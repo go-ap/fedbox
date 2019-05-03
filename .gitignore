@@ -1,0 +1,10 @@
+.env
+.env.dev
+.idea/
+*.orig
+go.sum
+bin/*
+*.pem
+*.crt
+*.key
+tests/db
