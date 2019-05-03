@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/env"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -16,23 +15,21 @@ import (
 type logFn func(string, ...interface{})
 
 type Fedbox struct {
-	conf  config.Options
-	ver   string
-	host  string
-	port  int
-	env   env.Type
-	warn  logFn
-	err   logFn
-	inf   logFn
-	debug logFn
+	conf config.Options
+	ver  string
+	port int
+	warn logFn
+	err  logFn
+	inf  logFn
+	dbg  logFn
 }
 
 // New instantiates a new Fedbox
-func New(host string, port int, l logrus.FieldLogger, ver string) Fedbox {
-	app := Fedbox{host: host, port: port, ver: ver}
+func New(port int, l logrus.FieldLogger, ver string) Fedbox {
+	app := Fedbox{port: port, ver: ver}
 	var err error
 	if l != nil {
-		app.debug = l.Debugf
+		app.dbg = l.Debugf
 		app.inf = l.Infof
 		app.warn = l.Warnf
 		app.err = l.Errorf
@@ -45,7 +42,7 @@ func New(host string, port int, l logrus.FieldLogger, ver string) Fedbox {
 }
 
 func (a Fedbox) listen() string {
-	return fmt.Sprintf("%s:%d", a.host, a.port)
+	return fmt.Sprintf("%s:%d", a.conf.Host, a.port)
 }
 
 // Run is the wrapper for starting the web-server and handling signals

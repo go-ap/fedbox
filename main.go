@@ -17,15 +17,13 @@ const defaultTimeout = time.Second * 15
 func main() {
 	var wait time.Duration
 	var port int
-	var host string
 
 	flag.DurationVar(&wait, "graceful-timeout", defaultTimeout, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
 	flag.IntVar(&port, "port", defaultPort, "the port on which we should listen on")
-	flag.StringVar(&host, "host", "", "the host on which we should listen on")
 	flag.Parse()
 
 	l := log.New()
-	a := app.New(host, port, l, version)
+	a := app.New(port, l, version)
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
