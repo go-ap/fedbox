@@ -24,6 +24,14 @@ var validTypes = []Type{
 	TEST,
 }
 
+func ValidTypeOrDev(typ string) Type {
+	if ValidType(typ) {
+		return Type(typ)
+	}
+
+	return DEV
+}
+
 func ValidType(typ string) bool {
 	for _, t := range validTypes {
 		if strings.ToLower(typ ) == strings.ToLower(string(t)) {

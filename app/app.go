@@ -3,7 +3,9 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,19 +13,33 @@ import (
 	"time"
 )
 
+type logFn func(string, ...interface{})
+
 type Fedbox struct {
-	host string
-	port int
-	env env.Type
+	conf  config.Options
+	ver   string
+	host  string
+	port  int
+	env   env.Type
+	warn  logFn
+	err   logFn
+	inf   logFn
+	debug logFn
 }
 
 // New instantiates a new Fedbox
-func New(host string, port int, environ string, ver string) Fedbox {
-	app := Fedbox{host: host, port: port}
-	if !env.ValidType(environ) {
-		app.env = env.DEV
-	} else {
-		app.env = env.Type(environ)
+func New(host string, port int, l logrus.FieldLogger, ver string) Fedbox {
+	app := Fedbox{host: host, port: port, ver: ver}
+	var err error
+	if l != nil {
+		app.debug = l.Debugf
+		app.inf = l.Infof
+		app.warn = l.Warnf
+		app.err = l.Errorf
+	}
+	app.conf, err = config.LoadFromEnv()
+	if err != nil {
+		app.warn("Unable to load settings from environment variables: %s", err)
 	}
 	return app
 }
@@ -34,6 +50,7 @@ func (a Fedbox) listen() string {
 
 // Run is the wrapper for starting the web-server and handling signals
 func (a *Fedbox) Run(m http.Handler, wait time.Duration) {
+	a.inf("Started")
 	srv := &http.Server{
 		Addr:         a.listen(),
 		WriteTimeout: time.Second * 15,
@@ -45,7 +62,7 @@ func (a *Fedbox) Run(m http.Handler, wait time.Duration) {
 	// Run our server in a goroutine so that it doesn't block.
 	go func() {
 		if err := srv.ListenAndServe(); err != nil {
-			//a.Logger.Error(err.Error())
+			a.err("%s", err.Error())
 			os.Exit(1)
 		}
 	}()
@@ -60,19 +77,19 @@ func (a *Fedbox) Run(m http.Handler, wait time.Duration) {
 			s := <-sigChan
 			switch s {
 			case syscall.SIGHUP:
-				//a.Logger.Info("SIGHUP received, reloading configuration")
+				a.inf("SIGHUP received, reloading configuration")
 				//loadEnv(a)
 			// kill -SIGINT XXXX or Ctrl+c
 			case syscall.SIGINT:
-				//a.Logger.Info("SIGINT received, stopping")
+				a.inf("SIGINT received, stopping")
 				exitChan <- 0
 			// kill -SIGTERM XXXX
 			case syscall.SIGTERM:
-				//a.Logger.Info("SIGITERM received, force stopping")
+				a.inf("SIGITERM received, force stopping")
 				exitChan <- 0
 			// kill -SIGQUIT XXXX
 			case syscall.SIGQUIT:
-				//a.Logger.Info("SIGQUIT received, force stopping with core-dump")
+				a.inf("SIGQUIT received, force stopping with core-dump")
 				exitChan <- 0
 			default:
 				//a.Logger.WithContext(log.Ctx{"signal": s}).Info("Unknown signal")
@@ -92,6 +109,6 @@ func (a *Fedbox) Run(m http.Handler, wait time.Duration) {
 	// Optionally, you could run srv.Shutdown in a goroutine and block on
 	// <-ctx.Done() if your application should wait for other services
 	// to finalize based on context cancellation.
-	//a.Logger.Info("Shutting down")
+	a.inf("Shutting down")
 	os.Exit(code)
 }

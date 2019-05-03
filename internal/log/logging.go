@@ -7,15 +7,39 @@ import (
 	"net/http"
 	"time"
 )
-func NewStructuredLogger(logger *logrus.Logger) func(next http.Handler) http.Handler {
+
+type Level int8
+
+const (
+	PanicLevel Level = iota
+	FatalLevel
+	ErrorLevel
+	WarnLevel
+	InfoLevel
+	DebugLevel
+	TraceLevel
+)
+
+func New () logrus.FieldLogger {
+	return logrus.New()
+}
+
+func NewStructuredLogger(logger logrus.FieldLogger) func(next http.Handler) http.Handler {
 	return middleware.RequestLogger(&StructuredLogger{logger})
 }
 
 type StructuredLogger struct {
-	Logger *logrus.Logger
+	Logger logrus.FieldLogger
 }
 func (l *StructuredLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
-	entry := &StructuredLoggerEntry{Logger: logrus.NewEntry(l.Logger)}
+	entry := &StructuredLoggerEntry{}
+
+	ll, ok := l.Logger.(*logrus.Logger)
+	if !ok {
+		return entry
+	}
+
+	entry.Logger = logrus.NewEntry(ll)
 	logFields := logrus.Fields{}
 
 	logFields["ts"] = time.Now().UTC().Format(time.RFC1123)
