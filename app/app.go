@@ -41,6 +41,10 @@ func New(port int, l logrus.FieldLogger, ver string) Fedbox {
 	return app
 }
 
+func (a Fedbox) Config() config.Options {
+	return a.conf
+}
+
 func (a Fedbox) listen() string {
 	return fmt.Sprintf("%s:%d", a.conf.Host, a.port)
 }

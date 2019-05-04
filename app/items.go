@@ -19,7 +19,7 @@ func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error)
 
 	var items as.ItemCollection
 	var err error
-	f := st.Filters{}
+	f := &st.Filters{}
 	f.FromRequest(r)
 	f.ItemKey = []st.Hash{
 		st.Hash(id),
@@ -43,7 +43,7 @@ func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error)
 		return nil, err
 	}
 	if len(items) == 1 {
-		it, err := loadItem(items, &f, reqURL(r, r.URL.Path))
+		it, err := loadItem(items, f, reqURL(r, r.URL.Path))
 		if err != nil {
 			return nil, errors.NotFoundf("%s", collection)
 		}
@@ -63,7 +63,7 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 
 	var items as.ItemCollection
 	var err error
-	f := st.Filters{}
+	f := &st.Filters{}
 	f.FromRequest(r)
 	f.ItemKey = []st.Hash{
 		st.Hash(id),
@@ -88,7 +88,7 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 		return nil, err
 	}
 	if len(items) == 1 {
-		it, err := loadItem(items, &f, reqURL(r, r.URL.Path))
+		it, err := loadItem(items, f, reqURL(r, r.URL.Path))
 		if err != nil {
 			return nil, errors.NotFoundf("%s", collection)
 		}

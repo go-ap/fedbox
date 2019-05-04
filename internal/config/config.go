@@ -14,7 +14,7 @@ import (
 type backendConfig struct {
 	Enabled bool
 	Host    string
-	Port    string
+	Port    int64
 	User    string
 	Pw      string
 	Name    string
@@ -73,7 +73,11 @@ func LoadFromEnv() (Options, error) {
 	conf.DB.Host = os.Getenv("DB_HOST")
 	conf.DB.Pw = os.Getenv("DB_PASSWORD")
 	conf.DB.Name = os.Getenv("DB_NAME")
-	conf.DB.Port = os.Getenv("DB_PORT")
+	var err error
+	if conf.DB.Port, err = strconv.ParseInt(os.Getenv("DB_PORT"), 10, 32); err != nil {
+		conf.DB.Port = 5432
+	}
+
 	conf.DB.User = os.Getenv("DB_USER")
 
 	return conf, nil

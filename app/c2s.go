@@ -9,7 +9,7 @@ import (
 
 // HandleClientRequest handles client to server (C2S) POST requests to an ActivityPub Actor's outbox
 func HandleClientRequest(w http.ResponseWriter, r *http.Request) (as.IRI, int, error) {
-	f := st.Filters{}
+	f := &st.Filters{}
 	if err := f.FromRequest(r); err != nil {
 		return as.IRI(""), http.StatusBadRequest, errors.BadRequestf("could not load filters from request")
 	}

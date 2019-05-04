@@ -139,11 +139,11 @@ func NewMethodNotAllowed(e error, s string, args ...interface{}) error {
 }
 
 func NotValidf(s string, args ...interface{}) error {
-	return &notValid{wrap(nil, s, args...)}
+	return &notValid{wrap(nil, "not valid "+s, args...)}
 }
 
 func NewNotValid(e error, s string, args ...interface{}) error {
-	return &notValid{wrap(e, "forbidden "+s, args...)}
+	return &notValid{wrap(e, "not valid "+s, args...)}
 }
 
 func Forbiddenf(s string, args ...interface{}) error {
@@ -151,7 +151,7 @@ func Forbiddenf(s string, args ...interface{}) error {
 }
 
 func NewForbidden(e error, s string, args ...interface{}) error {
-	return &forbidden{wrap(e, s, args...)}
+	return &forbidden{wrap(e, "forbidden "+s, args...)}
 }
 
 func NotImplementedf(s string, args ...interface{}) error {
@@ -159,7 +159,7 @@ func NotImplementedf(s string, args ...interface{}) error {
 }
 
 func NewNotImplemented(e error, s string, args ...interface{}) error {
-	return &notImplemented{wrap(e, s, args...)}
+	return &notImplemented{wrap(e, s + " not implemented", args...)}
 }
 
 func BadRequestf(s string, args ...interface{}) error {
@@ -213,7 +213,6 @@ func IsTimeout(e error) bool {
 func IsNotValid(e error) bool {
 	return xerr.Is(e, notValid{})
 }
-
 func isA (err1, err2 error) bool {
 	return reflect.TypeOf(err1) == reflect.TypeOf(err2)
 }

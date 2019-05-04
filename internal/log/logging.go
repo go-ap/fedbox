@@ -31,6 +31,7 @@ func NewStructuredLogger(logger logrus.FieldLogger) func(next http.Handler) http
 type StructuredLogger struct {
 	Logger logrus.FieldLogger
 }
+
 func (l *StructuredLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
 	entry := &StructuredLoggerEntry{}
 

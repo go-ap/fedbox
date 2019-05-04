@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -48,6 +49,9 @@ func (f Filters) IRIs() []as.IRI {
 	}
 	return ret
 }
+
+const MaxItems = 100
+
 // FromRequest loads the filters we use for generating storage queries from the HTTP request
 func (f *Filters) FromRequest(r *http.Request) error {
 	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
@@ -77,6 +81,14 @@ func (f *Filters) FromRequest(r *http.Request) error {
 			}
 		}
 	}
+
+	if f.MaxItems == 0 {
+		f.MaxItems = MaxItems
+	}
+	if f.Page == 0 {
+		f.Page = 1
+	}
+
 	return nil
 }
 
@@ -109,65 +121,107 @@ func query(f *Filters) string {
 }
 
 // QueryString
-func (a *Filters) QueryString() string {
-	return query(a)
+func (f *Filters) QueryString() string {
+	return query(f)
 }
 
 // BasePage
-func (a *Filters) BasePage() s.Paginator {
+func (f *Filters) BasePage() s.Paginator {
 	b := &Filters{}
-	copyActivityFilters(b, *a)
+	copyActivityFilters(b, *f)
 	return b
 }
 
 // CurrentPage
-func (a *Filters) CurrentPage() s.Paginator {
-	return a
+func (f *Filters) CurrentPage() s.Paginator {
+	return f
 }
 
 // NextPage
-func (a *Filters) NextPage() s.Paginator {
+func (f *Filters) NextPage() s.Paginator {
 	b := &Filters{}
-	copyActivityFilters(b, *a)
+	copyActivityFilters(b, *f)
 	b.Page += 1
 	return b
 }
 
 // PrevPage
-func (a *Filters) PrevPage() s.Paginator {
+func (f *Filters) PrevPage() s.Paginator {
 	b := &Filters{}
-	copyActivityFilters(b, *a)
+	copyActivityFilters(b, *f)
 	b.Page -= 1
 	return b
 }
 
 // FirstPage
-func (a *Filters) FirstPage() s.Paginator {
+func (f *Filters) FirstPage() s.Paginator {
 	b := &Filters{}
-	copyActivityFilters(b, *a)
+	copyActivityFilters(b, *f)
 	b.Page = 1
 	return b
 }
 
 // CurrentIndex
-func (a *Filters) CurrentIndex() int {
-	return a.Page
+func (f *Filters) CurrentIndex() int {
+	return f.Page
 }
 
-//type Filterable interface {
-//	GetWhereClauses() ([]string, []interface{})
-//	GetLimit() string
-//}
-//func (a Filters) GetWhereClauses() ([]string, []interface{}) {
-//	return []string{}, []interface{}{}
-//}
-//func (a Filters) GetLimit() string {
-//	if a.MaxItems == 0 {
-//		return ""
-//	}
-//	limit := fmt.Sprintf("  LIMIT %d", a.MaxItems)
-//	if a.Page > 1 {
-//		limit = fmt.Sprintf("%s OFFSET %d", limit, a.MaxItems*(a.Page-1))
-//	}
-//	return limit
-//}
+type Filterable interface {
+	GetWhereClauses() ([]string, []interface{})
+	GetLimit() string
+}
+func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
+	var clauses = make([]string, 0)
+	var values = make([]interface{}, 0)
+
+	var counter = 1
+
+	keys := f.Key
+	if len(keys) > 0 {
+		keyWhere := make([]string, 0)
+		for _, hash := range keys {
+			keyWhere = append(keyWhere, fmt.Sprintf(`"key" ~* $%d`, counter))
+			values = append(values, interface{}(hash))
+			counter++
+		}
+		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
+	}
+	types := f.Types()
+	if len(types) > 0 {
+		keyWhere := make([]string, 0)
+		for _, typ := range types {
+			keyWhere = append(keyWhere, fmt.Sprintf(`"type" = $%d`, counter))
+			values = append(values, interface{}(typ))
+			counter++
+		}
+		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
+	}
+
+	iris := f.IRIs()
+	if len(iris) > 0 {
+		keyWhere := make([]string, 0)
+		for _, key := range iris {
+			keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->"ID" ~* $%d`, counter))
+			values = append(values, interface{}(key))
+			counter++
+		}
+		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
+	}
+
+	if len(clauses) == 0 {
+		clauses = append(clauses, " true")
+	}
+
+	return clauses, values
+}
+
+func (f Filters) GetLimit() string {
+	if f.MaxItems == 0 {
+		return ""
+	}
+	limit := fmt.Sprintf(" LIMIT %d", f.MaxItems)
+	if f.Page >= 1 {
+		limit = fmt.Sprintf("%s OFFSET %d", limit, f.MaxItems*(f.Page-1))
+	}
+	return limit
+}
