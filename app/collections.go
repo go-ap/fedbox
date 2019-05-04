@@ -49,6 +49,7 @@ func (c CollectionHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 type CollectionType string
 
 const (
+	Unknown   = CollectionType("")
 	Outbox    = CollectionType("outbox")
 	Inbox     = CollectionType("inbox")
 	Shares    = CollectionType("shares")
@@ -64,6 +65,27 @@ type CollectionTyper interface {
 	Type(r *http.Request) CollectionType
 }
 
+type DefaultCollectionTyper struct{}
+
+func (d DefaultCollectionTyper) Type(r *http.Request) CollectionType {
+	if r.URL == nil || len(r.URL.Path) == 0 {
+		return Unknown
+	}
+	var col string
+	pathElements := strings.Split(r.URL.Path[1:], "/") // Skip first /
+	for i := len(pathElements) - 1; i >= 0; i-- {
+		col = pathElements[i]
+		if typ := getValidActivityCollection(col); typ != Unknown {
+			return typ
+		}
+		if typ := getValidObjectCollection(col); typ != Unknown {
+			return typ
+		}
+	}
+
+	return CollectionType(col)
+}
+
 var validActivityCollection = []CollectionType{
 	Outbox,
 	Inbox,
@@ -72,14 +94,18 @@ var validActivityCollection = []CollectionType{
 	Replies, // activitystreams
 }
 
-// ValidActivityCollection shows if the current ActivityPub end-point type is a valid one for handling Activities
-func ValidActivityCollection(typ string) bool {
+func getValidActivityCollection(typ string) CollectionType {
 	for _, t := range validActivityCollection {
 		if strings.ToLower(typ) == string(t) {
-			return true
+			return t
 		}
 	}
-	return false
+	return Unknown
+}
+
+// ValidActivityCollection shows if the current ActivityPub end-point type is a valid one for handling Activities
+func ValidActivityCollection(typ string) bool {
+	return getValidActivityCollection(typ) != Unknown
 }
 
 var validObjectCollection = []CollectionType{
@@ -88,28 +114,49 @@ var validObjectCollection = []CollectionType{
 	Liked,
 }
 
-// ValidActivityCollection shows if the current ActivityPub end-point type is a valid one for handling Objects
-func ValidObjectCollection(typ string) bool {
+func getValidObjectCollection(typ string) CollectionType {
 	for _, t := range validObjectCollection {
 		if strings.ToLower(typ) == string(t) {
-			return true
+			return t
 		}
 	}
-	return false
+	return Unknown
+}
+
+// ValidActivityCollection shows if the current ActivityPub end-point type is a valid one for handling Objects
+func ValidObjectCollection(typ string) bool {
+	return getValidObjectCollection(typ) != Unknown
+}
+
+func getValidCollection(typ string) CollectionType {
+	if typ := getValidActivityCollection(typ); typ != Unknown {
+		return typ
+	}
+	if typ := getValidObjectCollection(typ); typ != Unknown {
+		return typ
+	}
+	return Unknown
 }
 
 func ValidCollection(typ string) bool {
-	return ValidActivityCollection(typ) || ValidObjectCollection(typ)
+	return getValidCollection(typ) != Unknown
 }
 
 // HandleActivityCollection serves content from the outbox, inbox, likes, shares and replies end-points
 // that return ActivityPub collections containing activities
 func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
-	return nil, errors.NotImplementedf("not implemented")
+	// TODO(marius): move typer instantiation outside the handler, so we can pass it from outside
+	typer := DefaultCollectionTyper{}
+	collection :=  typer.Type(r)
+	return nil, errors.NotImplementedf("%s", collection)
 }
 
 // HandleObjectCollection serves content from following, followers, liked, and likes end-points
 // that return ActivityPub collections containing plain objects
 func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
-	return nil, errors.NotImplementedf("not implemented")
+	// TODO(marius): move typer instantiation outside the handler, so we can pass it from outside
+	typer := DefaultCollectionTyper{}
+	collection :=  typer.Type(r)
+
+	return nil, errors.NotImplementedf("%s", collection)
 }

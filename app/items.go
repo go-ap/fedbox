@@ -4,6 +4,7 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/errors"
 	j "github.com/go-ap/jsonld"
+	"github.com/go-chi/chi"
 	"net/http"
 )
 
@@ -47,11 +48,21 @@ func (i ItemHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // HandleActivityItem serves content from the outbox, inbox, likes, shares and replies end-points
 // that returns a single ActivityPub activity
 func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
-	return nil, errors.NotImplementedf("not implemented")
+	// TODO(marius): move typer instantiation outside the handler, so we can pass it from outside
+	typer := DefaultCollectionTyper{}
+	collection :=  typer.Type(r)
+
+	id := chi.URLParam(r, "id")
+	return nil, errors.NotFoundf("%s %s", collection, id)
 }
 
 // HandleObjectItem serves content from the following, followers, liked, and likes end-points
 // that returns a single ActivityPub object
 func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
-	return nil, errors.NotImplementedf("not implemented")
+	// TODO(marius): move typer instantiation outside the handler, so we can pass it from outside
+	typer := DefaultCollectionTyper{}
+	collection :=  typer.Type(r)
+
+	id := chi.URLParam(r, "id")
+	return nil, errors.NotFoundf("%s %s", collection, id)
 }

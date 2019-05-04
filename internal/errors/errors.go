@@ -155,7 +155,7 @@ func NewForbidden(e error, s string, args ...interface{}) error {
 }
 
 func NotImplementedf(s string, args ...interface{}) error {
-	return &notImplemented{wrap(nil, s, args...)}
+	return &notImplemented{wrap(nil, "not implemented "+s, args...)}
 }
 
 func NewNotImplemented(e error, s string, args ...interface{}) error {

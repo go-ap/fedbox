@@ -39,5 +39,8 @@ func (a ActivityHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // HandleClientRequest handles client to server (C2S) POST requests to an ActivityPub Actor's outbox
 func HandleClientRequest(w http.ResponseWriter, r *http.Request) (as.IRI, int, error) {
-	return as.IRI(""), http.StatusNotImplemented, errors.NotImplementedf("not implemented")
+	// TODO(marius): move typer instantiation outside the handler, so we can pass it from outside
+	typer := DefaultCollectionTyper{}
+	collection :=  typer.Type(r)
+	return as.IRI(""), http.StatusNotImplemented, errors.NotImplementedf("%s", collection)
 }
