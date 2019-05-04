@@ -24,7 +24,7 @@ type Fedbox struct {
 	dbg  logFn
 }
 
-// New instantiates a new Fedbox
+// New instantiates a new Fedbox instance
 func New(port int, l logrus.FieldLogger, ver string) Fedbox {
 	app := Fedbox{port: port, ver: ver}
 	var err error
