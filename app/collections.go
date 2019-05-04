@@ -16,12 +16,17 @@ func renderCollection(c as.CollectionInterface) ([]byte, error) {
 // Collection objects. It needs to implement the http.Handler interface
 type CollectionHandlerFn func(http.ResponseWriter, *http.Request) (as.CollectionInterface, error)
 
+// ValidMethod validates if the current handler can process the current request
+func (c CollectionHandlerFn) ValidMethod( r *http.Request) bool {
+	return r.Method != http.MethodGet && r.Method != http.MethodHead
+}
+
 // ServeHTTP implements the http.Handler interface for the CollectionHandlerFn type
 func (c CollectionHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var dat []byte
 	var status int
 
-	if r.Method != http.MethodGet || r.Method != http.MethodHead {
+	if c.ValidMethod(r) {
 		status = http.StatusNotAcceptable
 		dat, _ = errors.Render(errors.MethodNotAllowedf("invalid HTTP method"))
 	}

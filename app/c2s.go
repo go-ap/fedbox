@@ -10,6 +10,11 @@ import (
 // an ActivityStreams Activity. It needs to implement the http.Handler interface
 type ActivityHandlerFn func(http.ResponseWriter, *http.Request) (as.IRI, int, error)
 
+// ValidMethod validates if the current handler can process the current request
+func (a ActivityHandlerFn) ValidMethod( r *http.Request) bool {
+	return r.Method != http.MethodPost
+}
+
 // ServeHTTP implements the http.Handler interface for the ActivityHandlerFn type
 func (a ActivityHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var dat []byte
@@ -17,7 +22,7 @@ func (a ActivityHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var iri as.IRI
 	var err error
 
-	if r.Method != http.MethodPost {
+	if !a.ValidMethod(r) {
 		status = http.StatusNotAcceptable
 		dat, _ = errors.Render(errors.MethodNotAllowedf("invalid HTTP method"))
 	}

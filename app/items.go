@@ -16,12 +16,17 @@ func renderItem(i as.Item) ([]byte, error) {
 // objects. It needs to implement the http.Handler interface
 type ItemHandlerFn func(http.ResponseWriter, *http.Request) (as.Item, error)
 
+// ValidMethod validates if the current handler can process the current request
+func (i ItemHandlerFn) ValidMethod( r *http.Request) bool {
+	return r.Method != http.MethodGet && r.Method != http.MethodHead
+}
+
 // ServeHTTP implements the http.Handler interface for the ItemHandlerFn type
 func (i ItemHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var dat []byte
 	var status int
 
-	if r.Method != http.MethodGet || r.Method != http.MethodHead {
+	if i.ValidMethod(r) {
 		status = http.StatusNotAcceptable
 		dat, _ = errors.Render(errors.MethodNotAllowedf("invalid HTTP method"))
 	}
