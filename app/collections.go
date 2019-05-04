@@ -11,7 +11,7 @@ import (
 )
 
 func renderCollection(c as.CollectionInterface) ([]byte, error) {
-	return j.Marshal(c)
+	return j.WithContext(j.IRI(as.ActivityBaseURI)).Marshal(c)
 }
 
 // CollectionHandlerFn is the type that we're using to represent handlers that return ActivityStreams
