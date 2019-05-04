@@ -28,7 +28,6 @@ func main() {
 
 	r.Use(middleware.RequestID)
 	r.Use(log.NewStructuredLogger(l))
-	r.Use(middleware.Recoverer)
 
 	r.Route("/", app.Routes())
 
