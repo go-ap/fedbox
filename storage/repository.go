@@ -5,6 +5,8 @@ import (
 	s "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/errors"
+	"github.com/go-ap/jsonld"
+	uuid2 "github.com/google/uuid"
 	"github.com/jackc/pgx"
 	"strings"
 	"time"
@@ -103,4 +105,38 @@ func loadFromDb(conn *pgx.Conn, table string, f *Filters) (as.ItemCollection, er
 	}
 
 	return ret, nil
+}
+
+func (l Loader) SaveActivity(it as.Item) (as.Item, error) {
+	return saveToDb(l.conn, "activities", it)
+}
+func (l Loader) SaveActor(it as.Item) (as.Item, error) {
+	return saveToDb(l.conn, "actors", it)
+}
+func (l Loader) SaveObject(it as.Item) (as.Item, error) {
+	return saveToDb(l.conn, "objects", it)
+}
+
+func saveToDb(conn *pgx.Conn, table string, it as.Item) (as.Item, error) {
+	var query string
+	//if it.GetID() == nil {
+		query = fmt.Sprintf("INSERT INTO %s (key, iri, type, raw) VALUES ($1, $2, $3, $4);", table)
+	//} else {
+	//	query = fmt.Sprintf("UPDATE %s SET key = $1, iri = $2, type = $3, raw = $4;", table)
+	//}
+
+	raw, _ := jsonld.Marshal(it)
+
+	values := make([]interface{}, 4)
+	values[0] = interface{}(uuid2.New())
+	values[1] = interface{}(it.GetLink())
+	values[2] = interface{}(it.GetType())
+	values[3] = interface{}(raw)
+
+	_, err := conn.Exec(query, values...)
+	if err != nil {
+		return it, errors.Annotatef(err, "query error")
+	}
+
+	return it, nil
 }

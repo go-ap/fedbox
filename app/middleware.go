@@ -38,3 +38,21 @@ func ContextActorLoader(ctx context.Context) (storage.ActorLoader, bool) {
 	s, ok := ctxVal.(storage.ActorLoader)
 	return s, ok
 }
+
+func ContextActivitySaver(ctx context.Context) (storage.ActivitySaver, bool) {
+	ctxVal := ctx.Value(RepositoryCtxtKey)
+	s, ok := ctxVal.(storage.ActivitySaver)
+	return s, ok
+}
+
+func ContextActorSaver(ctx context.Context) (storage.ActorSaver, bool) {
+	ctxVal := ctx.Value(RepositoryCtxtKey)
+	s, ok := ctxVal.(storage.ActorSaver)
+	return s, ok
+}
+
+func ContextObjectSaver(ctx context.Context) (storage.ObjectSaver, bool) {
+	ctxVal := ctx.Value(RepositoryCtxtKey)
+	s, ok := ctxVal.(storage.ObjectSaver)
+	return s, ok
+}
