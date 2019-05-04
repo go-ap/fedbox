@@ -45,6 +45,7 @@ type Filters struct {
 	Page         int                         `qstring:"page,omitempty"`
 	MaxItems     int                         `qstring:"maxItems,omitempty"`
 }
+
 func (f Filters) Types() []as.ActivityVocabularyType {
 	return f.Type
 }
