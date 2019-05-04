@@ -5,11 +5,7 @@ import (
 	"github.com/go-ap/fedbox/internal/errors"
 )
 
-type Filters struct {
-	Type []as.ActivityVocabularyType `qstring:"type"`
-}
-
-func LoadActivities (f Filters) (as.ItemCollection, error) {
+func LoadActivities(f Filters) (as.ItemCollection, error) {
 	items := make(as.ItemCollection, 3)
 	items[0] = as.CreateNew("1", as.ObjectNew("1"))
 	items[1] = as.LikeNew("2", as.ObjectNew("1"))
@@ -20,10 +16,10 @@ func LoadActivities (f Filters) (as.ItemCollection, error) {
 	return nil, errors.NotImplementedf("loading activities")
 }
 
-func LoadObjects (f Filters) (as.ItemCollection, error) {
+func LoadObjects(f Filters) (as.ItemCollection, error) {
 	return nil, errors.NotImplementedf("loading objects")
 }
 
-func LoadActors (f Filters) (as.ItemCollection, error) {
+func LoadActors(f Filters) (as.ItemCollection, error) {
 	return nil, errors.NotImplementedf("loading actors")
 }
