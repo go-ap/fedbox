@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+type Filterable interface {
+	Types() []as.ActivityVocabularyType
+	IRIs() []as.IRI
+}
+
 // Paginator
 type Paginator interface {
 	QueryString() string
@@ -40,7 +45,16 @@ type Filters struct {
 	Page         int                         `qstring:"page,omitempty"`
 	MaxItems     int                         `qstring:"maxItems,omitempty"`
 }
-
+func (f Filters) Types() []as.ActivityVocabularyType {
+	return f.Type
+}
+func (f Filters) IRIs() []as.IRI {
+	ret := make([]as.IRI, len(f.ItemKey))
+	for i, k := range f.ItemKey {
+		ret[i] = as.IRI(k)
+	}
+ 	return ret
+}
 func (f *Filters) FromRequest(r *http.Request) error {
 	return qstring.Unmarshal(r.URL.Query(), f)
 }

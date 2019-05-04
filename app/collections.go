@@ -156,6 +156,7 @@ func ValidCollection(typ string) bool {
 // that return ActivityPub collections containing activities
 func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
 	collection :=  Typer.Type(r)
+	repo := loader{}
 
 	var items as.ItemCollection
 	var err error
@@ -165,9 +166,7 @@ func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.Collec
 	if col := chi.URLParam(r, "collection"); len(col) > 0 {
 		if CollectionType(col) == collection {
 			if ValidActivityCollection(col) {
-				items, err = LoadActivities(f)
-			} else if ValidObjectCollection(col) {
-				items, err = LoadObjects(f)
+				items, err = repo.LoadActivities(f)
 			} else {
 				return nil, errors.BadRequestf("invalid collection %s", collection)
 			}
@@ -177,7 +176,7 @@ func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.Collec
 		// In our case activities
 		switch collection {
 		case CollectionType("activities"):
-			items, err = LoadActivities(f)
+			items, err = repo.LoadActivities(f)
 		default:
 			return nil, errors.BadRequestf("invalid collection %s", collection)
 		}
@@ -199,6 +198,7 @@ func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.Collec
 // that return ActivityPub collections containing plain objects
 func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
 	collection :=  Typer.Type(r)
+	repo := loader{}
 	var items as.ItemCollection
 	var err error
 	f := Filters{}
@@ -206,10 +206,8 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 
 	if col := chi.URLParam(r, "collection"); len(col) > 0 {
 		if CollectionType(col) == collection {
-			if ValidActivityCollection(col) {
-				items, err = LoadActivities(f)
-			} else if ValidObjectCollection(col) {
-				items, err = LoadObjects(f)
+			if ValidObjectCollection(col) {
+				items, err = repo.LoadObjects(f)
 			} else {
 				return nil, errors.BadRequestf("invalid collection %s", collection)
 			}
@@ -219,9 +217,9 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 		// In our case actors and items
 		switch collection {
 		case CollectionType("actors"):
-			items, err = LoadActors(f)
+			items, err = repo.LoadActors(f)
 		case CollectionType("items"):
-			items, err = LoadObjects(f)
+			items, err = repo.LoadObjects(f)
 		default:
 			return nil, errors.BadRequestf("invalid collection %s", collection)
 		}
