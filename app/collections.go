@@ -5,6 +5,7 @@ import (
 	"github.com/go-ap/fedbox/internal/errors"
 	j "github.com/go-ap/jsonld"
 	"net/http"
+	"strings"
 )
 
 func renderCollection(c as.CollectionInterface) ([]byte, error) {
@@ -42,6 +43,62 @@ func (c CollectionHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		w.Write(dat)
 	}
+}
+
+type EndPointType string
+
+const (
+	Outbox    = EndPointType("outbox")
+	Inbox     = EndPointType("inbox")
+	Shares    = EndPointType("shares")
+	Replies   = EndPointType("replies") // activitystreams
+	Following = EndPointType("following")
+	Followers = EndPointType("followers")
+	Liked     = EndPointType("liked")
+	Likes     = EndPointType("likes")
+)
+
+// EndPointTyper allows external packages to tell us which collection the current HTTP request addresses
+type EndPointTyper interface {
+	Type(r *http.Request) EndPointType
+}
+
+var validActivityCollection = []EndPointType{
+	Outbox,
+	Inbox,
+	Likes,
+	Shares,
+	Replies, // activitystreams
+}
+
+// ValidActivityCollection shows if the current ActivityPub end-point type is a valid one for handling Activities
+func ValidActivityCollection(typ string) bool {
+	for _, t := range validActivityCollection {
+		if strings.ToLower(typ) == string(t) {
+			return true
+		}
+	}
+	return false
+}
+
+var validObjectCollection = []EndPointType{
+	Following,
+	Followers,
+	Liked,
+}
+
+// ValidActivityCollection shows if the current ActivityPub end-point type is a valid one for handling Objects
+func ValidObjectCollection(typ string) bool {
+	for _, t := range validObjectCollection {
+		if strings.ToLower(typ) == string(t) {
+			return true
+		}
+	}
+	return false
+}
+
+func ValidCollection(typ string) bool {
+	return ValidActivityCollection(typ) || ValidObjectCollection(typ)
 }
 
 // HandleActivityCollection serves content from the outbox, inbox, likes, shares and replies end-points

@@ -11,8 +11,17 @@ type Handler HandlerWithError
 
 func Routes() func(chi.Router) {
 	return func(r chi.Router) {
-		r.Handle("/activities", CollectionHandlerFn(HandleActivityCollection))
-		r.Handle("/actors", CollectionHandlerFn(HandleObjectCollection))
-		r.Handle("/items", CollectionHandlerFn(HandleObjectCollection))
+		r.Route("/activities", func(r chi.Router) {
+			r.Handle("/", CollectionHandlerFn(HandleActivityCollection))
+			r.Handle("/{id}", ItemHandlerFn(HandleActivityItem))
+		})
+		r.Route("/actors", func(r chi.Router) {
+			r.Handle("/", CollectionHandlerFn(HandleObjectCollection))
+			r.Handle("/{id}", ItemHandlerFn(HandleObjectItem))
+		})
+		r.Route("/items",  func(r chi.Router) {
+			r.Handle("/", CollectionHandlerFn(HandleObjectCollection))
+			r.Handle("/{id}", ItemHandlerFn(HandleObjectItem))
+		})
 	}
 }
