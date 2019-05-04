@@ -59,8 +59,8 @@ const (
 	Likes     = CollectionType("likes")
 )
 
-// EndPointTyper allows external packages to tell us which collection the current HTTP request addresses
-type EndPointTyper interface {
+// CollectionTyper allows external packages to tell us which collection the current HTTP request addresses
+type CollectionTyper interface {
 	Type(r *http.Request) CollectionType
 }
 
