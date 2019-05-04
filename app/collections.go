@@ -4,6 +4,7 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/errors"
 	j "github.com/go-ap/jsonld"
+	"github.com/go-chi/chi"
 	"net/http"
 	"strings"
 )
@@ -155,6 +156,39 @@ func ValidCollection(typ string) bool {
 func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
 	collection :=  Typer.Type(r)
 
+	var items as.ItemCollection
+	var err error
+	if col := chi.URLParam(r, "collection"); len(col) > 0 {
+		if CollectionType(col) == collection {
+			f := Filters{}
+			if ValidActivityCollection(col) {
+				items, err = LoadActivities(f)
+			} else if ValidObjectCollection(col) {
+				items, err = LoadObjects(f)
+			} else {
+				return nil, errors.BadRequestf("invalid collection %s", collection)
+			}
+		}
+	} else {
+		f := Filters{}
+		// Non recognized as valid collection types
+		// In our case actors, activities, items
+		switch collection {
+		case CollectionType("actors"):
+			items, err = LoadActors(f)
+		case CollectionType("activities"):
+			items, err = LoadActivities(f)
+		case CollectionType("items"):
+			items, err = LoadObjects(f)
+		default:
+			return nil, errors.BadRequestf("invalid collection %s", collection)
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	if len(items) > 0 {
+	}
 	return nil, errors.NotImplementedf("%s", collection)
 }
 
