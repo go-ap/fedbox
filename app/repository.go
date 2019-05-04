@@ -17,9 +17,25 @@ func LoadActivities(f Filters) (as.ItemCollection, error) {
 }
 
 func LoadObjects(f Filters) (as.ItemCollection, error) {
+	items := make(as.ItemCollection, 6)
+	items[0] = as.ObjectNew(as.ArticleType)
+	items[1] = as.ObjectNew(as.NoteType)
+	items[2] = as.ObjectNew(as.TombstoneType)
+	items[3] = as.ObjectNew(as.AudioType)
+	items[4] = as.ObjectNew(as.VideoType)
+	items[5] = as.LinkNew("6", as.MentionType)
+
+	return items, nil
 	return nil, errors.NotImplementedf("loading objects")
 }
 
 func LoadActors(f Filters) (as.ItemCollection, error) {
+	items := make(as.ItemCollection, 3)
+	items[0] = as.PersonNew("alice")
+	items[1] = as.PersonNew("bob")
+	items[1] = as.ServiceNew("self")
+	items[2] = as.GroupNew("dev")
+
+	return items, nil
 	return nil, errors.NotImplementedf("loading actors")
 }
