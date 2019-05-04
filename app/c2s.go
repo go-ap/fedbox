@@ -24,13 +24,13 @@ func (a ActivityHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if !a.ValidMethod(r) {
 		status = http.StatusNotAcceptable
-		dat, _ = errors.Render(errors.MethodNotAllowedf("invalid HTTP method"))
+		_, dat = errors.Render(r, errors.MethodNotAllowedf("invalid HTTP method"))
 	}
 
 	if iri, status, err = a(w, r); err != nil {
 		// HandleError
 		status = http.StatusInternalServerError
-		dat, _ = errors.Render(err)
+		_, dat = errors.Render(r, err)
 	} else {
 		dat = []byte("OK")
 	}

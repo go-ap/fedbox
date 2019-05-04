@@ -4,28 +4,40 @@ import (
 	"fmt"
 	"github.com/go-ap/jsonld"
 	_ "golang.org/x/xerrors"
+	"net/http"
 )
 
 // TODO(marius): get a proper context from
-func context() jsonld.Context {
+func context(r *http.Request) jsonld.Context {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
 	return jsonld.Context{
 		jsonld.ContextElement{
 			Term: jsonld.Term("errors"),
-			IRI: "/ns#errors",
+			IRI:  jsonld.IRI(fmt.Sprintf("%s://%s/ns#errors", scheme, r.Host)),
 		},
 	}
 }
 
 // Render outputs the json encoded errors, with the JsonLD context for current
-func Render(errs ...error) ([]byte, error) {
-	errMap := make([]string, len(errs))
+func Render(r *http.Request, errs ...error) (int, []byte) {
+	errMap := make([]Http, len(errs))
+	var status int
 	for i, err := range errs {
-		if false {
-			// TODO(marius): this is for dev environment
-			// errMap[i] = fmt.Sprintf("%s: %w", err, err)
-		} else {
-			errMap[i] = fmt.Sprintf("%s", err)
-		}
+		h := HttpError(err)
+		errMap[i] = h
+		status = h.Code
 	}
-	return jsonld.WithContext(context()).Marshal(struct{Errors []string `jsonld:"errors"`}{Errors: errMap})
+	var dat []byte
+	var err error
+
+	m := struct {
+		Errors []Http `jsonld:"errors"`
+	}{Errors: errMap}
+	if dat, err = jsonld.WithContext(context(r)).Marshal(m); err != nil {
+		return http.StatusInternalServerError, dat
+	}
+	return status, dat
 }

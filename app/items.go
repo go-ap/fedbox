@@ -28,17 +28,17 @@ func (i ItemHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if i.ValidMethod(r) {
 		status = http.StatusNotAcceptable
-		dat, _ = errors.Render(errors.MethodNotAllowedf("invalid HTTP method"))
+		_, dat = errors.Render(r, errors.MethodNotAllowedf("invalid HTTP method"))
 	}
 
 	if it, err := i(w, r); err != nil {
 		// HandleError
 		status = http.StatusInternalServerError
-		dat, _ = errors.Render(err)
+		_, dat = errors.Render(r, err)
 	} else {
 		if dat, err = renderItem(it); err != nil {
 			status = http.StatusInternalServerError
-			dat, _ = errors.Render(err)
+			_, dat = errors.Render(r, err)
 		} else {
 			status = http.StatusOK
 		}

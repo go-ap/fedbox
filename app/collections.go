@@ -29,17 +29,17 @@ func (c CollectionHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if c.ValidMethod(r) {
 		status = http.StatusNotAcceptable
-		dat, _ = errors.Render(errors.MethodNotAllowedf("invalid HTTP method"))
+		_, dat= errors.Render(r, errors.MethodNotAllowedf("invalid HTTP method"))
 	}
 
 	if col, err := c(w, r); err != nil {
 		// HandleError
 		status = http.StatusInternalServerError
-		dat, _ = errors.Render(err)
+		_, dat = errors.Render(r, err)
 	} else {
 		if dat, err = renderCollection(col); err != nil {
 			status = http.StatusInternalServerError
-			dat, _ = errors.Render(err)
+			_, dat= errors.Render(r, err)
 		} else {
 			status = http.StatusOK
 		}
