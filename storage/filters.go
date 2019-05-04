@@ -1,29 +1,13 @@
-package app
+package storage
 
 import (
-	"fmt"
+	s "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/mariusor/qstring"
 	"net/http"
 	"net/url"
 	"time"
 )
-
-type Filterable interface {
-	Types() []as.ActivityVocabularyType
-	IRIs() []as.IRI
-}
-
-// Paginator
-type Paginator interface {
-	QueryString() string
-	BasePage() Paginator
-	CurrentPage() Paginator
-	NextPage() Paginator
-	PrevPage() Paginator
-	FirstPage() Paginator
-	CurrentIndex() int
-}
 
 // Hash
 type Hash string
@@ -54,7 +38,7 @@ func (f Filters) IRIs() []as.IRI {
 	for i, k := range f.ItemKey {
 		ret[i] = as.IRI(k)
 	}
- 	return ret
+	return ret
 }
 func (f *Filters) FromRequest(r *http.Request) error {
 	return qstring.Unmarshal(r.URL.Query(), f)
@@ -71,14 +55,6 @@ func copyActivityFilters(dst *Filters, src Filters) {
 	dst.NewerThan = src.NewerThan
 	dst.Page = src.Page
 	dst.MaxItems = src.MaxItems
-}
-
-func reqURL(r *http.Request, path string) string {
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-	return fmt.Sprintf("%s://%s%s", scheme, r.Host, path)
 }
 
 func query(f *Filters) string {
@@ -102,19 +78,19 @@ func (a *Filters) QueryString() string {
 }
 
 // BasePage
-func (a *Filters) BasePage() Paginator {
+func (a *Filters) BasePage() s.Paginator {
 	b := &Filters{}
 	copyActivityFilters(b, *a)
 	return b
 }
 
 // CurrentPage
-func (a *Filters) CurrentPage() Paginator {
+func (a *Filters) CurrentPage() s.Paginator {
 	return a
 }
 
 // NextPage
-func (a *Filters) NextPage() Paginator {
+func (a *Filters) NextPage() s.Paginator {
 	b := &Filters{}
 	copyActivityFilters(b, *a)
 	b.Page += 1
@@ -122,7 +98,7 @@ func (a *Filters) NextPage() Paginator {
 }
 
 // PrevPage
-func (a *Filters) PrevPage() Paginator {
+func (a *Filters) PrevPage() s.Paginator {
 	b := &Filters{}
 	copyActivityFilters(b, *a)
 	b.Page -= 1
@@ -130,7 +106,7 @@ func (a *Filters) PrevPage() Paginator {
 }
 
 // FirstPage
-func (a *Filters) FirstPage() Paginator {
+func (a *Filters) FirstPage() s.Paginator {
 	b := &Filters{}
 	copyActivityFilters(b, *a)
 	b.Page = 1

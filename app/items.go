@@ -4,6 +4,7 @@ import (
 	h "github.com/go-ap/activitypub/handler"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/errors"
+	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-chi/chi"
 	"net/http"
 )
@@ -12,16 +13,16 @@ import (
 // that returns a single ActivityPub activity
 func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 	collection := h.Typer.Type(r)
-	repo := loader{}
+	repo := st.Loader{}
 
 	id := chi.URLParam(r, "id")
 
 	var items as.ItemCollection
 	var err error
-	f := Filters{}
+	f := st.Filters{}
 	f.FromRequest(r)
-	f.ItemKey = []Hash{
-		Hash(id),
+	f.ItemKey = []st.Hash{
+		st.Hash(id),
 	}
 	f.MaxItems = 1
 
@@ -61,16 +62,16 @@ func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error)
 // that returns a single ActivityPub object
 func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 	collection := h.Typer.Type(r)
-	repo := loader{}
+	repo := st.Loader{}
 
 	id := chi.URLParam(r, "id")
 
 	var items as.ItemCollection
 	var err error
-	f := Filters{}
+	f := st.Filters{}
 	f.FromRequest(r)
-	f.ItemKey = []Hash{
-		Hash(id),
+	f.ItemKey = []st.Hash{
+		st.Hash(id),
 	}
 	f.MaxItems = 1
 
@@ -108,6 +109,6 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 	return nil, errors.NotFoundf("%s %s", collection, id)
 }
 
-func loadItem(items as.ItemCollection, f Paginator, baseURL string) (as.Item, error) {
+func loadItem(items as.ItemCollection, f st.Paginator, baseURL string) (as.Item, error) {
 	return items[0], nil
 }

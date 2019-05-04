@@ -1,40 +1,43 @@
-package app
+package storage
 
 import (
+	s "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/errors"
 	"strings"
 )
 
+type Paginator = s.Paginator
+
 type ActivityPubLoader interface {
-	Load(f Filterable) (as.ItemCollection, error)
+	Load(f s.Filterable) (as.ItemCollection, error)
 }
 type ActivityPubActivityLoader interface {
-	LoadActivities(f Filterable) (as.ItemCollection, error)
+	LoadActivities(f s.Filterable) (as.ItemCollection, error)
 }
 type ActivityPubActorLoader interface {
-	LoadActors(f Filterable) (as.ItemCollection, error)
+	LoadActors(f s.Filterable) (as.ItemCollection, error)
 }
 type ActivityPubObjectLoader interface {
-	LoadObject(f Filterable) (as.ItemCollection, error)
+	LoadObject(f s.Filterable) (as.ItemCollection, error)
 }
 
-type loader struct{}
+type Loader struct{}
 
-func (l loader) Load(f Filterable) (as.ItemCollection, error) {
+func (l Loader) Load(f s.Filterable) (as.ItemCollection, error) {
 	return nil, errors.NotImplementedf("maybe this isn't needed")
 }
-func (l loader) LoadActivities(f Filterable) (as.ItemCollection, error) {
+func (l Loader) LoadActivities(f s.Filterable) (as.ItemCollection, error) {
 	return LoadActivities(f)
 }
-func (l loader) LoadActors(f Filterable) (as.ItemCollection, error) {
+func (l Loader) LoadActors(f s.Filterable) (as.ItemCollection, error) {
 	return LoadActors(f)
 }
-func (l loader) LoadObjects(f Filterable) (as.ItemCollection, error) {
+func (l Loader) LoadObjects(f s.Filterable) (as.ItemCollection, error) {
 	return LoadObjects(f)
 }
 
-func LoadActivities(f Filterable) (as.ItemCollection, error) {
+func LoadActivities(f s.Filterable) (as.ItemCollection, error) {
 	items := make(as.ItemCollection, 3)
 	items[0] = as.CreateNew("1", as.ObjectNew("1"))
 	items[1] = as.LikeNew("2", as.ObjectNew("1"))
@@ -56,7 +59,7 @@ func LoadActivities(f Filterable) (as.ItemCollection, error) {
 	return ret, nil
 }
 
-func LoadObjects(f Filterable) (as.ItemCollection, error) {
+func LoadObjects(f s.Filterable) (as.ItemCollection, error) {
 	items := make(as.ItemCollection, 6)
 	items[0] = as.ObjectNew(as.ArticleType)
 	items[1] = as.ObjectNew(as.NoteType)
@@ -81,7 +84,7 @@ func LoadObjects(f Filterable) (as.ItemCollection, error) {
 	return ret, nil
 }
 
-func LoadActors(f Filterable) (as.ItemCollection, error) {
+func LoadActors(f s.Filterable) (as.ItemCollection, error) {
 	items := make(as.ItemCollection, 4)
 	items[0] = as.PersonNew("alice")
 	items[1] = as.PersonNew("bob")

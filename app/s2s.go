@@ -9,7 +9,6 @@ import (
 
 // HandleServerRequest handles server to server (S2S) POST requests to an ActivityPub Actor's inbox
 func HandleServerRequest(w http.ResponseWriter, r *http.Request) (as.IRI, int, error) {
-	// TODO(marius): move typer instantiation outside the handler, so we can pass it from outside
 	collection := h.Typer.Type(r)
 	return as.IRI(""), http.StatusNotImplemented, errors.NotImplementedf("%s", collection)
 }

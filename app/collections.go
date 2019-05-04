@@ -5,24 +5,28 @@ import (
 	h "github.com/go-ap/activitypub/handler"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/errors"
-	j "github.com/go-ap/jsonld"
+	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-chi/chi"
 	"net/http"
 )
 
-func renderCollection(c as.CollectionInterface) ([]byte, error) {
-	return j.WithContext(j.IRI(as.ActivityBaseURI)).Marshal(c)
+func reqURL(r *http.Request, path string) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s%s", scheme, r.Host, path)
 }
 
 // HandleActivityCollection serves content from the outbox, inbox, likes, shares and replies end-points
 // that return ActivityPub collections containing activities
 func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
 	collection := h.Typer.Type(r)
-	repo := loader{}
+	repo := st.Loader{}
 
 	var items as.ItemCollection
 	var err error
-	f := Filters{}
+	f := st.Filters{}
 	f.FromRequest(r)
 
 	if col := chi.URLParam(r, "collection"); len(col) > 0 {
@@ -60,10 +64,10 @@ func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.Collec
 // that return ActivityPub collections containing plain objects
 func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
 	collection := h.Typer.Type(r)
-	repo := loader{}
+	repo := st.Loader{}
 	var items as.ItemCollection
 	var err error
-	f := Filters{}
+	f := st.Filters{}
 	f.FromRequest(r)
 
 	if col := chi.URLParam(r, "collection"); len(col) > 0 {
@@ -99,8 +103,8 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 	return nil, errors.NotImplementedf("%s", collection)
 }
 
-func loadCollection(items as.ItemCollection, count uint, filters Paginator, baseUrl string) (as.CollectionInterface, error) {
-	getURL := func(f Paginator) string {
+func loadCollection(items as.ItemCollection, count uint, filters st.Paginator, baseUrl string) (as.CollectionInterface, error) {
+	getURL := func(f st.Paginator) string {
 		qs := ""
 		if f != nil {
 			qs = f.QueryString()
@@ -109,13 +113,13 @@ func loadCollection(items as.ItemCollection, count uint, filters Paginator, base
 	}
 
 	var haveItems, moreItems, lessItems bool
-	var bp, fp, cp, pp, np Paginator
+	var bp, fp, cp, pp, np st.Paginator
 
 	oc := as.OrderedCollection{}
 	oc.ID = as.ObjectID(getURL(bp))
 	oc.Type = as.OrderedCollectionType
 
-	f, _ := filters.(*Filters)
+	f, _ := filters.(*st.Filters)
 	haveItems = len(items) > 0
 
 	moreItems = int(count) > ((f.Page + 1) * f.MaxItems)
