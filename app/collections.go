@@ -65,14 +65,17 @@ const (
 	Likes     = CollectionType("likes")
 )
 
+// Typer is the static package variable that determines a collection type for a particular request
+// It can be overloaded from outside packages.
+var Typer CollectionTyper = pathTyper{}
+
 // CollectionTyper allows external packages to tell us which collection the current HTTP request addresses
 type CollectionTyper interface {
 	Type(r *http.Request) CollectionType
 }
 
-type DefaultCollectionTyper struct{}
-
-func (d DefaultCollectionTyper) Type(r *http.Request) CollectionType {
+type pathTyper struct{}
+func (d pathTyper) Type(r *http.Request) CollectionType {
 	if r.URL == nil || len(r.URL.Path) == 0 {
 		return Unknown
 	}
@@ -88,7 +91,7 @@ func (d DefaultCollectionTyper) Type(r *http.Request) CollectionType {
 		}
 	}
 
-	return CollectionType(col)
+	return CollectionType(strings.ToLower(col))
 }
 
 var validActivityCollection = []CollectionType{
@@ -150,18 +153,15 @@ func ValidCollection(typ string) bool {
 // HandleActivityCollection serves content from the outbox, inbox, likes, shares and replies end-points
 // that return ActivityPub collections containing activities
 func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
-	// TODO(marius): move typer instantiation outside the handler, so we can pass it from outside
-	typer := DefaultCollectionTyper{}
-	collection :=  typer.Type(r)
+	collection :=  Typer.Type(r)
+
 	return nil, errors.NotImplementedf("%s", collection)
 }
 
 // HandleObjectCollection serves content from following, followers, liked, and likes end-points
 // that return ActivityPub collections containing plain objects
 func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
-	// TODO(marius): move typer instantiation outside the handler, so we can pass it from outside
-	typer := DefaultCollectionTyper{}
-	collection :=  typer.Type(r)
+	collection :=  Typer.Type(r)
 
 	return nil, errors.NotImplementedf("%s", collection)
 }

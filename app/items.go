@@ -53,9 +53,7 @@ func (i ItemHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // HandleActivityItem serves content from the outbox, inbox, likes, shares and replies end-points
 // that returns a single ActivityPub activity
 func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
-	// TODO(marius): move typer instantiation outside the handler, so we can pass it from outside
-	typer := DefaultCollectionTyper{}
-	collection :=  typer.Type(r)
+	collection :=  Typer.Type(r)
 
 	id := chi.URLParam(r, "id")
 	return nil, errors.NotFoundf("%s %s", collection, id)
@@ -64,9 +62,7 @@ func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error)
 // HandleObjectItem serves content from the following, followers, liked, and likes end-points
 // that returns a single ActivityPub object
 func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
-	// TODO(marius): move typer instantiation outside the handler, so we can pass it from outside
-	typer := DefaultCollectionTyper{}
-	collection :=  typer.Type(r)
+	collection :=  Typer.Type(r)
 
 	id := chi.URLParam(r, "id")
 	return nil, errors.NotFoundf("%s %s", collection, id)
