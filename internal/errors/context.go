@@ -22,7 +22,7 @@ func Render(errs ...error) ([]byte, error) {
 	for i, err := range errs {
 		if false {
 			// TODO(marius): this is for dev environment
-			errMap[i] = fmt.Sprintf("%s: %w", err, err)
+			// errMap[i] = fmt.Sprintf("%s: %w", err, err)
 		} else {
 			errMap[i] = fmt.Sprintf("%s", err)
 		}
