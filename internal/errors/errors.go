@@ -218,93 +218,56 @@ func isA (err1, err2 error) bool {
 	return reflect.TypeOf(err1) == reflect.TypeOf(err2)
 }
 func (n notFound) Is(e error) bool {
-	return isA(n, e)
+	return isA(n, e) || isA(n.Err, e)
 }
 func (n notValid) Is(e error) bool {
-	return isA(n, e)
+	return isA(n, e)  || isA(n.Err, e)
 }
 func (n notImplemented) Is(e error) bool {
-	return isA(n, e)
+	return isA(n, e) || isA(n.Err, e)
 }
 func (n notSupported) Is(e error) bool {
-	return isA(n, e)
+	return isA(n, e) || isA(n.Err, e)
 }
 func (b badRequest) Is(e error) bool {
-	return isA(b, e)
+	return isA(b, e) || isA(b.Err, e)
 }
 func (t timeout) Is(e error) bool {
-	return isA(t, e)
+	return isA(t, e) || isA(t.Err, e)
 }
 func (u unauthorized) Is(e error) bool {
-	return isA(u, e)
+	return isA(u, e) || isA(u.Err, e)
 }
 func (m methodNotAllowed) Is(e error) bool {
-	return isA(m, e)
+	return isA(m, e) || isA(m.Err, e)
 }
 func (f forbidden) Is(e error) bool {
-	return isA(f, e)
+	return isA(f, e) || isA(f.Err, e)
 }
-
-func (n notFound) As(e interface{}) bool {
-	if r, okt := e.(*Err); okt {
-		*r = n.Err
-		return true
-	}
-	return false
+func (n notFound) Unwrap() error {
+	return n.Err
 }
-func (n notValid) As(e interface{}) bool {
-	if _, okt := e.(*Err); okt {
-		e = n.Err
-		return true
-	}
-	return false
+func (n notValid) Unwrap() error {
+	return n.Err
 }
-func (n notImplemented) As(e interface{}) bool {
-	if _, okt := e.(*Err); okt {
-		e = n.Err
-		return true
-	}
-	return false
+func (n notImplemented) Unwrap() error {
+	return n.Err
 }
-func (n notSupported) As(e interface{}) bool {
-	if _, okt := e.(*Err); okt {
-		e = n.Err
-		return true
-	}
-	return false
+func (n notSupported) Unwrap() error {
+	return n.Err
 }
-func (b badRequest) As(e interface{}) bool {
-	if _, okt := e.(*Err); okt {
-		e = b.Err
-		return true
-	}
-	return false
+func (b badRequest) Unwrap() error {
+	return b.Err
 }
-func (t timeout) As(e interface{}) bool {
-	if _, okt := e.(*Err); okt {
-		e = t.Err
-		return true
-	}
-	return false
+func (t timeout) Unwrap() error {
+	return t.Err
 }
-func (u unauthorized) As(e interface{}) bool {
-	if _, okt := e.(*Err); okt {
-		e = u.Err
-		return true
-	}
-	return false
+func (u unauthorized)Unwrap() error {
+	return u.Err
 }
-func (m methodNotAllowed) As(e interface{}) bool {
-	if _, okt := e.(*Err); okt {
-		e = m.Err
-		return true
-	}
-	return false
+func (m methodNotAllowed) Unwrap() error {
+	return m.Err
 }
-func (f forbidden) As(e interface{}) bool {
-	if _, okt := e.(*Err); okt {
-		e = f.Err
-		return true
-	}
-	return false
+func (f forbidden) Unwrap() error {
+	return f.Err
 }

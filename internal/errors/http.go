@@ -1,7 +1,6 @@
 package errors
 
 import (
-	"encoding/json"
 	"fmt"
 	"golang.org/x/xerrors"
 	"net/http"
@@ -10,7 +9,7 @@ import (
 var IncludeBacktrace = true
 
 type Http struct {
-	Code     int    `jsonld:"authCode,omitempty"`
+	Code     int    `jsonld:"-"`
 	Message  string `jsonld:"message"`
 	Trace    *Stack `jsonld:"trace,omitempty"`
 	Location string `jsonld:"location,omitempty"`
@@ -22,10 +21,6 @@ func HttpError(err error) Http {
 	var trace *Stack
 
 	switch e := err.(type) {
-	case *json.UnmarshalTypeError:
-		msg = fmt.Sprintf("%T: Value[%s] Type[%v]\n", e, e.Value, e.Type)
-	case *json.InvalidUnmarshalError:
-		msg = fmt.Sprintf("%T: Type[%v]\n", e, e.Type)
 	case *Err:
 		msg = fmt.Sprintf("%s", e.Error())
 		if IncludeBacktrace {
@@ -37,8 +32,8 @@ func HttpError(err error) Http {
 			}
 		}
 	default:
-		local := Err{}
-		if ok := xerrors.As(err, &local); ok {
+		local := new(Err)
+		if ok := xerrors.As(err, local); ok {
 			if IncludeBacktrace {
 				trace, _ = parseStack(local.t)
 				f := local.f
