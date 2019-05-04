@@ -6,8 +6,11 @@ import (
 	"net/http"
 )
 
+// ActivityHandlerFn is the type that we're using to represent handlers that process requests containing
+// an ActivityStreams Activity. It needs to implement the http.Handler interface
 type ActivityHandlerFn func(http.ResponseWriter, *http.Request) (as.IRI, int, error)
 
+// ServeHTTP implements the http.Handler interface for the ActivityHandlerFn type
 func (a ActivityHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var dat []byte
 	var status int
