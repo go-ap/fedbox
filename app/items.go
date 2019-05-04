@@ -26,14 +26,8 @@ func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error)
 	}
 	f.MaxItems = 1
 
-	if col := chi.URLParam(r, "collection"); len(col) > 0 {
-		if h.CollectionType(col) == collection {
-			if h.ValidActivityCollection(col) {
-				items, err = repo.LoadActivities(f)
-			} else {
-				return nil, errors.BadRequestf("invalid collection %s", collection)
-			}
-		}
+	if h.ValidActivityCollection(string(f.Collection)) {
+		items, err = repo.LoadActivities(f)
 	} else {
 		// Non recognized as valid collection types
 		// In our case activities
@@ -44,6 +38,7 @@ func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error)
 			return nil, errors.BadRequestf("invalid collection %s", collection)
 		}
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -75,24 +70,18 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 	}
 	f.MaxItems = 1
 
-	if col := chi.URLParam(r, "collection"); len(col) > 0 {
-		if h.CollectionType(col) == collection {
-			if h.ValidObjectCollection(col) {
-				items, err = repo.LoadObjects(f)
-			} else {
-				return nil, errors.BadRequestf("invalid collection %s", collection)
-			}
-		}
+	if h.ValidObjectCollection(string(f.Collection)) {
+		items, err = repo.LoadObjects(f)
 	} else {
 		// Non recognized as valid collection types
-		// In our case actors and items
-		switch collection {
+		// In our case activities
+		switch f.Collection {
 		case h.CollectionType("actors"):
 			items, err = repo.LoadActors(f)
 		case h.CollectionType("items"):
 			items, err = repo.LoadObjects(f)
 		default:
-			return nil, errors.BadRequestf("invalid collection %s", collection)
+			return nil, errors.BadRequestf("invalid collection %s", f.Collection)
 		}
 	}
 	if err != nil {

@@ -6,7 +6,6 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/errors"
 	st "github.com/go-ap/fedbox/storage"
-	"github.com/go-chi/chi"
 	"net/http"
 )
 
@@ -21,7 +20,6 @@ func reqURL(r *http.Request, path string) string {
 // HandleActivityCollection serves content from the outbox, inbox, likes, shares and replies end-points
 // that return ActivityPub collections containing activities
 func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
-	collection := h.Typer.Type(r)
 	repo := st.Loader{}
 
 	var items as.ItemCollection
@@ -29,22 +27,16 @@ func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.Collec
 	f := st.Filters{}
 	f.FromRequest(r)
 
-	if col := chi.URLParam(r, "collection"); len(col) > 0 {
-		if h.CollectionType(col) == collection {
-			if h.ValidActivityCollection(col) {
-				items, err = repo.LoadActivities(f)
-			} else {
-				return nil, errors.BadRequestf("invalid collection %s", collection)
-			}
-		}
+	if h.ValidActivityCollection(string(f.Collection)) {
+		items, err = repo.LoadActivities(f)
 	} else {
 		// Non recognized as valid collection types
 		// In our case activities
-		switch collection {
+		switch f.Collection {
 		case h.CollectionType("activities"):
 			items, err = repo.LoadActivities(f)
 		default:
-			return nil, errors.BadRequestf("invalid collection %s", collection)
+			return nil, errors.BadRequestf("invalid collection %s", f.Collection)
 		}
 	}
 	if err != nil {
@@ -53,41 +45,34 @@ func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.Collec
 	if len(items) > 0 {
 		it, err := loadCollection(items, uint(len(items)), &f, reqURL(r, r.URL.Path))
 		if err != nil {
-			return nil, errors.NotFoundf("%s", collection)
+			return nil, errors.NotFoundf("%s", f.Collection)
 		}
 		return it, nil
 	}
-	return nil, errors.NotImplementedf("%s", collection)
+	return nil, errors.NotImplementedf("%s", f.Collection)
 }
 
 // HandleObjectCollection serves content from following, followers, liked, and likes end-points
 // that return ActivityPub collections containing plain objects
 func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
-	collection := h.Typer.Type(r)
 	repo := st.Loader{}
 	var items as.ItemCollection
 	var err error
 	f := st.Filters{}
 	f.FromRequest(r)
 
-	if col := chi.URLParam(r, "collection"); len(col) > 0 {
-		if h.CollectionType(col) == collection {
-			if h.ValidObjectCollection(col) {
-				items, err = repo.LoadObjects(f)
-			} else {
-				return nil, errors.BadRequestf("invalid collection %s", collection)
-			}
-		}
+	if h.ValidActivityCollection(string(f.Collection)) {
+		items, err = repo.LoadActivities(f)
 	} else {
 		// Non recognized as valid collection types
-		// In our case actors and items
-		switch collection {
+		// In our case actors, items
+		switch f.Collection {
 		case h.CollectionType("actors"):
 			items, err = repo.LoadActors(f)
 		case h.CollectionType("items"):
 			items, err = repo.LoadObjects(f)
 		default:
-			return nil, errors.BadRequestf("invalid collection %s", collection)
+			return nil, errors.BadRequestf("invalid collection %s", f.Collection)
 		}
 	}
 	if err != nil {
@@ -96,11 +81,11 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 	if len(items) > 0 {
 		it, err := loadCollection(items, uint(len(items)), &f, reqURL(r, r.URL.Path))
 		if err != nil {
-			return nil, errors.NotFoundf("%s", collection)
+			return nil, errors.NotFoundf("%s", f.Collection)
 		}
 		return it, nil
 	}
-	return nil, errors.NotImplementedf("%s", collection)
+	return nil, errors.NotImplementedf("%s", f.Collection)
 }
 
 func loadCollection(items as.ItemCollection, count uint, filters st.Paginator, baseUrl string) (as.CollectionInterface, error) {

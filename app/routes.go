@@ -22,7 +22,21 @@ func ObjectRoutes(r chi.Router) {
 		r.Method(http.MethodGet, "/", h.CollectionHandlerFn(HandleObjectCollection))
 		r.Route("/{id}", func (r chi.Router) {
 			r.Method(http.MethodGet, "/", h.ItemHandlerFn(HandleObjectItem))
-			r.Route("/{collection}",  ActivityRoutes)
+			r.Route("/replies",  ActivityRoutes)
+		})
+	})
+}
+
+func ActorRoutes(r chi.Router) {
+	r.Group(func (r chi.Router) {
+		r.With(middleware.GetHead)
+		r.Method(http.MethodGet, "/", h.CollectionHandlerFn(HandleObjectCollection))
+		r.Route("/{id}", func (r chi.Router) {
+			r.Method(http.MethodGet, "/", h.ItemHandlerFn(HandleObjectItem))
+			r.Route("/{collection}", ActivityRoutes)
+
+			r.Method(http.MethodPost, "/inbox", h.ActivityHandlerFn(HandleServerRequest))
+			r.Method(http.MethodPost, "/outbox", h.ActivityHandlerFn(HandleClientRequest))
 		})
 	})
 }
@@ -30,7 +44,7 @@ func ObjectRoutes(r chi.Router) {
 func Routes() func(chi.Router) {
 	return func(r chi.Router) {
 		r.Route("/activities", ActivityRoutes)
-		r.Route("/actors", ObjectRoutes)
+		r.Route("/actors", ActorRoutes)
 		r.Route("/items",  ObjectRoutes)
 
 		r.NotFound(HandleError(errors.MethodNotAllowedf("invalid url")).ServeHTTP)

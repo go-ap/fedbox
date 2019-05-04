@@ -1,11 +1,15 @@
 package storage
 
 import (
+	"fmt"
+	h "github.com/go-ap/activitypub/handler"
 	s "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/fedbox/internal/errors"
 	"github.com/mariusor/qstring"
 	"net/http"
 	"net/url"
+	"regexp"
 	"time"
 )
 
@@ -19,6 +23,7 @@ func (h Hash) String() string {
 
 // Filters
 type Filters struct {
+	Collection   h.CollectionType            `qstring:"-"`
 	Key          []Hash                      `qstring:"id,omitempty"`
 	ItemKey      []Hash                      `qstring:"objectid,omitempty"`
 	Type         []as.ActivityVocabularyType `qstring:"type"`
@@ -30,9 +35,12 @@ type Filters struct {
 	MaxItems     int                         `qstring:"maxItems,omitempty"`
 }
 
+// IRIs returns a list of ActivityVocabularyTypes to filter against
 func (f Filters) Types() []as.ActivityVocabularyType {
 	return f.Type
 }
+
+// IRIs returns a list of IRIs to filter against
 func (f Filters) IRIs() []as.IRI {
 	ret := make([]as.IRI, len(f.ItemKey))
 	for i, k := range f.ItemKey {
@@ -40,8 +48,36 @@ func (f Filters) IRIs() []as.IRI {
 	}
 	return ret
 }
+// FromRequest loads the filters we use for generating storage queries from the HTTP request
 func (f *Filters) FromRequest(r *http.Request) error {
-	return qstring.Unmarshal(r.URL.Query(), f)
+	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
+		return err
+	}
+
+	f.Collection = h.Typer.Type(r)
+
+	pr, _ := regexp.Compile(fmt.Sprintf("/(actors|items|activities)/(\\w+)/%s", f.Collection))
+	matches := pr.FindSubmatch([]byte(r.URL.Path))
+	if len(matches) < 3 {
+		errors.NotFoundf("%s", "actor")
+	} else {
+		col := matches[1]
+		switch string(col) {
+		case "actors":
+			f.AttributedTo = []Hash{
+				Hash(matches[2]),
+			}
+		case "items":
+			f.ItemKey = []Hash{
+				Hash(matches[2]),
+			}
+		case "activities":
+			f.Key = []Hash{
+				Hash(matches[2]),
+			}
+		}
+	}
+	return nil
 }
 
 func copyActivityFilters(dst *Filters, src Filters) {
