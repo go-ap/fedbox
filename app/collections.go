@@ -45,25 +45,26 @@ func (c CollectionHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type EndPointType string
+// CollectionType
+type CollectionType string
 
 const (
-	Outbox    = EndPointType("outbox")
-	Inbox     = EndPointType("inbox")
-	Shares    = EndPointType("shares")
-	Replies   = EndPointType("replies") // activitystreams
-	Following = EndPointType("following")
-	Followers = EndPointType("followers")
-	Liked     = EndPointType("liked")
-	Likes     = EndPointType("likes")
+	Outbox    = CollectionType("outbox")
+	Inbox     = CollectionType("inbox")
+	Shares    = CollectionType("shares")
+	Replies   = CollectionType("replies") // activitystreams
+	Following = CollectionType("following")
+	Followers = CollectionType("followers")
+	Liked     = CollectionType("liked")
+	Likes     = CollectionType("likes")
 )
 
 // EndPointTyper allows external packages to tell us which collection the current HTTP request addresses
 type EndPointTyper interface {
-	Type(r *http.Request) EndPointType
+	Type(r *http.Request) CollectionType
 }
 
-var validActivityCollection = []EndPointType{
+var validActivityCollection = []CollectionType{
 	Outbox,
 	Inbox,
 	Likes,
@@ -81,7 +82,7 @@ func ValidActivityCollection(typ string) bool {
 	return false
 }
 
-var validObjectCollection = []EndPointType{
+var validObjectCollection = []CollectionType{
 	Following,
 	Followers,
 	Liked,
