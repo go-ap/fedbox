@@ -5,6 +5,7 @@ import (
 	h "github.com/go-ap/activitypub/handler"
 	"github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/internal/errors"
 	st "github.com/go-ap/fedbox/storage"
 	"net/http"
@@ -28,7 +29,7 @@ func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.Collec
 
 	var repo storage.ActivityLoader
 	var ok bool
-	if repo, ok = ContextActivityLoader(r.Context()); !ok {
+	if repo, ok = context.ActivityLoader(r.Context()); !ok {
 		return nil, errors.NotValidf("invalid database connection")
 	}
 	items, err = repo.LoadActivities(f)
@@ -67,7 +68,7 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 	if h.ValidActivityCollection(string(f.Collection)) {
 		var repo storage.ObjectLoader
 		var ok bool
-		if repo, ok = ContextObjectLoader(r.Context()); !ok {
+		if repo, ok = context.ObjectLoader(r.Context()); !ok {
 			return nil, errors.NotValidf("invalid database connection")
 		}
 		items, err = repo.LoadObjects(f)
@@ -78,14 +79,14 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 		case h.CollectionType("actors"):
 			var repo storage.ActorLoader
 			var ok bool
-			if repo, ok = ContextActorLoader(r.Context()); !ok {
+			if repo, ok = context.ActorLoader(r.Context()); !ok {
 				return nil, errors.NotValidf("invalid database connection")
 			}
 			items, err = repo.LoadActors(f)
 		case h.CollectionType("items"):
 			var repo storage.ObjectLoader
 			var ok bool
-			if repo, ok = ContextObjectLoader(r.Context()); !ok {
+			if repo, ok = context.ObjectLoader(r.Context()); !ok {
 				return nil, errors.NotValidf("invalid database connection")
 			}
 			items, err = repo.LoadObjects(f)

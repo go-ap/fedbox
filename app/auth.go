@@ -11,6 +11,7 @@ import (
 	st "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/internal/errors"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/openshift/osin"
@@ -150,7 +151,7 @@ func loadActorFromAuthHeader(w http.ResponseWriter, r *http.Request, l logrus.Fi
 			acct = v.acc
 		}
 		if strings.Contains(auth, "Signature") {
-			if loader, ok := ContextActorLoader(r.Context()); ok {
+			if loader, ok := context.ActorLoader(r.Context()); ok {
 				// only verify http-signature if present
 				getter := keyLoader{acc: acct, l: loader, realm: r.URL.Host, c: client}
 				method = "httpSig"
