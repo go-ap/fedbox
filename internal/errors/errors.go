@@ -67,7 +67,7 @@ func (e Err) Unwrap() error {
 
 func Details(e error) error {
 	if x, ok := e.(wrapper); ok {
-		return  x.Unwrap()
+		return x.Unwrap()
 	}
 	return nil
 }
@@ -140,27 +140,27 @@ func NewMethodNotAllowed(e error, s string, args ...interface{}) error {
 }
 
 func NotValidf(s string, args ...interface{}) error {
-	return &notValid{wrap(nil, "not valid "+s, args...)}
+	return &notValid{wrap(nil, s, args...)}
 }
 
 func NewNotValid(e error, s string, args ...interface{}) error {
-	return &notValid{wrap(e, "not valid "+s, args...)}
+	return &notValid{wrap(e, s, args...)}
 }
 
 func Forbiddenf(s string, args ...interface{}) error {
-	return &forbidden{wrap(nil, "forbidden "+s, args...)}
+	return &forbidden{wrap(nil, s, args...)}
 }
 
 func NewForbidden(e error, s string, args ...interface{}) error {
-	return &forbidden{wrap(e, "forbidden "+s, args...)}
+	return &forbidden{wrap(e, s, args...)}
 }
 
 func NotImplementedf(s string, args ...interface{}) error {
-	return &notImplemented{wrap(nil, s + " not implemented", args...)}
+	return &notImplemented{wrap(nil, s, args...)}
 }
 
 func NewNotImplemented(e error, s string, args ...interface{}) error {
-	return &notImplemented{wrap(e, s + " not implemented", args...)}
+	return &notImplemented{wrap(e, s, args...)}
 }
 
 func BadRequestf(s string, args ...interface{}) error {
@@ -214,14 +214,14 @@ func IsTimeout(e error) bool {
 func IsNotValid(e error) bool {
 	return xerr.Is(e, notValid{})
 }
-func isA (err1, err2 error) bool {
+func isA(err1, err2 error) bool {
 	return reflect.TypeOf(err1) == reflect.TypeOf(err2)
 }
 func (n notFound) Is(e error) bool {
 	return isA(n, e) || isA(n.Err, e)
 }
 func (n notValid) Is(e error) bool {
-	return isA(n, e)  || isA(n.Err, e)
+	return isA(n, e) || isA(n.Err, e)
 }
 func (n notImplemented) Is(e error) bool {
 	return isA(n, e) || isA(n.Err, e)
@@ -262,7 +262,7 @@ func (b badRequest) Unwrap() error {
 func (t timeout) Unwrap() error {
 	return t.Err
 }
-func (u unauthorized)Unwrap() error {
+func (u unauthorized) Unwrap() error {
 	return u.Err
 }
 func (m methodNotAllowed) Unwrap() error {
@@ -272,9 +272,9 @@ func (f forbidden) Unwrap() error {
 	return f.Err
 }
 func NewUnauthorizedWithChallenge(c string, e error, s string, args ...interface{}) error {
-	return &unauthorized{Err: wrap(e, s, args...), challenge:c}
+	return &unauthorized{Err: wrap(e, s, args...), challenge: c}
 }
-func Challenge (err error) string {
+func Challenge(err error) string {
 	un := unauthorized{}
 	if ok := xerr.As(err, &un); ok {
 		return un.challenge
