@@ -24,6 +24,7 @@ func reqURL(r *http.Request, path string) string {
 func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
 	var items as.ItemCollection
 	var err error
+	var total int
 	f := &st.Filters{}
 	f.FromRequest(r)
 
@@ -32,22 +33,12 @@ func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.Collec
 	if repo, ok = context.ActivityLoader(r.Context()); !ok {
 		return nil, errors.NotValidf("invalid database connection")
 	}
-	items, err = repo.LoadActivities(f)
-	if h.ValidActivityCollection(string(f.Collection)) {
-	} else {
-		// Non recognized as valid collection types
-		// In our case activities
-		switch f.Collection {
-		case h.CollectionType("activities"):
-			items, err = repo.LoadActivities(f)
-		default:
-			return nil, errors.BadRequestf("invalid collection %s", f.Collection)
-		}
-	}
+	items, total, err = repo.LoadActivities(f)
+
 	if err != nil {
 		return nil, err
 	}
-	it, err := loadCollection(items, uint(len(items)), f, reqURL(r, r.URL.Path))
+	it, err := loadCollection(items, uint(total), f, reqURL(r, r.URL.Path))
 	if err != nil {
 		return nil, errors.NotFoundf("%s", f.Collection)
 	}
@@ -59,6 +50,7 @@ func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.Collec
 func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
 	var items as.ItemCollection
 	var err error
+	var total int
 	f := &st.Filters{}
 	f.FromRequest(r)
 
@@ -68,7 +60,7 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 		if repo, ok = context.ObjectLoader(r.Context()); !ok {
 			return nil, errors.NotValidf("invalid database connection")
 		}
-		items, err = repo.LoadObjects(f)
+		items, total, err = repo.LoadObjects(f)
 	} else {
 		// Non recognized as valid collection types
 		// In our case actors, items
@@ -79,14 +71,14 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 			if repo, ok = context.ActorLoader(r.Context()); !ok {
 				return nil, errors.NotValidf("invalid database connection")
 			}
-			items, err = repo.LoadActors(f)
+			items, total, err = repo.LoadActors(f)
 		case h.CollectionType("items"):
 			var repo storage.ObjectLoader
 			var ok bool
 			if repo, ok = context.ObjectLoader(r.Context()); !ok {
 				return nil, errors.NotValidf("invalid database connection")
 			}
-			items, err = repo.LoadObjects(f)
+			items, total, err = repo.LoadObjects(f)
 		default:
 			return nil, errors.BadRequestf("invalid collection %s", f.Collection)
 		}
@@ -94,7 +86,7 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 	if err != nil {
 		return nil, err
 	}
-	it, err := loadCollection(items, uint(len(items)), f, reqURL(r, r.URL.Path))
+	it, err := loadCollection(items, uint(total), f, reqURL(r, r.URL.Path))
 	if err != nil {
 		return nil, errors.NotFoundf("%s", f.Collection)
 	}

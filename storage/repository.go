@@ -52,29 +52,30 @@ func New(conn *pgx.Conn, url string, l logrus.FieldLogger) *loader {
 	}
 }
 
-func (l loader) Load(f s.Filterable) (as.ItemCollection, error) {
+func (l loader) Load(f s.Filterable) (as.ItemCollection, int, error) {
 	var ff *Filters
 	var ok bool
+	var total int
 	if ff, ok = f.(*Filters); !ok {
 		ff = &Filters{}
 	}
 	ret := make(as.ItemCollection, 0)
-	act, err := loadFromDb(l.conn, "activities", ff)
+	act, total, err := loadFromDb(l.conn, "activities", ff)
 	if err != nil {
 		ret = append(ret, act...)
 	}
-	it, err := loadFromDb(l.conn, "objects", ff)
+	it, total, err := loadFromDb(l.conn, "objects", ff)
 	if err != nil {
 		ret = append(ret, it...)
 	}
-	actors, err := loadFromDb(l.conn, "actors", ff)
+	actors, total, err := loadFromDb(l.conn, "actors", ff)
 	if err != nil {
 		ret = append(ret, actors...)
 	}
 
-	return ret, err
+	return ret, total, err
 }
-func (l loader) LoadActivities(f s.Filterable) (as.ItemCollection, error) {
+func (l loader) LoadActivities(f s.Filterable) (as.ItemCollection, int, error) {
 	var ff *Filters
 	var ok bool
 	if ff, ok = f.(*Filters); !ok {
@@ -82,7 +83,7 @@ func (l loader) LoadActivities(f s.Filterable) (as.ItemCollection, error) {
 	}
 	return loadFromDb(l.conn, "activities", ff)
 }
-func (l loader) LoadActors(f s.Filterable) (as.ItemCollection, error) {
+func (l loader) LoadActors(f s.Filterable) (as.ItemCollection, int, error) {
 	var ff *Filters
 	var ok bool
 	if ff, ok = f.(*Filters); !ok {
@@ -90,7 +91,7 @@ func (l loader) LoadActors(f s.Filterable) (as.ItemCollection, error) {
 	}
 	return loadFromDb(l.conn, "actors", ff)
 }
-func (l loader) LoadObjects(f s.Filterable) (as.ItemCollection, error) {
+func (l loader) LoadObjects(f s.Filterable) (as.ItemCollection, int, error) {
 	var ff *Filters
 	var ok bool
 	if ff, ok = f.(*Filters); !ok {
@@ -99,17 +100,18 @@ func (l loader) LoadObjects(f s.Filterable) (as.ItemCollection, error) {
 	return loadFromDb(l.conn, "objects", ff)
 }
 
-func loadFromDb(conn *pgx.Conn, table string, f *Filters) (as.ItemCollection, error) {
+func loadFromDb(conn *pgx.Conn, table string, f *Filters) (as.ItemCollection, int, error) {
 	clauses, values := f.GetWhereClauses()
+	total := 0
 
 	sel := fmt.Sprintf("SELECT id, key, iri, created_at, type, raw FROM %s WHERE %s %s", table, strings.Join(clauses, " AND "), f.GetLimit())
 	rows, err := conn.Query(sel, values...)
 	defer rows.Close()
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return as.ItemCollection{}, nil
+			return as.ItemCollection{}, total, nil
 		}
-		return nil, errors.Annotatef(err, "query error")
+		return nil, total, errors.Annotatef(err, "query error")
 	}
 
 	ret := make(as.ItemCollection, 0)
@@ -123,16 +125,18 @@ func loadFromDb(conn *pgx.Conn, table string, f *Filters) (as.ItemCollection, er
 		var raw []byte
 		err = rows.Scan(&id, &key, &iri, &createds, &typ, &raw)
 		if err != nil {
-			return ret, err
+			return ret, total, err
 		}
 		it, err := as.UnmarshalJSON(raw)
 		if err != nil {
-			return ret, err
+			return ret, total, err
 		}
 		ret = append(ret, it)
 	}
+	selCnt := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s", table, strings.Join(clauses, " AND "))
+	err = conn.QueryRow(selCnt, values...).Scan(&total)
 
-	return ret, nil
+	return ret, total, err
 }
 
 func (l loader) SaveActivity(it as.Item) (as.Item, error) {

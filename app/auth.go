@@ -63,7 +63,7 @@ func (k *keyLoader) GetKey(id string) interface{} {
 
 	if err := validateLocalIRI(as.IRI(id)); err == nil {
 		hash := path.Base(u.Path)
-		k.acc, err = k.l.LoadActors(storage.Filters{Key: []storage.Hash{storage.Hash(hash)}})
+		k.acc, _, err = k.l.LoadActors(storage.Filters{Key: []storage.Hash{storage.Hash(hash)}})
 		if err != nil {
 			k.logFn("unable to find local account matching key id %s", id)
 			return nil

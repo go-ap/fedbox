@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/buger/jsonparser v0.0.0-20181023193515-52c6e1462ebd
-	github.com/go-ap/activitypub v0.0.0-20190505190118-f740060847ef
+	github.com/go-ap/activitypub v0.0.0-20190505205623-8b5feb3b2b38
 	github.com/go-ap/activitystreams v0.0.0-20190505073245-03fc2158a8bf
 	github.com/go-ap/jsonld v0.0.0-20190306111347-fbb94302fe92
 	github.com/go-chi/chi v4.0.2+incompatible

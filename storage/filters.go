@@ -86,7 +86,7 @@ func (f *Filters) FromRequest(r *http.Request) error {
 						Hash(matches[2]),
 					},
 				}
-				if act, err := loader.LoadActors(ff); err == nil {
+				if act, _, err := loader.LoadActors(ff); err == nil {
 					f.Owner = act
 				}
 			}

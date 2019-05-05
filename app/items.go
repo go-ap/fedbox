@@ -29,13 +29,13 @@ func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error)
 	f.MaxItems = 1
 
 	if h.ValidActivityCollection(string(f.Collection)) {
-		items, err = repo.LoadActivities(f)
+		items, _, err = repo.LoadActivities(f)
 	} else {
 		// Non recognized as valid collection types
 		// In our case activities
 		switch collection {
 		case h.CollectionType("activities"):
-			items, err = repo.LoadActivities(f)
+			items, _, err = repo.LoadActivities(f)
 		default:
 			return nil, errors.BadRequestf("invalid collection %s", collection)
 		}
@@ -77,7 +77,7 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 		if repo, ok = context.ObjectLoader(r.Context()); !ok {
 			return nil, errors.NotValidf("invalid database connection")
 		}
-		items, err = repo.LoadObjects(f)
+		items, _, err = repo.LoadObjects(f)
 	} else {
 		// Non recognized as valid collection types
 		// In our case activities
@@ -88,14 +88,14 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 			if repo, ok = context.ActorLoader(r.Context()); !ok {
 				return nil, errors.NotValidf("invalid database connection")
 			}
-			items, err = repo.LoadActors(f)
+			items, _, err = repo.LoadActors(f)
 		case h.CollectionType("items"):
 			var repo storage.ObjectLoader
 			var ok bool
 			if repo, ok = context.ObjectLoader(r.Context()); !ok {
 				return nil, errors.NotValidf("invalid database connection")
 			}
-			items, err = repo.LoadObjects(f)
+			items, _, err = repo.LoadObjects(f)
 		default:
 			return nil, errors.BadRequestf("invalid collection %s", f.Collection)
 		}
