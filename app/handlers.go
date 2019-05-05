@@ -44,6 +44,7 @@ func (i ItemHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	w.Header().Set("Content-Type", "application/ld+json")
 	w.WriteHeader(status)
 	if r.Method == http.MethodGet {
 		w.Write(dat)
@@ -74,6 +75,7 @@ func (a ActivityHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		dat = []byte("OK")
 	}
 
+	w.Header().Set("Content-Type", "application/ld+json")
 	w.WriteHeader(status)
 	if len(iri) > 0 {
 		w.Header().Set("Location", iri.String())
@@ -117,6 +119,7 @@ func (c CollectionHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	w.Header().Set("Content-Type", "application/ld+json")
 	w.WriteHeader(status)
 	if r.Method == http.MethodGet {
 		w.Write(dat)
