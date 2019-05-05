@@ -55,9 +55,7 @@ func LoadFromEnv() (Options, error) {
 	}
 
 	for _, f := range configs {
-		if err := godotenv.Overload(f); err != nil {
-			return conf, err
-		}
+		godotenv.Overload(f)
 	}
 
 	if conf.Host == "" {
