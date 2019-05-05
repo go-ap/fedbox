@@ -51,6 +51,8 @@ func Routes() func(chi.Router) {
 		r.Route("/actors", ActorRoutes)
 		r.Route("/items",  ObjectRoutes)
 
+		r.Method(http.MethodPost, "/inbox", ActivityHandlerFn(HandleServerRequest))
+
 		r.NotFound(HandleError(errors.MethodNotAllowedf("invalid url")).ServeHTTP)
 		r.MethodNotAllowed(HandleError(errors.MethodNotAllowedf("method not allowed")).ServeHTTP)
 	}
