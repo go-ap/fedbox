@@ -2,6 +2,7 @@ package app
 
 import (
 	h "github.com/go-ap/activitypub/handler"
+	"github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/errors"
 	st "github.com/go-ap/fedbox/storage"
@@ -13,7 +14,7 @@ import (
 // that returns a single ActivityPub activity
 func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 	collection := h.Typer.Type(r)
-	repo := st.Loader{}
+	var repo st.Loader
 
 	id := chi.URLParam(r, "id")
 
@@ -57,7 +58,6 @@ func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error)
 // that returns a single ActivityPub object
 func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 	collection := h.Typer.Type(r)
-	repo := st.Loader{}
 
 	id := chi.URLParam(r, "id")
 
@@ -71,14 +71,29 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 	f.MaxItems = 1
 
 	if h.ValidObjectCollection(string(f.Collection)) {
+		var repo storage.ObjectLoader
+		var ok bool
+		if repo, ok = ContextObjectLoader(r.Context()); !ok {
+			return nil, errors.NotValidf("invalid database connection")
+		}
 		items, err = repo.LoadObjects(f)
 	} else {
 		// Non recognized as valid collection types
 		// In our case activities
 		switch f.Collection {
 		case h.CollectionType("actors"):
+			var repo storage.ActorLoader
+			var ok bool
+			if repo, ok = ContextActorLoader(r.Context()); !ok {
+				return nil, errors.NotValidf("invalid database connection")
+			}
 			items, err = repo.LoadActors(f)
 		case h.CollectionType("items"):
+			var repo storage.ObjectLoader
+			var ok bool
+			if repo, ok = ContextObjectLoader(r.Context()); !ok {
+				return nil, errors.NotValidf("invalid database connection")
+			}
 			items, err = repo.LoadObjects(f)
 		default:
 			return nil, errors.BadRequestf("invalid collection %s", f.Collection)
