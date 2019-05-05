@@ -8,24 +8,48 @@ import (
 	"github.com/go-ap/jsonld"
 	uuid2 "github.com/google/uuid"
 	"github.com/jackc/pgx"
+	"github.com/sirupsen/logrus"
 	"strings"
 )
 
 type Paginator = s.Paginator
 
-type Loader struct {
-	baseURL string
-	conn *pgx.Conn
+type Loader interface {
+	s.ActivityLoader
+	s.ActorLoader
+	s.ObjectLoader
+	s.ActivitySaver
+	s.ActorSaver
+	s.ObjectSaver
 }
 
-func New(conn *pgx.Conn, url string) *Loader {
-	return &Loader{
-		conn: conn,
-		baseURL: url,
+type loader struct {
+	baseURL string
+	conn    *pgx.Conn
+	logFn   loggerFn
+	errFn   loggerFn
+}
+
+type loggerFn func(logrus.Fields, string, ...interface{})
+
+func logFn(l logrus.FieldLogger, lvl logrus.Level) loggerFn {
+	return func(w logrus.Fields, f string, par ...interface{}) {
+		if l != nil {
+			l.WithFields(w).Logf(lvl, f, par...)
+		}
 	}
 }
 
-func (l Loader) Load(f s.Filterable) (as.ItemCollection, error) {
+func New(conn *pgx.Conn, url string, l logrus.FieldLogger) *loader {
+	return &loader{
+		conn:    conn,
+		baseURL: url,
+		logFn: logFn(l, logrus.InfoLevel),
+		errFn: logFn(l, logrus.ErrorLevel),
+	}
+}
+
+func (l loader) Load(f s.Filterable) (as.ItemCollection, error) {
 	var ff *Filters
 	var ok bool
 	if ff, ok = f.(*Filters); !ok {
@@ -36,7 +60,7 @@ func (l Loader) Load(f s.Filterable) (as.ItemCollection, error) {
 	if err != nil {
 		ret = append(ret, act...)
 	}
-	it, err  := loadFromDb(l.conn, "objects", ff)
+	it, err := loadFromDb(l.conn, "objects", ff)
 	if err != nil {
 		ret = append(ret, it...)
 	}
@@ -47,7 +71,7 @@ func (l Loader) Load(f s.Filterable) (as.ItemCollection, error) {
 
 	return ret, err
 }
-func (l Loader) LoadActivities(f s.Filterable) (as.ItemCollection, error) {
+func (l loader) LoadActivities(f s.Filterable) (as.ItemCollection, error) {
 	var ff *Filters
 	var ok bool
 	if ff, ok = f.(*Filters); !ok {
@@ -55,7 +79,7 @@ func (l Loader) LoadActivities(f s.Filterable) (as.ItemCollection, error) {
 	}
 	return loadFromDb(l.conn, "activities", ff)
 }
-func (l Loader) LoadActors(f s.Filterable) (as.ItemCollection, error) {
+func (l loader) LoadActors(f s.Filterable) (as.ItemCollection, error) {
 	var ff *Filters
 	var ok bool
 	if ff, ok = f.(*Filters); !ok {
@@ -63,7 +87,7 @@ func (l Loader) LoadActors(f s.Filterable) (as.ItemCollection, error) {
 	}
 	return loadFromDb(l.conn, "actors", ff)
 }
-func (l Loader) LoadObjects(f s.Filterable) (as.ItemCollection, error) {
+func (l loader) LoadObjects(f s.Filterable) (as.ItemCollection, error) {
 	var ff *Filters
 	var ok bool
 	if ff, ok = f.(*Filters); !ok {
@@ -108,20 +132,41 @@ func loadFromDb(conn *pgx.Conn, table string, f *Filters) (as.ItemCollection, er
 	return ret, nil
 }
 
-func (l Loader) SaveActivity(it as.Item) (as.Item, error) {
-	return l.saveToDb("activities", it)
+func (l loader) SaveActivity(it as.Item) (as.Item, error) {
+	return l.SaveObject(it)
 }
-func (l Loader) SaveActor(it as.Item) (as.Item, error) {
-	return l.saveToDb("actors", it)
+func (l loader) SaveActor(it as.Item) (as.Item, error) {
+	return l.SaveObject(it)
 }
-func (l Loader) SaveObject(it as.Item) (as.Item, error) {
-	return l.saveToDb( "objects", it)
+func (l loader) SaveObject(it as.Item) (as.Item, error) {
+	var err error
+	var table string
+	if as.ValidActivityType(it.GetType()) {
+		table = "activities"
+		act := as.ToActivity(it)
+		act.Object, err = l.SaveObject(act.Object)
+		act.Actor, err = l.SaveObject(act.Actor)
+		it = act
+	} else if as.ValidActorType(it.GetType()) {
+		table = "actors"
+	} else if as.ValidObjectType(it.GetType()) {
+		table = "objects"
+	}
+
+	it, err = l.saveToDb(table, it)
+	if err != nil {
+		l.errFn(logrus.Fields{
+			"table": table,
+		}, "%s", err.Error())
+	}
+
+	return it, err
 }
 
-func (l Loader)saveToDb(table string, it as.Item) (as.Item, error) {
+func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 	var query string
 	//if it.GetID() == nil {
-		query = fmt.Sprintf("INSERT INTO %s (key, iri, type, raw) VALUES ($1, $2, $3, $4);", table)
+	query = fmt.Sprintf("INSERT INTO %s (key, iri, type, raw) VALUES ($1, $2, $3, $4);", table)
 	//} else {
 	//	query = fmt.Sprintf("UPDATE %s SET key = $1, iri = $2, type = $3, raw = $4;", table)
 	//}
@@ -141,6 +186,9 @@ func (l Loader)saveToDb(table string, it as.Item) (as.Item, error) {
 
 	_, err := l.conn.Exec(query, values...)
 	if err != nil {
+		l.errFn(logrus.Fields{
+			"err": err.Error(),
+		}, "query error")
 		return it, errors.Annotatef(err, "query error")
 	}
 

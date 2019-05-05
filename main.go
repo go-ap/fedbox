@@ -39,7 +39,7 @@ func main() {
 	})
 	defer conn.Close()
 	if err == nil {
-		r.Use(app.Repo(storage.New(conn, a.Config().BaseURL)))
+		r.Use(app.Repo(storage.New(conn, a.Config().BaseURL, l)))
 	} else {
 		l.Errorf("invalid db connection")
 	}
