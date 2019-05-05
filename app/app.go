@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/env"
+	"github.com/go-ap/fedbox/internal/errors"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -38,6 +40,7 @@ func New(port int, l logrus.FieldLogger, ver string) Fedbox {
 	if err != nil {
 		app.warn("Unable to load settings from environment variables: %s", err)
 	}
+	errors.IncludeBacktrace = app.conf.Env == env.DEV
 	return app
 }
 

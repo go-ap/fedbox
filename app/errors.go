@@ -23,10 +23,6 @@ func (h ErrorHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func HandleError(e error) ErrorHandlerFn {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		errors.IncludeBacktrace = false
-		defer func () {
-			errors.IncludeBacktrace = true
-		}()
 		return e
 	}
 }

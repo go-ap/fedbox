@@ -44,10 +44,8 @@ func main() {
 		l.Errorf("invalid db connection")
 	}
 
-
 	r.Use(middleware.RequestID)
 	r.Use(log.NewStructuredLogger(l))
-
 
 	r.Route("/", app.Routes())
 
