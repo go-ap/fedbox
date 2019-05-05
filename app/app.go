@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
+	as "github.com/go-ap/activitystreams"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/errors"
@@ -41,6 +43,7 @@ func New(port int, l logrus.FieldLogger, ver string) Fedbox {
 		app.warn("Unable to load settings from environment variables: %s", err)
 	}
 	errors.IncludeBacktrace = app.conf.Env == env.DEV
+	as.ItemTyperFunc = ap.JSONGetItemByType
 	return app
 }
 
