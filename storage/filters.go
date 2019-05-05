@@ -27,6 +27,7 @@ func (h Hash) String() string {
 // Filters
 type Filters struct {
 	Actor        as.Actor                    `qstring:"-"`
+	Owner        as.Actor                    `qstring:"-"`
 	Collection   h.CollectionType            `qstring:"-"`
 	Key          []Hash                      `qstring:"id,omitempty"`
 	ItemKey      []Hash                      `qstring:"objectid,omitempty"`
@@ -71,8 +72,23 @@ func (f *Filters) FromRequest(r *http.Request) error {
 		col := matches[1]
 		switch string(col) {
 		case "actors":
-			f.AttributedTo = []Hash{
-				Hash(matches[2]),
+			// TODO(marius): this needs to be moved somewhere where it makes more sense
+			if loader, ok := ctxt.ActorLoader(r.Context()); ok {
+				ff := Filters{
+					Type: []as.ActivityVocabularyType{
+						as.PersonType,
+						as.GroupType,
+						as.ApplicationType,
+						as.ServiceType,
+						as.OrganizationType,
+					},
+					Key: []Hash{
+						Hash(matches[2]),
+					},
+				}
+				if act, err := loader.LoadActors(ff); err == nil {
+					f.Owner = act
+				}
 			}
 		case "items":
 			f.ItemKey = []Hash{

@@ -6,6 +6,7 @@ import (
 )
 type CtxtKey string
 
+var OwnerKey = CtxtKey("__owner")
 var ActorKey = CtxtKey("__actor")
 var RepositoryKey = CtxtKey("__repo")
 
