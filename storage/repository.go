@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/go-ap/activitypub/client"
 	s "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/errors"
@@ -26,6 +27,7 @@ type Loader interface {
 type loader struct {
 	baseURL string
 	conn    *pgx.Conn
+	d       client.Client
 	logFn   loggerFn
 	errFn   loggerFn
 }
@@ -44,8 +46,9 @@ func New(conn *pgx.Conn, url string, l logrus.FieldLogger) *loader {
 	return &loader{
 		conn:    conn,
 		baseURL: url,
-		logFn: logFn(l, logrus.InfoLevel),
-		errFn: logFn(l, logrus.ErrorLevel),
+		d:       client.NewClient(),
+		logFn:   logFn(l, logrus.InfoLevel),
+		errFn:   logFn(l, logrus.ErrorLevel),
 	}
 }
 
@@ -141,15 +144,30 @@ func (l loader) SaveActor(it as.Item) (as.Item, error) {
 func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	var err error
 	var table string
+	if it.IsLink() {
+		// dereference this shit
+		iri := it.GetLink()
+		if it, err := l.d.LoadIRI(iri); err != nil {
+			l.errFn(logrus.Fields{"IRI": iri}, "unable to dereference IRI")
+			return it, err
+		}
+	}
+
 	if as.ValidActivityType(it.GetType()) {
 		table = "activities"
 		act := as.ToActivity(it)
-		act.Object, err = l.SaveObject(act.Object)
-		act.Actor, err = l.SaveObject(act.Actor)
+		if act.Object, err = l.SaveObject(act.Object); err != nil {
+			l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's object")
+			return act, err
+		}
+		if act.Actor, err = l.SaveObject(act.Actor); err != nil {
+			l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's actor")
+			return act, err
+		}
 		it = act
 	} else if as.ValidActorType(it.GetType()) {
 		table = "actors"
-	} else if as.ValidObjectType(it.GetType()) {
+	} else {
 		table = "objects"
 	}
 
