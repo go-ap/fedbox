@@ -53,7 +53,7 @@ func Routes() func(chi.Router) {
 
 		r.Method(http.MethodPost, "/inbox", ActivityHandlerFn(HandleServerRequest))
 
-		r.NotFound(HandleError(errors.MethodNotAllowedf("invalid url")).ServeHTTP)
+		r.NotFound(HandleError(errors.NotFoundf("invalid url")).ServeHTTP)
 		r.MethodNotAllowed(HandleError(errors.MethodNotAllowedf("method not allowed")).ServeHTTP)
 	}
 }
