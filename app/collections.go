@@ -47,14 +47,11 @@ func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.Collec
 	if err != nil {
 		return nil, err
 	}
-	if len(items) > 0 {
-		it, err := loadCollection(items, uint(len(items)), f, reqURL(r, r.URL.Path))
-		if err != nil {
-			return nil, errors.NotFoundf("%s", f.Collection)
-		}
-		return it, nil
+	it, err := loadCollection(items, uint(len(items)), f, reqURL(r, r.URL.Path))
+	if err != nil {
+		return nil, errors.NotFoundf("%s", f.Collection)
 	}
-	return nil, errors.NotFoundf("any activities in %s", f.Collection)
+	return it, nil
 }
 
 // HandleObjectCollection serves content from following, followers, liked, and likes end-points
@@ -97,14 +94,11 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 	if err != nil {
 		return nil, err
 	}
-	if len(items) > 0 {
-		it, err := loadCollection(items, uint(len(items)), f, reqURL(r, r.URL.Path))
-		if err != nil {
-			return nil, errors.NotFoundf("%s", f.Collection)
-		}
-		return it, nil
+	it, err := loadCollection(items, uint(len(items)), f, reqURL(r, r.URL.Path))
+	if err != nil {
+		return nil, errors.NotFoundf("%s", f.Collection)
 	}
-	return nil, errors.NotFoundf("any items in %s", f.Collection)
+	return it, nil
 }
 
 func loadCollection(items as.ItemCollection, count uint, filters st.Paginator, baseUrl string) (as.CollectionInterface, error) {
