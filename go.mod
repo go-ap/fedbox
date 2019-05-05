@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/go-ap/activitypub v0.0.0-20190504182459-e13c279cfa7d
-	github.com/go-ap/activitystreams v0.0.0-20190504221535-302a70f172cd
+	github.com/go-ap/activitystreams v0.0.0-20190504225225-8020d0b4b25e
 	github.com/go-ap/jsonld v0.0.0-20190306111347-fbb94302fe92
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/google/uuid v1.1.1
