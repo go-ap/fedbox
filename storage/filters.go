@@ -201,7 +201,7 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 	if len(iris) > 0 {
 		keyWhere := make([]string, 0)
 		for _, key := range iris {
-			keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->"ID" ~* $%d`, counter))
+			keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->"id" ~* $%d`, counter))
 			values = append(values, interface{}(key))
 			counter++
 		}
