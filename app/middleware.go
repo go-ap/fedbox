@@ -6,7 +6,6 @@ import (
 	ctxt "github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/internal/errors"
 	"github.com/go-ap/fedbox/internal/log"
-	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -24,12 +23,19 @@ func Repo(loader storage.Loader) func(next http.Handler) http.Handler {
 func ActorFromAuthHeader(next http.Handler) http.Handler {
 	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger := log.New()
-		if acct, err := loadActorFromAuthHeader(w, r, logger); err == nil {
-			logger.WithFields(logrus.Fields{
-				"id": acct.GetID(),
-			}).Infof("Loaded actor")
-		} else {
+		act, err := LoadActorFromAuthHeader(r, logger)
+		if err != nil {
+			if errors.IsUnauthorized(err) {
+				if challenge := errors.Challenge(err); len(challenge) > 0 {
+					w.Header().Add("WWW-Authenticate", challenge)
+				}
+			}
 			logger.Warnf("%s", err)
+		}
+		if act != nil {
+			ctx := r.Context()
+			newCtx := context.WithValue(ctx, ctxt.ActorKey, act)
+			next.ServeHTTP(w, r.WithContext(newCtx))
 		}
 		next.ServeHTTP(w, r)
 	})

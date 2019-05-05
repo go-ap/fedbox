@@ -134,7 +134,7 @@ func httpSignatureVerifier(getter *keyLoader) (*httpsig.Verifier, string) {
 	return v, challenge
 }
 
-func loadActorFromAuthHeader(w http.ResponseWriter, r *http.Request, l logrus.FieldLogger) (as.Actor, error) {
+func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, error) {
 	client := cl.NewClient()
 	var acct as.Actor
 	if auth := r.Header.Get("Authorization"); auth != "" {
@@ -164,9 +164,7 @@ func loadActorFromAuthHeader(w http.ResponseWriter, r *http.Request, l logrus.Fi
 			}
 		}
 		if err != nil {
-			if challenge != "" {
-				w.Header().Add("WWW-Authenticate", challenge)
-			}
+			err = errors.NewUnauthorizedWithChallenge(challenge, err, "")
 			l.WithFields(logrus.Fields{
 				"id":   acct.GetID(),
 				"auth": r.Header.Get("Authorization"),

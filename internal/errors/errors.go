@@ -34,6 +34,7 @@ type badRequest struct {
 
 type unauthorized struct {
 	Err
+	challenge string
 }
 
 type notSupported struct {
@@ -169,10 +170,10 @@ func NewBadRequest(e error, s string, args ...interface{}) error {
 	return &badRequest{wrap(e, s, args...)}
 }
 func Unauthorizedf(s string, args ...interface{}) error {
-	return &unauthorized{wrap(nil, s, args...)}
+	return &unauthorized{Err: wrap(nil, s, args...)}
 }
 func NewUnauthorized(e error, s string, args ...interface{}) error {
-	return &unauthorized{wrap(e, s, args...)}
+	return &unauthorized{Err: wrap(e, s, args...)}
 }
 func NotSupportedf(s string, args ...interface{}) error {
 	return &notSupported{wrap(nil, s, args...)}
@@ -269,4 +270,14 @@ func (m methodNotAllowed) Unwrap() error {
 }
 func (f forbidden) Unwrap() error {
 	return f.Err
+}
+func NewUnauthorizedWithChallenge(c string, e error, s string, args ...interface{}) error {
+	return &unauthorized{Err: wrap(e, s, args...), challenge:c}
+}
+func Challenge (err error) string {
+	un := unauthorized{}
+	if ok := xerr.As(err, &un); ok {
+		return un.challenge
+	}
+	return ""
 }
