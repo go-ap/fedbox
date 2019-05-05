@@ -9,7 +9,7 @@ import (
 var IncludeBacktrace = true
 
 type Http struct {
-	Code     int    `jsonld:"-"`
+	Code     int    `jsonld:"status"`
 	Message  string `jsonld:"message"`
 	Trace    *Stack `jsonld:"trace,omitempty"`
 	Location string `jsonld:"location,omitempty"`
