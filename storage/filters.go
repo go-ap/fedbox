@@ -5,6 +5,8 @@ import (
 	h "github.com/go-ap/activitypub/handler"
 	s "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/fedbox/activitypub"
+	ctxt "github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/internal/errors"
 	"github.com/mariusor/qstring"
 	"net/http"
@@ -24,6 +26,7 @@ func (h Hash) String() string {
 
 // Filters
 type Filters struct {
+	Actor        as.Actor                    `qstring:"-"`
 	Collection   h.CollectionType            `qstring:"-"`
 	Key          []Hash                      `qstring:"id,omitempty"`
 	ItemKey      []Hash                      `qstring:"objectid,omitempty"`
@@ -80,6 +83,12 @@ func (f *Filters) FromRequest(r *http.Request) error {
 				Hash(matches[2]),
 			}
 		}
+	}
+
+	// TODO(marius): this needs to be moved somewhere where it makes more sense
+	ctxVal := r.Context().Value(ctxt.ActorKey)
+	if a, ok := ctxVal.(as.Actor); ok {
+		f.Actor = a
 	}
 
 	if f.MaxItems == 0 {
@@ -170,6 +179,7 @@ type Filterable interface {
 	GetWhereClauses() ([]string, []interface{})
 	GetLimit() string
 }
+
 func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 	var clauses = make([]string, 0)
 	var values = make([]interface{}, 0)
@@ -201,11 +211,25 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 	if len(iris) > 0 {
 		keyWhere := make([]string, 0)
 		for _, key := range iris {
-			keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->"id" ~* $%d`, counter))
+			keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'id' ~* $%d`, counter))
 			values = append(values, interface{}(key))
 			counter++
 		}
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
+	}
+
+	// TODO(marius): this looks cumbersome - we need to abstract the audience to something easier to query.
+	keyWhere := make([]string, 0)
+	keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'to' ~* $%d`, counter))
+	keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'cc' ~* $%d`, counter))
+	keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'bto' ~* $%d`, counter))
+	keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'bcc' ~* $%d`, counter))
+	keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'audience' ~* $%d`, counter))
+	clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
+	if f.Actor == nil {
+		values = append(values, interface{}(activitypub.Public))
+	} else {
+		values = append(values, interface{}(f.Actor.GetID()))
 	}
 
 	if len(clauses) == 0 {

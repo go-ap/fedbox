@@ -29,14 +29,13 @@ func ObjectRoutes(r chi.Router) {
 
 func ActorRoutes(r chi.Router) {
 	r.Group(func (r chi.Router) {
-		r.Use(middleware.GetHead)
+
 		r.Method(http.MethodGet, "/", CollectionHandlerFn(HandleObjectCollection))
 		r.Route("/{id}", func (r chi.Router) {
 			r.Method(http.MethodGet, "/", ItemHandlerFn(HandleObjectItem))
 			r.Route("/{collection}", ActivityRoutes)
 
 			r.Group(func (r chi.Router) {
-				r.Use(ActorFromAuthHeader)
 				r.Method(http.MethodPost, "/inbox", ActivityHandlerFn(HandleServerRequest))
 				r.Method(http.MethodPost, "/outbox", ActivityHandlerFn(HandleClientRequest))
 			})
@@ -46,6 +45,9 @@ func ActorRoutes(r chi.Router) {
 
 func Routes() func(chi.Router) {
 	return func(r chi.Router) {
+		r.Use(middleware.GetHead)
+		r.Use(ActorFromAuthHeader)
+
 		r.Route("/activities", ActivityRoutes)
 		r.Route("/actors", ActorRoutes)
 		r.Route("/items",  ObjectRoutes)

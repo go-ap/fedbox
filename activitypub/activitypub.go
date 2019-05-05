@@ -8,6 +8,8 @@ import (
 	"github.com/go-ap/jsonld"
 )
 
+const Public = "https://www.w3.org/ns/activitystreams#Public"
+
 // PublicKey holds the ActivityPub compatible public key data
 type PublicKey struct {
 	ID           as.ObjectID     `jsonld:"id,omitempty"`
