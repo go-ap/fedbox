@@ -15,42 +15,57 @@ type Http struct {
 	Location string `jsonld:"location,omitempty"`
 }
 
-func HttpError(err error) Http {
-	var msg string
-	var loc string
-	var trace *Stack
+func HttpErrors(err error) (int, []Http) {
+	https := make([]Http, 0)
 
-	switch e := err.(type) {
-	case *Err:
-		msg = fmt.Sprintf("%s", e.Error())
-		if IncludeBacktrace {
-			trace, _ = parseStack(e.t)
-			f := e.f
-			l := e.l
-			if len(f) > 0 {
-				loc = fmt.Sprintf("%s:%d", f, l)
-			}
-		}
-	default:
-		local := new(Err)
-		if ok := xerrors.As(err, local); ok {
+	load := func (err error) Http {
+		var loc string
+		var trace *Stack
+		var msg string
+		switch e := err.(type) {
+		case *Err:
+			msg = fmt.Sprintf("%s", e.Error())
 			if IncludeBacktrace {
-				trace, _ = parseStack(local.t)
-				f := local.f
-				l := local.l
+				trace, _ = parseStack(e.t)
+				f := e.f
+				l := e.l
 				if len(f) > 0 {
 					loc = fmt.Sprintf("%s:%d", f, l)
 				}
 			}
+		default:
+			local := new(Err)
+			if ok := xerrors.As(err, local); ok {
+				if IncludeBacktrace {
+					trace, _ = parseStack(local.t)
+					f := local.f
+					l := local.l
+					if len(f) > 0 {
+						loc = fmt.Sprintf("%s:%d", f, l)
+					}
+				}
+			}
+			msg = err.Error()
 		}
-		msg = err.Error()
+
+		code :=  httpErrorResponse(err)
+		return Http{
+			Message:  msg,
+			Trace:    trace,
+			Location: loc,
+			Code:     code,
+		}
 	}
-	return Http{
-		Message:  msg,
-		Trace:    trace,
-		Location: loc,
-		Code:     httpErrorResponse(err),
+	code :=  httpErrorResponse(err)
+	for {
+		if err = xerrors.Unwrap(err); err != nil {
+			https = append(https, load(err))
+		} else {
+			break
+		}
 	}
+
+	return code, https
 }
 
 func httpErrorResponse(e error) int {

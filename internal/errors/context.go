@@ -23,12 +23,12 @@ func context(r *http.Request) jsonld.Context {
 
 // Render outputs the json encoded errors, with the JsonLD context for current
 func Render(r *http.Request, errs ...error) (int, []byte) {
-	errMap := make([]Http, len(errs))
+	errMap := make([]Http, 0)
 	var status int
-	for i, err := range errs {
-		h := HttpError(err)
-		errMap[i] = h
-		status = h.Code
+	for _, err := range errs {
+		code, h := HttpErrors(err)
+		errMap = append(errMap, h...)
+		status = code
 	}
 	var dat []byte
 	var err error
