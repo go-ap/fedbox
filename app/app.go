@@ -55,7 +55,7 @@ func (a Fedbox) listen() string {
 	return fmt.Sprintf("%s:%d", a.conf.Host, a.port)
 }
 
-func runHttpServer(listen string, m http.Handler, wait time.Duration, ctx context.Context) (func(logFn), func(logFn)) {
+func setupHttpServer(listen string, m http.Handler, wait time.Duration, ctx context.Context) (func(logFn), func(logFn)) {
 	// TODO(marius): move server run to a separate function,
 	//   so we can add other tasks that can run independently.
 	//   Like a queue system for lazy loading of IRIs.
@@ -109,7 +109,7 @@ func waitForSignal(sigChan chan os.Signal, exitChan chan int) func(logFn) {
 				l("SIGQUIT received, force stopping with core-dump")
 				exitChan <- 0
 			default:
-				//a.Logger.WithContext(log.Ctx{"signal": s}).Info("Unknown signal")
+				l("Unknown signal %d", s)
 			}
 		}
 	}
@@ -123,19 +123,19 @@ func (a *Fedbox) Run(m http.Handler, wait time.Duration) {
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
 
-	run, stop:= runHttpServer(a.listen(), m, wait, ctx)
-	go run(a.err)
+	// Get start/stop functions for the http server
+	srvRun, srvStop := setupHttpServer(a.listen(), m, wait, ctx)
+	go srvRun(a.err)
 
+	// Add signal handlers
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGHUP, syscall.SIGINT,
-		syscall.SIGTERM, syscall.SIGQUIT)
-
 	exitChan := make(chan int)
+	signal.Notify(sigChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go waitForSignal(sigChan, exitChan)(a.inf)
 	code := <-exitChan
 
 	// Doesn't block if no connections, but will otherwise wait until the timeout deadline.
-	go stop(a.err)
+	go srvStop(a.err)
 	a.inf("Shutting down")
 	os.Exit(code)
 }
