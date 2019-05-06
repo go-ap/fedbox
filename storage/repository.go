@@ -165,17 +165,23 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 		act := as.ToActivity(it)
 		// TODO(marius): this whole logic chain needs to be kept separate from the
 		//    actual persistence layer, so we don't have to copy/paste it with every new implementation.
-		if act.Object, err = l.SaveObject(act.Object); err != nil {
-			l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's object")
-			return act, err
+		if act.Object != nil {
+			if act.Object, err = l.SaveObject(act.Object); err != nil {
+				l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's object")
+				return act, err
+			}
 		}
-		if act.Actor, err = l.SaveObject(act.Actor); err != nil {
-			l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's actor")
-			return act, err
+		if act.Actor != nil {
+			if act.Actor, err = l.SaveObject(act.Actor); err != nil {
+				l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's actor")
+				return act, err
+			}
 		}
-		if act.Target, err = l.SaveObject(act.Target); err != nil {
-			l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's target")
-			return act, err
+		if act.Target != nil {
+			if act.Target, err = l.SaveObject(act.Target); err != nil {
+				l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's target")
+				return act, err
+			}
 		}
 		it = act
 	} else if as.ValidActorType(it.GetType()) {
