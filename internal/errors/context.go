@@ -26,8 +26,8 @@ func Render(r *http.Request, errs ...error) (int, []byte) {
 	errMap := make([]Http, 0)
 	var status int
 	for _, err := range errs {
-		code, h := HttpErrors(err)
-		errMap = append(errMap, h...)
+		code, more := HttpErrors(err)
+		errMap = append(errMap, more...)
 		status = code
 	}
 	var dat []byte
