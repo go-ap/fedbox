@@ -124,11 +124,11 @@ func Errorf(s string, args ...interface{}) error {
 }
 
 func NotFoundf(s string, args ...interface{}) error {
-	return &notFound{wrap(nil, "not found "+s, args...)}
+	return &notFound{wrap(nil, s, args...)}
 }
 
 func NewNotFound(e error, s string, args ...interface{}) error {
-	return &notFound{wrap(e, "not found "+s, args...)}
+	return &notFound{wrap(e, s, args...)}
 }
 
 func MethodNotAllowedf(s string, args ...interface{}) error {
