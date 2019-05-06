@@ -17,7 +17,7 @@ func (h ErrorHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		status, dat = errors.Render(r, err)
 	}
 
-	w.Header().Set("Content-Type", "application/json+ld")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(dat)
 }
