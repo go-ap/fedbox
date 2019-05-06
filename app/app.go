@@ -55,67 +55,87 @@ func (a Fedbox) listen() string {
 	return fmt.Sprintf("%s:%d", a.conf.Host, a.port)
 }
 
-// Run is the wrapper for starting the web-server and handling signals
-func (a *Fedbox) Run(m http.Handler, wait time.Duration) {
-	a.inf("Started")
+func runHttpServer(listen string, m http.Handler, wait time.Duration, ctx context.Context) (func(logFn), func(logFn)) {
+	// TODO(marius): move server run to a separate function,
+	//   so we can add other tasks that can run independently.
+	//   Like a queue system for lazy loading of IRIs.
 	srv := &http.Server{
-		Addr:         a.listen(),
+		Addr:         listen,
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
 		Handler:      m,
 	}
 
-	// Run our server in a goroutine so that it doesn't block.
-	go func() {
+	run := func(l logFn) {
 		if err := srv.ListenAndServe(); err != nil {
-			a.err("%s", err.Error())
+			l("%s", err)
 			os.Exit(1)
 		}
-	}()
+	}
+
+	stop := func(l logFn) {
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			l("%s", err)
+		}
+		select {
+		case <-ctx.Done():
+			l("%s", ctx.Err())
+		}
+	}
+	// Run our server in a goroutine so that it doesn't block.
+	return run, stop
+}
+
+func waitForSignal(sigChan chan os.Signal, exitChan chan int) func(logFn) {
+	return func(l logFn) {
+		for {
+			s := <-sigChan
+			switch s {
+			case syscall.SIGHUP:
+				l("SIGHUP received, reloading configuration")
+				//loadEnv(a)
+			// kill -SIGINT XXXX or Ctrl+c
+			case syscall.SIGINT:
+				l("SIGINT received, stopping")
+				exitChan <- 0
+			// kill -SIGTERM XXXX
+			case syscall.SIGTERM:
+				l("SIGITERM received, force stopping")
+				exitChan <- 0
+			// kill -SIGQUIT XXXX
+			case syscall.SIGQUIT:
+				l("SIGQUIT received, force stopping with core-dump")
+				exitChan <- 0
+			default:
+				//a.Logger.WithContext(log.Ctx{"signal": s}).Info("Unknown signal")
+			}
+		}
+	}
+}
+
+// Run is the wrapper for starting the web-server and handling signals
+func (a *Fedbox) Run(m http.Handler, wait time.Duration) {
+	a.inf("Started")
+
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	defer cancel()
+
+	run, stop:= runHttpServer(a.listen(), m, wait, ctx)
+	go run(a.err)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGHUP, syscall.SIGINT,
 		syscall.SIGTERM, syscall.SIGQUIT)
 
 	exitChan := make(chan int)
-	go func() {
-		for {
-			s := <-sigChan
-			switch s {
-			case syscall.SIGHUP:
-				a.inf("SIGHUP received, reloading configuration")
-				//loadEnv(a)
-			// kill -SIGINT XXXX or Ctrl+c
-			case syscall.SIGINT:
-				a.inf("SIGINT received, stopping")
-				exitChan <- 0
-			// kill -SIGTERM XXXX
-			case syscall.SIGTERM:
-				a.inf("SIGITERM received, force stopping")
-				exitChan <- 0
-			// kill -SIGQUIT XXXX
-			case syscall.SIGQUIT:
-				a.inf("SIGQUIT received, force stopping with core-dump")
-				exitChan <- 0
-			default:
-				//a.Logger.WithContext(log.Ctx{"signal": s}).Info("Unknown signal")
-			}
-		}
-	}()
+	go waitForSignal(sigChan, exitChan)(a.inf)
 	code := <-exitChan
 
-	// Create a deadline to wait for.
-	ctx, cancel := context.WithTimeout(context.Background(), wait)
-	//log.RegisterExitHandler(cancel)
-	defer cancel()
-
-	// Doesn't block if no connections, but will otherwise wait
-	// until the timeout deadline.
-	srv.Shutdown(ctx)
-	// Optionally, you could run srv.Shutdown in a goroutine and block on
-	// <-ctx.Done() if your application should wait for other services
-	// to finalize based on context cancellation.
+	// Doesn't block if no connections, but will otherwise wait until the timeout deadline.
+	go stop(a.err)
 	a.inf("Shutting down")
 	os.Exit(code)
 }
