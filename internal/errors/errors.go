@@ -248,28 +248,28 @@ func (n notFound) Unwrap() error {
 	return n.Err.c
 }
 func (n notValid) Unwrap() error {
-	return n.Err
+	return n.Err.c
 }
 func (n notImplemented) Unwrap() error {
 	return n.Err.c
 }
 func (n notSupported) Unwrap() error {
-	return n.Err
+	return n.Err.c
 }
 func (b badRequest) Unwrap() error {
-	return b.Err
+	return b.Err.c
 }
 func (t timeout) Unwrap() error {
-	return t.Err
+	return t.Err.c
 }
 func (u unauthorized) Unwrap() error {
-	return u.Err
+	return u.Err.c
 }
 func (m methodNotAllowed) Unwrap() error {
-	return m.Err
+	return m.Err.c
 }
 func (f forbidden) Unwrap() error {
-	return f.Err
+	return f.Err.c
 }
 func (n *notFound) As(err interface{}) bool {
 	switch x := err.(type) {
