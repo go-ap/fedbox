@@ -111,7 +111,7 @@ func loadFromDb(conn *pgx.Conn, table string, f *Filters) (as.ItemCollection, in
 		if err == pgx.ErrNoRows {
 			return as.ItemCollection{}, total, nil
 		}
-		return nil, total, errors.Annotatef(err, "query error")
+		return nil, total, errors.Annotatef(err, "unable to run select")
 	}
 
 	ret := make(as.ItemCollection, 0)
@@ -125,16 +125,19 @@ func loadFromDb(conn *pgx.Conn, table string, f *Filters) (as.ItemCollection, in
 		var raw []byte
 		err = rows.Scan(&id, &key, &iri, &createds, &typ, &raw)
 		if err != nil {
-			return ret, total, err
+			return ret, total, errors.Annotatef(err, "scan values error")
 		}
 		it, err := as.UnmarshalJSON(raw)
 		if err != nil {
-			return ret, total, err
+			return ret, total, errors.Annotatef(err, "unable to unmarshal raw item")
 		}
 		ret = append(ret, it)
 	}
+
 	selCnt := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s", table, strings.Join(clauses, " AND "))
-	err = conn.QueryRow(selCnt, values...).Scan(&total)
+	if err = conn.QueryRow(selCnt, values...).Scan(&total); err != nil {
+		err = errors.Annotatef(err, "unable to count all rows")
+	}
 
 	return ret, total, err
 }
