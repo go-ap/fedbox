@@ -48,15 +48,15 @@ func HttpErrors(err error) (int, []Http) {
 			msg = err.Error()
 		}
 
-		code :=  httpErrorResponse(err)
 		return Http{
 			Message:  msg,
 			Trace:    trace,
 			Location: loc,
-			Code:     code,
+			Code:     httpErrorResponse(err),
 		}
 	}
 	code :=  httpErrorResponse(err)
+	https = append(https, load(err))
 	for {
 		if err = xerrors.Unwrap(err); err != nil {
 			https = append(https, load(err))

@@ -245,13 +245,13 @@ func (f forbidden) Is(e error) bool {
 	return isA(f, e) || isA(f.Err, e)
 }
 func (n notFound) Unwrap() error {
-	return n.Err
+	return n.Err.c
 }
 func (n notValid) Unwrap() error {
 	return n.Err
 }
 func (n notImplemented) Unwrap() error {
-	return n.Err
+	return n.Err.c
 }
 func (n notSupported) Unwrap() error {
 	return n.Err
@@ -271,6 +271,160 @@ func (m methodNotAllowed) Unwrap() error {
 func (f forbidden) Unwrap() error {
 	return f.Err
 }
+func (n *notFound) As(err interface{}) bool {
+	switch x := err.(type) {
+	case **notFound:
+		*x = n
+	case *Err:
+		*x = Err{
+			c: n.Err.c,
+			m: n.Err.m,
+			t: n.Err.t,
+			l: n.Err.l,
+			f: n.Err.f,
+		}
+	default:
+		return false
+	}
+	return true
+}
+func (n *notValid) As(err interface{}) bool {
+	switch x := err.(type) {
+	case **notValid:
+		*x = n
+	case *Err:
+		*x = Err{
+			c: n.Err.c,
+			m: n.Err.m,
+			t: n.Err.t,
+			l: n.Err.l,
+			f: n.Err.f,
+		}
+	default:
+		return false
+	}
+	return true
+}
+func (n *notImplemented) As(err interface{}) bool {
+	switch x := err.(type) {
+	case **notImplemented:
+		*x = n
+	case *Err:
+		*x = Err{
+			c: n.Err.c,
+			m: n.Err.m,
+			t: n.Err.t,
+			l: n.Err.l,
+			f: n.Err.f,
+		}
+	default:
+		return false
+	}
+	return true
+}
+func (n *notSupported) As(err interface{}) bool {
+	switch x := err.(type) {
+	case **notSupported:
+		*x = n
+	case *Err:
+		*x = Err{
+			c: n.Err.c,
+			m: n.Err.m,
+			t: n.Err.t,
+			l: n.Err.l,
+			f: n.Err.f,
+		}
+	default:
+		return false
+	}
+	return true
+}
+func (b *badRequest) As(err interface{}) bool {
+	switch x := err.(type) {
+	case **badRequest:
+		*x = b
+	case *Err:
+		*x = Err{
+			c: b.Err.c,
+			m: b.Err.m,
+			t: b.Err.t,
+			l: b.Err.l,
+			f: b.Err.f,
+		}
+	default:
+		return false
+	}
+	return true
+}
+func (t *timeout) As(err interface{}) bool {
+	switch x := err.(type) {
+	case **timeout:
+		*x = t
+	case *Err:
+		*x = Err{
+			c: t.Err.c,
+			m: t.Err.m,
+			t: t.Err.t,
+			l: t.Err.l,
+			f: t.Err.f,
+		}
+	default:
+		return false
+	}
+	return true
+}
+func (u *unauthorized) As(err interface{}) bool {
+	switch x := err.(type) {
+	case **unauthorized:
+		*x = u
+	case *Err:
+		*x = Err{
+			c: u.Err.c,
+			m: u.Err.m,
+			t: u.Err.t,
+			l: u.Err.l,
+			f: u.Err.f,
+		}
+	default:
+		return false
+	}
+	return true
+}
+func (m *methodNotAllowed) As(err interface{}) bool {
+	switch x := err.(type) {
+	case **methodNotAllowed:
+		*x = m
+	case *Err:
+		*x = Err{
+			c: m.Err.c,
+			m: m.Err.m,
+			t: m.Err.t,
+			l: m.Err.l,
+			f: m.Err.f,
+		}
+	default:
+		return false
+	}
+	return true
+}
+func (f *forbidden) As(err interface{}) bool {
+	switch x := err.(type) {
+	case **forbidden:
+		*x = f
+	case *Err:
+		*x = Err{
+			c: f.Err.c,
+			m: f.Err.m,
+			t: f.Err.t,
+			l: f.Err.l,
+			f: f.Err.f,
+		}
+	default:
+		return false
+	}
+	return true
+}
+
 func NewUnauthorizedWithChallenge(c string, e error, s string, args ...interface{}) error {
 	return &unauthorized{Err: wrap(e, s, args...), challenge: c}
 }
