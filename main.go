@@ -30,12 +30,13 @@ func main() {
 
 	dbConf := a.Config().DB
 	conn, err := pgx.Connect(pgx.ConnConfig{
-		Host: dbConf.Host,
-		Port: uint16(dbConf.Port),
+		Host:     dbConf.Host,
+		Port:     uint16(dbConf.Port),
 		Database: dbConf.Name,
-		User: dbConf.User,
+		User:     dbConf.User,
 		Password: dbConf.Pw,
-		Logger: storage.DBLogger(l),
+		Logger:   storage.DBLogger(l),
+		//PreferSimpleProtocol: true,
 	})
 	defer conn.Close()
 	if err == nil {
