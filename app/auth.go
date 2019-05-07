@@ -78,7 +78,7 @@ func (k *keyLoader) GetKey(id string) interface{} {
 
 	obj, err := activitypub.ToPerson(k.acc)
 	if err != nil {
-		k.logFn("unable to load actor %s", <err)
+		k.logFn("unable to load actor %s", err)
 		return nil
 	}
 	var pub crypto.PublicKey
@@ -181,8 +181,8 @@ func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, e
 		} else {
 			// TODO(marius): Add actor's host to the logging
 			l.WithFields(logrus.Fields{
-				"auth":   method,
-				"id": acct.GetID(),
+				"auth": method,
+				"id":   acct.GetID(),
 			}).Debug("loaded account from Authorization header")
 		}
 	}
