@@ -12,7 +12,6 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/context"
-	"github.com/go-ap/fedbox/internal/errors"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
@@ -110,7 +109,7 @@ func (k *oauthLoader) Verify(r *http.Request) (error, string) {
 			return err, ""
 		}
 	} else {
-		return errors.Unauthorizedf("unable to load from bearer"), ""
+		return Unauthorizedf("unable to load from bearer"), ""
 	}
 	return nil, ""
 }
@@ -164,7 +163,7 @@ func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, e
 			}
 		}
 		if err != nil {
-			err = errors.NewUnauthorizedWithChallenge(challenge, err, "")
+			err = NewUnauthorizedWithChallenge(challenge, err, "")
 			l.WithFields(logrus.Fields{
 				"id":   acct.GetID(),
 				"auth": r.Header.Get("Authorization"),

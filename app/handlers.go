@@ -1,10 +1,8 @@
 package app
 
-
 import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/internal/errors"
 	j "github.com/go-ap/jsonld"
 	"net/http"
 )
@@ -33,13 +31,13 @@ func (i ItemHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if status, err = i.ValidateRequest(r); err != nil {
-		_, dat = errors.Render(r, err)
+		_, dat = RenderErrors(r, err)
 	} else {
 		if it, err := i(w, r); err != nil {
-			status, dat = errors.Render(r, err)
+			status, dat = RenderErrors(r, err)
 		} else {
 			if dat, err = j.WithContext(j.IRI(as.ActivityBaseURI)).Marshal(it); err != nil {
-				status, dat = errors.Render(r, err)
+				status, dat = RenderErrors(r, err)
 			}
 		}
 	}
@@ -66,11 +64,11 @@ func (a ActivityHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var status = http.StatusOK
 
 	if status, err = a.ValidateRequest(r); err != nil {
-		_, dat = errors.Render(r, err)
+		_, dat = RenderErrors(r, err)
 	}
 
 	if iri, status, err = a(w, r); err != nil {
-		_, dat = errors.Render(r, err)
+		_, dat = RenderErrors(r, err)
 	} else {
 		dat = []byte("OK")
 	}
@@ -108,13 +106,13 @@ func (c CollectionHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if status, err = c.ValidateRequest(r); err != nil {
-		_, dat = errors.Render(r, err)
+		_, dat = RenderErrors(r, err)
 	} else {
 		if col, err := c(w, r); err != nil {
-			status, dat = errors.Render(r, err)
+			status, dat = RenderErrors(r, err)
 		} else {
 			if dat, err = j.WithContext(j.IRI(as.ActivityBaseURI)).Marshal(col); err != nil {
-				status, dat = errors.Render(r, err)
+				status, dat = RenderErrors(r, err)
 			}
 		}
 	}

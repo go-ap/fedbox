@@ -150,7 +150,7 @@ func (l loader) SaveActor(it as.Item) (as.Item, error) {
 }
 func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	if it == nil {
-		return it, errors.NotValidf("not saving nil item")
+		return it, errors.Newf("not saving nil item")
 	}
 	var err error
 	var table string

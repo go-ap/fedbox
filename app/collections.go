@@ -6,7 +6,6 @@ import (
 	"github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/context"
-	"github.com/go-ap/fedbox/internal/errors"
 	st "github.com/go-ap/fedbox/storage"
 	"net/http"
 )
@@ -31,7 +30,7 @@ func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.Collec
 	var repo storage.ActivityLoader
 	var ok bool
 	if repo, ok = context.ActivityLoader(r.Context()); !ok {
-		return nil, errors.NotValidf("invalid database connection")
+		return nil, NotValidf("invalid database connection")
 	}
 	items, total, err = repo.LoadActivities(f)
 
@@ -40,7 +39,7 @@ func HandleActivityCollection(w http.ResponseWriter, r *http.Request) (as.Collec
 	}
 	it, err := loadCollection(items, uint(total), f, reqURL(r, r.URL.Path))
 	if err != nil {
-		return nil, errors.NotFoundf("%s", f.Collection)
+		return nil, NotFoundf("%s", f.Collection)
 	}
 	return it, nil
 }
@@ -58,7 +57,7 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 		var repo storage.ObjectLoader
 		var ok bool
 		if repo, ok = context.ObjectLoader(r.Context()); !ok {
-			return nil, errors.NotValidf("invalid database connection")
+			return nil, NotValidf("invalid database connection")
 		}
 		items, total, err = repo.LoadObjects(f)
 	} else {
@@ -69,18 +68,18 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 			var repo storage.ActorLoader
 			var ok bool
 			if repo, ok = context.ActorLoader(r.Context()); !ok {
-				return nil, errors.NotValidf("invalid database connection")
+				return nil, NotValidf("invalid database connection")
 			}
 			items, total, err = repo.LoadActors(f)
 		case h.CollectionType("items"):
 			var repo storage.ObjectLoader
 			var ok bool
 			if repo, ok = context.ObjectLoader(r.Context()); !ok {
-				return nil, errors.NotValidf("invalid database connection")
+				return nil, NotValidf("invalid database connection")
 			}
 			items, total, err = repo.LoadObjects(f)
 		default:
-			return nil, errors.BadRequestf("invalid collection %s", f.Collection)
+			return nil, BadRequestf("invalid collection %s", f.Collection)
 		}
 	}
 	if err != nil {
@@ -88,7 +87,7 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 	}
 	it, err := loadCollection(items, uint(total), f, reqURL(r, r.URL.Path))
 	if err != nil {
-		return nil, errors.NotFoundf("%s", f.Collection)
+		return nil, NotFoundf("%s", f.Collection)
 	}
 	return it, nil
 }

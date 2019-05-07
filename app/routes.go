@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/go-ap/fedbox/internal/errors"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"net/http"
@@ -53,7 +52,7 @@ func Routes() func(chi.Router) {
 
 		r.Method(http.MethodPost, "/inbox", ActivityHandlerFn(HandleServerRequest))
 
-		r.NotFound(HandleError(errors.NotFoundf("invalid url")).ServeHTTP)
-		r.MethodNotAllowed(HandleError(errors.MethodNotAllowedf("method not allowed")).ServeHTTP)
+		r.NotFound(HandleError(NotFoundf("invalid url")).ServeHTTP)
+		r.MethodNotAllowed(HandleError(MethodNotAllowedf("method not allowed")).ServeHTTP)
 	}
 }

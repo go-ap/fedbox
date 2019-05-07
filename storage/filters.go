@@ -56,6 +56,8 @@ func (f Filters) IRIs() []as.IRI {
 
 const MaxItems = 100
 
+var ErrNotFound = errors.Newf("actor not found")
+
 // FromRequest loads the filters we use for generating storage queries from the HTTP request
 func (f *Filters) FromRequest(r *http.Request) error {
 	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
@@ -67,7 +69,7 @@ func (f *Filters) FromRequest(r *http.Request) error {
 	pr, _ := regexp.Compile(fmt.Sprintf("/(actors|items|activities)/(\\w+)/%s", f.Collection))
 	matches := pr.FindSubmatch([]byte(r.URL.Path))
 	if len(matches) < 3 {
-		errors.NotFoundf("%s", "actor")
+		return ErrNotFound
 	} else {
 		col := matches[1]
 		switch string(col) {
