@@ -49,7 +49,7 @@ type Err struct {
 	c error
 	m string
 	t []byte
-	l int64
+	l int
 	f string
 }
 
@@ -72,7 +72,7 @@ func Details(e error) error {
 	return nil
 }
 
-func (e *Err) Location() (string, int64) {
+func (e *Err) Location() (string, int) {
 	return e.f, e.l
 }
 
@@ -85,35 +85,25 @@ func Annotate(e error, s string) error {
 }
 
 func Annotatef(e error, s string, args ...interface{}) error {
-	_, file, line, _ := runtime.Caller(1)
-	return &Err{
-		c: e,
-		m: fmt.Sprintf(s, args...),
-		t: debug.Stack(),
-		f: file,
-		l: int64(line),
-	}
+	err := wrap(e, s, args...)
+	return &err
 }
 
-func New(s string) error {
-	_, file, line, _ := runtime.Caller(1)
-	return &Err{
-		m: s,
-		t: debug.Stack(),
-		f: file,
-		l: int64(line),
-	}
+func Newf(s string, args ...interface{}) error {
+	err := wrap(nil, s, args...)
+	return &err
 }
 
 func wrap(e error, s string, args ...interface{}) Err {
-	_, file, line, _ := runtime.Caller(2)
-	return Err{
+	err := Err{
 		c: e,
 		m: fmt.Sprintf(s, args...),
-		t: debug.Stack(),
-		f: file,
-		l: int64(line),
 	}
+	if IncludeBacktrace {
+		_, err.f, err.l, _ = runtime.Caller(2)
+		err.t = debug.Stack()
+	}
+	return err
 }
 
 func Errorf(s string, args ...interface{}) error {

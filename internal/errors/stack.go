@@ -27,7 +27,7 @@ func parseStack(b []byte) (*Stack, error) {
 	lines := bytes.Split(b, []byte("\n"))
 
 	if len(lines) <= lvl*2+1 {
-		return nil, New("invalid stack trace")
+		return nil, Newf("invalid stack trace")
 	}
 
 	skipLines := lvl * 2
