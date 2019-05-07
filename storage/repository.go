@@ -165,7 +165,11 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 
 	if as.ValidActivityType(it.GetType()) {
 		table = "activities"
-		act := as.ToActivity(it)
+		act, err := as.ToActivity(it)
+		if err != nil {
+			l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to load activity")
+			return act, err
+		}
 		// TODO(marius): this whole logic chain needs to be kept separate from the
 		//    actual persistence layer, so we don't have to copy/paste it with every new implementation.
 		if act.Object != nil {

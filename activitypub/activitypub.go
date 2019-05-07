@@ -5,6 +5,7 @@ import (
 	"github.com/buger/jsonparser"
 	ap "github.com/go-ap/activitypub"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/fedbox/internal/errors"
 	"github.com/go-ap/jsonld"
 )
 
@@ -380,17 +381,20 @@ func JSONGetItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 	return ret, err
 }
 
-func ToPerson(it as.Item) *Person {
+func ToPerson(it as.Item) (*Person, error) {
 	switch i := it.(type) {
 	case *Person:
-		return i
+		return i, nil
 	case Person:
-		return &i
+		return &i, nil
 	default:
-		ob := as.ToObject(it)
+		ob, err := as.ToObject(it)
+		if err != nil {
+			return nil, err
+		}
 		p := Person{}
 		p.Person.Parent = *ob
-		return &p
+		return &p, nil
 	}
-	return nil
+	return nil, errors.Newf("unable to convert person")
 }

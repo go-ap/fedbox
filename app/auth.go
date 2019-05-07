@@ -76,7 +76,11 @@ func (k *keyLoader) GetKey(id string) interface{} {
 		}
 	}
 
-	obj := activitypub.ToPerson(k.acc)
+	obj, err := activitypub.ToPerson(k.acc)
+	if err != nil {
+		k.logFn("unable to load actor %s", <err)
+		return nil
+	}
 	var pub crypto.PublicKey
 	pemmed := obj.PublicKey.PublicKeyPem
 	block, _ := pem.Decode([]byte(pemmed))
