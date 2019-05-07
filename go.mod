@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/buger/jsonparser v0.0.0-20181023193515-52c6e1462ebd
 	github.com/go-ap/activitypub v0.0.0-20190505205623-8b5feb3b2b38
-	github.com/go-ap/activitystreams v0.0.0-20190505073245-03fc2158a8bf
+	github.com/go-ap/activitystreams v0.0.0-20190507211115-3470d1f02eea
 	github.com/go-ap/jsonld v0.0.0-20190306111347-fbb94302fe92
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/google/uuid v1.1.1
@@ -21,10 +21,4 @@ require (
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a // indirect
 	golang.org/x/text v0.3.2 // indirect
 	golang.org/x/xerrors v0.0.0-20190410155217-1f06c39b4373
-)
-
-replace (
-	github.com/go-ap/activitypub => ../go-ap/activitypub
-	github.com/go-ap/activitystreams => ../go-ap/activitystreams
-	github.com/go-ap/jsonld => ../go-ap/jsonld
 )
