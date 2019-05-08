@@ -67,17 +67,9 @@ func Errorf(s string, args ...interface{}) error {
 func (e *Err) As(err interface{}) bool {
 	switch x := err.(type) {
 	case **Err:
-		(*x).m = e.m
-		(*x).c = e.c
-		(*x).t = e.t
-		(*x).l = e.l
-		(*x).f = e.f
+		*x = e
 	case *Err:
-		x.m = e.m
-		x.c = e.c
-		x.t = e.t
-		x.l = e.l
-		x.f = e.f
+		*x = *e
 	default:
 		return false
 	}
