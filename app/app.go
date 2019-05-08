@@ -18,6 +18,8 @@ import (
 
 type logFn func(string, ...interface{})
 
+type runner func()
+
 type Fedbox struct {
 	conf config.Options
 	ver  string

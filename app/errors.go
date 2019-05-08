@@ -208,7 +208,7 @@ func (n *notFound) As(err interface{}) bool {
 	case **notFound:
 		*x = n
 	case *errors.Err:
-		*x = n.Err
+		return n.Err.As(*x)
 	default:
 		return false
 	}
@@ -219,7 +219,7 @@ func (n *notValid) As(err interface{}) bool {
 	case **notValid:
 		*x = n
 	case *errors.Err:
-		*x = n.Err
+		return n.Err.As(*x)
 	default:
 		return false
 	}
@@ -230,7 +230,7 @@ func (n *notImplemented) As(err interface{}) bool {
 	case **notImplemented:
 		*x = n
 	case *errors.Err:
-		*x = n.Err
+		return n.Err.As(*x)
 	default:
 		return false
 	}
@@ -241,7 +241,7 @@ func (n *notSupported) As(err interface{}) bool {
 	case **notSupported:
 		*x = n
 	case *errors.Err:
-		*x = n.Err
+		return n.Err.As(*x)
 	default:
 		return false
 	}
@@ -252,7 +252,7 @@ func (b *badRequest) As(err interface{}) bool {
 	case **badRequest:
 		*x = b
 	case *errors.Err:
-		*x = b.Err
+		return b.Err.As(*x)
 	default:
 		return false
 	}
@@ -263,7 +263,7 @@ func (t *timeout) As(err interface{}) bool {
 	case **timeout:
 		*x = t
 	case *errors.Err:
-		*x = t.Err
+		return t.Err.As(*x)
 	default:
 		return false
 	}
@@ -274,7 +274,7 @@ func (u *unauthorized) As(err interface{}) bool {
 	case **unauthorized:
 		*x = u
 	case *errors.Err:
-		*x = u.Err
+		return u.Err.As(*x)
 	default:
 		return false
 	}
@@ -285,7 +285,7 @@ func (m *methodNotAllowed) As(err interface{}) bool {
 	case **methodNotAllowed:
 		*x = m
 	case *errors.Err:
-		*x = m.Err
+		return m.Err.As(*x)
 	default:
 		return false
 	}
@@ -296,7 +296,7 @@ func (f *forbidden) As(err interface{}) bool {
 	case **forbidden:
 		*x = f
 	case *errors.Err:
-		*x = f.Err
+		return f.Err.As(*x)
 	default:
 		return false
 	}
