@@ -208,7 +208,8 @@ func (n *notFound) As(err interface{}) bool {
 	case **notFound:
 		*x = n
 	case *errors.Err:
-		return n.Err.As(*x)
+		e := &n.Err
+		return e.As(x)
 	default:
 		return false
 	}
