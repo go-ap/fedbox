@@ -29,11 +29,11 @@ func (e Err) Unwrap() error {
 }
 
 // Location returns the file and line number pair of the instantiation of the error
-func (e *Err) Location() (string, int) {
+func (e Err) Location() (string, int) {
 	return e.f, e.l
 }
 // StackTrace returns the stack trace as returned by the debug.Stack function
-func (e *Err) StackTrace() []byte {
+func (e Err) StackTrace() []byte {
 	return e.t
 }
 // Annotatef wraps an error with new message
@@ -73,7 +73,8 @@ func wrap(e error, s string, args ...interface{}) Err {
 		m: fmt.Sprintf(s, args...),
 	}
 	if IncludeBacktrace {
-		_, err.f, err.l, _ = runtime.Caller(2)
+		skip := 2
+		_, err.f, err.l, _ = runtime.Caller(skip)
 		err.t = debug.Stack()
 	}
 	return err
