@@ -120,33 +120,53 @@ func NewTimeout(e error, s string, args ...interface{}) error {
 	return &timeout{wrapErr(e, s, args...)}
 }
 func IsBadRequest(e error) bool {
-	return xerr.Is(e, badRequest{})
+	_, ok := e.(*badRequest)
+	return ok
 }
 func IsForbidden(e error) bool {
-	return xerr.Is(e, forbidden{})
+	_, okp := e.(*forbidden)
+	_, oks := e.(forbidden)
+	return okp || oks
 }
 func IsNotSupported(e error) bool {
-	return xerr.Is(e, notSupported{})
+	_, okp := e.(*notSupported)
+	_, oks := e.(notSupported)
+	return okp || oks
 }
 func IsMethodNotAllowed(e error) bool {
-	return xerr.Is(e, methodNotAllowed{})
+	_, okp := e.(*methodNotAllowed)
+	_, oks := e.(methodNotAllowed)
+	return okp || oks
 }
 func IsNotFound(e error) bool {
-	return xerr.Is(e, notFound{})
+	_, okp := e.(*notFound)
+	_, oks := e.(notFound)
+	return okp || oks
 }
 func IsNotImplemented(e error) bool {
-	return xerr.Is(e, notImplemented{})
+	_, okp := e.(*notImplemented)
+	_, oks := e.(notImplemented)
+	return okp || oks
 }
 func IsUnauthorized(e error) bool {
-	return xerr.Is(e, unauthorized{})
+	_, okp := e.(*unauthorized)
+	_, oks := e.(unauthorized)
+	return okp || oks
 }
 func IsTimeout(e error) bool {
-	return xerr.Is(e, timeout{})
+	_, okp := e.(*timeout)
+	_, oks := e.(timeout)
+	return okp || oks
 }
 func IsNotValid(e error) bool {
-	return xerr.Is(e, notValid{})
+	_, okp := e.(*notValid)
+	_, oks := e.(notValid)
+	return okp || oks
 }
 func isA(err1, err2 error) bool {
+	if !(err1 != nil && err2 != nil) {
+		return false
+	}
 	return reflect.TypeOf(err1) == reflect.TypeOf(err2)
 }
 func (n notFound) Is(e error) bool {
@@ -208,8 +228,7 @@ func (n *notFound) As(err interface{}) bool {
 	case **notFound:
 		*x = n
 	case *errors.Err:
-		e := &n.Err
-		return e.As(x)
+		return n.Err.As(x)
 	default:
 		return false
 	}
@@ -220,7 +239,7 @@ func (n *notValid) As(err interface{}) bool {
 	case **notValid:
 		*x = n
 	case *errors.Err:
-		return n.Err.As(*x)
+		return n.Err.As(x)
 	default:
 		return false
 	}
@@ -231,7 +250,7 @@ func (n *notImplemented) As(err interface{}) bool {
 	case **notImplemented:
 		*x = n
 	case *errors.Err:
-		return n.Err.As(*x)
+		return n.Err.As(x)
 	default:
 		return false
 	}
@@ -242,7 +261,7 @@ func (n *notSupported) As(err interface{}) bool {
 	case **notSupported:
 		*x = n
 	case *errors.Err:
-		return n.Err.As(*x)
+		return n.Err.As(x)
 	default:
 		return false
 	}
@@ -253,7 +272,7 @@ func (b *badRequest) As(err interface{}) bool {
 	case **badRequest:
 		*x = b
 	case *errors.Err:
-		return b.Err.As(*x)
+		return b.Err.As(x)
 	default:
 		return false
 	}
@@ -264,7 +283,7 @@ func (t *timeout) As(err interface{}) bool {
 	case **timeout:
 		*x = t
 	case *errors.Err:
-		return t.Err.As(*x)
+		return t.Err.As(x)
 	default:
 		return false
 	}
@@ -275,7 +294,7 @@ func (u *unauthorized) As(err interface{}) bool {
 	case **unauthorized:
 		*x = u
 	case *errors.Err:
-		return u.Err.As(*x)
+		return u.Err.As(x)
 	default:
 		return false
 	}
@@ -286,7 +305,7 @@ func (m *methodNotAllowed) As(err interface{}) bool {
 	case **methodNotAllowed:
 		*x = m
 	case *errors.Err:
-		return m.Err.As(*x)
+		return m.Err.As(x)
 	default:
 		return false
 	}
@@ -297,7 +316,7 @@ func (f *forbidden) As(err interface{}) bool {
 	case **forbidden:
 		*x = f
 	case *errors.Err:
-		return f.Err.As(*x)
+		return f.Err.As(x)
 	default:
 		return false
 	}
@@ -307,6 +326,7 @@ func (f *forbidden) As(err interface{}) bool {
 func NewUnauthorizedWithChallenge(c string, e error, s string, args ...interface{}) error {
 	return &unauthorized{Err: wrapErr(e, s, args...), challenge: c}
 }
+
 func Challenge(err error) string {
 	un := unauthorized{}
 	if ok := xerr.As(err, &un); ok {
@@ -314,7 +334,6 @@ func Challenge(err error) string {
 	}
 	return ""
 }
-
 
 // ErrorHandlerFn
 type ErrorHandlerFn func(http.ResponseWriter, *http.Request) error
@@ -349,7 +368,7 @@ type Http struct {
 func HttpErrors(err error) (int, []Http) {
 	https := make([]Http, 0)
 
-	load := func (err error) Http {
+	load := func(err error) Http {
 		var loc string
 		var trace *Stack
 		var msg string
@@ -384,7 +403,7 @@ func HttpErrors(err error) (int, []Http) {
 			Code:     httpErrorResponse(err),
 		}
 	}
-	code :=  httpErrorResponse(err)
+	code := httpErrorResponse(err)
 	https = append(https, load(err))
 	for {
 		if err = xerr.Unwrap(err); err != nil {
@@ -401,33 +420,56 @@ func httpErrorResponse(e error) int {
 	if IsBadRequest(e) {
 		return http.StatusBadRequest
 	}
+	if IsUnauthorized(e) {
+		return http.StatusUnauthorized
+	}
+	// http.StatusPaymentRequired
 	if IsForbidden(e) {
 		return http.StatusForbidden
-	}
-	if IsNotSupported(e) {
-		return http.StatusHTTPVersionNotSupported
-	}
-	if IsMethodNotAllowed(e) {
-		return http.StatusMethodNotAllowed
 	}
 	if IsNotFound(e) {
 		return http.StatusNotFound
 	}
-	if IsNotImplemented(e) {
-		return http.StatusNotImplemented
-	}
-	if IsUnauthorized(e) {
-		return http.StatusUnauthorized
-	}
-	if IsTimeout(e) {
-		return http.StatusGatewayTimeout
+	if IsMethodNotAllowed(e) {
+		return http.StatusMethodNotAllowed
 	}
 	if IsNotValid(e) {
 		return http.StatusNotAcceptable
 	}
-	if IsMethodNotAllowed(e) {
-		return http.StatusMethodNotAllowed
+	//  http.StatusProxyAuthRequired
+	//  http.StatusRequestTimeout
+	//  TODO(marius): http.StatusConflict
+	//  TODO(marius): http.StatusGone
+	//  http.StatusLengthRequres
+	//  http.StatusPreconditionFailed
+	//  http.StatusRequestEntityTooLarge
+	//  http.StatusRequestURITooLong
+	//  TODO(marius): http.StatusUnsupportedMediaType
+	//  http.StatusRequestedRangeNotSatisfiable
+	//  http.StatusExpectationFailed
+	//  http.StatusTeapot
+	//  http.StatusMisdirectedRequest
+	//  http.StatusUnprocessableEntity
+	//  http.StatusLocked
+	//  http.StatusFailedDependency
+	//  http.StatusTooEarly
+	//  http.StatusTooManyRequests
+	//  http.StatusRequestHeaderFieldsTooLarge
+	//  http.StatusUnavailableForLegalReason
+
+	//  http.StatusInternalServerError
+	//  http.StatusInternalServerError
+	if IsNotImplemented(e) {
+		return http.StatusNotImplemented
 	}
+	if IsNotSupported(e) {
+		return http.StatusHTTPVersionNotSupported
+	}
+
+	if IsTimeout(e) {
+		return http.StatusGatewayTimeout
+	}
+
 	return http.StatusInternalServerError
 }
 
@@ -444,6 +486,7 @@ type StackElement struct {
 	Callee string `jsonld:"calee,omitempty"`
 	Addr   int64  `jsonld:"address,omitempty"`
 }
+
 // Stack is an array of stack elements representing the parsed relevant bits of a backtrace
 // Relevant in this ctxt means, it strips the calls that are happening in the package
 type Stack []StackElement
