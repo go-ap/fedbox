@@ -38,11 +38,7 @@ func HandleClientRequest(w http.ResponseWriter, r *http.Request) (as.IRI, int, e
 // HandleServerRequest handles server to server (S2S) POST requests to an ActivityPub Actor's inbox
 func HandleServerRequest(w http.ResponseWriter, r *http.Request) (as.IRI, int, error) {
 	f := &st.Filters{}
-	if err := f.FromRequest(r); err == st.ErrNotFound {
-		return as.IRI(""), http.StatusNotFound, NewNotFound(err, "")
-	} else if err != nil {
-		return as.IRI(""), http.StatusBadRequest, BadRequestf("could not load filters from request")
-	}
+	f.FromRequest(r)
 
 	if f.Collection != h.Inbox {
 		return as.IRI(""), http.StatusNotFound, NotFoundf("%s", f.Collection)
