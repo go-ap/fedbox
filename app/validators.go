@@ -1,7 +1,10 @@
 package app
 
 import (
+	"context"
+	"fmt"
 	as "github.com/go-ap/activitystreams"
+	localctxt "github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/internal/errors"
 )
 
@@ -42,50 +45,73 @@ type genericValidator struct{}
 
 type ActivityPubError errors.Err
 
-var InvalidActivity = wrapErr(nil, "Activity is not valid")
-var InvalidActivityActor = wrapErr(nil,"Actor is not valid")
-var InvalidActivityObject = wrapErr(nil,"Object is not valid")
-var InvalidTarget = wrapErr(nil,"Target is not valid")
+var errFn = func(ss string) (func (s string, p ...interface{}) errors.Err) {
+	fn := func (s string, p ...interface{}) errors.Err {
+		return wrapErr(nil, fmt.Sprintf("%s: %s", ss, s), p...)
+	}
+	return fn
+}
 
+var InvalidActivity = func (s string, p ...interface{}) errors.Err {
+	return wrapErr(nil, fmt.Sprintf("Activity is not valid: %s", s), p...)
+}
+var InvalidActivityActor = func (s string, p ...interface{}) errors.Err {
+	return wrapErr(nil, fmt.Sprintf("Actor is not valid: %s", s), p...)
+}
+var InvalidActivityObject = func (s string, p ...interface{}) errors.Err {
+	return wrapErr(nil, fmt.Sprintf("Object is not valid: %s", s), p...)
+}
+var InvalidTarget = func (s string, p ...interface{}) errors.Err {
+	return wrapErr(nil, fmt.Sprintf("Target is not valid: %s", s), p...)
+}
 func (v genericValidator) ValidateActivity(a as.Item) error {
 	if !as.ValidActivityType(a.GetType()) {
-		return InvalidActivity
+		return InvalidActivity("invalid type %s", a.GetType())
 	}
 	act, err := as.ToActivity(a)
 	if err != nil {
-		return errors.Annotatef(err, "")
+		return err
 	}
 	if err := v.ValidateActor(act.Actor); err != nil {
-		return errors.Annotatef(err, "")
+		return err
 	}
 	if err := v.ValidateObject(act.Object); err != nil {
-		return errors.Annotatef(err, "")
+		return err
 	}
 	if act.Target != nil {
 		if err := v.ValidateObject(act.Target); err != nil {
-			return errors.Annotatef(err, "")
+			return err
 		}
 	}
 	return nil
 }
 func (v genericValidator) ValidateActor(a as.Item) error {
 	if !as.ValidActorType(a.GetType()) {
-		return InvalidActivityActor
+		return InvalidActivityActor("invalid type %s", a.GetType())
 	}
 	return nil
 }
-func (v genericValidator) ValidateObject(a as.Item) error {
-	if !as.ValidObjectType(a.GetType()) {
-		return InvalidActivityObject
+func (v genericValidator) ValidateObject(o as.Item) error {
+	if !as.ValidObjectType(o.GetType()) {
+		return InvalidActivityObject("invalid type %s", o.GetType())
 	}
 	return nil
 }
 func (v genericValidator) ValidateTarget(a as.Item) error {
 	if !as.ValidObjectType(a.GetType()) {
-		return InvalidActivityObject
+		return InvalidActivityObject("invalid type %s", a.GetType())
 	}
 	return nil
 }
-func (v genericValidator) ValidateAudience(a as.Item) error {
+
+func (v genericValidator) ValidateAudience(audience ...as.ItemCollection) error {
 	return nil
+}
+
+var ValidatorKey = localctxt.CtxtKey("__validator")
+
+func ActivityValidatorCtxt(ctx context.Context) (ActivityValidator, bool) {
+	ctxVal := ctx.Value(ValidatorKey)
+	s, ok := ctxVal.(ActivityValidator)
+	return s, ok
 }
