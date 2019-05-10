@@ -71,6 +71,7 @@ func (f *Filters) FromRequest(r *http.Request) error {
 	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
 		return err
 	}
+	f.MaxItems = MaxItems
 
 	f.Collection = h.Typer.Type(r)
 
