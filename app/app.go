@@ -23,7 +23,6 @@ type runner func()
 type Fedbox struct {
 	conf config.Options
 	ver  string
-	port int
 	warn logFn
 	err  logFn
 	inf  logFn
@@ -32,7 +31,7 @@ type Fedbox struct {
 
 // New instantiates a new Fedbox instance
 func New(port int, l logrus.FieldLogger, ver string) Fedbox {
-	app := Fedbox{port: port, ver: ver}
+	app := Fedbox{ver: ver}
 	var err error
 	if l != nil {
 		app.dbg = l.Debugf
@@ -54,7 +53,7 @@ func (a Fedbox) Config() config.Options {
 }
 
 func (a Fedbox) listen() string {
-	return fmt.Sprintf("%s:%d", a.conf.Host, a.port)
+	return fmt.Sprintf("%s:%d", a.conf.Host, a.conf.Port)
 }
 
 func setupHttpServer(listen string, m http.Handler, wait time.Duration, ctx context.Context) (func(logFn), func(logFn)) {
