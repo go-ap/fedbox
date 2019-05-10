@@ -10,6 +10,20 @@ import (
 	"net/http"
 )
 
+type ActivityPubActivityHandler interface {
+	ActivityPubActivityC2SHandler
+	ActivityPubActivityS2SHandler
+}
+
+type ActivityPubActivityC2SHandler interface {
+	HandleClientRequest(http.ResponseWriter, *http.Request) (as.IRI, int, error)
+}
+type ActivityPubActivityS2SHandler interface {
+	HandleServerRequest(http.ResponseWriter, *http.Request) (as.IRI, int, error)
+}
+
+type DumbHandler struct {}
+
 // HandleClientRequest handles client to server (C2S) POST requests to an ActivityPub Actor's outbox
 func HandleClientRequest(w http.ResponseWriter, r *http.Request) (as.IRI, int, error) {
 	f := &st.Filters{}
@@ -53,10 +67,19 @@ func HandleServerRequest(w http.ResponseWriter, r *http.Request) (as.IRI, int, e
 			return as.IRI(""), http.StatusInternalServerError, NewNotValid(err, "unable to unmarshal JSON request")
 		}
 	}
-	if repo, ok := context.ActivitySaver(r.Context()); ok == true {
-		if it, err = repo.SaveActivity(it); err != nil {
-			return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Can't save %s %s", f.Collection, it.GetType())
-		}
+	validator, ok := ActivityValidatorCtxt(r.Context())
+	if ok == false {
+		return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity validator")
+	}
+	if err = validator.ValidateActivity(it); err != nil {
+		return as.IRI(""), http.StatusBadRequest, NewBadRequest(err, "%s activity failed validation", it.GetType())
+	}
+	repo, ok := context.ActivitySaver(r.Context())
+	if  ok == false {
+		return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity saver")
+	}
+	if it, err = repo.SaveActivity(it); err != nil {
+		return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 	}
 
 	return it.GetLink(), http.StatusOK, nil
