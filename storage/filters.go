@@ -58,6 +58,14 @@ const MaxItems = 100
 
 var ErrNotFound = errors.Newf("actor not found")
 
+func reqURL(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.Path)
+}
+
 // FromRequest loads the filters we use for generating storage queries from the HTTP request
 func (f *Filters) FromRequest(r *http.Request) error {
 	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
@@ -72,6 +80,7 @@ func (f *Filters) FromRequest(r *http.Request) error {
 		return ErrNotFound
 	} else {
 		col := matches[1]
+		url := reqURL(r)
 		switch string(col) {
 		case "actors":
 			// TODO(marius): this needs to be moved somewhere where it makes more sense
@@ -84,22 +93,16 @@ func (f *Filters) FromRequest(r *http.Request) error {
 						as.ServiceType,
 						as.OrganizationType,
 					},
-					Key: []Hash{
-						Hash(matches[2]),
-					},
+					Key: []Hash{Hash(url)},
 				}
 				if act, _, err := loader.LoadActors(ff); err == nil {
 					f.Owner = act
 				}
 			}
 		case "items":
-			f.ItemKey = []Hash{
-				Hash(matches[2]),
-			}
+			f.ItemKey = []Hash{Hash(url)}
 		case "activities":
-			f.Key = []Hash{
-				Hash(matches[2]),
-			}
+			f.Key = []Hash{Hash(url)}
 		}
 	}
 
@@ -229,7 +232,19 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 	if len(iris) > 0 {
 		keyWhere := make([]string, 0)
 		for _, key := range iris {
-			keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'id' ~* $%d`, counter))
+			if _, err := url.ParseRequestURI(key.String()); err != nil {
+				// not a valid iri
+				keyWhere = append(keyWhere, fmt.Sprintf(`"key" ~* $%d`, counter))
+			} else {
+				// For Link type we need to search the full raw column
+				if len(f.Type) == 1 && f.Type[0] == as.LinkType {
+					keyWhere = append(keyWhere, fmt.Sprintf(`"raw"::text ~* $%d`, counter))
+					keyWhere = append(keyWhere, fmt.Sprintf(`"iri" ~* $%d`, counter))
+				} else {
+					keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'id' ~* $%d`, counter))
+					keyWhere = append(keyWhere, fmt.Sprintf(`"iri" ~* $%d`, counter))
+				}
+			}
 			values = append(values, interface{}(key))
 			counter++
 		}
@@ -237,17 +252,19 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 	}
 
 	// TODO(marius): this looks cumbersome - we need to abstract the audience to something easier to query.
-	keyWhere := make([]string, 0)
-	keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'to' ~* $%d`, counter))
-	keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'cc' ~* $%d`, counter))
-	keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'bto' ~* $%d`, counter))
-	keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'bcc' ~* $%d`, counter))
-	keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'audience' ~* $%d`, counter))
-	clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
-	if f.Actor == nil {
-		values = append(values, interface{}(activitypub.Public))
-	} else {
-		values = append(values, interface{}(f.Actor.GetID()))
+	if !(len(f.Type) == 1 && f.Type[0] == as.LinkType) {
+		keyWhere := make([]string, 0)
+		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'to' ~* $%d`, counter))
+		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'cc' ~* $%d`, counter))
+		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'bto' ~* $%d`, counter))
+		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'bcc' ~* $%d`, counter))
+		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'audience' ~* $%d`, counter))
+		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
+		if f.Actor == nil {
+			values = append(values, interface{}(activitypub.Public))
+		} else {
+			values = append(values, interface{}(f.Actor.GetID()))
+		}
 	}
 
 	if len(clauses) == 0 {
