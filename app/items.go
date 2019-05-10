@@ -66,8 +66,10 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 	var err error
 	f := &st.Filters{}
 	f.FromRequest(r)
-	f.ItemKey = []st.Hash{
-		st.Hash(id),
+	if len(f.ItemKey) == 0 {
+		f.ItemKey = []st.Hash{
+			st.Hash(id),
+		}
 	}
 	f.MaxItems = 1
 
