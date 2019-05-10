@@ -91,3 +91,7 @@ create table actors
     "type" types,
     "raw" jsonb
 );
+-- name: insert-service-actor
+insert into actors ("key", "iri", "type", "raw")
+values ('d3ab037c-0f15-4c09-b635-3d6e201c11aa', 'https://federated.id/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa', 'Service', '{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "https://federated.id/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa","type": "Service","name": "self","inbox": "https://federated.id/inbox", "audience": [
+  "https://www.w3.org/ns/activitystreams#Public"]}');
