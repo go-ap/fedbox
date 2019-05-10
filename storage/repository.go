@@ -5,15 +5,47 @@ import (
 	"github.com/go-ap/activitypub/client"
 	s "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/errors"
 	"github.com/go-ap/jsonld"
 	uuid2 "github.com/google/uuid"
 	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/xerrors"
 	"strings"
 )
 
 type Paginator = s.Paginator
+
+type errDuplicateKey struct {
+	errors.Err
+}
+
+func IsDuplicateKey(e error) bool {
+	_, okp := e.(*errDuplicateKey)
+	_, oks := e.(errDuplicateKey)
+	return okp || oks
+}
+func (n errDuplicateKey) Is(e error) bool {
+	return IsDuplicateKey(e)
+}
+func wrapErr(err error, s string, args ...interface{}) errors.Err {
+	e := errors.Annotatef(err, s, args...)
+	asErr := errors.Err{}
+	xerrors.As(e, &asErr)
+	return asErr
+}
+
+var errFn = func(ss string) func(s string, p ...interface{}) errors.Err {
+	fn := func(s string, p ...interface{}) errors.Err {
+		return wrapErr(nil, fmt.Sprintf("%s: %s", ss, s), p...)
+	}
+	return fn
+}
+
+var ErrDuplicateObject = func(s string, p ...interface{}) errDuplicateKey {
+	return errDuplicateKey{wrapErr(nil, fmt.Sprintf("Duplicate key: %s", s), p...)}
+}
 
 type Loader interface {
 	s.ActivityLoader
@@ -173,19 +205,19 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 		// TODO(marius): this whole logic chain needs to be kept separate from the
 		//    actual persistence layer, so we don't have to copy/paste it with every new implementation.
 		if act.Object != nil {
-			if act.Object, err = l.SaveObject(act.Object); err != nil {
+			if act.Object, err = l.SaveObject(act.Object); err != nil && !IsDuplicateKey(err) {
 				l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's object")
 				return act, err
 			}
 		}
 		if act.Actor != nil {
-			if act.Actor, err = l.SaveObject(act.Actor); err != nil {
+			if act.Actor, err = l.SaveObject(act.Actor); err != nil && !IsDuplicateKey(err) {
 				l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's actor")
 				return act, err
 			}
 		}
 		if act.Target != nil {
-			if act.Target, err = l.SaveObject(act.Target); err != nil {
+			if act.Target, err = l.SaveObject(act.Target); err != nil && !IsDuplicateKey(err) {
 				l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's target")
 				return act, err
 			}
@@ -197,6 +229,21 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 		table = "objects"
 	}
 
+	if len(it.GetLink()) > 0 {
+		if _, cnt, _ := loadFromDb(l.conn, table, &Filters{
+			ItemKey: []Hash{Hash(it.GetLink().String())},
+			Type:    []as.ActivityVocabularyType{it.GetType()},
+		}); cnt != 0 {
+			err := ErrDuplicateObject("%s in table %s", it.GetLink(), table)
+			l.errFn(logrus.Fields{
+				"table": table,
+				"type":  it.GetType(),
+				"iri":   it.GetLink(),
+				"err":   err.Error(),
+			}, "skipping save")
+			return it, err
+		}
+	}
 	it, err = l.saveToDb(table, it)
 	if err != nil {
 		l.errFn(logrus.Fields{
@@ -218,7 +265,26 @@ func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 	uuid := uuid2.New()
 	iri := it.GetLink().String()
 	if len(iri) == 0 {
+		// TODO(marius): this needs to be in a different place
 		iri = fmt.Sprintf("%s/%s/%s", l.baseURL, table, uuid)
+		if as.ValidActivityType(it.GetType()) {
+			if a, err := as.ToActivity(it); err == nil {
+				a.ID = as.ObjectID(iri)
+				it = a
+			}
+		}
+		if as.ValidActorType(it.GetType()) {
+			if p, err := activitypub.ToPerson(it); err == nil {
+				p.ID = as.ObjectID(iri)
+				it = p
+			}
+		}
+		if as.ValidObjectType(it.GetType()) {
+			if o, err := as.ToObject(it); err == nil {
+				o.ID = as.ObjectID(iri)
+				it = o
+			}
+		}
 	}
 	raw, _ := jsonld.Marshal(it)
 
