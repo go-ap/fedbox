@@ -40,3 +40,14 @@ func ActorFromAuthHeader(next http.Handler) http.Handler {
 	})
 	return http.HandlerFunc(fn)
 }
+
+func Validator(v ActivityValidator) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			newCtx := context.WithValue(ctx, ValidatorKey, v)
+			next.ServeHTTP(w, r.WithContext(newCtx))
+		}
+		return http.HandlerFunc(fn)
+	}
+}

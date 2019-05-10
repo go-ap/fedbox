@@ -33,7 +33,9 @@ func ActorRoutes(r chi.Router) {
 			r.Method(http.MethodGet, "/", ItemHandlerFn(HandleObjectItem))
 			r.Route("/{collection}", ActivityRoutes)
 
+			val := genericValidator{}
 			r.Group(func (r chi.Router) {
+				r.Use(Validator(&val))
 				r.Method(http.MethodPost, "/inbox", ActivityHandlerFn(HandleServerRequest))
 				r.Method(http.MethodPost, "/outbox", ActivityHandlerFn(HandleClientRequest))
 			})
@@ -50,7 +52,8 @@ func Routes() func(chi.Router) {
 		r.Route("/actors", ActorRoutes)
 		r.Route("/items",  ObjectRoutes)
 
-		r.Method(http.MethodPost, "/inbox", ActivityHandlerFn(HandleServerRequest))
+		val := genericValidator{}
+		r.With(Validator(&val)).Method(http.MethodPost, "/inbox", ActivityHandlerFn(HandleServerRequest))
 
 		r.NotFound(HandleError(NotFoundf("invalid url")).ServeHTTP)
 		r.MethodNotAllowed(HandleError(MethodNotAllowedf("method not allowed")).ServeHTTP)
