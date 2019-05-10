@@ -6,6 +6,7 @@ import (
 	as "github.com/go-ap/activitystreams"
 	localctxt "github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/internal/errors"
+	"strings"
 )
 
 // ActivityValidator is an interface used for validating activity objects.
@@ -41,30 +42,38 @@ type invalidActivity struct {
 	errors.Err
 }
 
-type genericValidator struct{}
+type genericValidator struct {
+	baseIRI as.IRI
+}
 
-type ActivityPubError errors.Err
-
-var errFn = func(ss string) (func (s string, p ...interface{}) errors.Err) {
+type ActivityPubError struct {
+	errors.Err
+}
+var errFn = func(ss string) func (s string, p ...interface{}) errors.Err {
 	fn := func (s string, p ...interface{}) errors.Err {
 		return wrapErr(nil, fmt.Sprintf("%s: %s", ss, s), p...)
 	}
 	return fn
 }
-
-var InvalidActivity = func (s string, p ...interface{}) errors.Err {
-	return wrapErr(nil, fmt.Sprintf("Activity is not valid: %s", s), p...)
+var InvalidActivity = func (s string, p ...interface{}) ActivityPubError {
+	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Activity is not valid: %s", s), p...)}
 }
-var InvalidActivityActor = func (s string, p ...interface{}) errors.Err {
-	return wrapErr(nil, fmt.Sprintf("Actor is not valid: %s", s), p...)
+var InvalidActivityActor = func (s string, p ...interface{}) ActivityPubError {
+	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Actor is not valid: %s", s), p...)}
 }
 var InvalidActivityObject = func (s string, p ...interface{}) errors.Err {
 	return wrapErr(nil, fmt.Sprintf("Object is not valid: %s", s), p...)
 }
-var InvalidTarget = func (s string, p ...interface{}) errors.Err {
-	return wrapErr(nil, fmt.Sprintf("Target is not valid: %s", s), p...)
+var InvalidIRI = func (s string, p ...interface{}) errors.Err {
+	return wrapErr(nil, fmt.Sprintf("IRI is not valid: %s", s), p...)
+}
+var InvalidTarget = func (s string, p ...interface{}) ActivityPubError {
+	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Target is not valid: %s", s), p...)}
 }
 func (v genericValidator) ValidateActivity(a as.Item) error {
+	if a.IsLink() {
+		return v.ValidateLink(a.GetLink())
+	}
 	if !as.ValidActivityType(a.GetType()) {
 		return InvalidActivity("invalid type %s", a.GetType())
 	}
@@ -85,21 +94,41 @@ func (v genericValidator) ValidateActivity(a as.Item) error {
 	}
 	return nil
 }
+// IsLocalIRI shows if the received IRI belongs to the current instance
+// TODO(marius): make this not be true always
+func (v genericValidator) IsLocalIRI (i as.IRI) bool {
+	return true || strings.Contains(i.String(), v.baseIRI.String())
+}
+func (v genericValidator) ValidateLink(i as.IRI) error {
+	if !v.IsLocalIRI(i) {
+		return InvalidIRI("is not local")
+	}
+	return nil
+}
 func (v genericValidator) ValidateActor(a as.Item) error {
+	if a.IsLink() {
+		return v.ValidateLink(a.GetLink())
+	}
 	if !as.ValidActorType(a.GetType()) {
 		return InvalidActivityActor("invalid type %s", a.GetType())
 	}
 	return nil
 }
 func (v genericValidator) ValidateObject(o as.Item) error {
+	if o.IsLink() {
+		return v.ValidateLink(o.GetLink())
+	}
 	if !as.ValidObjectType(o.GetType()) {
 		return InvalidActivityObject("invalid type %s", o.GetType())
 	}
 	return nil
 }
-func (v genericValidator) ValidateTarget(a as.Item) error {
-	if !as.ValidObjectType(a.GetType()) {
-		return InvalidActivityObject("invalid type %s", a.GetType())
+func (v genericValidator) ValidateTarget(t as.Item) error {
+	if t.IsLink() {
+		return v.ValidateLink(t.GetLink())
+	}
+	if !as.ValidObjectType(t.GetType()) {
+		return InvalidActivityObject("invalid type %s", t.GetType())
 	}
 	return nil
 }
