@@ -5,6 +5,7 @@ import (
 	"github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/context"
+	"github.com/go-ap/fedbox/internal/errors"
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-chi/chi"
 	"net/http"
@@ -74,7 +75,7 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 		var repo storage.ObjectLoader
 		var ok bool
 		if repo, ok = context.ObjectLoader(r.Context()); !ok {
-			return nil, NotValidf("invalid database connection")
+			return nil, errors.Newf("invalid database connection")
 		}
 		items, _, err = repo.LoadObjects(f)
 	} else {
@@ -85,18 +86,18 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 			var repo storage.ActorLoader
 			var ok bool
 			if repo, ok = context.ActorLoader(r.Context()); !ok {
-				return nil, NotValidf("invalid database connection")
+				return nil, errors.Newf("invalid database connection")
 			}
 			items, _, err = repo.LoadActors(f)
 		case h.CollectionType("items"):
 			var repo storage.ObjectLoader
 			var ok bool
 			if repo, ok = context.ObjectLoader(r.Context()); !ok {
-				return nil, NotValidf("invalid database connection")
+				return nil, errors.Newf("invalid database connection")
 			}
 			items, _, err = repo.LoadObjects(f)
 		default:
-			return nil, BadRequestf("invalid collection %s", f.Collection)
+			return nil, errors.Newf("invalid collection %s", f.Collection)
 		}
 	}
 	if err != nil {
