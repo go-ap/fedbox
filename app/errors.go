@@ -7,7 +7,6 @@ import (
 	"github.com/go-ap/jsonld"
 	xerr "golang.org/x/xerrors"
 	"net/http"
-	"reflect"
 	"strconv"
 )
 
@@ -163,38 +162,32 @@ func IsNotValid(e error) bool {
 	_, oks := e.(notValid)
 	return okp || oks
 }
-func isA(err1, err2 error) bool {
-	if !(err1 != nil && err2 != nil) {
-		return false
-	}
-	return reflect.TypeOf(err1) == reflect.TypeOf(err2)
-}
 func (n notFound) Is(e error) bool {
-	return isA(n, e) || isA(n.Err, e)
+	return IsNotFound(e)
 }
 func (n notValid) Is(e error) bool {
-	return isA(n, e) || isA(n.Err, e)
+	return IsNotValid(e)
 }
 func (n notImplemented) Is(e error) bool {
-	return isA(n, e) || isA(n.Err, e)
+	return IsNotImplemented(e)
 }
 func (n notSupported) Is(e error) bool {
-	return isA(n, e) || isA(n.Err, e)
+	return IsNotSupported(e)
 }
 func (b badRequest) Is(e error) bool {
-	return isA(b, e) || isA(b.Err, e)
+	return IsBadRequest(e)
 }
 func (t timeout) Is(e error) bool {
-	return isA(t, e) || isA(t.Err, e)
+	return IsTimeout(e)
 }
 func (u unauthorized) Is(e error) bool {
-	return isA(u, e) || isA(u.Err, e)
+	return IsUnauthorized(e)
 }
 func (m methodNotAllowed) Is(e error) bool {
-	return isA(m, e) || isA(m.Err, e)
+	return IsMethodNotAllowed(m)
 }
 func (f forbidden) Is(e error) bool {
-	return isA(f, e) || isA(f.Err, e)
+	return IsForbidden(e)
 }
 func (n notFound) Unwrap() error {
 	return n.Err.Unwrap()
