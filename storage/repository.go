@@ -159,10 +159,12 @@ func loadFromDb(conn *pgx.Conn, table string, f *Filters) (as.ItemCollection, in
 		if err != nil {
 			return ret, total, errors.Annotatef(err, "scan values error")
 		}
+
 		it, err := as.UnmarshalJSON(raw)
 		if err != nil {
 			return ret, total, errors.Annotatef(err, "unable to unmarshal raw item")
 		}
+		it = as.FoldProperties(it)
 		ret = append(ret, it)
 	}
 
@@ -209,18 +211,21 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 				l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's object")
 				return act, err
 			}
+			act.Object = as.FoldToIRI(act.Object)
 		}
 		if act.Actor != nil {
 			if act.Actor, err = l.SaveObject(act.Actor); err != nil && !IsDuplicateKey(err) {
 				l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's actor")
 				return act, err
 			}
+			act.Actor = as.FoldToIRI(act.Actor)
 		}
 		if act.Target != nil {
 			if act.Target, err = l.SaveObject(act.Target); err != nil && !IsDuplicateKey(err) {
 				l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's target")
 				return act, err
 			}
+			act.Target = as.FoldToIRI(act.Target)
 		}
 		it = act
 	} else if as.ValidActorType(it.GetType()) {
