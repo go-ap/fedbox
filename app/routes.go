@@ -50,7 +50,7 @@ func Routes() func(chi.Router) {
 
 		r.Route("/activities", ActivityRoutes)
 		r.Route("/actors", ActorRoutes)
-		r.Route("/items",  ObjectRoutes)
+		r.Route("/objects",  ObjectRoutes)
 
 		val := genericValidator{}
 		r.With(Validator(&val)).Method(http.MethodPost, "/inbox", ActivityHandlerFn(HandleServerRequest))
