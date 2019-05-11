@@ -11,6 +11,10 @@ import (
 	"net/http"
 )
 
+var ActivitiesType = h.CollectionType("activities")
+var ObjectsType = h.CollectionType("objects")
+var ActorsType = h.CollectionType("actors")
+
 // HandleActivityItem serves content from the outbox, inbox, likes, shares and replies end-points
 // that returns a single ActivityPub activity
 func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
@@ -34,7 +38,7 @@ func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error)
 		// Non recognized as valid collection types
 		// In our case activities
 		switch collection {
-		case h.CollectionType("activities"):
+		case ActivitiesType:
 			items, _, err = repo.LoadActivities(f)
 		default:
 			return nil, BadRequestf("invalid collection %s", collection)
@@ -84,14 +88,14 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 		// Non recognized as valid collection types
 		// In our case activities
 		switch f.Collection {
-		case h.CollectionType("actors"):
+		case ActorsType:
 			var repo storage.ActorLoader
 			var ok bool
 			if repo, ok = context.ActorLoader(r.Context()); !ok {
 				return nil, errors.Newf("invalid database connection")
 			}
 			items, _, err = repo.LoadActors(f)
-		case h.CollectionType("items"):
+		case ObjectsType:
 			var repo storage.ObjectLoader
 			var ok bool
 			if repo, ok = context.ObjectLoader(r.Context()); !ok {
@@ -108,12 +112,12 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 	if len(items) == 1 {
 		it, err := loadItem(items, f, reqURL(r, r.URL.Path))
 		if err != nil {
-			return nil, NotFoundf("%s", collection)
+			return nil, NotFoundf("Not found %s", collection)
 		}
 		return it, nil
 	}
 
-	return nil, NotFoundf("%s %s", collection, id)
+	return nil, NotFoundf("Not found %s in %s", id, collection)
 }
 
 func loadItem(items as.ItemCollection, f st.Paginator, baseURL string) (as.Item, error) {

@@ -65,14 +65,14 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 		// Non recognized as valid collection types
 		// In our case actors, items
 		switch f.Collection {
-		case h.CollectionType("actors"):
+		case ActorsType:
 			var repo storage.ActorLoader
 			var ok bool
 			if repo, ok = context.ActorLoader(r.Context()); !ok {
 				return nil, errors.Newf("invalid database connection")
 			}
 			items, total, err = repo.LoadActors(f)
-		case h.CollectionType("items"):
+		case ObjectsType:
 			var repo storage.ObjectLoader
 			var ok bool
 			if repo, ok = context.ObjectLoader(r.Context()); !ok {
