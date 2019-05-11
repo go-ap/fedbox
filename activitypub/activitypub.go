@@ -98,12 +98,6 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// CollectionNew initializes a new Collection
-func OrderedCollectionNew(id as.ObjectID) *OrderedCollection {
-	o := OrderedCollection(*as.OrderedCollectionNew(id))
-	return &o
-}
-
 // GetType returns the OrderedCollection's type
 func (o OrderedCollection) GetType() as.ActivityVocabularyType {
 	return o.Type
@@ -192,12 +186,6 @@ func (o *OrderedCollection) UnmarshalJSON(data []byte) error {
 	o.OrderedItems = items
 	o.TotalItems = uint(len(items))
 	return nil
-}
-
-// CollectionNew initializes a new Collection
-func CollectionNew(id as.ObjectID) *Collection {
-	o := Collection(*as.CollectionNew(id))
-	return &o
 }
 
 // GetType returns the Collection's type
