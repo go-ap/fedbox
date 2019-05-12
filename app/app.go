@@ -30,7 +30,7 @@ type Fedbox struct {
 }
 
 // New instantiates a new Fedbox instance
-func New(port int, l logrus.FieldLogger, ver string) Fedbox {
+func New(l logrus.FieldLogger, ver string) Fedbox {
 	app := Fedbox{ver: ver}
 	var err error
 	if l != nil {
