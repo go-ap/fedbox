@@ -6,7 +6,6 @@ import (
 	ap "github.com/go-ap/activitypub"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/errors"
-	"github.com/go-ap/jsonld"
 )
 
 const Public = "https://www.w3.org/ns/activitystreams#Public"
@@ -306,54 +305,25 @@ func (a Activity) IsObject() bool {
 
 // UnmarshalJSON
 func (a *Activity) UnmarshalJSON(data []byte) error {
-	it := as.Activity{}
+	it := new(as.Activity)
 	err := it.UnmarshalJSON(data)
 	if err != nil {
 		return err
 	}
-	*a = Activity(it)
+	*a = Activity(*it)
 	return nil
-}
-
-// UnmarshalJSON tries to detect the type of the object in the json data and then outputs a matching
-// ActivityStreams object, if possible
-func UnmarshalJSON(data []byte) (as.Item, error) {
-	i, err := as.UnmarshalJSON(data)
-	switch i.GetType() {
-	case as.ApplicationType:
-		fallthrough
-	case as.ServiceType:
-		fallthrough
-	case as.GroupType:
-		fallthrough
-	case as.PersonType:
-		i = Person{}
-		jsonld.Unmarshal(data, &i)
-	case as.CollectionType:
-		i = Collection{}
-		jsonld.Unmarshal(data, &i)
-	case as.OrderedCollectionType:
-		i = OrderedCollection{}
-		jsonld.Unmarshal(data, &i)
-	case as.ActivityType:
-		i = Activity{}
-		jsonld.Unmarshal(data, &i)
-	}
-	return i, err
-}
-
-func (a *Activity) RecipientsDeduplication() {
-	b := as.Activity(*a)
-	b.RecipientsDeduplication()
 }
 
 func JSONGetItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 	var ret as.Item
-	var err error
 
 	if as.ValidActorType(typ) {
 		ret = &Person{}
 		o := ret.(*Person)
+		o.Type = typ
+	} else if as.ValidActivityType(typ) {
+		ret = &Activity{}
+		o := ret.(*Activity)
 		o.Type = typ
 	} else if typ == as.CollectionType {
 		ret = &Collection{}
@@ -366,15 +336,15 @@ func JSONGetItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 	} else {
 		return as.JSONGetItemByType(typ)
 	}
-	return ret, err
+	return ret, nil
 }
 
 func ToPerson(it as.Item) (*Person, error) {
-	switch i := it.(type) {
+	switch o := it.(type) {
 	case *Person:
-		return i, nil
+		return o, nil
 	case Person:
-		return &i, nil
+		return &o, nil
 	default:
 		ob, err := as.ToObject(it)
 		if err != nil {
@@ -385,4 +355,21 @@ func ToPerson(it as.Item) (*Person, error) {
 		return &p, nil
 	}
 	return nil, errors.Newf("unable to convert person")
+}
+
+// ToActivity
+func ToActivity(it as.Item) (*Activity, error) {
+	switch act := it.(type) {
+	case Activity:
+		return &act, nil
+	case *Activity:
+		return act, nil
+	}
+
+	a, err := as.ToActivity(it)
+	if err != nil {
+		return nil, err
+	}
+	aa := Activity(*a)
+	return &aa, nil
 }

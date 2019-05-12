@@ -3,7 +3,9 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/go-ap/activitypub/client"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/fedbox/activitypub"
 	localctxt "github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/internal/errors"
 	"strings"
@@ -44,6 +46,7 @@ type invalidActivity struct {
 
 type genericValidator struct {
 	baseIRI as.IRI
+	c client.Client
 }
 
 type ActivityPubError struct {
@@ -71,13 +74,16 @@ var InvalidTarget = func (s string, p ...interface{}) ActivityPubError {
 	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Target is not valid: %s", s), p...)}
 }
 func (v genericValidator) ValidateActivity(a as.Item) error {
+	if a == nil {
+		return InvalidActivityActor("received nil activity")
+	}
 	if a.IsLink() {
 		return v.ValidateLink(a.GetLink())
 	}
 	if !as.ValidActivityType(a.GetType()) {
 		return InvalidActivity("invalid type %s", a.GetType())
 	}
-	act, err := as.ToActivity(a)
+	act, err := activitypub.ToActivity(a)
 	if err != nil {
 		return err
 	}
@@ -101,11 +107,17 @@ func (v genericValidator) IsLocalIRI (i as.IRI) bool {
 }
 func (v genericValidator) ValidateLink(i as.IRI) error {
 	if !v.IsLocalIRI(i) {
-		return InvalidIRI("is not local")
+		// try to dereference this shit
+		_, err := v.c.LoadIRI(i)
+		return err
 	}
+
 	return nil
 }
 func (v genericValidator) ValidateActor(a as.Item) error {
+	if a == nil {
+		return InvalidActivityActor("received nil actor")
+	}
 	if a.IsLink() {
 		return v.ValidateLink(a.GetLink())
 	}
@@ -115,6 +127,9 @@ func (v genericValidator) ValidateActor(a as.Item) error {
 	return nil
 }
 func (v genericValidator) ValidateObject(o as.Item) error {
+	if o == nil {
+		return InvalidActivityActor("received nil object")
+	}
 	if o.IsLink() {
 		return v.ValidateLink(o.GetLink())
 	}
@@ -124,6 +139,9 @@ func (v genericValidator) ValidateObject(o as.Item) error {
 	return nil
 }
 func (v genericValidator) ValidateTarget(t as.Item) error {
+	if t == nil {
+		return InvalidActivityActor("received nil target")
+	}
 	if t.IsLink() {
 		return v.ValidateLink(t.GetLink())
 	}

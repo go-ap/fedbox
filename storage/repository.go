@@ -13,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 	"strings"
+	"time"
 )
 
 type Paginator = s.Paginator
@@ -136,7 +137,7 @@ func loadFromDb(conn *pgx.ConnPool, table string, f *Filters) (as.ItemCollection
 	clauses, values := f.GetWhereClauses()
 	total := 0
 
-	sel := fmt.Sprintf("SELECT id, key, iri, created_at, type, raw FROM %s WHERE %s %s", table, strings.Join(clauses, " AND "), f.GetLimit())
+	sel := fmt.Sprintf("SELECT id, key, iri, created_at, type, raw FROM %s WHERE %s ORDER BY raw->>'published' DESC %s", table, strings.Join(clauses, " AND "), f.GetLimit())
 	rows, err := conn.Query(sel, values...)
 	defer rows.Close()
 	if err != nil {
@@ -164,7 +165,7 @@ func loadFromDb(conn *pgx.ConnPool, table string, f *Filters) (as.ItemCollection
 		if err != nil {
 			return ret, total, errors.Annotatef(err, "unable to unmarshal raw item")
 		}
-		it = as.FlattenProperties(it)
+		//it = as.FlattenProperties(it)
 		ret = append(ret, it)
 	}
 
@@ -188,44 +189,18 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	}
 	var err error
 	var table string
-	if it.IsLink() {
-		// dereference this shit
-		iri := it.GetLink()
-		if it, err := l.d.LoadIRI(iri); err != nil {
-			l.errFn(logrus.Fields{"IRI": iri}, "unable to dereference IRI")
-			return it, err
-		}
-	}
-
 	if as.ValidActivityType(it.GetType()) {
 		table = "activities"
-		act, err := as.ToActivity(it)
+		act, err := activitypub.ToActivity(it)
 		if err != nil {
 			l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to load activity")
 			return act, err
 		}
-		// TODO(marius): this whole logic chain needs to be kept separate from the
-		//    actual persistence layer, so we don't have to copy/paste it with every new implementation.
-		if act.Object != nil {
-			if act.Object, err = l.SaveObject(act.Object); err != nil && !IsDuplicateKey(err) {
-				l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's object")
-				return act, err
+		if as.ValidContentManagementType(it.GetType()) {
+			act, err = l.ContentManagementActivity(act)
+			if err != nil {
+				return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
 			}
-			act.Object = as.FlattenToIRI(act.Object)
-		}
-		if act.Actor != nil {
-			if act.Actor, err = l.SaveObject(act.Actor); err != nil && !IsDuplicateKey(err) {
-				l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's actor")
-				return act, err
-			}
-			act.Actor = as.FlattenToIRI(act.Actor)
-		}
-		if act.Target != nil {
-			if act.Target, err = l.SaveObject(act.Target); err != nil && !IsDuplicateKey(err) {
-				l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to save activity's target")
-				return act, err
-			}
-			act.Target = as.FlattenToIRI(act.Target)
 		}
 		it = act
 	} else if as.ValidActorType(it.GetType()) {
@@ -252,6 +227,7 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	it, err = l.saveToDb(table, it)
 	if err != nil {
 		l.errFn(logrus.Fields{
+			"action": "insert",
 			"table": table,
 		}, "%s", err.Error())
 	}
@@ -261,11 +237,7 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 
 func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 	var query string
-	//if it.GetID() == nil {
 	query = fmt.Sprintf("INSERT INTO %s (key, iri, type, raw) VALUES ($1, $2, $3, $4);", table)
-	//} else {
-	//	query = fmt.Sprintf("UPDATE %s SET key = $1, iri = $2, type = $3, raw = $4;", table)
-	//}
 
 	uuid := uuid2.New()
 	iri := it.GetLink().String()
@@ -308,4 +280,128 @@ func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 	}
 
 	return it, nil
+}
+
+func (l loader) UpdateObject(it as.Item) (as.Item, error) {
+	if it == nil {
+		return it, errors.Newf("not saving nil item")
+	}
+	var err error
+	var table string
+	if as.ValidActivityType(it.GetType()) {
+		return nil, errors.Newf("unable to update activity")
+	} else if as.ValidActorType(it.GetType()) {
+		table = "actors"
+		actor, err := activitypub.ToPerson(it)
+		if err != nil {
+			l.errFn(logrus.Fields{
+				"type": it.GetType(),
+				"iri": it.GetLink(),
+			}, "unable to load person from the underlying interface")
+		}
+		upd := time.Now()
+		actor.Updated = upd.UTC()
+		it = actor
+	} else {
+		table = "objects"
+	}
+
+	it, err = l.updateItem(table, it)
+	if err != nil {
+		l.errFn(logrus.Fields{
+			"action": "update",
+			"table": table,
+		}, "%s", err.Error())
+	}
+
+	return it, err
+}
+
+func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
+	if table == "activities" {
+		return it, errors.Newf("update action invalid, activities are immutable")
+	}
+	query := fmt.Sprintf("UPDATE %s SET type = $1, raw = $2 WHERE iri = $3;", table)
+
+	iri := it.GetLink().String()
+	if len(iri) == 0 {
+		return it, errors.Newf("invalid update item does not have a valid IRI")
+	}
+	raw, _ := jsonld.Marshal(it)
+
+	values := make([]interface{}, 3)
+	values[0] = interface{}(it.GetType())
+	values[1] = interface{}(raw)
+	values[2] = interface{}(iri)
+
+	_, err := l.conn.Exec(query, values...)
+	if err != nil {
+		l.errFn(logrus.Fields{
+			"err": err.Error(),
+		}, "query error")
+		return it, errors.Annotatef(err, "query error")
+	}
+
+	return it, nil
+}
+
+func (l loader) DeleteObject(it as.Item) (as.Item, error) {
+	if it == nil {
+		return it, errors.Newf("not saving nil item")
+	}
+	var err error
+	var table string
+	if as.ValidActivityType(it.GetType()) {
+		return nil, errors.Newf("unable to delete activity")
+	} else if as.ValidActorType(it.GetType()) {
+		table = "actors"
+	} else {
+		table = "objects"
+	}
+
+	t := as.Tombstone{
+		Parent: as.Parent {
+			ID: as.ObjectID(it.GetLink()),
+			Type: as.TombstoneType,
+			To: as.ItemCollection{
+				as.IRI(activitypub.Public),
+			},
+		},
+		Deleted: time.Now().UTC(),
+		FormerType: it.GetType(),
+	}
+
+	it, err = l.updateItem(table, t)
+	if err != nil {
+		l.errFn(logrus.Fields{
+			"action": "update",
+			"table": table,
+		}, "%s", err.Error())
+	}
+
+	return it, err
+}
+
+func (l loader) ContentManagementActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
+	var err error
+	if act.Object != nil {
+		switch act.Type {
+		case as.CreateType:
+			act.Object, err = l.SaveObject(act.Object)
+		case as.UpdateType:
+			// TODO(marius): Move this piece of logic to the validation mechanism
+			if len(act.Object.GetLink()) == 0 {
+				return act, errors.Newf("unable to update object without a valid object id")
+			}
+			act.Object, err = l.UpdateObject(act.Object)
+		case as.DeleteType:
+			act.Object, err = l.DeleteObject(act.Object)
+		}
+		if err != nil && !IsDuplicateKey(err) {
+			l.errFn(logrus.Fields{"IRI": act.GetLink(), "type": act.Type}, "unable to save activity's object")
+			return act, err
+		}
+		act.Object = as.FlattenToIRI(act.Object)
+	}
+	return act, err
 }
