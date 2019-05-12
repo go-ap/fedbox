@@ -29,14 +29,17 @@ func main() {
 	r := chi.NewRouter()
 
 	dbConf := a.Config().DB
-	conn, err := pgx.Connect(pgx.ConnConfig{
-		Host:     dbConf.Host,
-		Port:     uint16(dbConf.Port),
-		Database: dbConf.Name,
-		User:     dbConf.User,
-		Password: dbConf.Pw,
-		Logger:   storage.DBLogger(l),
-		//PreferSimpleProtocol: true,
+	conn, err := pgx.NewConnPool(pgx.ConnPoolConfig{
+		ConnConfig: pgx.ConnConfig{
+			Host:     dbConf.Host,
+			Port:     uint16(dbConf.Port),
+			Database: dbConf.Name,
+			User:     dbConf.User,
+			Password: dbConf.Pw,
+			Logger:   storage.DBLogger(l),
+			//PreferSimpleProtocol: true,
+		},
+		MaxConnections: 3,
 	})
 	defer conn.Close()
 	if err == nil {

@@ -58,7 +58,7 @@ type Loader interface {
 
 type loader struct {
 	baseURL string
-	conn    *pgx.Conn
+	conn    *pgx.ConnPool
 	d       client.Client
 	logFn   loggerFn
 	errFn   loggerFn
@@ -74,7 +74,7 @@ func logFn(l logrus.FieldLogger, lvl logrus.Level) loggerFn {
 	}
 }
 
-func New(conn *pgx.Conn, url string, l logrus.FieldLogger) *loader {
+func New(conn *pgx.ConnPool, url string, l logrus.FieldLogger) *loader {
 	return &loader{
 		conn:    conn,
 		baseURL: url,
@@ -132,7 +132,7 @@ func (l loader) LoadObjects(f s.Filterable) (as.ItemCollection, int, error) {
 	return loadFromDb(l.conn, "objects", ff)
 }
 
-func loadFromDb(conn *pgx.Conn, table string, f *Filters) (as.ItemCollection, int, error) {
+func loadFromDb(conn *pgx.ConnPool, table string, f *Filters) (as.ItemCollection, int, error) {
 	clauses, values := f.GetWhereClauses()
 	total := 0
 
