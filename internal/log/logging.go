@@ -79,7 +79,7 @@ func (l *StructuredLoggerEntry) Write(status, bytes int, elapsed time.Duration) 
 	})
 
 	var logFn func(args ...interface{})
-	if status > 200 && status < 400 {
+	if status >= 200 && status < 400 {
 		logFn = l.Logger.Info
 	} else {
 		logFn = l.Logger.Error
