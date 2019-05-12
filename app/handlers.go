@@ -70,7 +70,7 @@ func (a ActivityHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if iri, status, err = a(w, r); err != nil {
 		_, dat = RenderErrors(r, err)
 	} else {
-		dat = []byte("OK")
+		dat, _ = j.Marshal("OK")
 	}
 
 	w.Header().Set("Content-Type", "application/ld+json")
