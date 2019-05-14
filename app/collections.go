@@ -5,6 +5,7 @@ import (
 	h "github.com/go-ap/activitypub/handler"
 	"github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/internal/errors"
 	st "github.com/go-ap/fedbox/storage"
@@ -85,6 +86,9 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 	}
 	if err != nil {
 		return nil, err
+	}
+	for i, it := range items {
+		items[i] = activitypub.FlattenProperties(it)
 	}
 	it, err := loadCollection(items, uint(total), f, reqURL(r, r.URL.Path))
 	if err != nil {

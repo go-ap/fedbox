@@ -4,6 +4,7 @@ import (
 	h "github.com/go-ap/activitypub/handler"
 	"github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/internal/errors"
 	st "github.com/go-ap/fedbox/storage"
@@ -19,7 +20,6 @@ var ActorsType = h.CollectionType("actors")
 // that returns a single ActivityPub activity
 func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 	collection := h.Typer.Type(r)
-	var repo st.Loader
 
 	id := chi.URLParam(r, "id")
 
@@ -33,12 +33,22 @@ func HandleActivityItem(w http.ResponseWriter, r *http.Request) (as.Item, error)
 	f.MaxItems = 1
 
 	if h.ValidActivityCollection(string(f.Collection)) {
+		var repo storage.ActivityLoader
+		var ok bool
+		if repo, ok = context.ActivityLoader(r.Context()); !ok {
+			return nil, errors.Newf("invalid activity loader")
+		}
 		items, _, err = repo.LoadActivities(f)
 	} else {
 		// Non recognized as valid collection types
 		// In our case activities
 		switch collection {
 		case ActivitiesType:
+			var repo storage.ActivityLoader
+			var ok bool
+			if repo, ok = context.ActivityLoader(r.Context()); !ok {
+				return nil, errors.Newf("invalid activity loader")
+			}
 			items, _, err = repo.LoadActivities(f)
 		default:
 			return nil, BadRequestf("invalid collection %s", collection)
@@ -114,7 +124,7 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 		if err != nil {
 			return nil, NotFoundf("Not found %s", collection)
 		}
-		return it, nil
+		return activitypub.FlattenProperties(it), nil
 	}
 
 	return nil, NotFoundf("Not found %s in %s", id, collection)

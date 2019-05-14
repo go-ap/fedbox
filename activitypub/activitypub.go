@@ -373,3 +373,19 @@ func ToActivity(it as.Item) (*Activity, error) {
 	aa := Activity(*a)
 	return &aa, nil
 }
+
+// FlattenObjectProperties flattens the Object's properties from Object types to IRI
+func FlattenPersonProperties(o Person) Person {
+	as.FlattenObjectProperties(o.Parent)
+	return o
+}
+// FlattenProperties flattens the Item's properties from Object types to IRI
+func FlattenProperties(it as.Item) as.Item {
+	if as.ValidActorType(it.GetType()) {
+		ob, err := ToPerson(it)
+		if err == nil {
+			return FlattenPersonProperties(*ob)
+		}
+	}
+	return as.FlattenProperties(it)
+}

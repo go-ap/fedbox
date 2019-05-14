@@ -165,7 +165,6 @@ func loadFromDb(conn *pgx.ConnPool, table string, f *Filters) (as.ItemCollection
 		if err != nil {
 			return ret, total, errors.Annotatef(err, "unable to unmarshal raw item")
 		}
-		//it = as.FlattenProperties(it)
 		ret = append(ret, it)
 	}
 
@@ -178,31 +177,43 @@ func loadFromDb(conn *pgx.ConnPool, table string, f *Filters) (as.ItemCollection
 }
 
 func (l loader) SaveActivity(it as.Item) (as.Item, error) {
-	return l.SaveObject(it)
+	var err error
+
+	// First we process the activity to effect whatever changes we need to on the activity properties.
+	act, err := activitypub.ToActivity(it)
+	if err != nil {
+		l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to load activity")
+		return act, err
+	}
+	if as.ValidContentManagementType(it.GetType()) {
+		act, err = l.ContentManagementActivity(act)
+		if err != nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
+	}
+
+	it, err = l.SaveObject(it)
+	if err != nil {
+		l.errFn(logrus.Fields{"IRI": it.GetLink()}, "unable to save activity")
+		return it, err
+	}
+
+	return act, err
 }
+
 func (l loader) SaveActor(it as.Item) (as.Item, error) {
 	return l.SaveObject(it)
 }
+
 func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
+
 	var err error
 	var table string
 	if as.ValidActivityType(it.GetType()) {
 		table = "activities"
-		act, err := activitypub.ToActivity(it)
-		if err != nil {
-			l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to load activity")
-			return act, err
-		}
-		if as.ValidContentManagementType(it.GetType()) {
-			act, err = l.ContentManagementActivity(act)
-			if err != nil {
-				return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-			}
-		}
-		it = act
 	} else if as.ValidActorType(it.GetType()) {
 		table = "actors"
 	} else {
@@ -226,7 +237,7 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	}
 	it, err = l.saveToDb(table, it)
 	if err != nil {
-		l.errFn(logrus.Fields{
+		l.errFn(logrus.Fields {
 			"action": "insert",
 			"table": table,
 		}, "%s", err.Error())
@@ -240,23 +251,21 @@ func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 	query = fmt.Sprintf("INSERT INTO %s (key, iri, type, raw) VALUES ($1, $2, $3, $4);", table)
 
 	uuid := uuid2.New()
-	iri := it.GetLink().String()
+	iri := it.GetLink()
 	if len(iri) == 0 {
 		// TODO(marius): this needs to be in a different place
-		iri = fmt.Sprintf("%s/%s/%s", l.baseURL, table, uuid)
+		iri = as.IRI(fmt.Sprintf("%s/%s/%s", l.baseURL, table, uuid))
 		if as.ValidActivityType(it.GetType()) {
 			if a, err := as.ToActivity(it); err == nil {
 				a.ID = as.ObjectID(iri)
 				it = a
 			}
-		}
-		if as.ValidActorType(it.GetType()) {
+		} else if as.ValidActorType(it.GetType()) {
 			if p, err := activitypub.ToPerson(it); err == nil {
 				p.ID = as.ObjectID(iri)
 				it = p
 			}
-		}
-		if as.ValidObjectType(it.GetType()) {
+		} else if as.ValidObjectType(it.GetType()) {
 			if o, err := as.ToObject(it); err == nil {
 				o.ID = as.ObjectID(iri)
 				it = o
@@ -270,6 +279,34 @@ func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 	values[1] = interface{}(iri)
 	values[2] = interface{}(it.GetType())
 	values[3] = interface{}(raw)
+
+	_, err := l.conn.Exec(query, values...)
+	if err != nil {
+		l.errFn(logrus.Fields{
+			"err": err.Error(),
+		}, "query error")
+		return it, errors.Annotatef(err, "query error")
+	}
+
+	return it, nil
+}
+
+func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
+	if table == "activities" {
+		return it, errors.Newf("update action invalid, activities are immutable")
+	}
+	query := fmt.Sprintf("UPDATE %s SET type = $1, raw = $2 WHERE iri = $3;", table)
+
+	iri := it.GetLink().String()
+	if len(iri) == 0 {
+		return it, errors.Newf("invalid update item does not have a valid IRI")
+	}
+	raw, _ := jsonld.Marshal(it)
+
+	values := make([]interface{}, 3)
+	values[0] = interface{}(it.GetType())
+	values[1] = interface{}(raw)
+	values[2] = interface{}(iri)
 
 	_, err := l.conn.Exec(query, values...)
 	if err != nil {
@@ -315,34 +352,6 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 	}
 
 	return it, err
-}
-
-func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
-	if table == "activities" {
-		return it, errors.Newf("update action invalid, activities are immutable")
-	}
-	query := fmt.Sprintf("UPDATE %s SET type = $1, raw = $2 WHERE iri = $3;", table)
-
-	iri := it.GetLink().String()
-	if len(iri) == 0 {
-		return it, errors.Newf("invalid update item does not have a valid IRI")
-	}
-	raw, _ := jsonld.Marshal(it)
-
-	values := make([]interface{}, 3)
-	values[0] = interface{}(it.GetType())
-	values[1] = interface{}(raw)
-	values[2] = interface{}(iri)
-
-	_, err := l.conn.Exec(query, values...)
-	if err != nil {
-		l.errFn(logrus.Fields{
-			"err": err.Error(),
-		}, "query error")
-		return it, errors.Annotatef(err, "query error")
-	}
-
-	return it, nil
 }
 
 func (l loader) DeleteObject(it as.Item) (as.Item, error) {
