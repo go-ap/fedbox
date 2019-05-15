@@ -256,7 +256,7 @@ func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 		// TODO(marius): this needs to be in a different place
 		iri = as.IRI(fmt.Sprintf("%s/%s/%s", l.baseURL, table, uuid))
 		if as.ValidActivityType(it.GetType()) {
-			if a, err := as.ToActivity(it); err == nil {
+			if a, err := activitypub.ToActivity(it); err == nil {
 				a.ID = as.ObjectID(iri)
 				it = a
 			}
