@@ -319,28 +319,95 @@ func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
 	return it, nil
 }
 
+func UpdatePersonProperties(old, new *activitypub.Person) (*activitypub.Person, error) {
+	return old, errors.Newf("UpdatePersonProperties not implemented")
+}
+
+func UpdateObjectProperties(old, new *as.Object) (*as.Object, error) {
+	return old, errors.Newf("UpdateObjectProperties not implemented")
+}
+
+func UpdateItemProperties(old, new as.Item) (as.Item, error) {
+	if old == nil {
+		return old, errors.Newf("Nil object to update")
+	}
+	if new == nil {
+		return old, errors.Newf("Nil object for update")
+	}
+	if *old.GetID() != *new.GetID() {
+		return old, errors.Newf("Object IDs don't match")
+	}
+	if old.GetType() != new.GetType() {
+		return old, errors.Newf("Invalid object types for update")
+	}
+	if as.ValidActorType(old.GetType()) {
+		o, err := activitypub.ToPerson(old)
+		if err != nil {
+			return o, err
+		}
+		n, err := activitypub.ToPerson(new)
+		if err != nil {
+			return o, err
+		}
+		return UpdatePersonProperties(o, n)
+	}
+	if as.ValidObjectType(old.GetType()) {
+		o, err := as.ToObject(old)
+		if err != nil {
+			return o, err
+		}
+		n, err := as.ToObject(new)
+		if err != nil {
+			return o, err
+		}
+		return UpdateObjectProperties(o, n)
+	}
+	return old, errors.Newf("could not process objects with type %s", old.GetType())
+}
+
 func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
 	var err error
 	var table string
+	label := "item"
 	if as.ValidActivityType(it.GetType()) {
 		return nil, errors.Newf("unable to update activity")
 	} else if as.ValidActorType(it.GetType()) {
+		label = "actor"
 		table = "actors"
-		actor, err := activitypub.ToPerson(it)
-		if err != nil {
-			l.errFn(logrus.Fields{
-				"type": it.GetType(),
-				"iri": it.GetLink(),
-			}, "unable to load person from the underlying interface")
-		}
-		upd := time.Now()
-		actor.Updated = upd.UTC()
-		it = actor
 	} else {
+		label = "object"
 		table = "objects"
+	}
+	if len(it.GetLink()) == 0 {
+		err := ErrNotFound(fmt.Sprintf("Unable to update %s with no ID", label))
+		return it, err
+	}
+	found, cnt, _ := loadFromDb(l.conn, table, &Filters{
+		ItemKey: []Hash{Hash(it.GetLink().String())},
+		Type:    []as.ActivityVocabularyType{it.GetType()},
+	})
+	if cnt == 0 {
+		err := ErrNotFound(fmt.Sprintf("%s %s", it.GetLink(), label))
+		l.errFn(logrus.Fields{
+			"table": table,
+			"type":  it.GetType(),
+			"iri":   it.GetLink(),
+			"err":   err.Error(),
+		}, "unable to find old item")
+		return it, err
+	}
+	old := found[0]
+	it, err = UpdateItemProperties(old, it)
+	if err != nil {
+		l.errFn(logrus.Fields{
+			"table": table,
+			"type":  old.GetType(),
+			"iri":   old.GetLink(),
+			"err":   err.Error(),
+		}, "invalid")
 	}
 
 	it, err = l.updateItem(table, it)

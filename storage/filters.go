@@ -56,7 +56,9 @@ func (f Filters) IRIs() []as.IRI {
 
 const MaxItems = 100
 
-var ErrNotFound = errors.Newf("actor not found")
+var ErrNotFound = func (s string) error {
+	return errors.Newf(fmt.Sprintf("%s not found", s))
+}
 
 func reqURL(r *http.Request) string {
 	scheme := "http"
@@ -78,7 +80,7 @@ func (f *Filters) FromRequest(r *http.Request) error {
 	pr, _ := regexp.Compile(fmt.Sprintf("/(actors|items|activities)/(\\w+)/%s", f.Collection))
 	matches := pr.FindSubmatch([]byte(r.URL.Path))
 	if len(matches) < 3 {
-		return ErrNotFound
+		return ErrNotFound(string(f.Collection))
 	} else {
 		col := matches[1]
 		url := reqURL(r)
