@@ -346,12 +346,12 @@ func ToPerson(it as.Item) (*Person, error) {
 	case Person:
 		return &o, nil
 	default:
-		ob, err := as.ToObject(it)
+		ob, err := ap.ToPerson(it)
 		if err != nil {
 			return nil, err
 		}
 		p := Person{}
-		p.Person.Parent = *ob
+		p.Person = *ob
 		return &p, nil
 	}
 	return nil, errors.Newf("unable to convert person")
