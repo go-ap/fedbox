@@ -74,10 +74,10 @@ func (a ActivityHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/ld+json")
-	w.WriteHeader(status)
 	if len(iri) > 0 {
 		w.Header().Set("Location", iri.String())
 	}
+	w.WriteHeader(status)
 	w.Write(dat)
 }
 

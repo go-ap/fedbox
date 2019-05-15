@@ -45,8 +45,12 @@ func HandleClientRequest(w http.ResponseWriter, r *http.Request) (as.IRI, int, e
 			return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Can't save %s %s", f.Collection, it.GetType())
 		}
 	}
+	status := http.StatusOK
+	if it.GetType() == as.CreateType {
+		status = http.StatusCreated
+	}
 
-	return it.GetLink(), http.StatusOK, nil
+	return it.GetLink(), status, nil
 }
 
 // HandleServerRequest handles server to server (S2S) POST requests to an ActivityPub Actor's inbox
@@ -81,6 +85,10 @@ func HandleServerRequest(w http.ResponseWriter, r *http.Request) (as.IRI, int, e
 	if it, err = repo.SaveActivity(it); err != nil {
 		return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 	}
+	status := http.StatusOK
+	if it.GetType() == as.CreateType {
+		status = http.StatusCreated
+	}
 
-	return it.GetLink(), http.StatusOK, nil
+	return it.GetLink(), status, nil
 }
