@@ -258,16 +258,19 @@ func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 		if as.ValidActivityType(it.GetType()) {
 			if a, err := activitypub.ToActivity(it); err == nil {
 				a.ID = as.ObjectID(iri)
+				a.Published = time.Now()
 				it = a
 			}
 		} else if as.ValidActorType(it.GetType()) {
 			if p, err := activitypub.ToPerson(it); err == nil {
 				p.ID = as.ObjectID(iri)
+				p.Published = time.Now()
 				it = p
 			}
 		} else if as.ValidObjectType(it.GetType()) {
 			if o, err := as.ToObject(it); err == nil {
 				o.ID = as.ObjectID(iri)
+				o.Published = time.Now()
 				it = o
 			}
 		}
@@ -297,9 +300,20 @@ func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
 	}
 	query := fmt.Sprintf("UPDATE %s SET type = $1, raw = $2 WHERE iri = $3;", table)
 
-	iri := it.GetLink().String()
+	iri := it.GetLink()
 	if len(iri) == 0 {
 		return it, errors.Newf("invalid update item does not have a valid IRI")
+	}
+	if as.ValidActorType(it.GetType()) {
+		if p, err := activitypub.ToPerson(it); err == nil {
+			p.Updated = time.Now()
+			it = p
+		}
+	} else if as.ValidObjectType(it.GetType()) {
+		if o, err := as.ToObject(it); err == nil {
+			o.Updated = time.Now()
+			it = o
+		}
 	}
 	raw, _ := jsonld.Marshal(it)
 
@@ -320,11 +334,80 @@ func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
 }
 
 func UpdatePersonProperties(old, new *activitypub.Person) (*activitypub.Person, error) {
-	return old, errors.Newf("UpdatePersonProperties not implemented")
+	o, err := UpdateObjectProperties(&old.Parent, &new.Parent)
+	old.Parent = *o
+	old.Inbox = ReplaceIfItem(old.Inbox, new.Inbox)
+	old.Outbox = ReplaceIfItem(old.Outbox, new.Outbox)
+	old.Following = ReplaceIfItem(old.Following, new.Following)
+	old.Followers = ReplaceIfItem(old.Followers, new.Followers)
+	old.Liked = ReplaceIfItem(old.Liked, new.Liked)
+	old.PreferredUsername = ReplaceIfNaturalLanguageValues(old.PreferredUsername, new.PreferredUsername)
+	return old, err
+}
+
+func ReplaceIfItem(old, new as.Item) as.Item {
+	if new == nil {
+		return old
+	}
+	return new
+}
+
+func ReplaceIfItemCollection(old, new as.ItemCollection) as.ItemCollection {
+	if new == nil {
+		return old
+	}
+	return new
+}
+
+func ReplaceIfNaturalLanguageValues(old, new as.NaturalLanguageValues) as.NaturalLanguageValues {
+	if new == nil {
+		return old
+	}
+	return new
 }
 
 func UpdateObjectProperties(old, new *as.Object) (*as.Object, error) {
-	return old, errors.Newf("UpdateObjectProperties not implemented")
+	old.Name = ReplaceIfNaturalLanguageValues(old.Name, new.Name)
+	old.Attachment =  ReplaceIfItem(old.Attachment, new.Attachment)
+	old.AttributedTo = ReplaceIfItem(old.AttributedTo, new.AttributedTo)
+	old.Audience = ReplaceIfItemCollection(old.Audience, new.Audience)
+	old.Content = ReplaceIfNaturalLanguageValues(old.Content, new.Content)
+	old.Context =ReplaceIfItem(old.Context, new.Context)
+	if len(new.MediaType) > 0 {
+		old.MediaType = new.MediaType
+	}
+	if !new.EndTime.IsZero() {
+		old.EndTime = new.EndTime
+	}
+	old.Generator = ReplaceIfItem(old.Generator, new.Generator)
+	old.Icon = ReplaceIfItem(old.Icon, new.Icon)
+	old.Image = ReplaceIfItem(old.Image, new.Image)
+	old.InReplyTo = ReplaceIfItem(old.InReplyTo, new.InReplyTo)
+	old.Location = ReplaceIfItem(old.Location, new.Location)
+	old.Preview = ReplaceIfItem(old.Preview, new.Preview)
+	if !new.Published.IsZero() {
+		old.Published = new.Published
+	}
+	old.Replies = ReplaceIfItem(old.Replies, new.Replies)
+	if !new.StartTime.IsZero() {
+		old.StartTime = new.StartTime
+	}
+	old.Summary = ReplaceIfNaturalLanguageValues(old.Summary, new.Summary)
+	old.Tag = ReplaceIfItemCollection(old.Tag, new.Tag)
+	if !new.Updated.IsZero() {
+		old.Updated = new.Updated
+	}
+	if new.URL != nil {
+		old.URL = new.URL
+	}
+	old.To = ReplaceIfItemCollection(old.To, new.To)
+	old.Bto = ReplaceIfItemCollection(old.Bto, new.Bto)
+	old.CC = ReplaceIfItemCollection(old.CC, new.CC)
+	old.BCC = ReplaceIfItemCollection(old.BCC, new.BCC)
+	if new.Duration == 0 {
+		old.Duration = new.Duration
+	}
+	return old, nil
 }
 
 func UpdateItemProperties(old, new as.Item) (as.Item, error) {
@@ -447,7 +530,7 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 		FormerType: it.GetType(),
 	}
 
-	it, err = l.updateItem(table, t)
+	it, err = l.updateItem(table, &t)
 	if err != nil {
 		l.errFn(logrus.Fields{
 			"action": "update",
