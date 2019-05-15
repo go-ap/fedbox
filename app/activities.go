@@ -49,6 +49,9 @@ func HandleClientRequest(w http.ResponseWriter, r *http.Request) (as.IRI, int, e
 	if it.GetType() == as.CreateType {
 		status = http.StatusCreated
 	}
+	if it.GetType() == as.DeleteType {
+		status = http.StatusGone
+	}
 
 	return it.GetLink(), status, nil
 }
@@ -88,6 +91,9 @@ func HandleServerRequest(w http.ResponseWriter, r *http.Request) (as.IRI, int, e
 	status := http.StatusOK
 	if it.GetType() == as.CreateType {
 		status = http.StatusCreated
+	}
+	if it.GetType() == as.DeleteType {
+		status = http.StatusGone
 	}
 
 	return it.GetLink(), status, nil
