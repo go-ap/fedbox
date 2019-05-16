@@ -192,13 +192,70 @@ func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 		}
 	}
 	if as.CollectionManagementActivityTypes.Contains(it.GetType()) {
-		// TODO(marius):
+		act, err = l.CollectionManagementActivity(act)
+		if err != nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
 	}
 	if as.ReactionsActivityTypes.Contains(it.GetType()) {
-		// TODO(marius):
+		act, err = l.ReactionsActivity(act)
+		if err != nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
 	}
-	if as.ReactionsActivityTypes.Contains(it.GetType()) {
-		// TODO(marius):
+	if as.EventRSVPActivityTypes.Contains(it.GetType()) {
+		act, err = l.EventRSVPActivity(act)
+		if err != nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
+	}
+	if as.GroupManagementActivityTypes.Contains(it.GetType()) {
+		act, err = l.GroupManagementActivity(act)
+		if err != nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
+	}
+	if as.ContentExperienceActivityTypes.Contains(it.GetType()) {
+		act, err = l.ContentExperienceActivity(act)
+		if err != nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
+	}
+	if as.GeoSocialEventsActivityTypes.Contains(it.GetType()) {
+		act, err = l.GeoSocialEventsActivity(act)
+		if err != nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
+	}
+	if as.NotificationActivityTypes.Contains(it.GetType()) {
+		act, err = l.NotificationActivity(act)
+		if err != nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
+	}
+	if as.QuestionActivityTypes.Contains(it.GetType()) {
+		act, err = l.QuestionActivity(act)
+		if err != nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
+	}
+	if as.RelationshipManagementActivityTypes.Contains(it.GetType()) {
+		act, err = l.RelationshipManagementActivity(act)
+		if err != nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
+	}
+	if as.NegatingActivityTypes.Contains(it.GetType()) {
+		act, err = l.NegatingActivity(act)
+		if err != nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
+	}
+	if as.OffersActivityTypes.Contains(it.GetType()) {
+		act, err = l.OffersActivity(act)
+		if err != nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
 	}
 
 	it, err = l.SaveObject(it)
@@ -246,9 +303,9 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	}
 	it, err = l.saveToDb(table, it)
 	if err != nil {
-		l.errFn(logrus.Fields {
+		l.errFn(logrus.Fields{
 			"action": "insert",
-			"table": table,
+			"table":  table,
 		}, "%s", err.Error())
 	}
 
@@ -318,7 +375,7 @@ func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
 			p.Updated = time.Now()
 			it = p
 		}
-	} else if as.ObjectTypes.Contains(it.GetType()) {
+	} else if as.ObjectTypes.Contains(it.GetType()) && it.GetType() != as.TombstoneType {
 		if o, err := as.ToObject(it); err == nil {
 			o.Updated = time.Now()
 			it = o
@@ -377,11 +434,11 @@ func ReplaceIfNaturalLanguageValues(old, new as.NaturalLanguageValues) as.Natura
 
 func UpdateObjectProperties(old, new *as.Object) (*as.Object, error) {
 	old.Name = ReplaceIfNaturalLanguageValues(old.Name, new.Name)
-	old.Attachment =  ReplaceIfItem(old.Attachment, new.Attachment)
+	old.Attachment = ReplaceIfItem(old.Attachment, new.Attachment)
 	old.AttributedTo = ReplaceIfItem(old.AttributedTo, new.AttributedTo)
 	old.Audience = ReplaceIfItemCollection(old.Audience, new.Audience)
 	old.Content = ReplaceIfNaturalLanguageValues(old.Content, new.Content)
-	old.Context =ReplaceIfItem(old.Context, new.Context)
+	old.Context = ReplaceIfItem(old.Context, new.Context)
 	if len(new.MediaType) > 0 {
 		old.MediaType = new.MediaType
 	}
@@ -506,7 +563,7 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 	if err != nil {
 		l.errFn(logrus.Fields{
 			"action": "update",
-			"table": table,
+			"table":  table,
 		}, "%s", err.Error())
 	}
 
@@ -519,6 +576,7 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 	}
 	var err error
 	var table string
+
 	if as.ActivityTypes.Contains(it.GetType()) {
 		return nil, errors.Newf("unable to delete activity")
 	} else if as.ActorTypes.Contains(it.GetType()) {
@@ -527,29 +585,58 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 		table = "objects"
 	}
 
+	f := Filters{
+		ItemKey: []Hash{Hash(it.GetLink().String())},
+	}
+	if it.IsObject() {
+		f.Type = []as.ActivityVocabularyType{it.GetType()}
+	}
+	var cnt int
+	var found as.ItemCollection
+	found, cnt, _ = loadFromDb(l.conn, table, &f)
+	if cnt == 0 {
+		if table == "objects" {
+			table = "actors"
+		}
+		// try other table
+		found, cnt, _ = loadFromDb(l.conn, table, &f)
+	}
+	if cnt == 0 {
+		err := ErrNotFound(fmt.Sprintf("%s in either actors or objects", it.GetLink()))
+		l.errFn(logrus.Fields{
+			"table": table,
+			"type":  it.GetType(),
+			"iri":   it.GetLink(),
+			"err":   err.Error(),
+		}, "unable to find old item")
+		return it, err
+	}
+	old := found.First()
+
 	t := as.Tombstone{
-		Parent: as.Parent {
-			ID: as.ObjectID(it.GetLink()),
+		Parent: as.Parent{
+			ID:   as.ObjectID(it.GetLink()),
 			Type: as.TombstoneType,
 			To: as.ItemCollection{
 				as.IRI(activitypub.Public),
 			},
 		},
-		Deleted: time.Now().UTC(),
-		FormerType: it.GetType(),
+		Deleted:    time.Now().UTC(),
+		FormerType: old.GetType(),
 	}
 
 	it, err = l.updateItem(table, &t)
 	if err != nil {
 		l.errFn(logrus.Fields{
 			"action": "update",
-			"table": table,
+			"table":  table,
 		}, "%s", err.Error())
 	}
 
 	return it, err
 }
 
+// ContentManagementActivity processes matching activities
 func (l loader) ContentManagementActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
 	var err error
 	if act.Object != nil {
@@ -572,4 +659,70 @@ func (l loader) ContentManagementActivity(act *activitypub.Activity) (*activityp
 		act.Object = as.FlattenToIRI(act.Object)
 	}
 	return act, err
+}
+
+// ReactionsActivity processes matching activities
+func (l loader) ReactionsActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
+	// TODO(marius):
+	return nil, errors.Errorf("Not implemented")
+}
+
+// CollectionManagementActivity processes matching activities
+func (l loader) CollectionManagementActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
+	// TODO(marius):
+	return nil, errors.Errorf("Not implemented")
+}
+
+// EventRSVPActivity processes matching activities
+func (l loader) EventRSVPActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
+	// TODO(marius):
+	return nil, errors.Errorf("Not implemented")
+}
+
+// GroupManagementActivity processes matching activities
+func (l loader) GroupManagementActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
+	// TODO(marius):
+	return nil, errors.Errorf("Not implemented")
+}
+
+// CollectionManagementActivity processes matching activities
+func (l loader) ContentExperienceActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
+	// TODO(marius):
+	return nil, errors.Errorf("Not implemented")
+}
+
+// GeoSocialEventsActivity processes matching activities
+func (l loader) GeoSocialEventsActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
+	// TODO(marius):
+	return nil, errors.Errorf("Not implemented")
+}
+
+// NotificationActivity processes matching activities
+func (l loader) NotificationActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
+	// TODO(marius):
+	return nil, errors.Errorf("Not implemented")
+}
+
+// QuestionActivity processes matching activities
+func (l loader) QuestionActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
+	// TODO(marius):
+	return nil, errors.Errorf("Not implemented")
+}
+
+// RelationshipManagementActivity processes matching activities
+func (l loader) RelationshipManagementActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
+	// TODO(marius):
+	return nil, errors.Errorf("Not implemented")
+}
+
+// NegatingActivity processes matching activities
+func (l loader) NegatingActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
+	// TODO(marius):
+	return nil, errors.Errorf("Not implemented")
+}
+
+// OffersActivity processes matching activities
+func (l loader) OffersActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
+	// TODO(marius):
+	return nil, errors.Errorf("Not implemented")
 }
