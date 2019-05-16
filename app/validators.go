@@ -133,7 +133,7 @@ func (v genericValidator) ValidateObject(o as.Item) error {
 	if o.IsLink() {
 		return v.ValidateLink(o.GetLink())
 	}
-	if !as.ObjectTypes.Contains(o.GetType()) {
+	if !(as.ObjectTypes.Contains(o.GetType()) || as.ActorTypes.Contains(o.GetType())) {
 		return InvalidActivityObject("invalid type %s", o.GetType())
 	}
 	return nil
@@ -145,7 +145,7 @@ func (v genericValidator) ValidateTarget(t as.Item) error {
 	if t.IsLink() {
 		return v.ValidateLink(t.GetLink())
 	}
-	if !as.ObjectTypes.Contains(t.GetType()) {
+	if !(as.ObjectTypes.Contains(t.GetType()) || as.ActorTypes.Contains(t.GetType()) || as.ActivityTypes.Contains(t.GetType())){
 		return InvalidActivityObject("invalid type %s", t.GetType())
 	}
 	return nil
