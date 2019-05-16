@@ -145,7 +145,7 @@ func (o *OrderedCollection) UnmarshalJSON(data []byte) error {
 	var items = make(as.ItemCollection, 0)
 	for i, it := range col.OrderedItems {
 		var a as.ObjectOrLink
-		if as.ValidActivityType(it.GetType()) {
+		if as.ActivityTypes.Contains(it.GetType()) {
 			act := &Activity{}
 			if data, _, _, err := jsonparser.Get(data, "orderedItems", fmt.Sprintf("[%d]", i)); err == nil {
 				act.UnmarshalJSON(data)
@@ -154,7 +154,7 @@ func (o *OrderedCollection) UnmarshalJSON(data []byte) error {
 				act.Context = as.IRI(context)
 			}
 			a = act
-		} else if as.ValidObjectType(it.GetType()) {
+		} else if as.ObjectTypes.Contains(it.GetType()) {
 			switch it.GetType() {
 			case as.ServiceType:
 				fallthrough
@@ -235,7 +235,7 @@ func (c *Collection) UnmarshalJSON(data []byte) error {
 	var items = make(as.ItemCollection, 0)
 	for i, it := range col.Items {
 		var a as.ObjectOrLink
-		if as.ValidActivityType(it.GetType()) {
+		if as.ActivityTypes.Contains(it.GetType()) {
 			act := &Activity{}
 			if data, _, _, err := jsonparser.Get(data, "items", fmt.Sprintf("[%d]", i)); err == nil {
 				act.UnmarshalJSON(data)
@@ -244,7 +244,7 @@ func (c *Collection) UnmarshalJSON(data []byte) error {
 				act.Context = as.IRI(context)
 			}
 			a = act
-		} else if as.ValidObjectType(it.GetType()) {
+		} else if as.ObjectTypes.Contains(it.GetType()) {
 			switch it.GetType() {
 			case as.ServiceType:
 				fallthrough
@@ -317,11 +317,11 @@ func (a *Activity) UnmarshalJSON(data []byte) error {
 func JSONGetItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 	var ret as.Item
 
-	if as.ValidActorType(typ) {
+	if as.ActorTypes.Contains(typ) {
 		ret = &Person{}
 		o := ret.(*Person)
 		o.Type = typ
-	} else if as.ValidActivityType(typ) {
+	} else if as.ActivityTypes.Contains(typ) {
 		ret = &Activity{}
 		o := ret.(*Activity)
 		o.Type = typ
@@ -381,7 +381,7 @@ func FlattenPersonProperties(o Person) Person {
 }
 // FlattenProperties flattens the Item's properties from Object types to IRI
 func FlattenProperties(it as.Item) as.Item {
-	if as.ValidActorType(it.GetType()) {
+	if as.ActorTypes.Contains(it.GetType()) {
 		ob, err := ToPerson(it)
 		if err == nil {
 			return FlattenPersonProperties(*ob)

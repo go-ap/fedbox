@@ -185,11 +185,20 @@ func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 		l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to load activity")
 		return act, err
 	}
-	if as.ValidContentManagementType(it.GetType()) {
+	if as.ContentManagementActivityTypes.Contains(it.GetType()) {
 		act, err = l.ContentManagementActivity(act)
 		if err != nil {
 			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
 		}
+	}
+	if as.CollectionManagementActivityTypes.Contains(it.GetType()) {
+		// TODO(marius):
+	}
+	if as.ReactionsActivityTypes.Contains(it.GetType()) {
+		// TODO(marius):
+	}
+	if as.ReactionsActivityTypes.Contains(it.GetType()) {
+		// TODO(marius):
 	}
 
 	it, err = l.SaveObject(it)
@@ -212,9 +221,9 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 
 	var err error
 	var table string
-	if as.ValidActivityType(it.GetType()) {
+	if as.ActivityTypes.Contains(it.GetType()) {
 		table = "activities"
-	} else if as.ValidActorType(it.GetType()) {
+	} else if as.ActorTypes.Contains(it.GetType()) {
 		table = "actors"
 	} else {
 		table = "objects"
@@ -255,19 +264,19 @@ func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 	if len(iri) == 0 {
 		// TODO(marius): this needs to be in a different place
 		iri = as.IRI(fmt.Sprintf("%s/%s/%s", l.baseURL, table, uuid))
-		if as.ValidActivityType(it.GetType()) {
+		if as.ActivityTypes.Contains(it.GetType()) {
 			if a, err := activitypub.ToActivity(it); err == nil {
 				a.ID = as.ObjectID(iri)
 				a.Published = time.Now()
 				it = a
 			}
-		} else if as.ValidActorType(it.GetType()) {
+		} else if as.ActorTypes.Contains(it.GetType()) {
 			if p, err := activitypub.ToPerson(it); err == nil {
 				p.ID = as.ObjectID(iri)
 				p.Published = time.Now()
 				it = p
 			}
-		} else if as.ValidObjectType(it.GetType()) {
+		} else if as.ObjectTypes.Contains(it.GetType()) {
 			if o, err := as.ToObject(it); err == nil {
 				o.ID = as.ObjectID(iri)
 				o.Published = time.Now()
@@ -304,12 +313,12 @@ func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
 	if len(iri) == 0 {
 		return it, errors.Newf("invalid update item does not have a valid IRI")
 	}
-	if as.ValidActorType(it.GetType()) {
+	if as.ActorTypes.Contains(it.GetType()) {
 		if p, err := activitypub.ToPerson(it); err == nil {
 			p.Updated = time.Now()
 			it = p
 		}
-	} else if as.ValidObjectType(it.GetType()) {
+	} else if as.ObjectTypes.Contains(it.GetType()) {
 		if o, err := as.ToObject(it); err == nil {
 			o.Updated = time.Now()
 			it = o
@@ -423,7 +432,7 @@ func UpdateItemProperties(old, new as.Item) (as.Item, error) {
 	if old.GetType() != new.GetType() {
 		return old, errors.Newf("Invalid object types for update")
 	}
-	if as.ValidActorType(old.GetType()) {
+	if as.ActorTypes.Contains(old.GetType()) {
 		o, err := activitypub.ToPerson(old)
 		if err != nil {
 			return o, err
@@ -434,7 +443,7 @@ func UpdateItemProperties(old, new as.Item) (as.Item, error) {
 		}
 		return UpdatePersonProperties(o, n)
 	}
-	if as.ValidObjectType(old.GetType()) {
+	if as.ObjectTypes.Contains(old.GetType()) {
 		o, err := as.ToObject(old)
 		if err != nil {
 			return o, err
@@ -455,9 +464,9 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 	var err error
 	var table string
 	label := "item"
-	if as.ValidActivityType(it.GetType()) {
+	if as.ActivityTypes.Contains(it.GetType()) {
 		return nil, errors.Newf("unable to update activity")
-	} else if as.ValidActorType(it.GetType()) {
+	} else if as.ActorTypes.Contains(it.GetType()) {
 		label = "actor"
 		table = "actors"
 	} else {
@@ -510,9 +519,9 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 	}
 	var err error
 	var table string
-	if as.ValidActivityType(it.GetType()) {
+	if as.ActivityTypes.Contains(it.GetType()) {
 		return nil, errors.Newf("unable to delete activity")
-	} else if as.ValidActorType(it.GetType()) {
+	} else if as.ActorTypes.Contains(it.GetType()) {
 		table = "actors"
 	} else {
 		table = "objects"

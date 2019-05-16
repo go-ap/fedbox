@@ -80,7 +80,7 @@ func (v genericValidator) ValidateActivity(a as.Item) error {
 	if a.IsLink() {
 		return v.ValidateLink(a.GetLink())
 	}
-	if !as.ValidActivityType(a.GetType()) {
+	if !as.ActivityTypes.Contains(a.GetType()) {
 		return InvalidActivity("invalid type %s", a.GetType())
 	}
 	act, err := activitypub.ToActivity(a)
@@ -121,7 +121,7 @@ func (v genericValidator) ValidateActor(a as.Item) error {
 	if a.IsLink() {
 		return v.ValidateLink(a.GetLink())
 	}
-	if !as.ValidActorType(a.GetType()) {
+	if !as.ActorTypes.Contains(a.GetType()) {
 		return InvalidActivityActor("invalid type %s", a.GetType())
 	}
 	return nil
@@ -133,7 +133,7 @@ func (v genericValidator) ValidateObject(o as.Item) error {
 	if o.IsLink() {
 		return v.ValidateLink(o.GetLink())
 	}
-	if !as.ValidObjectType(o.GetType()) {
+	if !as.ObjectTypes.Contains(o.GetType()) {
 		return InvalidActivityObject("invalid type %s", o.GetType())
 	}
 	return nil
@@ -145,7 +145,7 @@ func (v genericValidator) ValidateTarget(t as.Item) error {
 	if t.IsLink() {
 		return v.ValidateLink(t.GetLink())
 	}
-	if !as.ValidObjectType(t.GetType()) {
+	if !as.ObjectTypes.Contains(t.GetType()) {
 		return InvalidActivityObject("invalid type %s", t.GetType())
 	}
 	return nil
