@@ -176,6 +176,86 @@ func loadFromDb(conn *pgx.ConnPool, table string, f *Filters) (as.ItemCollection
 	return ret, total, err
 }
 
+func processActivity(l loader, it as.Item) (as.Item, error) {
+	var err error
+
+	// First we process the activity to effect whatever changes we need to on the activity properties.
+	act, err := activitypub.ToActivity(it)
+	if as.ContentManagementActivityTypes.Contains(it.GetType()) {
+		act, err = l.ContentManagementActivity(act)
+		if err == nil {
+			return act, nil
+		}
+	}
+	if as.CollectionManagementActivityTypes.Contains(it.GetType()) {
+		act, err = l.CollectionManagementActivity(act)
+		if err == nil {
+			return act, nil
+		}
+	}
+	if as.ReactionsActivityTypes.Contains(it.GetType()) {
+		act, err = l.ReactionsActivity(act)
+		if err == nil {
+			return act, nil
+		}
+	}
+	if as.EventRSVPActivityTypes.Contains(it.GetType()) {
+		act, err = l.EventRSVPActivity(act)
+		if err == nil {
+			return act, nil
+		}
+	}
+	if as.GroupManagementActivityTypes.Contains(it.GetType()) {
+		act, err = l.GroupManagementActivity(act)
+		if err == nil {
+			return act, nil
+		}
+	}
+	if as.ContentExperienceActivityTypes.Contains(it.GetType()) {
+		act, err = l.ContentExperienceActivity(act)
+		if err == nil {
+			return act, nil
+		}
+	}
+	if as.GeoSocialEventsActivityTypes.Contains(it.GetType()) {
+		act, err = l.GeoSocialEventsActivity(act)
+		if err == nil {
+			return act, nil
+		}
+	}
+	if as.NotificationActivityTypes.Contains(it.GetType()) {
+		act, err = l.NotificationActivity(act)
+		if err == nil {
+			return act, nil
+		}
+	}
+	if as.QuestionActivityTypes.Contains(it.GetType()) {
+		act, err = l.QuestionActivity(act)
+		if err == nil {
+			return act, nil
+		}
+	}
+	if as.RelationshipManagementActivityTypes.Contains(it.GetType()) && act.Object.GetType() == as.RelationshipType  {
+		act, err = l.RelationshipManagementActivity(act)
+		if err == nil {
+			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
+		}
+	}
+	if as.NegatingActivityTypes.Contains(it.GetType()) {
+		act, err = l.NegatingActivity(act)
+		if err == nil {
+			return act, nil
+		}
+	}
+	if as.OffersActivityTypes.Contains(it.GetType()) {
+		act, err = l.OffersActivity(act)
+		if err == nil {
+			return act, nil
+		}
+	}
+	return it, err
+}
+
 func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
 
@@ -185,78 +265,9 @@ func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 		l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to load activity")
 		return act, err
 	}
-	if as.ContentManagementActivityTypes.Contains(it.GetType()) {
-		act, err = l.ContentManagementActivity(act)
-		if err != nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
-	if as.CollectionManagementActivityTypes.Contains(it.GetType()) {
-		act, err = l.CollectionManagementActivity(act)
-		if err != nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
-	if as.ReactionsActivityTypes.Contains(it.GetType()) {
-		act, err = l.ReactionsActivity(act)
-		if err != nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
-	if as.EventRSVPActivityTypes.Contains(it.GetType()) {
-		act, err = l.EventRSVPActivity(act)
-		if err != nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
-	if as.GroupManagementActivityTypes.Contains(it.GetType()) {
-		act, err = l.GroupManagementActivity(act)
-		if err != nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
-	if as.ContentExperienceActivityTypes.Contains(it.GetType()) {
-		act, err = l.ContentExperienceActivity(act)
-		if err != nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
-	if as.GeoSocialEventsActivityTypes.Contains(it.GetType()) {
-		act, err = l.GeoSocialEventsActivity(act)
-		if err != nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
-	if as.NotificationActivityTypes.Contains(it.GetType()) {
-		act, err = l.NotificationActivity(act)
-		if err != nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
-	if as.QuestionActivityTypes.Contains(it.GetType()) {
-		act, err = l.QuestionActivity(act)
-		if err != nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
-	if as.RelationshipManagementActivityTypes.Contains(it.GetType()) {
-		act, err = l.RelationshipManagementActivity(act)
-		if err != nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
-	if as.NegatingActivityTypes.Contains(it.GetType()) {
-		act, err = l.NegatingActivity(act)
-		if err != nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
-	if as.OffersActivityTypes.Contains(it.GetType()) {
-		act, err = l.OffersActivity(act)
-		if err != nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
+
+	it, err = processActivity(l, it)
+	it = activitypub.FlattenProperties(it)
 
 	it, err = l.SaveObject(it)
 	if err != nil {
@@ -656,7 +667,6 @@ func (l loader) ContentManagementActivity(act *activitypub.Activity) (*activityp
 			l.errFn(logrus.Fields{"IRI": act.GetLink(), "type": act.Type}, "unable to save activity's object")
 			return act, err
 		}
-		act.Object = as.FlattenToIRI(act.Object)
 	}
 	return act, err
 }
