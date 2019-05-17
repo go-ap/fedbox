@@ -381,6 +381,12 @@ func FlattenPersonProperties(o Person) Person {
 }
 // FlattenProperties flattens the Item's properties from Object types to IRI
 func FlattenProperties(it as.Item) as.Item {
+	if as.ActivityTypes.Contains(it.GetType()) {
+		ob, err := ToActivity(it)
+		if err == nil {
+			return as.FlattenActivityProperties(as.Activity(*ob))
+		}
+	}
 	if as.ActorTypes.Contains(it.GetType()) {
 		ob, err := ToPerson(it)
 		if err == nil {
