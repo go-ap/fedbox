@@ -235,7 +235,7 @@ func processActivity(l loader, it as.Item) (as.Item, error) {
 			return act, nil
 		}
 	}
-	if as.RelationshipManagementActivityTypes.Contains(it.GetType()) && act.Object.GetType() == as.RelationshipType  {
+	if as.RelationshipManagementActivityTypes.Contains(it.GetType()) && act.Object.GetType() == as.RelationshipType {
 		act, err = l.RelationshipManagementActivity(act)
 		if err == nil {
 			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
@@ -259,13 +259,6 @@ func processActivity(l loader, it as.Item) (as.Item, error) {
 func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
 
-	// First we process the activity to effect whatever changes we need to on the activity properties.
-	act, err := activitypub.ToActivity(it)
-	if err != nil {
-		l.errFn(logrus.Fields{"IRI": act.GetLink()}, "unable to load activity")
-		return act, err
-	}
-
 	it, err = processActivity(l, it)
 	it = activitypub.FlattenProperties(it)
 
@@ -275,7 +268,7 @@ func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 		return it, err
 	}
 
-	return act, err
+	return it, err
 }
 
 func (l loader) SaveActor(it as.Item) (as.Item, error) {
@@ -287,7 +280,6 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 		return it, errors.Newf("not saving nil item")
 	}
 
-	var err error
 	var table string
 	if as.ActivityTypes.Contains(it.GetType()) {
 		table = "activities"
@@ -312,15 +304,7 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 			return it, err
 		}
 	}
-	it, err = l.saveToDb(table, it)
-	if err != nil {
-		l.errFn(logrus.Fields{
-			"action": "insert",
-			"table":  table,
-		}, "%s", err.Error())
-	}
-
-	return it, err
+	return l.saveToDb(table, it)
 }
 
 func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
@@ -487,42 +471,42 @@ func UpdateObjectProperties(old, new *as.Object) (*as.Object, error) {
 	return old, nil
 }
 
-func UpdateItemProperties(old, new as.Item) (as.Item, error) {
-	if old == nil {
-		return old, errors.Newf("Nil object to update")
+func UpdateItemProperties(to, from as.Item) (as.Item, error) {
+	if to == nil {
+		return to, errors.Newf("Nil object to update")
 	}
-	if new == nil {
-		return old, errors.Newf("Nil object for update")
+	if from == nil {
+		return to, errors.Newf("Nil object for update")
 	}
-	if *old.GetID() != *new.GetID() {
-		return old, errors.Newf("Object IDs don't match")
+	if *to.GetID() != *from.GetID() {
+		return to, errors.Newf("Object IDs don't match")
 	}
-	if old.GetType() != new.GetType() {
-		return old, errors.Newf("Invalid object types for update")
+	if to.GetType() != from.GetType() {
+		return to, errors.Newf("Invalid object types for update")
 	}
-	if as.ActorTypes.Contains(old.GetType()) {
-		o, err := activitypub.ToPerson(old)
+	if as.ActorTypes.Contains(to.GetType()) {
+		o, err := activitypub.ToPerson(to)
 		if err != nil {
 			return o, err
 		}
-		n, err := activitypub.ToPerson(new)
+		n, err := activitypub.ToPerson(from)
 		if err != nil {
 			return o, err
 		}
 		return UpdatePersonProperties(o, n)
 	}
-	if as.ObjectTypes.Contains(old.GetType()) {
-		o, err := as.ToObject(old)
+	if as.ObjectTypes.Contains(to.GetType()) {
+		o, err := as.ToObject(to)
 		if err != nil {
 			return o, err
 		}
-		n, err := as.ToObject(new)
+		n, err := as.ToObject(from)
 		if err != nil {
 			return o, err
 		}
 		return UpdateObjectProperties(o, n)
 	}
-	return old, errors.Newf("could not process objects with type %s", old.GetType())
+	return to, errors.Newf("could not process objects with type %s", to.GetType())
 }
 
 func (l loader) UpdateObject(it as.Item) (as.Item, error) {
@@ -585,7 +569,6 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
-	var err error
 	var table string
 
 	if as.ActivityTypes.Contains(it.GetType()) {
@@ -636,15 +619,7 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 		FormerType: old.GetType(),
 	}
 
-	it, err = l.updateItem(table, &t)
-	if err != nil {
-		l.errFn(logrus.Fields{
-			"action": "update",
-			"table":  table,
-		}, "%s", err.Error())
-	}
-
-	return it, err
+	return l.updateItem(table, t)
 }
 
 // ContentManagementActivity processes matching activities
@@ -661,6 +636,10 @@ func (l loader) ContentManagementActivity(act *activitypub.Activity) (*activityp
 			}
 			act.Object, err = l.UpdateObject(act.Object)
 		case as.DeleteType:
+			// TODO(marius): Move this piece of logic to the validation mechanism
+			if len(act.Object.GetLink()) == 0 {
+				return act, errors.Newf("unable to update object without a valid object id")
+			}
 			act.Object, err = l.DeleteObject(act.Object)
 		}
 		if err != nil && !IsDuplicateKey(err) {
