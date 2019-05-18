@@ -5,7 +5,6 @@ import (
 	"github.com/buger/jsonparser"
 	ap "github.com/go-ap/activitypub"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/internal/errors"
 )
 
 const Public = "https://www.w3.org/ns/activitystreams#Public"
@@ -318,21 +317,21 @@ func JSONGetItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 	var ret as.Item
 
 	if as.ActorTypes.Contains(typ) {
-		ret = &Person{}
-		o := ret.(*Person)
+		o := &Person{}
 		o.Type = typ
+		ret = o
 	} else if as.ActivityTypes.Contains(typ) {
-		ret = &Activity{}
-		o := ret.(*Activity)
+		o := &Activity{}
 		o.Type = typ
+		ret = o
 	} else if typ == as.CollectionType {
-		ret = &Collection{}
-		o := ret.(*Collection)
+		o := &Collection{}
 		o.Type = typ
+		ret = o
 	} else if typ == as.OrderedCollectionType {
-		ret = &OrderedCollection{}
-		o := ret.(*OrderedCollection)
+		o := &OrderedCollection{}
 		o.Type = typ
+		ret = o
 	} else {
 		return as.JSONGetItemByType(typ)
 	}
@@ -345,16 +344,14 @@ func ToPerson(it as.Item) (*Person, error) {
 		return o, nil
 	case Person:
 		return &o, nil
-	default:
-		ob, err := ap.ToPerson(it)
-		if err != nil {
-			return nil, err
-		}
-		p := Person{}
-		p.Person = *ob
-		return &p, nil
 	}
-	return nil, errors.Newf("unable to convert person")
+	ob, err := ap.ToPerson(it)
+	if err != nil {
+		return nil, err
+	}
+	p := Person{}
+	p.Person = *ob
+	return &p, nil
 }
 
 // ToActivity
