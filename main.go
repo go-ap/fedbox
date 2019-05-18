@@ -13,7 +13,6 @@ import (
 
 var version = "HEAD"
 
-const defaultPort = 4000
 const defaultTimeout = time.Second * 15
 
 func main() {
