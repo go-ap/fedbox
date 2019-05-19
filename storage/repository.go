@@ -652,8 +652,24 @@ func (l loader) ContentManagementActivity(act *activitypub.Activity) (*activityp
 
 // ReactionsActivity processes matching activities
 func (l loader) ReactionsActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	// TODO(marius):
-	return nil, errors.Errorf("Not implemented")
+	var err error
+	if act.Object != nil {
+		switch act.Type {
+		case as.BlockType:
+		case as.AcceptType:
+			// TODO(marius): either the actor or the object needs to be local for this action to be valid
+			// in the case of C2S... the actor needs to be local
+			// in the case of S2S... the object is
+		case as.DislikeType:
+		case as.FlagType:
+		case as.IgnoreType:
+		case as.LikeType:
+		case as.RejectType:
+		case as.TentativeAcceptType:
+		case as.TentativeRejectType:
+		}
+	}
+	return act, err
 }
 
 // CollectionManagementActivity processes matching activities
