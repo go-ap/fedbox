@@ -46,33 +46,35 @@ type invalidActivity struct {
 
 type genericValidator struct {
 	baseIRI as.IRI
-	c client.Client
+	c       client.Client
 }
 
 type ActivityPubError struct {
 	errors.Err
 }
-var errFn = func(ss string) func (s string, p ...interface{}) errors.Err {
-	fn := func (s string, p ...interface{}) errors.Err {
+
+var errFn = func(ss string) func(s string, p ...interface{}) errors.Err {
+	fn := func(s string, p ...interface{}) errors.Err {
 		return wrapErr(nil, fmt.Sprintf("%s: %s", ss, s), p...)
 	}
 	return fn
 }
-var InvalidActivity = func (s string, p ...interface{}) ActivityPubError {
+var InvalidActivity = func(s string, p ...interface{}) ActivityPubError {
 	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Activity is not valid: %s", s), p...)}
 }
-var InvalidActivityActor = func (s string, p ...interface{}) ActivityPubError {
+var InvalidActivityActor = func(s string, p ...interface{}) ActivityPubError {
 	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Actor is not valid: %s", s), p...)}
 }
-var InvalidActivityObject = func (s string, p ...interface{}) errors.Err {
+var InvalidActivityObject = func(s string, p ...interface{}) errors.Err {
 	return wrapErr(nil, fmt.Sprintf("Object is not valid: %s", s), p...)
 }
-var InvalidIRI = func (s string, p ...interface{}) errors.Err {
+var InvalidIRI = func(s string, p ...interface{}) errors.Err {
 	return wrapErr(nil, fmt.Sprintf("IRI is not valid: %s", s), p...)
 }
-var InvalidTarget = func (s string, p ...interface{}) ActivityPubError {
+var InvalidTarget = func(s string, p ...interface{}) ActivityPubError {
 	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Target is not valid: %s", s), p...)}
 }
+
 func (v genericValidator) ValidateActivity(a as.Item) error {
 	if a == nil {
 		return InvalidActivityActor("received nil activity")
@@ -100,9 +102,10 @@ func (v genericValidator) ValidateActivity(a as.Item) error {
 	}
 	return nil
 }
+
 // IsLocalIRI shows if the received IRI belongs to the current instance
 // TODO(marius): make this not be true always
-func (v genericValidator) IsLocalIRI (i as.IRI) bool {
+func (v genericValidator) IsLocalIRI(i as.IRI) bool {
 	return true || strings.Contains(i.String(), v.baseIRI.String())
 }
 func (v genericValidator) ValidateLink(i as.IRI) error {
@@ -145,14 +148,24 @@ func (v genericValidator) ValidateTarget(t as.Item) error {
 	if t.IsLink() {
 		return v.ValidateLink(t.GetLink())
 	}
-	if !(as.ObjectTypes.Contains(t.GetType()) || as.ActorTypes.Contains(t.GetType()) || as.ActivityTypes.Contains(t.GetType())){
+	if !(as.ObjectTypes.Contains(t.GetType()) || as.ActorTypes.Contains(t.GetType()) || as.ActivityTypes.Contains(t.GetType())) {
 		return InvalidActivityObject("invalid type %s", t.GetType())
 	}
 	return nil
 }
 
 func (v genericValidator) ValidateAudience(audience ...as.ItemCollection) error {
-	return nil
+	for _, elem := range audience {
+		for _, iri := range elem {
+			if err := validateLocalIRI(iri.GetLink()); err == nil {
+				return nil
+			}
+			if iri.GetLink() == activitypub.Public {
+				return nil
+			}
+		}
+	}
+	return errors.Newf("None of the audience elements is local")
 }
 
 var ValidatorKey = localctxt.CtxtKey("__validator")
@@ -161,4 +174,11 @@ func ActivityValidatorCtxt(ctx context.Context) (ActivityValidator, bool) {
 	ctxVal := ctx.Value(ValidatorKey)
 	s, ok := ctxVal.(ActivityValidator)
 	return s, ok
+}
+
+func validateLocalIRI(i as.IRI) error {
+	if strings.Contains(i.String(), "fedbox.git") {
+		return nil
+	}
+	return errors.Newf("%s is not a local IRI", i)
 }

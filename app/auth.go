@@ -24,10 +24,6 @@ import (
 
 var oss *osin.Server
 
-func validateLocalIRI(i as.IRI) error {
-	return nil
-}
-
 type keyLoader struct {
 	logFn func(string, ...interface{})
 	realm string
