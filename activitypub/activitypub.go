@@ -7,7 +7,7 @@ import (
 	as "github.com/go-ap/activitystreams"
 )
 
-const Public = "https://www.w3.org/ns/activitystreams#Public"
+const Public = as.IRI("https://www.w3.org/ns/activitystreams#Public")
 
 // PublicKey holds the ActivityPub compatible public key data
 type PublicKey struct {
