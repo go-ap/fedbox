@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"github.com/go-ap/activitypub/client"
+	"github.com/go-ap/activitypub/handler"
 	s "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/activitypub"
@@ -257,6 +258,8 @@ func processActivity(l loader, it as.Item) (as.Item, error) {
 	return it, err
 }
 
+var activitiesCollectionIRI = as.IRI("http://fedbox.git:4000/activities")
+
 func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
 
@@ -272,14 +275,30 @@ func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 	return it, err
 }
 
-func (l loader) SaveActor(it as.Item) (as.Item, error) {
-	return l.SaveObject(it)
+func getCollectionID(actor as.Item, c handler.CollectionType) as.ObjectID {
+	return as.ObjectID(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
 
+func getCollectionIRI(actor as.Item, c handler.CollectionType) as.IRI {
+	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
+}
+
+func ( l loader) createActorCollection(actor as.Item, c handler.CollectionType) (as.CollectionInterface, error) {
+	col := as.OrderedCollection{
+		Parent: as.Parent {
+			ID: getCollectionID(actor, c),
+			Type: as.OrderedCollectionType,
+		},
+	}
+	return l.createCollection(&col)
+}
+
+var topLevelCollectionIRI = as.IRI("http://fedbox.git:4000")
 func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
+	var err error
 
 	var table string
 	if as.ActivityTypes.Contains(it.GetType()) {
@@ -305,12 +324,82 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 			return it, err
 		}
 	}
-	return l.saveToDb(table, it)
+	it, err = l.saveToDb(table, it)
+	if err != nil {
+		return it, err
+	}
+
+
+	err = l.addToCollection(getCollectionIRI(topLevelCollectionIRI, handler.CollectionType(table)), it)
+	if err != nil {
+		l.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": table}, "unable to add to collection")
+	}
+	return it, err
+}
+
+func (l loader) createCollection(it as.CollectionInterface) (as.CollectionInterface, error) {
+	if it == nil {
+		return it, errors.Newf("unable to create nil collection")
+	}
+	if len(it.GetLink()) == 0 {
+		return it, errors.Newf("invalid create collection does not have a valid IRI")
+	}
+
+	query := fmt.Sprintf("INSERT INTO collections (iri, type, created_at) VALUES ($1, $2, $3::timestamptz);")
+
+	now := time.Now().UTC()
+	nowTz := pgtype.Timestamptz{
+		Time: now,
+		Status: pgtype.Present,
+	}
+	_, err := l.conn.Exec(query, it.GetLink(), it.GetType(), &nowTz)
+	if err != nil {
+		l.errFn(logrus.Fields{
+			"err": err.Error(),
+		}, "query error")
+		return it, errors.Annotatef(err, "query error")
+	}
+
+	return it, nil
+}
+
+func (l loader) addToCollection(iri as.IRI, it as.Item) error {
+	if it == nil {
+		return errors.Newf("unable to add nil element to collection")
+	}
+	if len(iri) == 0 {
+		return errors.Newf("unable to find collection")
+	}
+	if len(it.GetLink()) == 0 {
+		return errors.Newf("invalid create collection does not have a valid IRI")
+	}
+
+	query := fmt.Sprintf("UPDATE collections SET updated_at = $1, elements = array_append(elements, $2), count = count+1 WHERE iri = $3;")
+
+	now := time.Now().UTC()
+	nowTz := pgtype.Timestamptz{
+		Time:   now,
+		Status: pgtype.Present,
+	}
+	t, err := l.conn.Exec(query, &nowTz, it.GetLink(), iri)
+	if err != nil {
+		l.errFn(logrus.Fields{
+			"err": err.Error(),
+		}, "query error")
+		return errors.Annotatef(err, "query error")
+	}
+	if t.RowsAffected() != 1 {
+		l.errFn(logrus.Fields{
+			"rows": t.RowsAffected(),
+		}, "query error")
+		return errors.Annotatef(err, "query error, invalid updated rows")
+	}
+
+	return nil
 }
 
 func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
-	var query string
-	query = fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3::timestamptz, $4, $5::jsonb);", table)
+	query := fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3::timestamptz, $4, $5::jsonb);", table)
 
 	now := time.Now().UTC()
 
@@ -329,6 +418,38 @@ func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 			if p, err := activitypub.ToPerson(it); err == nil {
 				p.ID = as.ObjectID(iri)
 				p.Published = now
+
+				if in, err := l.createActorCollection(it, handler.Inbox); err != nil {
+					return it, err
+				} else {
+					p.Inbox = in.GetLink()
+				}
+				if out, err := l.createActorCollection(it, handler.Outbox); err != nil {
+					return it, err
+				} else {
+					p.Outbox = out.GetLink()
+				}
+				if fers, err := l.createActorCollection(it, handler.Followers); err != nil {
+					return it, err
+				} else {
+					p.Followers = fers.GetLink()
+				}
+				if fing, err := l.createActorCollection(it, handler.Following); err != nil {
+					return it, err
+				} else {
+					p.Following = fing.GetLink()
+				}
+				if ld, err := l.createActorCollection(it, handler.Liked); err != nil {
+					return it, err
+				} else {
+					p.Liked = ld.GetLink()
+				}
+				// TODO(marius): missing likes in go-ap/activitypub actor
+				//if ls, err := l.createActorCollection(it, handler.Likes); err != nil {
+				//	return it, err
+				//} else {
+				//	p.Liked = ls.GetLink()
+				//}
 				it = p
 			}
 		} else if as.ObjectTypes.Contains(it.GetType()) {
