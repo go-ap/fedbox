@@ -4,7 +4,6 @@ import (
 	h "github.com/go-ap/activitypub/handler"
 	"github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/internal/errors"
 	st "github.com/go-ap/fedbox/storage"
@@ -124,7 +123,7 @@ func HandleObjectItem(w http.ResponseWriter, r *http.Request) (as.Item, error) {
 		if err != nil {
 			return nil, NotFoundf("Not found %s", collection)
 		}
-		return activitypub.FlattenProperties(it), nil
+		return it, nil
 	}
 
 	return nil, NotFoundf("Not found %s in %s", id, collection)
