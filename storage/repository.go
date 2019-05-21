@@ -10,6 +10,7 @@ import (
 	"github.com/go-ap/jsonld"
 	uuid2 "github.com/google/uuid"
 	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/pgtype"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 	"strings"
@@ -137,7 +138,7 @@ func loadFromDb(conn *pgx.ConnPool, table string, f *Filters) (as.ItemCollection
 	clauses, values := f.GetWhereClauses()
 	total := 0
 
-	sel := fmt.Sprintf("SELECT id, key, iri, created_at, type, raw FROM %s WHERE %s ORDER BY raw->>'published' DESC %s", table, strings.Join(clauses, " AND "), f.GetLimit())
+	sel := fmt.Sprintf("SELECT id, key, iri, created_at::timestamptz, type, raw FROM %s WHERE %s ORDER BY raw->>'published' DESC %s", table, strings.Join(clauses, " AND "), f.GetLimit())
 	rows, err := conn.Query(sel, values...)
 	defer rows.Close()
 	if err != nil {
@@ -153,10 +154,10 @@ func loadFromDb(conn *pgx.ConnPool, table string, f *Filters) (as.ItemCollection
 		var id int64
 		var key Hash
 		var iri string
-		var createds string
+		var created pgtype.Timestamptz
 		var typ string
 		var raw []byte
-		err = rows.Scan(&id, &key, &iri, &createds, &typ, &raw)
+		err = rows.Scan(&id, &key, &iri, &created, &typ, &raw)
 		if err != nil {
 			return ret, total, errors.Annotatef(err, "scan values error")
 		}
@@ -309,7 +310,9 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 
 func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 	var query string
-	query = fmt.Sprintf("INSERT INTO %s (key, iri, type, raw) VALUES ($1, $2, $3, $4);", table)
+	query = fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3::timestamptz, $4, $5::jsonb);", table)
+
+	now := time.Now().UTC()
 
 	uuid := uuid2.New()
 	iri := it.GetLink()
@@ -319,32 +322,30 @@ func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 		if as.ActivityTypes.Contains(it.GetType()) {
 			if a, err := activitypub.ToActivity(it); err == nil {
 				a.ID = as.ObjectID(iri)
-				a.Published = time.Now()
+				a.Published = now
 				it = a
 			}
 		} else if as.ActorTypes.Contains(it.GetType()) {
 			if p, err := activitypub.ToPerson(it); err == nil {
 				p.ID = as.ObjectID(iri)
-				p.Published = time.Now()
+				p.Published = now
 				it = p
 			}
 		} else if as.ObjectTypes.Contains(it.GetType()) {
 			if o, err := as.ToObject(it); err == nil {
 				o.ID = as.ObjectID(iri)
-				o.Published = time.Now()
+				o.Published = now
 				it = o
 			}
 		}
 	}
 	raw, _ := jsonld.Marshal(it)
 
-	values := make([]interface{}, 4)
-	values[0] = interface{}(uuid)
-	values[1] = interface{}(iri)
-	values[2] = interface{}(it.GetType())
-	values[3] = interface{}(raw)
-
-	_, err := l.conn.Exec(query, values...)
+	nowTz := pgtype.Timestamptz{
+		Time: now,
+		Status: pgtype.Present,
+	}
+	_, err := l.conn.Exec(query, uuid, iri, &nowTz, it.GetType(), raw)
 	if err != nil {
 		l.errFn(logrus.Fields{
 			"err": err.Error(),
@@ -359,31 +360,31 @@ func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
 	if table == "activities" {
 		return it, errors.Newf("update action invalid, activities are immutable")
 	}
-	query := fmt.Sprintf("UPDATE %s SET type = $1, raw = $2 WHERE iri = $3;", table)
-
 	iri := it.GetLink()
 	if len(iri) == 0 {
 		return it, errors.Newf("invalid update item does not have a valid IRI")
 	}
+
+	query := fmt.Sprintf("UPDATE %s SET type = $1, updated_at = $2::timestamptz,raw = $3::jsonb WHERE iri = $4;", table)
+	now := time.Now().UTC()
 	if as.ActorTypes.Contains(it.GetType()) {
 		if p, err := activitypub.ToPerson(it); err == nil {
-			p.Updated = time.Now()
+			p.Updated = now
 			it = p
 		}
 	} else if as.ObjectTypes.Contains(it.GetType()) && it.GetType() != as.TombstoneType {
 		if o, err := as.ToObject(it); err == nil {
-			o.Updated = time.Now()
+			o.Updated = now
 			it = o
 		}
 	}
 	raw, _ := jsonld.Marshal(it)
 
-	values := make([]interface{}, 3)
-	values[0] = interface{}(it.GetType())
-	values[1] = interface{}(raw)
-	values[2] = interface{}(iri)
-
-	_, err := l.conn.Exec(query, values...)
+	nowTz := pgtype.Timestamptz{
+		Time: now,
+		Status: pgtype.Present,
+	}
+	_, err := l.conn.Exec(query, it.GetType(), &nowTz, raw, iri)
 	if err != nil {
 		l.errFn(logrus.Fields{
 			"err": err.Error(),
