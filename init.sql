@@ -67,7 +67,7 @@ create table objects
     "id"  serial not null constraint objects_pkey primary key,
     "key" varchar constraint objects_key_key unique,
     "iri" varchar constraint objects_iri_key unique,
-    "created_at" timetz default current_timestamp,
+    "created_at" timestamptz default current_timestamp,
     "type" types,
     "raw" jsonb
 );
@@ -77,7 +77,8 @@ create table activities
     "id"  serial not null constraint activities_pkey primary key,
     "key" varchar constraint activities_key_key unique,
     "iri" varchar constraint activities_iri_key unique,
-    "created_at" timetz default current_timestamp,
+    "created_at" timestamptz default current_timestamp,
+    "updated_at" timestamptz default NULL,
     "type" types,
     "raw" jsonb
 );
