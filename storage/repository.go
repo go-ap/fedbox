@@ -292,6 +292,15 @@ func ( l loader) createActorCollection(actor as.Item, c handler.CollectionType) 
 	}
 	return l.createCollection(&col)
 }
+func ( l loader) createObjectCollection(object as.Item, c handler.CollectionType) (as.CollectionInterface, error) {
+	col := as.OrderedCollection{
+		Parent: as.Parent {
+			ID: getCollectionID(object, c),
+			Type: as.OrderedCollectionType,
+		},
+	}
+	return l.createCollection(&col)
+}
 
 var topLevelCollectionIRI = as.IRI("http://fedbox.git:4000")
 func (l loader) SaveObject(it as.Item) (as.Item, error) {
@@ -456,6 +465,11 @@ func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 			if o, err := as.ToObject(it); err == nil {
 				o.ID = as.ObjectID(iri)
 				o.Published = now
+				if repl, err := l.createObjectCollection(it, handler.Replies); err != nil {
+					return it, err
+				} else {
+					o.Replies = repl.GetLink()
+				}
 				it = o
 			}
 		}
