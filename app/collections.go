@@ -102,6 +102,7 @@ func HandleCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInte
 
 	f := &st.Filters{}
 	f.FromRequest(r)
+	f.ItemKey = append(f.ItemKey, st.Hash(reqURL(r, r.URL.Path)))
 
 	var repo storage.CollectionLoader
 	var ok bool

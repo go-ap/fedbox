@@ -179,8 +179,19 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 			col.ID = as.ObjectID(iri)
 			ret = col
 		}
+		f.ItemKey = f.ItemKey[:0]
 		for _, elem := range elements {
-			ret.Append(as.IRI(elem))
+			f.ItemKey = append(f.ItemKey, Hash(elem))
+		}
+	}
+
+	var items as.ItemCollection
+	if !handler.ValidActivityCollection(string(f.Collection)) {
+		items, total, err = loadFromDb(l.conn, string(f.Collection), f)
+		if err == nil {
+			for _, it := range items {
+				ret.Append(it)
+			}
 		}
 	}
 

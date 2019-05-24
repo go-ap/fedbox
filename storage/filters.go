@@ -231,6 +231,11 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
 	}
 
+	validAudienceType := false
+	for _, typ := range f.Type {
+		validAudienceType = as.ActivityTypes.Contains(typ) || as.ObjectTypes.Contains(typ) || as.ActorTypes.Contains(typ)
+	}
+
 	iris := f.IRIs()
 	if len(iris) > 0 {
 		keyWhere := make([]string, 0)
@@ -239,14 +244,13 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 				// not a valid iri
 				keyWhere = append(keyWhere, fmt.Sprintf(`"key" ~* $%d`, counter))
 			} else {
-				// For Link type we need to search the full raw column
 				if len(f.Type) == 1 && f.Type[0] == as.LinkType {
 					keyWhere = append(keyWhere, fmt.Sprintf(`"raw"::text ~* $%d`, counter))
-					keyWhere = append(keyWhere, fmt.Sprintf(`"iri" ~* $%d`, counter))
-				} else {
+				} else if validAudienceType {
+					// For Link type we need to search the full raw column
 					keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'id' ~* $%d`, counter))
-					keyWhere = append(keyWhere, fmt.Sprintf(`"iri" ~* $%d`, counter))
 				}
+				keyWhere = append(keyWhere, fmt.Sprintf(`"iri" ~* $%d`, counter))
 			}
 			values = append(values, interface{}(key))
 			counter++
@@ -255,7 +259,7 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 	}
 
 	// TODO(marius): this looks cumbersome - we need to abstract the audience to something easier to query.
-	if !(len(f.Type) == 1 && f.Type[0] == as.LinkType) {
+	if validAudienceType {
 		keyWhere := make([]string, 0)
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'to' ~* $%d`, counter))
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'cc' ~* $%d`, counter))
