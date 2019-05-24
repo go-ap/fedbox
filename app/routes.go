@@ -6,38 +6,19 @@ import (
 	"net/http"
 )
 
-func ActivityRoutes(r chi.Router) {
+func CollectionRoutes(r chi.Router) {
 	r.Group(func (r chi.Router) {
 		r.With(middleware.GetHead)
-		r.Method(http.MethodGet, "/", CollectionHandlerFn(HandleActivityCollection))
-		r.Method(http.MethodGet, "/{id}", ItemHandlerFn(HandleActivityItem))
-	})
-}
+		r.Method(http.MethodGet, "/", CollectionHandlerFn(HandleCollection))
 
-func ObjectRoutes(r chi.Router) {
-	r.Group(func (r chi.Router) {
-		r.With(middleware.GetHead)
-		r.Method(http.MethodGet, "/", CollectionHandlerFn(HandleObjectCollection))
 		r.Route("/{id}", func (r chi.Router) {
-			r.Method(http.MethodGet, "/", ItemHandlerFn(HandleObjectItem))
-			r.Route("/replies",  ActivityRoutes)
-		})
-	})
-}
+			r.Method(http.MethodGet, "/", ItemHandlerFn(HandleItem))
+			r.Method(http.MethodGet, "/{collection}", CollectionHandlerFn(HandleCollection))
 
-func ActorRoutes(r chi.Router) {
-	r.Group(func (r chi.Router) {
-
-		r.Method(http.MethodGet, "/", CollectionHandlerFn(HandleObjectCollection))
-		r.Route("/{id}", func (r chi.Router) {
-			r.Method(http.MethodGet, "/", ItemHandlerFn(HandleObjectItem))
-			r.Route("/{collection}", ActivityRoutes)
-
-			val := genericValidator{}
 			r.Group(func (r chi.Router) {
+				val := genericValidator{}
 				r.Use(Validator(&val))
-				r.Method(http.MethodPost, "/inbox", ActivityHandlerFn(HandleServerRequest))
-				r.Method(http.MethodPost, "/outbox", ActivityHandlerFn(HandleClientRequest))
+				r.Method(http.MethodPost, "/{collection}", ActivityHandlerFn(HandleRequest))
 			})
 		})
 	})
@@ -48,13 +29,7 @@ func Routes() func(chi.Router) {
 		r.Use(middleware.GetHead)
 		r.Use(ActorFromAuthHeader)
 
-		//r.Method(http.MethodGet, "/{collection}", CollectionHandlerFn(HandleCollection))
-		r.Route("/activities", ActivityRoutes)
-		r.Route("/actors", ActorRoutes)
-		r.Route("/objects",  ObjectRoutes)
-
-		val := genericValidator{}
-		r.With(Validator(&val)).Method(http.MethodPost, "/inbox", ActivityHandlerFn(HandleServerRequest))
+		r.Route("/{collection}", CollectionRoutes)
 
 		r.NotFound(HandleError(NotFoundf("invalid url")).ServeHTTP)
 		r.MethodNotAllowed(HandleError(MethodNotAllowedf("method not allowed")).ServeHTTP)

@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/go-ap/activitypub/handler"
 	as "github.com/go-ap/activitystreams"
 	j "github.com/go-ap/jsonld"
 	"net/http"
@@ -50,7 +51,7 @@ func (i ItemHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 // ActivityHandlerFn is the type that we're using to represent handlers that process requests containing
 // an ActivityStreams Activity. It needs to implement the http.Handler interface.
-type ActivityHandlerFn func(http.ResponseWriter, *http.Request) (as.IRI, int, error)
+type ActivityHandlerFn func(handler.CollectionType, http.ResponseWriter, *http.Request) (as.IRI, int, error)
 
 // ValidateRequest validates if the current handler can process the current request
 func (a ActivityHandlerFn) ValidateRequest(r *http.Request) (int, error) {
@@ -67,7 +68,8 @@ func (a ActivityHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_, dat = RenderErrors(r, err)
 	}
 
-	if iri, status, err = a(w, r); err != nil {
+
+	if iri, status, err = a(handler.Typer.Type(r), w, r); err != nil {
 		_, dat = RenderErrors(r, err)
 	} else {
 		dat, _ = j.Marshal("OK")

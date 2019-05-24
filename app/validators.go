@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-ap/activitypub/client"
+	"github.com/go-ap/activitypub/handler"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/activitypub"
 	localctxt "github.com/go-ap/fedbox/internal/context"
@@ -13,11 +14,11 @@ import (
 
 // ActivityValidator is an interface used for validating activity objects.
 type ActivityValidator interface {
-	ValidateActivity(as.Item) error
-	ValidateObject(as.Item) error
-	ValidateActor(as.Item) error
-	ValidateTarget(as.Item) error
-	ValidateAudience(...as.ItemCollection) error
+	ValidateActivity(handler.CollectionType, as.Item) error
+	ValidateObject(handler.CollectionType, as.Item) error
+	ValidateActor(handler.CollectionType, as.Item) error
+	ValidateTarget(handler.CollectionType, as.Item) error
+	ValidateAudience(handler.CollectionType, ...as.ItemCollection) error
 }
 
 //type AudienceValidator interface {
@@ -75,7 +76,7 @@ var InvalidTarget = func(s string, p ...interface{}) ActivityPubError {
 	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Target is not valid: %s", s), p...)}
 }
 
-func (v genericValidator) ValidateActivity(a as.Item) error {
+func (v genericValidator) ValidateActivity(typ handler.CollectionType, a as.Item) error {
 	if a == nil {
 		return InvalidActivityActor("received nil activity")
 	}
@@ -89,14 +90,14 @@ func (v genericValidator) ValidateActivity(a as.Item) error {
 	if err != nil {
 		return err
 	}
-	if err := v.ValidateActor(act.Actor); err != nil {
+	if err := v.ValidateActor(typ, act.Actor); err != nil {
 		return err
 	}
-	if err := v.ValidateObject(act.Object); err != nil {
+	if err := v.ValidateObject(typ, act.Object); err != nil {
 		return err
 	}
 	if act.Target != nil {
-		if err := v.ValidateObject(act.Target); err != nil {
+		if err := v.ValidateObject(typ, act.Target); err != nil {
 			return err
 		}
 	}
@@ -117,7 +118,7 @@ func (v genericValidator) ValidateLink(i as.IRI) error {
 
 	return nil
 }
-func (v genericValidator) ValidateActor(a as.Item) error {
+func (v genericValidator) ValidateActor(typ handler.CollectionType, a as.Item) error {
 	if a == nil {
 		return InvalidActivityActor("received nil actor")
 	}
@@ -129,7 +130,8 @@ func (v genericValidator) ValidateActor(a as.Item) error {
 	}
 	return nil
 }
-func (v genericValidator) ValidateObject(o as.Item) error {
+
+func (v genericValidator) ValidateObject(typ handler.CollectionType, o as.Item) error {
 	if o == nil {
 		return InvalidActivityActor("received nil object")
 	}
@@ -141,7 +143,8 @@ func (v genericValidator) ValidateObject(o as.Item) error {
 	}
 	return nil
 }
-func (v genericValidator) ValidateTarget(t as.Item) error {
+
+func (v genericValidator) ValidateTarget(typ handler.CollectionType, t as.Item) error {
 	if t == nil {
 		return InvalidActivityActor("received nil target")
 	}
@@ -154,7 +157,7 @@ func (v genericValidator) ValidateTarget(t as.Item) error {
 	return nil
 }
 
-func (v genericValidator) ValidateAudience(audience ...as.ItemCollection) error {
+func (v genericValidator) ValidateAudience(typ handler.CollectionType, audience ...as.ItemCollection) error {
 	for _, elem := range audience {
 		for _, iri := range elem {
 			if err := validateLocalIRI(iri.GetLink()); err == nil {

@@ -185,13 +185,18 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 		}
 	}
 
+	table := "objects"
 	var items as.ItemCollection
-	if !handler.ValidActivityCollection(string(f.Collection)) {
-		items, total, err = loadFromDb(l.conn, string(f.Collection), f)
-		if err == nil {
-			for _, it := range items {
-				ret.Append(it)
-			}
+	if f.Collection == "actors" {
+		table = "actors"
+	}
+	if f.Collection == "activities" {
+		table = "activities"
+	}
+	items, total, err = loadFromDb(l.conn, table, f)
+	if err == nil {
+		for _, it := range items {
+			ret.Append(it)
 		}
 	}
 
