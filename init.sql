@@ -110,6 +110,7 @@ values ('d3ab037c-0f15-4c09-b635-3d6e201c11aa', 'https://federated.id/actors/d3a
 -- name: insert-activities-collection
 insert into collections ("iri", "type") values ('http://fedbox.git:4000/activities', 'OrderedCollection');
 -- name: insert-actors-collection
-insert into collections ("iri", "type", "count") values ('http://fedbox.git:4000/actors', 'OrderedCollection', 1, 'https://federated.id/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa');
+insert into collections ("iri", "type") values ('http://fedbox.git:4000/actors', 'OrderedCollection');
+update collections set count = 1, elements = array_append(elements, 'https://federated.id/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa') WHERE iri = 'http://fedbox.git:4000/actors';
 -- name: insert-objects-collection
 insert into collections ("iri", "type") values ('http://fedbox.git:4000/objects', 'OrderedCollection');
