@@ -135,6 +135,58 @@ func (l loader) LoadObjects(f s.Filterable) (as.ItemCollection, int, error) {
 	return loadFromDb(l.conn, "objects", ff)
 }
 
+func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, error) {
+	var f *Filters
+	var ok bool
+	if f, ok = ff.(*Filters); !ok {
+		f = &Filters{}
+	}
+	clauses, values := f.GetWhereClauses()
+	total := 0
+
+	var ret as.CollectionInterface
+
+	sel := fmt.Sprintf("SELECT id, iri, created_at::timestamptz, type, count, elements FROM collections WHERE %s ORDER BY created_at DESC %s", strings.Join(clauses, " AND "), f.GetLimit())
+	rows, err := l.conn.Query(sel, values...)
+	defer rows.Close()
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return ret, total, nil
+		}
+		return ret, total, errors.Annotatef(err, "unable to run select")
+	}
+
+	// Iterate through the result set
+	for rows.Next() {
+		var id int64
+		var iri string
+		var count uint
+		var created pgtype.Timestamptz
+		var typ string
+		var elements []string
+		err = rows.Scan(&id, &iri, &created, &typ, &count, &elements)
+		if err != nil {
+			return ret, total, errors.Annotatef(err, "scan values error")
+		}
+
+		if as.ActivityVocabularyType(typ) == as.CollectionType {
+			col := &as.Collection{}
+			col.ID = as.ObjectID(iri)
+			ret = col
+		}
+		if as.ActivityVocabularyType(typ) == as.OrderedCollectionType {
+			col := &as.OrderedCollection{}
+			col.ID = as.ObjectID(iri)
+			ret = col
+		}
+		for _, elem := range elements {
+			ret.Append(as.IRI(elem))
+		}
+	}
+
+	return ret, total, err
+}
+
 func loadFromDb(conn *pgx.ConnPool, table string, f *Filters) (as.ItemCollection, int, error) {
 	clauses, values := f.GetWhereClauses()
 	total := 0

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-ap/activitypub/storage"
 )
+
 type CtxtKey string
 
 var OwnerKey = CtxtKey("__owner")
@@ -25,6 +26,12 @@ func ObjectLoader(ctx context.Context) (storage.ObjectLoader, bool) {
 func ActorLoader(ctx context.Context) (storage.ActorLoader, bool) {
 	ctxVal := ctx.Value(RepositoryKey)
 	s, ok := ctxVal.(storage.ActorLoader)
+	return s, ok
+}
+
+func CollectionLoader(ctx context.Context) (storage.CollectionLoader, bool) {
+	ctxVal := ctx.Value(RepositoryKey)
+	s, ok := ctxVal.(storage.CollectionLoader)
 	return s, ok
 }
 

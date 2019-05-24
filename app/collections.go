@@ -93,6 +93,29 @@ func HandleObjectCollection(w http.ResponseWriter, r *http.Request) (as.Collecti
 	return it, nil
 }
 
+
+// HandleCollection serves content from the generic collection end-points
+// that return ActivityPub objects or activities
+func HandleCollection(w http.ResponseWriter, r *http.Request) (as.CollectionInterface, error) {
+	var items as.CollectionInterface
+	var err error
+
+	f := &st.Filters{}
+	f.FromRequest(r)
+
+	var repo storage.CollectionLoader
+	var ok bool
+	if repo, ok = context.CollectionLoader(r.Context()); !ok {
+		return nil, errors.Newf("invalid database connection")
+	}
+	items, _, err = repo.LoadCollection(f)
+	if err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
 func loadCollection(items as.ItemCollection, count uint, filters st.Paginator, baseUrl string) (as.CollectionInterface, error) {
 	getURL := func(f st.Paginator) string {
 		qs := ""

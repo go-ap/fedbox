@@ -48,6 +48,7 @@ func Routes() func(chi.Router) {
 		r.Use(middleware.GetHead)
 		r.Use(ActorFromAuthHeader)
 
+		//r.Method(http.MethodGet, "/{collection}", CollectionHandlerFn(HandleCollection))
 		r.Route("/activities", ActivityRoutes)
 		r.Route("/actors", ActorRoutes)
 		r.Route("/objects",  ObjectRoutes)
