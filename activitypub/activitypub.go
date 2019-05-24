@@ -390,5 +390,12 @@ func FlattenProperties(it as.Item) as.Item {
 			return FlattenPersonProperties(*ob)
 		}
 	}
+	if it.GetType() == as.TombstoneType {
+		t, err := as.ToTombstone(it)
+		if err == nil {
+			t.Parent = as.FlattenObjectProperties(t.Parent)
+			return t
+		}
+	}
 	return as.FlattenProperties(it)
 }
