@@ -155,6 +155,9 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 		}
 		return ret, total, errors.Annotatef(err, "unable to run select")
 	}
+	if err := rows.Err(); err != nil {
+		return ret, total, errors.Annotatef(err, "unable to run select")
+	}
 	var count int
 	// Iterate through the result set
 	for rows.Next() {
@@ -193,6 +196,9 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 			f.ItemKey = append(f.ItemKey, Hash(elem))
 		}
 	}
+	if ret == nil {
+		return ret, 0, errors.Newf("could not load collection")
+	}
 
 	table := "objects"
 	var items as.ItemCollection
@@ -204,7 +210,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 	}
 	f.ItemKey = f.ItemKey[:0]
 	items, total, err = loadFromDb(l.conn, table, f)
-	if err == nil {
+	if err == nil && total > 0 {
 		for _, it := range items {
 			ret.Append(it)
 		}
