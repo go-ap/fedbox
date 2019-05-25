@@ -5,7 +5,6 @@ import (
 	"github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/context"
-	"github.com/go-ap/fedbox/internal/errors"
 	st "github.com/go-ap/fedbox/storage"
 	"net/http"
 )
@@ -28,10 +27,14 @@ func HandleCollection(r *http.Request) (as.CollectionInterface, error) {
 	f.FromRequest(r)
 	f.ItemKey = append(f.ItemKey, st.Hash(reqURL(r, r.URL.Path)))
 
+	if !st.ValidActivityCollection(string(f.Collection)) {
+		return nil, NotFoundf("collection '%s' not found", f.Collection)
+	}
+
 	var repo storage.CollectionLoader
 	var ok bool
 	if repo, ok = context.CollectionLoader(r.Context()); !ok {
-		return nil, errors.Newf("invalid database connection")
+		return nil, NotValidf("invalid database connection")
 	}
 	items, _, err = repo.LoadCollection(f)
 	if err != nil {
