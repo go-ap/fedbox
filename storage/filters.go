@@ -80,6 +80,8 @@ func (f Filters) IRIs() []as.IRI {
 	return ret
 }
 
+// TODO(marius): move this somewhere else. Or replace it with something that makes more sense.
+var Secure = false
 const MaxItems = 100
 
 var ErrNotFound = func(s string) error {
@@ -88,7 +90,7 @@ var ErrNotFound = func(s string) error {
 
 func reqURL(r *http.Request) string {
 	scheme := "http"
-	if r.TLS != nil {
+	if Secure || r.TLS != nil {
 		scheme = "https"
 	}
 	return fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.Path)

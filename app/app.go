@@ -8,6 +8,7 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/errors"
+	"github.com/go-ap/fedbox/storage"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -15,6 +16,9 @@ import (
 	"syscall"
 	"time"
 )
+
+// TODO(marius) Move away from keeping this data statically.
+var Config config.Options
 
 type logFn func(string, ...interface{})
 
@@ -40,6 +44,10 @@ func New(l logrus.FieldLogger, ver string) Fedbox {
 		app.err = l.Errorf
 	}
 	app.conf, err = config.LoadFromEnv()
+	if err == nil {
+		Config = app.conf
+		storage.Secure = app.conf.Secure
+	}
 	if err != nil {
 		app.warn("Unable to load settings from environment variables: %s", err)
 	}

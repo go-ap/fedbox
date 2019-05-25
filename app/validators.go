@@ -180,7 +180,7 @@ func ActivityValidatorCtxt(ctx context.Context) (ActivityValidator, bool) {
 }
 
 func validateLocalIRI(i as.IRI) error {
-	if strings.Contains(i.String(), "fedbox.git") {
+	if strings.Contains(i.String(), Config.BaseURL) {
 		return nil
 	}
 	return errors.Newf("%s is not a local IRI", i)
