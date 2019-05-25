@@ -9,16 +9,15 @@ import (
 func CollectionRoutes(r chi.Router) {
 	r.Group(func (r chi.Router) {
 		r.With(middleware.GetHead)
+		val := genericValidator{}
 		r.Method(http.MethodGet, "/", CollectionHandlerFn(HandleCollection))
+		r.With(Validator(&val)).Method(http.MethodPost, "/", ActivityHandlerFn(HandleRequest))
 
 		r.Route("/{id}", func (r chi.Router) {
 			r.Method(http.MethodGet, "/", ItemHandlerFn(HandleItem))
-			r.Method(http.MethodGet, "/{collection}", CollectionHandlerFn(HandleCollection))
-
-			r.Group(func (r chi.Router) {
-				val := genericValidator{}
-				r.Use(Validator(&val))
-				r.Method(http.MethodPost, "/{collection}", ActivityHandlerFn(HandleRequest))
+			r.Route("/{collection}", func (r chi.Router) {
+				r.Method(http.MethodGet, "/", CollectionHandlerFn(HandleCollection))
+				r.With(Validator(&val)).Method(http.MethodPost, "/", ActivityHandlerFn(HandleRequest))
 			})
 		})
 	})
