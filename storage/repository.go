@@ -197,7 +197,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 		}
 	}
 	if ret == nil {
-		return ret, 0, errors.Newf("could not load collection")
+		return ret, 0, errors.Newf("could not load '%s' collection", f.Collection)
 	}
 
 	table := "objects"
