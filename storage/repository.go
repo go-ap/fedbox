@@ -146,7 +146,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 
 	var ret as.CollectionInterface
 
-	sel := fmt.Sprintf("SELECT id, iri, created_at::timestamptz, type, count, elements FROM collections WHERE %s ORDER BY created_at DESC %s", strings.Join(clauses, " AND "), f.GetLimit())
+	sel := fmt.Sprintf("SELECT id, iri, created_at::timestamptz, type, count, elements FROM collections WHERE %s ORDER BY created_at DESC LIMIT 1", strings.Join(clauses, " AND "))
 	rows, err := l.conn.Query(sel, values...)
 	defer rows.Close()
 	if err != nil {
@@ -155,12 +155,11 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 		}
 		return ret, total, errors.Annotatef(err, "unable to run select")
 	}
-
+	var count uint
 	// Iterate through the result set
 	for rows.Next() {
 		var id int64
 		var iri string
-		var count uint
 		var created pgtype.Timestamptz
 		var typ string
 		var elements []string
@@ -172,11 +171,13 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 		if as.ActivityVocabularyType(typ) == as.CollectionType {
 			col := &as.Collection{}
 			col.ID = as.ObjectID(iri)
+			col.Type = as.CollectionType
 			ret = col
 		}
 		if as.ActivityVocabularyType(typ) == as.OrderedCollectionType {
 			col := &as.OrderedCollection{}
 			col.ID = as.ObjectID(iri)
+			col.Type = as.OrderedCollectionType
 			ret = col
 		}
 		f.ItemKey = f.ItemKey[:0]
@@ -193,14 +194,133 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 	if f.Collection == "activities" {
 		table = "activities"
 	}
+	f.ItemKey = f.ItemKey[:0]
 	items, total, err = loadFromDb(l.conn, table, f)
 	if err == nil {
 		for _, it := range items {
 			ret.Append(it)
 		}
 	}
-
+	ret, err = paginateCollection(ret, uint(count), f)
 	return ret, total, err
+}
+
+func paginateCollection(col as.CollectionInterface, count uint, filters Paginator) (as.CollectionInterface, error) {
+	if col == nil {
+		return col, errors.Newf("unable to paginate nil collection")
+	}
+
+	baseURL := col.GetLink()
+	getURL := func(f Paginator) string {
+		qs := ""
+		if f != nil {
+			qs = f.QueryString()
+		}
+		return fmt.Sprintf("%s%s", baseURL, qs)
+	}
+
+	var items as.ItemCollection
+	var haveItems, moreItems, lessItems bool
+	var fp, cp, pp, np Paginator
+
+	if col.GetType() == as.OrderedCollectionType {
+		oc, err := activitypub.ToOrderedCollection(col)
+		if err == nil {
+			oc.TotalItems = count
+			col = oc
+			items = oc.OrderedItems
+		}
+	}
+	if col.GetType() == as.CollectionType {
+		c, err := activitypub.ToCollection(col)
+		if err == nil {
+			c.TotalItems = count
+			col = c
+			items = c.Items
+		}
+	}
+
+	f, _ := filters.(*Filters)
+	haveItems = len(items) > 0
+
+	moreItems = int(count) > ((f.Page + 1) * f.MaxItems)
+	lessItems = f.Page > 1
+	if filters != nil {
+		fp = filters.FirstPage()
+		cp = filters.CurrentPage()
+	}
+
+	if haveItems {
+		firstURL := getURL(fp)
+		if col.GetType() == as.OrderedCollectionType {
+			oc, err := activitypub.ToOrderedCollection(col)
+			if err == nil {
+				oc.First = as.IRI(firstURL)
+				col = oc
+			}
+		}
+		if col.GetType() == as.CollectionType {
+			c, err := activitypub.ToCollection(col)
+			if err == nil {
+				c.First = as.IRI(firstURL)
+				col = c
+			}
+		}
+
+		if f.Page >= 1 {
+			var nextURL string
+			var prevURL string
+			curURL := getURL(cp)
+			if moreItems {
+				np = filters.NextPage()
+				nextURL = getURL(np)
+			}
+			if lessItems {
+				pp = filters.PrevPage()
+				prevURL = getURL(pp)
+			}
+
+			if col.GetType() == as.OrderedCollectionType {
+				oc, err := activitypub.ToOrderedCollection(col)
+				if err == nil {
+					page := as.OrderedCollectionPageNew(oc)
+					page.ID = as.ObjectID(curURL)
+					page.PartOf = baseURL
+					page.First = oc.First
+					if moreItems {
+						page.Next = as.IRI(nextURL)
+					}
+					if lessItems {
+						page.Prev = as.IRI(prevURL)
+					}
+					page.OrderedItems = oc.OrderedItems
+					page.TotalItems = count
+					col = page
+				}
+			}
+			if col.GetType() == as.CollectionType {
+				c, err := activitypub.ToCollection(col)
+				if err == nil {
+					page := as.CollectionPageNew(c)
+					page.ID = as.ObjectID(curURL)
+					page.PartOf = baseURL
+					page.First = c.First
+					if moreItems {
+						page.Next = as.IRI(nextURL)
+					}
+					if lessItems {
+						page.Prev = as.IRI(prevURL)
+					}
+					page.TotalItems = count
+					page.Items = c.Items
+					col = page
+				}
+			}
+			return col, nil
+		}
+	}
+
+	return col, nil
 }
 
 func loadFromDb(conn *pgx.ConnPool, table string, f *Filters) (as.ItemCollection, int, error) {
@@ -326,8 +446,6 @@ func processActivity(l loader, it as.Item) (as.Item, error) {
 	return it, err
 }
 
-var activitiesCollectionIRI = as.IRI("http://fedbox.git:4000/activities")
-
 func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
 
@@ -370,7 +488,6 @@ func ( l loader) createObjectCollection(object as.Item, c handler.CollectionType
 	return l.createCollection(&col)
 }
 
-var topLevelCollectionIRI = as.IRI("http://fedbox.git:4000")
 func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
@@ -407,7 +524,7 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	}
 
 
-	err = l.addToCollection(getCollectionIRI(topLevelCollectionIRI, handler.CollectionType(table)), it)
+	err = l.addToCollection(getCollectionIRI(as.IRI(l.baseURL), handler.CollectionType(table)), it)
 	if err != nil {
 		l.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": table}, "unable to add to collection")
 	}
