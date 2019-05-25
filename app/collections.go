@@ -11,7 +11,7 @@ import (
 
 func reqURL(r *http.Request, path string) string {
 	scheme := "http"
-	if r.TLS != nil {
+	if Config.Secure || r.TLS != nil {
 		scheme = "https"
 	}
 	return fmt.Sprintf("%s://%s%s", scheme, r.Host, path)
@@ -34,7 +34,7 @@ func HandleCollection(r *http.Request) (as.CollectionInterface, error) {
 	var repo storage.CollectionLoader
 	var ok bool
 	if repo, ok = context.CollectionLoader(r.Context()); !ok {
-		return nil, NotValidf("invalid database connection")
+		return nil, NotValidf("unable to load storage")
 	}
 	items, _, err = repo.LoadCollection(f)
 	if err != nil {
