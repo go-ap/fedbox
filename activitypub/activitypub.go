@@ -5,6 +5,7 @@ import (
 	"github.com/buger/jsonparser"
 	ap "github.com/go-ap/activitypub"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/fedbox/internal/errors"
 )
 
 const Public = as.IRI("https://www.w3.org/ns/activitystreams#Public")
@@ -336,6 +337,38 @@ func JSONGetItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 		return as.JSONGetItemByType(typ)
 	}
 	return ret, nil
+}
+
+func ToOrderedCollection (it as.Item) (*OrderedCollection, error) {
+	switch o := it.(type) {
+	case *OrderedCollection:
+		return o, nil
+	case OrderedCollection:
+		return &o, nil
+	case *as.OrderedCollection:
+		col := OrderedCollection(*o)
+		return &col, nil
+	case as.OrderedCollection:
+		col := OrderedCollection(o)
+		return &col, nil
+	}
+	return nil, errors.Newf("invalid ordered collection")
+}
+
+func ToCollection (it as.Item) (*Collection, error) {
+	switch o := it.(type) {
+	case *Collection:
+		return o, nil
+	case Collection:
+		return &o, nil
+	case *as.Collection:
+		col := Collection(*o)
+		return &col, nil
+	case as.Collection:
+		col := Collection(o)
+		return &col, nil
+	}
+	return nil, errors.Newf("invalid  collection")
 }
 
 func ToPerson(it as.Item) (*Person, error) {
