@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	as "github.com/go-ap/activitystreams"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -61,7 +60,7 @@ func (a Fedbox) Config() config.Options {
 }
 
 func (a Fedbox) listen() string {
-	return fmt.Sprintf("%s:%d", a.conf.Host, a.conf.Port)
+	return a.conf.Listen
 }
 
 func setupHttpServer(listen string, m http.Handler, wait time.Duration, ctx context.Context) (func(logFn), func(logFn)) {
@@ -126,7 +125,7 @@ func waitForSignal(sigChan chan os.Signal, exitChan chan int) func(logFn) {
 
 // Run is the wrapper for starting the web-server and handling signals
 func (a *Fedbox) Run(m http.Handler, wait time.Duration) {
-	a.inf("Started")
+	a.inf("Listening on %s", a.listen())
 
 	// Create a deadline to wait for.
 	ctx, cancel := context.WithTimeout(context.Background(), wait)

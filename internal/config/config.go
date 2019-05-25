@@ -25,7 +25,7 @@ type Options struct {
 	LogLevel            log.Level
 	Secure              bool
 	Host                string
-	Port                int
+	Listen              string
 	BaseURL             string
 	DB                  backendConfig
 }
@@ -69,10 +69,7 @@ func LoadFromEnv() (Options, error) {
 		conf.BaseURL = fmt.Sprintf("http://%s", conf.Host)
 	}
 
-	if port, err := strconv.ParseInt(os.Getenv("PORT"), 10, 32); err == nil {
-		conf.Port = int(port)
-		conf.BaseURL = fmt.Sprintf("%s:%d", conf.BaseURL, conf.Port)
-	}
+	conf.Listen = os.Getenv("LISTEN")
 
 	conf.DB.Host = os.Getenv("DB_HOST")
 	conf.DB.Pw = os.Getenv("DB_PASSWORD")
