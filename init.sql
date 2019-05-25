@@ -105,12 +105,12 @@ create table collections (
 );
 -- name: insert-service-actor
 insert into actors ("key", "iri", "type", "raw")
-values ('d3ab037c-0f15-4c09-b635-3d6e201c11aa', 'https://federated.id/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa', 'Service', '{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "https://federated.id/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa","type": "Service","name": "self","inbox": "https://federated.id/inbox", "audience": [
+values ('d3ab037c-0f15-4c09-b635-3d6e201c11aa', 'http://fedbox.git:4000/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa', 'Service', '{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "http://fedbox.git:4000/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa","type": "Service","name": "self","inbox": "http://fedbox.git:4000/inbox", "audience": [
   "https://www.w3.org/ns/activitystreams#Public"]}');
 -- name: insert-activities-collection
 insert into collections ("iri", "type") values ('http://fedbox.git:4000/activities', 'OrderedCollection');
 -- name: insert-actors-collection
 insert into collections ("iri", "type") values ('http://fedbox.git:4000/actors', 'OrderedCollection');
-update collections set count = 1, elements = array_append(elements, 'https://federated.id/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa') WHERE iri = 'http://fedbox.git:4000/actors';
+update collections set count = 1, elements = array_append(elements, 'http://fedbox.git:4000/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa') WHERE iri = 'http://fedbox.git:4000/actors';
 -- name: insert-objects-collection
 insert into collections ("iri", "type") values ('http://fedbox.git:4000/objects', 'OrderedCollection');
