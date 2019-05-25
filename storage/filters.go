@@ -24,6 +24,32 @@ func (h Hash) String() string {
 	return string(h)
 }
 
+const (
+	ActorsType     = h.CollectionType("actors")
+	ActivitiesType = h.CollectionType("activities")
+	ObjectsType    = h.CollectionType("objects")
+)
+
+var validActivityCollection = []h.CollectionType{
+	ActorsType,
+	ActivitiesType,
+	ObjectsType,
+}
+
+func getValidActivityCollection(typ string) h.CollectionType {
+	for _, t := range validActivityCollection {
+		if strings.ToLower(typ) == string(t) {
+			return t
+		}
+	}
+	return h.Unknown
+}
+
+// ValidActivityCollection shows if the current ActivityPub end-point type is a valid one for handling Activities
+func ValidActivityCollection(typ string) bool {
+	return getValidActivityCollection(typ) != h.Unknown || h.ValidActivityCollection(typ) || h.ValidObjectCollection(typ)
+}
+
 // Filters
 type Filters struct {
 	Actor        as.Actor                    `qstring:"-"`
@@ -56,7 +82,7 @@ func (f Filters) IRIs() []as.IRI {
 
 const MaxItems = 100
 
-var ErrNotFound = func (s string) error {
+var ErrNotFound = func(s string) error {
 	return errors.Newf(fmt.Sprintf("%s not found", s))
 }
 
@@ -248,9 +274,9 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 					keyWhere = append(keyWhere, fmt.Sprintf(`"raw"::text ~* $%d`, counter))
 				} else if validAudienceType {
 					// For Link type we need to search the full raw column
-					keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'id' ~* $%d`, counter))
+					keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'id' = $%d`, counter))
 				}
-				keyWhere = append(keyWhere, fmt.Sprintf(`"iri" ~* $%d`, counter))
+				keyWhere = append(keyWhere, fmt.Sprintf(`"iri" = $%d`, counter))
 			}
 			values = append(values, interface{}(key))
 			counter++

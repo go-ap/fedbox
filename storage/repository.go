@@ -155,7 +155,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 		}
 		return ret, total, errors.Annotatef(err, "unable to run select")
 	}
-	var count uint
+	var count int
 	// Iterate through the result set
 	for rows.Next() {
 		var id int64
