@@ -167,6 +167,14 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 		if err != nil {
 			return ret, total, errors.Annotatef(err, "scan values error")
 		}
+		l.logFn(logrus.Fields{
+			"id": id,
+			"iri": iri,
+			"created_at": created,
+			"type": typ,
+			"count": count,
+			"elements": elements,
+		}, "loaded fields")
 
 		if as.ActivityVocabularyType(typ) == as.CollectionType {
 			col := &as.Collection{}
