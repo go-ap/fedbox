@@ -13,7 +13,7 @@ import (
 type DumbHandler struct {}
 
 // HandleRequest handles POST requests to an ActivityPub Actor's inbox/outbox, based on the CollectionType
-func HandleRequest(typ h.CollectionType, w http.ResponseWriter, r *http.Request) (as.IRI, int, error) {
+func HandleRequest(typ h.CollectionType, r *http.Request) (as.IRI, int, error) {
 	f := &st.Filters{}
 	f.FromRequest(r)
 

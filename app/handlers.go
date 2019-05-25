@@ -51,7 +51,7 @@ func (i ItemHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 // ActivityHandlerFn is the type that we're using to represent handlers that process requests containing
 // an ActivityStreams Activity. It needs to implement the http.Handler interface.
-type ActivityHandlerFn func(handler.CollectionType, http.ResponseWriter, *http.Request) (as.IRI, int, error)
+type ActivityHandlerFn func(handler.CollectionType, *http.Request) (as.IRI, int, error)
 
 // ValidateRequest validates if the current handler can process the current request
 func (a ActivityHandlerFn) ValidateRequest(r *http.Request) (int, error) {
@@ -68,8 +68,7 @@ func (a ActivityHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_, dat = RenderErrors(r, err)
 	}
 
-
-	if iri, status, err = a(handler.Typer.Type(r), w, r); err != nil {
+	if iri, status, err = a(handler.Typer.Type(r), r); err != nil {
 		_, dat = RenderErrors(r, err)
 	} else {
 		dat, _ = j.Marshal("OK")
@@ -85,7 +84,7 @@ func (a ActivityHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // CollectionHandlerFn is the type that we're using to represent handlers that will return ActivityStreams
 // Collection or OrderedCollection objects. It needs to implement the http.Handler interface.
-type CollectionHandlerFn func(http.ResponseWriter, *http.Request) (as.CollectionInterface, error)
+type CollectionHandlerFn func(*http.Request) (as.CollectionInterface, error)
 
 // ValidMethod validates if the current handler can process the current request
 func (c CollectionHandlerFn) ValidMethod(r *http.Request) bool {
@@ -110,7 +109,7 @@ func (c CollectionHandlerFn) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if status, err = c.ValidateRequest(r); err != nil {
 		_, dat = RenderErrors(r, err)
 	} else {
-		if col, err := c(w, r); err != nil {
+		if col, err := c(r); err != nil {
 			status, dat = RenderErrors(r, err)
 		} else {
 			if dat, err = j.WithContext(j.IRI(as.ActivityBaseURI)).Marshal(col); err != nil {
