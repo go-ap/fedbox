@@ -33,6 +33,17 @@ func HandleRequest(typ h.CollectionType, r *http.Request) (as.IRI, int, error) {
 	if err = validator.ValidateActivity(typ, it); err != nil {
 		return as.IRI(""), http.StatusBadRequest, NewBadRequest(err, "%s activity failed validation", it.GetType())
 	}
+
+	if typ == h.Outbox {
+		// C2S - get recipients and cleanup activity
+		if actWRecipients, ok := it.(as.HasRecipients); ok {
+			recipients := actWRecipients.Recipients()
+			func (rec as.ItemCollection) {
+				// TODO(marius): for C2S activities propagate them
+			}(recipients)
+		}
+	}
+
 	repo, ok := context.ActivitySaver(r.Context())
 	if  ok == false {
 		return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity saver")
@@ -40,6 +51,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request) (as.IRI, int, error) {
 	if it, err = repo.SaveActivity(it); err != nil {
 		return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 	}
+
 	status := http.StatusOK
 	if it.GetType() == as.CreateType {
 		status = http.StatusCreated
