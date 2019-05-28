@@ -69,6 +69,12 @@ type loader struct {
 
 type loggerFn func(logrus.Fields, string, ...interface{})
 
+// IsLocalIRI shows if the received IRI belongs to the current instance
+// TODO(marius): make this not be true always
+func (l loader) IsLocalIRI(i as.IRI) bool {
+	return strings.Contains(i.String(), l.baseURL)
+}
+
 func logFn(l logrus.FieldLogger, lvl logrus.Level) loggerFn {
 	return func(w logrus.Fields, f string, par ...interface{}) {
 		if l != nil {
@@ -537,11 +543,24 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 		return it, err
 	}
 
-
 	err = l.addToCollection(getCollectionIRI(as.IRI(l.baseURL), handler.CollectionType(table)), it)
 	if err != nil {
 		l.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": table}, "unable to add to collection")
 	}
+
+	// TODO(marius) Move to somewhere else
+	if toFw, ok := it.(as.HasRecipients); ok {
+		for _, fw := range toFw.Recipients() {
+			var errs []error
+			colIRI := fw.GetLink()
+			if l.IsLocalIRI(colIRI) {
+				if err := l.addToCollection(colIRI, it); err != nil {
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+
 	return it, err
 }
 
@@ -963,6 +982,20 @@ func (l loader) ContentManagementActivity(act *activitypub.Activity) (*activityp
 	if act.Object != nil {
 		switch act.Type {
 		case as.CreateType:
+			// TODO(marius) Add function as.AttributedTo(it as.Item, auth as.Item)
+			if o, err := activitypub.ToObject(act.Object); err == nil {
+				// See https://www.w3.org/TR/activitypub/#create-activity-outbox
+				// Copying the actor's IRI to the object's AttributedTo
+				o.AttributedTo = act.Actor.GetLink()
+
+				aRec := act.Recipients()
+				// Copying the activity's recipients to the object's
+				o.Audience = aRec
+				// Copying the object's recipients to the activity's audience
+				act.Audience = o.Recipients()
+
+				act.Object = o
+			}
 			act.Object, err = l.SaveObject(act.Object)
 		case as.UpdateType:
 			// TODO(marius): Move this piece of logic to the validation mechanism
