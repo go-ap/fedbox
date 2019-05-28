@@ -371,6 +371,16 @@ func ToCollection (it as.Item) (*Collection, error) {
 	return nil, errors.Newf("invalid  collection")
 }
 
+func ToObject(it as.Item) (*as.Object, error) {
+	switch o := it.(type) {
+	case *Person:
+		return &o.Parent, nil
+	case Person:
+		return &o.Parent, nil
+	}
+	return as.ToObject(it)
+}
+
 func ToPerson(it as.Item) (*Person, error) {
 	switch o := it.(type) {
 	case *Person:
