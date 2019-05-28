@@ -107,8 +107,9 @@ func (v genericValidator) ValidateActivity(typ handler.CollectionType, a as.Item
 // IsLocalIRI shows if the received IRI belongs to the current instance
 // TODO(marius): make this not be true always
 func (v genericValidator) IsLocalIRI(i as.IRI) bool {
-	return true || strings.Contains(i.String(), v.baseIRI.String())
+	return strings.Contains(i.String(), v.baseIRI.String())
 }
+
 func (v genericValidator) ValidateLink(i as.IRI) error {
 	if !v.IsLocalIRI(i) {
 		// try to dereference this shit
