@@ -18,8 +18,6 @@ import (
 	"time"
 )
 
-type Paginator = s.Paginator
-
 type errDuplicateKey struct {
 	errors.Err
 }
@@ -51,9 +49,10 @@ var ErrDuplicateObject = func(s string, p ...interface{}) errDuplicateKey {
 }
 
 type Loader interface {
-	s.ActivityLoader
-	s.ActorLoader
-	s.ObjectLoader
+	LoadActivities(f activitypub.Filterable) (as.ItemCollection, int, error)
+	LoadActors(f activitypub.Filterable) (as.ItemCollection, int, error)
+	LoadObjects(f activitypub.Filterable) (as.ItemCollection, int, error)
+	LoadCollection(f activitypub.Filterable) (as.CollectionInterface, int, error)
 	s.ActivitySaver
 	s.ActorSaver
 	s.ObjectSaver
@@ -93,60 +92,34 @@ func New(conn *pgx.ConnPool, url string, l logrus.FieldLogger) *loader {
 	}
 }
 
-func (l loader) Load(f s.Filterable) (as.ItemCollection, int, error) {
-	var ff *Filters
-	var ok bool
+func (l loader) Load(f activitypub.Filterable) (as.ItemCollection, int, error) {
 	var total int
-	if ff, ok = f.(*Filters); !ok {
-		ff = &Filters{}
-	}
 	ret := make(as.ItemCollection, 0)
-	act, total, err := loadFromDb(l.conn, "activities", ff)
+	act, total, err := loadFromDb(l.conn, "activities", f)
 	if err != nil {
 		ret = append(ret, act...)
 	}
-	it, total, err := loadFromDb(l.conn, "objects", ff)
+	it, total, err := loadFromDb(l.conn, "objects", f)
 	if err != nil {
 		ret = append(ret, it...)
 	}
-	actors, total, err := loadFromDb(l.conn, "actors", ff)
+	actors, total, err := loadFromDb(l.conn, "actors", f)
 	if err != nil {
 		ret = append(ret, actors...)
 	}
 
 	return ret, total, err
 }
-func (l loader) LoadActivities(f s.Filterable) (as.ItemCollection, int, error) {
-	var ff *Filters
-	var ok bool
-	if ff, ok = f.(*Filters); !ok {
-		ff = &Filters{}
-	}
-	return loadFromDb(l.conn, "activities", ff)
+func (l loader) LoadActivities(f activitypub.Filterable) (as.ItemCollection, int, error) {
+	return loadFromDb(l.conn, "activities", f)
 }
-func (l loader) LoadActors(f s.Filterable) (as.ItemCollection, int, error) {
-	var ff *Filters
-	var ok bool
-	if ff, ok = f.(*Filters); !ok {
-		ff = &Filters{}
-	}
-	return loadFromDb(l.conn, "actors", ff)
+func (l loader) LoadActors(f activitypub.Filterable) (as.ItemCollection, int, error) {
+	return loadFromDb(l.conn, "actors", f)
 }
-func (l loader) LoadObjects(f s.Filterable) (as.ItemCollection, int, error) {
-	var ff *Filters
-	var ok bool
-	if ff, ok = f.(*Filters); !ok {
-		ff = &Filters{}
-	}
-	return loadFromDb(l.conn, "objects", ff)
+func (l loader) LoadObjects(f activitypub.Filterable) (as.ItemCollection, int, error) {
+	return loadFromDb(l.conn, "objects", f)
 }
-
-func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, error) {
-	var f *Filters
-	var ok bool
-	if f, ok = ff.(*Filters); !ok {
-		f = &Filters{}
-	}
+func (l loader) LoadCollection(f activitypub.Filterable) (as.CollectionInterface, int, error) {
 	clauses, values := f.GetWhereClauses()
 	total := 0
 
@@ -164,6 +137,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 	if err := rows.Err(); err != nil {
 		return ret, total, errors.Annotatef(err, "unable to run select")
 	}
+	ff, _ := f.(*activitypub.Filters)
 	var count int
 	// Iterate through the result set
 	for rows.Next() {
@@ -197,153 +171,34 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 			col.Type = as.OrderedCollectionType
 			ret = col
 		}
-		f.ItemKey = f.ItemKey[:0]
+		ff.ItemKey = ff.ItemKey[:0]
 		for _, elem := range elements {
-			f.ItemKey = append(f.ItemKey, Hash(elem))
+			ff.ItemKey = append(ff.ItemKey, activitypub.Hash(elem))
 		}
 	}
 	if ret == nil {
-		return ret, 0, errors.Newf("could not load '%s' collection", f.Collection)
+		return ret, 0, errors.Newf("could not load '%s' collection", ff.Collection)
 	}
 
 	table := "objects"
 	var items as.ItemCollection
-	if f.Collection == "actors" {
+	if ff.Collection == "actors" {
 		table = "actors"
 	}
-	if f.Collection == "activities" {
+	if ff.Collection == "activities" {
 		table = "activities"
 	}
-	f.ItemKey = f.ItemKey[:0]
+	ff.ItemKey = ff.ItemKey[:0]
 	items, total, err = loadFromDb(l.conn, table, f)
 	if err == nil && total > 0 {
 		for _, it := range items {
 			ret.Append(it)
 		}
 	}
-	ret, err = paginateCollection(ret, uint(count), f)
+	ret, err = activitypub.GetPaginatedCollection(ret, uint(count), f.(activitypub.Paginator))
 	return ret, total, err
 }
-
-func paginateCollection(col as.CollectionInterface, count uint, filters Paginator) (as.CollectionInterface, error) {
-	if col == nil {
-		return col, errors.Newf("unable to paginate nil collection")
-	}
-
-	baseURL := col.GetLink()
-	getURL := func(f Paginator) string {
-		qs := ""
-		if f != nil {
-			qs = f.QueryString()
-		}
-		return fmt.Sprintf("%s%s", baseURL, qs)
-	}
-
-	var items as.ItemCollection
-	var haveItems, moreItems, lessItems bool
-	var fp, cp, pp, np Paginator
-
-	if col.GetType() == as.OrderedCollectionType {
-		oc, err := activitypub.ToOrderedCollection(col)
-		if err == nil {
-			oc.TotalItems = count
-			col = oc
-			items = oc.OrderedItems
-		}
-	}
-	if col.GetType() == as.CollectionType {
-		c, err := activitypub.ToCollection(col)
-		if err == nil {
-			c.TotalItems = count
-			col = c
-			items = c.Items
-		}
-	}
-
-	f, _ := filters.(*Filters)
-	haveItems = len(items) > 0
-
-	moreItems = int(count) > ((f.Page + 1) * f.MaxItems)
-	lessItems = f.Page > 1
-	if filters != nil {
-		fp = filters.FirstPage()
-		cp = filters.CurrentPage()
-	}
-
-	if haveItems {
-		firstURL := getURL(fp)
-		if col.GetType() == as.OrderedCollectionType {
-			oc, err := activitypub.ToOrderedCollection(col)
-			if err == nil {
-				oc.First = as.IRI(firstURL)
-				col = oc
-			}
-		}
-		if col.GetType() == as.CollectionType {
-			c, err := activitypub.ToCollection(col)
-			if err == nil {
-				c.First = as.IRI(firstURL)
-				col = c
-			}
-		}
-
-		if f.Page >= 1 {
-			var nextURL string
-			var prevURL string
-			curURL := getURL(cp)
-			if moreItems {
-				np = filters.NextPage()
-				nextURL = getURL(np)
-			}
-			if lessItems {
-				pp = filters.PrevPage()
-				prevURL = getURL(pp)
-			}
-
-			if col.GetType() == as.OrderedCollectionType {
-				oc, err := activitypub.ToOrderedCollection(col)
-				if err == nil {
-					page := as.OrderedCollectionPageNew(oc)
-					page.ID = as.ObjectID(curURL)
-					page.PartOf = baseURL
-					page.First = oc.First
-					if moreItems {
-						page.Next = as.IRI(nextURL)
-					}
-					if lessItems {
-						page.Prev = as.IRI(prevURL)
-					}
-					page.OrderedItems = oc.OrderedItems
-					page.TotalItems = count
-					col = page
-				}
-			}
-			if col.GetType() == as.CollectionType {
-				c, err := activitypub.ToCollection(col)
-				if err == nil {
-					page := as.CollectionPageNew(c)
-					page.ID = as.ObjectID(curURL)
-					page.PartOf = baseURL
-					page.First = c.First
-					if moreItems {
-						page.Next = as.IRI(nextURL)
-					}
-					if lessItems {
-						page.Prev = as.IRI(prevURL)
-					}
-					page.TotalItems = count
-					page.Items = c.Items
-					col = page
-				}
-			}
-			return col, nil
-		}
-	}
-
-	return col, nil
-}
-
-func loadFromDb(conn *pgx.ConnPool, table string, f *Filters) (as.ItemCollection, int, error) {
+func loadFromDb(conn *pgx.ConnPool, table string, f activitypub.Filterable) (as.ItemCollection, int, error) {
 	clauses, values := f.GetWhereClauses()
 	total := 0
 
@@ -361,7 +216,7 @@ func loadFromDb(conn *pgx.ConnPool, table string, f *Filters) (as.ItemCollection
 	// Iterate through the result set
 	for rows.Next() {
 		var id int64
-		var key Hash
+		var key activitypub.Hash
 		var iri string
 		var created pgtype.Timestamptz
 		var typ string
@@ -508,6 +363,10 @@ func ( l loader) createObjectCollection(object as.Item, c handler.CollectionType
 	return l.createCollection(&col)
 }
 
+func (l loader) SaveActor(it as.Item) (as.Item, error) {
+	return l.SaveObject(it)
+}
+
 func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
@@ -524,8 +383,8 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	}
 
 	if len(it.GetLink()) > 0 {
-		if _, cnt, _ := loadFromDb(l.conn, table, &Filters{
-			ItemKey: []Hash{Hash(it.GetLink().String())},
+		if _, cnt, _ := loadFromDb(l.conn, table, &activitypub.Filters{
+			ItemKey: []activitypub.Hash{activitypub.Hash(it.GetLink().String())},
 			Type:    []as.ActivityVocabularyType{it.GetType()},
 		}); cnt != 0 {
 			err := ErrDuplicateObject("%s in table %s", it.GetLink(), table)
@@ -863,6 +722,10 @@ func UpdateItemProperties(to, from as.Item) (as.Item, error) {
 	return to, errors.Newf("could not process objects with type %s", to.GetType())
 }
 
+var ErrNotFound = func(s string) error {
+	return errors.Newf(fmt.Sprintf("%s not found", s))
+}
+
 func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
@@ -883,8 +746,8 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 		err := ErrNotFound(fmt.Sprintf("Unable to update %s with no ID", label))
 		return it, err
 	}
-	found, cnt, _ := loadFromDb(l.conn, table, &Filters{
-		ItemKey: []Hash{Hash(it.GetLink().String())},
+	found, cnt, _ := loadFromDb(l.conn, table, &activitypub.Filters{
+		ItemKey: []activitypub.Hash{activitypub.Hash(it.GetLink().String())},
 		Type:    []as.ActivityVocabularyType{it.GetType()},
 	})
 	if cnt == 0 {
@@ -933,8 +796,8 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 		table = "objects"
 	}
 
-	f := Filters{
-		ItemKey: []Hash{Hash(it.GetLink().String())},
+	f := activitypub.Filters{
+		ItemKey: []activitypub.Hash{activitypub.Hash(it.GetLink().String())},
 	}
 	if it.IsObject() {
 		f.Type = []as.ActivityVocabularyType{it.GetType()}

@@ -7,7 +7,6 @@ import (
 	"github.com/go-ap/activitypub/handler"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/activitypub"
-	localctxt "github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/internal/errors"
 	"strings"
 )
@@ -172,7 +171,7 @@ func (v genericValidator) ValidateAudience(typ handler.CollectionType, audience 
 	return errors.Newf("None of the audience elements is local")
 }
 
-var ValidatorKey = localctxt.CtxtKey("__validator")
+var ValidatorKey = CtxtKey("__validator")
 
 func ActivityValidatorCtxt(ctx context.Context) (ActivityValidator, bool) {
 	ctxVal := ctx.Value(ValidatorKey)

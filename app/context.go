@@ -1,8 +1,9 @@
-package context
+package app
 
 import (
 	"context"
 	"github.com/go-ap/activitypub/storage"
+	st "github.com/go-ap/fedbox/storage"
 )
 
 type CtxtKey string
@@ -11,27 +12,9 @@ var OwnerKey = CtxtKey("__owner")
 var ActorKey = CtxtKey("__actor")
 var RepositoryKey = CtxtKey("__repo")
 
-func ActivityLoader(ctx context.Context) (storage.ActivityLoader, bool) {
+func Loader(ctx context.Context) (st.Loader, bool) {
 	ctxVal := ctx.Value(RepositoryKey)
-	s, ok := ctxVal.(storage.ActivityLoader)
-	return s, ok
-}
-
-func ObjectLoader(ctx context.Context) (storage.ObjectLoader, bool) {
-	ctxVal := ctx.Value(RepositoryKey)
-	s, ok := ctxVal.(storage.ObjectLoader)
-	return s, ok
-}
-
-func ActorLoader(ctx context.Context) (storage.ActorLoader, bool) {
-	ctxVal := ctx.Value(RepositoryKey)
-	s, ok := ctxVal.(storage.ActorLoader)
-	return s, ok
-}
-
-func CollectionLoader(ctx context.Context) (storage.CollectionLoader, bool) {
-	ctxVal := ctx.Value(RepositoryKey)
-	s, ok := ctxVal.(storage.CollectionLoader)
+	s, ok := ctxVal.(st.Loader)
 	return s, ok
 }
 

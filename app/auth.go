@@ -8,10 +8,8 @@ import (
 	"fmt"
 	"github.com/go-ap/activitypub/client"
 	cl "github.com/go-ap/activitypub/client"
-	st "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
@@ -28,7 +26,7 @@ type keyLoader struct {
 	logFn func(string, ...interface{})
 	realm string
 	acc   as.Actor
-	l     st.ActorLoader
+	l     storage.Loader
 	c     client.Client
 }
 
@@ -58,7 +56,7 @@ func (k *keyLoader) GetKey(id string) interface{} {
 
 	if err := validateLocalIRI(as.IRI(id)); err == nil {
 		hash := path.Base(u.Path)
-		k.acc, _, err = k.l.LoadActors(storage.Filters{Key: []storage.Hash{storage.Hash(hash)}})
+		k.acc, _, err = k.l.LoadActors(&activitypub.Filters{Key: []activitypub.Hash{activitypub.Hash(hash)}})
 		if err != nil {
 			k.logFn("unable to find local account matching key id %s", id)
 			return nil
@@ -150,7 +148,7 @@ func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, e
 			acct = v.acc
 		}
 		if strings.Contains(auth, "Signature") {
-			if loader, ok := context.ActorLoader(r.Context()); ok {
+			if loader, ok := Loader(r.Context()); ok {
 				// only verify http-signature if present
 				getter := keyLoader{acc: acct, l: loader, realm: r.URL.Host, c: client}
 				method = "httpSig"

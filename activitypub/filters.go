@@ -1,17 +1,14 @@
-package storage
+package activitypub
 
 import (
 	"fmt"
 	h "github.com/go-ap/activitypub/handler"
 	s "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/activitypub"
-	ctxt "github.com/go-ap/fedbox/internal/context"
 	"github.com/go-ap/fedbox/internal/errors"
 	"github.com/mariusor/qstring"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -82,76 +79,6 @@ func (f Filters) IRIs() []as.IRI {
 
 // TODO(marius): move this somewhere else. Or replace it with something that makes more sense.
 var Secure = false
-const MaxItems = 100
-
-var ErrNotFound = func(s string) error {
-	return errors.Newf(fmt.Sprintf("%s not found", s))
-}
-
-func reqURL(r *http.Request) string {
-	scheme := "http"
-	if Secure || r.TLS != nil {
-		scheme = "https"
-	}
-	return fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.Path)
-}
-
-// FromRequest loads the filters we use for generating storage queries from the HTTP request
-func (f *Filters) FromRequest(r *http.Request) error {
-	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
-		return err
-	}
-	f.MaxItems = MaxItems
-
-	f.Collection = h.Typer.Type(r)
-
-	pr, _ := regexp.Compile(fmt.Sprintf("/(actors|items|activities)/(\\w+)/%s", f.Collection))
-	matches := pr.FindSubmatch([]byte(r.URL.Path))
-	if len(matches) < 3 {
-		return ErrNotFound(string(f.Collection))
-	} else {
-		col := matches[1]
-		url := reqURL(r)
-		switch string(col) {
-		case "actors":
-			// TODO(marius): this needs to be moved somewhere where it makes more sense
-			if loader, ok := ctxt.ActorLoader(r.Context()); ok {
-				ff := Filters{
-					Type: []as.ActivityVocabularyType{
-						as.PersonType,
-						as.GroupType,
-						as.ApplicationType,
-						as.ServiceType,
-						as.OrganizationType,
-					},
-					Key: []Hash{Hash(url)},
-				}
-				if act, _, err := loader.LoadActors(ff); err == nil {
-					f.Owner = act
-				}
-			}
-		case "items":
-			f.ItemKey = []Hash{Hash(url)}
-		case "activities":
-			f.Key = []Hash{Hash(url)}
-		}
-	}
-
-	// TODO(marius): this needs to be moved somewhere where it makes more sense
-	ctxVal := r.Context().Value(ctxt.ActorKey)
-	if a, ok := ctxVal.(as.Actor); ok {
-		f.Actor = a
-	}
-
-	if f.MaxItems == 0 {
-		f.MaxItems = MaxItems
-	}
-	if f.Page == 0 {
-		f.Page = 1
-	}
-
-	return nil
-}
 
 func copyActivityFilters(dst *Filters, src Filters) {
 	dst.Type = src.Type
@@ -296,7 +223,7 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'audience' ~* $%d`, counter))
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
 		if f.Actor == nil {
-			values = append(values, interface{}(activitypub.Public))
+			values = append(values, interface{}(Public))
 		} else {
 			values = append(values, interface{}(f.Actor.GetID()))
 		}
@@ -318,4 +245,29 @@ func (f Filters) GetLimit() string {
 		limit = fmt.Sprintf("%s OFFSET %d", limit, f.MaxItems*(f.Page-1))
 	}
 	return limit
+}
+
+const MaxItems = 100
+var ErrNotFound = func(s string) error {
+	return errors.Newf(fmt.Sprintf("%s not found", s))
+}
+
+// FromRequest loads the filters we use for generating storage queries from the HTTP request
+func FromRequest(r *http.Request) (Filterable, error) {
+	f := &Filters{}
+	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
+		return f, err
+	}
+	f.MaxItems = MaxItems
+
+	f.Collection = h.Typer.Type(r)
+
+	if f.MaxItems == 0 {
+		f.MaxItems = MaxItems
+	}
+	if f.Page == 0 {
+		f.Page = 1
+	}
+
+	return f, nil
 }
