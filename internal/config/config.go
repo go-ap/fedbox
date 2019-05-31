@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/joho/godotenv"
@@ -79,10 +80,14 @@ func LoadFromEnv() (Options, error) {
 
 	conf.Listen = os.Getenv("LISTEN")
 
-	conf.Storage = StorageType(strings.ToLower(os.Getenv("STORAGE")))
+	envStorage := os.Getenv("STORAGE")
+	conf.Storage = StorageType(strings.ToLower(envStorage))
 	switch conf.Storage {
 	case BOLTDB:
 		conf.BoltDBPath = fmt.Sprintf("%s/%s.bolt.db", os.TempDir(), path.Clean(conf.Host))
+	case StorageType(""):
+		conf.Storage = POSTGRES
+		fallthrough
 	case POSTGRES:
 		conf.DB.Host = os.Getenv("DB_HOST")
 		conf.DB.Pw = os.Getenv("DB_PASSWORD")
@@ -93,6 +98,9 @@ func LoadFromEnv() (Options, error) {
 		}
 
 		conf.DB.User = os.Getenv("DB_USER")
+
+	default:
+		return conf, errors.Errorf("Invalid STORAGE value %s", envStorage)
 	}
 
 	return conf, nil
