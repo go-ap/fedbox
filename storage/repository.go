@@ -242,6 +242,29 @@ func loadFromDb(conn *pgx.ConnPool, table string, f activitypub.Filterable) (as.
 	return ret, total, err
 }
 
+func (l loader) SaveActivity(it as.Item) (as.Item, error) {
+	var err error
+
+	it, err = processActivity(l, it)
+	it = activitypub.FlattenProperties(it)
+
+	it, err = l.SaveObject(it)
+	if err != nil {
+		l.errFn(logrus.Fields{"IRI": it.GetLink()}, "unable to save activity")
+		return it, err
+	}
+
+	return it, err
+}
+
+func getCollectionID(actor as.Item, c handlers.CollectionType) as.ObjectID {
+	return as.ObjectID(fmt.Sprintf("%s/%s", actor.GetLink(), c))
+}
+
+func getCollectionIRI(actor as.Item, c handlers.CollectionType) as.IRI {
+	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
+}
+
 func processActivity(l loader, it as.Item) (as.Item, error) {
 	var err error
 
@@ -320,29 +343,6 @@ func processActivity(l loader, it as.Item) (as.Item, error) {
 		}
 	}
 	return it, err
-}
-
-func (l loader) SaveActivity(it as.Item) (as.Item, error) {
-	var err error
-
-	it, err = processActivity(l, it)
-	it = activitypub.FlattenProperties(it)
-
-	it, err = l.SaveObject(it)
-	if err != nil {
-		l.errFn(logrus.Fields{"IRI": it.GetLink()}, "unable to save activity")
-		return it, err
-	}
-
-	return it, err
-}
-
-func getCollectionID(actor as.Item, c handlers.CollectionType) as.ObjectID {
-	return as.ObjectID(fmt.Sprintf("%s/%s", actor.GetLink(), c))
-}
-
-func getCollectionIRI(actor as.Item, c handlers.CollectionType) as.IRI {
-	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
 
 func ( l loader) createActorCollection(actor as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
