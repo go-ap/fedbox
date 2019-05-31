@@ -163,7 +163,7 @@ func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, e
 		}
 		if err != nil {
 			// TODO(marius): fix this challenge passing
-			err = errors.NewUnauthorized(err, "")//.Challenge(challenge)
+			err = errors.NewUnauthorized(err, "").Challenge(challenge)
 			l.WithFields(logrus.Fields{
 				"id":   acct.GetID(),
 				"auth": r.Header.Get("Authorization"),
