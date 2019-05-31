@@ -2,12 +2,17 @@ package activitypub
 
 import (
 	"fmt"
-	s "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/errors"
 )
 
-type Paginator = s.Paginator
+type Paginator interface {
+	QueryString() string
+	FirstPage() Paginator
+	CurrentPage() Paginator
+	NextPage() Paginator
+	PrevPage() Paginator
+}
 
 func GetPaginatedCollection(col as.CollectionInterface, count uint, filters Paginator) (as.CollectionInterface, error) {
 	if col == nil {

@@ -2,10 +2,9 @@ package activitypub
 
 import (
 	"fmt"
-	h "github.com/go-ap/activitypub/handler"
-	s "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/internal/errors"
+	h "github.com/go-ap/handlers"
 	"github.com/mariusor/qstring"
 	"net/http"
 	"net/url"
@@ -114,19 +113,19 @@ func (f *Filters) QueryString() string {
 }
 
 // BasePage
-func (f *Filters) BasePage() s.Paginator {
+func (f *Filters) BasePage() Paginator {
 	b := &Filters{}
 	copyActivityFilters(b, *f)
 	return b
 }
 
 // CurrentPage
-func (f *Filters) CurrentPage() s.Paginator {
+func (f *Filters) CurrentPage() Paginator {
 	return f
 }
 
 // NextPage
-func (f *Filters) NextPage() s.Paginator {
+func (f *Filters) NextPage() Paginator {
 	b := &Filters{}
 	copyActivityFilters(b, *f)
 	b.Page += 1
@@ -134,7 +133,7 @@ func (f *Filters) NextPage() s.Paginator {
 }
 
 // PrevPage
-func (f *Filters) PrevPage() s.Paginator {
+func (f *Filters) PrevPage() Paginator {
 	b := &Filters{}
 	copyActivityFilters(b, *f)
 	b.Page -= 1
@@ -142,7 +141,7 @@ func (f *Filters) PrevPage() s.Paginator {
 }
 
 // FirstPage
-func (f *Filters) FirstPage() s.Paginator {
+func (f *Filters) FirstPage() Paginator {
 	b := &Filters{}
 	copyActivityFilters(b, *f)
 	b.Page = 1

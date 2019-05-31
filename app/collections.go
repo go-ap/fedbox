@@ -4,7 +4,8 @@ import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/handlers"
+	"github.com/go-ap/storage"
 	"net/http"
 )
 
@@ -18,7 +19,7 @@ func reqURL(r *http.Request) string {
 
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
-func HandleCollection(r *http.Request) (as.CollectionInterface, error) {
+func HandleCollection(typ handlers.CollectionType, r *http.Request, repo storage.CollectionLoader) (as.CollectionInterface, error) {
 	var items as.CollectionInterface
 	var err error
 
@@ -26,15 +27,10 @@ func HandleCollection(r *http.Request) (as.CollectionInterface, error) {
 	f, _ := ff.(*activitypub.Filters)
 	f.ItemKey = append(f.ItemKey, activitypub.Hash(reqURL(r)))
 
-	if !activitypub.ValidActivityCollection(string(f.Collection)) {
+	if !activitypub.ValidActivityCollection(string(typ)) {
 		return nil, NotFoundf("collection '%s' not found", f.Collection)
 	}
 
-	var repo storage.Loader
-	var ok bool
-	if repo, ok = Loader(r.Context()); !ok {
-		return nil, NotValidf("unable to load storage")
-	}
 	items, _, err = repo.LoadCollection(f)
 	if err != nil {
 		return nil, err

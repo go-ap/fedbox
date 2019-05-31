@@ -4,14 +4,15 @@ import (
 	"context"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/handlers"
 	"net/http"
 )
 
-func Repo(loader storage.Loader) func(next http.Handler) http.Handler {
+func Repo(loader storage.ActorLoader) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			newCtx := context.WithValue(ctx, RepositoryKey, loader)
+			newCtx := context.WithValue(ctx, handlers.RepositoryKey, loader)
 			next.ServeHTTP(w, r.WithContext(newCtx))
 		}
 		return http.HandlerFunc(fn)

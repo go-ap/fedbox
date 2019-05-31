@@ -3,12 +3,12 @@ package storage
 import (
 	"fmt"
 	"github.com/go-ap/activitypub/client"
-	"github.com/go-ap/activitypub/handler"
-	s "github.com/go-ap/activitypub/storage"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/errors"
+	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
+	s "github.com/go-ap/storage"
 	uuid2 "github.com/google/uuid"
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/pgtype"
@@ -27,9 +27,11 @@ func IsDuplicateKey(e error) bool {
 	_, oks := e.(errDuplicateKey)
 	return okp || oks
 }
+
 func (n errDuplicateKey) Is(e error) bool {
 	return IsDuplicateKey(e)
 }
+
 func wrapErr(err error, s string, args ...interface{}) errors.Err {
 	e := errors.Annotatef(err, s, args...)
 	asErr := errors.Err{}
@@ -48,14 +50,8 @@ var ErrDuplicateObject = func(s string, p ...interface{}) errDuplicateKey {
 	return errDuplicateKey{wrapErr(nil, fmt.Sprintf("Duplicate key: %s", s), p...)}
 }
 
-type Loader interface {
-	LoadActivities(f activitypub.Filterable) (as.ItemCollection, int, error)
-	LoadActors(f activitypub.Filterable) (as.ItemCollection, int, error)
-	LoadObjects(f activitypub.Filterable) (as.ItemCollection, int, error)
-	LoadCollection(f activitypub.Filterable) (as.CollectionInterface, int, error)
-	s.ActivitySaver
-	s.ActorSaver
-	s.ObjectSaver
+type ActorLoader interface {
+	LoadActors(f s.Filterable) (as.ItemCollection, int, error)
 }
 
 type loader struct {
@@ -69,7 +65,6 @@ type loader struct {
 type loggerFn func(logrus.Fields, string, ...interface{})
 
 // IsLocalIRI shows if the received IRI belongs to the current instance
-// TODO(marius): make this not be true always
 func (l loader) IsLocalIRI(i as.IRI) bool {
 	return strings.Contains(i.String(), l.baseURL)
 }
@@ -92,34 +87,32 @@ func New(conn *pgx.ConnPool, url string, l logrus.FieldLogger) *loader {
 	}
 }
 
-func (l loader) Load(f activitypub.Filterable) (as.ItemCollection, int, error) {
-	var total int
-	ret := make(as.ItemCollection, 0)
-	act, total, err := loadFromDb(l.conn, "activities", f)
-	if err != nil {
-		ret = append(ret, act...)
+func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, int, error) {
+	f, ok := ff.(*activitypub.Filters)
+	if ok {
+		return nil, 0, errors.Newf("invalid activitypub filters")
 	}
-	it, total, err := loadFromDb(l.conn, "objects", f)
-	if err != nil {
-		ret = append(ret, it...)
-	}
-	actors, total, err := loadFromDb(l.conn, "actors", f)
-	if err != nil {
-		ret = append(ret, actors...)
-	}
-
-	return ret, total, err
-}
-func (l loader) LoadActivities(f activitypub.Filterable) (as.ItemCollection, int, error) {
 	return loadFromDb(l.conn, "activities", f)
 }
-func (l loader) LoadActors(f activitypub.Filterable) (as.ItemCollection, int, error) {
+func (l loader) LoadActors(ff s.Filterable) (as.ItemCollection, int, error) {
+	f, ok := ff.(*activitypub.Filters)
+	if !ok {
+		return nil, 0, errors.Newf("invalid activitypub filters")
+	}
 	return loadFromDb(l.conn, "actors", f)
 }
-func (l loader) LoadObjects(f activitypub.Filterable) (as.ItemCollection, int, error) {
+func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, int, error) {
+	f, ok := ff.(*activitypub.Filters)
+	if !ok {
+		return nil, 0, errors.Newf("invalid activitypub filters")
+	}
 	return loadFromDb(l.conn, "objects", f)
 }
-func (l loader) LoadCollection(f activitypub.Filterable) (as.CollectionInterface, int, error) {
+func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, error) {
+	f, ok := ff.(*activitypub.Filters)
+	if !ok {
+		return nil, 0, errors.Newf("invalid activitypub filters")
+	}
 	clauses, values := f.GetWhereClauses()
 	total := 0
 
@@ -137,7 +130,7 @@ func (l loader) LoadCollection(f activitypub.Filterable) (as.CollectionInterface
 	if err := rows.Err(); err != nil {
 		return ret, total, errors.Annotatef(err, "unable to run select")
 	}
-	ff, _ := f.(*activitypub.Filters)
+
 	var count int
 	// Iterate through the result set
 	for rows.Next() {
@@ -171,33 +164,34 @@ func (l loader) LoadCollection(f activitypub.Filterable) (as.CollectionInterface
 			col.Type = as.OrderedCollectionType
 			ret = col
 		}
-		ff.ItemKey = ff.ItemKey[:0]
+		f.ItemKey = f.ItemKey[:0]
 		for _, elem := range elements {
-			ff.ItemKey = append(ff.ItemKey, activitypub.Hash(elem))
+			f.ItemKey = append(f.ItemKey, activitypub.Hash(elem))
 		}
 	}
 	if ret == nil {
-		return ret, 0, errors.Newf("could not load '%s' collection", ff.Collection)
+		return ret, 0, errors.Newf("could not load '%s' collection", f.Collection)
 	}
 
 	table := "objects"
 	var items as.ItemCollection
-	if ff.Collection == "actors" {
+	if f.Collection == "actors" {
 		table = "actors"
 	}
-	if ff.Collection == "activities" {
+	if f.Collection == "activities" {
 		table = "activities"
 	}
-	ff.ItemKey = ff.ItemKey[:0]
+	f.ItemKey = f.ItemKey[:0]
 	items, total, err = loadFromDb(l.conn, table, f)
 	if err == nil && total > 0 {
 		for _, it := range items {
 			ret.Append(it)
 		}
 	}
-	ret, err = activitypub.GetPaginatedCollection(ret, uint(count), f.(activitypub.Paginator))
+	ret, err = activitypub.GetPaginatedCollection(ret, uint(count), f)
 	return ret, total, err
 }
+
 func loadFromDb(conn *pgx.ConnPool, table string, f activitypub.Filterable) (as.ItemCollection, int, error) {
 	clauses, values := f.GetWhereClauses()
 	total := 0
@@ -336,15 +330,15 @@ func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 	return it, err
 }
 
-func getCollectionID(actor as.Item, c handler.CollectionType) as.ObjectID {
+func getCollectionID(actor as.Item, c handlers.CollectionType) as.ObjectID {
 	return as.ObjectID(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
 
-func getCollectionIRI(actor as.Item, c handler.CollectionType) as.IRI {
+func getCollectionIRI(actor as.Item, c handlers.CollectionType) as.IRI {
 	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
 
-func ( l loader) createActorCollection(actor as.Item, c handler.CollectionType) (as.CollectionInterface, error) {
+func ( l loader) createActorCollection(actor as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
 	col := as.OrderedCollection{
 		Parent: as.Parent {
 			ID: getCollectionID(actor, c),
@@ -353,7 +347,7 @@ func ( l loader) createActorCollection(actor as.Item, c handler.CollectionType) 
 	}
 	return l.createCollection(&col)
 }
-func ( l loader) createObjectCollection(object as.Item, c handler.CollectionType) (as.CollectionInterface, error) {
+func ( l loader) createObjectCollection(object as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
 	col := as.OrderedCollection{
 		Parent: as.Parent {
 			ID: getCollectionID(object, c),
@@ -402,7 +396,7 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 		return it, err
 	}
 
-	err = l.addToCollection(getCollectionIRI(as.IRI(l.baseURL), handler.CollectionType(table)), it)
+	err = l.addToCollection(getCollectionIRI(as.IRI(l.baseURL), handlers.CollectionType(table)), it)
 	if err != nil {
 		l.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": table}, "unable to add to collection")
 	}
@@ -505,33 +499,33 @@ func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 				p.ID = as.ObjectID(iri)
 				p.Published = now
 
-				if in, err := l.createActorCollection(it, handler.Inbox); err != nil {
+				if in, err := l.createActorCollection(it, handlers.Inbox); err != nil {
 					return it, err
 				} else {
 					p.Inbox = in.GetLink()
 				}
-				if out, err := l.createActorCollection(it, handler.Outbox); err != nil {
+				if out, err := l.createActorCollection(it, handlers.Outbox); err != nil {
 					return it, err
 				} else {
 					p.Outbox = out.GetLink()
 				}
-				if fers, err := l.createActorCollection(it, handler.Followers); err != nil {
+				if fers, err := l.createActorCollection(it, handlers.Followers); err != nil {
 					return it, err
 				} else {
 					p.Followers = fers.GetLink()
 				}
-				if fing, err := l.createActorCollection(it, handler.Following); err != nil {
+				if fing, err := l.createActorCollection(it, handlers.Following); err != nil {
 					return it, err
 				} else {
 					p.Following = fing.GetLink()
 				}
-				if ld, err := l.createActorCollection(it, handler.Liked); err != nil {
+				if ld, err := l.createActorCollection(it, handlers.Liked); err != nil {
 					return it, err
 				} else {
 					p.Liked = ld.GetLink()
 				}
 				// TODO(marius): missing likes in go-ap/activitypub actor
-				//if ls, err := l.createActorCollection(it, handler.Likes); err != nil {
+				//if ls, err := l.createActorCollection(it, handlers.Likes); err != nil {
 				//	return it, err
 				//} else {
 				//	p.Liked = ls.GetLink()
@@ -542,7 +536,7 @@ func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
 			if o, err := as.ToObject(it); err == nil {
 				o.ID = as.ObjectID(iri)
 				o.Published = now
-				if repl, err := l.createObjectCollection(it, handler.Replies); err != nil {
+				if repl, err := l.createObjectCollection(it, handlers.Replies); err != nil {
 					return it, err
 				} else {
 					o.Replies = repl.GetLink()

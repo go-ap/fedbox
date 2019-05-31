@@ -26,7 +26,7 @@ type keyLoader struct {
 	logFn func(string, ...interface{})
 	realm string
 	acc   as.Actor
-	l     storage.Loader
+	l     storage.ActorLoader
 	c     client.Client
 }
 

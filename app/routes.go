@@ -1,6 +1,7 @@
 package app
 
 import (
+	h "github.com/go-ap/handlers"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"net/http"
@@ -10,14 +11,15 @@ func CollectionRoutes(r chi.Router) {
 	r.Group(func (r chi.Router) {
 		r.With(middleware.GetHead)
 		val := genericValidator{}
-		r.Method(http.MethodGet, "/", CollectionHandlerFn(HandleCollection))
-		r.With(Validator(&val)).Method(http.MethodPost, "/", ActivityHandlerFn(HandleRequest))
+
+		r.Method(http.MethodGet, "/", h.CollectionHandlerFn(HandleCollection))
+		r.With(Validator(&val)).Method(http.MethodPost, "/", h.ActivityHandlerFn(HandleRequest))
 
 		r.Route("/{id}", func (r chi.Router) {
-			r.Method(http.MethodGet, "/", ItemHandlerFn(HandleItem))
+			r.Method(http.MethodGet, "/", h.ItemHandlerFn(HandleItem))
 			r.Route("/{collection}", func (r chi.Router) {
-				r.Method(http.MethodGet, "/", CollectionHandlerFn(HandleCollection))
-				r.With(Validator(&val)).Method(http.MethodPost, "/", ActivityHandlerFn(HandleRequest))
+				r.Method(http.MethodGet, "/", h.CollectionHandlerFn(HandleCollection))
+				r.With(Validator(&val)).Method(http.MethodPost, "/", h.ActivityHandlerFn(HandleRequest))
 			})
 		})
 	})

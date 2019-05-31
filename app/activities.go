@@ -1,18 +1,17 @@
 package app
 
 import (
-	h "github.com/go-ap/activitypub/handler"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/errors"
+	h "github.com/go-ap/handlers"
+	"github.com/go-ap/storage"
 	"io/ioutil"
 	"net/http"
 )
 
-type DumbHandler struct {}
-
 // HandleRequest handles POST requests to an ActivityPub Actor's inbox/outbox, based on the CollectionType
-func HandleRequest(typ h.CollectionType, r *http.Request) (as.IRI, int, error) {
+func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.ActivitySaver) (as.IRI, int, error) {
 	ff, _ := activitypub.FromRequest(r)
 	f, _ := ff.(*activitypub.Filters)
 	LoadToFilters(r, f)
@@ -44,10 +43,6 @@ func HandleRequest(typ h.CollectionType, r *http.Request) (as.IRI, int, error) {
 		}
 	}
 
-	repo, ok := ActivitySaver(r.Context())
-	if  ok == false {
-		return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity saver")
-	}
 	if it, err = repo.SaveActivity(it); err != nil {
 		return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 	}
