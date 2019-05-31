@@ -442,3 +442,118 @@ func FlattenProperties(it as.Item) as.Item {
 	}
 	return as.FlattenProperties(it)
 }
+
+func UpdatePersonProperties(old, new *Person) (*Person, error) {
+	o, err := UpdateObjectProperties(&old.Parent, &new.Parent)
+	old.Parent = *o
+	old.Inbox = ReplaceIfItem(old.Inbox, new.Inbox)
+	old.Outbox = ReplaceIfItem(old.Outbox, new.Outbox)
+	old.Following = ReplaceIfItem(old.Following, new.Following)
+	old.Followers = ReplaceIfItem(old.Followers, new.Followers)
+	old.Liked = ReplaceIfItem(old.Liked, new.Liked)
+	old.PreferredUsername = ReplaceIfNaturalLanguageValues(old.PreferredUsername, new.PreferredUsername)
+	return old, err
+}
+
+func ReplaceIfItem(old, new as.Item) as.Item {
+	if new == nil {
+		return old
+	}
+	return new
+}
+
+func ReplaceIfItemCollection(old, new as.ItemCollection) as.ItemCollection {
+	if new == nil {
+		return old
+	}
+	return new
+}
+
+func ReplaceIfNaturalLanguageValues(old, new as.NaturalLanguageValues) as.NaturalLanguageValues {
+	if new == nil {
+		return old
+	}
+	return new
+}
+
+func UpdateObjectProperties(old, new *as.Object) (*as.Object, error) {
+	old.Name = ReplaceIfNaturalLanguageValues(old.Name, new.Name)
+	old.Attachment = ReplaceIfItem(old.Attachment, new.Attachment)
+	old.AttributedTo = ReplaceIfItem(old.AttributedTo, new.AttributedTo)
+	old.Audience = ReplaceIfItemCollection(old.Audience, new.Audience)
+	old.Content = ReplaceIfNaturalLanguageValues(old.Content, new.Content)
+	old.Context = ReplaceIfItem(old.Context, new.Context)
+	if len(new.MediaType) > 0 {
+		old.MediaType = new.MediaType
+	}
+	if !new.EndTime.IsZero() {
+		old.EndTime = new.EndTime
+	}
+	old.Generator = ReplaceIfItem(old.Generator, new.Generator)
+	old.Icon = ReplaceIfItem(old.Icon, new.Icon)
+	old.Image = ReplaceIfItem(old.Image, new.Image)
+	old.InReplyTo = ReplaceIfItem(old.InReplyTo, new.InReplyTo)
+	old.Location = ReplaceIfItem(old.Location, new.Location)
+	old.Preview = ReplaceIfItem(old.Preview, new.Preview)
+	if !new.Published.IsZero() {
+		old.Published = new.Published
+	}
+	old.Replies = ReplaceIfItem(old.Replies, new.Replies)
+	if !new.StartTime.IsZero() {
+		old.StartTime = new.StartTime
+	}
+	old.Summary = ReplaceIfNaturalLanguageValues(old.Summary, new.Summary)
+	old.Tag = ReplaceIfItemCollection(old.Tag, new.Tag)
+	if !new.Updated.IsZero() {
+		old.Updated = new.Updated
+	}
+	if new.URL != nil {
+		old.URL = new.URL
+	}
+	old.To = ReplaceIfItemCollection(old.To, new.To)
+	old.Bto = ReplaceIfItemCollection(old.Bto, new.Bto)
+	old.CC = ReplaceIfItemCollection(old.CC, new.CC)
+	old.BCC = ReplaceIfItemCollection(old.BCC, new.BCC)
+	if new.Duration == 0 {
+		old.Duration = new.Duration
+	}
+	return old, nil
+}
+
+func UpdateItemProperties(to, from as.Item) (as.Item, error) {
+	if to == nil {
+		return to, errors.Newf("Nil object to update")
+	}
+	if from == nil {
+		return to, errors.Newf("Nil object for update")
+	}
+	if *to.GetID() != *from.GetID() {
+		return to, errors.Newf("Object IDs don't match")
+	}
+	if to.GetType() != from.GetType() {
+		return to, errors.Newf("Invalid object types for update")
+	}
+	if as.ActorTypes.Contains(to.GetType()) {
+		o, err := ToPerson(to)
+		if err != nil {
+			return o, err
+		}
+		n, err := ToPerson(from)
+		if err != nil {
+			return o, err
+		}
+		return UpdatePersonProperties(o, n)
+	}
+	if as.ObjectTypes.Contains(to.GetType()) {
+		o, err := as.ToObject(to)
+		if err != nil {
+			return o, err
+		}
+		n, err := as.ToObject(from)
+		if err != nil {
+			return o, err
+		}
+		return UpdateObjectProperties(o, n)
+	}
+	return to, errors.Newf("could not process objects with type %s", to.GetType())
+}
