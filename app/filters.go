@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/errors"
 	pub "github.com/go-ap/fedbox/activitypub"
 	"net/http"
 	"regexp"
@@ -12,7 +13,7 @@ func LoadToFilters(r *http.Request, f *pub.Filters) error {
 	pr, _ := regexp.Compile(fmt.Sprintf("/(actors|items|activities)/(\\w+)/%s", f.Collection))
 	matches := pr.FindSubmatch([]byte(r.URL.Path))
 	if len(matches) < 3 {
-		return NotFoundf("%s collection not found", f.Collection)
+		return errors.NotFoundf("%s collection not found", f.Collection)
 	} else {
 		col := matches[1]
 		url := reqURL(r)

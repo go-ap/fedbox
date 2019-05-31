@@ -5,7 +5,7 @@ import (
 	"github.com/buger/jsonparser"
 	ap "github.com/go-ap/activitypub"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/internal/errors"
+	"github.com/go-ap/errors"
 )
 
 const Public = as.IRI("https://www.w3.org/ns/activitystreams#Public")

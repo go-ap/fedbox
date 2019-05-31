@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
@@ -28,7 +29,7 @@ func HandleCollection(typ handlers.CollectionType, r *http.Request, repo storage
 	f.ItemKey = append(f.ItemKey, activitypub.Hash(reqURL(r)))
 
 	if !activitypub.ValidActivityCollection(string(typ)) {
-		return nil, NotFoundf("collection '%s' not found", f.Collection)
+		return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
 	}
 
 	items, _, err = repo.LoadCollection(f)

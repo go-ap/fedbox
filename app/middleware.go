@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
@@ -24,8 +25,8 @@ func ActorFromAuthHeader(next http.Handler) http.Handler {
 		logger := log.New()
 		act, err := LoadActorFromAuthHeader(r, logger)
 		if err != nil {
-			if IsUnauthorized(err) {
-				if challenge := Challenge(err); len(challenge) > 0 {
+			if errors.IsUnauthorized(err) {
+				if challenge := errors.Challenge(err); len(challenge) > 0 {
 					w.Header().Add("WWW-Authenticate", challenge)
 				}
 			}

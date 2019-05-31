@@ -3,7 +3,7 @@ package activitypub
 import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/internal/errors"
+	"github.com/go-ap/errors"
 	h "github.com/go-ap/handlers"
 	"github.com/mariusor/qstring"
 	"net/http"

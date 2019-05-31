@@ -6,7 +6,7 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/fedbox/internal/errors"
+	"github.com/go-ap/errors"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"

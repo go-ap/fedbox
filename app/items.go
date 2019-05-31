@@ -3,7 +3,7 @@ package app
 import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/errors"
+	"github.com/go-ap/errors"
 	h "github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
@@ -31,7 +31,7 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 	f.MaxItems = 1
 
 	if !activitypub.ValidActivityCollection(string(f.Collection)) {
-		return nil, NotFoundf("collection '%s' not found", f.Collection)
+		return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
 	}
 	if h.ValidObjectCollection(string(f.Collection)) {
 		if obLoader, ok := repo.(storage.ObjectLoader); ok {
@@ -63,12 +63,12 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 	if len(items) == 1 {
 		it, err := loadItem(items, f, reqURL(r))
 		if err != nil {
-			return nil, NotFoundf("Not found %s", collection)
+			return nil, errors.NotFoundf("Not found %s", collection)
 		}
 		return it, nil
 	}
 
-	return nil, NotFoundf("Not found %s in %s", id, collection)
+	return nil, errors.NotFoundf("Not found %s in %s", id, collection)
 }
 
 func loadItem(items as.ItemCollection, f activitypub.Paginator, baseURL string) (as.Item, error) {

@@ -5,7 +5,7 @@ import (
 	"github.com/go-ap/activitypub/client"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/errors"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"

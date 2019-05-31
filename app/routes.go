@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/go-ap/errors"
 	h "github.com/go-ap/handlers"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -32,7 +33,7 @@ func Routes() func(chi.Router) {
 
 		r.Route("/{collection}", CollectionRoutes)
 
-		r.NotFound(HandleError(NotFoundf("invalid url")).ServeHTTP)
-		r.MethodNotAllowed(HandleError(MethodNotAllowedf("method not allowed")).ServeHTTP)
+		r.NotFound(errors.HandleError(errors.NotFoundf("invalid url")).ServeHTTP)
+		r.MethodNotAllowed(errors.HandleError(errors.MethodNotAllowedf("method not allowed")).ServeHTTP)
 	}
 }

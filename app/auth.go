@@ -9,6 +9,7 @@ import (
 	"github.com/go-ap/activitypub/client"
 	cl "github.com/go-ap/activitypub/client"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/openshift/osin"
@@ -107,7 +108,7 @@ func (k *oauthLoader) Verify(r *http.Request) (error, string) {
 			return err, ""
 		}
 	} else {
-		return Unauthorizedf("unable to load from bearer"), ""
+		return errors.Unauthorizedf("unable to load from bearer"), ""
 	}
 	return nil, ""
 }
@@ -161,12 +162,14 @@ func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, e
 			}
 		}
 		if err != nil {
-			err = NewUnauthorizedWithChallenge(challenge, err, "")
+			// TODO(marius): fix this challenge passing
+			err = errors.NewUnauthorized(err, "")//.Challenge(challenge)
 			l.WithFields(logrus.Fields{
 				"id":   acct.GetID(),
 				"auth": r.Header.Get("Authorization"),
 				"req":  fmt.Sprintf("%s:%s", r.Method, r.URL.RequestURI()),
 				"err":  err,
+				"challenge": challenge,
 			}).Warn("invalid HTTP Authorization")
 			// TODO(marius): here we need to implement some outside logic, as to we want to allow non-signed
 			//   requests on some urls, but not on others - probably another handler to check for Anonymous
