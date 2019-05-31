@@ -6,6 +6,7 @@ import (
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/joho/godotenv"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 )
@@ -27,8 +28,15 @@ type Options struct {
 	Host                string
 	Listen              string
 	BaseURL             string
+	Storage             StorageType
 	DB                  backendConfig
+	BoltDBPath          string
 }
+
+type StorageType string
+
+const BOLTDB = StorageType("boltdb")
+const POSTGRES = StorageType("postgres")
 
 func LoadFromEnv() (Options, error) {
 	conf := Options{}
@@ -71,15 +79,21 @@ func LoadFromEnv() (Options, error) {
 
 	conf.Listen = os.Getenv("LISTEN")
 
-	conf.DB.Host = os.Getenv("DB_HOST")
-	conf.DB.Pw = os.Getenv("DB_PASSWORD")
-	conf.DB.Name = os.Getenv("DB_NAME")
-	var err error
-	if conf.DB.Port, err = strconv.ParseInt(os.Getenv("DB_PORT"), 10, 32); err != nil {
-		conf.DB.Port = 5432
-	}
+	conf.Storage = StorageType(strings.ToLower(os.Getenv("STORAGE")))
+	switch conf.Storage {
+	case BOLTDB:
+		conf.BoltDBPath = fmt.Sprintf("%s/%s.bolt.db", os.TempDir(), path.Clean(conf.Host))
+	case POSTGRES:
+		conf.DB.Host = os.Getenv("DB_HOST")
+		conf.DB.Pw = os.Getenv("DB_PASSWORD")
+		conf.DB.Name = os.Getenv("DB_NAME")
+		var err error
+		if conf.DB.Port, err = strconv.ParseInt(os.Getenv("DB_PORT"), 10, 32); err != nil {
+			conf.DB.Port = 5432
+		}
 
-	conf.DB.User = os.Getenv("DB_USER")
+		conf.DB.User = os.Getenv("DB_USER")
+	}
 
 	return conf, nil
 }

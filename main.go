@@ -2,16 +2,14 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/go-ap/fedbox/app"
+	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/storage/boltdb"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/jackc/pgx"
-	"os"
-	"path"
 	"time"
 )
 
@@ -29,12 +27,17 @@ func main() {
 	a := app.New(l, version)
 	r := chi.NewRouter()
 
-	if b, err := boltdb.New(boltdb.Config{
-		Path: fmt.Sprintf("%s/%s.bolt.db", os.TempDir(), path.Clean(a.Config().Host)),
-		BucketName: "fedbox",
-	}); err == nil {
-		r.Use(app.Repo(b))
-	} else {
+	var onClose func()
+
+	if a.Config().Storage == config.BOLTDB {
+		if b, err := boltdb.New(boltdb.Config{
+			Path: a.Config().BoltDBPath,
+			BucketName: "fedbox",
+		}); err == nil {
+			r.Use(app.Repo(b))
+		}
+	}
+	if a.Config().Storage == config.POSTGRES {
 		dbConf := a.Config().DB
 		conn, err := pgx.NewConnPool(pgx.ConnPoolConfig{
 			ConnConfig: pgx.ConnConfig{
@@ -48,7 +51,11 @@ func main() {
 			},
 			MaxConnections: 3,
 		})
-		defer conn.Close()
+		// TODO(marius) this defer Close doesn't seem right any more as we're not on top scope any more
+		onClose = func () {
+			l.Info("closing DB %v", conn.Close)
+			conn.Close()
+		}
 		if err == nil {
 			r.Use(app.Repo(storage.New(conn, a.Config().BaseURL, l)))
 		} else {
@@ -61,5 +68,5 @@ func main() {
 
 	r.Route("/", app.Routes())
 
-	a.Run(r, wait)
+	a.Run(r, wait, onClose)
 }
