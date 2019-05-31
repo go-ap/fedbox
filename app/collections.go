@@ -32,7 +32,7 @@ func HandleCollection(typ handlers.CollectionType, r *http.Request, repo storage
 		return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
 	}
 
-	items, _, err = repo.LoadCollection(f)
+	items, err = repo.LoadCollection(f)
 	if err != nil {
 		return nil, err
 	}

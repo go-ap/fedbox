@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/go-ap/activitypub/client"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
@@ -94,6 +94,7 @@ func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, int, error) 
 	}
 	return loadFromDb(l.conn, "activities", f)
 }
+
 func (l loader) LoadActors(ff s.Filterable) (as.ItemCollection, int, error) {
 	f, ok := ff.(*activitypub.Filters)
 	if !ok {
@@ -101,6 +102,7 @@ func (l loader) LoadActors(ff s.Filterable) (as.ItemCollection, int, error) {
 	}
 	return loadFromDb(l.conn, "actors", f)
 }
+
 func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, int, error) {
 	f, ok := ff.(*activitypub.Filters)
 	if !ok {
@@ -108,13 +110,13 @@ func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, int, error) {
 	}
 	return loadFromDb(l.conn, "objects", f)
 }
-func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, error) {
+
+func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 	f, ok := ff.(*activitypub.Filters)
 	if !ok {
-		return nil, 0, errors.Newf("invalid activitypub filters")
+		return nil, errors.Newf("invalid activitypub filters")
 	}
 	clauses, values := f.GetWhereClauses()
-	total := 0
 
 	var ret as.CollectionInterface
 
@@ -123,12 +125,12 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 	defer rows.Close()
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return ret, total, nil
+			return ret, nil
 		}
-		return ret, total, errors.Annotatef(err, "unable to run select")
+		return ret, errors.Annotatef(err, "unable to run select")
 	}
 	if err := rows.Err(); err != nil {
-		return ret, total, errors.Annotatef(err, "unable to run select")
+		return ret, errors.Annotatef(err, "unable to run select")
 	}
 
 	var count int
@@ -141,7 +143,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 		var elements []string
 		err = rows.Scan(&id, &iri, &created, &typ, &count, &elements)
 		if err != nil {
-			return ret, total, errors.Annotatef(err, "scan values error")
+			return ret, errors.Annotatef(err, "scan values error")
 		}
 		l.logFn(logrus.Fields{
 			"id": id,
@@ -170,7 +172,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 		}
 	}
 	if ret == nil {
-		return ret, 0, errors.Newf("could not load '%s' collection", f.Collection)
+		return ret, errors.Newf("could not load '%s' collection", f.Collection)
 	}
 
 	table := "objects"
@@ -182,6 +184,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 		table = "activities"
 	}
 	f.ItemKey = f.ItemKey[:0]
+	var total int
 	items, total, err = loadFromDb(l.conn, table, f)
 	if err == nil && total > 0 {
 		for _, it := range items {
@@ -189,7 +192,11 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, int, er
 		}
 	}
 	ret, err = activitypub.GetPaginatedCollection(ret, uint(count), f)
-	return ret, total, err
+	return ret, err
+}
+
+func (l loader) Load(ff s.Filterable) (as.ItemCollection, int, error) {
+	return nil, 0, errors.NotImplementedf("not implemented loader.Load()")
 }
 
 func loadFromDb(conn *pgx.ConnPool, table string, f activitypub.Filterable) (as.ItemCollection, int, error) {
@@ -345,7 +352,7 @@ func ( l loader) createActorCollection(actor as.Item, c handlers.CollectionType)
 			Type: as.OrderedCollectionType,
 		},
 	}
-	return l.createCollection(&col)
+	return createCollection(l, &col)
 }
 func ( l loader) createObjectCollection(object as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
 	col := as.OrderedCollection{
@@ -354,7 +361,7 @@ func ( l loader) createObjectCollection(object as.Item, c handlers.CollectionTyp
 			Type: as.OrderedCollectionType,
 		},
 	}
-	return l.createCollection(&col)
+	return createCollection(l, &col)
 }
 
 func (l loader) SaveActor(it as.Item) (as.Item, error) {
@@ -391,12 +398,12 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 			return it, err
 		}
 	}
-	it, err = l.saveToDb(table, it)
+	it, err = saveToDb(l, table, it)
 	if err != nil {
 		return it, err
 	}
 
-	err = l.addToCollection(getCollectionIRI(as.IRI(l.baseURL), handlers.CollectionType(table)), it)
+	err = addToCollection(l, getCollectionIRI(as.IRI(l.baseURL), handlers.CollectionType(table)), it)
 	if err != nil {
 		l.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": table}, "unable to add to collection")
 	}
@@ -407,7 +414,7 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 			var errs []error
 			colIRI := fw.GetLink()
 			if l.IsLocalIRI(colIRI) {
-				if err := l.addToCollection(colIRI, it); err != nil {
+				if err := addToCollection(l, colIRI, it); err != nil {
 					errs = append(errs, err)
 				}
 			}
@@ -417,7 +424,7 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	return it, err
 }
 
-func (l loader) createCollection(it as.CollectionInterface) (as.CollectionInterface, error) {
+func createCollection(l loader, it as.CollectionInterface) (as.CollectionInterface, error) {
 	if it == nil {
 		return it, errors.Newf("unable to create nil collection")
 	}
@@ -443,7 +450,7 @@ func (l loader) createCollection(it as.CollectionInterface) (as.CollectionInterf
 	return it, nil
 }
 
-func (l loader) addToCollection(iri as.IRI, it as.Item) error {
+func addToCollection(l loader, iri as.IRI, it as.Item) error {
 	if it == nil {
 		return errors.Newf("unable to add nil element to collection")
 	}
@@ -478,7 +485,7 @@ func (l loader) addToCollection(iri as.IRI, it as.Item) error {
 	return nil
 }
 
-func (l loader) saveToDb(table string, it as.Item) (as.Item, error) {
+func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 	query := fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3::timestamptz, $4, $5::jsonb);", table)
 
 	now := time.Now().UTC()
