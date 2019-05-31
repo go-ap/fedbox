@@ -4,12 +4,12 @@ import (
 	"context"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/log"
-	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
+	"github.com/go-ap/storage"
 	"net/http"
 )
 
-func Repo(loader storage.ActorLoader) func(next http.Handler) http.Handler {
+func Repo(loader storage.Loader) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
