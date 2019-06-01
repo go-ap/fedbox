@@ -6,8 +6,8 @@ require (
 	github.com/buger/jsonparser v0.0.0-20181023193515-52c6e1462ebd
 	github.com/go-ap/activitypub v0.0.0-20190531134937-a26398b9f290
 	github.com/go-ap/activitystreams v0.0.0-20190530184402-5829d059925a
-	github.com/go-ap/errors v0.0.0-20190531180850-ba5bb7eaf9a5
-	github.com/go-ap/handlers v0.0.0-20190531144443-5cc2741fc07f
+	github.com/go-ap/errors v0.0.0-20190531221153-9f3d3241690b
+	github.com/go-ap/handlers v0.0.0-20190531221258-1698b2c51e3b
 	github.com/go-ap/jsonld v0.0.0-20190306111347-fbb94302fe92
 	github.com/go-ap/storage v0.0.0-20190531204405-12e0866dc628
 	github.com/go-chi/chi v4.0.2+incompatible
