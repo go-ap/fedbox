@@ -34,6 +34,9 @@ func HandleCollection(typ handlers.CollectionType, r *http.Request, repo storage
 
 	items, err = repo.LoadCollection(f)
 	if err != nil {
+		if f.Collection == handlers.Inbox || f.Collection == handlers.Outbox {
+			return nil, errors.MethodNotAllowedf("method not allowed")
+		}
 		return nil, err
 	}
 
