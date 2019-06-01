@@ -32,7 +32,7 @@ func main() {
 	if a.Config().Storage == config.BOLTDB {
 		if b, err := boltdb.New(boltdb.Config{
 			Path: a.Config().BoltDBPath,
-			BucketName: "fedbox",
+			BucketName: app.Config.Host,
 		}); err == nil {
 			r.Use(app.Repo(b))
 		}
