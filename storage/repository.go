@@ -479,7 +479,7 @@ func addToCollection(l loader, iri as.IRI, it as.Item) error {
 		l.errFn(logrus.Fields{
 			"rows": t.RowsAffected(),
 		}, "query error")
-		return errors.Annotatef(err, "query error, invalid updated rows")
+		return errors.Annotatef(err, "query error, Invalid updated rows")
 	}
 
 	return nil
@@ -531,7 +531,7 @@ func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 				} else {
 					p.Liked = ld.GetLink()
 				}
-				// TODO(marius): missing likes in go-ap/activitypub actor
+				// TODO(marius): missing likes in go-ap/ActivityPub actor
 				//if ls, err := l.createActorCollection(it, handlers.Likes); err != nil {
 				//	return it, err
 				//} else {
@@ -628,7 +628,7 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 		err := errors.NotFoundf("Unable to update %s with no ID", label)
 		return it, err
 	}
-	found, cnt, _ := loadFromDb(l.conn, table, &activitypub.Filters{
+	found, cnt, _ := l.LoadObjects(&activitypub.Filters{
 		ItemKey: []activitypub.Hash{activitypub.Hash(it.GetLink().String())},
 		Type:    []as.ActivityVocabularyType{it.GetType()},
 	})
@@ -724,41 +724,67 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 // ContentManagementActivity processes matching activities
 func (l loader) ContentManagementActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
 	var err error
-	if act.Object != nil {
-		switch act.Type {
-		case as.CreateType:
-			// TODO(marius) Add function as.AttributedTo(it as.Item, auth as.Item)
-			if o, err := activitypub.ToObject(act.Object); err == nil {
-				// See https://www.w3.org/TR/activitypub/#create-activity-outbox
-				// Copying the actor's IRI to the object's AttributedTo
-				o.AttributedTo = act.Actor.GetLink()
+	if act.Object == nil {
+		return act, errors.NotValidf("Missing object for Activity")
+	}
+	switch act.Type {
+	case as.CreateType:
 
-				aRec := act.Recipients()
-				// Copying the activity's recipients to the object's
-				o.Audience = aRec
-				// Copying the object's recipients to the activity's audience
-				act.Audience = o.Recipients()
+		// TODO(marius) Add function as.AttributedTo(it as.Item, auth as.Item)
+		if a, err := activitypub.ToActivity(act.Object); err == nil {
+			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
+			// Copying the actor's IRI to the object's AttributedTo
+			a.AttributedTo = act.Actor.GetLink()
 
-				act.Object = o
-			}
-			act.Object, err = l.SaveObject(act.Object)
-		case as.UpdateType:
-			// TODO(marius): Move this piece of logic to the validation mechanism
-			if len(act.Object.GetLink()) == 0 {
-				return act, errors.Newf("unable to update object without a valid object id")
-			}
-			act.Object, err = l.UpdateObject(act.Object)
-		case as.DeleteType:
-			// TODO(marius): Move this piece of logic to the validation mechanism
-			if len(act.Object.GetLink()) == 0 {
-				return act, errors.Newf("unable to update object without a valid object id")
-			}
-			act.Object, err = l.DeleteObject(act.Object)
+			aRec := act.Recipients()
+			// Copying the activity's recipients to the object's
+			a.Audience = aRec
+			// Copying the object's recipients to the activity's audience
+			act.Audience = a.Recipients()
+
+			act.Object = a
+		} else if p, err := activitypub.ToPerson(act.Object); err == nil {
+			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
+			// Copying the actor's IRI to the object's AttributedTo
+			p.AttributedTo = act.Actor.GetLink()
+
+			aRec := act.Recipients()
+			// Copying the activity's recipients to the object's
+			p.Audience = aRec
+			// Copying the object's recipients to the activity's audience
+			act.Audience = p.Recipients()
+
+			act.Object = p
+		} else if o, err := activitypub.ToObject(act.Object); err == nil {
+			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
+			// Copying the actor's IRI to the object's AttributedTo
+			o.AttributedTo = act.Actor.GetLink()
+
+			aRec := act.Recipients()
+			// Copying the activity's recipients to the object's
+			o.Audience = aRec
+			// Copying the object's recipients to the activity's audience
+			act.Audience = o.Recipients()
+
+			act.Object = o
 		}
-		if err != nil && !IsDuplicateKey(err) {
-			l.errFn(logrus.Fields{"IRI": act.GetLink(), "type": act.Type}, "unable to save activity's object")
-			return act, err
+		act.Object, err = l.SaveObject(act.Object)
+	case as.UpdateType:
+		// TODO(marius): Move this piece of logic to the validation mechanism
+		if len(act.Object.GetLink()) == 0 {
+			return act, errors.Newf("unable to update object without a valid object id")
 		}
+		act.Object, err = l.UpdateObject(act.Object)
+	case as.DeleteType:
+		// TODO(marius): Move this piece of logic to the validation mechanism
+		if len(act.Object.GetLink()) == 0 {
+			return act, errors.Newf("unable to update object without a valid object id")
+		}
+		act.Object, err = l.DeleteObject(act.Object)
+	}
+	if err != nil && !IsDuplicateKey(err) {
+		l.errFn(logrus.Fields{"IRI": act.GetLink(), "type": act.Type}, "unable to save activity's object")
+		return act, err
 	}
 	return act, err
 }

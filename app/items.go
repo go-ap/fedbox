@@ -2,8 +2,9 @@ package app
 
 import (
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox/activitypub"
+	st "github.com/go-ap/fedbox/storage"
 	h "github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
@@ -25,7 +26,7 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 
 	if len(f.ItemKey) == 0 {
 		f.ItemKey = []activitypub.Hash{
-			activitypub.Hash(id),
+			activitypub.Hash(reqURL(r)),
 		}
 	}
 	f.MaxItems = 1
@@ -37,25 +38,27 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 		if obLoader, ok := repo.(storage.ObjectLoader); ok {
 			items, _, err = obLoader.LoadObjects(f)
 		}
-	} else if activitypub.ValidActivityCollection(string(f.Collection)) {
+	} else if h.ValidActivityCollection(string(f.Collection)) {
 		if actLoader, ok := repo.(storage.ActivityLoader); ok {
 			items, _, err = actLoader.LoadActivities(f)
 		}
-	}
-
-	switch f.Collection {
-	case activitypub.ActivitiesType:
-		if actLoader, ok := repo.(storage.ActivityLoader); ok {
-			items, _, err = actLoader.LoadActivities(f)
+	} else {
+		switch f.Collection {
+		case activitypub.ActivitiesType:
+			if actLoader, ok := repo.(storage.ActivityLoader); ok {
+				items, _, err = actLoader.LoadActivities(f)
+			}
+		case activitypub.ActorsType:
+			if actLoader, ok := repo.(st.ActorLoader); ok {
+				items, _, err = actLoader.LoadActors(f)
+			}
+		case activitypub.ObjectsType:
+			if obLoader, ok := repo.(storage.ObjectLoader); ok {
+				items, _, err = obLoader.LoadObjects(f)
+			}
+		default:
+			return nil, errors.Newf("invalid collection %s", f.Collection)
 		}
-	case activitypub.ActorsType:
-		fallthrough
-	case activitypub.ObjectsType:
-		if obLoader, ok := repo.(storage.ObjectLoader); ok {
-			items, _, err = obLoader.LoadObjects(f)
-		}
-	default:
-		return nil, errors.Newf("invalid collection %s", f.Collection)
 	}
 	if err != nil {
 		return nil, err
