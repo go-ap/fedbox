@@ -90,7 +90,7 @@ func New(conn *pgx.ConnPool, url string, l logrus.FieldLogger) *loader {
 func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, int, error) {
 	f, ok := ff.(*activitypub.Filters)
 	if !ok {
-		return nil, 0, errors.Newf("invalid activitypub filters")
+		return nil, 0, errors.Newf("Invalid ActivityPub filters")
 	}
 	return loadFromDb(l.conn, "activities", f)
 }
@@ -98,7 +98,7 @@ func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, int, error) 
 func (l loader) LoadActors(ff s.Filterable) (as.ItemCollection, int, error) {
 	f, ok := ff.(*activitypub.Filters)
 	if !ok {
-		return nil, 0, errors.Newf("invalid activitypub filters")
+		return nil, 0, errors.Newf("Invalid ActivityPub filters")
 	}
 	return loadFromDb(l.conn, "actors", f)
 }
@@ -106,7 +106,7 @@ func (l loader) LoadActors(ff s.Filterable) (as.ItemCollection, int, error) {
 func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, int, error) {
 	f, ok := ff.(*activitypub.Filters)
 	if !ok {
-		return nil, 0, errors.Newf("invalid activitypub filters")
+		return nil, 0, errors.Newf("Invalid ActivityPub filters")
 	}
 	return loadFromDb(l.conn, "objects", f)
 }
@@ -114,7 +114,7 @@ func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, int, error) {
 func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 	f, ok := ff.(*activitypub.Filters)
 	if !ok {
-		return nil, errors.Newf("invalid activitypub filters")
+		return nil, errors.Newf("Invalid ActivityPub filters")
 	}
 	clauses, values := f.GetWhereClauses()
 
@@ -429,7 +429,7 @@ func createCollection(l loader, it as.CollectionInterface) (as.CollectionInterfa
 		return it, errors.Newf("unable to create nil collection")
 	}
 	if len(it.GetLink()) == 0 {
-		return it, errors.Newf("invalid create collection does not have a valid IRI")
+		return it, errors.Newf("Invalid create collection does not have a valid IRI")
 	}
 
 	query := fmt.Sprintf("INSERT INTO collections (iri, type, created_at) VALUES ($1, $2, $3::timestamptz);")
@@ -458,7 +458,7 @@ func addToCollection(l loader, iri as.IRI, it as.Item) error {
 		return errors.Newf("unable to find collection")
 	}
 	if len(it.GetLink()) == 0 {
-		return errors.Newf("invalid create collection does not have a valid IRI")
+		return errors.Newf("Invalid create collection does not have a valid IRI")
 	}
 
 	query := fmt.Sprintf("UPDATE collections SET updated_at = $1, elements = array_append(elements, $2), count = count+1 WHERE iri = $3;")
@@ -571,11 +571,11 @@ func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 
 func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
 	if table == "activities" {
-		return it, errors.Newf("update action invalid, activities are immutable")
+		return it, errors.Newf("update action Invalid, activities are immutable")
 	}
 	iri := it.GetLink()
 	if len(iri) == 0 {
-		return it, errors.Newf("invalid update item does not have a valid IRI")
+		return it, errors.Newf("Invalid update item does not have a valid IRI")
 	}
 
 	query := fmt.Sprintf("UPDATE %s SET type = $1, updated_at = $2::timestamptz,raw = $3::jsonb WHERE iri = $4;", table)
@@ -650,7 +650,7 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 			"type":  old.GetType(),
 			"iri":   old.GetLink(),
 			"err":   err.Error(),
-		}, "invalid")
+		}, "Invalid")
 	}
 
 	it, err = l.updateItem(table, it)
