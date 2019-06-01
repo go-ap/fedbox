@@ -4,12 +4,12 @@ import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
-	pub "github.com/go-ap/fedbox/activitypub"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"net/http"
 	"regexp"
 )
 
-func LoadToFilters(r *http.Request, f *pub.Filters) error {
+func LoadToFilters(r *http.Request, f *ap.Filters) error {
 	pr, _ := regexp.Compile(fmt.Sprintf("/(actors|items|activities)/(\\w+)/%s", f.Collection))
 	matches := pr.FindSubmatch([]byte(r.URL.Path))
 	if len(matches) < 3 {
@@ -21,7 +21,7 @@ func LoadToFilters(r *http.Request, f *pub.Filters) error {
 		case "actors":
 			// TODO(marius): this needs to be moved somewhere where it makes more sense
 			if loader, ok := Loader(r.Context()); ok {
-				ff := pub.Filters{
+				ff := ap.Filters{
 					Type: []as.ActivityVocabularyType{
 						as.PersonType,
 						as.GroupType,
@@ -29,16 +29,16 @@ func LoadToFilters(r *http.Request, f *pub.Filters) error {
 						as.ServiceType,
 						as.OrganizationType,
 					},
-					Key: []pub.Hash{pub.Hash(url)},
+					Key: []ap.Hash{ap.Hash(url)},
 				}
 				if act, _, err := loader.LoadActors(&ff); err == nil {
 					f.Owner = act
 				}
 			}
 		case "items":
-			f.ItemKey = []pub.Hash{pub.Hash(url)}
+			f.ItemKey = []ap.Hash{ap.Hash(url)}
 		case "activities":
-			f.Key = []pub.Hash{pub.Hash(url)}
+			f.Key = []ap.Hash{ap.Hash(url)}
 		}
 	}
 
