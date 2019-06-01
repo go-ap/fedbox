@@ -411,19 +411,21 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 		return it, err
 	}
 
-	err = addToCollection(l, getCollectionIRI(as.IRI(l.baseURL), handlers.CollectionType(table)), it)
+	colIRI :=  getCollectionIRI(as.IRI(l.baseURL), handlers.CollectionType(table))
+	err = addToCollection(l, colIRI, it)
 	if err != nil {
-		l.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": table}, "unable to add to collection")
+		// This errs
+		l.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI}, "unable to add to collection")
 	}
 
 	// TODO(marius) Move to somewhere else
 	if toFw, ok := it.(as.HasRecipients); ok {
 		for _, fw := range toFw.Recipients() {
-			var errs []error
 			colIRI := fw.GetLink()
 			if l.IsLocalIRI(colIRI) {
-				if err := addToCollection(l, colIRI, it); err != nil {
-					errs = append(errs, err)
+				// we shadow the err variable intentionally so it does not propagate upper to the call stack
+				if errFw := addToCollection(l, colIRI, it); err != nil {
+					l.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI, "error": errFw}, "unable to add to collection")
 				}
 			}
 		}
