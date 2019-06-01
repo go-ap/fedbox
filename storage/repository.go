@@ -89,7 +89,7 @@ func New(conn *pgx.ConnPool, url string, l logrus.FieldLogger) *loader {
 
 func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, int, error) {
 	f, ok := ff.(*activitypub.Filters)
-	if ok {
+	if !ok {
 		return nil, 0, errors.Newf("invalid activitypub filters")
 	}
 	return loadFromDb(l.conn, "activities", f)
