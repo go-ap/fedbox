@@ -7,7 +7,7 @@ require (
 	github.com/go-ap/activitypub v0.0.0-20190531134937-a26398b9f290
 	github.com/go-ap/activitystreams v0.0.0-20190530184402-5829d059925a
 	github.com/go-ap/errors v0.0.0-20190531221153-9f3d3241690b
-	github.com/go-ap/handlers v0.0.0-20190601072212-fccccb03b0b1
+	github.com/go-ap/handlers v0.0.0-20190601105755-e43ee89950ec
 	github.com/go-ap/jsonld v0.0.0-20190306111347-fbb94302fe92
 	github.com/go-ap/storage v0.0.0-20190531204405-12e0866dc628
 	github.com/go-chi/chi v4.0.2+incompatible
