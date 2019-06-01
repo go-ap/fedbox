@@ -108,6 +108,8 @@ insert into actors ("key", "iri", "type", "raw")
 values ('d3ab037c-0f15-4c09-b635-3d6e201c11aa', 'http://fedbox.git/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa', 'Service', '{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "http://fedbox.git/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa","type": "Service","name": "self","inbox": "http://fedbox.git/inbox", "audience": [
   "https://www.w3.org/ns/activitystreams#Public"]}');
 -- name: insert-activities-collection
+-- if we want to have an accessible inbox collection we add it to the table
+-- insert into collections ("iri", "type") values ('http://fedbox.git/inbox', 'OrderedCollection');
 insert into collections ("iri", "type") values ('http://fedbox.git/activities', 'OrderedCollection');
 -- name: insert-actors-collection
 insert into collections ("iri", "type") values ('http://fedbox.git/actors', 'OrderedCollection');
