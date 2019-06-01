@@ -622,28 +622,34 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 	}
 	var err error
 	var table string
+	var found as.ItemCollection
+	var cnt int
 	label := "item"
 	if as.ActivityTypes.Contains(it.GetType()) {
 		return nil, errors.Newf("unable to update activity")
 	} else if as.ActorTypes.Contains(it.GetType()) {
 		label = "actor"
 		table = "actors"
+		found, cnt, _ = l.LoadActors(&activitypub.Filters{
+			ItemKey: []activitypub.Hash{activitypub.Hash(it.GetLink().String())},
+			Type:    []as.ActivityVocabularyType{it.GetType()},
+		})
 	} else {
 		label = "object"
 		table = "objects"
+		found, cnt, _ = l.LoadObjects(&activitypub.Filters{
+			ItemKey: []activitypub.Hash{activitypub.Hash(it.GetLink().String())},
+			Type:    []as.ActivityVocabularyType{it.GetType()},
+		})
 	}
 	if len(it.GetLink()) == 0 {
 		err := errors.NotFoundf("Unable to update %s with no ID", label)
 		return it, err
 	}
-	found, cnt, _ := l.LoadObjects(&activitypub.Filters{
-		ItemKey: []activitypub.Hash{activitypub.Hash(it.GetLink().String())},
-		Type:    []as.ActivityVocabularyType{it.GetType()},
-	})
+
 	if cnt == 0 {
 		err := errors.NotFoundf("%s %s", it.GetLink(), label)
 		l.errFn(logrus.Fields{
-			"table": table,
 			"type":  it.GetType(),
 			"iri":   it.GetLink(),
 			"err":   err.Error(),
@@ -737,7 +743,6 @@ func (l loader) ContentManagementActivity(act *activitypub.Activity) (*activityp
 	}
 	switch act.Type {
 	case as.CreateType:
-
 		// TODO(marius) Add function as.AttributedTo(it as.Item, auth as.Item)
 		if a, err := activitypub.ToActivity(act.Object); err == nil {
 			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
