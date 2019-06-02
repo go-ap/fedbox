@@ -24,11 +24,15 @@ TEST := $(GO) test $(BUILDFLAGS)
 
 .PHONY: all run clean test
 
-all: app
+all: app boltbootstrap
 
 app: bin/app
 bin/app: go.mod main.go $(APPSOURCES)
 	$(BUILD) -tags $(ENV) -o $@ ./main.go
+
+boltbootstrap: bin/boltbootstrap
+bin/boltbootstrap: go.mod cli/boltbootstrap/main.go
+	$(BUILD) -tags $(ENV) -o $@ cli/boltbootstrap/main.go
 
 run: app
 	@./bin/app
