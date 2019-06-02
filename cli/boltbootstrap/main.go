@@ -98,7 +98,7 @@ func main() {
 			  "https://www.w3.org/ns/activitystreams#Public"]}`
 			a := fmt.Sprintf(j, conf.Host, bucketActors, conf.Host)
 			iri := fmt.Sprintf("%s/%s/d3ab037c-0f15-4c09-b635-3d6e201c11aa", conf.Host, bucketActors)
-			err := col.Put([]byte(iri), []byte(a))
+			err := act.Put([]byte(iri), []byte(a))
 			if err != nil {
 				return fmt.Errorf("could not insert entry: %v", err)
 			}
