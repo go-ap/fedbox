@@ -58,7 +58,7 @@ type Filters struct {
 	FollowedBy   []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
 	OlderThan    time.Time                   `qstring:"olderThan,omitempty"`
 	NewerThan    time.Time                   `qstring:"newerThan,omitempty"`
-	Page         int                         `qstring:"page,omitempty"`
+	CurPage      int                         `qstring:"page,omitempty"`
 	MaxItems     int                         `qstring:"maxItems,omitempty"`
 }
 
@@ -88,7 +88,7 @@ func copyActivityFilters(dst *Filters, src Filters) {
 	dst.FollowedBy = src.FollowedBy
 	dst.OlderThan = src.OlderThan
 	dst.NewerThan = src.NewerThan
-	dst.Page = src.Page
+	dst.CurPage = src.CurPage
 	dst.MaxItems = src.MaxItems
 }
 
@@ -107,50 +107,14 @@ func query(f *Filters) string {
 	return res
 }
 
-// QueryString
-func (f *Filters) QueryString() string {
-	return query(f)
+// Page
+func (f *Filters) Page() int {
+	return f.CurPage
 }
 
-// BasePage
-func (f *Filters) BasePage() Paginator {
-	b := &Filters{}
-	copyActivityFilters(b, *f)
-	return b
-}
-
-// CurrentPage
-func (f *Filters) CurrentPage() Paginator {
-	return f
-}
-
-// NextPage
-func (f *Filters) NextPage() Paginator {
-	b := &Filters{}
-	copyActivityFilters(b, *f)
-	b.Page += 1
-	return b
-}
-
-// PrevPage
-func (f *Filters) PrevPage() Paginator {
-	b := &Filters{}
-	copyActivityFilters(b, *f)
-	b.Page -= 1
-	return b
-}
-
-// FirstPage
-func (f *Filters) FirstPage() Paginator {
-	b := &Filters{}
-	copyActivityFilters(b, *f)
-	b.Page = 1
-	return b
-}
-
-// CurrentIndex
-func (f *Filters) CurrentIndex() int {
-	return f.Page
+// Count
+func (f *Filters) Count() int {
+	return f.MaxItems
 }
 
 type Filterable interface {
@@ -240,8 +204,8 @@ func (f Filters) GetLimit() string {
 		return ""
 	}
 	limit := fmt.Sprintf(" LIMIT %d", f.MaxItems)
-	if f.Page >= 1 {
-		limit = fmt.Sprintf("%s OFFSET %d", limit, f.MaxItems*(f.Page-1))
+	if f.CurPage >= 1 {
+		limit = fmt.Sprintf("%s OFFSET %d", limit, f.MaxItems*(f.CurPage-1))
 	}
 	return limit
 }
@@ -264,8 +228,8 @@ func FromRequest(r *http.Request) (Filterable, error) {
 	if f.MaxItems == 0 {
 		f.MaxItems = MaxItems
 	}
-	if f.Page == 0 {
-		f.Page = 1
+	if f.CurPage == 0 {
+		f.CurPage = 1
 	}
 
 	return f, nil

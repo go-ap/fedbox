@@ -1,66 +1,83 @@
 package activitypub
 
 import (
-	"fmt"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
+	"github.com/mariusor/qstring"
 )
 
+// Paginator
 type Paginator interface {
-	QueryString() string
-	FirstPage() Paginator
-	CurrentPage() Paginator
-	NextPage() Paginator
-	PrevPage() Paginator
+	Count() int
+	Page() int
 }
 
-func GetPaginatedCollection(col as.CollectionInterface, filters Paginator) (as.CollectionInterface, error) {
+func getURL (i as.IRI, f Paginator) as.IRI {
+	q, err := qstring.Marshal(f)
+	if err != nil {
+		return i
+	}
+	if u, err := i.URL(); err == nil {
+		query := u.Query()
+		for k, el := range q {
+			if len(el) == 0 {
+				continue
+			}
+			for _, v := range el {
+				query.Add(k, v)
+			}
+		}
+		u.RawQuery = query.Encode()
+		i = as.IRI(u.String())
+	}
+	return i
+}
+
+// PaginateCollection is a function that populates the received collection as
+func PaginateCollection(col as.CollectionInterface, f Paginator) (as.CollectionInterface, error) {
 	if col == nil {
 		return col, errors.Newf("unable to paginate nil collection")
 	}
 
 	var count uint
 	baseURL := col.GetLink()
-	getURL := func(f Paginator) string {
-		qs := ""
-		if f != nil {
-			qs = f.QueryString()
-		}
-		return fmt.Sprintf("%s%s", baseURL, qs)
-	}
 
 	var items as.ItemCollection
 	var haveItems, moreItems, lessItems bool
-	var fp, cp, pp, np Paginator
+	var fp, pp, np Paginator
 
-	if col.GetType() == as.OrderedCollectionType {
+	typ := col.GetType()
+	switch typ {
+	case as.OrderedCollectionType:
 		oc, err := ToOrderedCollection(col)
 		if err == nil {
 			col = oc
 			count = oc.TotalItems
 			items = oc.OrderedItems
 		}
-	}
-	if col.GetType() == as.CollectionType {
+	case as.CollectionType:
 		c, err := ToCollection(col)
 		if err == nil {
 			count = c.TotalItems
 			items = c.Items
 		}
+	default:
+		return col, nil
 	}
 
-	f, _ := filters.(*Filters)
 	haveItems = len(items) > 0
 
-	moreItems = int(count) > ((f.Page + 1) * f.MaxItems)
-	lessItems = f.Page > 1
-	if filters != nil {
-		fp = filters.FirstPage()
-		cp = filters.CurrentPage()
+	moreItems = int(count) > ((f.Page() + 1) * f.Count())
+	lessItems = f.Page() > 1
+	if f != nil {
+		fp = &Filters {
+			CurPage: 0,
+			MaxItems: f.Count(),
+		}
 	}
 
 	if haveItems {
-		firstURL := getURL(fp)
+		firstURL := getURL(baseURL, fp)
 		if col.GetType() == as.OrderedCollectionType {
 			oc, err := ToOrderedCollection(col)
 			if err == nil {
@@ -75,19 +92,18 @@ func GetPaginatedCollection(col as.CollectionInterface, filters Paginator) (as.C
 				col = c
 			}
 		}
-		var nextURL string
-		var prevURL string
+		var nextURL, prevURL as.IRI
 		if moreItems {
-			np = filters.NextPage()
-			nextURL = getURL(np)
+			np = &Filters{ CurPage: f.Page()+1, MaxItems:f.Count()}
+			nextURL = getURL(baseURL, np)
 		}
 		if lessItems {
-			pp = filters.PrevPage()
-			prevURL = getURL(pp)
+			pp = &Filters{ CurPage: f.Page()-1, MaxItems:f.Count()}
+			prevURL = getURL(baseURL, pp)
 		}
-		curURL := getURL(cp)
+		curURL := baseURL
 
-		if f.Page > 0 {
+		if f.Page() > 1 {
 			if col.GetType() == as.OrderedCollectionType {
 				oc, err := ToOrderedCollection(col)
 				if err == nil {
