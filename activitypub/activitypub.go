@@ -134,6 +134,14 @@ func (o *OrderedCollection) Append(ob as.Item) error {
 	return nil
 }
 
+// Count returns the maximum between the length of Items in collection and its TotalItems property
+func (o *OrderedCollection) Count() uint {
+	if o.TotalItems > 0 {
+		return o.TotalItems
+	}
+	return uint(len(o.OrderedItems))
+}
+
 // UnmarshalJSON tries to load json data to OrderedCollection o
 func (o *OrderedCollection) UnmarshalJSON(data []byte) error {
 	col := as.OrderedCollection{}
@@ -215,6 +223,14 @@ func (c Collection) IsObject() bool {
 // Collection returns the underlying Collection type
 func (c *Collection) Collection() as.CollectionInterface {
 	return c
+}
+
+// Count returns the maximum between the length of Items in collection and its TotalItems property
+func (c *Collection) Count() uint {
+	if c.TotalItems > 0 {
+		return c.TotalItems
+	}
+	return uint(len(c.Items))
 }
 
 // Append adds an element to an Collection

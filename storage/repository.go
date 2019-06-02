@@ -158,42 +158,43 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 			"elements": elements,
 		}, "loaded fields")
 
+		table := "objects"
+		var items as.ItemCollection
+		if f.Collection == "actors" {
+			table = "actors"
+		}
+		if f.Collection == "activities" {
+			table = "activities"
+		}
+		f.ItemKey = f.ItemKey[:0]
+		for _, elem := range elements {
+			f.ItemKey = append(f.ItemKey, activitypub.Hash(elem))
+		}
+		var total uint
+		items, total, err = loadFromDb(l.conn, table, f)
+
 		if as.ActivityVocabularyType(typ) == as.CollectionType {
 			col := &as.Collection{}
 			col.ID = as.ObjectID(iri)
 			col.Type = as.CollectionType
+			col.TotalItems = total
 			ret = col
 		}
 		if as.ActivityVocabularyType(typ) == as.OrderedCollectionType {
 			col := &as.OrderedCollection{}
 			col.ID = as.ObjectID(iri)
 			col.Type = as.OrderedCollectionType
+			col.TotalItems = total
 			ret = col
 		}
-		f.ItemKey = f.ItemKey[:0]
-		for _, elem := range elements {
-			f.ItemKey = append(f.ItemKey, activitypub.Hash(elem))
+		if err == nil && total > 0 {
+			for _, it := range items {
+				ret.Append(it)
+			}
 		}
 	}
 	if ret == nil {
 		return ret, errors.Newf("could not load '%s' collection", f.Collection)
-	}
-
-	table := "objects"
-	var items as.ItemCollection
-	if f.Collection == "actors" {
-		table = "actors"
-	}
-	if f.Collection == "activities" {
-		table = "activities"
-	}
-	f.ItemKey = f.ItemKey[:0]
-	var total uint
-	items, total, err = loadFromDb(l.conn, table, f)
-	if err == nil && total > 0 {
-		for _, it := range items {
-			ret.Append(it)
-		}
 	}
 	return ret, err
 }
