@@ -14,11 +14,12 @@ type Paginator interface {
 	PrevPage() Paginator
 }
 
-func GetPaginatedCollection(col as.CollectionInterface, count uint, filters Paginator) (as.CollectionInterface, error) {
+func GetPaginatedCollection(col as.CollectionInterface, filters Paginator) (as.CollectionInterface, error) {
 	if col == nil {
 		return col, errors.Newf("unable to paginate nil collection")
 	}
 
+	var count uint
 	baseURL := col.GetLink()
 	getURL := func(f Paginator) string {
 		qs := ""
@@ -35,7 +36,7 @@ func GetPaginatedCollection(col as.CollectionInterface, count uint, filters Pagi
 	if col.GetType() == as.OrderedCollectionType {
 		oc, err := ToOrderedCollection(col)
 		if err == nil {
-			oc.TotalItems = count
+			count = oc.TotalItems
 			col = oc
 			items = oc.OrderedItems
 		}
@@ -43,7 +44,7 @@ func GetPaginatedCollection(col as.CollectionInterface, count uint, filters Pagi
 	if col.GetType() == as.CollectionType {
 		c, err := ToCollection(col)
 		if err == nil {
-			c.TotalItems = count
+			count = c.TotalItems
 			col = c
 			items = c.Items
 		}

@@ -195,7 +195,6 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 			ret.Append(it)
 		}
 	}
-	ret, err = activitypub.GetPaginatedCollection(ret, uint(count), f)
 	return ret, err
 }
 

@@ -39,6 +39,5 @@ func HandleCollection(typ handlers.CollectionType, r *http.Request, repo storage
 		}
 		return nil, err
 	}
-
-	return items, nil
+	return activitypub.GetPaginatedCollection(items, f)
 }
