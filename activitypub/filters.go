@@ -204,13 +204,14 @@ func (f Filters) GetLimit() string {
 		return ""
 	}
 	limit := fmt.Sprintf(" LIMIT %d", f.MaxItems)
-	if f.CurPage >= 1 {
-		limit = fmt.Sprintf("%s OFFSET %d", limit, f.MaxItems*(f.CurPage-1))
+	if f.CurPage > 0 {
+		limit = fmt.Sprintf("%s OFFSET %d", limit, f.MaxItems*(f.CurPage))
 	}
 	return limit
 }
 
 const MaxItems = 100
+
 var ErrNotFound = func(s string) error {
 	return errors.Newf(fmt.Sprintf("%s not found", s))
 }
@@ -227,9 +228,6 @@ func FromRequest(r *http.Request) (Filterable, error) {
 
 	if f.MaxItems == 0 {
 		f.MaxItems = MaxItems
-	}
-	if f.CurPage == 0 {
-		f.CurPage = 1
 	}
 
 	return f, nil
