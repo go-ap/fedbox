@@ -36,8 +36,8 @@ func GetPaginatedCollection(col as.CollectionInterface, filters Paginator) (as.C
 	if col.GetType() == as.OrderedCollectionType {
 		oc, err := ToOrderedCollection(col)
 		if err == nil {
-			count = oc.TotalItems
 			col = oc
+			count = oc.TotalItems
 			items = oc.OrderedItems
 		}
 	}
@@ -45,7 +45,6 @@ func GetPaginatedCollection(col as.CollectionInterface, filters Paginator) (as.C
 		c, err := ToCollection(col)
 		if err == nil {
 			count = c.TotalItems
-			col = c
 			items = c.Items
 		}
 	}
@@ -76,20 +75,19 @@ func GetPaginatedCollection(col as.CollectionInterface, filters Paginator) (as.C
 				col = c
 			}
 		}
+		var nextURL string
+		var prevURL string
+		if moreItems {
+			np = filters.NextPage()
+			nextURL = getURL(np)
+		}
+		if lessItems {
+			pp = filters.PrevPage()
+			prevURL = getURL(pp)
+		}
+		curURL := getURL(cp)
 
-		if f.Page >= 1 {
-			var nextURL string
-			var prevURL string
-			curURL := getURL(cp)
-			if moreItems {
-				np = filters.NextPage()
-				nextURL = getURL(np)
-			}
-			if lessItems {
-				pp = filters.PrevPage()
-				prevURL = getURL(pp)
-			}
-
+		if f.Page > 0 {
 			if col.GetType() == as.OrderedCollectionType {
 				oc, err := ToOrderedCollection(col)
 				if err == nil {
