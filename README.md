@@ -4,4 +4,4 @@ FedBOX is a very simple ActivityPub enabled service. Its main purpose is as a re
 
 The secondary purpose is to abstract some of the common functionality that such a service would use, such as: HTTP handlers and middlewares, storage and filtering etc.
 
-The current iteration persists data to PostgreSQL and BoltDB, but I want to also add support for a filesystem based method.
+The current iteration can persist data to PostgreSQL and BoltDB, but I want to also add support for a filesystem based method.
