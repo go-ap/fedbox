@@ -70,21 +70,21 @@ func main() {
 		col := tx.Bucket(rootBucket).Bucket([]byte(bucketCollections))
 		{
 			{
-				iri := fmt.Sprintf("%s/%s", conf.Host, bucketActivities)
+				iri := fmt.Sprintf("%s/%s", conf.BaseURL, bucketActivities)
 				err := col.Put([]byte(iri), nil)
 				if err != nil {
 					return fmt.Errorf("could not insert entry: %v", err)
 				}
 			}
 			{
-				iri := fmt.Sprintf("%s/%s", conf.Host, bucketActors)
+				iri := fmt.Sprintf("%s/%s", conf.BaseURL, bucketActors)
 				err := col.Put([]byte(iri), nil)
 				if err != nil {
 					return fmt.Errorf("could not insert entry: %v", err)
 				}
 			}
 			{
-				iri := fmt.Sprintf("%s/%s", conf.Host, bucketObjects)
+				iri := fmt.Sprintf("%s/%s", conf.BaseURL, bucketObjects)
 				err := col.Put([]byte(iri), nil)
 				if err != nil {
 					return fmt.Errorf("could not insert entry: %v", err)
@@ -96,8 +96,8 @@ func main() {
 		{
 			j := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s/%s/d3ab037c-0f15-4c09-b635-3d6e201c11aa","type": "Service","name": "self","inbox": "%s/inbox", "audience": [
 			  "https://www.w3.org/ns/activitystreams#Public"]}`
-			a := fmt.Sprintf(j, conf.Host, bucketActors, conf.Host)
-			iri := fmt.Sprintf("%s/%s/d3ab037c-0f15-4c09-b635-3d6e201c11aa", conf.Host, bucketActors)
+			a := fmt.Sprintf(j, conf.BaseURL, bucketActors, conf.BaseURL)
+			iri := fmt.Sprintf("%s/%s/d3ab037c-0f15-4c09-b635-3d6e201c11aa", conf.BaseURL, bucketActors)
 			err := act.Put([]byte(iri), []byte(a))
 			if err != nil {
 				return fmt.Errorf("could not insert entry: %v", err)
@@ -106,7 +106,7 @@ func main() {
 			actors := []string{iri}
 			aBytes, _ := json.Marshal(&actors)
 			{
-				iri := fmt.Sprintf("%s/%s", conf.Host, bucketActors)
+				iri := fmt.Sprintf("%s/%s", conf.BaseURL, bucketActors)
 				err := col.Put([]byte(iri), aBytes)
 				if err != nil {
 					return fmt.Errorf("could not insert entry: %v", err)
