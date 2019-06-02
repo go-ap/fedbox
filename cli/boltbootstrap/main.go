@@ -70,19 +70,22 @@ func main() {
 		col := tx.Bucket(rootBucket).Bucket([]byte(bucketCollections))
 		{
 			{
-				err := col.Put([]byte("http://fedbox.git/activities"), nil)
+				iri := fmt.Sprintf("%s/%s", conf.Host, bucketActivities)
+				err := col.Put([]byte(iri), nil)
 				if err != nil {
 					return fmt.Errorf("could not insert entry: %v", err)
 				}
 			}
 			{
-				err := col.Put([]byte("http://fedbox.git/actors"), nil)
+				iri := fmt.Sprintf("%s/%s", conf.Host, bucketActors)
+				err := col.Put([]byte(iri), nil)
 				if err != nil {
 					return fmt.Errorf("could not insert entry: %v", err)
 				}
 			}
 			{
-				err := col.Put([]byte("http://fedbox.git/objects"), nil)
+				iri := fmt.Sprintf("%s/%s", conf.Host, bucketObjects)
+				err := col.Put([]byte(iri), nil)
 				if err != nil {
 					return fmt.Errorf("could not insert entry: %v", err)
 				}
@@ -91,17 +94,20 @@ func main() {
 		// Service actor
 		act := tx.Bucket(rootBucket).Bucket([]byte(bucketActors))
 		{
-			a := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "http://fedbox.git/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa","type": "Service","name": "self","inbox": "http://fedbox.git/inbox", "audience": [
+			j := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s/%s/d3ab037c-0f15-4c09-b635-3d6e201c11aa","type": "Service","name": "self","inbox": "%s/inbox", "audience": [
 			  "https://www.w3.org/ns/activitystreams#Public"]}`
-			err := act.Put([]byte("http://fedbox.git/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa"), []byte(a))
+			a := fmt.Sprintf(j, conf.Host, bucketActors, conf.Host)
+			iri := fmt.Sprintf("%s/%s/d3ab037c-0f15-4c09-b635-3d6e201c11aa", conf.Host, bucketActors)
+			err := col.Put([]byte(iri), []byte(a))
 			if err != nil {
 				return fmt.Errorf("could not insert entry: %v", err)
 			}
 			col := tx.Bucket(rootBucket).Bucket([]byte(bucketCollections))
-			actors := []string{"http://fedbox.git/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa"}
+			actors := []string{iri}
 			aBytes, _ := json.Marshal(&actors)
 			{
-				err := col.Put([]byte("http://fedbox.git/actors"), aBytes)
+				iri := fmt.Sprintf("%s/%s", conf.Host, bucketActors)
+				err := col.Put([]byte(iri), aBytes)
 				if err != nil {
 					return fmt.Errorf("could not insert entry: %v", err)
 				}
