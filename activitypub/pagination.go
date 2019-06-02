@@ -8,8 +8,8 @@ import (
 
 // Paginator
 type Paginator interface {
-	Count() int
-	Page() int
+	Count() uint
+	Page() uint
 }
 
 func getURL(i as.IRI, f Paginator) as.IRI {
@@ -39,40 +39,21 @@ func PaginateCollection(col as.CollectionInterface, f Paginator) (as.CollectionI
 		return col, errors.Newf("unable to paginate nil collection")
 	}
 
-	var count uint
 	baseURL := col.GetLink()
 
-	var items as.ItemCollection
 	var haveItems, moreItems, lessItems bool
 	var pp, np Paginator
 
-	typ := col.GetType()
-	switch typ {
-	case as.OrderedCollectionType:
-		oc, err := ToOrderedCollection(col)
-		if err == nil {
-			col = oc
-			count = oc.TotalItems
-			items = oc.OrderedItems
-		}
-	case as.CollectionType:
-		c, err := ToCollection(col)
-		if err == nil {
-			count = c.TotalItems
-			items = c.Items
-		}
-	default:
-		return col, nil
-	}
-	haveItems = len(items) > 0
-	moreItems = int(count) > ((f.Page() + 1) * f.Count())
+	count := col.Count()
+	haveItems = count > 0
+	moreItems = uint(count) > ((f.Page() + 1) * f.Count())
 	lessItems = f.Page() > 1
 
 	if haveItems {
 		var firstURL as.IRI
 
 		if f != nil {
-			fp := &Filters{CurPage: 1, MaxItems: f.Count()}
+			fp := &Filters{CurPage: 1, MaxItems: count}
 			firstURL = getURL(baseURL, fp)
 		}
 		if col.GetType() == as.OrderedCollectionType {
@@ -91,11 +72,11 @@ func PaginateCollection(col as.CollectionInterface, f Paginator) (as.CollectionI
 		}
 		var nextURL, prevURL as.IRI
 		if moreItems {
-			np = &Filters{CurPage: f.Page() + 1, MaxItems: f.Count()}
+			np = &Filters{CurPage: f.Page() + 1, MaxItems: count}
 			nextURL = getURL(baseURL, np)
 		}
 		if lessItems {
-			pp = &Filters{CurPage: f.Page() - 1, MaxItems: f.Count()}
+			pp = &Filters{CurPage: f.Page() - 1, MaxItems: count}
 			prevURL = getURL(baseURL, pp)
 		}
 		curURL := baseURL

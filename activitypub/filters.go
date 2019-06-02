@@ -58,8 +58,8 @@ type Filters struct {
 	FollowedBy   []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
 	OlderThan    time.Time                   `qstring:"olderThan,omitempty"`
 	NewerThan    time.Time                   `qstring:"newerThan,omitempty"`
-	CurPage      int                         `qstring:"page,omitempty"`
-	MaxItems     int                         `qstring:"maxItems,omitempty"`
+	CurPage      uint                        `qstring:"page,omitempty"`
+	MaxItems     uint                        `qstring:"maxItems,omitempty"`
 }
 
 // IRIs returns a list of ActivityVocabularyTypes to filter against
@@ -108,12 +108,12 @@ func query(f *Filters) string {
 }
 
 // Page
-func (f *Filters) Page() int {
+func (f *Filters) Page() uint {
 	return f.CurPage
 }
 
 // Count
-func (f *Filters) Count() int {
+func (f *Filters) Count() uint {
 	return f.MaxItems
 }
 
@@ -222,8 +222,6 @@ func FromRequest(r *http.Request) (Filterable, error) {
 	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
 		return f, err
 	}
-	f.MaxItems = MaxItems
-
 	f.Collection = h.Typer.Type(r)
 
 	if f.MaxItems == 0 {
