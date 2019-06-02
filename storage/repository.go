@@ -51,10 +51,6 @@ var ErrDuplicateObject = func(s string, p ...interface{}) errDuplicateKey {
 	return errDuplicateKey{wrapErr(nil, fmt.Sprintf("Duplicate key: %s", s), p...)}
 }
 
-type ActorLoader interface {
-	LoadActors(f s.Filterable) (as.ItemCollection, int, error)
-}
-
 type loader struct {
 	baseURL string
 	conn    *pgx.ConnPool

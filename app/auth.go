@@ -11,7 +11,7 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/storage"
+	st "github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"github.com/spacemonkeygo/httpsig"
@@ -27,7 +27,7 @@ type keyLoader struct {
 	logFn func(string, ...interface{})
 	realm string
 	acc   as.Actor
-	l     storage.ActorLoader
+	l     st.ActorLoader
 	c     client.Client
 }
 

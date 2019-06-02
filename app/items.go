@@ -4,7 +4,6 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
-	st "github.com/go-ap/fedbox/storage"
 	h "github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
@@ -49,7 +48,7 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 				items, _, err = actLoader.LoadActivities(f)
 			}
 		case activitypub.ActorsType:
-			if actLoader, ok := repo.(st.ActorLoader); ok {
+			if actLoader, ok := repo.(storage.ActorLoader); ok {
 				items, _, err = actLoader.LoadActors(f)
 			}
 		case activitypub.ObjectsType:

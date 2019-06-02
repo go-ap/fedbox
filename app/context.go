@@ -2,8 +2,8 @@ package app
 
 import (
 	"context"
-	st "github.com/go-ap/fedbox/storage"
 	ap "github.com/go-ap/handlers"
+	st "github.com/go-ap/storage"
 )
 
 type CtxtKey string
