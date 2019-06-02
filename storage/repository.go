@@ -95,7 +95,7 @@ func New(conn *pgx.ConnPool, url string, l logrus.FieldLogger) *loader {
 	}
 }
 
-func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, int, error) {
+func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, uint, error) {
 	f, ok := ff.(*activitypub.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
@@ -103,7 +103,7 @@ func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, int, error) 
 	return loadFromDb(l.conn, "activities", f)
 }
 
-func (l loader) LoadActors(ff s.Filterable) (as.ItemCollection, int, error) {
+func (l loader) LoadActors(ff s.Filterable) (as.ItemCollection, uint, error) {
 	f, ok := ff.(*activitypub.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
@@ -111,7 +111,7 @@ func (l loader) LoadActors(ff s.Filterable) (as.ItemCollection, int, error) {
 	return loadFromDb(l.conn, "actors", f)
 }
 
-func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, int, error) {
+func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, uint, error) {
 	f, ok := ff.(*activitypub.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
@@ -192,7 +192,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 		table = "activities"
 	}
 	f.ItemKey = f.ItemKey[:0]
-	var total int
+	var total uint
 	items, total, err = loadFromDb(l.conn, table, f)
 	if err == nil && total > 0 {
 		for _, it := range items {
@@ -203,13 +203,13 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 	return ret, err
 }
 
-func (l loader) Load(ff s.Filterable) (as.ItemCollection, int, error) {
+func (l loader) Load(ff s.Filterable) (as.ItemCollection, uint, error) {
 	return nil, 0, errors.NotImplementedf("not implemented loader.Load()")
 }
 
-func loadFromDb(conn *pgx.ConnPool, table string, f activitypub.Filterable) (as.ItemCollection, int, error) {
+func loadFromDb(conn *pgx.ConnPool, table string, f activitypub.Filterable) (as.ItemCollection, uint, error) {
 	clauses, values := f.GetWhereClauses()
-	total := 0
+	var total uint = 0
 
 	sel := fmt.Sprintf("SELECT id, key, iri, created_at::timestamptz, type, raw FROM %s WHERE %s ORDER BY raw->>'published' DESC %s", table, strings.Join(clauses, " AND "), f.GetLimit())
 	rows, err := conn.Query(sel, values...)
@@ -625,7 +625,7 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 	var err error
 	var table string
 	var found as.ItemCollection
-	var cnt int
+	var cnt uint
 	label := "item"
 	if as.ActivityTypes.Contains(it.GetType()) {
 		return nil, errors.Newf("unable to update activity")
@@ -700,7 +700,7 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 	if it.IsObject() {
 		f.Type = []as.ActivityVocabularyType{it.GetType()}
 	}
-	var cnt int
+	var cnt uint
 	var found as.ItemCollection
 	found, cnt, _ = loadFromDb(l.conn, table, &f)
 	if cnt == 0 {
