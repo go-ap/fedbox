@@ -5,7 +5,7 @@ import (
 	"github.com/go-ap/activitypub/client"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/activitypub"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
@@ -13,43 +13,10 @@ import (
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/pgtype"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/xerrors"
 	"net/url"
 	"strings"
 	"time"
 )
-
-type errDuplicateKey struct {
-	errors.Err
-}
-
-func IsDuplicateKey(e error) bool {
-	_, okp := e.(*errDuplicateKey)
-	_, oks := e.(errDuplicateKey)
-	return okp || oks
-}
-
-func (n errDuplicateKey) Is(e error) bool {
-	return IsDuplicateKey(e)
-}
-
-func wrapErr(err error, s string, args ...interface{}) errors.Err {
-	e := errors.Annotatef(err, s, args...)
-	asErr := errors.Err{}
-	xerrors.As(e, &asErr)
-	return asErr
-}
-
-var errFn = func(ss string) func(s string, p ...interface{}) errors.Err {
-	fn := func(s string, p ...interface{}) errors.Err {
-		return wrapErr(nil, fmt.Sprintf("%s: %s", ss, s), p...)
-	}
-	return fn
-}
-
-var ErrDuplicateObject = func(s string, p ...interface{}) errDuplicateKey {
-	return errDuplicateKey{wrapErr(nil, fmt.Sprintf("Duplicate key: %s", s), p...)}
-}
 
 type loader struct {
 	baseURL string
@@ -92,7 +59,7 @@ func New(conn *pgx.ConnPool, url string, l logrus.FieldLogger) *loader {
 }
 
 func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, uint, error) {
-	f, ok := ff.(*activitypub.Filters)
+	f, ok := ff.(*ap.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
 	}
@@ -100,7 +67,7 @@ func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, uint, error)
 }
 
 func (l loader) LoadActors(ff s.Filterable) (as.ItemCollection, uint, error) {
-	f, ok := ff.(*activitypub.Filters)
+	f, ok := ff.(*ap.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
 	}
@@ -108,7 +75,7 @@ func (l loader) LoadActors(ff s.Filterable) (as.ItemCollection, uint, error) {
 }
 
 func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, uint, error) {
-	f, ok := ff.(*activitypub.Filters)
+	f, ok := ff.(*ap.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
 	}
@@ -116,7 +83,7 @@ func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, uint, error) {
 }
 
 func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
-	f, ok := ff.(*activitypub.Filters)
+	f, ok := ff.(*ap.Filters)
 	if !ok {
 		return nil, errors.Newf("Invalid ActivityPub filters")
 	}
@@ -168,7 +135,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 		}
 		f.ItemKey = f.ItemKey[:0]
 		for _, elem := range elements {
-			f.ItemKey = append(f.ItemKey, activitypub.Hash(elem))
+			f.ItemKey = append(f.ItemKey, ap.Hash(elem))
 		}
 		var total uint
 		items, total, err = loadFromDb(l.conn, table, f)
@@ -203,7 +170,7 @@ func (l loader) Load(ff s.Filterable) (as.ItemCollection, uint, error) {
 	return nil, 0, errors.NotImplementedf("not implemented loader.Load()")
 }
 
-func loadFromDb(conn *pgx.ConnPool, table string, f activitypub.Filterable) (as.ItemCollection, uint, error) {
+func loadFromDb(conn *pgx.ConnPool, table string, f ap.Filterable) (as.ItemCollection, uint, error) {
 	clauses, values := f.GetWhereClauses()
 	var total uint = 0
 
@@ -221,7 +188,7 @@ func loadFromDb(conn *pgx.ConnPool, table string, f activitypub.Filterable) (as.
 	// Iterate through the result set
 	for rows.Next() {
 		var id int64
-		var key activitypub.Hash
+		var key ap.Hash
 		var iri string
 		var created pgtype.Timestamptz
 		var typ string
@@ -249,8 +216,8 @@ func loadFromDb(conn *pgx.ConnPool, table string, f activitypub.Filterable) (as.
 func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
 
-	it, err = processActivity(l, it)
-	it = activitypub.FlattenProperties(it)
+	it, err = ap.ProcessActivity(l, it)
+	it = ap.FlattenProperties(it)
 
 	it, err = l.SaveObject(it)
 	if err != nil {
@@ -267,86 +234,6 @@ func getCollectionID(actor as.Item, c handlers.CollectionType) as.ObjectID {
 
 func getCollectionIRI(actor as.Item, c handlers.CollectionType) as.IRI {
 	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
-}
-
-func processActivity(l loader, it as.Item) (as.Item, error) {
-	var err error
-
-	// First we process the activity to effect whatever changes we need to on the activity properties.
-	act, err := activitypub.ToActivity(it)
-	if as.ContentManagementActivityTypes.Contains(it.GetType()) {
-		act, err = l.ContentManagementActivity(act)
-		if err == nil {
-			return act, nil
-		}
-	}
-	if as.CollectionManagementActivityTypes.Contains(it.GetType()) {
-		act, err = l.CollectionManagementActivity(act)
-		if err == nil {
-			return act, nil
-		}
-	}
-	if as.ReactionsActivityTypes.Contains(it.GetType()) {
-		act, err = l.ReactionsActivity(act)
-		if err == nil {
-			return act, nil
-		}
-	}
-	if as.EventRSVPActivityTypes.Contains(it.GetType()) {
-		act, err = l.EventRSVPActivity(act)
-		if err == nil {
-			return act, nil
-		}
-	}
-	if as.GroupManagementActivityTypes.Contains(it.GetType()) {
-		act, err = l.GroupManagementActivity(act)
-		if err == nil {
-			return act, nil
-		}
-	}
-	if as.ContentExperienceActivityTypes.Contains(it.GetType()) {
-		act, err = l.ContentExperienceActivity(act)
-		if err == nil {
-			return act, nil
-		}
-	}
-	if as.GeoSocialEventsActivityTypes.Contains(it.GetType()) {
-		act, err = l.GeoSocialEventsActivity(act)
-		if err == nil {
-			return act, nil
-		}
-	}
-	if as.NotificationActivityTypes.Contains(it.GetType()) {
-		act, err = l.NotificationActivity(act)
-		if err == nil {
-			return act, nil
-		}
-	}
-	if as.QuestionActivityTypes.Contains(it.GetType()) {
-		act, err = l.QuestionActivity(act)
-		if err == nil {
-			return act, nil
-		}
-	}
-	if as.RelationshipManagementActivityTypes.Contains(it.GetType()) && act.Object.GetType() == as.RelationshipType {
-		act, err = l.RelationshipManagementActivity(act)
-		if err == nil {
-			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
-		}
-	}
-	if as.NegatingActivityTypes.Contains(it.GetType()) {
-		act, err = l.NegatingActivity(act)
-		if err == nil {
-			return act, nil
-		}
-	}
-	if as.OffersActivityTypes.Contains(it.GetType()) {
-		act, err = l.OffersActivity(act)
-		if err == nil {
-			return act, nil
-		}
-	}
-	return it, err
 }
 
 func ( l loader) createActorCollection(actor as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
@@ -388,11 +275,11 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	}
 
 	if len(it.GetLink()) > 0 {
-		if _, cnt, _ := loadFromDb(l.conn, table, &activitypub.Filters{
-			ItemKey: []activitypub.Hash{activitypub.Hash(it.GetLink().String())},
+		if _, cnt, _ := loadFromDb(l.conn, table, &ap.Filters{
+			ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
 			Type:    []as.ActivityVocabularyType{it.GetType()},
 		}); cnt != 0 {
-			err := ErrDuplicateObject("%s in table %s", it.GetLink(), table)
+			err := ap.ErrDuplicateObject("%s in table %s", it.GetLink(), table)
 			l.errFn(logrus.Fields{
 				"table": table,
 				"type":  it.GetType(),
@@ -502,13 +389,13 @@ func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 		// TODO(marius): this needs to be in a different place
 		iri = as.IRI(fmt.Sprintf("%s/%s/%s", l.baseURL, table, uuid))
 		if as.ActivityTypes.Contains(it.GetType()) {
-			if a, err := activitypub.ToActivity(it); err == nil {
+			if a, err := ap.ToActivity(it); err == nil {
 				a.ID = as.ObjectID(iri)
 				a.Published = now
 				it = a
 			}
 		} else if as.ActorTypes.Contains(it.GetType()) {
-			if p, err := activitypub.ToPerson(it); err == nil {
+			if p, err := ap.ToPerson(it); err == nil {
 				p.ID = as.ObjectID(iri)
 				p.Published = now
 
@@ -587,7 +474,7 @@ func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
 	query := fmt.Sprintf("UPDATE %s SET type = $1, updated_at = $2::timestamptz,raw = $3::jsonb WHERE iri = $4;", table)
 	now := time.Now().UTC()
 	if as.ActorTypes.Contains(it.GetType()) {
-		if p, err := activitypub.ToPerson(it); err == nil {
+		if p, err := ap.ToPerson(it); err == nil {
 			p.Updated = now
 			it = p
 		}
@@ -614,6 +501,10 @@ func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
 	return it, nil
 }
 
+func (l loader) UpdateActor(it as.Item) (as.Item, error) {
+	return l.UpdateObject(it)
+}
+
 func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
@@ -628,15 +519,15 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 	} else if as.ActorTypes.Contains(it.GetType()) {
 		label = "actor"
 		table = "actors"
-		found, cnt, _ = l.LoadActors(&activitypub.Filters{
-			ItemKey: []activitypub.Hash{activitypub.Hash(it.GetLink().String())},
+		found, cnt, _ = l.LoadActors(&ap.Filters{
+			ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
 			Type:    []as.ActivityVocabularyType{it.GetType()},
 		})
 	} else {
 		label = "object"
 		table = "objects"
-		found, cnt, _ = l.LoadObjects(&activitypub.Filters{
-			ItemKey: []activitypub.Hash{activitypub.Hash(it.GetLink().String())},
+		found, cnt, _ = l.LoadObjects(&ap.Filters{
+			ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
 			Type:    []as.ActivityVocabularyType{it.GetType()},
 		})
 	}
@@ -655,7 +546,7 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 		return it, err
 	}
 	old := found[0]
-	it, err = activitypub.UpdateItemProperties(old, it)
+	it, err = ap.UpdateItemProperties(old, it)
 	if err != nil {
 		l.errFn(logrus.Fields{
 			"table": table,
@@ -676,6 +567,9 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 	return it, err
 }
 
+func (l loader) DeleteActor(it as.Item) (as.Item, error) {
+	return l.DeleteObject(it)
+}
 func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
@@ -690,8 +584,8 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 		table = "objects"
 	}
 
-	f := activitypub.Filters{
-		ItemKey: []activitypub.Hash{activitypub.Hash(it.GetLink().String())},
+	f := ap.Filters{
+		ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
 	}
 	if it.IsObject() {
 		f.Type = []as.ActivityVocabularyType{it.GetType()}
@@ -723,7 +617,7 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 			ID:   as.ObjectID(it.GetLink()),
 			Type: as.TombstoneType,
 			To: as.ItemCollection{
-				as.IRI(activitypub.Public),
+				as.IRI(ap.Public),
 			},
 		},
 		Deleted:    time.Now().UTC(),
@@ -731,153 +625,4 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 	}
 
 	return l.updateItem(table, t)
-}
-
-// ContentManagementActivity processes matching activities
-func (l loader) ContentManagementActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	var err error
-	if act.Object == nil {
-		return act, errors.NotValidf("Missing object for Activity")
-	}
-	switch act.Type {
-	case as.CreateType:
-		// TODO(marius) Add function as.AttributedTo(it as.Item, auth as.Item)
-		if a, err := activitypub.ToActivity(act.Object); err == nil {
-			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
-			// Copying the actor's IRI to the object's AttributedTo
-			a.AttributedTo = act.Actor.GetLink()
-
-			aRec := act.Recipients()
-			// Copying the activity's recipients to the object's
-			a.Audience = aRec
-			// Copying the object's recipients to the activity's audience
-			act.Audience = a.Recipients()
-
-			act.Object = a
-		} else if p, err := activitypub.ToPerson(act.Object); err == nil {
-			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
-			// Copying the actor's IRI to the object's AttributedTo
-			p.AttributedTo = act.Actor.GetLink()
-
-			aRec := act.Recipients()
-			// Copying the activity's recipients to the object's
-			p.Audience = aRec
-			// Copying the object's recipients to the activity's audience
-			act.Audience = p.Recipients()
-
-			act.Object = p
-		} else if o, err := activitypub.ToObject(act.Object); err == nil {
-			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
-			// Copying the actor's IRI to the object's AttributedTo
-			o.AttributedTo = act.Actor.GetLink()
-
-			aRec := act.Recipients()
-			// Copying the activity's recipients to the object's
-			o.Audience = aRec
-			// Copying the object's recipients to the activity's audience
-			act.Audience = o.Recipients()
-
-			act.Object = o
-		}
-		act.Object, err = l.SaveObject(act.Object)
-	case as.UpdateType:
-		// TODO(marius): Move this piece of logic to the validation mechanism
-		if len(act.Object.GetLink()) == 0 {
-			return act, errors.Newf("unable to update object without a valid object id")
-		}
-		act.Object, err = l.UpdateObject(act.Object)
-	case as.DeleteType:
-		// TODO(marius): Move this piece of logic to the validation mechanism
-		if len(act.Object.GetLink()) == 0 {
-			return act, errors.Newf("unable to update object without a valid object id")
-		}
-		act.Object, err = l.DeleteObject(act.Object)
-	}
-	if err != nil && !IsDuplicateKey(err) {
-		l.errFn(logrus.Fields{"IRI": act.GetLink(), "type": act.Type}, "unable to save activity's object")
-		return act, err
-	}
-	return act, err
-}
-
-// ReactionsActivity processes matching activities
-func (l loader) ReactionsActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	var err error
-	if act.Object != nil {
-		switch act.Type {
-		case as.BlockType:
-		case as.AcceptType:
-			// TODO(marius): either the actor or the object needs to be local for this action to be valid
-			// in the case of C2S... the actor needs to be local
-			// in the case of S2S... the object is
-		case as.DislikeType:
-		case as.FlagType:
-		case as.IgnoreType:
-		case as.LikeType:
-		case as.RejectType:
-		case as.TentativeAcceptType:
-		case as.TentativeRejectType:
-		}
-	}
-	return act, err
-}
-
-// CollectionManagementActivity processes matching activities
-func (l loader) CollectionManagementActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	// TODO(marius):
-	return nil, errors.Errorf("Not implemented")
-}
-
-// EventRSVPActivity processes matching activities
-func (l loader) EventRSVPActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	// TODO(marius):
-	return nil, errors.Errorf("Not implemented")
-}
-
-// GroupManagementActivity processes matching activities
-func (l loader) GroupManagementActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	// TODO(marius):
-	return nil, errors.Errorf("Not implemented")
-}
-
-// CollectionManagementActivity processes matching activities
-func (l loader) ContentExperienceActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	// TODO(marius):
-	return nil, errors.Errorf("Not implemented")
-}
-
-// GeoSocialEventsActivity processes matching activities
-func (l loader) GeoSocialEventsActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	// TODO(marius):
-	return nil, errors.Errorf("Not implemented")
-}
-
-// NotificationActivity processes matching activities
-func (l loader) NotificationActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	// TODO(marius):
-	return nil, errors.Errorf("Not implemented")
-}
-
-// QuestionActivity processes matching activities
-func (l loader) QuestionActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	// TODO(marius):
-	return nil, errors.Errorf("Not implemented")
-}
-
-// RelationshipManagementActivity processes matching activities
-func (l loader) RelationshipManagementActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	// TODO(marius):
-	return nil, errors.Errorf("Not implemented")
-}
-
-// NegatingActivity processes matching activities
-func (l loader) NegatingActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	// TODO(marius):
-	return nil, errors.Errorf("Not implemented")
-}
-
-// OffersActivity processes matching activities
-func (l loader) OffersActivity(act *activitypub.Activity) (*activitypub.Activity, error) {
-	// TODO(marius):
-	return nil, errors.Errorf("Not implemented")
 }
