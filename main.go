@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/jackc/pgx"
+	"os"
 	"time"
 )
 
@@ -27,13 +28,12 @@ func main() {
 	a := app.New(l, version)
 	r := chi.NewRouter()
 
-	var onClose func()
-
 	if a.Config().Storage == config.BOLTDB {
-		if b, err := boltdb.New(boltdb.Config{
-			Path: a.Config().BoltDBPath,
+		b, err := boltdb.New(boltdb.Config{
+			Path: app.Config.BoltDBPath,
 			BucketName: app.Config.Host,
-		}); err == nil {
+		})
+		if err == nil {
 			r.Use(app.Repo(b))
 		}
 	}
@@ -51,11 +51,10 @@ func main() {
 			},
 			MaxConnections: 3,
 		})
-		// TODO(marius) this defer Close doesn't seem right any more as we're not on top scope any more
-		onClose = func () {
-			l.Info("closing DB %v", conn.Close)
+		defer func () {
+			l.Info("closing DB %v", conn)
 			conn.Close()
-		}
+		}()
 		if err == nil {
 			r.Use(app.Repo(storage.New(conn, a.Config().BaseURL, l)))
 		} else {
@@ -68,5 +67,6 @@ func main() {
 
 	r.Route("/", app.Routes())
 
-	a.Run(r, wait, onClose)
+	status := a.Run(r, wait)
+	os.Exit(status)
 }

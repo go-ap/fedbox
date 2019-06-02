@@ -123,13 +123,12 @@ func waitForSignal(sigChan chan os.Signal, exitChan chan int) func(logFn) {
 }
 
 // Run is the wrapper for starting the web-server and handling signals
-func (a *Fedbox) Run(m http.Handler, wait time.Duration, onClose func()) {
+func (a *Fedbox) Run(m http.Handler, wait time.Duration) int {
 	a.inf("Listening on %s", a.listen())
 
 	// Create a deadline to wait for.
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
-	defer onClose()
 
 	// Get start/stop functions for the http server
 	srvRun, srvStop := setupHttpServer(a.listen(), m, wait, ctx)
@@ -145,5 +144,6 @@ func (a *Fedbox) Run(m http.Handler, wait time.Duration, onClose func()) {
 	// Doesn't block if no connections, but will otherwise wait until the timeout deadline.
 	go srvStop(a.err)
 	a.inf("Shutting down")
-	os.Exit(code)
+
+	return code
 }
