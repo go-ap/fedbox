@@ -6,6 +6,7 @@ import (
 	"github.com/go-ap/errors"
 	s "github.com/go-ap/storage"
 	"golang.org/x/xerrors"
+	"time"
 )
 
 
@@ -41,63 +42,68 @@ var ErrDuplicateObject = func(s string, p ...interface{}) errDuplicateKey {
 	return errDuplicateKey{wrapErr(nil, fmt.Sprintf("Duplicate key: %s", s), p...)}
 }
 
+// ProcessActivity
 func ProcessActivity(l s.Saver, it as.Item) (as.Item, error) {
 	var err error
+
+	// TODO(marius): Since we're not failing on the first error, so we can try to process the same type of
+	// activity in multiple contexts, we should propagate all the errors to the end, by probably using some
+	// errors.Annotatef...
 
 	// First we process the activity to effect whatever changes we need to on the activity properties.
 	act, err := ToActivity(it)
 	if as.ContentManagementActivityTypes.Contains(it.GetType()) {
 		act, err = ContentManagementActivity(l, act)
 		if err == nil {
-			return act, nil
+			return l.SaveActivity(it)
 		}
 	}
 	if as.CollectionManagementActivityTypes.Contains(it.GetType()) {
 		act, err = CollectionManagementActivity(l, act)
 		if err == nil {
-			return act, nil
+			return l.SaveActivity(it)
 		}
 	}
 	if as.ReactionsActivityTypes.Contains(it.GetType()) {
 		act, err = ReactionsActivity(l, act)
 		if err == nil {
-			return act, nil
+			return l.SaveActivity(it)
 		}
 	}
 	if as.EventRSVPActivityTypes.Contains(it.GetType()) {
 		act, err = EventRSVPActivity(l, act)
 		if err == nil {
-			return act, nil
+			return l.SaveActivity(it)
 		}
 	}
 	if as.GroupManagementActivityTypes.Contains(it.GetType()) {
 		act, err = GroupManagementActivity(l, act)
 		if err == nil {
-			return act, nil
+			return l.SaveActivity(it)
 		}
 	}
 	if as.ContentExperienceActivityTypes.Contains(it.GetType()) {
 		act, err = ContentExperienceActivity(l, act)
 		if err == nil {
-			return act, nil
+			return l.SaveActivity(it)
 		}
 	}
 	if as.GeoSocialEventsActivityTypes.Contains(it.GetType()) {
 		act, err = GeoSocialEventsActivity(l, act)
 		if err == nil {
-			return act, nil
+			return l.SaveActivity(it)
 		}
 	}
 	if as.NotificationActivityTypes.Contains(it.GetType()) {
 		act, err = NotificationActivity(l, act)
 		if err == nil {
-			return act, nil
+			return l.SaveActivity(it)
 		}
 	}
 	if as.QuestionActivityTypes.Contains(it.GetType()) {
 		act, err = QuestionActivity(l, act)
 		if err == nil {
-			return act, nil
+			return l.SaveActivity(it)
 		}
 	}
 	if as.RelationshipManagementActivityTypes.Contains(it.GetType()) && act.Object.GetType() == as.RelationshipType {
@@ -109,18 +115,18 @@ func ProcessActivity(l s.Saver, it as.Item) (as.Item, error) {
 	if as.NegatingActivityTypes.Contains(it.GetType()) {
 		act, err = NegatingActivity(l, act)
 		if err == nil {
-			return act, nil
+			return l.SaveActivity(it)
 		}
 	}
 	if as.OffersActivityTypes.Contains(it.GetType()) {
 		act, err = OffersActivity(l, act)
 		if err == nil {
-			return act, nil
+			return l.SaveActivity(it)
 		}
 	}
-	return it, err
-}
 
+	return l.SaveActivity(it)
+}
 
 // ContentManagementActivity processes matching activities
 func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
@@ -128,6 +134,7 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 	if act.Object == nil {
 		return act, errors.NotValidf("Missing object for Activity")
 	}
+	now := time.Now().UTC()
 	switch act.Type {
 	case as.CreateType:
 		// TODO(marius) Add function as.AttributedTo(it as.Item, auth as.Item)
@@ -142,6 +149,10 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 			// Copying the object's recipients to the activity's audience
 			act.Audience = a.Recipients()
 
+			// TODO(marius): Move these to a ProcessObject function
+			// Set the published date
+			a.Published = now
+
 			act.Object = a
 		} else if p, err := ToPerson(act.Object); err == nil {
 			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
@@ -154,6 +165,10 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 			// Copying the object's recipients to the activity's audience
 			act.Audience = p.Recipients()
 
+			// TODO(marius): Move these to a ProcessObject function
+			// Set the published date
+			p.Published = now
+
 			act.Object = p
 		} else if o, err := ToObject(act.Object); err == nil {
 			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
@@ -165,6 +180,10 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 			o.Audience = aRec
 			// Copying the object's recipients to the activity's audience
 			act.Audience = o.Recipients()
+
+			// TODO(marius): Move these to a ProcessObject function
+			// Set the published date
+			o.Published = now
 
 			act.Object = o
 		}
@@ -186,6 +205,9 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 		//l.errFn(logrus.Fields{"IRI": act.GetLink(), "type": act.Type}, "unable to save activity's object")
 		return act, err
 	}
+
+	// Set the published date
+	act.Published = now
 	return act, err
 }
 

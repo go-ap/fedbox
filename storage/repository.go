@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/pgtype"
 	"github.com/sirupsen/logrus"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 )
@@ -216,10 +217,7 @@ func loadFromDb(conn *pgx.ConnPool, table string, f ap.Filterable) (as.ItemColle
 func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
 
-	it, err = ap.ProcessActivity(l, it)
-	it = ap.FlattenProperties(it)
-
-	it, err = l.SaveObject(it)
+	it, err = l.SaveObject(ap.FlattenProperties(it))
 	if err != nil {
 		l.errFn(logrus.Fields{"IRI": it.GetLink()}, "unable to save activity")
 		return it, err
@@ -378,27 +376,41 @@ func addToCollection(l loader, iri as.IRI, it as.Item) error {
 	return nil
 }
 
+func (l loader) GenerateObjectID(parent handlers.CollectionType, it as.Item) {
+	uuid := uuid2.New()
+	// TODO(marius): this needs to be in a different place
+	id := as.ObjectID(fmt.Sprintf("%s/%s/%s", l.baseURL, strings.ToLower(string(parent)), uuid))
+
+	if as.ActivityTypes.Contains(it.GetType()) {
+		if a, err := ap.ToActivity(it); err == nil {
+			a.ID = id
+			it = a
+		}
+	}
+	if as.ActorTypes.Contains(it.GetType()) {
+		if p, err := ap.ToPerson(it); err == nil {
+			p.ID = id
+			it = p
+		}
+	}
+	if as.ObjectTypes.Contains(it.GetType()) {
+		if o, err := ap.ToObject(it); err == nil {
+			o.ID = id
+			it = o
+		}
+	}
+}
+
 func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 	query := fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3::timestamptz, $4, $5::jsonb);", table)
 
-	now := time.Now().UTC()
-
-	uuid := uuid2.New()
 	iri := it.GetLink()
 	if len(iri) == 0 {
 		// TODO(marius): this needs to be in a different place
-		iri = as.IRI(fmt.Sprintf("%s/%s/%s", l.baseURL, table, uuid))
-		if as.ActivityTypes.Contains(it.GetType()) {
-			if a, err := ap.ToActivity(it); err == nil {
-				a.ID = as.ObjectID(iri)
-				a.Published = now
-				it = a
-			}
-		} else if as.ActorTypes.Contains(it.GetType()) {
-			if p, err := ap.ToPerson(it); err == nil {
-				p.ID = as.ObjectID(iri)
-				p.Published = now
 
+		l.GenerateObjectID(handlers.CollectionType(table), it)
+		if as.ActorTypes.Contains(it.GetType()) {
+			if p, err := ap.ToPerson(it); err == nil {
 				if in, err := l.createActorCollection(it, handlers.Inbox); err != nil {
 					return it, err
 				} else {
@@ -424,18 +436,20 @@ func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 				} else {
 					p.Liked = ld.GetLink()
 				}
-				// TODO(marius): missing likes in go-ap/ActivityPub actor
-				//if ls, err := l.createActorCollection(it, handlers.Likes); err != nil {
-				//	return it, err
-				//} else {
-				//	p.Liked = ls.GetLink()
-				//}
+				if ls, err := l.createActorCollection(it, handlers.Likes); err != nil {
+					return it, err
+				} else {
+					p.Likes = ls.GetLink()
+				}
+				if sh, err := l.createActorCollection(it, handlers.Shares); err != nil {
+					return it, err
+				} else {
+					p.Shares = sh.GetLink()
+				}
 				it = p
 			}
 		} else if as.ObjectTypes.Contains(it.GetType()) {
 			if o, err := as.ToObject(it); err == nil {
-				o.ID = as.ObjectID(iri)
-				o.Published = now
 				if repl, err := l.createObjectCollection(it, handlers.Replies); err != nil {
 					return it, err
 				} else {
@@ -445,10 +459,12 @@ func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 			}
 		}
 	}
-	raw, _ := jsonld.Marshal(it)
 
+	iri = it.GetLink()
+	uuid := path.Base(iri.String())
+	raw, _ := jsonld.Marshal(it)
 	nowTz := pgtype.Timestamptz{
-		Time: now,
+		Time: time.Now().UTC(),
 		Status: pgtype.Present,
 	}
 	_, err := l.conn.Exec(query, uuid, iri, &nowTz, it.GetType(), raw)

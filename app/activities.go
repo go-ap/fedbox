@@ -11,7 +11,7 @@ import (
 )
 
 // HandleRequest handles POST requests to an ActivityPub Actor's inbox/outbox, based on the CollectionType
-func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.ActivitySaver) (as.IRI, int, error) {
+func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repository) (as.IRI, int, error) {
 	ff, _ := activitypub.FromRequest(r)
 	f, _ := ff.(*activitypub.Filters)
 	LoadToFilters(r, f)
@@ -43,9 +43,10 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.ActivityS
 		}
 	}
 
-	if it, err = repo.SaveActivity(it); err != nil {
+	if it, err = activitypub.ProcessActivity(repo, it); err != nil {
 		return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 	}
+	it = activitypub.FlattenProperties(it)
 
 	status := http.StatusOK
 	if it.GetType() == as.CreateType {
