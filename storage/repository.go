@@ -83,7 +83,7 @@ func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, uint, error) {
 	return loadFromDb(l.conn, "objects", f)
 }
 
-func getCollectionTable(typ handlers.CollectionType) string {
+func GetCollectionTable(typ handlers.CollectionType) string {
 	switch typ {
 	case handlers.Followers:
 		fallthrough
@@ -160,7 +160,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 			f.ItemKey = append(f.ItemKey, ap.Hash(elem))
 		}
 		var total uint
-		items, total, err = loadFromDb(l.conn, getCollectionTable(f.Collection), f)
+		items, total, err = loadFromDb(l.conn, GetCollectionTable(f.Collection), f)
 
 		if as.ActivityVocabularyType(typ) == as.CollectionType {
 			col := &as.Collection{}
