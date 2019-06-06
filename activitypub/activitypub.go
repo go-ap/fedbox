@@ -130,7 +130,6 @@ func (o *OrderedCollection) Collection() as.CollectionInterface {
 // Append adds an element to an OrderedCollection
 func (o *OrderedCollection) Append(ob as.Item) error {
 	o.OrderedItems = append(o.OrderedItems, ob)
-	o.TotalItems++
 	return nil
 }
 
@@ -236,7 +235,6 @@ func (c *Collection) Count() uint {
 // Append adds an element to an Collection
 func (c *Collection) Append(ob as.Item) error {
 	c.Items = append(c.Items, ob)
-	c.TotalItems++
 	return nil
 }
 
