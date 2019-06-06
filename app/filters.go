@@ -9,7 +9,13 @@ import (
 	"regexp"
 )
 
-func LoadToFilters(r *http.Request, f *ap.Filters) error {
+func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {
+	err := LoadItemFilters(r, f)
+	f.ItemKey = append(f.ItemKey, ap.Hash(reqURL(r)))
+	return err
+}
+
+func LoadItemFilters(r *http.Request, f *ap.Filters) error {
 	pr, _ := regexp.Compile(fmt.Sprintf("/(actors|items|activities)/(\\w+)/%s", f.Collection))
 	matches := pr.FindSubmatch([]byte(r.URL.Path))
 	if len(matches) < 3 {
