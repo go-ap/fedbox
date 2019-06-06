@@ -5,7 +5,6 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	s "github.com/go-ap/storage"
-	"golang.org/x/xerrors"
 	"time"
 )
 
@@ -25,10 +24,7 @@ func (n errDuplicateKey) Is(e error) bool {
 }
 
 func wrapErr(err error, s string, args ...interface{}) errors.Err {
-	e := errors.Annotatef(err, s, args...)
-	asErr := errors.Err{}
-	xerrors.As(e, &asErr)
-	return asErr
+	return *errors.Annotatef(err, s, args...)
 }
 
 var errFn = func(ss string) func(s string, p ...interface{}) errors.Err {
