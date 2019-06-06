@@ -83,6 +83,34 @@ func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, uint, error) {
 	return loadFromDb(l.conn, "objects", f)
 }
 
+func getCollectionTable(typ handlers.CollectionType) string {
+	switch typ {
+	case handlers.Followers:
+		fallthrough
+	case handlers.Following:
+		fallthrough
+	case "actors":
+		return "actors"
+	case handlers.Inbox:
+		fallthrough
+	case handlers.Outbox:
+		fallthrough
+	case handlers.Shares:
+		fallthrough
+	case handlers.Liked:
+		fallthrough
+	case handlers.Likes:
+		fallthrough
+	case "activities":
+		return "activities"
+	case handlers.Replies:
+		fallthrough
+	default:
+		return "objects"
+	}
+	return "objects"
+}
+
 func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 	f, ok := ff.(*ap.Filters)
 	if !ok {
@@ -126,20 +154,13 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 			"elements": elements,
 		}, "loaded fields")
 
-		table := "objects"
 		var items as.ItemCollection
-		if f.Collection == "actors" {
-			table = "actors"
-		}
-		if f.Collection == "activities" {
-			table = "activities"
-		}
 		f.ItemKey = f.ItemKey[:0]
 		for _, elem := range elements {
 			f.ItemKey = append(f.ItemKey, ap.Hash(elem))
 		}
 		var total uint
-		items, total, err = loadFromDb(l.conn, table, f)
+		items, total, err = loadFromDb(l.conn, getCollectionTable(f.Collection), f)
 
 		if as.ActivityVocabularyType(typ) == as.CollectionType {
 			col := &as.Collection{}
