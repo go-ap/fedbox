@@ -34,7 +34,7 @@ func ActorFromAuthHeader(next http.Handler) http.Handler {
 		}
 		if act != nil {
 			ctx := r.Context()
-			newCtx := context.WithValue(ctx, ActorKey, act)
+			newCtx := context.WithValue(ctx, actorKey, act)
 			next.ServeHTTP(w, r.WithContext(newCtx))
 		}
 		next.ServeHTTP(w, r)

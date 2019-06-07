@@ -5,6 +5,7 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/handlers"
 	"net/http"
 	"regexp"
 )
@@ -16,17 +17,17 @@ func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {
 }
 
 func LoadItemFilters(r *http.Request, f *ap.Filters) error {
-	pr, _ := regexp.Compile(fmt.Sprintf("/(actors|items|activities)/(\\w+)/%s", f.Collection))
+	pr, _ := regexp.Compile(fmt.Sprintf("/(%s|%s|%s)/(\\w+)/%s", ap.ActorsType, ap.ActivitiesType, ap.ObjectsType, f.Collection))
 	matches := pr.FindSubmatch([]byte(r.URL.Path))
 	if len(matches) < 3 {
 		return errors.NotFoundf("%s collection not found", f.Collection)
 	} else {
-		col := matches[1]
+		col := handlers.CollectionType(matches[1])
 		url := reqURL(r)
-		switch string(col) {
-		case "actors":
+		switch col {
+		case ap.ActorsType:
 			// TODO(marius): this needs to be moved somewhere where it makes more sense
-			if loader, ok := Loader(r.Context()); ok {
+			if loader, ok := loader(r.Context()); ok {
 				ff := ap.Filters{
 					Type: []as.ActivityVocabularyType{
 						as.PersonType,
@@ -41,15 +42,15 @@ func LoadItemFilters(r *http.Request, f *ap.Filters) error {
 					f.Owner = act
 				}
 			}
-		case "items":
+		case ap.ObjectsType:
 			f.ItemKey = []ap.Hash{ap.Hash(url)}
-		case "activities":
+		case ap.ActivitiesType:
 			f.Key = []ap.Hash{ap.Hash(url)}
 		}
 	}
 
 	// TODO(marius): this needs to be moved somewhere where it makes more sense
-	ctxVal := r.Context().Value(ActorKey)
+	ctxVal := r.Context().Value(actorKey)
 	if a, ok := ctxVal.(as.Actor); ok {
 		f.Actor = a
 	}

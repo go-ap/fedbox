@@ -7,6 +7,8 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
+	"github.com/go-ap/handlers"
+	st "github.com/go-ap/storage"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -14,6 +16,15 @@ import (
 	"syscall"
 	"time"
 )
+type CtxtKey string
+
+var actorKey = CtxtKey("__actor")
+
+func loader(ctx context.Context) (st.ActorLoader, bool) {
+	ctxVal := ctx.Value(handlers.RepositoryKey)
+	s, ok := ctxVal.(st.ActorLoader)
+	return s, ok
+}
 
 // TODO(marius) Move away from keeping this data statically.
 var Config config.Options

@@ -21,8 +21,14 @@ func (h Hash) String() string {
 }
 
 const (
+	// ActorsType is a constant that represents the URL path for the local actors collection.
+	// It is used as the parent for all Actor ObjectIDs
 	ActorsType     = h.CollectionType("actors")
+	// ActivitiesType is a constant that represents the URL path for the local activities collection
+	// It is used as the parent for all Activity ObjectIDs
 	ActivitiesType = h.CollectionType("activities")
+	// ObjectsType is a constant that represents the URL path for the local objects collection
+	// It is used as the parent for all non Actor, non Activity Object ObjectIDs
 	ObjectsType    = h.CollectionType("objects")
 )
 
@@ -90,21 +96,6 @@ func copyActivityFilters(dst *Filters, src Filters) {
 	dst.NewerThan = src.NewerThan
 	dst.CurPage = src.CurPage
 	dst.MaxItems = src.MaxItems
-}
-
-func query(f *Filters) string {
-	res := ""
-
-	var u url.Values
-	var err error
-	if u, err = qstring.Marshal(f); err != nil {
-		return ""
-	}
-
-	if len(u) > 0 {
-		res = "?" + u.Encode()
-	}
-	return res
 }
 
 // Page

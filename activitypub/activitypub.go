@@ -328,6 +328,7 @@ func (a *Activity) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// JSONGetItemByType
 func JSONGetItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 	var ret as.Item
 
@@ -353,6 +354,7 @@ func JSONGetItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 	return ret, nil
 }
 
+// ToOrderedCollection
 func ToOrderedCollection (it as.Item) (*OrderedCollection, error) {
 	switch o := it.(type) {
 	case *OrderedCollection:
@@ -369,6 +371,7 @@ func ToOrderedCollection (it as.Item) (*OrderedCollection, error) {
 	return nil, errors.Newf("invalid ordered collection")
 }
 
+// ToCollection
 func ToCollection (it as.Item) (*Collection, error) {
 	switch o := it.(type) {
 	case *Collection:
@@ -385,6 +388,7 @@ func ToCollection (it as.Item) (*Collection, error) {
 	return nil, errors.Newf("invalid  collection")
 }
 
+// ToObject
 func ToObject(it as.Item) (*as.Object, error) {
 	switch o := it.(type) {
 	case *Person:
@@ -395,6 +399,7 @@ func ToObject(it as.Item) (*as.Object, error) {
 	return as.ToObject(it)
 }
 
+// ToPerson
 func ToPerson(it as.Item) (*Person, error) {
 	switch o := it.(type) {
 	case *Person:
@@ -433,6 +438,7 @@ func FlattenPersonProperties(o Person) Person {
 	as.FlattenObjectProperties(o.Parent)
 	return o
 }
+
 // FlattenProperties flattens the Item's properties from Object types to IRI
 func FlattenProperties(it as.Item) as.Item {
 	if as.ActivityTypes.Contains(it.GetType()) {
@@ -460,80 +466,83 @@ func FlattenProperties(it as.Item) as.Item {
 func UpdatePersonProperties(old, new *Person) (*Person, error) {
 	o, err := UpdateObjectProperties(&old.Parent, &new.Parent)
 	old.Parent = *o
-	old.Inbox = ReplaceIfItem(old.Inbox, new.Inbox)
-	old.Outbox = ReplaceIfItem(old.Outbox, new.Outbox)
-	old.Following = ReplaceIfItem(old.Following, new.Following)
-	old.Followers = ReplaceIfItem(old.Followers, new.Followers)
-	old.Liked = ReplaceIfItem(old.Liked, new.Liked)
-	old.PreferredUsername = ReplaceIfNaturalLanguageValues(old.PreferredUsername, new.PreferredUsername)
+	old.Inbox = replaceIfItem(old.Inbox, new.Inbox)
+	old.Outbox = replaceIfItem(old.Outbox, new.Outbox)
+	old.Following = replaceIfItem(old.Following, new.Following)
+	old.Followers = replaceIfItem(old.Followers, new.Followers)
+	old.Liked = replaceIfItem(old.Liked, new.Liked)
+	old.PreferredUsername = replaceIfNaturalLanguageValues(old.PreferredUsername, new.PreferredUsername)
 	return old, err
 }
 
-func ReplaceIfItem(old, new as.Item) as.Item {
+func replaceIfItem(old, new as.Item) as.Item {
 	if new == nil {
 		return old
 	}
 	return new
 }
 
-func ReplaceIfItemCollection(old, new as.ItemCollection) as.ItemCollection {
+func replaceIfItemCollection(old, new as.ItemCollection) as.ItemCollection {
 	if new == nil {
 		return old
 	}
 	return new
 }
 
-func ReplaceIfNaturalLanguageValues(old, new as.NaturalLanguageValues) as.NaturalLanguageValues {
+func replaceIfNaturalLanguageValues(old, new as.NaturalLanguageValues) as.NaturalLanguageValues {
 	if new == nil {
 		return old
 	}
 	return new
 }
 
+// UpdateObjectProperties updates the "old" object properties with "new's"
 func UpdateObjectProperties(old, new *as.Object) (*as.Object, error) {
-	old.Name = ReplaceIfNaturalLanguageValues(old.Name, new.Name)
-	old.Attachment = ReplaceIfItem(old.Attachment, new.Attachment)
-	old.AttributedTo = ReplaceIfItem(old.AttributedTo, new.AttributedTo)
-	old.Audience = ReplaceIfItemCollection(old.Audience, new.Audience)
-	old.Content = ReplaceIfNaturalLanguageValues(old.Content, new.Content)
-	old.Context = ReplaceIfItem(old.Context, new.Context)
+	old.Name = replaceIfNaturalLanguageValues(old.Name, new.Name)
+	old.Attachment = replaceIfItem(old.Attachment, new.Attachment)
+	old.AttributedTo = replaceIfItem(old.AttributedTo, new.AttributedTo)
+	old.Audience = replaceIfItemCollection(old.Audience, new.Audience)
+	old.Content = replaceIfNaturalLanguageValues(old.Content, new.Content)
+	old.Context = replaceIfItem(old.Context, new.Context)
 	if len(new.MediaType) > 0 {
 		old.MediaType = new.MediaType
 	}
 	if !new.EndTime.IsZero() {
 		old.EndTime = new.EndTime
 	}
-	old.Generator = ReplaceIfItem(old.Generator, new.Generator)
-	old.Icon = ReplaceIfItem(old.Icon, new.Icon)
-	old.Image = ReplaceIfItem(old.Image, new.Image)
-	old.InReplyTo = ReplaceIfItem(old.InReplyTo, new.InReplyTo)
-	old.Location = ReplaceIfItem(old.Location, new.Location)
-	old.Preview = ReplaceIfItem(old.Preview, new.Preview)
+	old.Generator = replaceIfItem(old.Generator, new.Generator)
+	old.Icon = replaceIfItem(old.Icon, new.Icon)
+	old.Image = replaceIfItem(old.Image, new.Image)
+	old.InReplyTo = replaceIfItem(old.InReplyTo, new.InReplyTo)
+	old.Location = replaceIfItem(old.Location, new.Location)
+	old.Preview = replaceIfItem(old.Preview, new.Preview)
 	if !new.Published.IsZero() {
 		old.Published = new.Published
 	}
-	old.Replies = ReplaceIfItem(old.Replies, new.Replies)
+	old.Replies = replaceIfItem(old.Replies, new.Replies)
 	if !new.StartTime.IsZero() {
 		old.StartTime = new.StartTime
 	}
-	old.Summary = ReplaceIfNaturalLanguageValues(old.Summary, new.Summary)
-	old.Tag = ReplaceIfItemCollection(old.Tag, new.Tag)
+	old.Summary = replaceIfNaturalLanguageValues(old.Summary, new.Summary)
+	old.Tag = replaceIfItemCollection(old.Tag, new.Tag)
 	if !new.Updated.IsZero() {
 		old.Updated = new.Updated
 	}
 	if new.URL != nil {
 		old.URL = new.URL
 	}
-	old.To = ReplaceIfItemCollection(old.To, new.To)
-	old.Bto = ReplaceIfItemCollection(old.Bto, new.Bto)
-	old.CC = ReplaceIfItemCollection(old.CC, new.CC)
-	old.BCC = ReplaceIfItemCollection(old.BCC, new.BCC)
+	old.To = replaceIfItemCollection(old.To, new.To)
+	old.Bto = replaceIfItemCollection(old.Bto, new.Bto)
+	old.CC = replaceIfItemCollection(old.CC, new.CC)
+	old.BCC = replaceIfItemCollection(old.BCC, new.BCC)
 	if new.Duration == 0 {
 		old.Duration = new.Duration
 	}
 	return old, nil
 }
 
+// UpdateItemProperties delegates to the correct per type functions for copying
+// properties between matching Activity Objects
 func UpdateItemProperties(to, from as.Item) (as.Item, error) {
 	if to == nil {
 		return to, errors.Newf("Nil object to update")
