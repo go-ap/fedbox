@@ -112,14 +112,16 @@ func GetCollectionTable(typ handlers.CollectionType) string {
 }
 
 func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
-	f, ok := ff.(*ap.Filters)
-	if !ok {
-		return nil, errors.Newf("Invalid ActivityPub filters")
+	ids := ff.IRIs()
+	if len(ids) != 1 {
+		// oops
 	}
-	clauses, values := f.GetWhereClauses()
+	colFilters := ap.Filters{
+		ItemKey: []ap.Hash{ ap.Hash(ids[0].String())},
+	}
+	clauses, values := colFilters.GetWhereClauses()
 
 	var ret as.CollectionInterface
-
 	sel := fmt.Sprintf("SELECT id, iri, created_at::timestamptz, type, count, elements FROM collections WHERE %s ORDER BY created_at DESC LIMIT 1", strings.Join(clauses, " AND "))
 	rows, err := l.conn.Query(sel, values...)
 	defer rows.Close()
@@ -131,6 +133,11 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 	}
 	if err := rows.Err(); err != nil {
 		return ret, errors.Annotatef(err, "unable to run select")
+	}
+
+	f, ok := ff.(*ap.Filters)
+	if !ok {
+		return nil, errors.Newf("Invalid ActivityPub filters")
 	}
 
 	var count int

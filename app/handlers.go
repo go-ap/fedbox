@@ -27,8 +27,13 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 	var err error
 
 	ff, err := activitypub.FromRequest(r)
-	f, _ := ff.(*activitypub.Filters)
-	LoadCollectionFilters(r, f)
+	if err != nil {
+		return nil, errors.NewNotValid(err, "Unable to load filters from request")
+	}
+	f, ok := ff.(*activitypub.Filters)
+	if ok {
+		LoadItemFilters(r, f)
+	}
 
 	if !activitypub.ValidActivityCollection(string(typ)) {
 		return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
@@ -36,7 +41,10 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 
 	items, err = repo.LoadCollection(f)
 	if err != nil {
-		if f.Collection == h.Inbox || f.Collection == h.Outbox {
+		topLevelCollection := func(f *activitypub.Filters) bool {
+			return f.Author == nil && f.Parent == nil && f.To == nil
+		}(f)
+		if topLevelCollection && (f.Collection == h.Inbox || f.Collection == h.Outbox) {
 			return nil, errors.MethodNotAllowedf("method not allowed")
 		}
 		return nil, err
@@ -44,14 +52,20 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 	return activitypub.PaginateCollection(items, f)
 }
 
-// HandleRequest handles POST requests to an ActivityPub Actor's inbox/outbox, based on the CollectionType
+// HandleRequest handles POST requests to an ActivityPub To's inbox/outbox, based on the CollectionType
 func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repository) (as.IRI, int, error) {
-	ff, _ := activitypub.FromRequest(r)
-	f, _ := ff.(*activitypub.Filters)
-	LoadItemFilters(r, f)
+	var err error
+
+	ff, err := activitypub.FromRequest(r)
+	if err != nil {
+		return as.IRI(""), 0, errors.NewNotValid(err, "Unable to load filters from request")
+	}
+	f, ok := ff.(*activitypub.Filters)
+	if ok {
+		LoadItemFilters(r, f)
+	}
 
 	var it as.Item
-	var err error
 	if body, err := ioutil.ReadAll(r.Body); err != nil || len(body) == 0 {
 		return as.IRI(""), http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
 	} else {
@@ -101,8 +115,13 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 	var items as.ItemCollection
 	var err error
 	ff, err := activitypub.FromRequest(r)
-	f, _ := ff.(*activitypub.Filters)
-	LoadItemFilters(r, f)
+	if err != nil {
+		return nil, errors.NotFoundf("Not found %s", collection)
+	}
+	f, ok := ff.(*activitypub.Filters)
+	if ok {
+		LoadItemFilters(r, f)
+	}
 
 	iri := reqURL(r)
 	if len(f.ItemKey) == 0 {

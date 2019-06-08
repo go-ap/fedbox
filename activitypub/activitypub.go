@@ -18,7 +18,7 @@ type PublicKey struct {
 }
 
 // Person it should be identical to:
-//    github.com/go-ap/activitypub/actors.go#Actor
+//    github.com/go-ap/activitypub/actors.go#To
 // We need it here in order to be able to add to it our Score property
 type Person struct {
 	ap.Person

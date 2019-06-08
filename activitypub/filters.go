@@ -22,14 +22,14 @@ func (h Hash) String() string {
 
 const (
 	// ActorsType is a constant that represents the URL path for the local actors collection.
-	// It is used as the parent for all Actor ObjectIDs
-	ActorsType     = h.CollectionType("actors")
+	// It is used as the parent for all To ObjectIDs
+	ActorsType = h.CollectionType("actors")
 	// ActivitiesType is a constant that represents the URL path for the local activities collection
 	// It is used as the parent for all Activity ObjectIDs
 	ActivitiesType = h.CollectionType("activities")
 	// ObjectsType is a constant that represents the URL path for the local objects collection
-	// It is used as the parent for all non Actor, non Activity Object ObjectIDs
-	ObjectsType    = h.CollectionType("objects")
+	// It is used as the parent for all non To, non Activity Object ObjectIDs
+	ObjectsType = h.CollectionType("objects")
 )
 
 var validActivityCollection = []h.CollectionType{
@@ -54,13 +54,16 @@ func ValidActivityCollection(typ string) bool {
 
 // Filters
 type Filters struct {
-	Actor        as.Actor                    `qstring:"-"`
-	Owner        as.Actor                    `qstring:"-"`
+	To           as.Actor                    `qstring:"-"`
+	Author       as.Actor                    `qstring:"-"`
+	Parent       as.Actor                    `qstring:"-"`
 	Collection   h.CollectionType            `qstring:"-"`
+	Audience     []as.IRI                    `qstring:"-"`
 	Key          []Hash                      `qstring:"id,omitempty"`
 	ItemKey      []Hash                      `qstring:"objectid,omitempty"`
 	Type         []as.ActivityVocabularyType `qstring:"type"`
 	AttributedTo []Hash                      `qstring:"attributedTo,omitempty"`
+	InReplyTo    []Hash                      `qstring:"inReplyTo,omitempty"`
 	FollowedBy   []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
 	OlderThan    time.Time                   `qstring:"olderThan,omitempty"`
 	NewerThan    time.Time                   `qstring:"newerThan,omitempty"`
@@ -167,6 +170,10 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
 	}
 
+	//if f.To != nil && len(f.To.GetLink()) > 0 {
+	//	clauses = append(clauses, fmt.Sprintf(`"raw"->>'to' ~* $%d`, counter))
+	//	values = append(values, interface{}(f.To.GetLink()))
+	//}
 	// TODO(marius): this looks cumbersome - we need to abstract the audience to something easier to query.
 	if validAudienceType {
 		keyWhere := make([]string, 0)
@@ -176,11 +183,14 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'bcc' ~* $%d`, counter))
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'audience' ~* $%d`, counter))
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
-		if f.Actor == nil {
+		if f.To == nil {
 			values = append(values, interface{}(Public))
-		} else {
-			values = append(values, interface{}(f.Actor.GetID()))
 		}
+	}
+
+	if f.Author != nil && len(f.Author.GetLink()) > 0 {
+		clauses = append(clauses, fmt.Sprintf(`"raw"->>'attributedTo' ~* $%d`, counter))
+		values = append(values, interface{}(f.Author.GetLink()))
 	}
 
 	if len(clauses) == 0 {

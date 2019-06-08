@@ -20,9 +20,15 @@ type CtxtKey string
 
 var actorKey = CtxtKey("__actor")
 
-func loader(ctx context.Context) (st.ActorLoader, bool) {
+func actorLoader(ctx context.Context) (st.ActorLoader, bool) {
 	ctxVal := ctx.Value(handlers.RepositoryKey)
 	s, ok := ctxVal.(st.ActorLoader)
+	return s, ok
+}
+
+func objectLoader(ctx context.Context) (st.ObjectLoader, bool) {
+	ctxVal := ctx.Value(handlers.RepositoryKey)
+	s, ok := ctxVal.(st.ObjectLoader)
 	return s, ok
 }
 
