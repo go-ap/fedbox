@@ -4,12 +4,12 @@ go 1.12
 
 require (
 	github.com/buger/jsonparser v0.0.0-20181023193515-52c6e1462ebd
-	github.com/go-ap/activitypub v0.0.0-20190603155149-3a5229d5419a
-	github.com/go-ap/activitystreams v0.0.0-20190602144537-c6deab0d6b08
-	github.com/go-ap/errors v0.0.0-20190606193907-19b91351bbf9
-	github.com/go-ap/handlers v0.0.0-20190603135909-3e684cc01ad3
-	github.com/go-ap/jsonld v0.0.0-20190306111347-fbb94302fe92
-	github.com/go-ap/storage v0.0.0-20190602204054-0c5d7e177baa
+	github.com/go-ap/activitypub v0.0.0-20190608163820-92289ec5eaf9
+	github.com/go-ap/activitystreams v0.0.0-20190608163840-701f1ef193fb
+	github.com/go-ap/errors v0.0.0-20190608164315-f206ab60a986
+	github.com/go-ap/handlers v0.0.0-20190608164340-76285c2730c3
+	github.com/go-ap/jsonld v0.0.0-20190608163935-9494c4e2f23a
+	github.com/go-ap/storage v0.0.0-20190608164421-0758c353aeae
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/google/uuid v1.1.1
 	github.com/jackc/pgx v3.4.0+incompatible
