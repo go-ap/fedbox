@@ -404,31 +404,6 @@ func addToCollection(l loader, iri as.IRI, it as.Item) error {
 	return nil
 }
 
-func (l loader) GenerateObjectID(parent handlers.CollectionType, it as.Item) {
-	uuid := uuid2.New()
-	// TODO(marius): this needs to be in a different place
-	id := as.ObjectID(fmt.Sprintf("%s/%s/%s", l.baseURL, strings.ToLower(string(parent)), uuid))
-
-	if as.ActivityTypes.Contains(it.GetType()) {
-		if a, err := ap.ToActivity(it); err == nil {
-			a.ID = id
-			it = a
-		}
-	}
-	if as.ActorTypes.Contains(it.GetType()) {
-		if p, err := ap.ToPerson(it); err == nil {
-			p.ID = id
-			it = p
-		}
-	}
-	if as.ObjectTypes.Contains(it.GetType()) {
-		if o, err := ap.ToObject(it); err == nil {
-			o.ID = id
-			it = o
-		}
-	}
-}
-
 func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 	query := fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3::timestamptz, $4, $5::jsonb);", table)
 
@@ -436,7 +411,10 @@ func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 	if len(iri) == 0 {
 		// TODO(marius): this needs to be in a different place
 
-		l.GenerateObjectID(handlers.CollectionType(table), it)
+		pc := as.IRI(fmt.Sprintf("%s/%s", l.baseURL, table))
+		if _, err := l.GenerateID(it, pc, nil); err != nil {
+			return it, err
+		}
 		if as.ActorTypes.Contains(it.GetType()) {
 			if p, err := ap.ToPerson(it); err == nil {
 				if in, err := l.createActorCollection(it, handlers.Inbox); err != nil {
@@ -614,6 +592,61 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 func (l loader) DeleteActor(it as.Item) (as.Item, error) {
 	return l.DeleteObject(it)
 }
+func (l loader) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
+	uuid := uuid2.New()
+	// TODO(marius): this needs to be in a different place
+	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(string(partOf)), uuid))
+
+	if as.ActivityTypes.Contains(it.GetType()) {
+		a, err := ap.ToActivity(it)
+		if err == nil {
+			return *it.GetID(), err
+		}
+		a.ID = id
+		it = a
+	}
+	if as.ActorTypes.Contains(it.GetType()) || as.ObjectTypes.Contains(it.GetType()) {
+		switch it.GetType() {
+		case as.PlaceType:
+			p, err := as.ToPlace(it)
+			if err != nil {
+				return *it.GetID(), err
+			}
+			p.ID = id
+			it = p
+		case as.ProfileType:
+			p, err := as.ToProfile(it)
+			if err != nil {
+				return *it.GetID(), err
+			}
+			p.ID = id
+			it = p
+		case as.RelationshipType:
+			p, err := as.ToRelationship(it)
+			if err != nil {
+				return *it.GetID(), err
+			}
+			p.ID = id
+			it = p
+		case as.TombstoneType:
+			p, err := as.ToTombstone(it)
+			if err != nil {
+				return *it.GetID(), err
+			}
+			p.ID = id
+			it = p
+		default:
+			p, err := as.ToObject(it)
+			if err != nil {
+				return *it.GetID(), err
+			}
+			p.ID = id
+			it = p
+		}
+	}
+	return *it.GetID(), nil
+}
+
 func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
