@@ -52,6 +52,9 @@ func PaginateCollection(col as.CollectionInterface, f Paginator) (as.CollectionI
 	if haveItems {
 		var firstURL as.IRI
 
+		if count < MaxItems {
+			count = MaxItems
+		}
 		if f != nil {
 			fp := &Filters{CurPage: 1, MaxItems: count}
 			firstURL = getURL(baseURL, fp)

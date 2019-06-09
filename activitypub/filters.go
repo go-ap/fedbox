@@ -225,7 +225,7 @@ func FromRequest(r *http.Request) (Filterable, error) {
 	}
 	f.Collection = h.Typer.Type(r)
 
-	if f.MaxItems == 0 {
+	if f.MaxItems < MaxItems {
 		f.MaxItems = MaxItems
 	}
 
