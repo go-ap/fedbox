@@ -40,6 +40,5 @@ run: app
 clean:
 	-$(RM) bin/*
 
-
 test: app
 	$(TEST) ./{app,internal}/...

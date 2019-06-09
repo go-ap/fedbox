@@ -4,19 +4,18 @@ go 1.12
 
 require (
 	github.com/buger/jsonparser v0.0.0-20181023193515-52c6e1462ebd
-	github.com/go-ap/activitypub v0.0.0-20190608163820-92289ec5eaf9
-	github.com/go-ap/activitystreams v0.0.0-20190608163840-701f1ef193fb
-	github.com/go-ap/errors v0.0.0-20190608164315-f206ab60a986
-	github.com/go-ap/handlers v0.0.0-20190608164340-76285c2730c3
-	github.com/go-ap/jsonld v0.0.0-20190608163935-9494c4e2f23a
-	github.com/go-ap/storage v0.0.0-20190608164421-0758c353aeae
+	github.com/go-ap/activitypub v0.0.0-20190609113821-e6b9cf208875
+	github.com/go-ap/activitystreams v0.0.0-20190609113828-c3751a437218
+	github.com/go-ap/errors v0.0.0-20190609113835-66971bd6542e
+	github.com/go-ap/handlers v0.0.0-20190609114428-9e57f91e95e1
+	github.com/go-ap/jsonld v0.0.0-20190609113851-76de27407c35
+	github.com/go-ap/storage v0.0.0-20190609124016-1eee2088101c
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/google/uuid v1.1.1
 	github.com/jackc/pgx v3.4.0+incompatible
 	github.com/joho/godotenv v1.3.0
 	github.com/mariusor/qstring v0.0.0-20180919140350-29d781f85f0f
 	github.com/openshift/osin v1.0.1
-	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/sirupsen/logrus v1.4.1
 	github.com/spacemonkeygo/httpsig v0.0.0-20181218213338-2605ae379e47
