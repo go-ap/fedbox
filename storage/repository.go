@@ -112,12 +112,9 @@ func GetCollectionTable(typ handlers.CollectionType) string {
 }
 
 func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
-	ids := ff.IRIs()
-	if len(ids) != 1 {
-		// oops
-	}
+	id := ff.ID()
 	colFilters := ap.Filters{
-		ItemKey: []ap.Hash{ ap.Hash(ids[0].String())},
+		ItemKey: []ap.Hash{ ap.Hash(id)},
 	}
 	clauses, values := colFilters.GetWhereClauses()
 

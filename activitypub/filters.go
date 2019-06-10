@@ -57,6 +57,7 @@ type Filters struct {
 	To           as.Actor                    `qstring:"-"`
 	Author       as.Actor                    `qstring:"-"`
 	Parent       as.Actor                    `qstring:"-"`
+	IRI          as.IRI                      `qstring:"-"`
 	Collection   h.CollectionType            `qstring:"-"`
 	Audience     []as.IRI                    `qstring:"-"`
 	Key          []Hash                      `qstring:"id,omitempty"`
@@ -87,10 +88,7 @@ func (f Filters) IRIs() []as.IRI {
 
 // ID returns a list of IRIs to filter against
 func (f Filters) ID() as.IRI {
-	if len(f.ItemKey) >= 1 {
-		return as.IRI(f.ItemKey[0])
-	}
-	return ""
+	return f.IRI
 }
 
 // TODO(marius): move this somewhere else. Or replace it with something that makes more sense.

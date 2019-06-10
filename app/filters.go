@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
@@ -78,7 +79,7 @@ func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {
 // LoadItemFilters uses specific logic for adding elements to the filters when loading
 // single items from the database.
 func LoadItemFilters(r *http.Request, f *ap.Filters) error {
-	f.ItemKey = []ap.Hash{ap.Hash(reqURL(r))}
+	f.IRI = as.IRI(reqURL(r))
 
 	// TODO(marius): this needs to be moved somewhere where it makes more sense
 	//ctxVal := r.Context().Value(actorKey)
