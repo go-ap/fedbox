@@ -9,7 +9,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20190609113835-66971bd6542e
 	github.com/go-ap/handlers v0.0.0-20190609114428-9e57f91e95e1
 	github.com/go-ap/jsonld v0.0.0-20190609113851-76de27407c35
-	github.com/go-ap/storage v0.0.0-20190609124016-1eee2088101c
+	github.com/go-ap/storage v0.0.0-20190610153753-648134cc8b11
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/google/uuid v1.1.1
 	github.com/jackc/pgx v3.4.0+incompatible

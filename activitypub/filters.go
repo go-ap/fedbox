@@ -85,6 +85,14 @@ func (f Filters) IRIs() []as.IRI {
 	return ret
 }
 
+// ID returns a list of IRIs to filter against
+func (f Filters) ID() as.IRI {
+	if len(f.ItemKey) >= 1 {
+		return as.IRI(f.ItemKey[0])
+	}
+	return ""
+}
+
 // TODO(marius): move this somewhere else. Or replace it with something that makes more sense.
 var Secure = false
 
