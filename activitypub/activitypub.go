@@ -433,6 +433,18 @@ func ToActivity(it as.Item) (*Activity, error) {
 	return &aa, nil
 }
 
+// FlattenActivityProperties flattens the Activity's properties from Object type to IRI
+func FlattenActivityProperties(act *Activity) *Activity {
+	act.Object = as.FlattenToIRI(act.Object)
+	act.Actor = as.FlattenToIRI(act.Actor)
+	act.Target = as.FlattenToIRI(act.Target)
+	act.Result = as.FlattenToIRI(act.Result)
+	act.Origin = as.FlattenToIRI(act.Origin)
+	act.Result = as.FlattenToIRI(act.Result)
+	act.Instrument = as.FlattenToIRI(act.Instrument)
+	return act
+}
+
 // FlattenObjectProperties flattens the Object's properties from Object types to IRI
 func FlattenPersonProperties(o *Person) *Person {
 	o.Parent = *as.FlattenObjectProperties(&o.Parent)
@@ -442,9 +454,9 @@ func FlattenPersonProperties(o *Person) *Person {
 // FlattenProperties flattens the Item's properties from Object types to IRI
 func FlattenProperties(it as.Item) as.Item {
 	if as.ActivityTypes.Contains(it.GetType()) {
-		a, err := as.ToActivity(it)
+		a, err := ToActivity(it)
 		if err == nil {
-			return as.FlattenActivityProperties(a)
+			return FlattenActivityProperties(a)
 		}
 	}
 	if as.ActorTypes.Contains(it.GetType()) {
