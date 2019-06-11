@@ -10,16 +10,16 @@ environment:
 tasks:
   - setup: |
       cd fedbox && go mod download
+  - build: |
+      cd fedbox && make all
   - tests: |
-      cd fedbox
-      go test -v ./...
+      cd fedbox && make test
   - coverage: |
       set -a +x
-      source ~/.code-cov.sh
-      cd fedbox
-      go test -cover -coverprofile fedbox.coverprofile ./...
+      cd fedbox && make coverage
       GIT_SHA=$(git rev-parse --verify HEAD)
       GIT_BRANCH=$(git name-rev --name-only HEAD)
+      source ~/.code-cov.sh
       curl -X POST \
           --data-binary @fedbox.coverprofile \
            -H 'Accept: application/json' \
