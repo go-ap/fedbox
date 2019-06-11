@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-
 type errDuplicateKey struct {
 	errors.Err
 }

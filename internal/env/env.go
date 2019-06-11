@@ -34,7 +34,7 @@ func ValidTypeOrDev(typ string) Type {
 
 func ValidType(typ string) bool {
 	for _, t := range validTypes {
-		if strings.ToLower(typ ) == strings.ToLower(string(t)) {
+		if strings.ToLower(typ) == strings.ToLower(string(t)) {
 			return true
 		}
 	}

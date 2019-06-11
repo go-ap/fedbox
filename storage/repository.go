@@ -167,12 +167,12 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 			return ret, nil
 		}
 		l.logFn(logrus.Fields{
-			"id": id,
-			"iri": iri,
+			"id":         id,
+			"iri":        iri,
 			"created_at": created,
-			"type": typ,
-			"count": count,
-			"elements": elements,
+			"type":       typ,
+			"count":      count,
+			"elements":   elements,
 		}, "loaded fields")
 
 		var items as.ItemCollection
@@ -184,12 +184,12 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 		var total uint
 		items, total, err = loadFromDb(l.conn, GetCollectionTable(f.Collection), f)
 		if as.ActivityVocabularyType(typ) == as.CollectionType {
-			if col, err  := ap.ToCollection(ret); err == nil {
+			if col, err := ap.ToCollection(ret); err == nil {
 				col.TotalItems = total
 			}
 		}
 		if as.ActivityVocabularyType(typ) == as.OrderedCollectionType {
-			if col, err  := ap.ToOrderedCollection(ret); err == nil {
+			if col, err := ap.ToOrderedCollection(ret); err == nil {
 				col.TotalItems = total
 			}
 		}
@@ -273,19 +273,19 @@ func getCollectionIRI(actor as.Item, c handlers.CollectionType) as.IRI {
 	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
 
-func ( l loader) createActorCollection(actor as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
+func (l loader) createActorCollection(actor as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
 	col := as.OrderedCollection{
-		Parent: as.Parent {
-			ID: getCollectionID(actor, c),
+		Parent: as.Parent{
+			ID:   getCollectionID(actor, c),
 			Type: as.OrderedCollectionType,
 		},
 	}
 	return createCollection(l, &col)
 }
-func ( l loader) createObjectCollection(object as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
+func (l loader) createObjectCollection(object as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
 	col := as.OrderedCollection{
-		Parent: as.Parent {
-			ID: getCollectionID(object, c),
+		Parent: as.Parent{
+			ID:   getCollectionID(object, c),
 			Type: as.OrderedCollectionType,
 		},
 	}
@@ -331,7 +331,7 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 		return it, err
 	}
 
-	colIRI :=  getCollectionIRI(as.IRI(l.baseURL), handlers.CollectionType(table))
+	colIRI := getCollectionIRI(as.IRI(l.baseURL), handlers.CollectionType(table))
 	err = addToCollection(l, colIRI, it)
 	if err != nil {
 		// This errs
@@ -366,7 +366,7 @@ func createCollection(l loader, it as.CollectionInterface) (as.CollectionInterfa
 
 	now := time.Now().UTC()
 	nowTz := pgtype.Timestamptz{
-		Time: now,
+		Time:   now,
 		Status: pgtype.Present,
 	}
 	_, err := l.conn.Exec(query, it.GetLink(), it.GetType(), &nowTz)
@@ -481,7 +481,7 @@ func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 	uuid := path.Base(iri.String())
 	raw, _ := jsonld.Marshal(it)
 	nowTz := pgtype.Timestamptz{
-		Time: time.Now().UTC(),
+		Time:   time.Now().UTC(),
 		Status: pgtype.Present,
 	}
 	_, err := l.conn.Exec(query, uuid, iri, &nowTz, it.GetType(), raw)
@@ -520,7 +520,7 @@ func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
 	raw, _ := jsonld.Marshal(it)
 
 	nowTz := pgtype.Timestamptz{
-		Time: now,
+		Time:   now,
 		Status: pgtype.Present,
 	}
 	_, err := l.conn.Exec(query, it.GetType(), &nowTz, raw, iri)
@@ -572,9 +572,9 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 	if cnt == 0 {
 		err := errors.NotFoundf("%s %s", it.GetLink(), label)
 		l.errFn(logrus.Fields{
-			"type":  it.GetType(),
-			"iri":   it.GetLink(),
-			"err":   err.Error(),
+			"type": it.GetType(),
+			"iri":  it.GetLink(),
+			"err":  err.Error(),
 		}, "unable to find old item")
 		return it, err
 	}

@@ -5,7 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type dbLogger struct{
+type dbLogger struct {
 	l logrus.FieldLogger
 }
 

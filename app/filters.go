@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 )
+
 // LoadCollectionFilters uses specific logic for adding elements to the filters when loading
 // collections from the database.
 func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {

@@ -20,7 +20,7 @@ const (
 	TraceLevel
 )
 
-func New () logrus.FieldLogger {
+func New() logrus.FieldLogger {
 	return logrus.New()
 }
 
@@ -73,8 +73,8 @@ type StructuredLoggerEntry struct {
 
 func (l *StructuredLoggerEntry) Write(status, bytes int, elapsed time.Duration) {
 	l.Logger = l.Logger.WithFields(logrus.Fields{
-		"status": status,
-		"len": bytes,
+		"status":  status,
+		"len":     bytes,
 		"elapsed": float64(elapsed.Nanoseconds()) / 1000000.0,
 	})
 

@@ -30,7 +30,7 @@ func main() {
 
 	if a.Config().Storage == config.BOLTDB {
 		b, err := boltdb.New(boltdb.Config{
-			Path: app.Config.BoltDBPath,
+			Path:       app.Config.BoltDBPath,
 			BucketName: app.Config.Host,
 		})
 		if err == nil {
@@ -51,7 +51,7 @@ func main() {
 			},
 			MaxConnections: 3,
 		})
-		defer func () {
+		defer func() {
 			l.Info("closing DB %v", conn)
 			conn.Close()
 		}()

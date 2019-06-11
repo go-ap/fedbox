@@ -12,7 +12,6 @@ import (
 	"strings"
 )
 
-
 type backendConfig struct {
 	Enabled bool
 	Host    string
@@ -23,15 +22,15 @@ type backendConfig struct {
 }
 
 type Options struct {
-	Env                 env.Type
-	LogLevel            log.Level
-	Secure              bool
-	Host                string
-	Listen              string
-	BaseURL             string
-	Storage             StorageType
-	DB                  backendConfig
-	BoltDBPath          string
+	Env        env.Type
+	LogLevel   log.Level
+	Secure     bool
+	Host       string
+	Listen     string
+	BaseURL    string
+	Storage    StorageType
+	DB         backendConfig
+	BoltDBPath string
 }
 
 type StorageType string

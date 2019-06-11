@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/go-ap/activitypub/client"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox/activitypub"
 	h "github.com/go-ap/handlers"
 	"golang.org/x/xerrors"
 	"strings"
@@ -40,7 +40,6 @@ type ActivityValidator interface {
 //type TargetValidator interface {
 //	ValidTarget(as.Item) error
 //}
-
 
 func wrapErr(err error, s string, args ...interface{}) errors.Err {
 	e := errors.Annotatef(err, s, args...)

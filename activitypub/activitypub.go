@@ -355,7 +355,7 @@ func JSONGetItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 }
 
 // ToOrderedCollection
-func ToOrderedCollection (it as.Item) (*OrderedCollection, error) {
+func ToOrderedCollection(it as.Item) (*OrderedCollection, error) {
 	switch o := it.(type) {
 	case *OrderedCollection:
 		return o, nil
@@ -372,7 +372,7 @@ func ToOrderedCollection (it as.Item) (*OrderedCollection, error) {
 }
 
 // ToCollection
-func ToCollection (it as.Item) (*Collection, error) {
+func ToCollection(it as.Item) (*Collection, error) {
 	switch o := it.(type) {
 	case *Collection:
 		return o, nil

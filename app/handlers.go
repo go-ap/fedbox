@@ -85,7 +85,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		// C2S - get recipients and cleanup activity
 		if actWRecipients, ok := it.(as.HasRecipients); ok {
 			recipients := actWRecipients.Recipients()
-			func (rec as.ItemCollection) {
+			func(rec as.ItemCollection) {
 				// TODO(marius): for C2S activities propagate them
 			}(recipients)
 		}
