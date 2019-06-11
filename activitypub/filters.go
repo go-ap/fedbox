@@ -212,7 +212,7 @@ func (f Filters) GetLimit() string {
 	}
 	limit := fmt.Sprintf(" LIMIT %d", f.MaxItems)
 	if f.CurPage > 0 {
-		limit = fmt.Sprintf("%s OFFSET %d", limit, f.MaxItems*(f.CurPage))
+		limit = fmt.Sprintf("%s OFFSET %d", limit, f.MaxItems*(f.CurPage-1))
 	}
 	return limit
 }
