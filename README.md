@@ -2,7 +2,7 @@
 
 [![MIT Licensed](https://img.shields.io/github/license/go-ap/fedbox.svg)](https://raw.githubusercontent.com/go-ap/fedbox/master/LICENSE)
 [![Build Status](https://builds.sr.ht/~mariusor/fedbox.svg)](https://builds.sr.ht/~mariusor/fedbox)
-[![Test Coverage](https://codecov.io/gh/go-ap/fedbox/branch/master/graph/badge.svg)](https://codecov.io/gh/go-ap/fedbox)
+[![Test Coverage](https://img.shields.io/codecov/c/github/go-ap/fedbox.svg)](https://codecov.io/gh/go-ap/fedbox)
 [![Go Report Card](https://goreportcard.com/badge/github.com/go-ap/fedbox)](https://goreportcard.com/report/github.com/go-ap/fedbox)
 
 FedBOX is a very simple ActivityPub enabled service. Its main purpose is as a reference implementation for the other [go-ap](https://github.com/go-ap) packages.
