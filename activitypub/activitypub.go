@@ -434,29 +434,29 @@ func ToActivity(it as.Item) (*Activity, error) {
 }
 
 // FlattenObjectProperties flattens the Object's properties from Object types to IRI
-func FlattenPersonProperties(o Person) Person {
-	as.FlattenObjectProperties(o.Parent)
+func FlattenPersonProperties(o *Person) *Person {
+	o.Parent = *as.FlattenObjectProperties(&o.Parent)
 	return o
 }
 
 // FlattenProperties flattens the Item's properties from Object types to IRI
 func FlattenProperties(it as.Item) as.Item {
 	if as.ActivityTypes.Contains(it.GetType()) {
-		ob, err := ToActivity(it)
+		a, err := as.ToActivity(it)
 		if err == nil {
-			return as.FlattenActivityProperties(as.Activity(*ob))
+			return as.FlattenActivityProperties(a)
 		}
 	}
 	if as.ActorTypes.Contains(it.GetType()) {
 		ob, err := ToPerson(it)
 		if err == nil {
-			return FlattenPersonProperties(*ob)
+			return FlattenPersonProperties(ob)
 		}
 	}
 	if it.GetType() == as.TombstoneType {
 		t, err := as.ToTombstone(it)
 		if err == nil {
-			t.Parent = as.FlattenObjectProperties(t.Parent)
+			t.Parent = *as.FlattenObjectProperties(&t.Parent)
 			return t
 		}
 	}

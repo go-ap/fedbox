@@ -256,7 +256,8 @@ func loadFromDb(conn *pgx.ConnPool, table string, f ap.Filterable) (as.ItemColle
 func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
 
-	it, err = l.SaveObject(ap.FlattenProperties(it))
+	it = ap.FlattenProperties(it)
+	it, err = l.SaveObject(it)
 	if err != nil {
 		l.errFn(logrus.Fields{"IRI": it.GetLink()}, "unable to save activity")
 		return it, err
@@ -423,6 +424,7 @@ func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 		// TODO(marius): this needs to be in a different place
 
 		pc := as.IRI(fmt.Sprintf("%s/%s", l.baseURL, table))
+
 		if _, err := l.GenerateID(it, pc, nil); err != nil {
 			return it, err
 		}
@@ -479,6 +481,10 @@ func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 
 	iri = it.GetLink()
 	uuid := path.Base(iri.String())
+	if uuid == "." {
+		// broken ObjectID generation
+		return it, errors.Newf("Unable to generate ObjectID for %s[%s]", table, it.GetType())
+	}
 	raw, _ := jsonld.Marshal(it)
 	nowTz := pgtype.Timestamptz{
 		Time:   time.Now().UTC(),
@@ -603,20 +609,28 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 func (l loader) DeleteActor(it as.Item) (as.Item, error) {
 	return l.DeleteObject(it)
 }
+// GenerateID generates an unique identifier for the it ActivityPub Object.
+// TODO(marius): remove the need to
 func (l loader) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
-	uuid := uuid2.New()
-	// TODO(marius): this needs to be in a different place
-	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(string(partOf)), uuid))
+	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(string(partOf)), uuid2.New()))
 
 	if as.ActivityTypes.Contains(it.GetType()) {
 		a, err := ap.ToActivity(it)
-		if err == nil {
+		if err != nil {
 			return *it.GetID(), err
 		}
 		a.ID = id
 		it = a
 	}
-	if as.ActorTypes.Contains(it.GetType()) || as.ObjectTypes.Contains(it.GetType()) {
+	if as.ActorTypes.Contains(it.GetType()) {
+		p, err := ap.ToPerson(it)
+		if err != nil {
+			return *it.GetID(), err
+		}
+		p.ID = id
+		it = p
+	}
+	if as.ObjectTypes.Contains(it.GetType()) {
 		switch it.GetType() {
 		case as.PlaceType:
 			p, err := as.ToPlace(it)
@@ -633,12 +647,12 @@ func (l loader) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, 
 			p.ID = id
 			it = p
 		case as.RelationshipType:
-			p, err := as.ToRelationship(it)
+			r, err := as.ToRelationship(it)
 			if err != nil {
 				return *it.GetID(), err
 			}
-			p.ID = id
-			it = p
+			r.ID = id
+			it = r
 		case as.TombstoneType:
 			p, err := as.ToTombstone(it)
 			if err != nil {
@@ -647,12 +661,12 @@ func (l loader) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, 
 			p.ID = id
 			it = p
 		default:
-			p, err := as.ToObject(it)
+			o, err := as.ToObject(it)
 			if err != nil {
 				return *it.GetID(), err
 			}
-			p.ID = id
-			it = p
+			o.ID = id
+			it = o
 		}
 	}
 	return *it.GetID(), nil

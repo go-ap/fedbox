@@ -94,7 +94,6 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	if it, err = activitypub.ProcessActivity(repo, it); err != nil {
 		return "", http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 	}
-	it = activitypub.FlattenProperties(it)
 
 	status := http.StatusOK
 	if it.GetType() == as.CreateType {
