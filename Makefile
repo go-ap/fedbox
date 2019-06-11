@@ -22,7 +22,7 @@ endif
 BUILD := $(GO) build $(BUILDFLAGS)
 TEST := $(GO) test $(BUILDFLAGS)
 
-.PHONY: all run clean test
+.PHONY: all run clean test coverage
 
 all: app boltbootstrap
 
@@ -40,5 +40,8 @@ run: app
 clean:
 	-$(RM) bin/*
 
-test: app
-	$(TEST) ./{app,internal}/...
+test:
+	$(TEST) ./{app,internal,storage,cli}/...
+
+coverage: export TEST := $(TEST) -coverage -coverprofile fedbox.coverprofile
+coverage: test
