@@ -7,6 +7,7 @@ ENV ?= dev
 LDFLAGS ?= -X main.version=$(VERSION)
 BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)'
 APPSOURCES := $(wildcard ./app/*.go storage/*.go activitypub/*.go internal/*/*.go)
+PROJECT_NAME := $(shell basename $(PWD))
 
 ifneq ($(ENV), dev)
 	LDFLAGS += -s -w -extldflags "-static"
@@ -43,5 +44,5 @@ clean:
 test:
 	$(TEST) ./{app,internal,storage,cli}/...
 
-coverage: export TEST := $(TEST) -coverage -coverprofile fedbox.coverprofile
+coverage: TEST_FLAGS += -covermode=count -coverprofile $(PROJECT_NAME).coverprofile
 coverage: test
