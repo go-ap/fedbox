@@ -58,7 +58,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 
 	ff, err := activitypub.FromRequest(r)
 	if err != nil {
-		return as.IRI(""), 0, errors.NewNotValid(err, "Unable to load filters from request")
+		return "", 0, errors.NewNotValid(err, "Unable to load filters from request")
 	}
 	f, ok := ff.(*activitypub.Filters)
 	if ok {
@@ -67,18 +67,18 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 
 	var it as.Item
 	if body, err := ioutil.ReadAll(r.Body); err != nil || len(body) == 0 {
-		return as.IRI(""), http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
+		return "", http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
 	} else {
 		if it, err = as.UnmarshalJSON(body); err != nil {
-			return as.IRI(""), http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
+			return "", http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
 	}
 	validator, ok := ActivityValidatorCtxt(r.Context())
 	if ok == false {
-		return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity validator")
+		return "", http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity validator")
 	}
 	if err = validator.ValidateActivity(typ, it); err != nil {
-		return as.IRI(""), http.StatusBadRequest, errors.NewBadRequest(err, "%s activity failed validation", it.GetType())
+		return "", http.StatusBadRequest, errors.NewBadRequest(err, "%s activity failed validation", it.GetType())
 	}
 
 	if typ == h.Outbox {
@@ -92,7 +92,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	}
 
 	if it, err = activitypub.ProcessActivity(repo, it); err != nil {
-		return as.IRI(""), http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
+		return "", http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 	}
 	it = activitypub.FlattenProperties(it)
 
