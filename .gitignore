@@ -8,3 +8,4 @@ bin/*
 *.crt
 *.key
 tests/db
+*.coverprofile
