@@ -192,7 +192,7 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 	//}
 	// TODO(marius): this looks cumbersome - we need to abstract the audience to something easier to query.
 	if canHaveAudience {
-		keyWhere := make([]string, 0)2
+		keyWhere := make([]string, 0)
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'to' ~* $%d`, counter))
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'cc' ~* $%d`, counter))
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'bto' ~* $%d`, counter))
