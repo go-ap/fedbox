@@ -149,9 +149,9 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
 	}
 
-	validAudienceType := false
+	canHaveAudience := false
 	for _, typ := range f.Type {
-		validAudienceType = as.ActivityTypes.Contains(typ) || as.ObjectTypes.Contains(typ) || as.ActorTypes.Contains(typ)
+		canHaveAudience = as.ActivityTypes.Contains(typ) || as.ObjectTypes.Contains(typ) || as.ActorTypes.Contains(typ)
 	}
 
 	iris := f.IRIs()
@@ -164,7 +164,7 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 			} else {
 				if len(f.Type) == 1 && f.Type[0] == as.LinkType {
 					keyWhere = append(keyWhere, fmt.Sprintf(`"raw"::text ~* $%d`, counter))
-				} else if validAudienceType {
+				} else if canHaveAudience {
 					// For Link type we need to search the full raw column
 					keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'id' = $%d`, counter))
 				}
@@ -176,13 +176,23 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
 	}
 
+	if len(f.IRI) > 0 {
+		if canHaveAudience {
+			// For Link type we need to search the full raw column
+			clauses = append(clauses, fmt.Sprintf(`"raw"->>'id' = $%d`, counter))
+		}
+		clauses = append(clauses, fmt.Sprintf(`"iri" = $%d`, counter))
+		values = append(values, interface{}(f.IRI))
+		counter++
+	}
+
 	//if f.To != nil && len(f.To.GetLink()) > 0 {
 	//	clauses = append(clauses, fmt.Sprintf(`"raw"->>'to' ~* $%d`, counter))
 	//	values = append(values, interface{}(f.To.GetLink()))
 	//}
 	// TODO(marius): this looks cumbersome - we need to abstract the audience to something easier to query.
-	if validAudienceType {
-		keyWhere := make([]string, 0)
+	if canHaveAudience {
+		keyWhere := make([]string, 0)2
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'to' ~* $%d`, counter))
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'cc' ~* $%d`, counter))
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'bto' ~* $%d`, counter))

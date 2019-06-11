@@ -114,7 +114,7 @@ func GetCollectionTable(typ handlers.CollectionType) string {
 func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 	id := ff.ID()
 	colFilters := ap.Filters{
-		ItemKey: []ap.Hash{ ap.Hash(id)},
+		IRI: id,
 	}
 	clauses, values := colFilters.GetWhereClauses()
 
@@ -134,9 +134,8 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 
 	f, ok := ff.(*ap.Filters)
 	if !ok {
-		return nil, errors.Newf("Invalid ActivityPub filters")
+		return ret, errors.Newf("unable to load filters")
 	}
-
 	var count int
 	// Iterate through the result set
 	for rows.Next() {
@@ -149,6 +148,24 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 		if err != nil {
 			return ret, errors.Annotatef(err, "scan values error")
 		}
+
+		if as.ActivityVocabularyType(typ) == as.CollectionType {
+			col := &as.Collection{}
+			col.ID = as.ObjectID(iri)
+			col.Type = as.CollectionType
+			col.TotalItems = uint(count)
+			ret = col
+		}
+		if as.ActivityVocabularyType(typ) == as.OrderedCollectionType {
+			col := &as.OrderedCollection{}
+			col.ID = as.ObjectID(iri)
+			col.Type = as.OrderedCollectionType
+			col.TotalItems = uint(count)
+			ret = col
+		}
+		if count == 0 {
+			return ret, nil
+		}
 		l.logFn(logrus.Fields{
 			"id": id,
 			"iri": iri,
@@ -160,26 +177,23 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 
 		var items as.ItemCollection
 		f.ItemKey = f.ItemKey[:0]
+		f.IRI = ""
 		for _, elem := range elements {
 			f.ItemKey = append(f.ItemKey, ap.Hash(elem))
 		}
 		var total uint
 		items, total, err = loadFromDb(l.conn, GetCollectionTable(f.Collection), f)
-
 		if as.ActivityVocabularyType(typ) == as.CollectionType {
-			col := &as.Collection{}
-			col.ID = as.ObjectID(iri)
-			col.Type = as.CollectionType
-			col.TotalItems = total
-			ret = col
+			if col, err  := ap.ToCollection(ret); err == nil {
+				col.TotalItems = total
+			}
 		}
 		if as.ActivityVocabularyType(typ) == as.OrderedCollectionType {
-			col := &as.OrderedCollection{}
-			col.ID = as.ObjectID(iri)
-			col.Type = as.OrderedCollectionType
-			col.TotalItems = total
-			ret = col
+			if col, err  := ap.ToOrderedCollection(ret); err == nil {
+				col.TotalItems = total
+			}
 		}
+
 		if err == nil && total > 0 {
 			for _, it := range items {
 				ret.Append(it)
