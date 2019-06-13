@@ -23,7 +23,7 @@ endif
 BUILD := $(GO) build $(BUILDFLAGS)
 TEST := $(GO) test $(BUILDFLAGS)
 
-.PHONY: all run clean test coverage
+.PHONY: all run clean test coverage integration
 
 all: app boltbootstrap
 
@@ -46,3 +46,6 @@ test:
 
 coverage: TEST_FLAGS += -covermode=count -coverprofile $(PROJECT_NAME).coverprofile
 coverage: test
+
+integration:
+	$(MAKE) -C tests $@
