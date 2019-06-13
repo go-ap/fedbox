@@ -51,12 +51,13 @@ func main() {
 			},
 			MaxConnections: 3,
 		})
+		repo := storage.New(conn, a.Config().BaseURL, l)
 		defer func() {
 			l.Info("closing DB %v", conn)
-			conn.Close()
+			repo.Close()
 		}()
 		if err == nil {
-			r.Use(app.Repo(storage.New(conn, a.Config().BaseURL, l)))
+			r.Use(app.Repo(repo))
 		} else {
 			l.Errorf("invalid db connection")
 		}
