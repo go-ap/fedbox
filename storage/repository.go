@@ -270,6 +270,7 @@ func getCollectionID(actor as.Item, c handlers.CollectionType) as.ObjectID {
 	return as.ObjectID(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
 
+
 func getCollectionIRI(actor as.Item, c handlers.CollectionType) as.IRI {
 	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
@@ -283,6 +284,7 @@ func (l loader) createActorCollection(actor as.Item, c handlers.CollectionType) 
 	}
 	return createCollection(l, &col)
 }
+
 func (l loader) createObjectCollection(object as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
 	col := as.OrderedCollection{
 		Parent: as.Parent{
@@ -727,4 +729,10 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 	}
 
 	return l.updateItem(table, t)
+}
+
+// Close closes the underlying db connections
+func (l *loader) Close() error {
+	l.conn.Close()
+	return nil
 }
