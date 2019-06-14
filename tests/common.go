@@ -43,7 +43,7 @@ type testReq struct {
 
 type testRes struct {
 	code int
-	val  objectVal
+	val  *objectVal
 	body string
 }
 
@@ -75,7 +75,7 @@ type objectVal struct {
 	next              *objectVal
 	last              *objectVal
 	current           *objectVal
-	items             map[string]objectVal
+	items             map[string]*objectVal
 }
 
 var (
@@ -119,7 +119,7 @@ var data = map[string][][]interface{}{
 type assertFn func(v bool, msg string, args ...interface{})
 type errFn func(format string, args ...interface{})
 type requestGetAssertFn func(iri string) map[string]interface{}
-type objectPropertiesAssertFn func(ob map[string]interface{}, testVal objectVal)
+type objectPropertiesAssertFn func(ob map[string]interface{}, testVal *objectVal)
 type mapFieldAssertFn func(ob map[string]interface{}, key string, testVal interface{})
 
 func errorf(t *testing.T) errFn {
@@ -177,7 +177,7 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 						assertTrue(v1 == tt.id, "Invalid %s, %s expected in %#v", "id", v1, tt)
 					}
 					if okB {
-						errOnObjectProperties(t)(v2, *tt)
+						errOnObjectProperties(t)(v2, tt)
 					}
 				}
 			default:
@@ -192,7 +192,10 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 	assertReq := errOnGetRequest(t)
 	assertTrue := errIfNotTrue(t)
 
-	return func(ob map[string]interface{}, tVal objectVal) {
+	return func(ob map[string]interface{}, tVal *objectVal) {
+		if tVal == nil {
+			return
+		}
 		if tVal.id != "" {
 			assertMapKey(ob, "id", tVal.id)
 		}
@@ -218,42 +221,42 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			assertMapKey(ob, "inbox", tVal.inbox)
 			if tVal.inbox.typ != "" {
 				dCol := assertReq(tVal.inbox.id)
-				errOnObjectProperties(t)(dCol, *tVal.inbox)
+				errOnObjectProperties(t)(dCol, tVal.inbox)
 			}
 		}
 		if tVal.outbox != nil {
 			assertMapKey(ob, "outbox", tVal.outbox)
 			if tVal.outbox.typ != "" {
 				dCol := assertReq(tVal.outbox.id)
-				errOnObjectProperties(t)(dCol, *tVal.outbox)
+				errOnObjectProperties(t)(dCol, tVal.outbox)
 			}
 		}
 		if tVal.liked != nil {
 			assertMapKey(ob, "liked", tVal.liked)
 			if tVal.liked.typ != "" {
 				dCol := assertReq(tVal.liked.id)
-				errOnObjectProperties(t)(dCol, *tVal.liked)
+				errOnObjectProperties(t)(dCol, tVal.liked)
 			}
 		}
 		if tVal.following != nil {
 			assertMapKey(ob, "following", tVal.following)
 			if tVal.following.typ != "" {
 				dCol := assertReq(tVal.following.id)
-				errOnObjectProperties(t)(dCol, *tVal.following)
+				errOnObjectProperties(t)(dCol, tVal.following)
 			}
 		}
 		if tVal.act != nil {
 			assertMapKey(ob, "actor", tVal.act)
 			if tVal.act.typ != "" {
 				dAct := assertReq(tVal.act.id)
-				errOnObjectProperties(t)(dAct, *tVal.act)
+				errOnObjectProperties(t)(dAct, tVal.act)
 			}
 		}
 		if tVal.obj != nil {
 			assertMapKey(ob, "object", tVal.obj)
 			if tVal.obj.id != "" {
 				derefObj := assertReq(tVal.obj.id)
-				errOnObjectProperties(t)(derefObj, *tVal.obj)
+				errOnObjectProperties(t)(derefObj, tVal.obj)
 			}
 		}
 		if tVal.typ != string(as.CollectionType) &&
@@ -266,35 +269,35 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			assertMapKey(ob, "first", tVal.first)
 			if tVal.first.typ != "" {
 				derefCol := assertReq(tVal.first.id)
-				errOnObjectProperties(t)(derefCol, *tVal.first)
+				errOnObjectProperties(t)(derefCol, tVal.first)
 			}
 		}
 		if tVal.next != nil {
 			assertMapKey(ob, "next", tVal.next)
 			if tVal.next.typ != "" {
 				derefCol := assertReq(tVal.next.id)
-				errOnObjectProperties(t)(derefCol, *tVal.next)
+				errOnObjectProperties(t)(derefCol, tVal.next)
 			}
 		}
 		if tVal.current != nil {
 			assertMapKey(ob, "current", tVal.current)
 			if tVal.current.typ != "" {
 				dCol := assertReq(tVal.current.id)
-				errOnObjectProperties(t)(dCol, *tVal.current)
+				errOnObjectProperties(t)(dCol, tVal.current)
 			}
 		}
 		if tVal.last != nil {
 			assertMapKey(ob, "last", tVal.last)
 			if tVal.last.typ != "" {
 				derefCol := assertReq(tVal.last.id)
-				errOnObjectProperties(t)(derefCol, *tVal.last)
+				errOnObjectProperties(t)(derefCol, tVal.last)
 			}
 		}
 		if tVal.partOf != nil {
 			assertMapKey(ob, "partOf", tVal.partOf)
 			if tVal.partOf.typ != "" {
 				derefCol := assertReq(tVal.partOf.id)
-				errOnObjectProperties(t)(derefCol, *tVal.partOf)
+				errOnObjectProperties(t)(derefCol, tVal.partOf)
 			}
 		}
 		if tVal.itemCount != 0 {
@@ -387,6 +390,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 		}
 		resp, err := http.DefaultClient.Do(req)
 
+		assertTrue(resp == nil, "Error: request failed: response is nil")
 		assertTrue(err == nil, "Error: request failed: %s", err)
 		assertTrue(resp.StatusCode == test.res.code,
 			"Error: invalid HTTP response %d, expected %d\nReq:[%s] %s\n%v\nResponse\n%v\n%s",
@@ -416,6 +420,9 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 		err = json.Unmarshal(b, &res)
 		assertTrue(err == nil, "Error: unmarshal failed: %s", err)
 
+		if test.res.val == nil {
+			return res
+		}
 		if test.res.val.id != "" {
 			saved := assertGetRequest(test.res.val.id)
 			if test.res.val.typ != "" {
@@ -431,7 +438,7 @@ func testSuite(t *testing.T, pairs testPairs) {
 	for typ, tests := range pairs {
 		resetDB(t, true)
 		for _, test := range tests {
-			lbl := fmt.Sprintf("%s:%s:%s:%s", typ, test.req.met, test.res.val.typ, test.req.url)
+			lbl := fmt.Sprintf("%s:%s:%s", typ, test.req.met, test.req.url)
 			t.Run(lbl, func(t *testing.T) {
 				errOnRequest(t)(test)
 			})
