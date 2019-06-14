@@ -7,8 +7,7 @@ TEST := $(GO) test -v
 clean:
 	@-$(RM) -rf ./test-*.bdb
 
-test:
+test: clean
 	$(TEST) ./...
-	@-$(MAKE) clean
 
 integration: test
