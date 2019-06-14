@@ -79,8 +79,8 @@ type objectVal struct {
 }
 
 var (
-	host   = "127.0.0.1:6666"
-	apiURL = "http://127.0.0.1:6666"
+	host   = "127.0.0.1:9998"
+	apiURL = "http://127.0.0.1:9998"
 )
 
 const testActorHash = "f00f00f00f00f00f00f00f00f00f6667"
