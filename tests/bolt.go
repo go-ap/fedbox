@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/boltdb/bolt"
 	"github.com/go-ap/errors"
@@ -40,10 +39,6 @@ func bootstrapBolt(path string, rootBucket []byte, baseURL string) error {
 		if err != nil {
 			return errors.Annotatef(err, "could not create %s bucket", bucketObjects)
 		}
-		_, err = root.CreateBucketIfNotExists([]byte(bucketCollections))
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s bucket", bucketCollections)
-		}
 		return nil
 	})
 	if err != nil {
@@ -51,31 +46,6 @@ func bootstrapBolt(path string, rootBucket []byte, baseURL string) error {
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
-		// Create collections
-		col := tx.Bucket(rootBucket).Bucket([]byte(bucketCollections))
-		{
-			{
-				iri := fmt.Sprintf("%s/%s", baseURL, bucketActivities)
-				err := col.Put([]byte(iri), nil)
-				if err != nil {
-					return fmt.Errorf("could not insert entry: %v", err)
-				}
-			}
-			{
-				iri := fmt.Sprintf("%s/%s", baseURL, bucketActors)
-				err := col.Put([]byte(iri), nil)
-				if err != nil {
-					return fmt.Errorf("could not insert entry: %v", err)
-				}
-			}
-			{
-				iri := fmt.Sprintf("%s/%s", baseURL, bucketObjects)
-				err := col.Put([]byte(iri), nil)
-				if err != nil {
-					return fmt.Errorf("could not insert entry: %v", err)
-				}
-			}
-		}
 		// Service actor
 		act := tx.Bucket(rootBucket).Bucket([]byte(bucketActors))
 		{
@@ -86,16 +56,6 @@ func bootstrapBolt(path string, rootBucket []byte, baseURL string) error {
 			err := act.Put([]byte(iri), []byte(a))
 			if err != nil {
 				return fmt.Errorf("could not insert entry: %v", err)
-			}
-			col := tx.Bucket(rootBucket).Bucket([]byte(bucketCollections))
-			actors := []string{iri}
-			aBytes, _ := json.Marshal(&actors)
-			{
-				iri := fmt.Sprintf("%s/%s", baseURL, bucketActors)
-				err := col.Put([]byte(iri), aBytes)
-				if err != nil {
-					return fmt.Errorf("could not insert entry: %v", err)
-				}
 			}
 		}
 		return nil
