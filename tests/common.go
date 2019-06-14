@@ -8,17 +8,11 @@ import (
 	"encoding/json"
 	"fmt"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/app"
-	"github.com/go-ap/fedbox/internal/log"
-	"github.com/go-ap/storage"
-	"github.com/go-chi/chi"
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
-	"os"
 	"runtime/debug"
 	"strings"
 	"testing"
@@ -120,33 +114,6 @@ var data = map[string][][]interface{}{
 			interface{}(string(jm)),
 		},
 	},
-}
-
-func runAPP(l logrus.FieldLogger, b storage.Loader) int {
-	a := app.New(l, "HEAD")
-	r := chi.NewRouter()
-
-	r.Use(app.Repo(b))
-	r.Use(log.NewStructuredLogger(l))
-	r.Route("/", app.Routes())
-
-	return a.Run(r, time.Second*5)
-}
-
-func resetDB(t *testing.T, testData bool) {
-	if t != nil {
-		t.Helper()
-		t.Logf("Resetting DB")
-	}
-
-	curPath, err := os.Getwd()
-	if err != nil {
-		curPath = os.TempDir()
-	}
-	path := fmt.Sprintf("%s/%s-%d.bdb", curPath, "test", os.Getpid())
-	os.Remove(path)
-
-	bootstrapBolt(path, []byte(host), apiURL)
 }
 
 type assertFn func(v bool, msg string, args ...interface{})
