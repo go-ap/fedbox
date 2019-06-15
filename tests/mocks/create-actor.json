@@ -1,0 +1,16 @@
+{
+  "type": "Create",
+  "actor": "%s",
+  "object": {
+    "type": "Person",
+    "published": "2019-05-10T22:16:40Z",
+    "to": [
+      "https://www.w3.org/ns/activitystreams#Public"
+    ],
+    "name": "Jane Doe",
+    "preferredUsername": "jennyjane"
+  },
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ]
+}

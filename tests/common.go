@@ -88,9 +88,9 @@ var (
 const testActorHash = "f00f00f00f00f00f00f00f00f00f6667"
 const testActorHandle = "johndoe"
 
-var inboxURL = fmt.Sprintf("%s/self/inbox", apiURL)
-var outboxURL = fmt.Sprintf("%s/self/outbox", apiURL)
-var baseURL = strings.Replace(apiURL, "/api", "", 1)
+var inboxURL = fmt.Sprintf("%s/inbox", apiURL)
+var outboxURL = fmt.Sprintf("%s/outbox", apiURL)
+var baseURL = apiURL
 var callbackURL = fmt.Sprintf("%s/auth/local/callback", baseURL)
 var rnd = rand.New(rand.NewSource(6667))
 var key, _ = rsa.GenerateKey(rnd, 512)
@@ -99,7 +99,7 @@ var pub, _ = x509.MarshalPKIXPublicKey(&key.PublicKey)
 var meta interface{} = nil
 
 var defaultTestAccount = testAccount{
-	id:         fmt.Sprintf("%s/self/following/%s", apiURL, testActorHash),
+	id:         fmt.Sprintf("%s/actors/%s", apiURL, testActorHash),
 	Handle:     testActorHandle,
 	Hash:       testActorHash,
 	publicKey:  key.Public(),

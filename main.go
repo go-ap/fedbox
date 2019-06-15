@@ -37,7 +37,7 @@ func main() {
 		bolt, errb := boltdb.New(boltdb.Config{
 			Path:       app.Config.BoltDBPath,
 			BucketName: app.Config.Host,
-		})
+		}, a.Config().BaseURL)
 		repo = bolt
 		err = errb
 		defer bolt.Close()

@@ -52,7 +52,7 @@ func runAPP(e string) int {
 		BucketName: host,
 		ErrFn:      l.Errorf,
 		LogFn:      l.Infof,
-	})
+	}, apiURL)
 	defer func() {
 		b.Close()
 		def()

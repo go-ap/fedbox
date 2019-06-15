@@ -1,0 +1,18 @@
+{
+  "type": "Update",
+  "actor": "http://fedbox.git/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa",
+  "object": {
+    "id": "http://fedbox.git/actors/3b8462c0-d17c-475c-8448-bc3db9010bb2",
+    "type": "Person",
+    "to": [
+      "http://fedbox.git/inbox",
+      "https://www.w3.org/ns/activitystreams#Public"
+    ],
+    "name": "Jane Doe",
+    "summary": "I am a test user, and I am fine with that",
+    "preferredUsername": "jennyjane1"
+  },
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ]
+}
