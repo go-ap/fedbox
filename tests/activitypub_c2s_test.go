@@ -23,6 +23,8 @@ var C2STests = testPairs{
 					itemCount: 1,
 					first: &objectVal{
 						id: fmt.Sprintf("%s/actors?maxItems=%d&page=1", apiURL, activitypub.MaxItems),
+						typ: string(as.OrderedCollectionPageType),
+						itemCount: 1,
 					},
 				},
 			},
@@ -60,7 +62,7 @@ var C2STests = testPairs{
 			},
 		},
 	},
-	"LocalService": {
+	"ServiceActor": {
 		{
 			req: testReq{
 				met: http.MethodGet,

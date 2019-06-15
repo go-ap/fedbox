@@ -40,6 +40,7 @@ func PaginateCollection(col as.CollectionInterface, f Paginator) (as.CollectionI
 	}
 
 	baseURL := col.GetLink()
+	curURL := getURL(baseURL, f)
 
 	var haveItems, moreItems, lessItems bool
 	var pp, np Paginator
@@ -83,7 +84,6 @@ func PaginateCollection(col as.CollectionInterface, f Paginator) (as.CollectionI
 			pp = &Filters{CurPage: f.Page() - 1, MaxItems: maxItems}
 			prevURL = getURL(baseURL, pp)
 		}
-		curURL := baseURL
 
 		if f.Page() > 0 {
 			if col.GetType() == as.OrderedCollectionType {
@@ -92,12 +92,14 @@ func PaginateCollection(col as.CollectionInterface, f Paginator) (as.CollectionI
 					page := as.OrderedCollectionPageNew(oc)
 					page.ID = as.ObjectID(curURL)
 					page.PartOf = baseURL
-					page.First = oc.First
+					if firstURL != curURL {
+						page.First = oc.First
+					}
 					if moreItems {
-						page.Next = as.IRI(nextURL)
+						page.Next = nextURL
 					}
 					if lessItems {
-						page.Prev = as.IRI(prevURL)
+						page.Prev = prevURL
 					}
 					page.OrderedItems = oc.OrderedItems
 					page.TotalItems = count
@@ -112,10 +114,10 @@ func PaginateCollection(col as.CollectionInterface, f Paginator) (as.CollectionI
 					page.PartOf = baseURL
 					page.First = c.First
 					if moreItems {
-						page.Next = as.IRI(nextURL)
+						page.Next = nextURL
 					}
 					if lessItems {
-						page.Prev = as.IRI(prevURL)
+						page.Prev = prevURL
 					}
 					page.TotalItems = count
 					page.Items = c.Items
