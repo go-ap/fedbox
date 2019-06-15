@@ -50,7 +50,7 @@ type Fedbox struct {
 }
 
 // New instantiates a new Fedbox instance
-func New(l logrus.FieldLogger, ver string) Fedbox {
+func New(l logrus.FieldLogger, ver string, environment string) Fedbox {
 	app := Fedbox{ver: ver}
 	var err error
 	if l != nil {
@@ -59,7 +59,7 @@ func New(l logrus.FieldLogger, ver string) Fedbox {
 		app.warn = l.Warnf
 		app.err = l.Errorf
 	}
-	app.conf, err = config.LoadFromEnv()
+	app.conf, err = config.LoadFromEnv(environment)
 	if err == nil {
 		Config = app.conf
 		ap.Secure = app.conf.Secure
@@ -67,7 +67,7 @@ func New(l logrus.FieldLogger, ver string) Fedbox {
 	if err != nil {
 		app.warn("Unable to load settings from environment variables: %s", err)
 	}
-	errors.IncludeBacktrace = app.conf.Env == env.DEV
+	errors.IncludeBacktrace = app.conf.Env == env.DEV || app.conf.Env == env.TEST
 	as.ItemTyperFunc = ap.JSONGetItemByType
 	return app
 }

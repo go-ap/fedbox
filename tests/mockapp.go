@@ -59,7 +59,7 @@ func runAPP() int {
 	if err != nil {
 		return 1
 	}
-	a := app.New(l, "HEAD")
+	a := app.New(l, "HEAD", "test")
 	r := chi.NewRouter()
 
 	r.Use(app.Repo(b))

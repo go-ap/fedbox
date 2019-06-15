@@ -38,10 +38,13 @@ type StorageType string
 const BOLTDB = StorageType("boltdb")
 const POSTGRES = StorageType("postgres")
 
-func LoadFromEnv() (Options, error) {
+func LoadFromEnv(e string) (Options, error) {
 	conf := Options{}
+	if !env.ValidType(e) {
+		e = os.Getenv("ENV")
+	}
 
-	conf.Env = env.ValidTypeOrDev(os.Getenv("ENV"))
+	conf.Env = env.ValidTypeOrDev(e)
 	configs := []string{
 		".env",
 		fmt.Sprintf(".env.%s", conf.Env),

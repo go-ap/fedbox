@@ -20,12 +20,14 @@ const defaultTimeout = time.Second * 15
 
 func main() {
 	var wait time.Duration
+	var environment string
 
 	flag.DurationVar(&wait, "graceful-timeout", defaultTimeout, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
+	flag.StringVar(&environment, "env", "dev", "environment")
 	flag.Parse()
 
 	l := log.New()
-	a := app.New(l, version)
+	a := app.New(l, version, "")
 	r := chi.NewRouter()
 
 	if a.Config().Storage == config.BOLTDB {

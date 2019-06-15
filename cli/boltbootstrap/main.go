@@ -55,7 +55,7 @@ func openDb(path string, root []byte) (*bolt.DB, error) {
 }
 
 func main() {
-	conf, err := config.LoadFromEnv()
+	conf, err := config.LoadFromEnv("")
 	if err != nil {
 		errf("Unable to load settings from environment variables: %s", err)
 	}
