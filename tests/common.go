@@ -351,22 +351,32 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 				)
 			foundItem:
 				for k, testIt := range tVal.items {
-					iri := fmt.Sprintf("%s/%s", apiURL, k)
+					url, _ := url.Parse(tVal.id)
+					iri := fmt.Sprintf("%s%s/%s", apiURL, url.Path, k)
 					for _, it := range items {
-						act, ok := it.(map[string]interface{})
-						assertTrue(ok, "Unable to convert %#v to %T type, Received %#v:(%T)", it, act, it, it)
-						itId, ok := act["id"]
-						assertTrue(ok, "Could not load id property of item: %#v", act)
-						itIRI, ok := itId.(string)
-						assertTrue(ok, "Unable to convert %#v to %T type, Received %#v:(%T)", itId, itIRI, val, val)
-						if strings.EqualFold(itIRI, iri) {
-							kk := strings.Replace(k, "self/", "", 1)
-							t.Run(kk, func(t *testing.T) {
-								errOnObjectProperties(t)(act, testIt)
-								dAct := assertReq(itIRI)
-								errOnObjectProperties(t)(dAct, testIt)
-							})
-							continue foundItem
+						switch act := it.(type) {
+						case map[string]interface{}:
+							assertTrue(ok, "Unable to convert %#v to %T type, Received %#v:(%T)", it, act, it, it)
+							itId, ok := act["id"]
+							assertTrue(ok, "Could not load id property of item: %#v", act)
+							itIRI, ok := itId.(string)
+							assertTrue(ok, "Unable to convert %#v to %T type, Received %#v:(%T)", itId, itIRI, val, val)
+							if strings.EqualFold(itIRI, iri) {
+								kk := strings.Replace(k, "self/", "", 1)
+								t.Run(kk, func(t *testing.T) {
+									errOnObjectProperties(t)(act, testIt)
+									dAct := assertReq(itIRI)
+									errOnObjectProperties(t)(dAct, testIt)
+								})
+								continue foundItem
+							}
+						case string:
+							if testIt.id != "" {
+								if strings.EqualFold(act, iri) {
+									assertTrue(act == testIt.id, "invalid item ID %s, expected %s", act, testIt.id)
+									continue foundItem
+								}
+							}
 						}
 					}
 					errorf(t)("Unable to find %s in the %s collection %#v", iri, itemsKey, items)

@@ -21,10 +21,20 @@ var C2STests = testPairs{
 					id:  fmt.Sprintf("%s/actors", apiURL),
 					typ: string(as.OrderedCollectionType),
 					itemCount: 1,
+					items: map[string]*objectVal{
+						selfAccount.Hash: {
+							id: selfAccount.id,
+						},
+					},
 					first: &objectVal{
 						id: fmt.Sprintf("%s/actors?maxItems=%d&page=1", apiURL, activitypub.MaxItems),
 						typ: string(as.OrderedCollectionPageType),
 						itemCount: 1,
+						items: map[string]*objectVal{
+							selfAccount.Hash: {
+								id: selfAccount.id,
+							},
+						},
 					},
 				},
 			},
