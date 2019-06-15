@@ -86,7 +86,7 @@ func LoadFromEnv(e string) (Options, error) {
 	conf.Storage = StorageType(strings.ToLower(envStorage))
 	switch conf.Storage {
 	case BOLTDB:
-		conf.BoltDBPath = fmt.Sprintf("%s/%s.bolt.db", os.TempDir(), path.Clean(conf.Host))
+		conf.BoltDBPath = fmt.Sprintf("%s/%s-%s.bdb", os.TempDir(), path.Clean(conf.Host), conf.Env)
 	case StorageType(""):
 		conf.Storage = POSTGRES
 		fallthrough

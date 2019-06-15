@@ -1,121 +1,30 @@
 package main
 
 import (
-	"encoding/json"
+	"flag"
 	"fmt"
-	"github.com/boltdb/bolt"
-	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/env"
+	"github.com/go-ap/fedbox/storage/boltdb"
 )
 
 func errf(s string, par ...interface{}) {
 	fmt.Printf(s, par...)
 }
 
-const (
-	bucketActors      = "actors"
-	bucketActivities  = "activities"
-	bucketObjects     = "objects"
-	bucketCollections = "collections"
-)
-
-func openDb(path string, root []byte) (*bolt.DB, error) {
-	db, err := bolt.Open(path, 0600, nil)
-	if err != nil {
-		return nil, errors.Annotatef(err, "could not open db")
-	}
-	rootBucket := []byte(root)
-	err = db.Update(func(tx *bolt.Tx) error {
-		root, err := tx.CreateBucketIfNotExists(rootBucket)
-		if err != nil {
-			return errors.Annotatef(err, "could not create root bucket")
-		}
-		_, err = root.CreateBucketIfNotExists([]byte(bucketActivities))
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s bucket", bucketActivities)
-		}
-		_, err = root.CreateBucketIfNotExists([]byte(bucketActors))
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s bucket", bucketActors)
-		}
-		_, err = root.CreateBucketIfNotExists([]byte(bucketObjects))
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s bucket", bucketObjects)
-		}
-		_, err = root.CreateBucketIfNotExists([]byte(bucketCollections))
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s bucket", bucketCollections)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, errors.Annotatef(err, "could not set up buckets")
-	}
-	return db, nil
-}
-
 func main() {
-	conf, err := config.LoadFromEnv("")
+	var environ string
+
+	flag.StringVar(&environ, "env", string(env.DEV), "environment")
+	flag.Parse()
+
+	conf, err := config.LoadFromEnv(environ)
 	if err != nil {
 		errf("Unable to load settings from environment variables: %s", err)
 	}
-
-	rootBucket := []byte(conf.Host)
-	db, err := openDb(conf.BoltDBPath, rootBucket)
-	if err != nil {
-		errf("Unable to open bolt db: %s", err)
-	}
-	err = db.Update(func(tx *bolt.Tx) error {
-		// Create collections
-		col := tx.Bucket(rootBucket).Bucket([]byte(bucketCollections))
-		{
-			{
-				iri := fmt.Sprintf("%s/%s", conf.BaseURL, bucketActivities)
-				err := col.Put([]byte(iri), nil)
-				if err != nil {
-					return fmt.Errorf("could not insert entry: %v", err)
-				}
-			}
-			{
-				iri := fmt.Sprintf("%s/%s", conf.BaseURL, bucketActors)
-				err := col.Put([]byte(iri), nil)
-				if err != nil {
-					return fmt.Errorf("could not insert entry: %v", err)
-				}
-			}
-			{
-				iri := fmt.Sprintf("%s/%s", conf.BaseURL, bucketObjects)
-				err := col.Put([]byte(iri), nil)
-				if err != nil {
-					return fmt.Errorf("could not insert entry: %v", err)
-				}
-			}
-		}
-		// Service actor
-		act := tx.Bucket(rootBucket).Bucket([]byte(bucketActors))
-		{
-			j := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s/%s/d3ab037c-0f15-4c09-b635-3d6e201c11aa","type": "Service","name": "self","inbox": "%s/inbox", "audience": [
-			  "https://www.w3.org/ns/activitystreams#Public"]}`
-			a := fmt.Sprintf(j, conf.BaseURL, bucketActors, conf.BaseURL)
-			iri := fmt.Sprintf("%s/%s/d3ab037c-0f15-4c09-b635-3d6e201c11aa", conf.BaseURL, bucketActors)
-			err := act.Put([]byte(iri), []byte(a))
-			if err != nil {
-				return fmt.Errorf("could not insert entry: %v", err)
-			}
-			col := tx.Bucket(rootBucket).Bucket([]byte(bucketCollections))
-			actors := []string{iri}
-			aBytes, _ := json.Marshal(&actors)
-			{
-				iri := fmt.Sprintf("%s/%s", conf.BaseURL, bucketActors)
-				err := col.Put([]byte(iri), aBytes)
-				if err != nil {
-					return fmt.Errorf("could not insert entry: %v", err)
-				}
-			}
-		}
-		return nil
-	})
+	err = boltdb.Bootstrap(conf.BoltDBPath, []byte(conf.Host), conf.BaseURL)
 	if err != nil {
 		errf("Unable to update bolt db: %s", err)
 	}
+	fmt.Println("OK")
 }

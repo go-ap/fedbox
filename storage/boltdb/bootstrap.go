@@ -1,4 +1,4 @@
-package tests
+package boltdb
 
 import (
 	"fmt"
@@ -6,15 +6,13 @@ import (
 	"github.com/go-ap/errors"
 )
 
-
 const (
 	bucketActors      = "actors"
 	bucketActivities  = "activities"
 	bucketObjects     = "objects"
-	bucketCollections = "collections"
 )
 
-func bootstrapBolt(path string, rootBucket []byte, baseURL string) error {
+func Bootstrap(path string, rootBucket []byte, baseURL string) error {
 	var err error
 	db, err := bolt.Open(path, 0600, nil)
 	if err != nil {
@@ -49,11 +47,11 @@ func bootstrapBolt(path string, rootBucket []byte, baseURL string) error {
 		// Service actor
 		act := tx.Bucket(rootBucket).Bucket([]byte(bucketActors))
 		{
-			j := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s/%s/d3ab037c-0f15-4c09-b635-3d6e201c11aa","type": "Service","name": "self","inbox": "%s/inbox", "audience": [
-			  "https://www.w3.org/ns/activitystreams#Public"]}`
-			a := fmt.Sprintf(j, baseURL, bucketActors, baseURL)
-			iri := fmt.Sprintf("%s/%s/d3ab037c-0f15-4c09-b635-3d6e201c11aa", baseURL, bucketActors)
-			err := act.Put([]byte(iri), []byte(a))
+			hash := "d3ab037c-0f15-4c09-b635-3d6e201c11aa"
+			iri := fmt.Sprintf("%s/%s/%s", baseURL, bucketActors, hash)
+			j := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s","type": "Service","name": "self","inbox": "%s/inbox", "audience": ["https://www.w3.org/ns/activitystreams#Public"]}`
+			a := fmt.Sprintf(j, iri, baseURL)
+			err := act.Put([]byte(hash), []byte(a))
 			if err != nil {
 				return fmt.Errorf("could not insert entry: %v", err)
 			}
@@ -63,6 +61,6 @@ func bootstrapBolt(path string, rootBucket []byte, baseURL string) error {
 	if err != nil {
 		return errors.Annotatef(err, "Unable to update bolt db")
 	}
-	
+
 	return nil
 }

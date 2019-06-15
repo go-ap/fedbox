@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/log"
+	b "github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/storage/boltdb"
 	"github.com/go-chi/chi"
 	"github.com/sirupsen/logrus"
@@ -31,11 +32,11 @@ func resetDB(t *testing.T, testData bool) func() {
 	}
 	rm()
 
-	bootstrapBolt(path, []byte(host), apiURL)
+	b.Bootstrap(path, []byte(host), apiURL)
 	return rm
 }
 
-func runAPP() int {
+func runAPP(e string) int {
 	l := logrus.New()
 	l.SetLevel(logrus.TraceLevel)
 
@@ -59,7 +60,7 @@ func runAPP() int {
 	if err != nil {
 		return 1
 	}
-	a := app.New(l, "HEAD", "test")
+	a := app.New(l, "HEAD", e)
 	r := chi.NewRouter()
 
 	r.Use(app.Repo(b))
