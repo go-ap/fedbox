@@ -1,4 +1,4 @@
-package storage
+package pgx
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
@@ -22,7 +23,9 @@ import (
 type loader struct {
 	baseURL string
 	conn    *pgx.ConnPool
+	conf    config.BackendConfig
 	d       client.Client
+	l       logrus.FieldLogger
 	logFn   loggerFn
 	errFn   loggerFn
 }
@@ -49,14 +52,19 @@ func logFn(l logrus.FieldLogger, lvl logrus.Level) loggerFn {
 	}
 }
 
-func New(conn *pgx.ConnPool, url string, l logrus.FieldLogger) *loader {
-	return &loader{
-		conn:    conn,
+func New(conf config.BackendConfig, url string, lp logrus.FieldLogger) (*loader, error) {
+	l := loader{
 		baseURL: url,
+		conf:    conf,
 		d:       client.NewClient(),
-		logFn:   logFn(l, logrus.InfoLevel),
-		errFn:   logFn(l, logrus.ErrorLevel),
+		l: lp,
+		errFn:   logFn(lp, logrus.ErrorLevel),
 	}
+
+	if err := l.Open(); err != nil {
+		return &l, err
+	}
+	return &l, nil
 }
 
 func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, uint, error) {
@@ -166,14 +174,14 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 		if count == 0 {
 			return ret, nil
 		}
-		l.logFn(logrus.Fields{
+		l.l.WithFields(logrus.Fields{
 			"id":         id,
 			"iri":        iri,
 			"created_at": created,
 			"type":       typ,
 			"count":      count,
 			"elements":   elements,
-		}, "loaded fields")
+		}).Infof("loaded fields")
 
 		var items as.ItemCollection
 		f.ItemKey = f.ItemKey[:0]
@@ -269,7 +277,6 @@ func (l loader) SaveActivity(it as.Item) (as.Item, error) {
 func getCollectionID(actor as.Item, c handlers.CollectionType) as.ObjectID {
 	return as.ObjectID(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
-
 
 func getCollectionIRI(actor as.Item, c handlers.CollectionType) as.IRI {
 	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
@@ -611,6 +618,7 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 func (l loader) DeleteActor(it as.Item) (as.Item, error) {
 	return l.DeleteObject(it)
 }
+
 // GenerateID generates an unique identifier for the it ActivityPub Object.
 // TODO(marius): remove the need to
 func (l loader) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
@@ -729,6 +737,26 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 	}
 
 	return l.updateItem(table, t)
+}
+
+// Close closes the underlying db connections
+func (l *loader) Open() error {
+	var err error
+	l.conn, err = pgx.NewConnPool(pgx.ConnPoolConfig{
+		ConnConfig: pgx.ConnConfig {
+			Host:     l.conf.Host,
+			Port:     uint16(l.conf.Port),
+			Database: l.conf.Name,
+			User:     l.conf.User,
+			Password: l.conf.Pw,
+			Logger:   DBLogger(l.l),
+		},
+		MaxConnections: 3,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Close closes the underlying db connections

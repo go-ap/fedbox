@@ -1,4 +1,4 @@
-package storage
+package pgx
 
 import (
 	"github.com/jackc/pgx"

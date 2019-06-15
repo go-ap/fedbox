@@ -4,12 +4,13 @@ import (
 	"flag"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
-	"github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/fedbox/storage/pgx"
+	st "github.com/go-ap/storage"
 	"github.com/go-ap/storage/boltdb"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/jackc/pgx"
 	"os"
 	"time"
 )
@@ -20,51 +21,38 @@ const defaultTimeout = time.Second * 15
 
 func main() {
 	var wait time.Duration
-	var environment string
+	var environ string
 
 	flag.DurationVar(&wait, "graceful-timeout", defaultTimeout, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
-	flag.StringVar(&environment, "env", "dev", "environment")
+	flag.StringVar(&environ, "env", string(env.DEV), "environment")
 	flag.Parse()
 
 	l := log.New()
 	a := app.New(l, version, "")
 	r := chi.NewRouter()
 
+	var repo st.Loader
+	var err error
 	if a.Config().Storage == config.BOLTDB {
-		b, err := boltdb.New(boltdb.Config{
+		bolt, errb := boltdb.New(boltdb.Config{
 			Path:       app.Config.BoltDBPath,
 			BucketName: app.Config.Host,
 		})
-		if err == nil {
-			r.Use(app.Repo(b))
-		}
+		repo = bolt
+		err = errb
+		defer bolt.Close()
 	}
 	if a.Config().Storage == config.POSTGRES {
-		dbConf := a.Config().DB
-		conn, err := pgx.NewConnPool(pgx.ConnPoolConfig{
-			ConnConfig: pgx.ConnConfig{
-				Host:     dbConf.Host,
-				Port:     uint16(dbConf.Port),
-				Database: dbConf.Name,
-				User:     dbConf.User,
-				Password: dbConf.Pw,
-				Logger:   storage.DBLogger(l),
-				//PreferSimpleProtocol: true,
-			},
-			MaxConnections: 3,
-		})
-		repo := storage.New(conn, a.Config().BaseURL, l)
-		defer func() {
-			l.Info("closing DB %v", conn)
-			repo.Close()
-		}()
-		if err == nil {
-			r.Use(app.Repo(repo))
-		} else {
-			l.Errorf("invalid db connection")
-		}
+		pg, errp := pgx.New(a.Config().DB, a.Config().BaseURL, l)
+		repo = pg
+		err = errp
+		defer pg.Close()
+	}
+	if err != nil {
+		l.WithField("storage", a.Config().Storage).Error(err)
 	}
 
+	r.Use(app.Repo(repo))
 	r.Use(middleware.RequestID)
 	r.Use(log.NewStructuredLogger(l))
 

@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-type backendConfig struct {
+type BackendConfig struct {
 	Enabled bool
 	Host    string
 	Port    int64
@@ -29,7 +29,7 @@ type Options struct {
 	Listen     string
 	BaseURL    string
 	Storage    StorageType
-	DB         backendConfig
+	DB         BackendConfig
 	BoltDBPath string
 }
 
