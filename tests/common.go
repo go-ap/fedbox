@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"runtime/debug"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -76,6 +77,7 @@ type objectVal struct {
 	last              *objectVal
 	current           *objectVal
 	items             map[string]*objectVal
+	audience          []string
 }
 
 var (
@@ -121,6 +123,7 @@ type errFn func(format string, args ...interface{})
 type requestGetAssertFn func(iri string) map[string]interface{}
 type objectPropertiesAssertFn func(ob map[string]interface{}, testVal *objectVal)
 type mapFieldAssertFn func(ob map[string]interface{}, key string, testVal interface{})
+type stringArrFieldAssertFn func(ob []interface{}, testVal []string)
 
 func errorf(t *testing.T) errFn {
 	return func(msg string, args ...interface{}) {
@@ -137,6 +140,24 @@ func errIfNotTrue(t *testing.T) assertFn {
 	return func(v bool, msg string, args ...interface{}) {
 		if !v {
 			errorf(t)(msg, args...)
+		}
+	}
+}
+
+func errOnArray(t *testing.T) stringArrFieldAssertFn {
+	assertTrue := errIfNotTrue(t)
+	return func(arrI []interface{}, tVal []string) {
+		arr := make([]string, len(arrI))
+		for k, v := range arrI {
+			arr[k] = fmt.Sprintf("%s", v)
+		}
+		assertTrue(len(tVal) == len(arr), "invalid array count %d, expected %d", len(arr), len(tVal))
+		if len(tVal) > 0 {
+			sort.Strings(tVal)
+			sort.Strings(arr)
+			for k, iri := range tVal {
+				assertTrue(iri == arr[k], "array element at pos %d, %s does not match expected %s", k, arr[k], iri)
+			}
 		}
 	}
 }
@@ -180,6 +201,11 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 						errOnObjectProperties(t)(v2, tt)
 					}
 				}
+			case []string:
+				v1, okA := val.([]interface{})
+				v2, okB := tVal.([]string)
+				assertTrue(okA || okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
+				errOnArray(t)(v1, v2)
 			default:
 				assertTrue(false, "UNKNOWN check for %s, %#v expected %#v", key, val, t)
 			}
@@ -258,6 +284,13 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 				derefObj := assertReq(tVal.obj.id)
 				errOnObjectProperties(t)(derefObj, tVal.obj)
 			}
+		}
+		if tVal.audience != nil {
+			assertMapKey(ob, "audience", tVal.audience)
+			audOb, _ := ob["audience"]
+			aud, ok := audOb.([]interface{})
+			assertTrue(ok, "received audience is not a []string, received %T", aud)
+			errOnArray(t)(aud, tVal.audience)
 		}
 		if tVal.typ != string(as.CollectionType) &&
 			tVal.typ != string(as.OrderedCollectionType) &&

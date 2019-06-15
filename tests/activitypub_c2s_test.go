@@ -60,6 +60,25 @@ var C2STests = testPairs{
 			},
 		},
 	},
+	"LocalService": {
+		{
+			req: testReq{
+				met: http.MethodGet,
+				url: selfAccount.id,
+			},
+			res: testRes{
+				code: http.StatusOK,
+				val: &objectVal{
+					id:  selfAccount.id,
+					typ: string(as.ServiceType),
+					name: selfAccount.Handle,
+					audience: []string{
+						"https://www.w3.org/ns/activitystreams#Public",
+					},
+				},
+			},
+		},
+	},
 }
 
 func Test_C2SRequests(t *testing.T) {
