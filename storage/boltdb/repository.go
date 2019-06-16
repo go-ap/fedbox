@@ -142,6 +142,7 @@ func descendInBucket(root *bolt.Bucket, path string) (*bolt.Bucket, string, erro
 		}
 		cb := b.Bucket([]byte(name))
 		if cb == nil {
+			lvl--
 			break
 		}
 		b = cb
@@ -193,11 +194,19 @@ func (b *boltDB) LoadCollection(f s.Filterable) (as.CollectionInterface, error) 
 	return ret, err
 }
 
-func save(db *bolt.DB, rootBkt, bucket []byte, it as.Item) (as.Item, error) {
+func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 	entryBytes, err := jsonld.Marshal(it)
 	if err != nil {
 		return it, errors.Annotatef(err, "could not marshal activity")
 	}
+	iri := it.GetLink()
+	url, err := iri.URL()
+	path := url.Path
+	if err != nil {
+		return it, errors.Annotatef(err,"invalid IRI")
+	}
+
+	var uuid string
 	err = db.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket(rootBkt)
 		if root == nil {
@@ -206,15 +215,15 @@ func save(db *bolt.DB, rootBkt, bucket []byte, it as.Item) (as.Item, error) {
 		if !root.Writable() {
 			return errors.Errorf("Non writeable bucket %s", rootBkt)
 		}
-		// Assume bucket exists and has keys
-		b := root.Bucket(bucket)
-		if b == nil {
-			return errors.Errorf("Invalid bucket %s.%s", rootBkt, bucket)
+		var b *bolt.Bucket
+		b, uuid, err = descendInBucket(root, path)
+		if err != nil {
+			return errors.Newf("Unable to find %s in root bucket", path)
 		}
 		if !b.Writable() {
-			return errors.Errorf("Non writeable bucket %s %s", rootBkt, bucket)
+			return errors.Errorf("Non writeable bucket %s", path)
 		}
-		err := b.Put([]byte(it.GetLink()), entryBytes)
+		err = b.Put([]byte(uuid), entryBytes)
 		if err != nil {
 			return fmt.Errorf("could not insert entry: %v", err)
 		}
@@ -235,36 +244,10 @@ func (b *boltDB) SaveActivity(it as.Item) (as.Item, error) {
 			return it, err
 		}
 	}
-	if it, err = save(b.d, b.root, []byte(bucketActivities), it); err == nil {
+	if it, err = save(b.d, b.root, it); err == nil {
 		b.logFn("Added new activity: %s", it.GetLink())
 	}
 	return it, err
-}
-
-// SaveActor
-func (b *boltDB) SaveActor(it as.Item) (as.Item, error) {
-	var err error
-	iri := it.GetLink()
-	if len(iri) == 0 {
-		pc := as.IRI(fmt.Sprintf("%s/%s", b.baseURL, bucketActors))
-		if _, err = b.GenerateID(it, pc, nil); err != nil {
-			return it, err
-		}
-	}
-	if it, err = save(b.d, b.root, []byte(bucketActors), it); err == nil {
-		b.logFn("Added new activity: %s", it.GetLink())
-	}
-	return it, err
-}
-
-// UpdateActor
-func (b *boltDB) UpdateActor(it as.Item) (as.Item, error) {
-	return it, errors.NotImplementedf("UpdateActor not implemented in boltdb package")
-}
-
-// DeleteActor
-func (b *boltDB) DeleteActor(it as.Item) (as.Item, error) {
-	return it, errors.NotImplementedf("DeleteActor not implemented in boltdb package")
 }
 
 // SaveObject
@@ -285,8 +268,8 @@ func (b *boltDB) SaveObject(it as.Item) (as.Item, error) {
 			return it, err
 		}
 	}
-	if it, err = save(b.d, b.root, []byte(bucket), it); err == nil {
-		b.logFn("Added new activity: %s", it.GetLink())
+	if it, err = save(b.d, b.root, it); err == nil {
+		b.logFn("Added new %s: %s", bucket[:len(bucket)-1], it.GetLink())
 	}
 	return it, err
 }

@@ -10,7 +10,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20190612152253-ae42fac26117
 	github.com/go-ap/handlers v0.0.0-20190611133019-e9aec85e166b
 	github.com/go-ap/jsonld v0.0.0-20190611133029-f14cb36cc09c
-	github.com/go-ap/storage v0.0.0-20190615205651-d705d1da9080
+	github.com/go-ap/storage v0.0.0-20190616142113-d447d8a4cac8
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/jackc/pgx v3.4.0+incompatible
 	github.com/joho/godotenv v1.3.0

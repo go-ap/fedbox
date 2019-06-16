@@ -132,7 +132,7 @@ func errorf(t *testing.T) errFn {
 			return
 		}
 		t.Errorf(msg, args...)
-		t.FailNow()
+		t.Fail()
 	}
 }
 
@@ -435,12 +435,15 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 
 		assertTrue(resp == nil, "Error: request failed: response is nil")
 		assertTrue(err == nil, "Error: request failed: %s", err)
-		assertTrue(resp.StatusCode == test.res.code,
-			"Error: invalid HTTP response %d, expected %d\nReq:[%s] %s\n%v\nResponse\n%v\n%s",
-			resp.StatusCode, test.res.code, req.Method, req.URL, req.Header, resp.Header, b)
 
 		b, err = ioutil.ReadAll(resp.Body)
 		assertTrue(err == nil, "Error: invalid HTTP body! Read %d bytes %s", len(b), b)
+
+		assertTrue(resp.StatusCode == test.res.code,
+			"Error: invalid HTTP response %d, expected %d\nReq:[%s] %s\n    %v\nRes[%s]:\n    %v\n    %s",
+			resp.StatusCode, test.res.code, req.Method, req.URL, req.Header, resp.Status, resp.Header, b)
+
+		res := make(map[string]interface{})
 		if test.req.met != http.MethodGet {
 			location, ok := resp.Header["Location"]
 			if !ok {
@@ -454,25 +457,31 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			assertTrue(err == nil, "Location header holds invalid URL %s", newObjURL)
 			assertTrue(strings.Contains(newObjURL, apiURL), "Location header holds invalid URL %s, expected to contain %s", newObjURL, apiURL)
 
+			if test.res.val == nil {
+				test.res.val = &objectVal{}
+			}
 			if test.res.val.id == "" {
+				// this is the location of the Activity not of the created object
 				test.res.val.id = newObjURL
 			}
-		}
+			var msg string
+			err = json.Unmarshal(b, &msg)
+			assertTrue(err == nil, "Error: unmarshal failed: %s", err)
 
-		res := make(map[string]interface{})
-		err = json.Unmarshal(b, &res)
-		assertTrue(err == nil, "Error: unmarshal failed: %s", err)
-
-		if test.res.val == nil {
-			return res
+			if test.res.val != nil && test.res.val.id != "" {
+				// Loading from the location IRI
+				return assertGetRequest(test.res.val.id)
+			}
+		} else {
+			err = json.Unmarshal(b, &res)
+			assertTrue(err == nil, "Error: unmarshal failed: %s", err)
 		}
-		if test.res.val.id != "" {
+		if test.res.val != nil && test.res.val.id != "" {
 			saved := assertGetRequest(test.res.val.id)
 			if test.res.val.typ != "" {
 				assertObjectProperties(saved, test.res.val)
 			}
 		}
-
 		return res
 	}
 }

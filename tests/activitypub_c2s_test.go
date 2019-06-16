@@ -97,36 +97,36 @@ var C2STests = testPairs{
 	"CreateActor": {
 		{
 			req: testReq{
-				met: http.MethodPost,
-				url: fmt.Sprintf("%s/inbox", apiURL),
+				met:  http.MethodPost,
+				url:  fmt.Sprintf("%s/outbox", apiURL),
 				body: loadMockJson("mocks/create-actor.json", selfAccount.id),
 			},
 			res: testRes{
-				code: http.StatusInternalServerError,
+				code: http.StatusCreated,
 			},
 		},
 	},
 	"UpdateActor": {
 		{
 			req: testReq{
-				met: http.MethodPost,
-				url: fmt.Sprintf("%s/inbox", apiURL),
+				met:  http.MethodPost,
+				url:  fmt.Sprintf("%s/outbox", apiURL),
 				body: loadMockJson("mocks/update-actor.json", selfAccount.id),
 			},
 			res: testRes{
-				code: http.StatusInternalServerError,
+				code: http.StatusOK,
 			},
 		},
 	},
 	"DeleteActor": {
 		{
 			req: testReq{
-				met: http.MethodPost,
-				url: fmt.Sprintf("%s/inbox", apiURL),
+				met:  http.MethodPost,
+				url:  fmt.Sprintf("%s/outbox", apiURL),
 				body: loadMockJson("mocks/delete-actor.json", selfAccount.id),
 			},
 			res: testRes{
-				code: http.StatusInternalServerError,
+				code: http.StatusGone,
 			},
 		},
 	},
