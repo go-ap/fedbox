@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/log"
-	b "github.com/go-ap/fedbox/storage/boltdb"
-	"github.com/go-ap/storage/boltdb"
+	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-chi/chi"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -32,7 +31,7 @@ func resetDB(t *testing.T, testData bool) func() {
 	}
 	rm()
 
-	b.Bootstrap(path, []byte(host), apiURL)
+	boltdb.Bootstrap(path, []byte(host), apiURL)
 	return rm
 }
 

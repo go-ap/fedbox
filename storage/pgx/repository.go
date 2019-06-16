@@ -10,9 +10,9 @@ import (
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
-	uuid2 "github.com/google/uuid"
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/pgtype"
+	uuid2 "github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
 	"net/url"
 	"path"
@@ -627,7 +627,7 @@ func (l loader) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, 
 	if as.ActivityTypes.Contains(it.GetType()) {
 		a, err := ap.ToActivity(it)
 		if err != nil {
-			return *it.GetID(), err
+			return id, err
 		}
 		a.ID = id
 		it = a
@@ -635,7 +635,7 @@ func (l loader) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, 
 	if as.ActorTypes.Contains(it.GetType()) {
 		p, err := ap.ToPerson(it)
 		if err != nil {
-			return *it.GetID(), err
+			return id, err
 		}
 		p.ID = id
 		it = p
@@ -645,41 +645,41 @@ func (l loader) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, 
 		case as.PlaceType:
 			p, err := as.ToPlace(it)
 			if err != nil {
-				return *it.GetID(), err
+				return id, err
 			}
 			p.ID = id
 			it = p
 		case as.ProfileType:
 			p, err := as.ToProfile(it)
 			if err != nil {
-				return *it.GetID(), err
+				return id, err
 			}
 			p.ID = id
 			it = p
 		case as.RelationshipType:
 			r, err := as.ToRelationship(it)
 			if err != nil {
-				return *it.GetID(), err
+				return id, err
 			}
 			r.ID = id
 			it = r
 		case as.TombstoneType:
 			p, err := as.ToTombstone(it)
 			if err != nil {
-				return *it.GetID(), err
+				return id, err
 			}
 			p.ID = id
 			it = p
 		default:
 			o, err := as.ToObject(it)
 			if err != nil {
-				return *it.GetID(), err
+				return id, err
 			}
 			o.ID = id
 			it = o
 		}
 	}
-	return *it.GetID(), nil
+	return id, nil
 }
 
 func (l loader) DeleteObject(it as.Item) (as.Item, error) {

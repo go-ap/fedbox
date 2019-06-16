@@ -6,12 +6,6 @@ import (
 	"github.com/go-ap/errors"
 )
 
-const (
-	bucketActors      = "actors"
-	bucketActivities  = "activities"
-	bucketObjects     = "objects"
-)
-
 func Bootstrap(path string, rootBucket []byte, baseURL string) error {
 	var err error
 	db, err := bolt.Open(path, 0600, nil)

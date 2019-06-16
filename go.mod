@@ -12,11 +12,11 @@ require (
 	github.com/go-ap/jsonld v0.0.0-20190611133029-f14cb36cc09c
 	github.com/go-ap/storage v0.0.0-20190615205651-d705d1da9080
 	github.com/go-chi/chi v4.0.2+incompatible
-	github.com/google/uuid v1.1.1
 	github.com/jackc/pgx v3.4.0+incompatible
 	github.com/joho/godotenv v1.3.0
 	github.com/mariusor/qstring v0.0.0-20180919140350-29d781f85f0f
 	github.com/openshift/osin v1.0.1
+	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/sirupsen/logrus v1.4.1
 	github.com/spacemonkeygo/httpsig v0.0.0-20181218213338-2605ae379e47
