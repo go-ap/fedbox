@@ -40,6 +40,7 @@ run: app
 
 clean:
 	-$(RM) bin/*
+	$(MAKE) -C tests $@
 
 test:
 	$(TEST) ./{app,internal,storage,cli}/...
