@@ -12,7 +12,7 @@ import (
 	s "github.com/go-ap/storage"
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/pgtype"
-	uuid2 "github.com/pborman/uuid"
+	"github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
 	"net/url"
 	"path"
@@ -622,7 +622,7 @@ func (l loader) DeleteActor(it as.Item) (as.Item, error) {
 // GenerateID generates an unique identifier for the it ActivityPub Object.
 // TODO(marius): remove the need to
 func (l loader) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
-	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(string(partOf)), uuid2.New()))
+	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(string(partOf)), uuid.New()))
 
 	if as.ActivityTypes.Contains(it.GetType()) {
 		a, err := ap.ToActivity(it)
