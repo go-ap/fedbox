@@ -181,9 +181,12 @@ func (b *boltDB) LoadCollection(f s.Filterable) (as.CollectionInterface, error) 
 			if cb == nil {
 				return errors.Errorf("Invalid collection bucket path %s", path)
 			}
-			for k, _ := cb.First(); k != nil; k, _ = cb.Next() {
-				itIRI := as.IRI(fmt.Sprintf("%s/%s", iri, k))
-				if err = col.Append(itIRI); err == nil {
+			for k, raw := cb.First(); k != nil; k, raw = cb.Next() {
+				it, err := as.UnmarshalJSON(raw)
+				if err != nil {
+					return errors.Annotatef(err, "unable to unmarshal raw item")
+				}
+				if err = col.Append(it); err == nil {
 					col.TotalItems++
 				}
 			}
