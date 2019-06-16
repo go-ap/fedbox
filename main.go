@@ -28,7 +28,7 @@ func main() {
 	flag.Parse()
 
 	l := log.New()
-	a := app.New(l, version, "")
+	a := app.New(l, version, environ)
 	r := chi.NewRouter()
 
 	var repo st.Loader
