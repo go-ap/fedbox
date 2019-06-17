@@ -103,6 +103,9 @@ var C2STests = testPairs{
 			},
 			res: testRes{
 				code: http.StatusCreated,
+				val: &objectVal{
+					typ: string(as.CreateType),
+				},
 			},
 		},
 	},
@@ -115,6 +118,12 @@ var C2STests = testPairs{
 			},
 			res: testRes{
 				code: http.StatusInternalServerError,
+				val: &objectVal{
+					typ: string(as.UpdateType),
+					act: &objectVal{
+						typ: string(as.ServiceType),
+					},
+				},
 			},
 		},
 	},
@@ -123,10 +132,16 @@ var C2STests = testPairs{
 			req: testReq{
 				met:  http.MethodPost,
 				url:  fmt.Sprintf("%s/outbox", apiURL),
-				body: loadMockJson("mocks/delete-actor.json", selfAccount.id),
+				body: loadMockJson("mocks/delete-actor.json", selfAccount.id, selfAccount.id),
 			},
 			res: testRes{
-				code: http.StatusInternalServerError,
+				code: http.StatusGone,
+				val: &objectVal{
+					typ: string(as.DeleteType),
+					act: &objectVal{
+						typ: string(as.TombstoneType),
+					},
+				},
 			},
 		},
 	},

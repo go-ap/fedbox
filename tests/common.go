@@ -433,7 +433,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 		}
 		resp, err := http.DefaultClient.Do(req)
 
-		assertTrue(resp == nil, "Error: request failed: response is nil")
+		assertTrue(resp != nil, "Error: request failed: response is nil")
 		assertTrue(err == nil, "Error: request failed: %s", err)
 
 		b, err = ioutil.ReadAll(resp.Body)

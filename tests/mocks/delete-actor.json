@@ -1,7 +1,7 @@
 {
   "type": "Delete",
-  "actor": "http://fedbox.git:4000/actors/1ec86374078a9a2945480f96713ad1c1",
-  "object": "http://fedbox.git:4000/actors/2dc250f5-49d9-4ab8-b081-85bbd0163d4a",
+  "actor": "%s",
+  "object": "%s",
   "to": [
     "https://www.w3.org/ns/activitystreams#Public"
   ]
