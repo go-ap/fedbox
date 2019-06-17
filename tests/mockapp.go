@@ -24,10 +24,7 @@ func resetDB(t *testing.T, testData bool) func() {
 	}
 	path := fmt.Sprintf("%s/%s-%d.bdb", curPath, "test", os.Getpid())
 	rm := func() {
-		err := os.Remove(path)
-		if t != nil && err == nil {
-			t.Logf("Removed db file: %s", path)
-		}
+		boltdb.Clean(path, []byte(host))
 	}
 	rm()
 
@@ -37,7 +34,7 @@ func resetDB(t *testing.T, testData bool) func() {
 
 func runAPP(e string) int {
 	l := logrus.New()
-	l.SetLevel(logrus.TraceLevel)
+	l.SetLevel(logrus.PanicLevel)
 
 	def := resetDB(nil, true)
 	curPath, err := os.Getwd()
@@ -66,5 +63,5 @@ func runAPP(e string) int {
 	r.Use(log.NewStructuredLogger(l))
 	r.Route("/", app.Routes())
 
-	return a.Run(r, time.Second*5)
+	return a.Run(r, time.Second)
 }

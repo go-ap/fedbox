@@ -16,6 +16,10 @@ func TestMain(m *testing.M) {
 
 	go runAPP(environ)
 
-	time.Sleep(50 * time.Millisecond)
-	os.Exit(m.Run())
+	time.Sleep(100 * time.Millisecond)
+
+	st := m.Run()
+	if st != 0 {
+		os.Exit(st)
+	}
 }
