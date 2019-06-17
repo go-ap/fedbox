@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func resetDB(t *testing.T, testData bool) func() {
+func resetDB(t *testing.T, testData bool) string {
 	if t != nil {
 		t.Helper()
 		t.Logf("Resetting DB")
@@ -23,20 +23,17 @@ func resetDB(t *testing.T, testData bool) func() {
 		curPath = os.TempDir()
 	}
 	path := fmt.Sprintf("%s/%s-%d.bdb", curPath, "test", os.Getpid())
-	rm := func() {
-		boltdb.Clean(path, []byte(host))
-	}
-	rm()
 
+	boltdb.Clean(path, []byte(host))
 	boltdb.Bootstrap(path, []byte(host), apiURL)
-	return rm
+
+	return path
 }
 
 func runAPP(e string) int {
 	l := logrus.New()
 	l.SetLevel(logrus.PanicLevel)
 
-	def := resetDB(nil, true)
 	curPath, err := os.Getwd()
 	if err != nil {
 		curPath = os.TempDir()
@@ -49,13 +46,11 @@ func runAPP(e string) int {
 		ErrFn:      l.Errorf,
 		LogFn:      l.Infof,
 	}, apiURL)
-	defer func() {
-		b.Close()
-		def()
-	}()
 	if err != nil {
 		return 1
 	}
+	defer b.Close()
+
 	a := app.New(l, "HEAD", e)
 	r := chi.NewRouter()
 
