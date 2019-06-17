@@ -114,7 +114,7 @@ var C2STests = testPairs{
 				body: loadMockJson("mocks/update-actor.json", selfAccount.id),
 			},
 			res: testRes{
-				code: http.StatusOK,
+				code: http.StatusInternalServerError,
 			},
 		},
 	},
@@ -126,7 +126,7 @@ var C2STests = testPairs{
 				body: loadMockJson("mocks/delete-actor.json", selfAccount.id),
 			},
 			res: testRes{
-				code: http.StatusGone,
+				code: http.StatusInternalServerError,
 			},
 		},
 	},
