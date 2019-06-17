@@ -47,9 +47,6 @@ func New(c Config, baseURL string) (*boltDB, error) {
 		logFn: func(string, ...interface{}) {},
 		errFn: func(string, ...interface{}) {},
 	}
-	if err := b.Open(); err != nil {
-		return &b, err
-	}
 	if c.ErrFn != nil {
 		b.errFn = c.ErrFn
 	}
@@ -102,21 +99,45 @@ func loadFromBucket(db *bolt.DB, root, bucket []byte, f s.Filterable) (as.ItemCo
 
 // Load
 func (b *boltDB) Load(f s.Filterable) (as.ItemCollection, uint, error) {
+	var err error
+	err = b.Open()
+	if err != nil {
+		return nil, 0, err
+	}
+	defer b.Close()
 	return nil, 0, errors.NotImplementedf("BoltDB Load not implemented")
 }
 
 // LoadActivities
 func (b *boltDB) LoadActivities(f s.Filterable) (as.ItemCollection, uint, error) {
+	var err error
+	err = b.Open()
+	if err != nil {
+		return nil, 0, err
+	}
+	defer b.Close()
 	return loadFromBucket(b.d, b.root, []byte(bucketActivities), f)
 }
 
 // LoadObjects
 func (b *boltDB) LoadObjects(f s.Filterable) (as.ItemCollection, uint, error) {
+	var err error
+	err = b.Open()
+	if err != nil {
+		return nil, 0, err
+	}
+	defer b.Close()
 	return loadFromBucket(b.d, b.root, []byte(bucketObjects), f)
 }
 
 // LoadActors
 func (b *boltDB) LoadActors(f s.Filterable) (as.ItemCollection, uint, error) {
+	var err error
+	err = b.Open()
+	if err != nil {
+		return nil, 0, err
+	}
+	defer b.Close()
 	return loadFromBucket(b.d, b.root, []byte(bucketActors), f)
 }
 
@@ -154,6 +175,13 @@ func descendInBucket(root *bolt.Bucket, path string) (*bolt.Bucket, string, erro
 
 // LoadCollection
 func (b *boltDB) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
+	var err error
+	err = b.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer b.Close()
+
 	var ret as.CollectionInterface
 	iri := f.ID()
 	url, err := iri.URL()
@@ -240,6 +268,11 @@ func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 // SaveActivity
 func (b *boltDB) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
+	err = b.Open()
+	if err != nil {
+		return it, err
+	}
+	defer b.Close()
 	iri := it.GetLink()
 	if len(iri) == 0 {
 		pc := as.IRI(fmt.Sprintf("%s/%s", b.baseURL, bucketActivities))
@@ -256,6 +289,11 @@ func (b *boltDB) SaveActivity(it as.Item) (as.Item, error) {
 // SaveObject
 func (b *boltDB) SaveObject(it as.Item) (as.Item, error) {
 	var err error
+	err = b.Open()
+	if err != nil {
+		return it, err
+	}
+	defer b.Close()
 	var bucket string
 	if as.ActivityTypes.Contains(it.GetType()) {
 		bucket = bucketActivities
@@ -279,11 +317,23 @@ func (b *boltDB) SaveObject(it as.Item) (as.Item, error) {
 
 // UpdateObject
 func (b *boltDB) UpdateObject(it as.Item) (as.Item, error) {
+	var err error
+	err = b.Open()
+	if err != nil {
+		return it, err
+	}
+	defer b.Close()
 	return it, errors.NotImplementedf("UpdateObject not implemented in boltdb package")
 }
 
 // DeleteObject
 func (b *boltDB) DeleteObject(it as.Item) (as.Item, error) {
+	var err error
+	err = b.Open()
+	if err != nil {
+		return it, err
+	}
+	defer b.Close()
 	return it, errors.NotImplementedf("DeleteObject not implemented in boltdb package")
 }
 
