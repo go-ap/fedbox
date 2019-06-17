@@ -11,6 +11,7 @@ import (
 	s "github.com/go-ap/storage"
 	"github.com/pborman/uuid"
 	"strings"
+	"time"
 )
 
 type boltDB struct {
@@ -56,7 +57,7 @@ func New(c Config, baseURL string) (*boltDB, error) {
 	return &b, nil
 }
 
-func loadFromBucket(db *bolt.DB, root, bucket []byte, f s.Filterable) (as.ItemCollection, uint, error) {
+func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection, uint, error) {
 	col := make(as.ItemCollection, 0)
 
 	err := db.View(func(tx *bolt.Tx) error {
@@ -78,12 +79,12 @@ func loadFromBucket(db *bolt.DB, root, bucket []byte, f s.Filterable) (as.ItemCo
 			return err
 		}
 		if b == nil {
-			return errors.Errorf("Invalid bucket %s.%s", root, bucket)
+			return errors.Errorf("Invalid bucket %s/%s", root, path)
 		}
 
 		c := b.Cursor()
 		if c == nil {
-			return errors.Errorf("Invalid bucket cursor %s.%s", root, bucket)
+			return errors.Errorf("Invalid bucket cursor %s/%s", root, path)
 		}
 		prefix := []byte(path)
 		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
@@ -116,7 +117,7 @@ func (b *boltDB) LoadActivities(f s.Filterable) (as.ItemCollection, uint, error)
 		return nil, 0, err
 	}
 	defer b.Close()
-	return loadFromBucket(b.d, b.root, []byte(bucketActivities), f)
+	return loadFromBucket(b.d, b.root, f)
 }
 
 // LoadObjects
@@ -127,7 +128,7 @@ func (b *boltDB) LoadObjects(f s.Filterable) (as.ItemCollection, uint, error) {
 		return nil, 0, err
 	}
 	defer b.Close()
-	return loadFromBucket(b.d, b.root, []byte(bucketObjects), f)
+	return loadFromBucket(b.d, b.root, f)
 }
 
 // LoadActors
@@ -138,7 +139,7 @@ func (b *boltDB) LoadActors(f s.Filterable) (as.ItemCollection, uint, error) {
 		return nil, 0, err
 	}
 	defer b.Close()
-	return loadFromBucket(b.d, b.root, []byte(bucketActors), f)
+	return loadFromBucket(b.d, b.root, f)
 }
 
 func descendInBucket(root *bolt.Bucket, path string) (*bolt.Bucket, string, error) {
@@ -225,17 +226,73 @@ func (b *boltDB) LoadCollection(f s.Filterable) (as.CollectionInterface, error) 
 	return ret, err
 }
 
+func delete(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
+	url, err := it.GetLink().URL()
+	if err != nil {
+		return it, errors.Annotatef(err, "invalid IRI")
+	}
+	path := url.Path
+	f := ap.Filters{
+		IRI: it.GetLink(),
+	}
+	if it.IsObject() {
+		f.Type = []as.ActivityVocabularyType{it.GetType()}
+	}
+	var cnt uint
+	var found as.ItemCollection
+	found, cnt, _ = loadFromBucket(db, rootBkt, &f)
+	if cnt == 0 {
+		err := errors.NotFoundf("%s in either actors or objects", it.GetLink())
+		return it, err
+	}
+	old := found.First()
+
+	t := as.Tombstone{
+		Parent: as.Parent{
+			ID:   as.ObjectID(it.GetLink()),
+			Type: as.TombstoneType,
+			To: as.ItemCollection{
+				ap.Public,
+			},
+		},
+		Deleted:    time.Now().UTC(),
+		FormerType: old.GetType(),
+	}
+
+	entryBytes, err := jsonld.Marshal(t)
+	var uuid string
+	err = db.Update(func(tx *bolt.Tx) error {
+		root := tx.Bucket(rootBkt)
+		if root == nil {
+			return errors.Errorf("Invalid bucket %s", rootBkt)
+		}
+		if !root.Writable() {
+			return errors.Errorf("Non writeable bucket %s", rootBkt)
+		}
+		var b *bolt.Bucket
+		b, uuid, err = descendInBucket(root, path)
+		if err != nil {
+			return errors.Newf("Unable to find %s in root bucket", path)
+		}
+		if !b.Writable() {
+			return errors.Errorf("Non writeable bucket %s", path)
+		}
+		return b.Put([]byte(uuid), entryBytes)
+	})
+
+	return it, err
+}
+
 func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 	entryBytes, err := jsonld.Marshal(it)
 	if err != nil {
 		return it, errors.Annotatef(err, "could not marshal activity")
 	}
-	iri := it.GetLink()
-	url, err := iri.URL()
-	path := url.Path
+	url, err := it.GetLink().URL()
 	if err != nil {
 		return it, errors.Annotatef(err, "invalid IRI")
 	}
+	path := url.Path
 
 	var uuid string
 	err = db.Update(func(tx *bolt.Tx) error {
@@ -317,13 +374,7 @@ func (b *boltDB) SaveObject(it as.Item) (as.Item, error) {
 
 // UpdateObject
 func (b *boltDB) UpdateObject(it as.Item) (as.Item, error) {
-	var err error
-	err = b.Open()
-	if err != nil {
-		return it, err
-	}
-	defer b.Close()
-	return it, errors.NotImplementedf("UpdateObject not implemented in boltdb package")
+	return b.SaveObject(it)
 }
 
 // DeleteObject
@@ -334,7 +385,18 @@ func (b *boltDB) DeleteObject(it as.Item) (as.Item, error) {
 		return it, err
 	}
 	defer b.Close()
-	return it, errors.NotImplementedf("DeleteObject not implemented in boltdb package")
+	var bucket string
+	if as.ActivityTypes.Contains(it.GetType()) {
+		bucket = bucketActivities
+	} else if as.ActorTypes.Contains(it.GetType()) {
+		bucket = bucketActors
+	} else {
+		bucket = bucketObjects
+	}
+	if it, err = delete(b.d, b.root, it); err == nil {
+		b.logFn("Added new %s: %s", bucket[:len(bucket)-1], it.GetLink())
+	}
+	return it, err
 }
 
 // GenerateID
