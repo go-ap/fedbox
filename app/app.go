@@ -36,21 +36,20 @@ func objectLoader(ctx context.Context) (st.ObjectLoader, bool) {
 // TODO(marius) Move away from keeping this data statically.
 var Config config.Options
 
-type logFn func(string, ...interface{})
-
-type runner func()
+type LogFn func(string, ...interface{})
 
 type Fedbox struct {
-	conf config.Options
-	ver  string
-	warn logFn
-	err  logFn
-	inf  logFn
-	dbg  logFn
+	conf   config.Options
+	ver    string
+	warn   LogFn
+	err    LogFn
+	inf    LogFn
+	dbg    LogFn
+	stopFn func()
 }
 
 // New instantiates a new Fedbox instance
-func New(l logrus.FieldLogger, ver string, environment string) Fedbox {
+func New(l logrus.FieldLogger, ver string, environment string) *Fedbox {
 	app := Fedbox{ver: ver}
 	var err error
 	if l != nil {
@@ -69,7 +68,7 @@ func New(l logrus.FieldLogger, ver string, environment string) Fedbox {
 	}
 	errors.IncludeBacktrace = app.conf.Env == env.DEV || app.conf.Env == env.TEST
 	as.ItemTyperFunc = ap.JSONGetItemByType
-	return app
+	return &app
 }
 
 func (a Fedbox) Config() config.Options {
@@ -80,7 +79,7 @@ func (a Fedbox) listen() string {
 	return a.conf.Listen
 }
 
-func setupHttpServer(listen string, m http.Handler, wait time.Duration, ctx context.Context) (func(logFn), func(logFn)) {
+func setupHttpServer(listen string, m http.Handler, wait time.Duration, ctx context.Context) (func(LogFn), func(LogFn)) {
 	// TODO(marius): move server run to a separate function,
 	//   so we can add other tasks that can run independently.
 	//   Like a queue system for lazy loading of IRIs.
@@ -92,29 +91,33 @@ func setupHttpServer(listen string, m http.Handler, wait time.Duration, ctx cont
 		Handler:      m,
 	}
 
-	run := func(l logFn) {
+	run := func(l LogFn) {
 		if err := srv.ListenAndServe(); err != nil {
-			l("%s", err)
+			if l != nil {
+				l("%s", err)
+			}
 			os.Exit(1)
 		}
 	}
 
-	stop := func(l logFn) {
+	stop := func(l LogFn) {
 		err := srv.Shutdown(ctx)
-		if err != nil {
+		if err != nil && l != nil {
 			l("%s", err)
 		}
 		select {
 		case <-ctx.Done():
-			l("%s", ctx.Err())
+			if l != nil {
+				l("%s", ctx.Err())
+			}
 		}
 	}
 	// Run our server in a goroutine so that it doesn't block.
 	return run, stop
 }
 
-func waitForSignal(sigChan chan os.Signal, exitChan chan int) func(logFn) {
-	return func(l logFn) {
+func waitForSignal(sigChan chan os.Signal, exitChan chan int) func(LogFn) {
+	return func(l LogFn) {
 		for {
 			s := <-sigChan
 			switch s {
@@ -140,6 +143,13 @@ func waitForSignal(sigChan chan os.Signal, exitChan chan int) func(logFn) {
 	}
 }
 
+// Stop
+func (a *Fedbox) Stop() {
+	if a.stopFn != nil {
+		a.stopFn()
+	}
+}
+
 // Run is the wrapper for starting the web-server and handling signals
 func (a *Fedbox) Run(m http.Handler, wait time.Duration) int {
 	a.inf("Listening on %s", a.listen())
@@ -150,6 +160,9 @@ func (a *Fedbox) Run(m http.Handler, wait time.Duration) int {
 
 	// Get start/stop functions for the http server
 	srvRun, srvStop := setupHttpServer(a.listen(), m, wait, ctx)
+	a.stopFn = func() {
+		srvStop(a.inf)
+	}
 	go srvRun(a.err)
 
 	// Add signal handlers
