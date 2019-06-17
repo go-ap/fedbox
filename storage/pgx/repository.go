@@ -57,7 +57,7 @@ func New(conf config.BackendConfig, url string, lp logrus.FieldLogger) (*loader,
 		baseURL: url,
 		conf:    conf,
 		d:       client.NewClient(),
-		l: lp,
+		l:       lp,
 		errFn:   logFn(lp, logrus.ErrorLevel),
 	}
 
@@ -743,7 +743,7 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 func (l *loader) Open() error {
 	var err error
 	l.conn, err = pgx.NewConnPool(pgx.ConnPoolConfig{
-		ConnConfig: pgx.ConnConfig {
+		ConnConfig: pgx.ConnConfig{
 			Host:     l.conf.Host,
 			Port:     uint16(l.conf.Port),
 			Database: l.conf.Name,

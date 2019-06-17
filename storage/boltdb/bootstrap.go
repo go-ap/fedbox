@@ -59,7 +59,7 @@ func Bootstrap(path string, rootBucket []byte, baseURL string) error {
 	return nil
 }
 
-func Clean(path string, rootBucket []byte ) error {
+func Clean(path string, rootBucket []byte) error {
 	var err error
 	db, err := bolt.Open(path, 0600, nil)
 	if err != nil {

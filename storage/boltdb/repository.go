@@ -41,11 +41,11 @@ type Config struct {
 // New returns a new boltDB repository
 func New(c Config, baseURL string) (*boltDB, error) {
 	b := boltDB{
-		root:  []byte(c.BucketName),
-		path:  c.Path,
+		root:    []byte(c.BucketName),
+		path:    c.Path,
 		baseURL: baseURL,
-		logFn: func(string, ...interface{}) {},
-		errFn: func(string, ...interface{}) {},
+		logFn:   func(string, ...interface{}) {},
+		errFn:   func(string, ...interface{}) {},
 	}
 	if c.ErrFn != nil {
 		b.errFn = c.ErrFn
@@ -234,7 +234,7 @@ func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 	url, err := iri.URL()
 	path := url.Path
 	if err != nil {
-		return it, errors.Annotatef(err,"invalid IRI")
+		return it, errors.Annotatef(err, "invalid IRI")
 	}
 
 	var uuid string
