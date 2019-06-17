@@ -47,58 +47,58 @@ func ProcessActivity(l s.Saver, it as.Item) (as.Item, error) {
 
 	// First we process the activity to effect whatever changes we need to on the activity properties.
 	act, err := ToActivity(it)
-	if as.ContentManagementActivityTypes.Contains(it.GetType()) {
+	if as.ContentManagementActivityTypes.Contains(it.GetType()) && act.Object.GetType() != as.RelationshipType {
 		act, err = ContentManagementActivity(l, act)
-		if err == nil {
-			return l.SaveActivity(it)
+		if err != nil {
+			return it, err
 		}
 	}
 	if as.CollectionManagementActivityTypes.Contains(it.GetType()) {
 		act, err = CollectionManagementActivity(l, act)
-		if err == nil {
-			return l.SaveActivity(it)
+		if err != nil {
+			return it, err
 		}
 	}
 	if as.ReactionsActivityTypes.Contains(it.GetType()) {
 		act, err = ReactionsActivity(l, act)
-		if err == nil {
-			return l.SaveActivity(it)
+		if err != nil {
+			return it, err
 		}
 	}
 	if as.EventRSVPActivityTypes.Contains(it.GetType()) {
 		act, err = EventRSVPActivity(l, act)
-		if err == nil {
-			return l.SaveActivity(it)
+		if err != nil {
+			return it, err
 		}
 	}
 	if as.GroupManagementActivityTypes.Contains(it.GetType()) {
 		act, err = GroupManagementActivity(l, act)
-		if err == nil {
-			return l.SaveActivity(it)
+		if err != nil {
+			return it, err
 		}
 	}
 	if as.ContentExperienceActivityTypes.Contains(it.GetType()) {
 		act, err = ContentExperienceActivity(l, act)
-		if err == nil {
-			return l.SaveActivity(it)
+		if err != nil {
+			return it, err
 		}
 	}
 	if as.GeoSocialEventsActivityTypes.Contains(it.GetType()) {
 		act, err = GeoSocialEventsActivity(l, act)
-		if err == nil {
-			return l.SaveActivity(it)
+		if err != nil {
+			return it, err
 		}
 	}
 	if as.NotificationActivityTypes.Contains(it.GetType()) {
 		act, err = NotificationActivity(l, act)
-		if err == nil {
-			return l.SaveActivity(it)
+		if err != nil {
+			return it, err
 		}
 	}
 	if as.QuestionActivityTypes.Contains(it.GetType()) {
 		act, err = QuestionActivity(l, act)
-		if err == nil {
-			return l.SaveActivity(it)
+		if err != nil {
+			return it, err
 		}
 	}
 	if as.RelationshipManagementActivityTypes.Contains(it.GetType()) && act.Object.GetType() == as.RelationshipType {
@@ -109,14 +109,14 @@ func ProcessActivity(l s.Saver, it as.Item) (as.Item, error) {
 	}
 	if as.NegatingActivityTypes.Contains(it.GetType()) {
 		act, err = NegatingActivity(l, act)
-		if err == nil {
-			return l.SaveActivity(it)
+		if err != nil {
+			return it, err
 		}
 	}
 	if as.OffersActivityTypes.Contains(it.GetType()) {
 		act, err = OffersActivity(l, act)
-		if err == nil {
-			return l.SaveActivity(it)
+		if err != nil {
+			return it, err
 		}
 	}
 
