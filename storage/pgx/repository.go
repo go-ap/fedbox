@@ -697,7 +697,7 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 	}
 
 	f := ap.Filters{
-		ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
+		IRI: it.GetLink(),
 	}
 	if it.IsObject() {
 		f.Type = []as.ActivityVocabularyType{it.GetType()}
@@ -729,7 +729,7 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 			ID:   as.ObjectID(it.GetLink()),
 			Type: as.TombstoneType,
 			To: as.ItemCollection{
-				as.IRI(ap.Public),
+				ap.Public,
 			},
 		},
 		Deleted:    time.Now().UTC(),
