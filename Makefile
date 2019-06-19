@@ -43,7 +43,7 @@ clean:
 	$(MAKE) -C tests $@
 
 test:
-	$(TEST) ./{app,internal,storage,cli}/...
+	$(TEST) ./{activitypub,app,internal,storage,cli}/...
 
 coverage: TEST_FLAGS += -covermode=count -coverprofile $(PROJECT_NAME).coverprofile
 coverage: test

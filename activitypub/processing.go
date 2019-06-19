@@ -12,14 +12,14 @@ type errDuplicateKey struct {
 	errors.Err
 }
 
-func IsDuplicateKey(e error) bool {
+func isDuplicateKey(e error) bool {
 	_, okp := e.(*errDuplicateKey)
 	_, oks := e.(errDuplicateKey)
 	return okp || oks
 }
 
 func (n errDuplicateKey) Is(e error) bool {
-	return IsDuplicateKey(e)
+	return isDuplicateKey(e)
 }
 
 func wrapErr(err error, s string, args ...interface{}) errors.Err {
@@ -196,7 +196,7 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 		}
 		act.Object, err = l.DeleteObject(act.Object)
 	}
-	if err != nil && !IsDuplicateKey(err) {
+	if err != nil && !isDuplicateKey(err) {
 		//l.errFn(logrus.Fields{"IRI": act.GetLink(), "type": act.Type}, "unable to save activity's object")
 		return act, err
 	}
