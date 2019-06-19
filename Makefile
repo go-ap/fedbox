@@ -42,11 +42,14 @@ clean:
 	-$(RM) bin/*
 	$(MAKE) -C tests $@
 
-test:
-	$(TEST) ./{activitypub,app,internal,storage}/...
 
-coverage:
-	$(TEST) -covermode=count -coverprofile $(PROJECT_NAME).coverprofile ./{activitypub,app,internal,storage}/...
+test: TEST_TARGET := ./{activitypub,app,storage,internal}/...
+test:
+	$(TEST) $(TEST_FLAGS) $(TEST_TARGET)
+
+coverage: TEST_TARGET := .
+coverage: TEST_FLAGS += -covermode=count -coverprofile $(PROJECT_NAME).coverprofile
+coverage: test
 
 integration:
 	$(MAKE) -C tests $@
