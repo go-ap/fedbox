@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-type loader struct {
+type repo struct {
 	baseURL string
 	conn    *pgx.ConnPool
 	conf    config.BackendConfig
@@ -33,7 +33,7 @@ type loader struct {
 type loggerFn func(logrus.Fields, string, ...interface{})
 
 // IsLocalIRI shows if the received IRI belongs to the current instance
-func (l loader) IsLocalIRI(i as.IRI) bool {
+func (l repo) IsLocalIRI(i as.IRI) bool {
 	if _, err := url.Parse(i.String()); err != nil {
 		// not an url
 		l.errFn(logrus.Fields{
@@ -52,8 +52,8 @@ func logFn(l logrus.FieldLogger, lvl logrus.Level) loggerFn {
 	}
 }
 
-func New(conf config.BackendConfig, url string, lp logrus.FieldLogger) (*loader, error) {
-	l := loader{
+func New(conf config.BackendConfig, url string, lp logrus.FieldLogger) (*repo, error) {
+	l := repo{
 		baseURL: url,
 		conf:    conf,
 		d:       client.NewClient(),
@@ -67,7 +67,7 @@ func New(conf config.BackendConfig, url string, lp logrus.FieldLogger) (*loader,
 	return &l, nil
 }
 
-func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, uint, error) {
+func (l repo) LoadActivities(ff s.Filterable) (as.ItemCollection, uint, error) {
 	f, ok := ff.(*ap.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
@@ -75,7 +75,7 @@ func (l loader) LoadActivities(ff s.Filterable) (as.ItemCollection, uint, error)
 	return loadFromDb(l.conn, "activities", f)
 }
 
-func (l loader) LoadActors(ff s.Filterable) (as.ItemCollection, uint, error) {
+func (l repo) LoadActors(ff s.Filterable) (as.ItemCollection, uint, error) {
 	f, ok := ff.(*ap.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
@@ -83,7 +83,7 @@ func (l loader) LoadActors(ff s.Filterable) (as.ItemCollection, uint, error) {
 	return loadFromDb(l.conn, "actors", f)
 }
 
-func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, uint, error) {
+func (l repo) LoadObjects(ff s.Filterable) (as.ItemCollection, uint, error) {
 	f, ok := ff.(*ap.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
@@ -91,7 +91,7 @@ func (l loader) LoadObjects(ff s.Filterable) (as.ItemCollection, uint, error) {
 	return loadFromDb(l.conn, "objects", f)
 }
 
-func GetCollectionTable(typ handlers.CollectionType) string {
+func getCollectionTable(typ handlers.CollectionType) string {
 	switch typ {
 	case handlers.Followers:
 		fallthrough
@@ -119,7 +119,7 @@ func GetCollectionTable(typ handlers.CollectionType) string {
 	return "objects"
 }
 
-func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
+func (l repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 	id := ff.ID()
 	colFilters := ap.Filters{
 		IRI: id,
@@ -190,7 +190,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 			f.ItemKey = append(f.ItemKey, ap.Hash(elem))
 		}
 		var total uint
-		items, total, err = loadFromDb(l.conn, GetCollectionTable(f.Collection), f)
+		items, total, err = loadFromDb(l.conn, getCollectionTable(f.Collection), f)
 		if as.ActivityVocabularyType(typ) == as.CollectionType {
 			if col, err := ap.ToCollection(ret); err == nil {
 				col.TotalItems = total
@@ -214,7 +214,7 @@ func (l loader) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) 
 	return ret, err
 }
 
-func (l loader) Load(ff s.Filterable) (as.ItemCollection, uint, error) {
+func (l repo) Load(ff s.Filterable) (as.ItemCollection, uint, error) {
 	return nil, 0, errors.NotImplementedf("not implemented loader.Load()")
 }
 
@@ -261,7 +261,7 @@ func loadFromDb(conn *pgx.ConnPool, table string, f ap.Filterable) (as.ItemColle
 	return ret, total, err
 }
 
-func (l loader) SaveActivity(it as.Item) (as.Item, error) {
+func (l repo) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
 
 	it = ap.FlattenProperties(it)
@@ -282,7 +282,7 @@ func getCollectionIRI(actor as.Item, c handlers.CollectionType) as.IRI {
 	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
 
-func (l loader) createActorCollection(actor as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
+func (l repo) createActorCollection(actor as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
 	col := as.OrderedCollection{
 		Parent: as.Parent{
 			ID:   getCollectionID(actor, c),
@@ -292,7 +292,7 @@ func (l loader) createActorCollection(actor as.Item, c handlers.CollectionType) 
 	return createCollection(l, &col)
 }
 
-func (l loader) createObjectCollection(object as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
+func (l repo) createObjectCollection(object as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
 	col := as.OrderedCollection{
 		Parent: as.Parent{
 			ID:   getCollectionID(object, c),
@@ -302,11 +302,11 @@ func (l loader) createObjectCollection(object as.Item, c handlers.CollectionType
 	return createCollection(l, &col)
 }
 
-func (l loader) SaveActor(it as.Item) (as.Item, error) {
+func (l repo) SaveActor(it as.Item) (as.Item, error) {
 	return l.SaveObject(it)
 }
 
-func (l loader) SaveObject(it as.Item) (as.Item, error) {
+func (l repo) SaveObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
@@ -364,7 +364,7 @@ func (l loader) SaveObject(it as.Item) (as.Item, error) {
 	return it, err
 }
 
-func createCollection(l loader, it as.CollectionInterface) (as.CollectionInterface, error) {
+func createCollection(l repo, it as.CollectionInterface) (as.CollectionInterface, error) {
 	if it == nil {
 		return it, errors.Newf("unable to create nil collection")
 	}
@@ -390,7 +390,7 @@ func createCollection(l loader, it as.CollectionInterface) (as.CollectionInterfa
 	return it, nil
 }
 
-func addToCollection(l loader, iri as.IRI, it as.Item) error {
+func addToCollection(l repo, iri as.IRI, it as.Item) error {
 	if it == nil {
 		return errors.Newf("unable to add nil element to collection")
 	}
@@ -425,7 +425,7 @@ func addToCollection(l loader, iri as.IRI, it as.Item) error {
 	return nil
 }
 
-func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
+func saveToDb(l repo, table string, it as.Item) (as.Item, error) {
 	query := fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3::timestamptz, $4, $5::jsonb);", table)
 
 	iri := it.GetLink()
@@ -510,7 +510,7 @@ func saveToDb(l loader, table string, it as.Item) (as.Item, error) {
 	return it, nil
 }
 
-func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
+func (l repo) updateItem(table string, it as.Item) (as.Item, error) {
 	if table == "activities" {
 		return it, errors.Newf("update action Invalid, activities are immutable")
 	}
@@ -549,11 +549,11 @@ func (l loader) updateItem(table string, it as.Item) (as.Item, error) {
 	return it, nil
 }
 
-func (l loader) UpdateActor(it as.Item) (as.Item, error) {
+func (l repo) UpdateActor(it as.Item) (as.Item, error) {
 	return l.UpdateObject(it)
 }
 
-func (l loader) UpdateObject(it as.Item) (as.Item, error) {
+func (l repo) UpdateObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
@@ -615,13 +615,13 @@ func (l loader) UpdateObject(it as.Item) (as.Item, error) {
 	return it, err
 }
 
-func (l loader) DeleteActor(it as.Item) (as.Item, error) {
+func (l repo) DeleteActor(it as.Item) (as.Item, error) {
 	return l.DeleteObject(it)
 }
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.
 // TODO(marius): remove the need to
-func (l loader) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
+func (l repo) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
 	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(string(partOf)), uuid.New()))
 
 	if as.ActivityTypes.Contains(it.GetType()) {
@@ -682,7 +682,7 @@ func (l loader) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, 
 	return id, nil
 }
 
-func (l loader) DeleteObject(it as.Item) (as.Item, error) {
+func (l repo) DeleteObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
@@ -740,7 +740,7 @@ func (l loader) DeleteObject(it as.Item) (as.Item, error) {
 }
 
 // Close closes the underlying db connections
-func (l *loader) Open() error {
+func (l *repo) Open() error {
 	var err error
 	l.conn, err = pgx.NewConnPool(pgx.ConnPoolConfig{
 		ConnConfig: pgx.ConnConfig{
@@ -760,7 +760,7 @@ func (l *loader) Open() error {
 }
 
 // Close closes the underlying db connections
-func (l *loader) Close() error {
+func (l *repo) Close() error {
 	l.conn.Close()
 	return nil
 }

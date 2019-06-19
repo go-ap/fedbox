@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-type boltDB struct {
+type repo struct {
 	d       *bolt.DB
 	baseURL string
 	root    []byte
@@ -39,9 +39,9 @@ type Config struct {
 	ErrFn      loggerFn
 }
 
-// New returns a new boltDB repository
-func New(c Config, baseURL string) (*boltDB, error) {
-	b := boltDB{
+// New returns a new repo repository
+func New(c Config, baseURL string) (*repo, error) {
+	b := repo{
 		root:    []byte(c.BucketName),
 		path:    c.Path,
 		baseURL: baseURL,
@@ -99,7 +99,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 }
 
 // Load
-func (b *boltDB) Load(f s.Filterable) (as.ItemCollection, uint, error) {
+func (b *repo) Load(f s.Filterable) (as.ItemCollection, uint, error) {
 	var err error
 	err = b.Open()
 	if err != nil {
@@ -110,7 +110,7 @@ func (b *boltDB) Load(f s.Filterable) (as.ItemCollection, uint, error) {
 }
 
 // LoadActivities
-func (b *boltDB) LoadActivities(f s.Filterable) (as.ItemCollection, uint, error) {
+func (b *repo) LoadActivities(f s.Filterable) (as.ItemCollection, uint, error) {
 	var err error
 	err = b.Open()
 	if err != nil {
@@ -121,7 +121,7 @@ func (b *boltDB) LoadActivities(f s.Filterable) (as.ItemCollection, uint, error)
 }
 
 // LoadObjects
-func (b *boltDB) LoadObjects(f s.Filterable) (as.ItemCollection, uint, error) {
+func (b *repo) LoadObjects(f s.Filterable) (as.ItemCollection, uint, error) {
 	var err error
 	err = b.Open()
 	if err != nil {
@@ -132,7 +132,7 @@ func (b *boltDB) LoadObjects(f s.Filterable) (as.ItemCollection, uint, error) {
 }
 
 // LoadActors
-func (b *boltDB) LoadActors(f s.Filterable) (as.ItemCollection, uint, error) {
+func (b *repo) LoadActors(f s.Filterable) (as.ItemCollection, uint, error) {
 	var err error
 	err = b.Open()
 	if err != nil {
@@ -175,7 +175,7 @@ func descendInBucket(root *bolt.Bucket, path string) (*bolt.Bucket, string, erro
 }
 
 // LoadCollection
-func (b *boltDB) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
+func (b *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 	var err error
 	err = b.Open()
 	if err != nil {
@@ -323,7 +323,7 @@ func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 }
 
 // SaveActivity
-func (b *boltDB) SaveActivity(it as.Item) (as.Item, error) {
+func (b *repo) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
 	err = b.Open()
 	if err != nil {
@@ -344,7 +344,7 @@ func (b *boltDB) SaveActivity(it as.Item) (as.Item, error) {
 }
 
 // SaveObject
-func (b *boltDB) SaveObject(it as.Item) (as.Item, error) {
+func (b *repo) SaveObject(it as.Item) (as.Item, error) {
 	var err error
 	err = b.Open()
 	if err != nil {
@@ -373,12 +373,12 @@ func (b *boltDB) SaveObject(it as.Item) (as.Item, error) {
 }
 
 // UpdateObject
-func (b *boltDB) UpdateObject(it as.Item) (as.Item, error) {
+func (b *repo) UpdateObject(it as.Item) (as.Item, error) {
 	return b.SaveObject(it)
 }
 
 // DeleteObject
-func (b *boltDB) DeleteObject(it as.Item) (as.Item, error) {
+func (b *repo) DeleteObject(it as.Item) (as.Item, error) {
 	var err error
 	err = b.Open()
 	if err != nil {
@@ -400,7 +400,7 @@ func (b *boltDB) DeleteObject(it as.Item) (as.Item, error) {
 }
 
 // GenerateID
-func (b *boltDB) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
+func (b *repo) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
 	uuid := uuid.New()
 	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(string(partOf)), uuid))
 	if as.ActivityTypes.Contains(it.GetType()) {
@@ -461,7 +461,7 @@ func (b *boltDB) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID,
 	return id, nil
 }
 
-func (b *boltDB) Open() error {
+func (b *repo) Open() error {
 	var err error
 	b.d, err = bolt.Open(b.path, 0600, nil)
 	if err != nil {
@@ -484,6 +484,6 @@ func (b *boltDB) Open() error {
 }
 
 // Close closes the boltdb database if possible.
-func (b *boltDB) Close() error {
+func (b *repo) Close() error {
 	return b.d.Close()
 }
