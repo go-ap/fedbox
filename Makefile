@@ -45,8 +45,8 @@ clean:
 test:
 	$(TEST) ./{activitypub,app,internal,storage}/...
 
-coverage: TEST_FLAGS += -covermode=count -coverprofile $(PROJECT_NAME).coverprofile
-coverage: test
+coverage:
+	$(TEST) -covermode=count -coverprofile $(PROJECT_NAME).coverprofile ./{activitypub,app,internal,storage}/...
 
 integration:
 	$(MAKE) -C tests $@
