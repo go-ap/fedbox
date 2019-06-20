@@ -31,7 +31,7 @@ func TestActivity_GetLink(t *testing.T) {
 }
 
 func TestToActivity(t *testing.T) {
-
+	t.Skipf("TODO")
 }
 
 func TestActivity_GetType(t *testing.T) {
