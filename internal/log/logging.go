@@ -93,27 +93,3 @@ func (l *StructuredLoggerEntry) Panic(v interface{}, stack []byte) {
 		"panic": fmt.Sprintf("%+v", v),
 	})
 }
-
-// Helper methods used by the application to get the request-scoped
-// logger entry and set additional fields between handlers.
-//
-// This is a useful pattern to use to set state on the entry as it
-// passes through the handler chain, which at any point can be logged
-// with a call to .Print(), .Info(), etc.
-
-func GetLogEntry(r *http.Request) logrus.FieldLogger {
-	entry := middleware.GetLogEntry(r).(*StructuredLoggerEntry)
-	return entry.Logger
-}
-
-func LogEntrySetField(r *http.Request, key string, value interface{}) {
-	if entry, ok := r.Context().Value(middleware.LogEntryCtxKey).(*StructuredLoggerEntry); ok {
-		entry.Logger = entry.Logger.WithField(key, value)
-	}
-}
-
-func LogEntrySetFields(r *http.Request, fields map[string]interface{}) {
-	if entry, ok := r.Context().Value(middleware.LogEntryCtxKey).(*StructuredLoggerEntry); ok {
-		entry.Logger = entry.Logger.WithFields(fields)
-	}
-}

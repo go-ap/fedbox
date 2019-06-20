@@ -21,7 +21,7 @@ func (d dbLogger) Log(level pgx.LogLevel, msg string, data map[string]interface{
 	case pgx.LogLevelNone:
 		fallthrough
 	case pgx.LogLevelTrace:
-		fallthrough
+		log = d.l.WithFields(data).Tracef
 	case pgx.LogLevelDebug:
 		log = d.l.WithFields(data).Debugf
 	case pgx.LogLevelInfo:
