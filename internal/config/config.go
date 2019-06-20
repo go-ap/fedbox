@@ -35,13 +35,26 @@ type Options struct {
 
 type StorageType string
 
-const BOLTDB = StorageType("boltdb")
-const POSTGRES = StorageType("postgres")
+const (
+	KeyENV      = "ENV"
+	KeyLogLevel = "LOG_LEVEL"
+	KeyHostname = "HOSTNAME"
+	KeyHTTPS    = "HTTPS"
+	KeyListen   = "LISTEN"
+	KeyStorage  = "STORAGE"
+	KeyDBHost   = "DB_HOST"
+	KeyDBPort   = "DB_PORT"
+	KeyDBName   = "DB_NAME"
+	KeyDBUser   = "DB_USER"
+	KeyDBPw     = "DB_PASSWORD"
+	BoltDB      = StorageType("boltdb")
+	Postgres    = StorageType("postgres")
+)
 
 func LoadFromEnv(e string) (Options, error) {
 	conf := Options{}
 	if !env.ValidType(e) {
-		e = os.Getenv("ENV")
+		e = os.Getenv(KeyENV)
 	}
 
 	conf.Env = env.ValidTypeOrDev(e)
@@ -50,7 +63,7 @@ func LoadFromEnv(e string) (Options, error) {
 		fmt.Sprintf(".env.%s", conf.Env),
 	}
 
-	lvl := os.Getenv("LOG_LEVEL")
+	lvl := os.Getenv(KeyLogLevel)
 	switch strings.ToLower(lvl) {
 	case "trace":
 		conf.LogLevel = log.TraceLevel
@@ -71,35 +84,35 @@ func LoadFromEnv(e string) (Options, error) {
 	}
 
 	if conf.Host == "" {
-		conf.Host = os.Getenv("HOSTNAME")
+		conf.Host = os.Getenv(KeyHostname)
 	}
-	conf.Secure, _ = strconv.ParseBool(os.Getenv("HTTPS"))
+	conf.Secure, _ = strconv.ParseBool(os.Getenv(KeyHTTPS))
 	if conf.Secure {
 		conf.BaseURL = fmt.Sprintf("https://%s", conf.Host)
 	} else {
 		conf.BaseURL = fmt.Sprintf("http://%s", conf.Host)
 	}
 
-	conf.Listen = os.Getenv("LISTEN")
+	conf.Listen = os.Getenv(KeyListen)
 
-	envStorage := os.Getenv("STORAGE")
+	envStorage := os.Getenv(KeyStorage)
 	conf.Storage = StorageType(strings.ToLower(envStorage))
 	switch conf.Storage {
-	case BOLTDB:
+	case BoltDB:
 		conf.BoltDBPath = fmt.Sprintf("%s/%s-%s.bdb", os.TempDir(), path.Clean(conf.Host), conf.Env)
-	case StorageType(""):
-		conf.Storage = POSTGRES
+	case "":
+		conf.Storage = Postgres
 		fallthrough
-	case POSTGRES:
-		conf.DB.Host = os.Getenv("DB_HOST")
-		conf.DB.Pw = os.Getenv("DB_PASSWORD")
-		conf.DB.Name = os.Getenv("DB_NAME")
+	case Postgres:
+		conf.DB.Host = os.Getenv(KeyDBHost)
+		conf.DB.Pw = os.Getenv(KeyDBPw)
+		conf.DB.Name = os.Getenv(KeyDBName)
 		var err error
-		if conf.DB.Port, err = strconv.ParseInt(os.Getenv("DB_PORT"), 10, 32); err != nil {
+		if conf.DB.Port, err = strconv.ParseInt(os.Getenv(KeyDBPort), 10, 32); err != nil {
 			conf.DB.Port = 5432
 		}
 
-		conf.DB.User = os.Getenv("DB_USER")
+		conf.DB.User = os.Getenv(KeyDBUser)
 
 	default:
 		return conf, errors.Errorf("Invalid STORAGE value %s", envStorage)

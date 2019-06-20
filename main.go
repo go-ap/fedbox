@@ -33,7 +33,7 @@ func main() {
 
 	var repo st.Loader
 	var err error
-	if a.Config().Storage == config.BOLTDB {
+	if a.Config().Storage == config.BoltDB {
 		bolt, errb := boltdb.New(boltdb.Config{
 			Path:       app.Config.BoltDBPath,
 			BucketName: app.Config.Host,
@@ -42,7 +42,7 @@ func main() {
 		err = errb
 		defer bolt.Close()
 	}
-	if a.Config().Storage == config.POSTGRES {
+	if a.Config().Storage == config.Postgres {
 		pg, errp := pgx.New(a.Config().DB, a.Config().BaseURL, l)
 		repo = pg
 		err = errp
