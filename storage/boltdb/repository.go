@@ -85,6 +85,9 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 		if c == nil {
 			return errors.Errorf("Invalid bucket cursor %s/%s", root, path)
 		}
+		if path == "" {
+			path = objectKey
+		}
 		prefix := []byte(path)
 		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
 			if it, err := as.UnmarshalJSON(v); err == nil {
@@ -226,11 +229,6 @@ func (b *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 }
 
 func delete(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
-	url, err := it.GetLink().URL()
-	if err != nil {
-		return it, errors.Annotatef(err, "invalid IRI")
-	}
-	path := url.Path
 	f := ap.Filters{
 		IRI: it.GetLink(),
 	}
@@ -257,30 +255,10 @@ func delete(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 		Deleted:    time.Now().UTC(),
 		FormerType: old.GetType(),
 	}
-
-	entryBytes, err := jsonld.Marshal(t)
-	var uuid string
-	err = db.Update(func(tx *bolt.Tx) error {
-		root := tx.Bucket(rootBkt)
-		if root == nil {
-			return errors.Errorf("Invalid bucket %s", rootBkt)
-		}
-		if !root.Writable() {
-			return errors.Errorf("Non writeable bucket %s", rootBkt)
-		}
-		var b *bolt.Bucket
-		b, uuid, err = descendInBucket(root, path)
-		if err != nil {
-			return errors.Newf("Unable to find %s in root bucket", path)
-		}
-		if !b.Writable() {
-			return errors.Errorf("Non writeable bucket %s", path)
-		}
-		return b.Put([]byte(uuid), entryBytes)
-	})
-
-	return it, err
+	return save(db, rootBkt, t)
 }
+
+const objectKey = "__raw"
 
 func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 	entryBytes, err := jsonld.Marshal(it)
@@ -310,9 +288,15 @@ func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 		if !b.Writable() {
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
-		err = b.Put([]byte(uuid), entryBytes)
+		if uuid != "" {
+			b, err = b.CreateBucket([]byte(uuid))
+			if err != nil {
+				return errors.Errorf("could not create item bucket entry: %w", err)
+			}
+		}
+		err = b.Put([]byte(objectKey), entryBytes)
 		if err != nil {
-			return fmt.Errorf("could not insert entry: %v", err)
+			return errors.Errorf("could not insert entry: %w", err)
 		}
 
 		return nil
