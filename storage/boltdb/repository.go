@@ -212,7 +212,13 @@ func (b *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 			if cb == nil {
 				return errors.Errorf("Invalid collection bucket path %s", path)
 			}
-			for k, raw := cb.First(); k != nil; k, raw = cb.Next() {
+			for uuid, _ := cb.First(); uuid != nil; uuid, _ = cb.Next() {
+				ib := bb.Bucket(uuid)
+				raw := ib.Get([]byte(objectKey))
+				if raw == nil || len(raw) == 0 {
+					return errors.Annotatef(err, "empty raw item")
+				}
+
 				it, err := as.UnmarshalJSON(raw)
 				if err != nil {
 					return errors.Annotatef(err, "unable to unmarshal raw item")
@@ -228,6 +234,7 @@ func (b *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 	return ret, err
 }
 
+const objectKey = "__raw"
 func delete(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 	f := ap.Filters{
 		IRI: it.GetLink(),
@@ -257,8 +264,6 @@ func delete(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 	}
 	return save(db, rootBkt, t)
 }
-
-const objectKey = "__raw"
 
 func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 	entryBytes, err := jsonld.Marshal(it)
