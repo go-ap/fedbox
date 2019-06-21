@@ -44,14 +44,14 @@ func Bootstrap(path string, rootBucket []byte, baseURL string) error {
 			hash := "d3ab037c-0f15-4c09-b635-3d6e201c11aa"
 			ib, err := act.CreateBucketIfNotExists([]byte(hash))
 			if err != nil {
-				return errors.Errorf("could not create item bucket: %w", err)
+				return errors.Errorf("could not create item bucket: %s", err)
 			}
 			iri := fmt.Sprintf("%s/%s/%s", baseURL, bucketActors, hash)
 			j := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s","type": "Service","name": "self","inbox": "%s/inbox", "audience": ["https://www.w3.org/ns/activitystreams#Public"]}`
 			a := fmt.Sprintf(j, iri, baseURL)
 			err = ib.Put([]byte(objectKey), []byte(a))
 			if err != nil {
-				return errors.Errorf("could not insert entry: %w", err)
+				return errors.Errorf("could not insert entry: %s", err)
 			}
 		}
 		return nil

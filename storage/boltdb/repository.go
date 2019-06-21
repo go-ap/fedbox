@@ -291,12 +291,12 @@ func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 		if uuid != "" {
 			b, err = b.CreateBucket([]byte(uuid))
 			if err != nil {
-				return errors.Errorf("could not create item bucket entry: %w", err)
+				return errors.Errorf("could not create item bucket entry: %s", err)
 			}
 		}
 		err = b.Put([]byte(objectKey), entryBytes)
 		if err != nil {
-			return errors.Errorf("could not insert entry: %w", err)
+			return errors.Errorf("could not insert entry: %s", err)
 		}
 
 		return nil
