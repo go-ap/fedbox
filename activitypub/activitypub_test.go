@@ -179,17 +179,25 @@ func TestUpdatePersonProperties(t *testing.T) {
 }
 
 func TestGenerateID(t *testing.T) {
-	p := Person{}
-	p.Type = activitystreams.PersonType
+	var generateIDTests activitystreams.ActivityVocabularyTypes
+	generateIDTests = append(generateIDTests, activitystreams.ObjectTypes...)
+	generateIDTests = append(generateIDTests, activitystreams.ActivityTypes...)
+	generateIDTests = append(generateIDTests, activitystreams.ActorTypes...)
 	partOf := activitystreams.IRI("http://example.com")
-	id, err := GenerateID(&p, partOf, nil)
-	if err != nil {
-		t.Errorf("GenerateID failed: %s", err)
-	}
-	if !strings.Contains(string(id), partOf.String()) {
-		t.Errorf("Invalid ObjectID: %s, does not contain base URL %s", id, partOf)
-	}
-	if id != *p.GetID() {
-		t.Errorf("ObjectIDs don't match: %s, expected %s", *p.GetID(), id)
+	for _, typ := range generateIDTests {
+		it, err := ItemByType(typ)
+		if err != nil {
+			t.Errorf("Unable to create object from type: %s", err)
+		}
+		id, err := GenerateID(it, partOf, nil)
+		if err != nil {
+			t.Errorf("GenerateID failed: %s", err)
+		}
+		if !strings.Contains(string(id), partOf.String()) {
+			t.Errorf("Invalid ObjectID: %s, does not contain base URL %s", id, partOf)
+		}
+		if id != *it.GetID() {
+			t.Errorf("ObjectIDs don't match: %s, expected %s", *it.GetID(), id)
+		}
 	}
 }

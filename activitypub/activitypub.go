@@ -330,8 +330,8 @@ func (a *Activity) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// JSONGetItemByType
-func JSONGetItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
+// ItemByType
+func ItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 	var ret as.Item
 
 	if as.ActorTypes.Contains(typ) {

@@ -67,7 +67,7 @@ func New(l logrus.FieldLogger, ver string, environment string) *Fedbox {
 		app.warn("Unable to load settings from environment variables: %s", err)
 	}
 	errors.IncludeBacktrace = app.conf.Env == env.DEV || app.conf.Env == env.TEST
-	as.ItemTyperFunc = ap.JSONGetItemByType
+	as.ItemTyperFunc = ap.ItemByType
 	return &app
 }
 
