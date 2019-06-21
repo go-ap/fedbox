@@ -12,7 +12,6 @@ import (
 	s "github.com/go-ap/storage"
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/pgtype"
-	"github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
 	"net/url"
 	"path"
@@ -620,66 +619,8 @@ func (l repo) DeleteActor(it as.Item) (as.Item, error) {
 }
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.
-// TODO(marius): remove the need to
 func (l repo) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
-	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(string(partOf)), uuid.New()))
-
-	if as.ActivityTypes.Contains(it.GetType()) {
-		a, err := ap.ToActivity(it)
-		if err != nil {
-			return id, err
-		}
-		a.ID = id
-		it = a
-	}
-	if as.ActorTypes.Contains(it.GetType()) {
-		p, err := ap.ToPerson(it)
-		if err != nil {
-			return id, err
-		}
-		p.ID = id
-		it = p
-	}
-	if as.ObjectTypes.Contains(it.GetType()) {
-		switch it.GetType() {
-		case as.PlaceType:
-			p, err := as.ToPlace(it)
-			if err != nil {
-				return id, err
-			}
-			p.ID = id
-			it = p
-		case as.ProfileType:
-			p, err := as.ToProfile(it)
-			if err != nil {
-				return id, err
-			}
-			p.ID = id
-			it = p
-		case as.RelationshipType:
-			r, err := as.ToRelationship(it)
-			if err != nil {
-				return id, err
-			}
-			r.ID = id
-			it = r
-		case as.TombstoneType:
-			p, err := as.ToTombstone(it)
-			if err != nil {
-				return id, err
-			}
-			p.ID = id
-			it = p
-		default:
-			o, err := as.ToObject(it)
-			if err != nil {
-				return id, err
-			}
-			o.ID = id
-			it = o
-		}
-	}
-	return id, nil
+	return ap.GenerateID(it, partOf, by)
 }
 
 func (l repo) DeleteObject(it as.Item) (as.Item, error) {

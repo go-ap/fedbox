@@ -1,6 +1,10 @@
 package activitypub
 
-import "testing"
+import (
+	"github.com/go-ap/activitystreams"
+	"strings"
+	"testing"
+)
 
 func TestOrderedCollection_Count(t *testing.T) {
 	t.Skipf("TODO")
@@ -172,4 +176,20 @@ func TestUpdateObjectProperties(t *testing.T) {
 
 func TestUpdatePersonProperties(t *testing.T) {
 	t.Skipf("TODO")
+}
+
+func TestGenerateID(t *testing.T) {
+	p := Person{}
+	p.Type = activitystreams.PersonType
+	partOf := activitystreams.IRI("http://example.com")
+	id, err := GenerateID(&p, partOf, nil)
+	if err != nil {
+		t.Errorf("GenerateID failed: %s", err)
+	}
+	if !strings.Contains(string(id), partOf.String()) {
+		t.Errorf("Invalid ObjectID: %s, does not contain base URL %s", id, partOf)
+	}
+	if id != *p.GetID() {
+		t.Errorf("ObjectIDs don't match: %s, expected %s", *p.GetID(), id)
+	}
 }

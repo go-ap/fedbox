@@ -6,6 +6,8 @@ import (
 	ap "github.com/go-ap/activitypub"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
+	"github.com/pborman/uuid"
+	"strings"
 )
 
 const Public = as.IRI("https://www.w3.org/ns/activitystreams#Public")
@@ -591,4 +593,66 @@ func UpdateItemProperties(to, from as.Item) (as.Item, error) {
 		return UpdateObjectProperties(o, n)
 	}
 	return to, errors.Newf("could not process objects with type %s", to.GetType())
+}
+
+// GenerateID generates an unique identifier for the it ActivityPub Object.
+func GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
+	uuid := uuid.New()
+	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(string(partOf)), uuid))
+	if as.ActivityTypes.Contains(it.GetType()) {
+		a, err := ToActivity(it)
+		if err != nil {
+			return id, err
+		}
+		a.ID = id
+		it = a
+	}
+	if as.ActorTypes.Contains(it.GetType()) {
+		p, err := ToPerson(it)
+		if err != nil {
+			return id, err
+		}
+		p.ID = id
+		it = p
+	}
+	if as.ObjectTypes.Contains(it.GetType()) {
+		switch it.GetType() {
+		case as.PlaceType:
+			p, err := as.ToPlace(it)
+			if err != nil {
+				return id, err
+			}
+			p.ID = id
+			it = p
+		case as.ProfileType:
+			p, err := as.ToProfile(it)
+			if err != nil {
+				return id, err
+			}
+			p.ID = id
+			it = p
+		case as.RelationshipType:
+			p, err := as.ToRelationship(it)
+			if err != nil {
+				return id, err
+			}
+			p.ID = id
+			it = p
+		case as.TombstoneType:
+			p, err := as.ToTombstone(it)
+			if err != nil {
+				return id, err
+			}
+			p.ID = id
+			it = p
+		default:
+			p, err := as.ToObject(it)
+			if err != nil {
+				return id, err
+			}
+			p.ID = id
+			it = p
+		}
+	}
+	return id, nil
 }
