@@ -59,5 +59,7 @@ func main() {
 	r.Route("/", app.Routes())
 
 	status := a.Run(r, wait)
-	os.Exit(status)
+	if status != 0 {
+		os.Exit(status)
+	}
 }
