@@ -12,6 +12,8 @@ import (
 	"strings"
 )
 
+var Prefix = ""
+
 type BackendConfig struct {
 	Enabled bool
 	Host    string
@@ -51,10 +53,17 @@ const (
 	Postgres    = StorageType("postgres")
 )
 
+func k(k string) string {
+	if Prefix != "" {
+		return fmt.Sprintf("%s_%s", Prefix, k)
+	}
+	return k
+}
+
 func LoadFromEnv(e string) (Options, error) {
 	conf := Options{}
 	if !env.ValidType(e) {
-		e = os.Getenv(KeyENV)
+		e = os.Getenv(k(KeyENV))
 	}
 
 	conf.Env = env.ValidTypeOrDev(e)
@@ -63,7 +72,7 @@ func LoadFromEnv(e string) (Options, error) {
 		fmt.Sprintf(".env.%s", conf.Env),
 	}
 
-	lvl := os.Getenv(KeyLogLevel)
+	lvl := os.Getenv(k(KeyLogLevel))
 	switch strings.ToLower(lvl) {
 	case "trace":
 		conf.LogLevel = log.TraceLevel
@@ -84,18 +93,18 @@ func LoadFromEnv(e string) (Options, error) {
 	}
 
 	if conf.Host == "" {
-		conf.Host = os.Getenv(KeyHostname)
+		conf.Host = os.Getenv(k(KeyHostname))
 	}
-	conf.Secure, _ = strconv.ParseBool(os.Getenv(KeyHTTPS))
+	conf.Secure, _ = strconv.ParseBool(os.Getenv(k(KeyHTTPS)))
 	if conf.Secure {
 		conf.BaseURL = fmt.Sprintf("https://%s", conf.Host)
 	} else {
 		conf.BaseURL = fmt.Sprintf("http://%s", conf.Host)
 	}
 
-	conf.Listen = os.Getenv(KeyListen)
+	conf.Listen = os.Getenv(k(KeyListen))
 
-	envStorage := os.Getenv(KeyStorage)
+	envStorage := os.Getenv(k(KeyStorage))
 	conf.Storage = StorageType(strings.ToLower(envStorage))
 	switch conf.Storage {
 	case BoltDB:
@@ -104,15 +113,15 @@ func LoadFromEnv(e string) (Options, error) {
 		conf.Storage = Postgres
 		fallthrough
 	case Postgres:
-		conf.DB.Host = os.Getenv(KeyDBHost)
-		conf.DB.Pw = os.Getenv(KeyDBPw)
-		conf.DB.Name = os.Getenv(KeyDBName)
+		conf.DB.Host = os.Getenv(k(KeyDBHost))
+		conf.DB.Pw = os.Getenv(k(KeyDBPw))
+		conf.DB.Name = os.Getenv(k(KeyDBName))
 		var err error
-		if conf.DB.Port, err = strconv.ParseInt(os.Getenv(KeyDBPort), 10, 32); err != nil {
+		if conf.DB.Port, err = strconv.ParseInt(os.Getenv(k(KeyDBPort)), 10, 32); err != nil {
 			conf.DB.Port = 5432
 		}
 
-		conf.DB.User = os.Getenv(KeyDBUser)
+		conf.DB.User = os.Getenv(k(KeyDBUser))
 
 	default:
 		return conf, errors.Errorf("Invalid STORAGE value %s", envStorage)
