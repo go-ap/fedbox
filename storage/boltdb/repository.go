@@ -233,7 +233,7 @@ func (b *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 			if raw == nil || len(raw) == 0 {
 				return nil
 			}
-			return errors.Newf("TODO: unmarshall collection items in collection: %s", url.Path)
+			return errors.NotImplementedf("TODO: unmarshall collection items in collection: %s", url.Path)
 			// This should be a marshalled json array of IRIs,
 			// I probably need to use a different marshalling/unmarshalling method than the activitystreams one.
 			// Then for each element in the array, we load the corresponding item from the base collection
