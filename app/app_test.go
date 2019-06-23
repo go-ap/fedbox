@@ -3,7 +3,10 @@ package app
 import "testing"
 
 func TestNew(t *testing.T) {
-	t.Skipf("TODO")
+	app := New(nil, "HEAD",  "test" )
+	if app == nil {
+		t.Errorf("Nil app pointer returned by New")
+	}
 }
 
 func TestFedbox_Config(t *testing.T) {
