@@ -7,6 +7,7 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
 	"strings"
@@ -227,6 +228,23 @@ func (b *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 					col.TotalItems++
 				}
 			}
+		} else {
+			raw := bb.Get([]byte(path))
+			if raw == nil || len(raw) == 0 {
+				return nil
+			}
+			return errors.Newf("TODO: unmarshall collection items in collection: %s", url.Path)
+			// This should be a marshalled json array of IRIs,
+			// I probably need to use a different marshalling/unmarshalling method than the activitystreams one.
+			// Then for each element in the array, we load the corresponding item from the base collection
+			// The base collection in this case is one of: actors, activities, objects
+			it, err := as.UnmarshalJSON(raw)
+			if err != nil {
+				return errors.Annotatef(err, "unable to unmarshal raw item")
+			}
+			if err = col.Append(it); err == nil {
+				col.TotalItems++
+			}
 		}
 		return err
 	})
@@ -235,6 +253,7 @@ func (b *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 }
 
 const objectKey = "__raw"
+
 func delete(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 	f := ap.Filters{
 		IRI: it.GetLink(),
@@ -265,11 +284,34 @@ func delete(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 	return save(db, rootBkt, t)
 }
 
-func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
-	entryBytes, err := jsonld.Marshal(it)
-	if err != nil {
-		return it, errors.Annotatef(err, "could not marshal activity")
+func getCollectionID(actor as.Item, c handlers.CollectionType) as.ObjectID {
+	return as.ObjectID(fmt.Sprintf("%s/%s", actor.GetLink(), c))
+}
+
+func createActorCollection(b *bolt.Bucket, actor *ap.Person, c handlers.CollectionType) (as.CollectionInterface, error) {
+	col := as.OrderedCollection{
+		Parent: as.Parent{
+			ID:   getCollectionID(actor, c),
+			Type: as.OrderedCollectionType,
+		},
 	}
+
+	b.Put([]byte(c), nil)
+	return &col, nil
+}
+
+func createObjectCollection(b *bolt.Bucket, object *as.Object, c handlers.CollectionType) (as.CollectionInterface, error) {
+	col := as.OrderedCollection{
+		Parent: as.Parent{
+			ID:   getCollectionID(object, c),
+			Type: as.OrderedCollectionType,
+		},
+	}
+	b.Put([]byte(c), nil)
+	return &col, nil
+}
+
+func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 	url, err := it.GetLink().URL()
 	if err != nil {
 		return it, errors.Annotatef(err, "invalid IRI")
@@ -298,6 +340,59 @@ func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 			if err != nil {
 				return errors.Errorf("could not create item bucket entry: %s", err)
 			}
+		}
+		if as.ActorTypes.Contains(it.GetType()) {
+			if p, err := ap.ToPerson(it); err == nil {
+				if in, err := createActorCollection(b, p, handlers.Inbox); err != nil {
+					return errors.Errorf("could not create bucket for collection %s", err)
+				} else {
+					p.Inbox = in.GetLink()
+				}
+				if out, err := createActorCollection(b, p, handlers.Outbox); err != nil {
+					return errors.Errorf("could not create bucket for collection %s", err)
+				} else {
+					p.Outbox = out.GetLink()
+				}
+				if fers, err := createActorCollection(b, p, handlers.Followers); err != nil {
+					return errors.Errorf("could not create bucket for collection %s", err)
+				} else {
+					p.Followers = fers.GetLink()
+				}
+				if fing, err :=createActorCollection(b, p, handlers.Following); err != nil {
+					return errors.Errorf("could not create bucket for collection %s", err)
+				} else {
+					p.Following = fing.GetLink()
+				}
+				if ld, err := createActorCollection(b, p, handlers.Liked); err != nil {
+					return errors.Errorf("could not create bucket for collection %s", err)
+				} else {
+					p.Liked = ld.GetLink()
+				}
+				if ls, err := createActorCollection(b, p, handlers.Likes); err != nil {
+					return errors.Errorf("could not create bucket for collection %s", err)
+				} else {
+					p.Likes = ls.GetLink()
+				}
+				if sh, err := createActorCollection(b, p, handlers.Shares); err != nil {
+					return errors.Errorf("could not create bucket for collection %s", err)
+				} else {
+					p.Shares = sh.GetLink()
+				}
+				it = p
+			}
+		} else if as.ObjectTypes.Contains(it.GetType()) {
+			if o, err := as.ToObject(it); err == nil {
+				if repl, err := createObjectCollection(b, o, handlers.Replies); err != nil {
+					return errors.Errorf("could not create bucket for collection %s", err)
+				} else {
+					o.Replies = repl.GetLink()
+				}
+				it = o
+			}
+		}
+		entryBytes, err := jsonld.Marshal(it)
+		if err != nil {
+			return errors.Annotatef(err, "could not marshal activity")
 		}
 		err = b.Put([]byte(objectKey), entryBytes)
 		if err != nil {
