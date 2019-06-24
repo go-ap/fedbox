@@ -13,6 +13,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"path"
 	"runtime/debug"
 	"sort"
 	"strings"
@@ -131,8 +132,7 @@ func errorf(t *testing.T) errFn {
 		if args == nil || len(args) == 0 {
 			return
 		}
-		t.Errorf(msg, args...)
-		t.Fail()
+		t.Fatalf(msg, args...)
 	}
 }
 
@@ -145,29 +145,34 @@ func errIfNotTrue(t *testing.T) assertFn {
 }
 
 func errOnArray(t *testing.T) stringArrFieldAssertFn {
-	assertTrue := errIfNotTrue(t)
 	return func(arrI []interface{}, tVal []string) {
 		arr := make([]string, len(arrI))
 		for k, v := range arrI {
 			arr[k] = fmt.Sprintf("%s", v)
 		}
-		assertTrue(len(tVal) == len(arr), "invalid array count %d, expected %d", len(arr), len(tVal))
+		errIfNotTrue(t)(len(tVal) == len(arr), "invalid array count %d, expected %d", len(arr), len(tVal))
 		if len(tVal) > 0 {
 			sort.Strings(tVal)
 			sort.Strings(arr)
 			for k, iri := range tVal {
-				assertTrue(iri == arr[k], "array element at pos %d, %s does not match expected %s", k, arr[k], iri)
+				t.Run(fmt.Sprintf("[%d]", k), func(t *testing.T) {
+					vk := arr[k]
+					errIfNotTrue(t)(iri == vk, "array element at pos %d, %s does not match expected %s", k, vk, iri)
+				})
 			}
 		}
 	}
 }
 
 func errOnMapProp(t *testing.T) mapFieldAssertFn {
-	assertTrue := errIfNotTrue(t)
 	return func(ob map[string]interface{}, key string, tVal interface{}) {
 		t.Run(key, func(t *testing.T) {
+			assertTrue := errIfNotTrue(t)
+			assertMapKey := errOnMapProp(t)
+			assertObjectProperties := errOnObjectProperties(t)
+			assertArrayValues := errOnArray(t)
 			val, ok := ob[key]
-			errIfNotTrue(t)(ok, "Could not load %s property of item: %#v", key, ob)
+			assertTrue(ok, "Could not load %s property of item: %#v", key, ob)
 
 			switch tt := tVal.(type) {
 			case int64, int32, int16, int8:
@@ -185,7 +190,7 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 					assertTrue(v1 == tt, "Invalid %s, %s expected %s", key, v1, tt)
 				}
 				if okB {
-					errOnMapProp(t)(v2, "id", tt)
+					assertMapKey(v2, "id", tt)
 				}
 			case *objectVal:
 				// this is the case where the mock value is a pointer to objectVal (so we can dereference against it's id)
@@ -198,14 +203,14 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 						assertTrue(v1 == tt.id, "Invalid %s, %s expected in %#v", "id", v1, tt)
 					}
 					if okB {
-						errOnObjectProperties(t)(v2, tt)
+						assertObjectProperties(v2, tt)
 					}
 				}
 			case []string:
 				v1, okA := val.([]interface{})
 				v2, okB := tVal.([]string)
 				assertTrue(okA || okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
-				errOnArray(t)(v1, v2)
+				assertArrayValues(v1, v2)
 			default:
 				assertTrue(false, "UNKNOWN check for %s, %#v expected %#v", key, val, t)
 			}
@@ -214,197 +219,176 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 }
 
 func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
-	assertMapKey := errOnMapProp(t)
-	assertReq := errOnGetRequest(t)
-	assertTrue := errIfNotTrue(t)
-
 	return func(ob map[string]interface{}, tVal *objectVal) {
-		if tVal == nil {
-			return
-		}
-		if tVal.id != "" {
-			assertMapKey(ob, "id", tVal.id)
-		}
-		if tVal.typ != "" {
-			assertMapKey(ob, "type", tVal.typ)
-		}
-		if tVal.name != "" {
-			assertMapKey(ob, "name", tVal.name)
-		}
-		if tVal.preferredUsername != "" {
-			assertMapKey(ob, "preferredUsername", tVal.preferredUsername)
-		}
-		if tVal.score != 0 {
-			assertMapKey(ob, "score", tVal.score)
-		}
-		if tVal.url != "" {
-			assertMapKey(ob, "url", tVal.url)
-		}
-		if tVal.author != "" {
-			assertMapKey(ob, "attributedTo", tVal.author)
-		}
-		if tVal.inbox != nil {
-			assertMapKey(ob, "inbox", tVal.inbox)
-			if tVal.inbox.typ != "" {
-				dCol := assertReq(tVal.inbox.id)
-				t.Run(tVal.inbox.id, func(t *testing.T) {
-					errOnObjectProperties(t)(dCol, tVal.inbox)
-				})
+		t.Run(path.Base(tVal.id), func(t *testing.T) {
+			assertTrue := errIfNotTrue(t)
+			assertMapKey := errOnMapProp(t)
+			assertObjectProperties := errOnObjectProperties(t)
+			assertGetRequest := errOnGetRequest(t)
+			if tVal == nil {
+				return
 			}
-		}
-		if tVal.outbox != nil {
-			assertMapKey(ob, "outbox", tVal.outbox)
-			if tVal.outbox.typ != "" {
-				dCol := assertReq(tVal.outbox.id)
-				t.Run(tVal.outbox.id, func(t *testing.T) {
-					errOnObjectProperties(t)(dCol, tVal.outbox)
-				})
+			if tVal.id != "" {
+				assertMapKey(ob, "id", tVal.id)
 			}
-		}
-		if tVal.liked != nil {
-			assertMapKey(ob, "liked", tVal.liked)
-			if tVal.liked.typ != "" {
-				dCol := assertReq(tVal.liked.id)
-				t.Run(tVal.liked.id, func(t *testing.T) {
-					errOnObjectProperties(t)(dCol, tVal.liked)
-				})
+			if tVal.typ != "" {
+				assertMapKey(ob, "type", tVal.typ)
 			}
-		}
-		if tVal.following != nil {
-			assertMapKey(ob, "following", tVal.following)
-			if tVal.following.typ != "" {
-				dCol := assertReq(tVal.following.id)
-				t.Run(tVal.following.id, func(t *testing.T) {
-					errOnObjectProperties(t)(dCol, tVal.following)
-				})
+			if tVal.name != "" {
+				assertMapKey(ob, "name", tVal.name)
 			}
-		}
-		if tVal.act != nil {
-			assertMapKey(ob, "actor", tVal.act)
-			if tVal.act.typ != "" {
-				dAct := assertReq(tVal.act.id)
-				t.Run(tVal.act.id, func(t *testing.T) {
-					errOnObjectProperties(t)(dAct, tVal.act)
-				})
+			if tVal.preferredUsername != "" {
+				assertMapKey(ob, "preferredUsername", tVal.preferredUsername)
 			}
-		}
-		if tVal.obj != nil {
-			assertMapKey(ob, "object", tVal.obj)
-			if tVal.obj.id != "" {
-				derefObj := assertReq(tVal.obj.id)
-				t.Run(tVal.obj.id, func(t *testing.T) {
-					errOnObjectProperties(t)(derefObj, tVal.obj)
-				})
+			if tVal.score != 0 {
+				assertMapKey(ob, "score", tVal.score)
 			}
-		}
-		if tVal.audience != nil {
-			assertMapKey(ob, "audience", tVal.audience)
-			audOb, _ := ob["audience"]
-			aud, ok := audOb.([]interface{})
-			assertTrue(ok, "received audience is not a []string, received %T", aud)
-			errOnArray(t)(aud, tVal.audience)
-		}
-		if tVal.typ != string(as.CollectionType) &&
-			tVal.typ != string(as.OrderedCollectionType) &&
-			tVal.typ != string(as.CollectionPageType) &&
-			tVal.typ != string(as.OrderedCollectionPageType) {
-			return
-		}
-		if tVal.first != nil {
-			assertMapKey(ob, "first", tVal.first)
-			if tVal.first.typ != "" {
-				derefCol := assertReq(tVal.first.id)
-				t.Run(tVal.first.id, func(t *testing.T) {
-					errOnObjectProperties(t)(derefCol, tVal.first)
-				})
+			if tVal.url != "" {
+				assertMapKey(ob, "url", tVal.url)
 			}
-		}
-		if tVal.next != nil {
-			assertMapKey(ob, "next", tVal.next)
-			if tVal.next.typ != "" {
-				derefCol := assertReq(tVal.next.id)
-				t.Run(tVal.next.id, func(t *testing.T) {
-					errOnObjectProperties(t)(derefCol, tVal.next)
-				})
+			if tVal.author != "" {
+				assertMapKey(ob, "attributedTo", tVal.author)
 			}
-		}
-		if tVal.current != nil {
-			assertMapKey(ob, "current", tVal.current)
-			if tVal.current.typ != "" {
-				dCol := assertReq(tVal.current.id)
-				t.Run(tVal.current.id, func(t *testing.T) {
-					errOnObjectProperties(t)(dCol, tVal.current)
-				})
-			}
-		}
-		if tVal.last != nil {
-			assertMapKey(ob, "last", tVal.last)
-			if tVal.last.typ != "" {
-				derefCol := assertReq(tVal.last.id)
-				t.Run(tVal.last.id, func(t *testing.T) {
-					errOnObjectProperties(t)(derefCol, tVal.last)
-				})
-			}
-		}
-		if tVal.partOf != nil {
-			assertMapKey(ob, "partOf", tVal.partOf)
-			if tVal.partOf.typ != "" {
-				derefCol := assertReq(tVal.partOf.id)
-				t.Run(tVal.partOf.id, func(t *testing.T) {
-					errOnObjectProperties(t)(derefCol, tVal.partOf)
-				})
-			}
-		}
-		if tVal.itemCount != 0 {
-			assertMapKey(ob, "totalItems", tVal.itemCount)
-			itemsKey := func(typ string) string {
-				if typ == string(as.CollectionType) {
-					return "items"
+			if tVal.inbox != nil {
+				assertMapKey(ob, "inbox", tVal.inbox)
+				if tVal.inbox.typ != "" {
+					dCol := assertGetRequest(tVal.inbox.id)
+					assertObjectProperties(dCol, tVal.inbox)
 				}
-				return "orderedItems"
-			}(tVal.typ)
-			if len(tVal.items) > 0 {
-				val, ok := ob[itemsKey]
-				assertTrue(ok, "Could not load %s property of collection: %#v\n\n%#v\n\n", itemsKey, ob, tVal.items)
-				items, ok := val.([]interface{})
-				assertTrue(ok, "Invalid property %s %#v, expected %T", itemsKey, val, items)
-				assertTrue(len(items) == int(ob["totalItems"].(float64)),
-					"Invalid item count for collection %s %d, expected %d", itemsKey, len(items), tVal.itemCount,
-				)
-			foundItem:
-				for k, testIt := range tVal.items {
-					url, _ := url.Parse(tVal.id)
-					iri := fmt.Sprintf("%s%s/%s", apiURL, url.Path, k)
-					for _, it := range items {
-						switch act := it.(type) {
-						case map[string]interface{}:
-							assertTrue(ok, "Unable to convert %#v to %T type, Received %#v:(%T)", it, act, it, it)
-							itId, ok := act["id"]
-							assertTrue(ok, "Could not load id property of item: %#v", act)
-							itIRI, ok := itId.(string)
-							assertTrue(ok, "Unable to convert %#v to %T type, Received %#v:(%T)", itId, itIRI, val, val)
-							if strings.EqualFold(itIRI, iri) {
-								kk := strings.Replace(k, "self/", "", 1)
-								t.Run(kk, func(t *testing.T) {
-									errOnObjectProperties(t)(act, testIt)
-									dAct := assertReq(itIRI)
-									errOnObjectProperties(t)(dAct, testIt)
-								})
-								continue foundItem
-							}
-						case string:
-							if testIt.id != "" {
-								if strings.EqualFold(act, iri) {
-									assertTrue(act == testIt.id, "invalid item ID %s, expected %s", act, testIt.id)
+			}
+			if tVal.outbox != nil {
+				assertMapKey(ob, "outbox", tVal.outbox)
+				if tVal.outbox.typ != "" {
+					dCol := assertGetRequest(tVal.outbox.id)
+					assertObjectProperties(dCol, tVal.outbox)
+				}
+			}
+			if tVal.liked != nil {
+				assertMapKey(ob, "liked", tVal.liked)
+				if tVal.liked.typ != "" {
+					dCol := assertGetRequest(tVal.liked.id)
+					assertObjectProperties(dCol, tVal.liked)
+				}
+			}
+			if tVal.following != nil {
+				assertMapKey(ob, "following", tVal.following)
+				if tVal.following.typ != "" {
+					dCol := assertGetRequest(tVal.following.id)
+					assertObjectProperties(dCol, tVal.following)
+				}
+			}
+			if tVal.act != nil {
+				assertMapKey(ob, "actor", tVal.act)
+				if tVal.act.typ != "" {
+					dAct := assertGetRequest(tVal.act.id)
+					assertObjectProperties(dAct, tVal.act)
+				}
+			}
+			if tVal.obj != nil {
+				assertMapKey(ob, "object", tVal.obj)
+				if tVal.obj.id != "" {
+					dOb := assertGetRequest(tVal.obj.id)
+					assertObjectProperties(dOb, tVal.obj)
+				}
+			}
+			if tVal.audience != nil {
+				assertMapKey(ob, "audience", tVal.audience)
+				audOb, _ := ob["audience"]
+				aud, ok := audOb.([]interface{})
+				assertTrue(ok, "received audience is not a []string, received %T", aud)
+				errOnArray(t)(aud, tVal.audience)
+			}
+			if tVal.typ != string(as.CollectionType) &&
+				tVal.typ != string(as.OrderedCollectionType) &&
+				tVal.typ != string(as.CollectionPageType) &&
+				tVal.typ != string(as.OrderedCollectionPageType) {
+				return
+			}
+			if tVal.first != nil {
+				assertMapKey(ob, "first", tVal.first)
+				if tVal.first.typ != "" {
+					derefCol := assertGetRequest(tVal.first.id)
+					assertObjectProperties(derefCol, tVal.first)
+				}
+			}
+			if tVal.next != nil {
+				assertMapKey(ob, "next", tVal.next)
+				if tVal.next.typ != "" {
+					derefCol := assertGetRequest(tVal.next.id)
+					assertObjectProperties(derefCol, tVal.next)
+				}
+			}
+			if tVal.current != nil {
+				assertMapKey(ob, "current", tVal.current)
+				if tVal.current.typ != "" {
+					dCol := assertGetRequest(tVal.current.id)
+					assertObjectProperties(dCol, tVal.current)
+				}
+			}
+			if tVal.last != nil {
+				assertMapKey(ob, "last", tVal.last)
+				if tVal.last.typ != "" {
+					derefCol := assertGetRequest(tVal.last.id)
+					assertObjectProperties(derefCol, tVal.last)
+				}
+			}
+			if tVal.partOf != nil {
+				assertMapKey(ob, "partOf", tVal.partOf)
+				if tVal.partOf.typ != "" {
+					derefCol := assertGetRequest(tVal.partOf.id)
+					assertObjectProperties(derefCol, tVal.partOf)
+				}
+			}
+			if tVal.itemCount != 0 {
+				assertMapKey(ob, "totalItems", tVal.itemCount)
+				itemsKey := func(typ string) string {
+					if typ == string(as.CollectionType) {
+						return "items"
+					}
+					return "orderedItems"
+				}(tVal.typ)
+				if len(tVal.items) > 0 {
+					val, ok := ob[itemsKey]
+					assertTrue(ok, "Could not load %s property of collection: %#v\n\n%#v\n\n", itemsKey, ob, tVal.items)
+					items, ok := val.([]interface{})
+					assertTrue(ok, "Invalid property %s %#v, expected %T", itemsKey, val, items)
+					ti, ok := ob["totalItems"].(float64)
+					assertTrue(ok, "Invalid property %s %#v, expected %T", "totalItems", val, items)
+					assertTrue(len(items) == int(ti),
+						"Invalid item count for collection %s %d, expected %d", itemsKey, len(items), tVal.itemCount,
+					)
+				foundItem:
+					for k, testIt := range tVal.items {
+						url, _ := url.Parse(tVal.id)
+						iri := fmt.Sprintf("%s%s/%s", apiURL, url.Path, k)
+						for _, it := range items {
+							switch act := it.(type) {
+							case map[string]interface{}:
+								assertTrue(ok, "Unable to convert %#v to %T type, Received %#v:(%T)", it, act, it, it)
+								itId, ok := act["id"]
+								assertTrue(ok, "Could not load id property of item: %#v", act)
+								itIRI, ok := itId.(string)
+								assertTrue(ok, "Unable to convert %#v to %T type, Received %#v:(%T)", itId, itIRI, val, val)
+								if strings.EqualFold(itIRI, iri) {
+									assertObjectProperties(act, testIt)
+									dAct := assertGetRequest(itIRI)
+									assertObjectProperties(dAct, testIt)
 									continue foundItem
+								}
+							case string:
+								if testIt.id != "" {
+									if strings.EqualFold(act, iri) {
+										assertTrue(act == testIt.id, "invalid item ID %s, expected %s", act, testIt.id)
+										continue foundItem
+									}
 								}
 							}
 						}
+						errorf(t)("Unable to find %s in the %s collection %#v", iri, itemsKey, items)
 					}
-					errorf(t)("Unable to find %s in the %s collection %#v", iri, itemsKey, items)
 				}
 			}
-		}
+		})
 	}
 }
 func errOnGetRequest(t *testing.T) requestGetAssertFn {
@@ -423,82 +407,82 @@ func errOnGetRequest(t *testing.T) requestGetAssertFn {
 }
 
 func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
-	assertTrue := errIfNotTrue(t)
-	assertGetRequest := errOnGetRequest(t)
-	assertObjectProperties := errOnObjectProperties(t)
-
 	return func(test testPair) map[string]interface{} {
-		if len(test.req.headers) == 0 {
-			test.req.headers = make(http.Header, 0)
-			test.req.headers.Set("User-Agent", fmt.Sprintf("-%s", UserAgent))
-			test.req.headers.Set("Accept", HeaderAccept)
-			test.req.headers.Set("Cache-Control", "no-cache")
-		}
-		if test.req.met == "" {
-			test.req.met = http.MethodPost
-		}
-		if test.res.code == 0 {
-			test.res.code = http.StatusCreated
-		}
-
-		body := []byte(test.req.body)
-		b := make([]byte, 0)
-
-		var err error
-		req, err := http.NewRequest(test.req.met, test.req.url, bytes.NewReader(body))
-		assertTrue(err == nil, "Error: unable to create request: %s", err)
-
-		req.Header = test.req.headers
-		if test.req.account != nil {
-			req.Header.Set("Date", time.Now().Format(http.TimeFormat))
-			assertTrue(err == nil, "Error: unable to sign request: %s", err)
-		}
-		resp, err := http.DefaultClient.Do(req)
-
-		assertTrue(resp != nil, "Error: request failed: response is nil")
-		assertTrue(err == nil, "Error: request failed: %s", err)
-
-		b, err = ioutil.ReadAll(resp.Body)
-		assertTrue(err == nil, "Error: invalid HTTP body! Read %d bytes %s", len(b), b)
-
-		assertTrue(resp.StatusCode == test.res.code,
-			"Error: invalid HTTP response %d, expected %d\nReq:[%s] %s\n    %v\nRes[%s]:\n    %v\n    %s",
-			resp.StatusCode, test.res.code, req.Method, req.URL, req.Header, resp.Status, resp.Header, b)
-
 		res := make(map[string]interface{})
-		if test.req.met != http.MethodGet {
-			location, ok := resp.Header["Location"]
-			if !ok {
-				return nil
+		t.Run(fmt.Sprintf("%s::%s", test.req.met, test.req.url), func(t *testing.T) {
+			assertGetRequest := errOnGetRequest(t)
+			assertObjectProperties := errOnObjectProperties(t)
+			assertTrue := errIfNotTrue(t)
+			if len(test.req.headers) == 0 {
+				test.req.headers = make(http.Header, 0)
+				test.req.headers.Set("User-Agent", fmt.Sprintf("-%s", UserAgent))
+				test.req.headers.Set("Accept", HeaderAccept)
+				test.req.headers.Set("Cache-Control", "no-cache")
 			}
-			assertTrue(ok, "Server didn't respond with a Location header even though it confirmed the Like was created")
-			assertTrue(len(location) == 1, "Server responded with %d Location headers which is not expected", len(location))
+			if test.req.met == "" {
+				test.req.met = http.MethodPost
+			}
+			if test.res.code == 0 {
+				test.res.code = http.StatusCreated
+			}
+			body := []byte(test.req.body)
+			b := make([]byte, 0)
 
-			newObj, err := url.Parse(location[0])
-			newObjURL := newObj.String()
-			assertTrue(err == nil, "Location header holds invalid URL %s", newObjURL)
-			assertTrue(strings.Contains(newObjURL, apiURL), "Location header holds invalid URL %s, expected to contain %s", newObjURL, apiURL)
+			var err error
+			req, err := http.NewRequest(test.req.met, test.req.url, bytes.NewReader(body))
+			assertTrue(err == nil, "Error: unable to create request: %s", err)
 
-			if test.res.val == nil {
-				test.res.val = &objectVal{}
+			req.Header = test.req.headers
+			if test.req.account != nil {
+				req.Header.Set("Date", time.Now().Format(http.TimeFormat))
+				assertTrue(err == nil, "Error: unable to sign request: %s", err)
 			}
-			if test.res.val.id == "" {
-				// this is the location of the Activity not of the created object
-				test.res.val.id = newObjURL
+			resp, err := http.DefaultClient.Do(req)
+
+			assertTrue(resp != nil, "Error: request failed: response is nil")
+			assertTrue(err == nil, "Error: request failed: %s", err)
+
+			b, err = ioutil.ReadAll(resp.Body)
+			assertTrue(err == nil, "Error: invalid HTTP body! Read %d bytes %s", len(b), b)
+
+			assertTrue(resp.StatusCode == test.res.code,
+				"Error: invalid HTTP response %d, expected %d\nReq:[%s] %s\n    %v\nRes[%s]:\n    %v\n    %s",
+				resp.StatusCode, test.res.code, req.Method, req.URL, req.Header, resp.Status, resp.Header, b)
+
+			if test.req.met != http.MethodGet {
+				location, ok := resp.Header["Location"]
+				if !ok {
+					return
+				}
+				assertTrue(ok, "Server didn't respond with a Location header even though it confirmed the Like was created")
+				assertTrue(len(location) == 1, "Server responded with %d Location headers which is not expected", len(location))
+
+				newObj, err := url.Parse(location[0])
+				newObjURL := newObj.String()
+				assertTrue(err == nil, "Location header holds invalid URL %s", newObjURL)
+				assertTrue(strings.Contains(newObjURL, apiURL), "Location header holds invalid URL %s, expected to contain %s", newObjURL, apiURL)
+
+				if test.res.val == nil {
+					test.res.val = &objectVal{}
+				}
+				if test.res.val.id == "" {
+					// this is the location of the Activity not of the created object
+					test.res.val.id = newObjURL
+				}
+				var msg string
+				err = json.Unmarshal(b, &msg)
+				assertTrue(err == nil, "Error: unmarshal failed: %s", err)
+			} else {
+				err = json.Unmarshal(b, &res)
+				assertTrue(err == nil, "Error: unmarshal failed: %s", err)
 			}
-			var msg string
-			err = json.Unmarshal(b, &msg)
-			assertTrue(err == nil, "Error: unmarshal failed: %s", err)
-		} else {
-			err = json.Unmarshal(b, &res)
-			assertTrue(err == nil, "Error: unmarshal failed: %s", err)
-		}
-		if test.res.val != nil && test.res.val.id != "" {
-			saved := assertGetRequest(test.res.val.id)
-			if test.res.val.typ != "" {
-				assertObjectProperties(saved, test.res.val)
+			if test.res.val != nil && test.res.val.id != "" {
+				saved := assertGetRequest(test.res.val.id)
+				if test.res.val.typ != "" {
+					assertObjectProperties(saved, test.res.val)
+				}
 			}
-		}
+		})
 		return res
 	}
 }
@@ -507,8 +491,7 @@ func testSuite(t *testing.T, pairs testPairs) {
 	for typ, tests := range pairs {
 		resetDB(t, true)
 		for _, test := range tests {
-			lbl := fmt.Sprintf("%s:%s:%s", typ, test.req.met, test.req.url)
-			t.Run(lbl, func(t *testing.T) {
+			t.Run(typ, func(t *testing.T) {
 				errOnRequest(t)(test)
 			})
 		}
