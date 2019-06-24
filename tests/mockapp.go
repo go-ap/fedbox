@@ -43,8 +43,8 @@ func runAPP(e string) int {
 	b, err := boltdb.New(boltdb.Config{
 		Path:       path,
 		BucketName: host,
-		ErrFn:      l.Errorf,
-		LogFn:      l.Infof,
+		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.Errorf(s, p...) },
+		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.Infof(s, p...) },
 	}, apiURL)
 	if err != nil {
 		return 1

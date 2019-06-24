@@ -2,6 +2,7 @@ package boltdb
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"os"
 	"testing"
 )
@@ -16,8 +17,8 @@ func TestNew(t *testing.T) {
 	conf := Config{
 		Path:       path,
 		BucketName: bucket,
-		LogFn: t.Logf,
-		ErrFn: t.Errorf,
+		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { t.Logf(s, p...) },
+		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { t.Errorf(s, p...) },
 	}
 	repo, err := New(conf, url)
 	if err != nil {
