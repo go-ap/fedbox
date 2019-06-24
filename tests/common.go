@@ -247,42 +247,54 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			assertMapKey(ob, "inbox", tVal.inbox)
 			if tVal.inbox.typ != "" {
 				dCol := assertReq(tVal.inbox.id)
-				errOnObjectProperties(t)(dCol, tVal.inbox)
+				t.Run(tVal.inbox.id, func(t *testing.T) {
+					errOnObjectProperties(t)(dCol, tVal.inbox)
+				})
 			}
 		}
 		if tVal.outbox != nil {
 			assertMapKey(ob, "outbox", tVal.outbox)
 			if tVal.outbox.typ != "" {
 				dCol := assertReq(tVal.outbox.id)
-				errOnObjectProperties(t)(dCol, tVal.outbox)
+				t.Run(tVal.outbox.id, func(t *testing.T) {
+					errOnObjectProperties(t)(dCol, tVal.outbox)
+				})
 			}
 		}
 		if tVal.liked != nil {
 			assertMapKey(ob, "liked", tVal.liked)
 			if tVal.liked.typ != "" {
 				dCol := assertReq(tVal.liked.id)
-				errOnObjectProperties(t)(dCol, tVal.liked)
+				t.Run(tVal.liked.id, func(t *testing.T) {
+					errOnObjectProperties(t)(dCol, tVal.liked)
+				})
 			}
 		}
 		if tVal.following != nil {
 			assertMapKey(ob, "following", tVal.following)
 			if tVal.following.typ != "" {
 				dCol := assertReq(tVal.following.id)
-				errOnObjectProperties(t)(dCol, tVal.following)
+				t.Run(tVal.following.id, func(t *testing.T) {
+					errOnObjectProperties(t)(dCol, tVal.following)
+				})
 			}
 		}
 		if tVal.act != nil {
 			assertMapKey(ob, "actor", tVal.act)
 			if tVal.act.typ != "" {
 				dAct := assertReq(tVal.act.id)
-				errOnObjectProperties(t)(dAct, tVal.act)
+				t.Run(tVal.act.id, func(t *testing.T) {
+					errOnObjectProperties(t)(dAct, tVal.act)
+				})
 			}
 		}
 		if tVal.obj != nil {
 			assertMapKey(ob, "object", tVal.obj)
 			if tVal.obj.id != "" {
 				derefObj := assertReq(tVal.obj.id)
-				errOnObjectProperties(t)(derefObj, tVal.obj)
+				t.Run(tVal.obj.id, func(t *testing.T) {
+					errOnObjectProperties(t)(derefObj, tVal.obj)
+				})
 			}
 		}
 		if tVal.audience != nil {
@@ -302,35 +314,45 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			assertMapKey(ob, "first", tVal.first)
 			if tVal.first.typ != "" {
 				derefCol := assertReq(tVal.first.id)
-				errOnObjectProperties(t)(derefCol, tVal.first)
+				t.Run(tVal.first.id, func(t *testing.T) {
+					errOnObjectProperties(t)(derefCol, tVal.first)
+				})
 			}
 		}
 		if tVal.next != nil {
 			assertMapKey(ob, "next", tVal.next)
 			if tVal.next.typ != "" {
 				derefCol := assertReq(tVal.next.id)
-				errOnObjectProperties(t)(derefCol, tVal.next)
+				t.Run(tVal.next.id, func(t *testing.T) {
+					errOnObjectProperties(t)(derefCol, tVal.next)
+				})
 			}
 		}
 		if tVal.current != nil {
 			assertMapKey(ob, "current", tVal.current)
 			if tVal.current.typ != "" {
 				dCol := assertReq(tVal.current.id)
-				errOnObjectProperties(t)(dCol, tVal.current)
+				t.Run(tVal.current.id, func(t *testing.T) {
+					errOnObjectProperties(t)(dCol, tVal.current)
+				})
 			}
 		}
 		if tVal.last != nil {
 			assertMapKey(ob, "last", tVal.last)
 			if tVal.last.typ != "" {
 				derefCol := assertReq(tVal.last.id)
-				errOnObjectProperties(t)(derefCol, tVal.last)
+				t.Run(tVal.last.id, func(t *testing.T) {
+					errOnObjectProperties(t)(derefCol, tVal.last)
+				})
 			}
 		}
 		if tVal.partOf != nil {
 			assertMapKey(ob, "partOf", tVal.partOf)
 			if tVal.partOf.typ != "" {
 				derefCol := assertReq(tVal.partOf.id)
-				errOnObjectProperties(t)(derefCol, tVal.partOf)
+				t.Run(tVal.partOf.id, func(t *testing.T) {
+					errOnObjectProperties(t)(derefCol, tVal.partOf)
+				})
 			}
 		}
 		if tVal.itemCount != 0 {
