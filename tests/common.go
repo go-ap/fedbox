@@ -467,11 +467,6 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			var msg string
 			err = json.Unmarshal(b, &msg)
 			assertTrue(err == nil, "Error: unmarshal failed: %s", err)
-
-			if test.res.val != nil && test.res.val.id != "" {
-				// Loading from the location IRI
-				return assertGetRequest(test.res.val.id)
-			}
 		} else {
 			err = json.Unmarshal(b, &res)
 			assertTrue(err == nil, "Error: unmarshal failed: %s", err)

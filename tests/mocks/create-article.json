@@ -1,0 +1,12 @@
+{
+  "type": "Create",
+  "actor": "%s",
+  "to": ["https://www.w3.org/ns/activitystreams#Public"],
+  "object": {
+    "type": "Article",
+    "published": "2018-08-31T17:17:11Z",
+    "attributedTo": "%s",
+    "content": "<p>Hello world</p>",
+    "to": ["https://www.w3.org/ns/activitystreams#Public"]
+  }
+}

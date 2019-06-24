@@ -105,6 +105,10 @@ var C2STests = testPairs{
 				code: http.StatusCreated,
 				val: &objectVal{
 					typ: string(as.CreateType),
+					act: &objectVal{
+						id: selfAccount.id,
+						typ: string(as.ServiceType),
+					},
 				},
 			},
 		},
@@ -121,6 +125,7 @@ var C2STests = testPairs{
 				val: &objectVal{
 					typ: string(as.UpdateType),
 					act: &objectVal{
+						id: selfAccount.id,
 						typ: string(as.ServiceType),
 					},
 				},
@@ -139,7 +144,30 @@ var C2STests = testPairs{
 				val: &objectVal{
 					typ: string(as.DeleteType),
 					act: &objectVal{
+						id: selfAccount.id,
 						typ: string(as.TombstoneType),
+					},
+				},
+			},
+		},
+	},
+	"CreateArticle": {
+		{
+			req: testReq{
+				met:  http.MethodPost,
+				url:  fmt.Sprintf("%s/outbox", apiURL),
+				body: loadMockJson("mocks/create-article.json", selfAccount.id, selfAccount.id),
+			},
+			res: testRes{
+				code: http.StatusCreated,
+				val: &objectVal{
+					typ: string(as.CreateType),
+					act: &objectVal{
+						id: selfAccount.id,
+						typ: string(as.ServiceType),
+					},
+					obj: &objectVal{
+						typ: string(as.ArticleType),
 					},
 				},
 			},
