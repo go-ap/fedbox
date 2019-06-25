@@ -401,6 +401,7 @@ func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 // SaveActivity
 func (b *repo) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
+	it = ap.FlattenProperties(it)
 	if it, err = b.SaveObject(it); err == nil {
 		b.logFn(nil, "Added new activity: %s", it.GetLink())
 	}
