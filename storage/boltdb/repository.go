@@ -348,54 +348,72 @@ func save(r *repo, it as.Item) (as.Item, error) {
 				return errors.Errorf("could not create item bucket entry: %s", err)
 			}
 		}
-		if as.ActorTypes.Contains(it.GetType()) {
-			if p, err := ap.ToPerson(it); err == nil {
-				if in, err := r.CreateCollection(getCollection(p, handlers.Inbox)); err != nil {
-					return errors.Errorf("could not create bucket for collection %s", err)
-				} else {
-					p.Inbox = in.GetLink()
-				}
-				if out, err := r.CreateCollection(getCollection(p, handlers.Outbox)); err != nil {
-					return errors.Errorf("could not create bucket for collection %s", err)
-				} else {
-					p.Outbox = out.GetLink()
-				}
-				if fers, err := r.CreateCollection(getCollection(p, handlers.Followers)); err != nil {
-					return errors.Errorf("could not create bucket for collection %s", err)
-				} else {
-					p.Followers = fers.GetLink()
-				}
-				if fing, err := r.CreateCollection(getCollection(p, handlers.Following)); err != nil {
-					return errors.Errorf("could not create bucket for collection %s", err)
-				} else {
-					p.Following = fing.GetLink()
-				}
-				if ld, err := r.CreateCollection(getCollection(p, handlers.Liked)); err != nil {
-					return errors.Errorf("could not create bucket for collection %s", err)
-				} else {
-					p.Liked = ld.GetLink()
-				}
-				if ls, err := r.CreateCollection(getCollection(p, handlers.Likes)); err != nil {
-					return errors.Errorf("could not create bucket for collection %s", err)
-				} else {
-					p.Likes = ls.GetLink()
-				}
-				if sh, err := r.CreateCollection(getCollection(p, handlers.Shares)); err != nil {
-					return errors.Errorf("could not create bucket for collection %s", err)
-				} else {
-					p.Shares = sh.GetLink()
-				}
-				it = p
+		return nil
+	})
+	if as.ActorTypes.Contains(it.GetType()) {
+		if p, err := ap.ToPerson(it); err == nil {
+			if in, err := r.CreateCollection(getCollection(p, handlers.Inbox)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Inbox = in.GetLink()
 			}
-		} else if as.ObjectTypes.Contains(it.GetType()) {
-			if o, err := as.ToObject(it); err == nil {
-				if repl, err := r.CreateCollection(getCollection(o, handlers.Replies)); err != nil {
-					return errors.Errorf("could not create bucket for collection %s", err)
-				} else {
-					o.Replies = repl.GetLink()
-				}
-				it = o
+			if out, err := r.CreateCollection(getCollection(p, handlers.Outbox)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Outbox = out.GetLink()
 			}
+			if fers, err := r.CreateCollection(getCollection(p, handlers.Followers)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Followers = fers.GetLink()
+			}
+			if fing, err := r.CreateCollection(getCollection(p, handlers.Following)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Following = fing.GetLink()
+			}
+			if ld, err := r.CreateCollection(getCollection(p, handlers.Liked)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Liked = ld.GetLink()
+			}
+			if ls, err := r.CreateCollection(getCollection(p, handlers.Likes)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Likes = ls.GetLink()
+			}
+			if sh, err := r.CreateCollection(getCollection(p, handlers.Shares)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Shares = sh.GetLink()
+			}
+			it = p
+		}
+	} else if as.ObjectTypes.Contains(it.GetType()) {
+		if o, err := as.ToObject(it); err == nil {
+			if repl, err := r.CreateCollection(getCollection(o, handlers.Replies)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				o.Replies = repl.GetLink()
+			}
+			it = o
+		}
+	}
+	err = r.d.Update(func(tx *bolt.Tx) error {
+		root := tx.Bucket(r.root)
+		if root == nil {
+			return errors.Errorf("Invalid bucket %s", r.root)
+		}
+		if !root.Writable() {
+			return errors.Errorf("Non writeable bucket %s", r.root)
+		}
+		var b *bolt.Bucket
+		b, uuid, err = descendInBucket(root, path)
+		if err != nil {
+			return errors.Newf("Unable to find %s in root bucket", path)
+		}
+		if !b.Writable() {
+			return errors.Errorf("Non writeable bucket %s", path)
 		}
 		entryBytes, err := jsonld.Marshal(it)
 		if err != nil {
