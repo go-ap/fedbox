@@ -13,7 +13,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"path"
 	"runtime/debug"
 	"sort"
 	"strings"
@@ -200,6 +199,10 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 					v2, okB := val.(map[string]interface{})
 					assertTrue(okA || okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
 					if okA {
+						if tt.id == "" {
+							// the id was empty - probably an object loaded dynamically
+							tt.id = v1
+						}
 						assertTrue(v1 == tt.id, "Invalid %s, %s expected in %#v", "id", v1, tt)
 					}
 					if okB {
@@ -220,11 +223,13 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 
 func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 	return func(ob map[string]interface{}, tVal *objectVal) {
-		t.Run(path.Base(tVal.id), func(t *testing.T) {
+		t.Run(tVal.id, func(t *testing.T) {
+			fail := errorf(t)
 			assertTrue := errIfNotTrue(t)
 			assertMapKey := errOnMapProp(t)
-			assertObjectProperties := errOnObjectProperties(t)
 			assertGetRequest := errOnGetRequest(t)
+			assertObjectProperties := errOnObjectProperties(t)
+
 			if tVal == nil {
 				return
 			}
@@ -286,7 +291,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			}
 			if tVal.obj != nil {
 				assertMapKey(ob, "object", tVal.obj)
-				if tVal.obj.id != "" {
+				if tVal.obj.typ != "" {
 					dOb := assertGetRequest(tVal.obj.id)
 					assertObjectProperties(dOb, tVal.obj)
 				}
@@ -384,7 +389,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 								}
 							}
 						}
-						errorf(t)("Unable to find %s in the %s collection %#v", iri, itemsKey, items)
+						fail("Unable to find %s in the %s collection %#v", iri, itemsKey, items)
 					}
 				}
 			}
@@ -409,10 +414,10 @@ func errOnGetRequest(t *testing.T) requestGetAssertFn {
 func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 	return func(test testPair) map[string]interface{} {
 		res := make(map[string]interface{})
-		t.Run(fmt.Sprintf("%s::%s", test.req.met, test.req.url), func(t *testing.T) {
+		t.Run(test.req.met, func(t *testing.T) {
+			assertTrue := errIfNotTrue(t)
 			assertGetRequest := errOnGetRequest(t)
 			assertObjectProperties := errOnObjectProperties(t)
-			assertTrue := errIfNotTrue(t)
 			if len(test.req.headers) == 0 {
 				test.req.headers = make(http.Header, 0)
 				test.req.headers.Set("User-Agent", fmt.Sprintf("-%s", UserAgent))
@@ -478,9 +483,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			}
 			if test.res.val != nil && test.res.val.id != "" {
 				saved := assertGetRequest(test.res.val.id)
-				if test.res.val.typ != "" {
-					assertObjectProperties(saved, test.res.val)
-				}
+				assertObjectProperties(saved, test.res.val)
 			}
 		})
 		return res
