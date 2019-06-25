@@ -32,15 +32,15 @@ type repo struct {
 type loggerFn func(logrus.Fields, string, ...interface{})
 
 // IsLocalIRI shows if the received IRI belongs to the current instance
-func (l repo) IsLocalIRI(i as.IRI) bool {
+func (r repo) IsLocalIRI(i as.IRI) bool {
 	if _, err := url.Parse(i.String()); err != nil {
 		// not an url
-		l.errFn(logrus.Fields{
+		r.errFn(logrus.Fields{
 			"IRI": i,
 		}, "Invalid url")
 		return false
 	}
-	return strings.Contains(i.String(), l.baseURL)
+	return strings.Contains(i.String(), r.baseURL)
 }
 
 func logFn(l logrus.FieldLogger, lvl logrus.Level) loggerFn {
@@ -66,28 +66,28 @@ func New(conf config.BackendConfig, url string, lp logrus.FieldLogger) (*repo, e
 	return &l, nil
 }
 
-func (l repo) LoadActivities(ff s.Filterable) (as.ItemCollection, uint, error) {
+func (r repo) LoadActivities(ff s.Filterable) (as.ItemCollection, uint, error) {
 	f, ok := ff.(*ap.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
 	}
-	return loadFromDb(l.conn, "activities", f)
+	return loadFromDb(r.conn, "activities", f)
 }
 
-func (l repo) LoadActors(ff s.Filterable) (as.ItemCollection, uint, error) {
+func (r repo) LoadActors(ff s.Filterable) (as.ItemCollection, uint, error) {
 	f, ok := ff.(*ap.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
 	}
-	return loadFromDb(l.conn, "actors", f)
+	return loadFromDb(r.conn, "actors", f)
 }
 
-func (l repo) LoadObjects(ff s.Filterable) (as.ItemCollection, uint, error) {
+func (r repo) LoadObjects(ff s.Filterable) (as.ItemCollection, uint, error) {
 	f, ok := ff.(*ap.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
 	}
-	return loadFromDb(l.conn, "objects", f)
+	return loadFromDb(r.conn, "objects", f)
 }
 
 func getCollectionTable(typ handlers.CollectionType) string {
@@ -118,7 +118,7 @@ func getCollectionTable(typ handlers.CollectionType) string {
 	return "objects"
 }
 
-func (l repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
+func (r repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 	id := ff.ID()
 	colFilters := ap.Filters{
 		IRI: id,
@@ -127,7 +127,7 @@ func (l repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 
 	var ret as.CollectionInterface
 	sel := fmt.Sprintf("SELECT id, iri, created_at::timestamptz, type, count, elements FROM collections WHERE %s ORDER BY created_at DESC LIMIT 1", strings.Join(clauses, " AND "))
-	rows, err := l.conn.Query(sel, values...)
+	rows, err := r.conn.Query(sel, values...)
 	defer rows.Close()
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -173,7 +173,7 @@ func (l repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 		if count == 0 {
 			return ret, nil
 		}
-		l.l.WithFields(logrus.Fields{
+		r.l.WithFields(logrus.Fields{
 			"id":         id,
 			"iri":        iri,
 			"created_at": created,
@@ -189,7 +189,7 @@ func (l repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 			f.ItemKey = append(f.ItemKey, ap.Hash(elem))
 		}
 		var total uint
-		items, total, err = loadFromDb(l.conn, getCollectionTable(f.Collection), f)
+		items, total, err = loadFromDb(r.conn, getCollectionTable(f.Collection), f)
 		if as.ActivityVocabularyType(typ) == as.CollectionType {
 			if col, err := ap.ToCollection(ret); err == nil {
 				col.TotalItems = total
@@ -213,7 +213,7 @@ func (l repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 	return ret, err
 }
 
-func (l repo) Load(ff s.Filterable) (as.ItemCollection, uint, error) {
+func (r repo) Load(ff s.Filterable) (as.ItemCollection, uint, error) {
 	return nil, 0, errors.NotImplementedf("not implemented loader.Load()")
 }
 
@@ -260,13 +260,12 @@ func loadFromDb(conn *pgx.ConnPool, table string, f ap.Filterable) (as.ItemColle
 	return ret, total, err
 }
 
-func (l repo) SaveActivity(it as.Item) (as.Item, error) {
+func (r repo) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
 
-	it = ap.FlattenProperties(it)
-	it, err = l.SaveObject(it)
+	it, err = r.SaveObject(it)
 	if err != nil {
-		l.errFn(logrus.Fields{"IRI": it.GetLink()}, "unable to save activity")
+		r.errFn(logrus.Fields{"IRI": it.GetLink()}, "unable to save activity")
 		return it, err
 	}
 
@@ -281,31 +280,11 @@ func getCollectionIRI(actor as.Item, c handlers.CollectionType) as.IRI {
 	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
 
-func (l repo) createActorCollection(actor as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
-	col := as.OrderedCollection{
-		Parent: as.Parent{
-			ID:   getCollectionID(actor, c),
-			Type: as.OrderedCollectionType,
-		},
-	}
-	return createCollection(l, &col)
+func (r repo) SaveActor(it as.Item) (as.Item, error) {
+	return r.SaveObject(it)
 }
 
-func (l repo) createObjectCollection(object as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
-	col := as.OrderedCollection{
-		Parent: as.Parent{
-			ID:   getCollectionID(object, c),
-			Type: as.OrderedCollectionType,
-		},
-	}
-	return createCollection(l, &col)
-}
-
-func (l repo) SaveActor(it as.Item) (as.Item, error) {
-	return l.SaveObject(it)
-}
-
-func (l repo) SaveObject(it as.Item) (as.Item, error) {
+func (r repo) SaveObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
@@ -321,12 +300,12 @@ func (l repo) SaveObject(it as.Item) (as.Item, error) {
 	}
 
 	if len(it.GetLink()) > 0 {
-		if _, cnt, _ := loadFromDb(l.conn, table, &ap.Filters{
+		if _, cnt, _ := loadFromDb(r.conn, table, &ap.Filters{
 			ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
 			Type:    []as.ActivityVocabularyType{it.GetType()},
 		}); cnt != 0 {
 			err := ap.ErrDuplicateObject("%s in table %s", it.GetLink(), table)
-			l.errFn(logrus.Fields{
+			r.errFn(logrus.Fields{
 				"table": table,
 				"type":  it.GetType(),
 				"iri":   it.GetLink(),
@@ -335,26 +314,26 @@ func (l repo) SaveObject(it as.Item) (as.Item, error) {
 			return it, err
 		}
 	}
-	it, err = saveToDb(l, table, it)
+	it, err = saveToDb(r, table, it)
 	if err != nil {
 		return it, err
 	}
 
-	colIRI := getCollectionIRI(as.IRI(l.baseURL), handlers.CollectionType(table))
-	err = addToCollection(l, colIRI, it)
+	colIRI := getCollectionIRI(as.IRI(r.baseURL), handlers.CollectionType(table))
+	err = r.AddToCollection(colIRI, it)
 	if err != nil {
 		// This errs
-		l.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI}, "unable to add to collection")
+		r.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI}, "unable to add to collection")
 	}
 
 	// TODO(marius) Move to somewhere else
 	if toFw, ok := it.(as.HasRecipients); ok {
 		for _, fw := range toFw.Recipients() {
 			colIRI := fw.GetLink()
-			if l.IsLocalIRI(colIRI) {
+			if r.IsLocalIRI(colIRI) {
 				// we shadow the err variable intentionally so it does not propagate upper to the call stack
-				if errFw := addToCollection(l, colIRI, it); err != nil {
-					l.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI, "error": errFw}, "unable to add to collection")
+				if errFw := r.AddToCollection(colIRI, it); err != nil {
+					r.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI, "error": errFw}, "unable to add to collection")
 				}
 			}
 		}
@@ -363,7 +342,7 @@ func (l repo) SaveObject(it as.Item) (as.Item, error) {
 	return it, err
 }
 
-func createCollection(l repo, it as.CollectionInterface) (as.CollectionInterface, error) {
+func (r repo) CreateCollection(it as.CollectionInterface) (as.CollectionInterface, error) {
 	if it == nil {
 		return it, errors.Newf("unable to create nil collection")
 	}
@@ -378,9 +357,9 @@ func createCollection(l repo, it as.CollectionInterface) (as.CollectionInterface
 		Time:   now,
 		Status: pgtype.Present,
 	}
-	_, err := l.conn.Exec(query, it.GetLink(), it.GetType(), &nowTz)
+	_, err := r.conn.Exec(query, it.GetLink(), it.GetType(), &nowTz)
 	if err != nil {
-		l.errFn(logrus.Fields{
+		r.errFn(logrus.Fields{
 			"err": err.Error(),
 		}, "query error")
 		return it, errors.Annotatef(err, "query error")
@@ -389,11 +368,11 @@ func createCollection(l repo, it as.CollectionInterface) (as.CollectionInterface
 	return it, nil
 }
 
-func addToCollection(l repo, iri as.IRI, it as.Item) error {
+func (r repo) AddToCollection(col as.IRI, it as.Item) error {
 	if it == nil {
 		return errors.Newf("unable to add nil element to collection")
 	}
-	if len(iri) == 0 {
+	if len(col) == 0 {
 		return errors.Newf("unable to find collection")
 	}
 	if len(it.GetLink()) == 0 {
@@ -407,15 +386,15 @@ func addToCollection(l repo, iri as.IRI, it as.Item) error {
 		Time:   now,
 		Status: pgtype.Present,
 	}
-	t, err := l.conn.Exec(query, &nowTz, it.GetLink(), iri)
+	t, err := r.conn.Exec(query, &nowTz, it.GetLink(), col)
 	if err != nil {
-		l.errFn(logrus.Fields{
+		r.errFn(logrus.Fields{
 			"err": err.Error(),
 		}, "query error")
 		return errors.Annotatef(err, "query error")
 	}
 	if t.RowsAffected() != 1 {
-		l.errFn(logrus.Fields{
+		r.errFn(logrus.Fields{
 			"rows": t.RowsAffected(),
 		}, "query error")
 		return errors.Annotatef(err, "query error, Invalid updated rows")
@@ -424,51 +403,58 @@ func addToCollection(l repo, iri as.IRI, it as.Item) error {
 	return nil
 }
 
+func getCollection (it as.Item, c handlers.CollectionType) as.CollectionInterface {
+	return &as.OrderedCollection{
+		Parent: as.Parent{
+			ID:   getCollectionID(it, c),
+			Type: as.OrderedCollectionType,
+		},
+	}
+}
+
 func saveToDb(l repo, table string, it as.Item) (as.Item, error) {
 	query := fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3::timestamptz, $4, $5::jsonb);", table)
 
+	pc := as.IRI(fmt.Sprintf("%s/%s", l.baseURL, table))
 	iri := it.GetLink()
 	if len(iri) == 0 {
 		// TODO(marius): this needs to be in a different place
-
-		pc := as.IRI(fmt.Sprintf("%s/%s", l.baseURL, table))
-
 		if _, err := l.GenerateID(it, pc, nil); err != nil {
 			return it, err
 		}
 		if as.ActorTypes.Contains(it.GetType()) {
 			if p, err := ap.ToPerson(it); err == nil {
-				if in, err := l.createActorCollection(it, handlers.Inbox); err != nil {
+				if in, err := l.CreateCollection(getCollection(it, handlers.Inbox)); err != nil {
 					return it, err
 				} else {
 					p.Inbox = in.GetLink()
 				}
-				if out, err := l.createActorCollection(it, handlers.Outbox); err != nil {
+				if out, err := l.CreateCollection(getCollection(it, handlers.Outbox)); err != nil {
 					return it, err
 				} else {
 					p.Outbox = out.GetLink()
 				}
-				if fers, err := l.createActorCollection(it, handlers.Followers); err != nil {
+				if fers, err := l.CreateCollection(getCollection(it, handlers.Followers)); err != nil {
 					return it, err
 				} else {
 					p.Followers = fers.GetLink()
 				}
-				if fing, err := l.createActorCollection(it, handlers.Following); err != nil {
+				if fing, err := l.CreateCollection(getCollection(it, handlers.Following)); err != nil {
 					return it, err
 				} else {
 					p.Following = fing.GetLink()
 				}
-				if ld, err := l.createActorCollection(it, handlers.Liked); err != nil {
+				if ld, err := l.CreateCollection(getCollection(it, handlers.Liked)); err != nil {
 					return it, err
 				} else {
 					p.Liked = ld.GetLink()
 				}
-				if ls, err := l.createActorCollection(it, handlers.Likes); err != nil {
+				if ls, err := l.CreateCollection(getCollection(it, handlers.Likes)); err != nil {
 					return it, err
 				} else {
 					p.Likes = ls.GetLink()
 				}
-				if sh, err := l.createActorCollection(it, handlers.Shares); err != nil {
+				if sh, err := l.CreateCollection(getCollection(it, handlers.Shares)); err != nil {
 					return it, err
 				} else {
 					p.Shares = sh.GetLink()
@@ -477,7 +463,7 @@ func saveToDb(l repo, table string, it as.Item) (as.Item, error) {
 			}
 		} else if as.ObjectTypes.Contains(it.GetType()) {
 			if o, err := as.ToObject(it); err == nil {
-				if repl, err := l.createObjectCollection(it, handlers.Replies); err != nil {
+				if repl, err := l.CreateCollection(getCollection(it, handlers.Replies)); err != nil {
 					return it, err
 				} else {
 					o.Replies = repl.GetLink()
@@ -509,7 +495,7 @@ func saveToDb(l repo, table string, it as.Item) (as.Item, error) {
 	return it, nil
 }
 
-func (l repo) updateItem(table string, it as.Item) (as.Item, error) {
+func (r repo) updateItem(table string, it as.Item) (as.Item, error) {
 	if table == "activities" {
 		return it, errors.Newf("update action Invalid, activities are immutable")
 	}
@@ -537,9 +523,9 @@ func (l repo) updateItem(table string, it as.Item) (as.Item, error) {
 		Time:   now,
 		Status: pgtype.Present,
 	}
-	_, err := l.conn.Exec(query, it.GetType(), &nowTz, raw, iri)
+	_, err := r.conn.Exec(query, it.GetType(), &nowTz, raw, iri)
 	if err != nil {
-		l.errFn(logrus.Fields{
+		r.errFn(logrus.Fields{
 			"err": err.Error(),
 		}, "query error")
 		return it, errors.Annotatef(err, "query error")
@@ -548,11 +534,11 @@ func (l repo) updateItem(table string, it as.Item) (as.Item, error) {
 	return it, nil
 }
 
-func (l repo) UpdateActor(it as.Item) (as.Item, error) {
-	return l.UpdateObject(it)
+func (r repo) UpdateActor(it as.Item) (as.Item, error) {
+	return r.UpdateObject(it)
 }
 
-func (l repo) UpdateObject(it as.Item) (as.Item, error) {
+func (r repo) UpdateObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
@@ -566,14 +552,14 @@ func (l repo) UpdateObject(it as.Item) (as.Item, error) {
 	} else if as.ActorTypes.Contains(it.GetType()) {
 		label = "actor"
 		table = "actors"
-		found, cnt, _ = l.LoadActors(&ap.Filters{
+		found, cnt, _ = r.LoadActors(&ap.Filters{
 			ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
 			Type:    []as.ActivityVocabularyType{it.GetType()},
 		})
 	} else {
 		label = "object"
 		table = "objects"
-		found, cnt, _ = l.LoadObjects(&ap.Filters{
+		found, cnt, _ = r.LoadObjects(&ap.Filters{
 			ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
 			Type:    []as.ActivityVocabularyType{it.GetType()},
 		})
@@ -585,7 +571,7 @@ func (l repo) UpdateObject(it as.Item) (as.Item, error) {
 
 	if cnt == 0 {
 		err := errors.NotFoundf("%s %s", it.GetLink(), label)
-		l.errFn(logrus.Fields{
+		r.errFn(logrus.Fields{
 			"type": it.GetType(),
 			"iri":  it.GetLink(),
 			"err":  err.Error(),
@@ -595,7 +581,7 @@ func (l repo) UpdateObject(it as.Item) (as.Item, error) {
 	old := found[0]
 	it, err = ap.UpdateItemProperties(old, it)
 	if err != nil {
-		l.errFn(logrus.Fields{
+		r.errFn(logrus.Fields{
 			"table": table,
 			"type":  old.GetType(),
 			"iri":   old.GetLink(),
@@ -603,9 +589,9 @@ func (l repo) UpdateObject(it as.Item) (as.Item, error) {
 		}, "Invalid")
 	}
 
-	it, err = l.updateItem(table, it)
+	it, err = r.updateItem(table, it)
 	if err != nil {
-		l.errFn(logrus.Fields{
+		r.errFn(logrus.Fields{
 			"action": "update",
 			"table":  table,
 		}, "%s", err.Error())
@@ -614,16 +600,16 @@ func (l repo) UpdateObject(it as.Item) (as.Item, error) {
 	return it, err
 }
 
-func (l repo) DeleteActor(it as.Item) (as.Item, error) {
-	return l.DeleteObject(it)
+func (r repo) DeleteActor(it as.Item) (as.Item, error) {
+	return r.DeleteObject(it)
 }
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.
-func (l repo) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
+func (r repo) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
 	return ap.GenerateID(it, partOf, by)
 }
 
-func (l repo) DeleteObject(it as.Item) (as.Item, error) {
+func (r repo) DeleteObject(it as.Item) (as.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
@@ -645,17 +631,17 @@ func (l repo) DeleteObject(it as.Item) (as.Item, error) {
 	}
 	var cnt uint
 	var found as.ItemCollection
-	found, cnt, _ = loadFromDb(l.conn, table, &f)
+	found, cnt, _ = loadFromDb(r.conn, table, &f)
 	if cnt == 0 {
 		if table == "objects" {
 			table = "actors"
 		}
 		// try other table
-		found, cnt, _ = loadFromDb(l.conn, table, &f)
+		found, cnt, _ = loadFromDb(r.conn, table, &f)
 	}
 	if cnt == 0 {
 		err := errors.NotFoundf("%s in either actors or objects", it.GetLink())
-		l.errFn(logrus.Fields{
+		r.errFn(logrus.Fields{
 			"table": table,
 			"type":  it.GetType(),
 			"iri":   it.GetLink(),
@@ -677,20 +663,20 @@ func (l repo) DeleteObject(it as.Item) (as.Item, error) {
 		FormerType: old.GetType(),
 	}
 
-	return l.updateItem(table, t)
+	return r.updateItem(table, t)
 }
 
 // Close closes the underlying db connections
-func (l *repo) Open() error {
+func (r *repo) Open() error {
 	var err error
-	l.conn, err = pgx.NewConnPool(pgx.ConnPoolConfig{
+	r.conn, err = pgx.NewConnPool(pgx.ConnPoolConfig{
 		ConnConfig: pgx.ConnConfig{
-			Host:     l.conf.Host,
-			Port:     uint16(l.conf.Port),
-			Database: l.conf.Name,
-			User:     l.conf.User,
-			Password: l.conf.Pw,
-			Logger:   DBLogger(l.l),
+			Host:     r.conf.Host,
+			Port:     uint16(r.conf.Port),
+			Database: r.conf.Name,
+			User:     r.conf.User,
+			Password: r.conf.Pw,
+			Logger:   DBLogger(r.l),
 		},
 		MaxConnections: 3,
 	})
@@ -701,7 +687,7 @@ func (l *repo) Open() error {
 }
 
 // Close closes the underlying db connections
-func (l *repo) Close() error {
-	l.conn.Close()
+func (r *repo) Close() error {
+	r.conn.Close()
 	return nil
 }

@@ -12,6 +12,7 @@ import (
 	s "github.com/go-ap/storage"
 	"github.com/sirupsen/logrus"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 )
@@ -104,47 +105,47 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 }
 
 // Load
-func (b *repo) Load(f s.Filterable) (as.ItemCollection, uint, error) {
+func (r *repo) Load(f s.Filterable) (as.ItemCollection, uint, error) {
 	var err error
-	err = b.Open()
+	err = r.Open()
 	if err != nil {
 		return nil, 0, err
 	}
-	defer b.Close()
+	defer r.Close()
 	return nil, 0, errors.NotImplementedf("BoltDB Load not implemented")
 }
 
 // LoadActivities
-func (b *repo) LoadActivities(f s.Filterable) (as.ItemCollection, uint, error) {
+func (r *repo) LoadActivities(f s.Filterable) (as.ItemCollection, uint, error) {
 	var err error
-	err = b.Open()
+	err = r.Open()
 	if err != nil {
 		return nil, 0, err
 	}
-	defer b.Close()
-	return loadFromBucket(b.d, b.root, f)
+	defer r.Close()
+	return loadFromBucket(r.d, r.root, f)
 }
 
 // LoadObjects
-func (b *repo) LoadObjects(f s.Filterable) (as.ItemCollection, uint, error) {
+func (r *repo) LoadObjects(f s.Filterable) (as.ItemCollection, uint, error) {
 	var err error
-	err = b.Open()
+	err = r.Open()
 	if err != nil {
 		return nil, 0, err
 	}
-	defer b.Close()
-	return loadFromBucket(b.d, b.root, f)
+	defer r.Close()
+	return loadFromBucket(r.d, r.root, f)
 }
 
 // LoadActors
-func (b *repo) LoadActors(f s.Filterable) (as.ItemCollection, uint, error) {
+func (r *repo) LoadActors(f s.Filterable) (as.ItemCollection, uint, error) {
 	var err error
-	err = b.Open()
+	err = r.Open()
 	if err != nil {
 		return nil, 0, err
 	}
-	defer b.Close()
-	return loadFromBucket(b.d, b.root, f)
+	defer r.Close()
+	return loadFromBucket(r.d, r.root, f)
 }
 
 func descendInBucket(root *bolt.Bucket, path string) (*bolt.Bucket, string, error) {
@@ -180,35 +181,35 @@ func descendInBucket(root *bolt.Bucket, path string) (*bolt.Bucket, string, erro
 }
 
 // LoadCollection
-func (b *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
+func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 	var err error
-	err = b.Open()
+	err = r.Open()
 	if err != nil {
 		return nil, err
 	}
-	defer b.Close()
+	defer r.Close()
 
 	var ret as.CollectionInterface
 	iri := f.ID()
 	url, err := iri.URL()
 	if err != nil {
-		b.errFn(nil, "invalid IRI filter element %s when loading collections", iri)
+		r.errFn(nil, "invalid IRI filter element %s when loading collections", iri)
 	}
-	if string(b.root) != url.Host {
-		b.errFn(nil, "trying to load from non-local root bucket %s", url.Host)
+	if string(r.root) != url.Host {
+		r.errFn(nil, "trying to load from non-local root bucket %s", url.Host)
 	}
 	col := &as.OrderedCollection{}
 	col.ID = as.ObjectID(iri)
 	col.Type = as.OrderedCollectionType
 
-	err = b.d.View(func(tx *bolt.Tx) error {
-		rb := tx.Bucket(b.root)
+	err = r.d.View(func(tx *bolt.Tx) error {
+		rb := tx.Bucket(r.root)
 		if rb == nil {
-			return errors.Newf("invalid root bucket %s", b.root)
+			return errors.Newf("invalid root bucket %s", r.root)
 		}
 		bb, path, err := descendInBucket(rb, url.Path)
 		if err != nil {
-			b.errFn(nil, "unable to find %s in root bucket", path, b.root)
+			r.errFn(nil, "unable to find %s in root bucket", path, r.root)
 		}
 		if len(path) == 0 {
 			cb := bb.Cursor()
@@ -256,7 +257,7 @@ func (b *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 
 const objectKey = "__raw"
 
-func delete(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
+func delete(r *repo, it as.Item) (as.Item, error) {
 	f := ap.Filters{
 		IRI: it.GetLink(),
 	}
@@ -265,7 +266,7 @@ func delete(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 	}
 	var cnt uint
 	var found as.ItemCollection
-	found, cnt, _ = loadFromBucket(db, rootBkt, &f)
+	found, cnt, _ = loadFromBucket(r.d, r.root, &f)
 	if cnt == 0 {
 		err := errors.NotFoundf("%s in either actors or objects", it.GetLink())
 		return it, err
@@ -283,28 +284,41 @@ func delete(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 		Deleted:    time.Now().UTC(),
 		FormerType: old.GetType(),
 	}
-	return save(db, rootBkt, t)
+	return save(r, t)
 }
 
 func getCollectionID(actor as.Item, c handlers.CollectionType) as.ObjectID {
 	return as.ObjectID(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
 
-func createObjectCollection(b *bolt.Bucket, it as.Item, c handlers.CollectionType) (as.CollectionInterface, error) {
-	col := as.OrderedCollection{
+func getCollection(it as.Item, c handlers.CollectionType) as.CollectionInterface {
+	return &as.OrderedCollection{
 		Parent: as.Parent{
 			ID:   getCollectionID(it, c),
 			Type: as.OrderedCollectionType,
 		},
 	}
-	b.Put([]byte(c), nil)
-	return &col, nil
 }
 
-func getCollectionIRI(actor as.Item, c handlers.CollectionType) as.IRI {
-	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
+func (r *repo) CreateCollection(col as.CollectionInterface) (as.CollectionInterface, error) {
+	url, err := col.GetLink().URL()
+	if err != nil {
+		return col, err
+	}
+	cPath := url.Path
+	c := path.Base(cPath)
+	err = r.d.Update(func(tx *bolt.Tx) error {
+		root := tx.Bucket(r.root)
+		b, _, err := descendInBucket(root, cPath)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(c), nil)
+	})
+	return col, err
 }
-func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
+
+func save(r *repo, it as.Item) (as.Item, error) {
 	url, err := it.GetLink().URL()
 	if err != nil {
 		return it, errors.Annotatef(err, "invalid IRI")
@@ -312,13 +326,13 @@ func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 	path := url.Path
 
 	var uuid string
-	err = db.Update(func(tx *bolt.Tx) error {
-		root := tx.Bucket(rootBkt)
+	err = r.d.Update(func(tx *bolt.Tx) error {
+		root := tx.Bucket(r.root)
 		if root == nil {
-			return errors.Errorf("Invalid bucket %s", rootBkt)
+			return errors.Errorf("Invalid bucket %s", r.root)
 		}
 		if !root.Writable() {
-			return errors.Errorf("Non writeable bucket %s", rootBkt)
+			return errors.Errorf("Non writeable bucket %s", r.root)
 		}
 		var b *bolt.Bucket
 		b, uuid, err = descendInBucket(root, path)
@@ -336,37 +350,37 @@ func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 		}
 		if as.ActorTypes.Contains(it.GetType()) {
 			if p, err := ap.ToPerson(it); err == nil {
-				if in, err := createObjectCollection(b, p, handlers.Inbox); err != nil {
+				if in, err := r.CreateCollection(getCollection(p, handlers.Inbox)); err != nil {
 					return errors.Errorf("could not create bucket for collection %s", err)
 				} else {
 					p.Inbox = in.GetLink()
 				}
-				if out, err := createObjectCollection(b, p, handlers.Outbox); err != nil {
+				if out, err := r.CreateCollection(getCollection(p, handlers.Outbox)); err != nil {
 					return errors.Errorf("could not create bucket for collection %s", err)
 				} else {
 					p.Outbox = out.GetLink()
 				}
-				if fers, err := createObjectCollection(b, p, handlers.Followers); err != nil {
+				if fers, err := r.CreateCollection(getCollection(p, handlers.Followers)); err != nil {
 					return errors.Errorf("could not create bucket for collection %s", err)
 				} else {
 					p.Followers = fers.GetLink()
 				}
-				if fing, err := createObjectCollection(b, p, handlers.Following); err != nil {
+				if fing, err := r.CreateCollection(getCollection(p, handlers.Following)); err != nil {
 					return errors.Errorf("could not create bucket for collection %s", err)
 				} else {
 					p.Following = fing.GetLink()
 				}
-				if ld, err := createObjectCollection(b, p, handlers.Liked); err != nil {
+				if ld, err := r.CreateCollection(getCollection(p, handlers.Liked)); err != nil {
 					return errors.Errorf("could not create bucket for collection %s", err)
 				} else {
 					p.Liked = ld.GetLink()
 				}
-				if ls, err := createObjectCollection(b, p, handlers.Likes); err != nil {
+				if ls, err := r.CreateCollection(getCollection(p, handlers.Likes)); err != nil {
 					return errors.Errorf("could not create bucket for collection %s", err)
 				} else {
 					p.Likes = ls.GetLink()
 				}
-				if sh, err := createObjectCollection(b, p, handlers.Shares); err != nil {
+				if sh, err := r.CreateCollection(getCollection(p, handlers.Shares)); err != nil {
 					return errors.Errorf("could not create bucket for collection %s", err)
 				} else {
 					p.Shares = sh.GetLink()
@@ -375,7 +389,7 @@ func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 			}
 		} else if as.ObjectTypes.Contains(it.GetType()) {
 			if o, err := as.ToObject(it); err == nil {
-				if repl, err := createObjectCollection(b, o, handlers.Replies); err != nil {
+				if repl, err := r.CreateCollection(getCollection(o, handlers.Replies)); err != nil {
 					return errors.Errorf("could not create bucket for collection %s", err)
 				} else {
 					o.Replies = repl.GetLink()
@@ -399,23 +413,22 @@ func save(db *bolt.DB, rootBkt []byte, it as.Item) (as.Item, error) {
 }
 
 // SaveActivity
-func (b *repo) SaveActivity(it as.Item) (as.Item, error) {
+func (r *repo) SaveActivity(it as.Item) (as.Item, error) {
 	var err error
-	it = ap.FlattenProperties(it)
-	if it, err = b.SaveObject(it); err == nil {
-		b.logFn(nil, "Added new activity: %s", it.GetLink())
+	if it, err = r.SaveObject(it); err == nil {
+		r.logFn(nil, "Added new activity: %s", it.GetLink())
 	}
 	return it, err
 }
 
 // SaveObject
-func (b *repo) SaveObject(it as.Item) (as.Item, error) {
+func (r *repo) SaveObject(it as.Item) (as.Item, error) {
 	var err error
-	err = b.Open()
+	err = r.Open()
 	if err != nil {
 		return it, err
 	}
-	defer b.Close()
+	defer r.Close()
 	var bucket string
 	if as.ActivityTypes.Contains(it.GetType()) {
 		bucket = bucketActivities
@@ -426,23 +439,23 @@ func (b *repo) SaveObject(it as.Item) (as.Item, error) {
 	}
 	iri := it.GetLink()
 	if len(iri) == 0 {
-		pc := as.IRI(fmt.Sprintf("%s/%s", b.baseURL, bucket))
-		if _, err = b.GenerateID(it, pc, nil); err != nil {
+		pc := as.IRI(fmt.Sprintf("%s/%s", r.baseURL, bucket))
+		if _, err = r.GenerateID(it, pc, nil); err != nil {
 			return it, err
 		}
 	}
-	if it, err = save(b.d, b.root, it); err == nil {
-		b.logFn(nil, "Added new %s: %s", bucket[:len(bucket)-1], it.GetLink())
+	if it, err = save(r, it); err == nil {
+		r.logFn(nil, "Added new %s: %s", bucket[:len(bucket)-1], it.GetLink())
 	}
 
 	// TODO(marius) Move to somewhere else
 	if toFw, ok := it.(as.HasRecipients); ok {
 		for _, fw := range toFw.Recipients() {
 			colIRI := fw.GetLink()
-			if b.IsLocalIRI(colIRI) {
+			if r.IsLocalIRI(colIRI) {
 				// we shadow the err variable intentionally so it does not propagate upper to the call stack
-				if errFw := addToCollection(b.d, b.root, colIRI, it); err != nil {
-					b.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI, "error": errFw}, "unable to add to collection")
+				if errFw := r.AddToCollection(colIRI, it); err != nil {
+					r.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI, "error": errFw}, "unable to add to collection")
 				}
 			}
 		}
@@ -451,44 +464,44 @@ func (b *repo) SaveObject(it as.Item) (as.Item, error) {
 }
 
 // IsLocalIRI shows if the received IRI belongs to the current instance
-func (b repo) IsLocalIRI(i as.IRI) bool {
+func (r repo) IsLocalIRI(i as.IRI) bool {
 	if _, err := url.Parse(i.String()); err != nil {
 		// not an url
-		b.errFn(logrus.Fields{
+		r.errFn(logrus.Fields{
 			"IRI": i,
 		}, "Invalid url")
 		return false
 	}
-	return strings.Contains(i.String(), b.baseURL)
+	return strings.Contains(i.String(), r.baseURL)
 }
 
-func addToCollection(db *bolt.DB, rootBkt []byte, iri as.IRI, it as.Item) error {
+func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 	if it == nil {
 		return errors.Newf("unable to add nil element to collection")
 	}
-	if len(iri) == 0 {
+	if len(col) == 0 {
 		return errors.Newf("unable to find collection")
 	}
 	if len(it.GetLink()) == 0 {
 		return errors.Newf("Invalid create collection does not have a valid IRI")
 	}
-	url, err := iri.URL()
+	url, err := col.URL()
 	if err != nil {
 		return errors.Annotatef(err, "invalid IRI")
 	}
 	path := url.Path
 
-	return db.Update(func(tx *bolt.Tx) error {
-		var col string
-		root := tx.Bucket(rootBkt)
+	return r.d.Update(func(tx *bolt.Tx) error {
+		var rem string
+		root := tx.Bucket(r.root)
 		if root == nil {
-			return errors.Errorf("Invalid bucket %s", rootBkt)
+			return errors.Errorf("Invalid bucket %s", r.root)
 		}
 		if !root.Writable() {
-			return errors.Errorf("Non writeable bucket %s", rootBkt)
+			return errors.Errorf("Non writeable bucket %s", r.root)
 		}
 		var b *bolt.Bucket
-		b, col, err = descendInBucket(root, path)
+		b, rem, err = descendInBucket(root, path)
 		if err != nil {
 			return errors.Newf("Unable to find %s in root bucket", path)
 		}
@@ -496,19 +509,19 @@ func addToCollection(db *bolt.DB, rootBkt []byte, iri as.IRI, it as.Item) error 
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
 		var iris []as.IRI
-		raw := b.Get([]byte(col))
+		raw := b.Get([]byte(rem))
 		if len(raw) > 0 {
 			err := jsonld.Unmarshal(raw, iris)
 			if err != nil {
 				return errors.Newf("Unable to unmarshal entries in collection %s", path)
 			}
 		}
-		iris = append(iris, iri)
+		iris = append(iris, col)
 		raw, err := jsonld.Marshal(iris)
 		if err != nil {
 			return errors.Newf("Unable to marshal entries in collection %s", path)
 		}
-		err = b.Put([]byte(col), raw)
+		err = b.Put([]byte(rem), raw)
 		if err != nil {
 			return errors.Newf("Unable to save entries to collection %s", path)
 		}
@@ -518,18 +531,18 @@ func addToCollection(db *bolt.DB, rootBkt []byte, iri as.IRI, it as.Item) error 
 }
 
 // UpdateObject
-func (b *repo) UpdateObject(it as.Item) (as.Item, error) {
-	return b.SaveObject(it)
+func (r *repo) UpdateObject(it as.Item) (as.Item, error) {
+	return r.SaveObject(it)
 }
 
 // DeleteObject
-func (b *repo) DeleteObject(it as.Item) (as.Item, error) {
+func (r *repo) DeleteObject(it as.Item) (as.Item, error) {
 	var err error
-	err = b.Open()
+	err = r.Open()
 	if err != nil {
 		return it, err
 	}
-	defer b.Close()
+	defer r.Close()
 	var bucket string
 	if as.ActivityTypes.Contains(it.GetType()) {
 		bucket = bucketActivities
@@ -538,30 +551,30 @@ func (b *repo) DeleteObject(it as.Item) (as.Item, error) {
 	} else {
 		bucket = bucketObjects
 	}
-	if it, err = delete(b.d, b.root, it); err == nil {
-		b.logFn(nil, "Added new %s: %s", bucket[:len(bucket)-1], it.GetLink())
+	if it, err = delete(r, it); err == nil {
+		r.logFn(nil, "Added new %s: %s", bucket[:len(bucket)-1], it.GetLink())
 	}
 	return it, err
 }
 
 // GenerateID
-func (b *repo) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
+func (r *repo) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
 	return ap.GenerateID(it, partOf, by)
 }
 
-func (b *repo) Open() error {
+func (r *repo) Open() error {
 	var err error
-	b.d, err = bolt.Open(b.path, 0600, nil)
+	r.d, err = bolt.Open(r.path, 0600, nil)
 	if err != nil {
 		return errors.Annotatef(err, "could not open db")
 	}
-	err = b.d.Update(func(tx *bolt.Tx) error {
-		root := tx.Bucket(b.root)
+	err = r.d.Update(func(tx *bolt.Tx) error {
+		root := tx.Bucket(r.root)
 		if root == nil {
-			return errors.NotFoundf("root bucket %s not found", b.root)
+			return errors.NotFoundf("root bucket %s not found", r.root)
 		}
 		if !root.Writable() {
-			return errors.NotFoundf("root bucket %s is not writeable", b.root)
+			return errors.NotFoundf("root bucket %s is not writeable", r.root)
 		}
 		return nil
 	})
@@ -572,6 +585,6 @@ func (b *repo) Open() error {
 }
 
 // Close closes the boltdb database if possible.
-func (b *repo) Close() error {
-	return b.d.Close()
+func (r *repo) Close() error {
+	return r.d.Close()
 }

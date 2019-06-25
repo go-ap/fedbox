@@ -120,6 +120,7 @@ func ProcessActivity(l s.Saver, it as.Item) (as.Item, error) {
 		}
 	}
 
+	it = FlattenProperties(it)
 	return l.SaveActivity(it)
 }
 
