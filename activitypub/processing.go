@@ -4,6 +4,7 @@ import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/handlers"
 	s "github.com/go-ap/storage"
 	"time"
 )
@@ -37,8 +38,70 @@ var ErrDuplicateObject = func(s string, p ...interface{}) errDuplicateKey {
 	return errDuplicateKey{wrapErr(nil, fmt.Sprintf("Duplicate key: %s", s), p...)}
 }
 
+func getCollection(it as.Item, c handlers.CollectionType) as.CollectionInterface {
+	return &as.OrderedCollection{
+		Parent: as.Parent{
+			ID:   as.ObjectID(fmt.Sprintf("%s/%s", it.GetLink(), c)),
+			Type: as.OrderedCollectionType,
+		},
+	}
+}
+
+func AddNewObjectCollections(r s.CollectionSaver, it as.Item) (as.Item, error) {
+	if as.ActorTypes.Contains(it.GetType()) {
+		if p, err := ToPerson(it); err == nil {
+			if in, err := r.CreateCollection(getCollection(p, handlers.Inbox)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Inbox = in.GetLink()
+			}
+			if out, err := r.CreateCollection(getCollection(p, handlers.Outbox)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Outbox = out.GetLink()
+			}
+			if fers, err := r.CreateCollection(getCollection(p, handlers.Followers)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Followers = fers.GetLink()
+			}
+			if fing, err := r.CreateCollection(getCollection(p, handlers.Following)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Following = fing.GetLink()
+			}
+			if ld, err := r.CreateCollection(getCollection(p, handlers.Liked)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Liked = ld.GetLink()
+			}
+			if ls, err := r.CreateCollection(getCollection(p, handlers.Likes)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Likes = ls.GetLink()
+			}
+			if sh, err := r.CreateCollection(getCollection(p, handlers.Shares)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				p.Shares = sh.GetLink()
+			}
+			it = p
+		}
+	} else if as.ObjectTypes.Contains(it.GetType()) {
+		if o, err := as.ToObject(it); err == nil {
+			if repl, err := r.CreateCollection(getCollection(o, handlers.Replies)); err != nil {
+				return it, errors.Errorf("could not create bucket for collection %s", err)
+			} else {
+				o.Replies = repl.GetLink()
+			}
+			it = o
+		}
+	}
+	return it, nil
+}
+
 // ProcessActivity
-func ProcessActivity(l s.Saver, it as.Item) (as.Item, error) {
+func ProcessActivity(r s.Saver, it as.Item) (as.Item, error) {
 	var err error
 
 	// TODO(marius): Since we're not failing on the first error, so we can try to process the same type of
@@ -48,73 +111,73 @@ func ProcessActivity(l s.Saver, it as.Item) (as.Item, error) {
 	// First we process the activity to effect whatever changes we need to on the activity properties.
 	act, err := ToActivity(it)
 	if as.ContentManagementActivityTypes.Contains(it.GetType()) && act.Object.GetType() != as.RelationshipType {
-		act, err = ContentManagementActivity(l, act)
+		act, err = ContentManagementActivity(r, act)
 		if err != nil {
 			return it, err
 		}
 	}
 	if as.CollectionManagementActivityTypes.Contains(it.GetType()) {
-		act, err = CollectionManagementActivity(l, act)
+		act, err = CollectionManagementActivity(r, act)
 		if err != nil {
 			return it, err
 		}
 	}
 	if as.ReactionsActivityTypes.Contains(it.GetType()) {
-		act, err = ReactionsActivity(l, act)
+		act, err = ReactionsActivity(r, act)
 		if err != nil {
 			return it, err
 		}
 	}
 	if as.EventRSVPActivityTypes.Contains(it.GetType()) {
-		act, err = EventRSVPActivity(l, act)
+		act, err = EventRSVPActivity(r, act)
 		if err != nil {
 			return it, err
 		}
 	}
 	if as.GroupManagementActivityTypes.Contains(it.GetType()) {
-		act, err = GroupManagementActivity(l, act)
+		act, err = GroupManagementActivity(r, act)
 		if err != nil {
 			return it, err
 		}
 	}
 	if as.ContentExperienceActivityTypes.Contains(it.GetType()) {
-		act, err = ContentExperienceActivity(l, act)
+		act, err = ContentExperienceActivity(r, act)
 		if err != nil {
 			return it, err
 		}
 	}
 	if as.GeoSocialEventsActivityTypes.Contains(it.GetType()) {
-		act, err = GeoSocialEventsActivity(l, act)
+		act, err = GeoSocialEventsActivity(r, act)
 		if err != nil {
 			return it, err
 		}
 	}
 	if as.NotificationActivityTypes.Contains(it.GetType()) {
-		act, err = NotificationActivity(l, act)
+		act, err = NotificationActivity(r, act)
 		if err != nil {
 			return it, err
 		}
 	}
 	if as.QuestionActivityTypes.Contains(it.GetType()) {
-		act, err = QuestionActivity(l, act)
+		act, err = QuestionActivity(r, act)
 		if err != nil {
 			return it, err
 		}
 	}
 	if as.RelationshipManagementActivityTypes.Contains(it.GetType()) && act.Object.GetType() == as.RelationshipType {
-		act, err = RelationshipManagementActivity(l, act)
+		act, err = RelationshipManagementActivity(r, act)
 		if err == nil {
 			return act, errors.Annotatef(err, "%s activity processing failed", act.Type)
 		}
 	}
 	if as.NegatingActivityTypes.Contains(it.GetType()) {
-		act, err = NegatingActivity(l, act)
+		act, err = NegatingActivity(r, act)
 		if err != nil {
 			return it, err
 		}
 	}
 	if as.OffersActivityTypes.Contains(it.GetType()) {
-		act, err = OffersActivity(l, act)
+		act, err = OffersActivity(r, act)
 		if err != nil {
 			return it, err
 		}
@@ -122,11 +185,11 @@ func ProcessActivity(l s.Saver, it as.Item) (as.Item, error) {
 
 	iri := it.GetLink()
 	if len(iri) == 0 {
-		l.GenerateID(it, nil)
+		r.GenerateID(it, nil)
 	}
 
 	it = FlattenProperties(it)
-	return l.SaveActivity(it)
+	return r.SaveActivity(it)
 }
 
 // ContentManagementActivity processes matching activities
@@ -192,6 +255,14 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 
 			act.Object = o
 		}
+
+		if colSaver, ok := l.(s.CollectionSaver); ok {
+			act.Object, err = AddNewObjectCollections(colSaver, act.Object)
+			if err != nil {
+				return act, errors.Annotatef(err, "unable to add object collections to object %s", act.Object.GetLink())
+			}
+		}
+
 		act.Object, err = l.SaveObject(act.Object)
 	case as.UpdateType:
 		// TODO(marius): Move this piece of logic to the validation mechanism

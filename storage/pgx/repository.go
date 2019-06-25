@@ -272,10 +272,6 @@ func (r repo) SaveActivity(it as.Item) (as.Item, error) {
 	return it, err
 }
 
-func getCollectionID(actor as.Item, c handlers.CollectionType) as.ObjectID {
-	return as.ObjectID(fmt.Sprintf("%s/%s", actor.GetLink(), c))
-}
-
 func getCollectionIRI(actor as.Item, c handlers.CollectionType) as.IRI {
 	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
@@ -403,75 +399,10 @@ func (r repo) AddToCollection(col as.IRI, it as.Item) error {
 	return nil
 }
 
-func getCollection (it as.Item, c handlers.CollectionType) as.CollectionInterface {
-	return &as.OrderedCollection{
-		Parent: as.Parent{
-			ID:   getCollectionID(it, c),
-			Type: as.OrderedCollectionType,
-		},
-	}
-}
-
 func saveToDb(l repo, table string, it as.Item) (as.Item, error) {
 	query := fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3::timestamptz, $4, $5::jsonb);", table)
 
 	iri := it.GetLink()
-	if len(iri) == 0 {
-		// TODO(marius): this needs to be in a different place
-		if _, err := l.GenerateID(it, nil); err != nil {
-			return it, err
-		}
-	}
-	if as.ActorTypes.Contains(it.GetType()) {
-		if p, err := ap.ToPerson(it); err == nil {
-			if in, err := l.CreateCollection(getCollection(it, handlers.Inbox)); err != nil {
-				return it, err
-			} else {
-				p.Inbox = in.GetLink()
-			}
-			if out, err := l.CreateCollection(getCollection(it, handlers.Outbox)); err != nil {
-				return it, err
-			} else {
-				p.Outbox = out.GetLink()
-			}
-			if fers, err := l.CreateCollection(getCollection(it, handlers.Followers)); err != nil {
-				return it, err
-			} else {
-				p.Followers = fers.GetLink()
-			}
-			if fing, err := l.CreateCollection(getCollection(it, handlers.Following)); err != nil {
-				return it, err
-			} else {
-				p.Following = fing.GetLink()
-			}
-			if ld, err := l.CreateCollection(getCollection(it, handlers.Liked)); err != nil {
-				return it, err
-			} else {
-				p.Liked = ld.GetLink()
-			}
-			if ls, err := l.CreateCollection(getCollection(it, handlers.Likes)); err != nil {
-				return it, err
-			} else {
-				p.Likes = ls.GetLink()
-			}
-			if sh, err := l.CreateCollection(getCollection(it, handlers.Shares)); err != nil {
-				return it, err
-			} else {
-				p.Shares = sh.GetLink()
-			}
-			it = p
-		}
-	} else if as.ObjectTypes.Contains(it.GetType()) {
-		if o, err := as.ToObject(it); err == nil {
-			if repl, err := l.CreateCollection(getCollection(it, handlers.Replies)); err != nil {
-				return it, err
-			} else {
-				o.Replies = repl.GetLink()
-			}
-			it = o
-		}
-	}
-	iri = it.GetLink()
 	uuid := path.Base(iri.String())
 	if uuid == "." {
 		// broken ObjectID generation

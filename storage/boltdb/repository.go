@@ -7,7 +7,6 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
 	"github.com/sirupsen/logrus"
@@ -218,6 +217,9 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 			}
 			for uuid, _ := cb.First(); uuid != nil; uuid, _ = cb.Next() {
 				ib := bb.Bucket(uuid)
+				if ib == nil {
+					return nil
+				}
 				raw := ib.Get([]byte(objectKey))
 				if raw == nil || len(raw) == 0 {
 					return errors.Annotatef(err, "empty raw item")
@@ -287,20 +289,14 @@ func delete(r *repo, it as.Item) (as.Item, error) {
 	return save(r, t)
 }
 
-func getCollectionID(actor as.Item, c handlers.CollectionType) as.ObjectID {
-	return as.ObjectID(fmt.Sprintf("%s/%s", actor.GetLink(), c))
-}
-
-func getCollection(it as.Item, c handlers.CollectionType) as.CollectionInterface {
-	return &as.OrderedCollection{
-		Parent: as.Parent{
-			ID:   getCollectionID(it, c),
-			Type: as.OrderedCollectionType,
-		},
-	}
-}
-
 func (r *repo) CreateCollection(col as.CollectionInterface) (as.CollectionInterface, error) {
+	var err error
+	err = r.Open()
+	if err != nil {
+		return col, err
+	}
+	defer r.Close()
+
 	url, err := col.GetLink().URL()
 	if err != nil {
 		return col, err
@@ -350,55 +346,7 @@ func save(r *repo, it as.Item) (as.Item, error) {
 		}
 		return nil
 	})
-	if as.ActorTypes.Contains(it.GetType()) {
-		if p, err := ap.ToPerson(it); err == nil {
-			if in, err := r.CreateCollection(getCollection(p, handlers.Inbox)); err != nil {
-				return it, errors.Errorf("could not create bucket for collection %s", err)
-			} else {
-				p.Inbox = in.GetLink()
-			}
-			if out, err := r.CreateCollection(getCollection(p, handlers.Outbox)); err != nil {
-				return it, errors.Errorf("could not create bucket for collection %s", err)
-			} else {
-				p.Outbox = out.GetLink()
-			}
-			if fers, err := r.CreateCollection(getCollection(p, handlers.Followers)); err != nil {
-				return it, errors.Errorf("could not create bucket for collection %s", err)
-			} else {
-				p.Followers = fers.GetLink()
-			}
-			if fing, err := r.CreateCollection(getCollection(p, handlers.Following)); err != nil {
-				return it, errors.Errorf("could not create bucket for collection %s", err)
-			} else {
-				p.Following = fing.GetLink()
-			}
-			if ld, err := r.CreateCollection(getCollection(p, handlers.Liked)); err != nil {
-				return it, errors.Errorf("could not create bucket for collection %s", err)
-			} else {
-				p.Liked = ld.GetLink()
-			}
-			if ls, err := r.CreateCollection(getCollection(p, handlers.Likes)); err != nil {
-				return it, errors.Errorf("could not create bucket for collection %s", err)
-			} else {
-				p.Likes = ls.GetLink()
-			}
-			if sh, err := r.CreateCollection(getCollection(p, handlers.Shares)); err != nil {
-				return it, errors.Errorf("could not create bucket for collection %s", err)
-			} else {
-				p.Shares = sh.GetLink()
-			}
-			it = p
-		}
-	} else if as.ObjectTypes.Contains(it.GetType()) {
-		if o, err := as.ToObject(it); err == nil {
-			if repl, err := r.CreateCollection(getCollection(o, handlers.Replies)); err != nil {
-				return it, errors.Errorf("could not create bucket for collection %s", err)
-			} else {
-				o.Replies = repl.GetLink()
-			}
-			it = o
-		}
-	}
+
 	err = r.d.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
 		if root == nil {

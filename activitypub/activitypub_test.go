@@ -183,7 +183,7 @@ func TestGenerateID(t *testing.T) {
 	generateIDTests = append(generateIDTests, activitystreams.ObjectTypes...)
 	generateIDTests = append(generateIDTests, activitystreams.ActivityTypes...)
 	generateIDTests = append(generateIDTests, activitystreams.ActorTypes...)
-	partOf := activitystreams.IRI("http://example.com")
+	partOf := "http://example.com"
 	for _, typ := range generateIDTests {
 		it, err := ItemByType(typ)
 		if err != nil {
@@ -193,7 +193,7 @@ func TestGenerateID(t *testing.T) {
 		if err != nil {
 			t.Errorf("GenerateID failed: %s", err)
 		}
-		if !strings.Contains(string(id), partOf.String()) {
+		if !strings.Contains(string(id), partOf) {
 			t.Errorf("Invalid ObjectID: %s, does not contain base URL %s", id, partOf)
 		}
 		if id != *it.GetID() {
