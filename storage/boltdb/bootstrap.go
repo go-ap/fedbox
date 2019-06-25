@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/boltdb/bolt"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/handlers"
 )
 
 func Bootstrap(path string, rootBucket []byte, baseURL string) error {
@@ -47,8 +48,11 @@ func Bootstrap(path string, rootBucket []byte, baseURL string) error {
 				return errors.Errorf("could not create item bucket: %s", err)
 			}
 			iri := fmt.Sprintf("%s/%s/%s", baseURL, bucketActors, hash)
-			j := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s","type": "Service","name": "self","inbox": "%s/inbox", "audience": ["https://www.w3.org/ns/activitystreams#Public"]}`
-			a := fmt.Sprintf(j, iri, baseURL)
+			j := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s","type": "Service","name": "self", "inbox": "%s/inbox", "followers": "%s/followers",  "audience": ["https://www.w3.org/ns/activitystreams#Public"]}`
+			a := fmt.Sprintf(j, iri, baseURL, baseURL)
+			ib.Put([]byte(handlers.Inbox), nil)
+			ib.Put([]byte(handlers.Followers), nil)
+
 			err = ib.Put([]byte(objectKey), []byte(a))
 			if err != nil {
 				return errors.Errorf("could not insert entry: %s", err)

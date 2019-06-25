@@ -68,6 +68,7 @@ type objectVal struct {
 	inbox             *objectVal
 	outbox            *objectVal
 	following         *objectVal
+	followers         *objectVal
 	liked             *objectVal
 	act               *objectVal
 	obj               *objectVal
@@ -280,6 +281,13 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 				if tVal.following.typ != "" {
 					dCol := assertGetRequest(tVal.following.id)
 					assertObjectProperties(dCol, tVal.following)
+				}
+			}
+			if tVal.followers != nil {
+				assertMapKey(ob, "followers", tVal.followers)
+				if tVal.followers.typ != "" {
+					dCol := assertGetRequest(tVal.followers.id)
+					assertObjectProperties(dCol, tVal.followers)
 				}
 			}
 			if tVal.act != nil {

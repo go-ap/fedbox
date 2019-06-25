@@ -90,6 +90,12 @@ var C2STests = testPairs{
 					audience: []string{
 						"https://www.w3.org/ns/activitystreams#Public",
 					},
+					inbox: &objectVal {
+						id: fmt.Sprintf("%s/inbox", baseURL),
+					},
+					followers: &objectVal {
+						id: fmt.Sprintf("%s/followers", baseURL),
+					},
 				},
 			},
 		},
@@ -106,7 +112,7 @@ var C2STests = testPairs{
 				val: &objectVal{
 					typ: string(as.CreateType),
 					act: &objectVal{
-						id: selfAccount.id,
+						id:  selfAccount.id,
 						typ: string(as.ServiceType),
 					},
 				},
@@ -125,7 +131,7 @@ var C2STests = testPairs{
 				val: &objectVal{
 					typ: string(as.UpdateType),
 					act: &objectVal{
-						id: selfAccount.id,
+						id:  selfAccount.id,
 						typ: string(as.ServiceType),
 					},
 				},
@@ -144,7 +150,7 @@ var C2STests = testPairs{
 				val: &objectVal{
 					typ: string(as.DeleteType),
 					act: &objectVal{
-						id: selfAccount.id,
+						id:  selfAccount.id,
 						typ: string(as.TombstoneType),
 					},
 				},
@@ -163,7 +169,7 @@ var C2STests = testPairs{
 				val: &objectVal{
 					typ: string(as.CreateType),
 					act: &objectVal{
-						id: selfAccount.id,
+						id:  selfAccount.id,
 						typ: string(as.ServiceType),
 					},
 					obj: &objectVal{
