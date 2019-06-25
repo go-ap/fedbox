@@ -447,23 +447,9 @@ func (r *repo) SaveObject(it as.Item) (as.Item, error) {
 		return it, err
 	}
 	defer r.Close()
-	var bucket string
-	if as.ActivityTypes.Contains(it.GetType()) {
-		bucket = bucketActivities
-	} else if as.ActorTypes.Contains(it.GetType()) {
-		bucket = bucketActors
-	} else {
-		bucket = bucketObjects
-	}
-	iri := it.GetLink()
-	if len(iri) == 0 {
-		pc := as.IRI(fmt.Sprintf("%s/%s", r.baseURL, bucket))
-		if _, err = r.GenerateID(it, pc, nil); err != nil {
-			return it, err
-		}
-	}
+
 	if it, err = save(r, it); err == nil {
-		r.logFn(nil, "Added new %s: %s", bucket[:len(bucket)-1], it.GetLink())
+		r.logFn(nil, "Added new %s: %s", it.GetType(), it.GetLink())
 	}
 
 	// TODO(marius) Move to somewhere else
@@ -576,7 +562,16 @@ func (r *repo) DeleteObject(it as.Item) (as.Item, error) {
 }
 
 // GenerateID
-func (r *repo) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
+func (r *repo) GenerateID(it as.Item, by as.Item) (as.ObjectID, error) {
+	typ := it.GetType()
+	var partOf string
+	if as.ActivityTypes.Contains(typ) {
+		partOf = fmt.Sprintf("%s/activities", r.baseURL)
+	} else if as.ActorTypes.Contains(typ) {
+		partOf = fmt.Sprintf("%s/actors", r.baseURL)
+	} else if as.ObjectTypes.Contains(typ) {
+		partOf = fmt.Sprintf("%s/objects", r.baseURL)
+	}
 	return ap.GenerateID(it, partOf, by)
 }
 

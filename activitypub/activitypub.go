@@ -596,9 +596,9 @@ func UpdateItemProperties(to, from as.Item) (as.Item, error) {
 }
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.
-func GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
+func GenerateID(it as.Item, partOf string, by as.Item) (as.ObjectID, error) {
 	uuid := uuid.New()
-	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(string(partOf)), uuid))
+	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(partOf), uuid))
 	if as.ActivityTypes.Contains(it.GetType()) {
 		a, err := ToActivity(it)
 		if err != nil {

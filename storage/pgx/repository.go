@@ -415,64 +415,62 @@ func getCollection (it as.Item, c handlers.CollectionType) as.CollectionInterfac
 func saveToDb(l repo, table string, it as.Item) (as.Item, error) {
 	query := fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3::timestamptz, $4, $5::jsonb);", table)
 
-	pc := as.IRI(fmt.Sprintf("%s/%s", l.baseURL, table))
 	iri := it.GetLink()
 	if len(iri) == 0 {
 		// TODO(marius): this needs to be in a different place
-		if _, err := l.GenerateID(it, pc, nil); err != nil {
+		if _, err := l.GenerateID(it, nil); err != nil {
 			return it, err
 		}
-		if as.ActorTypes.Contains(it.GetType()) {
-			if p, err := ap.ToPerson(it); err == nil {
-				if in, err := l.CreateCollection(getCollection(it, handlers.Inbox)); err != nil {
-					return it, err
-				} else {
-					p.Inbox = in.GetLink()
-				}
-				if out, err := l.CreateCollection(getCollection(it, handlers.Outbox)); err != nil {
-					return it, err
-				} else {
-					p.Outbox = out.GetLink()
-				}
-				if fers, err := l.CreateCollection(getCollection(it, handlers.Followers)); err != nil {
-					return it, err
-				} else {
-					p.Followers = fers.GetLink()
-				}
-				if fing, err := l.CreateCollection(getCollection(it, handlers.Following)); err != nil {
-					return it, err
-				} else {
-					p.Following = fing.GetLink()
-				}
-				if ld, err := l.CreateCollection(getCollection(it, handlers.Liked)); err != nil {
-					return it, err
-				} else {
-					p.Liked = ld.GetLink()
-				}
-				if ls, err := l.CreateCollection(getCollection(it, handlers.Likes)); err != nil {
-					return it, err
-				} else {
-					p.Likes = ls.GetLink()
-				}
-				if sh, err := l.CreateCollection(getCollection(it, handlers.Shares)); err != nil {
-					return it, err
-				} else {
-					p.Shares = sh.GetLink()
-				}
-				it = p
+	}
+	if as.ActorTypes.Contains(it.GetType()) {
+		if p, err := ap.ToPerson(it); err == nil {
+			if in, err := l.CreateCollection(getCollection(it, handlers.Inbox)); err != nil {
+				return it, err
+			} else {
+				p.Inbox = in.GetLink()
 			}
-		} else if as.ObjectTypes.Contains(it.GetType()) {
-			if o, err := as.ToObject(it); err == nil {
-				if repl, err := l.CreateCollection(getCollection(it, handlers.Replies)); err != nil {
-					return it, err
-				} else {
-					o.Replies = repl.GetLink()
-				}
-				it = o
+			if out, err := l.CreateCollection(getCollection(it, handlers.Outbox)); err != nil {
+				return it, err
+			} else {
+				p.Outbox = out.GetLink()
 			}
+			if fers, err := l.CreateCollection(getCollection(it, handlers.Followers)); err != nil {
+				return it, err
+			} else {
+				p.Followers = fers.GetLink()
+			}
+			if fing, err := l.CreateCollection(getCollection(it, handlers.Following)); err != nil {
+				return it, err
+			} else {
+				p.Following = fing.GetLink()
+			}
+			if ld, err := l.CreateCollection(getCollection(it, handlers.Liked)); err != nil {
+				return it, err
+			} else {
+				p.Liked = ld.GetLink()
+			}
+			if ls, err := l.CreateCollection(getCollection(it, handlers.Likes)); err != nil {
+				return it, err
+			} else {
+				p.Likes = ls.GetLink()
+			}
+			if sh, err := l.CreateCollection(getCollection(it, handlers.Shares)); err != nil {
+				return it, err
+			} else {
+				p.Shares = sh.GetLink()
+			}
+			it = p
+		}
+	} else if as.ObjectTypes.Contains(it.GetType()) {
+		if o, err := as.ToObject(it); err == nil {
+			if repl, err := l.CreateCollection(getCollection(it, handlers.Replies)); err != nil {
+				return it, err
+			} else {
+				o.Replies = repl.GetLink()
+			}
+			it = o
 		}
 	}
-
 	iri = it.GetLink()
 	uuid := path.Base(iri.String())
 	if uuid == "." {
@@ -605,7 +603,16 @@ func (r repo) DeleteActor(it as.Item) (as.Item, error) {
 }
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.
-func (r repo) GenerateID(it as.Item, partOf as.IRI, by as.Item) (as.ObjectID, error) {
+func (r repo) GenerateID(it as.Item, by as.Item) (as.ObjectID, error) {
+	typ := it.GetType()
+	var partOf string
+	if as.ActivityTypes.Contains(typ) {
+		partOf = fmt.Sprintf("%s/activities", r.baseURL)
+	} else if as.ActorTypes.Contains(typ) {
+		partOf = fmt.Sprintf("%s/actors", r.baseURL)
+	} else if as.ObjectTypes.Contains(typ) {
+		partOf = fmt.Sprintf("%s/objects", r.baseURL)
+	}
 	return ap.GenerateID(it, partOf, by)
 }
 

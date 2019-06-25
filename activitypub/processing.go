@@ -120,6 +120,11 @@ func ProcessActivity(l s.Saver, it as.Item) (as.Item, error) {
 		}
 	}
 
+	iri := it.GetLink()
+	if len(iri) == 0 {
+		l.GenerateID(it, nil)
+	}
+
 	it = FlattenProperties(it)
 	return l.SaveActivity(it)
 }
@@ -133,6 +138,10 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 	now := time.Now().UTC()
 	switch act.Type {
 	case as.CreateType:
+		iri := act.Object.GetLink()
+		if len(iri) == 0 {
+			l.GenerateID(act.Object, act)
+		}
 		// TODO(marius) Add function as.AttributedTo(it as.Item, auth as.Item)
 		if a, err := ToActivity(act.Object); err == nil {
 			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
