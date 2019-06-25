@@ -93,8 +93,8 @@ var C2STests = testPairs{
 					inbox: &objectVal {
 						id: fmt.Sprintf("%s/inbox", baseURL),
 					},
-					followers: &objectVal {
-						id: fmt.Sprintf("%s/followers", baseURL),
+					following: &objectVal {
+						id: fmt.Sprintf("%s/following", baseURL),
 					},
 				},
 			},

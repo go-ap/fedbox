@@ -48,10 +48,10 @@ func Bootstrap(path string, rootBucket []byte, baseURL string) error {
 				return errors.Errorf("could not create item bucket: %s", err)
 			}
 			iri := fmt.Sprintf("%s/%s/%s", baseURL, bucketActors, hash)
-			j := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s","type": "Service","name": "self", "inbox": "%s/inbox", "followers": "%s/followers",  "audience": ["https://www.w3.org/ns/activitystreams#Public"]}`
+			j := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s","type": "Service","name": "self", "inbox": "%s/inbox", "following": "%s/following",  "audience": ["https://www.w3.org/ns/activitystreams#Public"]}`
 			a := fmt.Sprintf(j, iri, baseURL, baseURL)
 			ib.Put([]byte(handlers.Inbox), nil)
-			ib.Put([]byte(handlers.Followers), nil)
+			ib.Put([]byte(handlers.Following), nil)
 
 			err = ib.Put([]byte(objectKey), []byte(a))
 			if err != nil {
