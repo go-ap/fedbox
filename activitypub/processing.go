@@ -211,6 +211,11 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 			// Copying the actor's IRI to the object's AttributedTo
 			a.AttributedTo = act.Actor.GetLink()
 
+			// Setting the Generator to the current service if not specified explicitly
+			if a.Generator == nil && len(ServiceIRI) > 0 {
+				a.Generator = ServiceIRI
+			}
+
 			aRec := act.Recipients()
 			// Copying the activity's recipients to the object's
 			a.Audience = aRec
@@ -227,6 +232,11 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 			// Copying the actor's IRI to the object's AttributedTo
 			p.AttributedTo = act.Actor.GetLink()
 
+			// Setting the Generator to the current service if not specified explicitly
+			if p.Generator == nil && len(ServiceIRI) > 0 {
+				p.Generator = ServiceIRI
+			}
+
 			aRec := act.Recipients()
 			// Copying the activity's recipients to the object's
 			p.Audience = aRec
@@ -242,6 +252,11 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
 			// Copying the actor's IRI to the object's AttributedTo
 			o.AttributedTo = act.Actor.GetLink()
+
+			// Setting the Generator to the current service if not specified explicitly
+			if o.Generator == nil && len(ServiceIRI) > 0 {
+				o.Generator = ServiceIRI
+			}
 
 			aRec := act.Recipients()
 			// Copying the activity's recipients to the object's
