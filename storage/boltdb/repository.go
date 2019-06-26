@@ -280,7 +280,7 @@ func delete(r *repo, it as.Item) (as.Item, error) {
 			ID:   as.ObjectID(it.GetLink()),
 			Type: as.TombstoneType,
 			To: as.ItemCollection{
-				ap.Public,
+				ap.ActivityStreamsPublicNS,
 			},
 		},
 		Deleted:    time.Now().UTC(),

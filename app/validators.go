@@ -171,7 +171,7 @@ func (v genericValidator) ValidateAudience(typ h.CollectionType, audience ...as.
 			if err := validateLocalIRI(iri.GetLink()); err == nil {
 				return nil
 			}
-			if iri.GetLink() == activitypub.Public {
+			if iri.GetLink() == activitypub.ActivityStreamsPublicNS {
 				return nil
 			}
 		}

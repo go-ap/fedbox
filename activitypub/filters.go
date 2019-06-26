@@ -200,7 +200,7 @@ func (f *Filters) GetWhereClauses() ([]string, []interface{}) {
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'audience' ~* $%d`, counter))
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
 		if f.To == nil {
-			values = append(values, interface{}(Public))
+			values = append(values, interface{}(ActivityStreamsPublicNS))
 		}
 	}
 
