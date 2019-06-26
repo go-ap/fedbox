@@ -25,15 +25,15 @@ TEST := $(GO) test $(BUILDFLAGS)
 
 .PHONY: all run clean test coverage integration
 
-all: app boltbootstrap
+all: app bootstrap
 
 app: bin/app
 bin/app: go.mod main.go $(APPSOURCES)
 	$(BUILD) -tags $(ENV) -o $@ ./main.go
 
-boltbootstrap: bin/boltbootstrap $(wildcard storage/boltdb/*.go)
-bin/boltbootstrap: go.mod cli/boltbootstrap/main.go
-	$(BUILD) -tags $(ENV) -o $@ cli/boltbootstrap/main.go
+bootstrap: bin/bootstrap $(wildcard storage/boltdb/*.go)
+bin/bootstrap: go.mod cli/bootstrap/main.go
+	$(BUILD) -tags $(ENV) -o $@ cli/bootstrap/main.go
 
 run: app
 	@./bin/app
