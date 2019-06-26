@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/boltdb/bolt"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
 )
 
@@ -42,14 +43,12 @@ func Bootstrap(path string, rootBucket []byte, baseURL string) error {
 		// Service actor
 		act := tx.Bucket(rootBucket).Bucket([]byte(bucketActors))
 		{
-			hash := "d3ab037c-0f15-4c09-b635-3d6e201c11aa"
-			ib, err := act.CreateBucketIfNotExists([]byte(hash))
+			ib, err := act.CreateBucketIfNotExists([]byte(activitypub.ServiceHash))
 			if err != nil {
 				return errors.Errorf("could not create item bucket: %s", err)
 			}
-			iri := fmt.Sprintf("%s/%s/%s", baseURL, bucketActors, hash)
 			j := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s","type": "Service","name": "self", "inbox": "%s/inbox", "following": "%s/following",  "audience": ["https://www.w3.org/ns/activitystreams#Public"]}`
-			a := fmt.Sprintf(j, iri, baseURL, baseURL)
+			a := fmt.Sprintf(j, activitypub.DefaultServiceIRI(baseURL), baseURL, baseURL)
 			ib.Put([]byte(handlers.Inbox), nil)
 			ib.Put([]byte(handlers.Following), nil)
 

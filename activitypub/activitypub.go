@@ -11,6 +11,12 @@ import (
 )
 
 const Public = as.IRI("https://www.w3.org/ns/activitystreams#Public")
+const ServiceHash = Hash("d3ab037c-0f15-4c09-b635-3d6e201c11aa")
+var ServiceIRI as.IRI
+
+func DefaultServiceIRI(baseURL string) as.IRI {
+	return as.IRI(fmt.Sprintf("%s/actors/%s", baseURL, ServiceHash))
+}
 
 // PublicKey holds the ActivityPub compatible public key data
 type PublicKey struct {

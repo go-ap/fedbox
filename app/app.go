@@ -20,7 +20,6 @@ import (
 type CtxtKey string
 
 var actorKey = CtxtKey("__actor")
-
 func actorLoader(ctx context.Context) (st.ActorLoader, bool) {
 	ctxVal := ctx.Value(handlers.RepositoryKey)
 	s, ok := ctxVal.(st.ActorLoader)
@@ -68,6 +67,7 @@ func New(l logrus.FieldLogger, ver string, environment string) *Fedbox {
 	}
 	errors.IncludeBacktrace = app.conf.Env == env.DEV || app.conf.Env == env.TEST
 	as.ItemTyperFunc = ap.ItemByType
+	ap.ServiceIRI = ap.DefaultServiceIRI(app.conf.BaseURL)
 	return &app
 }
 
