@@ -105,14 +105,14 @@ create table collections (
 );
 -- name: insert-service-actor
 insert into actors ("key", "iri", "type", "raw")
-values ('d3ab037c-0f15-4c09-b635-3d6e201c11aa', 'http://fedbox.git/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa', 'Service', '{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "http://fedbox.git/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa","type": "Service","name": "self","inbox": "http://fedbox.git/inbox", "audience": [
-  "https://www.w3.org/ns/activitystreams#Public"]}');
--- name: insert-activities-collection
+values ('%s', '%s', 'Service', '{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s","type": "Service","name": "self","inbox": "%s", "following": "%s", "audience": ["%s"]}');
 -- if we want to have an accessible inbox collection we add it to the table
 -- insert into collections ("iri", "type") values ('http://fedbox.git/inbox', 'OrderedCollection');
-insert into collections ("iri", "type") values ('http://fedbox.git/activities', 'OrderedCollection');
+-- name: insert-activities-collection
+insert into collections ("iri", "type") values ('%s', 'OrderedCollection');
 -- name: insert-actors-collection
-insert into collections ("iri", "type") values ('http://fedbox.git/actors', 'OrderedCollection');
-update collections set count = 1, elements = array_append(elements, 'http://fedbox.git/actors/d3ab037c-0f15-4c09-b635-3d6e201c11aa') WHERE iri = 'http://fedbox.git/actors';
+insert into collections ("iri", "type") values ('%s', 'OrderedCollection');
+-- name: insert-service-actor
+update collections set count = 1, elements = array_append(elements, '%s') WHERE iri = '%s';
 -- name: insert-objects-collection
-insert into collections ("iri", "type") values ('http://fedbox.git/objects', 'OrderedCollection');
+insert into collections ("iri", "type") values ('%s', 'OrderedCollection');
