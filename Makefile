@@ -31,8 +31,8 @@ app: bin/app
 bin/app: go.mod main.go $(APPSOURCES)
 	$(BUILD) -tags $(ENV) -o $@ ./main.go
 
-bootstrap: bin/bootstrap $(wildcard storage/boltdb/*.go)
-bin/bootstrap: go.mod cli/bootstrap/main.go
+bootstrap: bin/bootstrap
+bin/bootstrap: go.mod $(wildcard storage/*/*.go) cli/bootstrap/main.go
 	$(BUILD) -tags $(ENV) -o $@ cli/bootstrap/main.go
 
 run: app
