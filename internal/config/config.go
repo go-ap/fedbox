@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/joho/godotenv"
@@ -103,28 +102,16 @@ func LoadFromEnv(e string) (Options, error) {
 	}
 
 	conf.Listen = os.Getenv(k(KeyListen))
-
 	envStorage := os.Getenv(k(KeyStorage))
 	conf.Storage = StorageType(strings.ToLower(envStorage))
-	switch conf.Storage {
-	case BoltDB:
-		conf.BoltDBPath = fmt.Sprintf("%s/%s-%s.bdb", os.TempDir(), path.Clean(conf.Host), conf.Env)
-	case "":
-		conf.Storage = Postgres
-		fallthrough
-	case Postgres:
-		conf.DB.Host = os.Getenv(k(KeyDBHost))
-		conf.DB.Pw = os.Getenv(k(KeyDBPw))
-		conf.DB.Name = os.Getenv(k(KeyDBName))
-		var err error
-		if conf.DB.Port, err = strconv.ParseInt(os.Getenv(k(KeyDBPort)), 10, 32); err != nil {
-			conf.DB.Port = 5432
-		}
-
-		conf.DB.User = os.Getenv(k(KeyDBUser))
-
-	default:
-		return conf, errors.Errorf("Invalid STORAGE value %s", envStorage)
+	conf.BoltDBPath = fmt.Sprintf("%s/%s-%s.bdb", os.TempDir(), path.Clean(conf.Host), conf.Env)
+	conf.DB.Host = os.Getenv(k(KeyDBHost))
+	conf.DB.Pw = os.Getenv(k(KeyDBPw))
+	conf.DB.Name = os.Getenv(k(KeyDBName))
+	conf.DB.User = os.Getenv(k(KeyDBUser))
+	var err error
+	if conf.DB.Port, err = strconv.ParseInt(os.Getenv(k(KeyDBPort)), 10, 32); err != nil {
+		conf.DB.Port = 5432
 	}
 
 	return conf, nil
