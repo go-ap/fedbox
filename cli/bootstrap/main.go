@@ -51,10 +51,10 @@ func main() {
 			dir, _ := os.Getwd()
 			file = path.Join(dir, "init.sql")
 		}
-		err = pgx.Bootstrap(conf.DB, pgRoot, pgPw, file)
+		err = pgx.Bootstrap(conf, pgRoot, pgPw, file)
 	}
 	if err != nil {
-		errf("Unable to update %s db: %s", typ, err)
+		errf("Unable to update %s db: %s\n", typ, err)
 		os.Exit(1)
 	}
 	fmt.Println("OK")

@@ -19,10 +19,24 @@ func openConn(c pgx.ConnConfig) (*pgx.ConnPool, error) {
 	})
 }
 
-func Bootstrap(conf config.BackendConfig, rootUser string, rootPw []byte, path string) error {
+func Bootstrap(opt config.Options, rootUser string, rootPw []byte, path string) error {
 	log := logrus.New()
 	var conn *pgx.ConnPool
 	var err error
+
+	conf := opt.DB
+	if conf.User == "" {
+		return errors.Newf("empty user")
+	}
+	if conf.Name == "" {
+		return errors.Newf("empty name")
+	}
+	if conf.Host == "" {
+		return errors.Newf("empty host")
+	}
+	if opt.BaseURL == "" {
+		return errors.Newf("empty base URL")
+	}
 
 	conn, err = openConn(pgx.ConnConfig{
 		Host:     conf.Host,
@@ -97,9 +111,9 @@ func Bootstrap(conf config.BackendConfig, rootUser string, rootPw []byte, path s
 	if err != nil {
 		return err
 	}
-	url := activitypub.DefaultServiceIRI("")
+	url := activitypub.DefaultServiceIRI(opt.BaseURL)
 	inbox := fmt.Sprintf("%s/inbox", url)
-	following := fmt.Sprintf("%s/follwoing", url)
+	following := fmt.Sprintf("%s/following", url)
 	err = exec("insert-service-actor", activitypub.ServiceHash, url, url, inbox, following, activitypub.ActivityStreamsPublicNS)
 	if err != nil {
 		return err
@@ -116,10 +130,6 @@ func Bootstrap(conf config.BackendConfig, rootUser string, rootPw []byte, path s
 	}
 	actors := fmt.Sprintf("%s/%s",url, activitypub.ActorsType)
 	err = exec("insert-actors-collection", actors)
-	if err != nil {
-		return err
-	}
-	err = exec("insert-service-actor", url, actors)
 	if err != nil {
 		return err
 	}
