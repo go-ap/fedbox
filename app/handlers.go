@@ -53,32 +53,32 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 }
 
 // HandleRequest handles POST requests to an ActivityPub To's inbox/outbox, based on the CollectionType
-func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repository) (as.IRI, int, error) {
+func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repository) (as.Item, int, error) {
 	var err error
+	var it as.Item
 
 	ff, err := activitypub.FromRequest(r)
 	if err != nil {
-		return "", 0, errors.NewNotValid(err, "Unable to load filters from request")
+		return it, 0, errors.NewNotValid(err, "Unable to load filters from request")
 	}
 	f, ok := ff.(*activitypub.Filters)
 	if ok {
 		LoadItemFilters(r, f)
 	}
 
-	var it as.Item
 	if body, err := ioutil.ReadAll(r.Body); err != nil || len(body) == 0 {
-		return "", http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
+		return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
 	} else {
 		if it, err = as.UnmarshalJSON(body); err != nil {
-			return "", http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
+			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
 	}
 	validator, ok := ActivityValidatorCtxt(r.Context())
 	if ok == false {
-		return "", http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity validator")
+		return it, http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity validator")
 	}
 	if err = validator.ValidateActivity(typ, it); err != nil {
-		return "", http.StatusBadRequest, errors.NewBadRequest(err, "%s activity failed validation", it.GetType())
+		return it, http.StatusBadRequest, errors.NewBadRequest(err, "%s activity failed validation", it.GetType())
 	}
 
 	if typ == h.Outbox {
@@ -92,7 +92,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	}
 
 	if it, err = activitypub.ProcessActivity(repo, it); err != nil {
-		return "", http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
+		return it, http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 	}
 
 	status := http.StatusCreated
@@ -100,7 +100,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		status = http.StatusGone
 	}
 
-	return it.GetLink(), status, nil
+	return it, status, nil
 }
 
 // HandleItem serves content from the following, followers, liked, and likes end-points
