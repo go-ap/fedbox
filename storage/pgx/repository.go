@@ -66,27 +66,15 @@ func New(conf config.BackendConfig, url string, lp logrus.FieldLogger) (*repo, e
 	return &l, nil
 }
 
-func (r repo) LoadActivities(ff s.Filterable) (as.ItemCollection, uint, error) {
-	f, ok := ff.(ap.Filters)
-	if !ok {
-		return nil, 0, errors.Newf("Invalid ActivityPub filters")
-	}
+func (r repo) LoadActivities(f s.Filterable) (as.ItemCollection, uint, error) {
 	return loadFromDb(r.conn, "activities", f)
 }
 
-func (r repo) LoadActors(ff s.Filterable) (as.ItemCollection, uint, error) {
-	f, ok := ff.(ap.Filters)
-	if !ok {
-		return nil, 0, errors.Newf("Invalid ActivityPub filters")
-	}
+func (r repo) LoadActors(f s.Filterable) (as.ItemCollection, uint, error) {
 	return loadFromDb(r.conn, "actors", f)
 }
 
-func (r repo) LoadObjects(ff s.Filterable) (as.ItemCollection, uint, error) {
-	f, ok := ff.(ap.Filters)
-	if !ok {
-		return nil, 0, errors.Newf("Invalid ActivityPub filters")
-	}
+func (r repo) LoadObjects(f s.Filterable) (as.ItemCollection, uint, error) {
 	return loadFromDb(r.conn, "objects", f)
 }
 
@@ -119,11 +107,7 @@ func getCollectionTable(typ handlers.CollectionType) string {
 }
 
 func (r repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
-	id := ff.GetLink()
-	colFilters := ap.Filters{
-		IRI: id,
-	}
-	clauses, values := getWhereClauses(colFilters)
+	clauses, values := getWhereClauses(ff)
 
 	var ret as.CollectionInterface
 	sel := fmt.Sprintf("SELECT id, iri, created_at::timestamptz, type, count, elements FROM collections WHERE %s ORDER BY created_at DESC LIMIT 1", strings.Join(clauses, " AND "))
@@ -217,7 +201,7 @@ func (r repo) Load(ff s.Filterable) (as.ItemCollection, uint, error) {
 	return nil, 0, errors.NotImplementedf("not implemented loader.Load()")
 }
 
-func loadFromDb(conn *pgx.ConnPool, table string, f ap.Filters) (as.ItemCollection, uint, error) {
+func loadFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (as.ItemCollection, uint, error) {
 	clauses, values := getWhereClauses(f)
 	var total uint = 0
 

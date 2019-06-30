@@ -26,14 +26,11 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 	var items as.CollectionInterface
 	var err error
 
-	ff, err := activitypub.FromRequest(r)
+	f, err := activitypub.FromRequest(r)
 	if err != nil {
 		return nil, errors.NewNotValid(err, "Unable to load filters from request")
 	}
-	f, ok := ff.(*activitypub.Filters)
-	if ok {
-		LoadItemFilters(r, f)
-	}
+	LoadItemFilters(r, &f)
 
 	if !activitypub.ValidActivityCollection(string(typ)) {
 		return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
@@ -41,7 +38,7 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 
 	items, err = repo.LoadCollection(f)
 	if err != nil {
-		topLevelCollection := func(f *activitypub.Filters) bool {
+		topLevelCollection := func(f activitypub.Filters) bool {
 			return f.Author == nil && f.Parent == nil && f.To == nil
 		}(f)
 		if topLevelCollection && (f.Collection == h.Inbox || f.Collection == h.Outbox) {
@@ -49,7 +46,7 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 		}
 		return nil, err
 	}
-	return activitypub.PaginateCollection(items, f)
+	return activitypub.PaginateCollection(items, &f)
 }
 
 // HandleRequest handles POST requests to an ActivityPub To's inbox/outbox, based on the CollectionType
@@ -57,14 +54,11 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	var err error
 	var it as.Item
 
-	ff, err := activitypub.FromRequest(r)
+	f, err := activitypub.FromRequest(r)
 	if err != nil {
 		return it, 0, errors.NewNotValid(err, "Unable to load filters from request")
 	}
-	f, ok := ff.(*activitypub.Filters)
-	if ok {
-		LoadItemFilters(r, f)
-	}
+	LoadItemFilters(r, &f)
 
 	if body, err := ioutil.ReadAll(r.Body); err != nil || len(body) == 0 {
 		return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
@@ -110,14 +104,11 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 
 	var items as.ItemCollection
 	var err error
-	ff, err := activitypub.FromRequest(r)
+	f, err := activitypub.FromRequest(r)
 	if err != nil {
 		return nil, errors.NotFoundf("Not found %s", collection)
 	}
-	f, ok := ff.(*activitypub.Filters)
-	if ok {
-		LoadItemFilters(r, f)
-	}
+	LoadItemFilters(r, &f)
 
 	iri := reqURL(r)
 	if len(f.ItemKey) == 0 {

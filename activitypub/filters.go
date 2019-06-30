@@ -5,7 +5,6 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	h "github.com/go-ap/handlers"
-	"github.com/go-ap/storage"
 	"github.com/mariusor/qstring"
 	"net/http"
 	"strings"
@@ -108,12 +107,12 @@ func copyActivityFilters(dst *Filters, src Filters) {
 }
 
 // Page
-func (f *Filters) Page() uint {
+func (f Filters) Page() uint {
 	return f.CurPage
 }
 
 // Count
-func (f *Filters) Count() uint {
+func (f Filters) Count() uint {
 	return f.MaxItems
 }
 
@@ -124,9 +123,9 @@ var ErrNotFound = func(s string) error {
 }
 
 // FromRequest loads the filters we use for generating storage queries from the HTTP request
-func FromRequest(r *http.Request) (storage.Filterable, error) {
-	f := &Filters{}
-	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
+func FromRequest(r *http.Request) (Filters, error) {
+	f := Filters{}
+	if err := qstring.Unmarshal(r.URL.Query(), &f); err != nil {
 		return f, err
 	}
 	f.Collection = h.Typer.Type(r)
