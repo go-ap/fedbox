@@ -284,7 +284,37 @@ func ContentManagementActivity(l s.Saver, act *as.Activity) (*as.Activity, error
 		if len(act.Object.GetLink()) == 0 {
 			return act, errors.Newf("unable to update object without a valid object id")
 		}
-		act.Object, err = l.UpdateObject(act.Object)
+
+		ob := act.Object
+		var cnt uint
+		if as.ActivityTypes.Contains(ob.GetType()) {
+			return act, errors.Newf("unable to update activity")
+		}
+
+		var found as.ItemCollection
+		typ := ob.GetType()
+		if loader, ok := l.(s.ActorLoader); ok && as.ActorTypes.Contains(typ) {
+			found, cnt, _ = loader.LoadActors(&Filters{
+				IRI:  ob.GetLink(),
+				Type: []as.ActivityVocabularyType{typ},
+			})
+		}
+		if loader, ok := l.(s.ObjectLoader); ok && as.ObjectTypes.Contains(typ) {
+			found, cnt, _ = loader.LoadObjects(&Filters{
+				IRI:  ob.GetLink(),
+				Type: []as.ActivityVocabularyType{typ},
+			})
+		}
+		if len(ob.GetLink()) == 0 {
+			return act, err
+		}
+
+		if cnt == 0 {
+			return act, errors.NotFoundf("Unable to find %s %s", ob.GetType(), ob.GetLink(), )
+		}
+		ob, err = UpdateItemProperties(found[0], ob)
+
+		act.Object, err = l.UpdateObject(ob)
 	case as.DeleteType:
 		// TODO(marius): Move this piece of logic to the validation mechanism
 		if len(act.Object.GetLink()) == 0 {

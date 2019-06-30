@@ -473,49 +473,19 @@ func (r repo) UpdateObject(it as.Item) (as.Item, error) {
 	}
 	var err error
 	var table string
-	var found as.ItemCollection
-	var cnt uint
 	label := "item"
 	if as.ActivityTypes.Contains(it.GetType()) {
 		return nil, errors.Newf("unable to update activity")
 	} else if as.ActorTypes.Contains(it.GetType()) {
 		label = "actor"
 		table = "actors"
-		found, cnt, _ = r.LoadActors(&ap.Filters{
-			ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
-			Type:    []as.ActivityVocabularyType{it.GetType()},
-		})
 	} else {
 		label = "object"
 		table = "objects"
-		found, cnt, _ = r.LoadObjects(&ap.Filters{
-			ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
-			Type:    []as.ActivityVocabularyType{it.GetType()},
-		})
 	}
 	if len(it.GetLink()) == 0 {
 		err := errors.NotFoundf("Unable to update %s with no ID", label)
 		return it, err
-	}
-
-	if cnt == 0 {
-		err := errors.NotFoundf("%s %s", it.GetLink(), label)
-		r.errFn(logrus.Fields{
-			"type": it.GetType(),
-			"iri":  it.GetLink(),
-			"err":  err.Error(),
-		}, "unable to find old item")
-		return it, err
-	}
-	old := found[0]
-	it, err = ap.UpdateItemProperties(old, it)
-	if err != nil {
-		r.errFn(logrus.Fields{
-			"table": table,
-			"type":  old.GetType(),
-			"iri":   old.GetLink(),
-			"err":   err.Error(),
-		}, "Invalid")
 	}
 
 	it, err = r.updateItem(table, it)
