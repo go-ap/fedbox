@@ -169,3 +169,15 @@ func TestGenerateID(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultServiceIRI(t *testing.T) {
+	t.Skipf("TODO")
+}
+
+func TestItemByType(t *testing.T) {
+	t.Skipf("TODO")
+}
+
+func TestAddNewObjectCollections(t *testing.T) {
+	t.Skipf("TODO")
+}
