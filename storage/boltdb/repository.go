@@ -67,7 +67,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 		if rb == nil {
 			return errors.Errorf("Invalid bucket %s", root)
 		}
-		iri := f.ID()
+		iri := f.GetLink()
 		url, err := iri.URL()
 		if err != nil {
 			return errors.Newf("invalid IRI filter element %s when loading collections", iri)
@@ -189,7 +189,7 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 	defer r.Close()
 
 	var ret as.CollectionInterface
-	iri := f.ID()
+	iri := f.GetLink()
 	url, err := iri.URL()
 	if err != nil {
 		r.errFn(nil, "invalid IRI filter element %s when loading collections", iri)

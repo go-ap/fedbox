@@ -67,7 +67,7 @@ func New(conf config.BackendConfig, url string, lp logrus.FieldLogger) (*repo, e
 }
 
 func (r repo) LoadActivities(ff s.Filterable) (as.ItemCollection, uint, error) {
-	f, ok := ff.(*ap.Filters)
+	f, ok := ff.(ap.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
 	}
@@ -75,7 +75,7 @@ func (r repo) LoadActivities(ff s.Filterable) (as.ItemCollection, uint, error) {
 }
 
 func (r repo) LoadActors(ff s.Filterable) (as.ItemCollection, uint, error) {
-	f, ok := ff.(*ap.Filters)
+	f, ok := ff.(ap.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
 	}
@@ -83,7 +83,7 @@ func (r repo) LoadActors(ff s.Filterable) (as.ItemCollection, uint, error) {
 }
 
 func (r repo) LoadObjects(ff s.Filterable) (as.ItemCollection, uint, error) {
-	f, ok := ff.(*ap.Filters)
+	f, ok := ff.(ap.Filters)
 	if !ok {
 		return nil, 0, errors.Newf("Invalid ActivityPub filters")
 	}
@@ -119,11 +119,11 @@ func getCollectionTable(typ handlers.CollectionType) string {
 }
 
 func (r repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
-	id := ff.ID()
+	id := ff.GetLink()
 	colFilters := ap.Filters{
 		IRI: id,
 	}
-	clauses, values := colFilters.GetWhereClauses()
+	clauses, values := getWhereClauses(colFilters)
 
 	var ret as.CollectionInterface
 	sel := fmt.Sprintf("SELECT id, iri, created_at::timestamptz, type, count, elements FROM collections WHERE %s ORDER BY created_at DESC LIMIT 1", strings.Join(clauses, " AND "))
@@ -139,7 +139,7 @@ func (r repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 		return ret, errors.Annotatef(err, "unable to run select")
 	}
 
-	f, ok := ff.(*ap.Filters)
+	f, ok := ff.(ap.Filters)
 	if !ok {
 		return ret, errors.Newf("unable to load filters")
 	}
@@ -217,11 +217,11 @@ func (r repo) Load(ff s.Filterable) (as.ItemCollection, uint, error) {
 	return nil, 0, errors.NotImplementedf("not implemented loader.Load()")
 }
 
-func loadFromDb(conn *pgx.ConnPool, table string, f ap.Filterable) (as.ItemCollection, uint, error) {
-	clauses, values := f.GetWhereClauses()
+func loadFromDb(conn *pgx.ConnPool, table string, f ap.Filters) (as.ItemCollection, uint, error) {
+	clauses, values := getWhereClauses(f)
 	var total uint = 0
 
-	sel := fmt.Sprintf("SELECT id, key, iri, created_at::timestamptz, type, raw FROM %s WHERE %s ORDER BY raw->>'published' DESC %s", table, strings.Join(clauses, " AND "), f.GetLimit())
+	sel := fmt.Sprintf("SELECT id, key, iri, created_at::timestamptz, type, raw FROM %s WHERE %s ORDER BY raw->>'published' DESC %s", table, strings.Join(clauses, " AND "), getLimit(f))
 	rows, err := conn.Query(sel, values...)
 	defer rows.Close()
 	if err != nil {
@@ -296,7 +296,7 @@ func (r repo) SaveObject(it as.Item) (as.Item, error) {
 	}
 
 	if len(it.GetLink()) > 0 {
-		if _, cnt, _ := loadFromDb(r.conn, table, &ap.Filters{
+		if _, cnt, _ := loadFromDb(r.conn, table, ap.Filters{
 			ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
 			Type:    []as.ActivityVocabularyType{it.GetType()},
 		}); cnt != 0 {
@@ -484,7 +484,7 @@ func (r repo) UpdateObject(it as.Item) (as.Item, error) {
 		table = "objects"
 	}
 	if len(it.GetLink()) == 0 {
-		err := errors.NotFoundf("Unable to update %s with no ID", label)
+		err := errors.NotFoundf("Unable to update %s with no GetLink", label)
 		return it, err
 	}
 
@@ -539,13 +539,13 @@ func (r repo) DeleteObject(it as.Item) (as.Item, error) {
 	}
 	var cnt uint
 	var found as.ItemCollection
-	found, cnt, _ = loadFromDb(r.conn, table, &f)
+	found, cnt, _ = loadFromDb(r.conn, table, f)
 	if cnt == 0 {
 		if table == "objects" {
 			table = "actors"
 		}
 		// try other table
-		found, cnt, _ = loadFromDb(r.conn, table, &f)
+		found, cnt, _ = loadFromDb(r.conn, table, f)
 	}
 	if cnt == 0 {
 		err := errors.NotFoundf("%s in either actors or objects", it.GetLink())

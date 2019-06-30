@@ -6,15 +6,8 @@ func TestFilters_Count(t *testing.T) {
 	t.Skipf("TODO")
 }
 
-func TestFilters_GetLimit(t *testing.T) {
-	t.Skipf("TODO")
-}
 
-func TestFilters_GetWhereClauses(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestFilters_ID(t *testing.T) {
+func TestFilters_GetLink(t *testing.T) {
 	t.Skipf("TODO")
 }
 
