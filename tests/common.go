@@ -482,13 +482,9 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 					// this is the location of the Activity not of the created object
 					test.res.val.id = newObjURL
 				}
-				var msg string
-				err = json.Unmarshal(b, &msg)
-				assertTrue(err == nil, "Error: unmarshal failed: %s", err)
-			} else {
-				err = json.Unmarshal(b, &res)
-				assertTrue(err == nil, "Error: unmarshal failed: %s", err)
 			}
+			err = json.Unmarshal(b, &res)
+			assertTrue(err == nil, "Error: unmarshal failed: %s", err)
 			if test.res.val != nil && test.res.val.id != "" {
 				saved := assertGetRequest(test.res.val.id)
 				assertObjectProperties(saved, test.res.val)
