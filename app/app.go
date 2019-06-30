@@ -37,7 +37,7 @@ var Config config.Options
 
 type LogFn func(string, ...interface{})
 
-type Fedbox struct {
+type FedBOX struct {
 	conf   config.Options
 	ver    string
 	warn   LogFn
@@ -47,9 +47,9 @@ type Fedbox struct {
 	stopFn func()
 }
 
-// New instantiates a new Fedbox instance
-func New(l logrus.FieldLogger, ver string, environment string) *Fedbox {
-	app := Fedbox{ver: ver}
+// New instantiates a new FedBOX instance
+func New(l logrus.FieldLogger, ver string, environment string) *FedBOX {
+	app := FedBOX{ver: ver}
 	var err error
 	if l != nil {
 		app.dbg = l.Debugf
@@ -71,11 +71,11 @@ func New(l logrus.FieldLogger, ver string, environment string) *Fedbox {
 	return &app
 }
 
-func (a Fedbox) Config() config.Options {
+func (a FedBOX) Config() config.Options {
 	return a.conf
 }
 
-func (a Fedbox) listen() string {
+func (a FedBOX) listen() string {
 	return a.conf.Listen
 }
 
@@ -144,14 +144,14 @@ func waitForSignal(sigChan chan os.Signal, exitChan chan int) func(LogFn) {
 }
 
 // Stop
-func (a *Fedbox) Stop() {
+func (a *FedBOX) Stop() {
 	if a.stopFn != nil {
 		a.stopFn()
 	}
 }
 
 // Run is the wrapper for starting the web-server and handling signals
-func (a *Fedbox) Run(m http.Handler, wait time.Duration) int {
+func (a *FedBOX) Run(m http.Handler, wait time.Duration) int {
 	a.inf("Listening on %s", a.listen())
 
 	// Create a deadline to wait for.
