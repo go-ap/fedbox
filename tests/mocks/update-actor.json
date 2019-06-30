@@ -3,9 +3,9 @@
   "actor": "%s",
   "object": {
     "id": "%s",
-    "type": "Person",
+    "type": "Service",
     "to": [
-      "http://fedbox.git/inbox",
+      "%s/inbox",
       "https://www.w3.org/ns/activitystreams#Public"
     ],
     "name": "Jane Doe",

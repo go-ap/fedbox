@@ -90,10 +90,10 @@ var C2STests = testPairs{
 					audience: []string{
 						"https://www.w3.org/ns/activitystreams#Public",
 					},
-					inbox: &objectVal {
+					inbox: &objectVal{
 						id: fmt.Sprintf("%s/inbox", baseURL),
 					},
-					following: &objectVal {
+					following: &objectVal{
 						id: fmt.Sprintf("%s/following", baseURL),
 					},
 				},
@@ -124,15 +124,26 @@ var C2STests = testPairs{
 			req: testReq{
 				met:  http.MethodPost,
 				url:  fmt.Sprintf("%s/outbox", apiURL),
-				body: loadMockJson("mocks/update-actor.json", selfAccount.id),
+				body: loadMockJson("mocks/update-actor.json", selfAccount.id, selfAccount.id, baseURL),
 			},
 			res: testRes{
-				code: http.StatusInternalServerError,
+				code: http.StatusCreated,
 				val: &objectVal{
 					typ: string(as.UpdateType),
 					act: &objectVal{
-						id:  selfAccount.id,
-						typ: string(as.ServiceType),
+						id: selfAccount.id,
+					},
+					obj: &objectVal{
+						id:   selfAccount.id,
+						name: "Jane Doe",
+						preferredUsername: "jennyjane",
+						typ:  string(as.ServiceType),
+						inbox: &objectVal{
+							id: fmt.Sprintf("%s/inbox", apiURL),
+						},
+						following: &objectVal{
+							id: fmt.Sprintf("%s/following", apiURL),
+						},
 					},
 				},
 			},
@@ -150,6 +161,10 @@ var C2STests = testPairs{
 				val: &objectVal{
 					typ: string(as.DeleteType),
 					act: &objectVal{
+						id:  selfAccount.id,
+						typ: string(as.TombstoneType),
+					},
+					obj: &objectVal{
 						id:  selfAccount.id,
 						typ: string(as.TombstoneType),
 					},
@@ -173,7 +188,8 @@ var C2STests = testPairs{
 						typ: string(as.ServiceType),
 					},
 					obj: &objectVal{
-						typ: string(as.ArticleType),
+						typ:     string(as.ArticleType),
+						content: "<p>Hello world</p>",
 					},
 				},
 			},
