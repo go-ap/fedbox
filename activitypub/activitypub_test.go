@@ -10,10 +10,6 @@ func TestOrderedCollection_Count(t *testing.T) {
 	t.Skipf("TODO")
 }
 
-func TestFlattenActivityProperties(t *testing.T) {
-	t.Skipf("TODO")
-}
-
 func TestFlattenProperties(t *testing.T) {
 	t.Skipf("TODO")
 }
@@ -22,35 +18,7 @@ func TestCollection_Count(t *testing.T) {
 	t.Skipf("TODO")
 }
 
-func TestActivity_GetID(t *testing.T) {
-	t.Skipf("TODO")
-}
-
 func TestJSONGetItemByType(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestActivity_GetLink(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestToActivity(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestActivity_GetType(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestActivity_IsLink(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestActivity_IsObject(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestActivity_UnmarshalJSON(t *testing.T) {
 	t.Skipf("TODO")
 }
 

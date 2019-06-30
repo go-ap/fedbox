@@ -109,7 +109,7 @@ func ProcessActivity(r s.Saver, it as.Item) (as.Item, error) {
 	// errors.Annotatef...
 
 	// First we process the activity to effect whatever changes we need to on the activity properties.
-	act, err := ToActivity(it)
+	act, err := as.ToActivity(it)
 	if as.ContentManagementActivityTypes.Contains(it.GetType()) && act.Object.GetType() != as.RelationshipType {
 		act, err = ContentManagementActivity(r, act)
 		if err != nil {
@@ -193,7 +193,7 @@ func ProcessActivity(r s.Saver, it as.Item) (as.Item, error) {
 }
 
 // ContentManagementActivity processes matching activities
-func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
+func ContentManagementActivity(l s.Saver, act *as.Activity) (*as.Activity, error) {
 	var err error
 	if act.Object == nil {
 		return act, errors.NotValidf("Missing object for Activity")
@@ -206,7 +206,7 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 			l.GenerateID(act.Object, act)
 		}
 		// TODO(marius) Add function as.AttributedTo(it as.Item, auth as.Item)
-		if a, err := ToActivity(act.Object); err == nil {
+		if a, err := as.ToActivity(act.Object); err == nil {
 			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
 			// Copying the actor's IRI to the object's AttributedTo
 			a.AttributedTo = act.Actor.GetLink()
@@ -303,7 +303,7 @@ func ContentManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
 }
 
 // ReactionsActivity processes matching activities
-func ReactionsActivity(l s.Saver, act *Activity) (*Activity, error) {
+func ReactionsActivity(l s.Saver, act *as.Activity) (*as.Activity, error) {
 	var err error
 	if act.Object != nil {
 		switch act.Type {
@@ -325,61 +325,61 @@ func ReactionsActivity(l s.Saver, act *Activity) (*Activity, error) {
 }
 
 // CollectionManagementActivity processes matching activities
-func CollectionManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
+func CollectionManagementActivity(l s.Saver, act *as.Activity) (*as.Activity, error) {
 	// TODO(marius):
 	return nil, errors.Errorf("Not implemented")
 }
 
 // EventRSVPActivity processes matching activities
-func EventRSVPActivity(l s.Saver, act *Activity) (*Activity, error) {
+func EventRSVPActivity(l s.Saver, act *as.Activity) (*as.Activity, error) {
 	// TODO(marius):
 	return nil, errors.Errorf("Not implemented")
 }
 
 // GroupManagementActivity processes matching activities
-func GroupManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
+func GroupManagementActivity(l s.Saver, act *as.Activity) (*as.Activity, error) {
 	// TODO(marius):
 	return nil, errors.Errorf("Not implemented")
 }
 
 // CollectionManagementActivity processes matching activities
-func ContentExperienceActivity(l s.Saver, act *Activity) (*Activity, error) {
+func ContentExperienceActivity(l s.Saver, act *as.Activity) (*as.Activity, error) {
 	// TODO(marius):
 	return nil, errors.Errorf("Not implemented")
 }
 
 // GeoSocialEventsActivity processes matching activities
-func GeoSocialEventsActivity(l s.Saver, act *Activity) (*Activity, error) {
+func GeoSocialEventsActivity(l s.Saver, act *as.Activity) (*as.Activity, error) {
 	// TODO(marius):
 	return nil, errors.Errorf("Not implemented")
 }
 
 // NotificationActivity processes matching activities
-func NotificationActivity(l s.Saver, act *Activity) (*Activity, error) {
+func NotificationActivity(l s.Saver, act *as.Activity) (*as.Activity, error) {
 	// TODO(marius):
 	return nil, errors.Errorf("Not implemented")
 }
 
 // QuestionActivity processes matching activities
-func QuestionActivity(l s.Saver, act *Activity) (*Activity, error) {
+func QuestionActivity(l s.Saver, act *as.Activity) (*as.Activity, error) {
 	// TODO(marius):
 	return nil, errors.Errorf("Not implemented")
 }
 
 // RelationshipManagementActivity processes matching activities
-func RelationshipManagementActivity(l s.Saver, act *Activity) (*Activity, error) {
+func RelationshipManagementActivity(l s.Saver, act *as.Activity) (*as.Activity, error) {
 	// TODO(marius):
 	return nil, errors.Errorf("Not implemented")
 }
 
 // NegatingActivity processes matching activities
-func NegatingActivity(l s.Saver, act *Activity) (*Activity, error) {
+func NegatingActivity(l s.Saver, act *as.Activity) (*as.Activity, error) {
 	// TODO(marius):
 	return nil, errors.Errorf("Not implemented")
 }
 
 // OffersActivity processes matching activities
-func OffersActivity(l s.Saver, act *Activity) (*Activity, error) {
+func OffersActivity(l s.Saver, act *as.Activity) (*as.Activity, error) {
 	// TODO(marius):
 	return nil, errors.Errorf("Not implemented")
 }

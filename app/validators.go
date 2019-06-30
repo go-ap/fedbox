@@ -93,7 +93,7 @@ func (v genericValidator) ValidateActivity(typ h.CollectionType, a as.Item) erro
 	if !as.ActivityTypes.Contains(a.GetType()) {
 		return InvalidActivity("invalid type %s", a.GetType())
 	}
-	act, err := activitypub.ToActivity(a)
+	act, err := as.ToActivity(a)
 	if err != nil {
 		return err
 	}

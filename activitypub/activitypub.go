@@ -47,11 +47,6 @@ type OrderedCollection as.OrderedCollection
 // We need it here in order to be able to implement our own UnmarshalJSON() method
 type Collection as.Collection
 
-// Activity it should be identical to:
-//    github.com/go-ap/activitystreams/activity.go#Activity
-// We need it here in order to be able to implement our own UnmarshalJSON() method
-type Activity as.Activity
-
 // GetID returns the ObjectID pointer of current Person instance
 func (p Person) GetID() *as.ObjectID {
 	id := as.ObjectID(p.ID)
@@ -161,7 +156,7 @@ func (o *OrderedCollection) UnmarshalJSON(data []byte) error {
 	for i, it := range col.OrderedItems {
 		var a as.ObjectOrLink
 		if as.ActivityTypes.Contains(it.GetType()) {
-			act := &Activity{}
+			act := &as.Activity{}
 			if data, _, _, err := jsonparser.Get(data, "orderedItems", fmt.Sprintf("[%d]", i)); err == nil {
 				act.UnmarshalJSON(data)
 			}
@@ -258,7 +253,7 @@ func (c *Collection) UnmarshalJSON(data []byte) error {
 	for i, it := range col.Items {
 		var a as.ObjectOrLink
 		if as.ActivityTypes.Contains(it.GetType()) {
-			act := &Activity{}
+			act := &as.Activity{}
 			if data, _, _, err := jsonparser.Get(data, "items", fmt.Sprintf("[%d]", i)); err == nil {
 				act.UnmarshalJSON(data)
 			}
@@ -299,42 +294,6 @@ func (c *Collection) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// GetID returns the ObjectID pointer of current Activity instance
-func (a Activity) GetID() *as.ObjectID {
-	id := as.ObjectID(a.ID)
-	return &id
-}
-
-// GetLink returns the IRI of the Activity object
-func (a Activity) GetLink() as.IRI {
-	return as.IRI(a.ID)
-}
-
-// GetType returns the current Activity's type
-func (a Activity) GetType() as.ActivityVocabularyType {
-	return as.ActivityVocabularyType(a.Type)
-}
-
-// IsLink returns false for an Activity object
-func (a Activity) IsLink() bool {
-	return false
-}
-
-// IsObject returns true for an Activity object
-func (a Activity) IsObject() bool {
-	return true
-}
-
-// UnmarshalJSON
-func (a *Activity) UnmarshalJSON(data []byte) error {
-	it := new(as.Activity)
-	err := it.UnmarshalJSON(data)
-	if err != nil {
-		return err
-	}
-	*a = Activity(*it)
-	return nil
-}
 
 // ItemByType
 func ItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
@@ -345,7 +304,7 @@ func ItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 		o.Type = typ
 		ret = o
 	} else if as.ActivityTypes.Contains(typ) {
-		o := &Activity{}
+		o := &as.Activity{}
 		o.Type = typ
 		ret = o
 	} else if typ == as.CollectionType {
@@ -424,35 +383,6 @@ func ToPerson(it as.Item) (*Person, error) {
 	return &p, nil
 }
 
-// ToActivity
-func ToActivity(it as.Item) (*Activity, error) {
-	switch act := it.(type) {
-	case Activity:
-		return &act, nil
-	case *Activity:
-		return act, nil
-	}
-
-	a, err := as.ToActivity(it)
-	if err != nil {
-		return nil, err
-	}
-	aa := Activity(*a)
-	return &aa, nil
-}
-
-// FlattenActivityProperties flattens the Activity's properties from Object type to IRI
-func FlattenActivityProperties(act *Activity) *Activity {
-	act.Object = as.FlattenToIRI(act.Object)
-	act.Actor = as.FlattenToIRI(act.Actor)
-	act.Target = as.FlattenToIRI(act.Target)
-	act.Result = as.FlattenToIRI(act.Result)
-	act.Origin = as.FlattenToIRI(act.Origin)
-	act.Result = as.FlattenToIRI(act.Result)
-	act.Instrument = as.FlattenToIRI(act.Instrument)
-	return act
-}
-
 // FlattenObjectProperties flattens the Object's properties from Object types to IRI
 func FlattenPersonProperties(o *Person) *Person {
 	o.Parent = *as.FlattenObjectProperties(&o.Parent)
@@ -462,9 +392,9 @@ func FlattenPersonProperties(o *Person) *Person {
 // FlattenProperties flattens the Item's properties from Object types to IRI
 func FlattenProperties(it as.Item) as.Item {
 	if as.ActivityTypes.Contains(it.GetType()) {
-		a, err := ToActivity(it)
+		a, err := as.ToActivity(it)
 		if err == nil {
-			return FlattenActivityProperties(a)
+			return as.FlattenActivityProperties(a)
 		}
 	}
 	if as.ActorTypes.Contains(it.GetType()) {
@@ -606,7 +536,7 @@ func GenerateID(it as.Item, partOf string, by as.Item) (as.ObjectID, error) {
 	uuid := uuid.New()
 	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(partOf), uuid))
 	if as.ActivityTypes.Contains(it.GetType()) {
-		a, err := ToActivity(it)
+		a, err := as.ToActivity(it)
 		if err != nil {
 			return id, err
 		}
