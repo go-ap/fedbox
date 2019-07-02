@@ -135,10 +135,10 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 	if err != nil {
 		return err
 	}
-	err = exec("add-to-collection", service.GetLink(), actors)
-	if err != nil {
-		return err
-	}
+	//err = exec("add-to-collection", service.GetLink(), actors)
+	//if err != nil {
+	//	return err
+	//}
 	err = exec("insert-collection", service.Inbox.GetLink(), activitystreams.OrderedCollectionType)
 	if err != nil {
 		return err

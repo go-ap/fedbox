@@ -76,7 +76,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 			return errors.Newf("trying to load from non-local root bucket %s", url.Host)
 		}
 		// Assume bucket exists and has keys
-		b, path, err := descendInBucket(rb, url.Path)
+		b, path, err := descendInBucket(rb, url.Path, false)
 		if err != nil {
 			return err
 		}
@@ -147,7 +147,7 @@ func (r *repo) LoadActors(f s.Filterable) (as.ItemCollection, uint, error) {
 	return loadFromBucket(r.d, r.root, f)
 }
 
-func descendInBucket(root *bolt.Bucket, path string) (*bolt.Bucket, string, error) {
+func descendInBucket(root *bolt.Bucket, path string, create bool) (*bolt.Bucket, string, error) {
 	if root == nil {
 		return nil, path, errors.Newf("Trying to descend into nil bucket")
 	}
@@ -167,7 +167,12 @@ func descendInBucket(root *bolt.Bucket, path string) (*bolt.Bucket, string, erro
 		if b == nil {
 			return root, path, errors.Errorf("trying to load from nil bucket")
 		}
-		cb := b.Bucket([]byte(name))
+		var cb *bolt.Bucket
+		if create {
+			cb, _ = b.CreateBucketIfNotExists([]byte(name))
+		} else {
+			cb = b.Bucket([]byte(name))
+		}
 		if cb == nil {
 			lvl--
 			break
@@ -206,7 +211,7 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 		if rb == nil {
 			return errors.Newf("invalid root bucket %s", r.root)
 		}
-		bb, path, err := descendInBucket(rb, url.Path)
+		bb, path, err := descendInBucket(rb, url.Path, false)
 		if err != nil {
 			r.errFn(nil, "unable to find %s in root bucket", path, r.root)
 		}
@@ -238,7 +243,7 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 			if raw == nil || len(raw) == 0 {
 				return nil
 			}
-			return errors.NotImplementedf("TODO: unmarshall collection items in collection: %s", url.Path)
+			return errors.NotImplementedf("TODO: unmarshal collection items in collection: %s", url.Path)
 			// This should be a marshalled json array of IRIs,
 			// I probably need to use a different marshalling/unmarshalling method than the activitystreams one.
 			// Then for each element in the array, we load the corresponding item from the base collection
@@ -305,7 +310,7 @@ func (r *repo) CreateCollection(col as.CollectionInterface) (as.CollectionInterf
 	c := path.Base(cPath)
 	err = r.d.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
-		b, _, err := descendInBucket(root, cPath)
+		b, _, err := descendInBucket(root, cPath, true)
 		if err != nil {
 			return err
 		}
@@ -331,7 +336,7 @@ func save(r *repo, it as.Item) (as.Item, error) {
 			return errors.Errorf("Non writeable bucket %s", r.root)
 		}
 		var b *bolt.Bucket
-		b, uuid, err = descendInBucket(root, path)
+		b, uuid, err = descendInBucket(root, path, true)
 		if err != nil {
 			return errors.Newf("Unable to find %s in root bucket", path)
 		}
@@ -356,7 +361,7 @@ func save(r *repo, it as.Item) (as.Item, error) {
 			return errors.Errorf("Non writeable bucket %s", r.root)
 		}
 		var b *bolt.Bucket
-		b, uuid, err = descendInBucket(root, path)
+		b, uuid, err = descendInBucket(root, path, true)
 		if err != nil {
 			return errors.Newf("Unable to find %s in root bucket", path)
 		}
@@ -453,7 +458,7 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 			return errors.Errorf("Non writeable bucket %s", r.root)
 		}
 		var b *bolt.Bucket
-		b, rem, err = descendInBucket(root, path)
+		b, rem, err = descendInBucket(root, path, true)
 		if err != nil {
 			return errors.Newf("Unable to find %s in root bucket", path)
 		}

@@ -271,8 +271,6 @@ func ContentManagementActivity(l s.Saver, act *as.Activity) (*as.Activity, error
 			act.Object = o
 		}
 
-		act.Object, err = l.SaveObject(act.Object)
-
 		if colSaver, ok := l.(s.CollectionSaver); ok {
 			act.Object, err = AddNewObjectCollections(colSaver, act.Object)
 			if err != nil {
