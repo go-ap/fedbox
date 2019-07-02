@@ -32,7 +32,7 @@ bin/app: go.mod main.go $(APPSOURCES)
 	$(BUILD) -tags $(ENV) -o $@ ./main.go
 
 bootstrap: bin/bootstrap
-bin/bootstrap: go.mod $(wildcard storage/*/*.go) cli/bootstrap/main.go
+bin/bootstrap: go.mod cli/bootstrap/main.go $(APPSOURCES)
 	$(BUILD) -tags $(ENV) -o $@ cli/bootstrap/main.go
 
 run: app
