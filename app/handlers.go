@@ -105,31 +105,25 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 	var items as.ItemCollection
 	var err error
 	f, err := activitypub.FromRequest(r)
+
+	where := ""
+	what := ""
+	if len(collection) > 0 {
+		what = fmt.Sprintf("%s ", collection)
+		where = fmt.Sprintf(" in %s", what)
+	}
 	if err != nil {
-		return nil, errors.NotFoundf("Not found %s", collection)
+		return nil, errors.NotFoundf("%snot found", what)
 	}
 	LoadItemFilters(r, &f)
 
 	iri := reqURL(r)
-	if len(f.ItemKey) == 0 {
-		f.ItemKey = []activitypub.Hash{
-			activitypub.Hash(iri),
-		}
+	if len(f.IRI) == 0 {
+		f.IRI = as.IRI(iri)
 	}
 	f.MaxItems = 1
 
-	if !activitypub.ValidActivityCollection(string(f.Collection)) {
-		return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
-	}
-	if h.ValidObjectCollection(string(f.Collection)) {
-		if obLoader, ok := repo.(storage.ObjectLoader); ok {
-			items, _, err = obLoader.LoadObjects(f)
-		}
-	} else if h.ValidActivityCollection(string(f.Collection)) {
-		if actLoader, ok := repo.(storage.ActivityLoader); ok {
-			items, _, err = actLoader.LoadActivities(f)
-		}
-	} else {
+	if activitypub.ValidActivityCollection(string(f.Collection)) {
 		switch f.Collection {
 		case activitypub.ActivitiesType:
 			if actLoader, ok := repo.(storage.ActivityLoader); ok {
@@ -140,26 +134,29 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 				items, _, err = actLoader.LoadActors(f)
 			}
 		case activitypub.ObjectsType:
-			if obLoader, ok := repo.(storage.ObjectLoader); ok {
-				items, _, err = obLoader.LoadObjects(f)
-			}
+			items, _, err = repo.LoadObjects(f)
 		default:
-			return nil, errors.Newf("invalid collection %s", f.Collection)
+
+		}
+	} else if f.Collection == "" {
+		if actLoader, ok := repo.(storage.ActorLoader); ok {
+			items, _, err = actLoader.LoadActors(f)
 		}
 	}
+
 	if err != nil {
 		return nil, err
 	}
 	if len(items) == 1 {
 		it, err := loadItem(items, f, reqURL(r))
 		if err != nil {
-			return nil, errors.NotFoundf("Not found %s", collection)
+			return nil, errors.NotFoundf("%snot found", what)
 		}
 		return it, nil
 	}
 
-	id := path.Base(iri)
-	return nil, errors.NotFoundf("Not found %s in %s", id, collection)
+	what = fmt.Sprintf("%s ", path.Base(iri))
+	return nil, errors.NotFoundf("%snot found%s", what, where)
 }
 
 func loadItem(items as.ItemCollection, f activitypub.Paginator, baseURL string) (as.Item, error) {

@@ -31,6 +31,7 @@ func Routes() func(chi.Router) {
 		r.Use(middleware.GetHead)
 		r.Use(ActorFromAuthHeader)
 
+		r.Method(http.MethodGet, "/", h.ItemHandlerFn(HandleItem))
 		r.Route("/{collection}", CollectionRoutes)
 
 		r.NotFound(errors.HandleError(errors.NotFoundf("invalid url")).ServeHTTP)

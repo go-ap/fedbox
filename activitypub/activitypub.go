@@ -6,16 +6,48 @@ import (
 	ap "github.com/go-ap/activitypub"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/handlers"
 	"github.com/pborman/uuid"
+	"net/url"
 	"strings"
 )
 
 const ActivityStreamsPublicNS = as.IRI("https://www.w3.org/ns/activitystreams#Public")
-const ServiceHash = Hash("d3ab037c-0f15-4c09-b635-3d6e201c11aa")
 var ServiceIRI as.IRI
 
+func Self(baseURL as.IRI) Service {
+	return Service {
+		Person: ap.Person{
+			Parent: as.Person{
+				ID:           as.ObjectID(baseURL),
+				Type:         as.ServiceType,
+				Name:         as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: "self"}},
+				AttributedTo: as.IRI("https://github.com/mariusor"),
+				Audience:     as.ItemCollection{
+					ActivityStreamsPublicNS,
+				},
+				Content:  nil, //as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: ""}},
+				Icon:     nil,
+				Image:    nil,
+				Location: nil,
+				Summary:  as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: "Generic ActivityPub service"}},
+				Tag:      nil,
+				URL:      baseURL,
+			},
+			Inbox:  as.IRI(fmt.Sprintf("%s%s", baseURL, handlers.Inbox)),
+			Outbox: as.IRI(fmt.Sprintf("%s%s", baseURL, handlers.Outbox)),
+		},
+	}
+}
+
 func DefaultServiceIRI(baseURL string) as.IRI {
-	return as.IRI(fmt.Sprintf("%s/actors/%s", baseURL, ServiceHash))
+	u, _ := url.Parse(baseURL)
+	// TODO(marius): I don't like adding the / folder to something like http://fedbox.git
+	// I need to find an
+	if u.Path == "" {
+		u.Path = "/"
+	}
+	return as.IRI(u.String())
 }
 
 // PublicKey holds the ActivityPub compatible public key data

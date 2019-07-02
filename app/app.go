@@ -20,6 +20,7 @@ import (
 type CtxtKey string
 
 var actorKey = CtxtKey("__actor")
+
 func actorLoader(ctx context.Context) (st.ActorLoader, bool) {
 	ctxVal := ctx.Value(handlers.RepositoryKey)
 	s, ok := ctxVal.(st.ActorLoader)
