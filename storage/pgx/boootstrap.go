@@ -3,25 +3,25 @@ package pgx
 import (
 	"fmt"
 	"github.com/gchaincl/dotsql"
+	"github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/jsonld"
 	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
+	"path"
 )
 
 var RootDb = "postgres"
 
-func openConn(c pgx.ConnConfig) (*pgx.ConnPool, error) {
-	return pgx.NewConnPool(pgx.ConnPoolConfig{
-		ConnConfig: c,
-		MaxConnections: 3,
-	})
+func openConn(c pgx.ConnConfig) (*pgx.Conn, error) {
+	return pgx.Connect(c)
 }
 
-func Bootstrap(opt config.Options, rootUser string, rootPw []byte, path string) error {
+func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) error {
 	log := logrus.New()
-	var conn *pgx.ConnPool
+	var conn *pgx.Conn
 	var err error
 
 	conf := opt.DB
@@ -49,9 +49,9 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, path string) 
 	if err != nil {
 		return err
 	}
-	dot, err := dotsql.LoadFromFile(path)
+	dot, err := dotsql.LoadFromFile(file)
 	if err != nil {
-		return errors.Annotatef(err, "could not open bootstrap file %s", path)
+		return errors.Annotatef(err, "could not open bootstrap file %s", file)
 	}
 
 	exec := func(lbl string, par ...interface{}) error {
@@ -111,31 +111,102 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, path string) 
 	if err != nil {
 		return err
 	}
-	url := activitypub.DefaultServiceIRI(opt.BaseURL)
-	inbox := fmt.Sprintf("%s/inbox", url)
-	following := fmt.Sprintf("%s/following", url)
-	err = exec("insert-service-actor", activitypub.ServiceHash, url, url, inbox, following, activitypub.ActivityStreamsPublicNS)
+	baseURL := activitypub.DefaultServiceIRI(opt.BaseURL)
+	service := activitypub.Self(baseURL)
+
+	u, _ := service.GetLink().URL()
+	raw, _ := jsonld.Marshal(service)
+	err = exec("insert-service-actor", path.Base(u.Path), service.GetLink(), raw)
 	if err != nil {
 		return err
 	}
-	activities := fmt.Sprintf("%s/%s",url, activitypub.ActivitiesType)
-	err = exec("insert-activities-collection", activities)
+	activities := fmt.Sprintf("%s%s", baseURL, activitypub.ActivitiesType)
+	err = exec("insert-collection", activities, activitystreams.OrderedCollectionType)
 	if err != nil {
 		return err
 	}
-	objects := fmt.Sprintf("%s/%s",url, activitypub.ObjectsType)
-	err = exec("insert-objects-collection", objects)
+	objects := fmt.Sprintf("%s%s", baseURL, activitypub.ObjectsType)
+	err = exec("insert-collection", objects, activitystreams.OrderedCollectionType)
 	if err != nil {
 		return err
 	}
-	actors := fmt.Sprintf("%s/%s",url, activitypub.ActorsType)
-	err = exec("insert-actors-collection", actors)
+	actors := fmt.Sprintf("%s%s", baseURL, activitypub.ActorsType)
+	err = exec("insert-collection", actors, activitystreams.OrderedCollectionType)
+	if err != nil {
+		return err
+	}
+	err = exec("add-to-collection", service.GetLink(), actors)
+	if err != nil {
+		return err
+	}
+	err = exec("insert-collection", service.Inbox.GetLink(), activitystreams.OrderedCollectionType)
+	if err != nil {
+		return err
+	}
+	//err = exec("insert-collection", service.Following.GetLink(), activitystreams.OrderedCollectionType)
+	//if err != nil {
+	//	return err
+	//}
+	err = exec("insert-collection", service.Outbox.GetLink(), activitystreams.OrderedCollectionType)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func Clean(c config.BackendConfig) error {
+func Clean(opt config.Options, rootUser string, rootPw []byte, path string) error {
+	log := logrus.New()
+	var conn *pgx.Conn
+	var err error
+
+	conf := opt.DB
+	if conf.User == "" {
+		return errors.Newf("empty user")
+	}
+	if conf.Name == "" {
+		return errors.Newf("empty name")
+	}
+	if conf.Host == "" {
+		return errors.Newf("empty host")
+	}
+
+	conn, err = openConn(pgx.ConnConfig{
+		Host:                 conf.Host,
+		Port:                 uint16(conf.Port),
+		Database:             RootDb,
+		User:                 rootUser,
+		Password:             string(rootPw),
+		Logger:               DBLogger(log),
+		LogLevel:             pgx.LogLevelWarn,
+	})
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	dot, err := dotsql.LoadFromFile(path)
+	if err != nil {
+		return errors.Annotatef(err, "could not open bootstrap file %s", path)
+	}
+
+	exec := func(lbl string, par ...interface{}) error {
+		qRaw, err := dot.Raw(lbl)
+		if err != nil {
+			return errors.Annotatef(err, "unable to load query: %s", lbl)
+		}
+		qSql := fmt.Sprintf(qRaw, par...)
+		_, err = conn.Exec(qSql)
+		if err != nil {
+			return errors.Annotatef(err, "unable to execute: %s", lbl)
+		}
+		return nil
+	}
+	err = exec("drop-database", conf.Name)
+	if err != nil {
+		return err
+	}
+	err = exec("drop-role", conf.User)
+	if err != nil {
+		return err
+	}
 	return nil
 }

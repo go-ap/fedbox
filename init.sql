@@ -104,15 +104,17 @@ create table collections (
      "elements" varchar[] default NULL
 );
 -- name: insert-service-actor
-insert into actors ("key", "iri", "type", "raw")
-values ('%s', '%s', 'Service', '{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s","type": "Service","name": "self","inbox": "%s", "following": "%s", "audience": ["%s"]}');
--- if we want to have an accessible inbox collection we add it to the table
--- insert into collections ("iri", "type") values ('http://fedbox.git/inbox', 'OrderedCollection');
--- name: insert-activities-collection
-insert into collections ("iri", "type") values ('%s', 'OrderedCollection');
--- name: insert-actors-collection
-insert into collections ("iri", "type") values ('%s', 'OrderedCollection');
--- name: insert-service-actor
+insert into actors ("key", "iri", "type", "raw") values ('%s', '%s', 'Service', '%s'::jsonb);
+-- name: insert-collection
+insert into collections ("iri", "type") values ('%s', '%s');
+-- name: add-to-collection
 update collections set count = 1, elements = array_append(elements, '%s') WHERE iri = '%s';
--- name: insert-objects-collection
-insert into collections ("iri", "type") values ('%s', 'OrderedCollection');
+-- name: drop-database
+drop database "%s";
+-- name: drop-role
+drop role "%s";
+-- name: truncate-tables
+truncate table collections;
+truncate table actors;
+truncate table activities;
+truncate table objects;
