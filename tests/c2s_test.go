@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/activitypub"
 	"io"
 	"net/http"
 	"os"
@@ -23,22 +22,7 @@ var C2STests = testPairs{
 				val: &objectVal{
 					id:        fmt.Sprintf("%s/actors", apiURL),
 					typ:       string(as.OrderedCollectionType),
-					itemCount: 1,
-					items: map[string]*objectVal{
-						selfAccount.Hash: {
-							id: selfAccount.id,
-						},
-					},
-					first: &objectVal{
-						id:        fmt.Sprintf("%s/actors?maxItems=%d&page=1", apiURL, activitypub.MaxItems),
-						typ:       string(as.OrderedCollectionPageType),
-						itemCount: 1,
-						items: map[string]*objectVal{
-							selfAccount.Hash: {
-								id: selfAccount.id,
-							},
-						},
-					},
+					itemCount: 0,
 				},
 			},
 		},
@@ -93,8 +77,8 @@ var C2STests = testPairs{
 					inbox: &objectVal{
 						id: fmt.Sprintf("%s/inbox", baseURL),
 					},
-					following: &objectVal{
-						id: fmt.Sprintf("%s/following", baseURL),
+					outbox: &objectVal{
+						id: fmt.Sprintf("%s/outbox", baseURL),
 					},
 				},
 			},
@@ -141,8 +125,8 @@ var C2STests = testPairs{
 						inbox: &objectVal{
 							id: fmt.Sprintf("%s/inbox", apiURL),
 						},
-						following: &objectVal{
-							id: fmt.Sprintf("%s/following", apiURL),
+						outbox: &objectVal{
+							id: fmt.Sprintf("%s/outbox", apiURL),
 						},
 					},
 				},

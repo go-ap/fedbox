@@ -100,7 +100,7 @@ var pub, _ = x509.MarshalPKIXPublicKey(&key.PublicKey)
 var meta interface{} = nil
 
 var defaultTestAccount = testAccount{
-	id:         fmt.Sprintf("%s/actors/%s", apiURL, testActorHash),
+	id:         fmt.Sprintf("http://%s/", host),
 	Handle:     testActorHandle,
 	Hash:       testActorHash,
 	publicKey:  key.Public(),
