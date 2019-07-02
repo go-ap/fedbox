@@ -21,11 +21,13 @@ func main() {
 	var typ string
 	var pgRoot string
 	var file string
+	var reset bool
 
 	flag.StringVar(&environ, "env", string(env.DEV), "environment")
 	flag.StringVar(&typ, "type", string(config.BoltDB), "type")
 	flag.StringVar(&pgRoot, "root", "postgres", "root account of postgres server")
 	flag.StringVar(&file, "path", "", "path")
+	flag.BoolVar(&reset, "reset", false, "reset existing database")
 	flag.Parse()
 
 	var err error
@@ -39,6 +41,9 @@ func main() {
 	if config.StorageType(typ) == config.BoltDB {
 		if file == "" {
 		}
+		if reset {
+			boltdb.Clean(conf.BoltDBPath, []byte(conf.Host))
+		}
 		err = boltdb.Bootstrap(conf.BoltDBPath, []byte(conf.Host), conf.BaseURL)
 	}
 	if config.StorageType(typ) == config.Postgres {
@@ -50,6 +55,9 @@ func main() {
 		if file == "" {
 			dir, _ := os.Getwd()
 			file = path.Join(dir, "init.sql")
+		}
+		if reset {
+			pgx.Clean(conf, pgRoot, pgPw, file)
 		}
 		err = pgx.Bootstrap(conf, pgRoot, pgPw, file)
 	}
