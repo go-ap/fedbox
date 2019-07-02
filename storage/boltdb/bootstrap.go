@@ -1,11 +1,11 @@
 package boltdb
 
 import (
-	"fmt"
 	"github.com/boltdb/bolt"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
+	"github.com/go-ap/jsonld"
 )
 
 func Bootstrap(path string, rootBucket []byte, baseURL string) error {
@@ -40,21 +40,26 @@ func Bootstrap(path string, rootBucket []byte, baseURL string) error {
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
-		// Service actor
-		act := tx.Bucket(rootBucket).Bucket([]byte(bucketActors))
 		{
-			ib, err := act.CreateBucketIfNotExists([]byte(activitypub.ServiceHash))
-			if err != nil {
-				return errors.Errorf("could not create item bucket: %s", err)
-			}
-			j := `{"@context": ["https://www.w3.org/ns/activitystreams"],"id": "%s","type": "Service","name": "self", "inbox": "%s/inbox", "following": "%s/following",  "audience": ["https://www.w3.org/ns/activitystreams#Public"]}`
-			a := fmt.Sprintf(j, activitypub.DefaultServiceIRI(baseURL), baseURL, baseURL)
-			ib.Put([]byte(handlers.Inbox), nil)
-			ib.Put([]byte(handlers.Following), nil)
+			root := tx.Bucket(rootBucket)
+			service := activitypub.Self(activitypub.DefaultServiceIRI(baseURL))
+			raw, _ := jsonld.Marshal(service)
 
-			err = ib.Put([]byte(objectKey), []byte(a))
+			root.Put([]byte(handlers.Inbox), nil)
+			//root.Put([]byte(handlers.Following), nil)
+			root.Put([]byte(handlers.Outbox), nil)
+
+			err = root.Put([]byte(objectKey), raw)
 			if err != nil {
 				return errors.Errorf("could not insert entry: %s", err)
+			}
+
+			actors := root.Bucket([]byte(bucketActors))
+			if actors == nil {
+				return errors.Annotatef(err, "could not open %s bucket", bucketActors)
+			}
+			if !actors.Writable() {
+				return errors.Errorf("Non writeable bucket %s", bucketActors)
 			}
 		}
 		return nil
