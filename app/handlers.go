@@ -5,6 +5,7 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/validation"
 	h "github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
 	"io/ioutil"
@@ -67,11 +68,18 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
 	}
-	validator, ok := ActivityValidatorCtxt(r.Context())
+	validator, ok := validation.ActivityValidatorCtxt(r.Context())
 	if ok == false {
 		return it, http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity validator")
 	}
-	if err = validator.ValidateActivity(typ, it); err != nil {
+	var validateFn func(as.Item) error
+	//if typ == h.Outbox {
+		validateFn = validator.ValidateClientActivity
+	//}
+	//if typ == h.Inbox {
+	//	validateFn = validator.ValidateServerActivity
+	//}
+	if err = validateFn(it); err != nil {
 		return it, http.StatusBadRequest, errors.NewBadRequest(err, "%s activity failed validation", it.GetType())
 	}
 

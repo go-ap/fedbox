@@ -24,11 +24,12 @@ import (
 var oss *osin.Server
 
 type keyLoader struct {
-	logFn func(string, ...interface{})
-	realm string
-	acc   as.Actor
-	l     st.ActorLoader
-	c     client.Client
+	baseIRI string
+	logFn   func(string, ...interface{})
+	realm   string
+	acc     as.Actor
+	l       st.ActorLoader
+	c       client.Client
 }
 
 func loadFederatedActor(c client.Client, id as.IRI) (as.Actor, error) {
@@ -40,6 +41,13 @@ func loadFederatedActor(c client.Client, id as.IRI) (as.Actor, error) {
 		return acct, nil
 	}
 	return as.Person{}, nil
+}
+
+func validateLocalIRI(i as.IRI) error {
+	if strings.Contains(i.String(), Config.BaseURL) {
+		return nil
+	}
+	return errors.Newf("%s is not a local IRI", i)
 }
 
 func (k *keyLoader) GetKey(id string) interface{} {
@@ -151,7 +159,7 @@ func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, e
 		if strings.Contains(auth, "Signature") {
 			if loader, ok := actorLoader(r.Context()); ok {
 				// only verify http-signature if present
-				getter := keyLoader{acc: acct, l: loader, realm: r.URL.Host, c: client}
+				getter := keyLoader{acc: acct, l: loader, realm: r.URL.Host, c: client }
 				method = "httpSig"
 				getter.logFn = l.WithFields(logrus.Fields{"from": method}).Debugf
 

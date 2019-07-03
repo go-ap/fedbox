@@ -1,4 +1,4 @@
-package app
+package validation
 
 import (
 	"context"
@@ -7,32 +7,45 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
-	h "github.com/go-ap/handlers"
+	"github.com/go-ap/storage"
 	"golang.org/x/xerrors"
 	"strings"
 )
 
+type ClientActivityValidator interface {
+	ValidateClientActivity(as.Item) error
+	//ValidateClientObject(as.Item) error
+	ValidateClientActor(as.Item) error
+	//ValidateClientTarget(as.Item) error
+	//ValidateClientAudience(...as.ItemCollection) error
+}
+
+type ServerActivityValidator interface {
+	ValidateServerActivity(as.Item) error
+	//ValidateServerObject(as.Item) error
+	ValidateServerActor(as.Item) error
+	//ValidateServerTarget(as.Item) error
+	//ValidateServerAudience(...as.ItemCollection) error
+}
+
 // ActivityValidator is an interface used for validating activity objects.
 type ActivityValidator interface {
-	ValidateActivity(h.CollectionType, as.Item) error
-	ValidateObject(h.CollectionType, as.Item) error
-	ValidateActor(h.CollectionType, as.Item) error
-	ValidateTarget(h.CollectionType, as.Item) error
-	ValidateAudience(h.CollectionType, ...as.ItemCollection) error
+	ClientActivityValidator
 }
 
 //type AudienceValidator interface {
 //	ValidateAudience(...as.ItemCollection) error
 //}
+
 // ObjectValidator is an interface used for validating generic objects
-//type ObjectValidator interface {
-//	ValidateObject(as.Item) error
-//}
+type ObjectValidator interface {
+	ValidateObject(as.Item) error
+}
 
 // ActorValidator is an interface used for validating actor objects
-//type ActorValidator interface {
-//	ValidActor(as.Item) error
-//}
+type ActorValidator interface {
+	ValidActor(as.Item) error
+}
 
 // TargetValidator is an interface used for validating an object that is an activity's target
 // TODO(marius): this seems to have a different semantic than the previous ones.
@@ -55,6 +68,15 @@ type invalidActivity struct {
 type genericValidator struct {
 	baseIRI as.IRI
 	c       client.Client
+	s       storage.Loader
+}
+
+func New(iri string, c client.Client, s storage.Loader) *genericValidator {
+	return &genericValidator{
+		baseIRI: as.IRI(iri),
+		c:       c,
+		s:       s,
+	}
 }
 
 type ActivityPubError struct {
@@ -83,7 +105,11 @@ var InvalidTarget = func(s string, p ...interface{}) ActivityPubError {
 	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Target is not valid: %s", s), p...)}
 }
 
-func (v genericValidator) ValidateActivity(typ h.CollectionType, a as.Item) error {
+func (v genericValidator) ValidateServerActivity(a as.Item) error {
+	return errors.NotImplementedf("Server Activity validation is not implemented")
+}
+
+func (v genericValidator) ValidateClientActivity(a as.Item) error {
 	if a == nil {
 		return InvalidActivityActor("received nil activity")
 	}
@@ -97,14 +123,14 @@ func (v genericValidator) ValidateActivity(typ h.CollectionType, a as.Item) erro
 	if err != nil {
 		return err
 	}
-	if err := v.ValidateActor(typ, act.Actor); err != nil {
+	if err := v.ValidateClientActor(act.Actor); err != nil {
 		return err
 	}
-	if err := v.ValidateObject(typ, act.Object); err != nil {
+	if err := v.ValidateClientObject(act.Object); err != nil {
 		return err
 	}
 	if act.Target != nil {
-		if err := v.ValidateObject(typ, act.Target); err != nil {
+		if err := v.ValidateClientObject(act.Target); err != nil {
 			return err
 		}
 	}
@@ -122,13 +148,33 @@ func (v genericValidator) ValidateLink(i as.IRI) error {
 		// try to dereference this shit
 		_, err := v.c.LoadIRI(i)
 		return err
+	} else {
+		_, cnt, err := v.s.LoadObjects(i)
+		if err != nil {
+			return err
+		}
+		if cnt == 0 {
+			return InvalidActivityActor("%s could not be found locally", i)
+		}
 	}
 
 	return nil
 }
-func (v genericValidator) ValidateActor(typ h.CollectionType, a as.Item) error {
+
+func (v genericValidator) ValidateClientActor(a as.Item) error {
+	if err := v.validateLocalIRI(a.GetLink()); err != nil {
+		return InvalidActivityActor("%s is not local", a.GetLink())
+	}
+	return v.ValidateActor(a)
+}
+
+func (v genericValidator) ValidateServerActor(a as.Item) error {
+	return v.ValidateActor(a)
+}
+
+func (v genericValidator) ValidateActor(a as.Item) error {
 	if a == nil {
-		return InvalidActivityActor("received nil actor")
+		return InvalidActivityActor("is nil")
 	}
 	if a.IsLink() {
 		return v.ValidateLink(a.GetLink())
@@ -139,9 +185,17 @@ func (v genericValidator) ValidateActor(typ h.CollectionType, a as.Item) error {
 	return nil
 }
 
-func (v genericValidator) ValidateObject(typ h.CollectionType, o as.Item) error {
+func (v genericValidator) ValidateClientObject(o as.Item) error {
+	return v.ValidateObject(o)
+}
+
+func (v genericValidator) ValidateServerObject(o as.Item) error {
+	return v.ValidateObject(o)
+}
+
+func (v genericValidator) ValidateObject(o as.Item) error {
 	if o == nil {
-		return InvalidActivityActor("received nil object")
+		return InvalidActivityObject("is nil")
 	}
 	if o.IsLink() {
 		return v.ValidateLink(o.GetLink())
@@ -152,9 +206,9 @@ func (v genericValidator) ValidateObject(typ h.CollectionType, o as.Item) error 
 	return nil
 }
 
-func (v genericValidator) ValidateTarget(typ h.CollectionType, t as.Item) error {
+func (v genericValidator) ValidateTarget(t as.Item) error {
 	if t == nil {
-		return InvalidActivityActor("received nil target")
+		return InvalidActivityObject("is nil")
 	}
 	if t.IsLink() {
 		return v.ValidateLink(t.GetLink())
@@ -165,10 +219,10 @@ func (v genericValidator) ValidateTarget(typ h.CollectionType, t as.Item) error 
 	return nil
 }
 
-func (v genericValidator) ValidateAudience(typ h.CollectionType, audience ...as.ItemCollection) error {
+func (v genericValidator) ValidateAudience(audience ...as.ItemCollection) error {
 	for _, elem := range audience {
 		for _, iri := range elem {
-			if err := validateLocalIRI(iri.GetLink()); err == nil {
+			if err := v.validateLocalIRI(iri.GetLink()); err == nil {
 				return nil
 			}
 			if iri.GetLink() == activitypub.ActivityStreamsPublicNS {
@@ -179,6 +233,7 @@ func (v genericValidator) ValidateAudience(typ h.CollectionType, audience ...as.
 	return errors.Newf("None of the audience elements is local")
 }
 
+type CtxtKey string
 var ValidatorKey = CtxtKey("__validator")
 
 func ActivityValidatorCtxt(ctx context.Context) (ActivityValidator, bool) {
@@ -187,9 +242,17 @@ func ActivityValidatorCtxt(ctx context.Context) (ActivityValidator, bool) {
 	return s, ok
 }
 
-func validateLocalIRI(i as.IRI) error {
-	if strings.Contains(i.String(), Config.BaseURL) {
-		return nil
+func (v genericValidator) validateLocalIRI(i as.IRI) error {
+	u1, err := i.URL()
+	if err != nil {
+		return err
 	}
-	return errors.Newf("%s is not a local IRI", i)
+	u2, err := v.baseIRI.URL()
+	if err != nil {
+		return err
+	}
+	if u1.Host != u2.Host {
+		return errors.Newf("%s is not a local IRI", i)
+	}
+	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/log"
+	"github.com/go-ap/fedbox/validation"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
 	"net/http"
@@ -42,11 +43,11 @@ func ActorFromAuthHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func Validator(v ActivityValidator) func(next http.Handler) http.Handler {
+func Validator(v validation.ActivityValidator) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			newCtx := context.WithValue(ctx, ValidatorKey, v)
+			newCtx := context.WithValue(ctx, validation.ValidatorKey, v)
 			next.ServeHTTP(w, r.WithContext(newCtx))
 		}
 		return http.HandlerFunc(fn)

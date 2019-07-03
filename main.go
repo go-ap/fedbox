@@ -2,12 +2,14 @@ package main
 
 import (
 	"flag"
+	"github.com/go-ap/activitypub/client"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/fedbox/storage/pgx"
+	"github.com/go-ap/fedbox/validation"
 	st "github.com/go-ap/storage"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -56,7 +58,8 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(log.NewStructuredLogger(l))
 
-	r.Route("/", app.Routes())
+	v := validation.New(a.Config().BaseURL, client.NewClient(), repo)
+	r.Route("/", app.Routes(v))
 
 	status := a.Run(r, wait)
 	if status != 0 {
