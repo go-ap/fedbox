@@ -2,9 +2,11 @@ package tests
 
 import (
 	"fmt"
+	"github.com/go-ap/activitypub/client"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/fedbox/storage/boltdb"
+	"github.com/go-ap/fedbox/validation"
 	"github.com/go-chi/chi"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -56,7 +58,7 @@ func runAPP(e string) int {
 
 	r.Use(app.Repo(b))
 	r.Use(log.NewStructuredLogger(l))
-	r.Route("/", app.Routes())
+	r.Route("/", app.Routes(validation.New(a.Config().BaseURL, client.NewClient(), b)))
 
 	return a.Run(r, time.Second)
 }
