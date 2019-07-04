@@ -31,6 +31,7 @@ type ServerActivityValidator interface {
 // ActivityValidator is an interface used for validating activity objects.
 type ActivityValidator interface {
 	ClientActivityValidator
+	ServerActivityValidator
 }
 
 //type AudienceValidator interface {

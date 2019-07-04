@@ -312,7 +312,7 @@ func ContentManagementActivity(l s.Saver, act *as.Activity) (*as.Activity, error
 		if cnt == 0 {
 			return act, errors.NotFoundf("Unable to find %s %s", ob.GetType(), ob.GetLink())
 		}
-		ob, err = UpdateItemProperties(found[0], ob)
+		ob, err = UpdateItemProperties(found.First(), ob)
 		if err != nil {
 			return act, err
 		}

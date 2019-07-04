@@ -312,9 +312,7 @@ func (r repo) SaveObject(it as.Item) (as.Item, error) {
 			colIRI := fw.GetLink()
 			if r.IsLocalIRI(colIRI) {
 				// we shadow the err variable intentionally so it does not propagate upper to the call stack
-				if errFw := r.AddToCollection(colIRI, it); err != nil {
-					r.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI, "error": errFw}, "unable to add to collection")
-				}
+				r.AddToCollection(colIRI, it)
 			}
 		}
 	}

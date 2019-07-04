@@ -22,7 +22,7 @@ func Repo(loader storage.Loader) func(next http.Handler) http.Handler {
 }
 
 func ActorFromAuthHeader(next http.Handler) http.Handler {
-	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger := log.New()
 		act, err := LoadActorFromAuthHeader(r, logger)
 		if err != nil {
@@ -40,7 +40,6 @@ func ActorFromAuthHeader(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
-	return http.HandlerFunc(fn)
 }
 
 func Validator(v validation.ActivityValidator) func(next http.Handler) http.Handler {

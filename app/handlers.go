@@ -73,12 +73,14 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		return it, http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity validator")
 	}
 	var validateFn func(as.Item) error
-	//if typ == h.Outbox {
+	switch typ {
+	case h.Outbox :
 		validateFn = validator.ValidateClientActivity
-	//}
-	//if typ == h.Inbox {
-	//	validateFn = validator.ValidateServerActivity
-	//}
+	case h.Inbox:
+		validateFn = validator.ValidateServerActivity
+	default:
+		return it, http.StatusNotAcceptable, errors.NewMethodNotAllowed(err, "Collection %s does not receive Activity requests", typ)
+	}
 	if err = validateFn(it); err != nil {
 		return it, http.StatusBadRequest, errors.NewBadRequest(err, "%s activity failed validation", it.GetType())
 	}
@@ -168,5 +170,5 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 }
 
 func loadItem(items as.ItemCollection, f activitypub.Paginator, baseURL string) (as.Item, error) {
-	return items[0], nil
+	return items.First(), nil
 }
