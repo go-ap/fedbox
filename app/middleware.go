@@ -21,6 +21,18 @@ func Repo(loader storage.Loader) func(next http.Handler) http.Handler {
 	}
 }
 
+func Validator(v validation.ActivityValidator) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			newCtx := context.WithValue(ctx, validation.ValidatorKey, v)
+			next.ServeHTTP(w, r.WithContext(newCtx))
+		}
+		return http.HandlerFunc(fn)
+	}
+}
+
+
 func ActorFromAuthHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger := log.New()
@@ -36,19 +48,8 @@ func ActorFromAuthHeader(next http.Handler) http.Handler {
 		if act != nil {
 			ctx := r.Context()
 			newCtx := context.WithValue(ctx, actorKey, act)
-			next.ServeHTTP(w, r.WithContext(newCtx))
+			r = r.WithContext(newCtx)
 		}
 		next.ServeHTTP(w, r)
 	})
-}
-
-func Validator(v validation.ActivityValidator) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			newCtx := context.WithValue(ctx, validation.ValidatorKey, v)
-			next.ServeHTTP(w, r.WithContext(newCtx))
-		}
-		return http.HandlerFunc(fn)
-	}
 }
