@@ -12,20 +12,28 @@ import (
 	"strings"
 )
 
-const ActivityStreamsPublicNS = as.IRI("https://www.w3.org/ns/activitystreams#Public")
 var ServiceIRI as.IRI
 
+const ActivityStreamsPublicNS = as.IRI("https://www.w3.org/ns/activitystreams#Public")
+
+var AnonymousActor = Person{
+	Person: ap.Person{
+		Parent: as.Parent{
+			ID:   as.ObjectID(ActivityStreamsPublicNS),
+			Type: as.PersonType,
+		},
+	},
+}
+
 func Self(baseURL as.IRI) Service {
-	return Service {
+	return Service{
 		Person: ap.Person{
 			Parent: as.Person{
 				ID:           as.ObjectID(baseURL),
 				Type:         as.ServiceType,
 				Name:         as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: "self"}},
 				AttributedTo: as.IRI("https://github.com/mariusor"),
-				Audience:     as.ItemCollection{
-					ActivityStreamsPublicNS,
-				},
+				Audience: as.ItemCollection{ ActivityStreamsPublicNS },
 				Content:  nil, //as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: ""}},
 				Icon:     nil,
 				Image:    nil,
@@ -325,7 +333,6 @@ func (c *Collection) UnmarshalJSON(data []byte) error {
 	c.TotalItems = uint(len(items))
 	return nil
 }
-
 
 // ItemByType
 func ItemByType(typ as.ActivityVocabularyType) (as.Item, error) {

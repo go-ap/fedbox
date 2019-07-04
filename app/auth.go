@@ -16,8 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spacemonkeygo/httpsig"
 	"net/http"
-	"net/url"
-	"path"
 	"strings"
 )
 
@@ -27,20 +25,23 @@ type keyLoader struct {
 	baseIRI string
 	logFn   func(string, ...interface{})
 	realm   string
-	acc     as.Actor
+	acc     activitypub.Person
 	l       st.ActorLoader
 	c       client.Client
 }
 
-func loadFederatedActor(c client.Client, id as.IRI) (as.Actor, error) {
+func loadFederatedActor(c client.Client, id as.IRI) (activitypub.Person, error) {
 	it, err := c.LoadIRI(id)
 	if err != nil {
-		return as.Person{}, err
+		return activitypub.AnonymousActor, err
 	}
-	if acct, ok := it.(*as.Person); ok {
+	if acct, ok := it.(*activitypub.Person); ok {
+		return *acct, nil
+	}
+	if acct, ok := it.(activitypub.Person); ok {
 		return acct, nil
 	}
-	return as.Person{}, nil
+	return activitypub.AnonymousActor, nil
 }
 
 func validateLocalIRI(i as.IRI) error {
@@ -53,7 +54,8 @@ func validateLocalIRI(i as.IRI) error {
 func (k *keyLoader) GetKey(id string) interface{} {
 	var err error
 
-	u, err := url.Parse(id)
+	iri := as.IRI(id)
+	u, err := iri.URL()
 	if err != nil {
 		return err
 	}
@@ -63,18 +65,24 @@ func (k *keyLoader) GetKey(id string) interface{} {
 		return nil
 	}
 
-	if err := validateLocalIRI(as.IRI(id)); err == nil {
-		hash := path.Base(u.Path)
-		k.acc, _, err = k.l.LoadActors(&activitypub.Filters{Key: []activitypub.Hash{activitypub.Hash(hash)}})
-		if err != nil {
-			k.logFn("unable to find local account matching key id %s", id)
+	if err := validateLocalIRI(iri); err == nil {
+		actors, cnt, err := k.l.LoadActors(&activitypub.Filters{IRI: iri})
+		if err != nil || cnt == 0 {
+			k.logFn("unable to find local account matching key id %s", iri)
 			return nil
+		}
+		actor := actors.First()
+		if acct, ok := actor.(*activitypub.Person); ok {
+			k.acc = *acct
+		}
+		if acct, ok := actor.(activitypub.Person); ok {
+			k.acc = acct
 		}
 	} else {
 		// @todo(queue_support): this needs to be moved to using queues
-		k.acc, err = loadFederatedActor(k.c, as.IRI(id))
+		k.acc, err = loadFederatedActor(k.c, iri)
 		if err != nil {
-			k.logFn("unable to load federated account matching key id %s", id)
+			k.logFn("unable to load federated account matching key id %s", iri)
 			return nil
 		}
 	}
@@ -85,8 +93,8 @@ func (k *keyLoader) GetKey(id string) interface{} {
 		return nil
 	}
 	var pub crypto.PublicKey
-	pemmed := obj.PublicKey.PublicKeyPem
-	block, _ := pem.Decode([]byte(pemmed))
+	rawPem := obj.PublicKey.PublicKeyPem
+	block, _ := pem.Decode([]byte(rawPem))
 	if block == nil {
 		k.logFn("failed to parse PEM block containing the public key")
 		return nil
@@ -101,7 +109,7 @@ func (k *keyLoader) GetKey(id string) interface{} {
 
 type oauthLoader struct {
 	logFn func(string, ...interface{})
-	acc   as.Actor
+	acc   activitypub.Person
 	s     *osin.Server
 }
 
@@ -112,7 +120,7 @@ func (k *oauthLoader) Verify(r *http.Request) (error, string) {
 		return err, ""
 	}
 	if b, ok := dat.UserData.(json.RawMessage); ok {
-		if err := json.Unmarshal([]byte(b), &k.acc); err != nil {
+		if err := json.Unmarshal(b, &k.acc); err != nil {
 			return err, ""
 		}
 	} else {
@@ -142,7 +150,7 @@ func httpSignatureVerifier(getter *keyLoader) (*httpsig.Verifier, string) {
 
 func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, error) {
 	client := cl.NewClient()
-	var acct as.Actor
+	acct := activitypub.AnonymousActor
 	if auth := r.Header.Get("Authorization"); auth != "" {
 		var err error
 		var challenge string
@@ -159,7 +167,7 @@ func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, e
 		if strings.Contains(auth, "Signature") {
 			if loader, ok := actorLoader(r.Context()); ok {
 				// only verify http-signature if present
-				getter := keyLoader{acc: acct, l: loader, realm: r.URL.Host, c: client }
+				getter := keyLoader{acc: acct, l: loader, realm: r.URL.Host, c: client}
 				method = "httpSig"
 				getter.logFn = l.WithFields(logrus.Fields{"from": method}).Debugf
 
@@ -171,7 +179,7 @@ func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, e
 		}
 		if err != nil {
 			// TODO(marius): fix this challenge passing
-			err = errors.NewUnauthorized(err, "").Challenge(challenge)
+			err = errors.NewUnauthorized(err, "").Challenge(r.URL.Path)
 			l.WithFields(logrus.Fields{
 				"id":        acct.GetID(),
 				"auth":      r.Header.Get("Authorization"),
