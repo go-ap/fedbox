@@ -93,7 +93,7 @@ var C2STests = testPairs{
 				body: loadMockJson("mocks/create-actor.json", selfAccount.id),
 			},
 			res: testRes{
-				code: http.StatusCreated,
+				code: http.StatusUnauthorized,
 				val: &objectVal{
 					typ: string(as.CreateType),
 					act: &objectVal{
@@ -112,7 +112,7 @@ var C2STests = testPairs{
 				body: loadMockJson("mocks/update-actor.json", selfAccount.id, selfAccount.id, baseURL),
 			},
 			res: testRes{
-				code: http.StatusCreated,
+				code: http.StatusUnauthorized,
 				val: &objectVal{
 					typ: string(as.UpdateType),
 					act: &objectVal{
@@ -142,7 +142,7 @@ var C2STests = testPairs{
 				body: loadMockJson("mocks/delete-actor.json", selfAccount.id, selfAccount.id),
 			},
 			res: testRes{
-				code: http.StatusGone,
+				code: http.StatusUnauthorized,
 				val: &objectVal{
 					typ: string(as.DeleteType),
 					act: &objectVal{
@@ -165,7 +165,7 @@ var C2STests = testPairs{
 				body: loadMockJson("mocks/create-article.json", selfAccount.id, selfAccount.id),
 			},
 			res: testRes{
-				code: http.StatusCreated,
+				code: http.StatusUnauthorized,
 				val: &objectVal{
 					typ: string(as.CreateType),
 					act: &objectVal{

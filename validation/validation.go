@@ -13,7 +13,7 @@ import (
 )
 
 type ClientActivityValidator interface {
-	ValidateClientActivity(as.Item) error
+	ValidateClientActivity(as.Item, as.IRI) error
 	//ValidateClientObject(as.Item) error
 	ValidateClientActor(as.Item) error
 	//ValidateClientTarget(as.Item) error
@@ -21,7 +21,7 @@ type ClientActivityValidator interface {
 }
 
 type ServerActivityValidator interface {
-	ValidateServerActivity(as.Item) error
+	ValidateServerActivity(as.Item, as.IRI) error
 	//ValidateServerObject(as.Item) error
 	ValidateServerActor(as.Item) error
 	//ValidateServerTarget(as.Item) error
@@ -68,6 +68,7 @@ type invalidActivity struct {
 
 type genericValidator struct {
 	baseIRI as.IRI
+	auth    activitypub.Person
 	c       client.Client
 	s       storage.Loader
 }
@@ -106,11 +107,49 @@ var InvalidTarget = func(s string, p ...interface{}) ActivityPubError {
 	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Target is not valid: %s", s), p...)}
 }
 
-func (v genericValidator) ValidateServerActivity(a as.Item) error {
+func (v genericValidator) ValidateServerActivity(a as.Item, inbox as.IRI) error {
 	return errors.NotImplementedf("Server Activity validation is not implemented")
 }
 
-func (v genericValidator) ValidateClientActivity(a as.Item) error {
+// IRIBelongsToActor checks if the search iri represents any of the collections associated with the actor.
+func IRIBelongsToActor(iri as.IRI, actor activitypub.Person) bool {
+	//p, _ := activitypub.ToPerson(actor)
+	if actor.Inbox == iri {
+		return true
+	}
+	if actor.Outbox == iri {
+		return true
+	}
+	if actor.Endpoints.SharedInbox == iri {
+		return true
+	}
+	// The following should not really come into question at any point.
+	// This function should be used for checking inbox/outbox/sharedInbox IRIS
+	if actor.Following == iri {
+		return true
+	}
+	if actor.Followers == iri {
+		return true
+	}
+	if actor.Replies == iri {
+		return true
+	}
+	if actor.Liked == iri {
+		return true
+	}
+	if actor.Shares == iri {
+		return true
+	}
+	if actor.Likes == iri {
+		return true
+	}
+	return false
+}
+
+func (v genericValidator) ValidateClientActivity(a as.Item, outbox as.IRI) error {
+	if !IRIBelongsToActor(outbox, v.auth) {
+		return errors.Unauthorizedf("%s actor does not own the current outbox", v.auth.Name)
+	}
 	if a == nil {
 		return InvalidActivityActor("received nil activity")
 	}
@@ -237,10 +276,14 @@ func (v genericValidator) ValidateAudience(audience ...as.ItemCollection) error 
 type CtxtKey string
 var ValidatorKey = CtxtKey("__validator")
 
-func ActivityValidatorCtxt(ctx context.Context) (ActivityValidator, bool) {
+func FromContext(ctx context.Context) (*genericValidator, bool) {
 	ctxVal := ctx.Value(ValidatorKey)
-	s, ok := ctxVal.(ActivityValidator)
+	s, ok := ctxVal.(*genericValidator)
 	return s, ok
+}
+
+func (v *genericValidator) SetActor(p activitypub.Person) {
+	v.auth = p
 }
 
 func (v genericValidator) validateLocalIRI(i as.IRI) error {

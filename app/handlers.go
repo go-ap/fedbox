@@ -31,7 +31,7 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 	if err != nil {
 		return nil, errors.NewNotValid(err, "Unable to load filters from request")
 	}
-	LoadItemFilters(r, &f)
+	LoadCollectionFilters(r, &f)
 
 	if !activitypub.ValidActivityCollection(string(typ)) {
 		return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
@@ -59,7 +59,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	if err != nil {
 		return it, 0, errors.NewNotValid(err, "Unable to load filters from request")
 	}
-	LoadItemFilters(r, &f)
+	LoadCollectionFilters(r, &f)
 
 	if body, err := ioutil.ReadAll(r.Body); err != nil || len(body) == 0 {
 		return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
@@ -68,11 +68,12 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
 	}
-	validator, ok := validation.ActivityValidatorCtxt(r.Context())
+	validator, ok := validation.FromContext(r.Context())
 	if ok == false {
 		return it, http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity validator")
 	}
-	var validateFn func(as.Item) error
+	validator.SetActor(f.Authenticated)
+	var validateFn func(as.Item, as.IRI) error
 	switch typ {
 	case h.Outbox :
 		validateFn = validator.ValidateClientActivity
@@ -81,8 +82,8 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	default:
 		return it, http.StatusNotAcceptable, errors.NewMethodNotAllowed(err, "Collection %s does not receive Activity requests", typ)
 	}
-	if err = validateFn(it); err != nil {
-		return it, http.StatusBadRequest, errors.NewBadRequest(err, "%s activity failed validation", it.GetType())
+	if err = validateFn(it, f.IRI); err != nil {
+		return it, 0, err
 	}
 
 	if typ == h.Outbox {

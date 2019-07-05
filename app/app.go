@@ -33,6 +33,18 @@ func objectLoader(ctx context.Context) (st.ObjectLoader, bool) {
 	return s, ok
 }
 
+func actor(ctx context.Context) (ap.Person, bool) {
+	ctxVal := ctx.Value(actorKey)
+	if p, ok := ctxVal.(ap.Person); ok {
+		return p, ok
+	}
+	if p, ok := ctxVal.(*ap.Person); ok {
+		return *p, ok
+	}
+	return ap.AnonymousActor, false
+}
+
+
 // TODO(marius) Move away from keeping this data statically.
 var Config config.Options
 

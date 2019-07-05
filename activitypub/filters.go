@@ -53,22 +53,23 @@ func ValidActivityCollection(typ string) bool {
 
 // Filters
 type Filters struct {
-	To           as.Actor                    `qstring:"-"`
-	Author       as.Actor                    `qstring:"-"`
-	Parent       as.Actor                    `qstring:"-"`
-	IRI          as.IRI                      `qstring:"-"`
-	Collection   h.CollectionType            `qstring:"-"`
-	Audience     []as.IRI                    `qstring:"-"`
-	Key          []Hash                      `qstring:"id,omitempty"`
-	ItemKey      []Hash                      `qstring:"objectid,omitempty"`
-	Type         []as.ActivityVocabularyType `qstring:"type"`
-	AttributedTo []Hash                      `qstring:"attributedTo,omitempty"`
-	InReplyTo    []Hash                      `qstring:"inReplyTo,omitempty"`
-	FollowedBy   []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
-	OlderThan    time.Time                   `qstring:"olderThan,omitempty"`
-	NewerThan    time.Time                   `qstring:"newerThan,omitempty"`
-	CurPage      uint                        `qstring:"page,omitempty"`
-	MaxItems     uint                        `qstring:"maxItems,omitempty"`
+	Authenticated Person                      `qstring:"-"`
+	To            as.Actor                    `qstring:"-"`
+	Author        as.Actor                    `qstring:"-"`
+	Parent        as.Actor                    `qstring:"-"`
+	IRI           as.IRI                      `qstring:"-"`
+	Collection    h.CollectionType            `qstring:"-"`
+	Audience      []as.IRI                    `qstring:"-"`
+	Key           []Hash                      `qstring:"id,omitempty"`
+	ItemKey       []Hash                      `qstring:"objectid,omitempty"`
+	Type          []as.ActivityVocabularyType `qstring:"type"`
+	AttributedTo  []Hash                      `qstring:"attributedTo,omitempty"`
+	InReplyTo     []Hash                      `qstring:"inReplyTo,omitempty"`
+	FollowedBy    []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
+	OlderThan     time.Time                   `qstring:"olderThan,omitempty"`
+	NewerThan     time.Time                   `qstring:"newerThan,omitempty"`
+	CurPage       uint                        `qstring:"page,omitempty"`
+	MaxItems      uint                        `qstring:"maxItems,omitempty"`
 }
 
 // IRIs returns a list of ActivityVocabularyTypes to filter against

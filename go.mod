@@ -7,7 +7,7 @@ require (
 	github.com/buger/jsonparser v0.0.0-20181023193515-52c6e1462ebd
 	github.com/gchaincl/dotsql v0.1.0
 	github.com/go-ap/activitypub v0.0.0-20190612152204-c791831e61fc
-	github.com/go-ap/activitystreams v0.0.0-20190621152349-7d4dd99336d5
+	github.com/go-ap/activitystreams v0.0.0-20190705093734-e11c56fb6b86
 	github.com/go-ap/errors v0.0.0-20190621154420-19e59a62cbd5
 	github.com/go-ap/handlers v0.0.0-20190630180016-6b4f127fefe8
 	github.com/go-ap/jsonld v0.0.0-20190630153951-3e340483bd9f

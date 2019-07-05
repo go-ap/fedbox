@@ -148,6 +148,10 @@ func httpSignatureVerifier(getter *keyLoader) (*httpsig.Verifier, string) {
 	return v, challenge
 }
 
+// LoadActorFromAuthHeader reads the Authorization header of an HTTP request and tries to decode it either as
+// an OAuth2 or HTTP Signatures:
+//   For OAuth2 it tries to load the matching local Actor and use it further in the processing logic
+//   For HTTP Signatures it tries to load the federated Actor and use it further in the processing logic
 func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, error) {
 	client := cl.NewClient()
 	acct := activitypub.AnonymousActor
@@ -161,8 +165,9 @@ func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, e
 			// TODO(marius): move this to a better place but outside the handler
 			v := oauthLoader{acc: acct, s: oss}
 			v.logFn = l.WithFields(logrus.Fields{"from": method}).Debugf
-			err, challenge = v.Verify(r)
-			acct = v.acc
+			if err, challenge = v.Verify(r); err == nil {
+				acct = v.acc
+			}
 		}
 		if strings.Contains(auth, "Signature") {
 			if loader, ok := actorLoader(r.Context()); ok {
@@ -173,23 +178,21 @@ func LoadActorFromAuthHeader(r *http.Request, l logrus.FieldLogger) (as.Actor, e
 
 				var v *httpsig.Verifier
 				v, challenge = httpSignatureVerifier(&getter)
-				err = v.Verify(r)
-				acct = getter.acc
+				if err = v.Verify(r); err == nil {
+					acct = getter.acc
+				}
 			}
 		}
 		if err != nil {
 			// TODO(marius): fix this challenge passing
-			err = errors.NewUnauthorized(err, "").Challenge(r.URL.Path)
+			err = errors.NewUnauthorized(err, "").Challenge(challenge)
 			l.WithFields(logrus.Fields{
 				"id":        acct.GetID(),
 				"auth":      r.Header.Get("Authorization"),
 				"req":       fmt.Sprintf("%s:%s", r.Method, r.URL.RequestURI()),
 				"err":       err,
 				"challenge": challenge,
-			}).Warn("invalid HTTP Authorization")
-			// TODO(marius): here we need to implement some outside logic, as to we want to allow non-signed
-			//   requests on some urls, but not on others - probably another handler to check for Anonymous
-			//   would suffice.
+			}).Warn("Invalid HTTP Authorization")
 			return acct, err
 		} else {
 			// TODO(marius): Add actor's host to the logging

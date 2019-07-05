@@ -10,6 +10,8 @@ import (
 	"net/http"
 )
 
+// Repo adds an implementation of the storage.Loader to a Request's context so it can be used
+// further in the middleware chain
 func Repo(loader storage.Loader) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -21,6 +23,8 @@ func Repo(loader storage.Loader) func(next http.Handler) http.Handler {
 	}
 }
 
+// Validator adds an implementation of the validation.ActivityValidator to a Request's context so it can be used
+// further in the middleware chain
 func Validator(v validation.ActivityValidator) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +36,7 @@ func Validator(v validation.ActivityValidator) func(next http.Handler) http.Hand
 	}
 }
 
-
+// ActorFromAuthHeader tries to load a local Actor from the OAuth2 or HTTP Signatures Authorization headers
 func ActorFromAuthHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger := log.New()
@@ -46,9 +50,7 @@ func ActorFromAuthHeader(next http.Handler) http.Handler {
 			logger.Warnf("%s", err)
 		}
 		if act != nil {
-			ctx := r.Context()
-			newCtx := context.WithValue(ctx, actorKey, act)
-			r = r.WithContext(newCtx)
+			r = r.WithContext(context.WithValue(r.Context(), actorKey, act))
 		}
 		next.ServeHTTP(w, r)
 	})
