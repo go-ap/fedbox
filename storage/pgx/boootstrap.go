@@ -116,7 +116,7 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 
 	u, _ := service.GetLink().URL()
 	raw, _ := jsonld.Marshal(service)
-	err = exec("insert-service-actor", path.Base(u.Path), service.GetLink(), raw)
+	err = exec("insert-actor", path.Base(u.Path), service.GetType(), service.GetLink(), raw)
 	if err != nil {
 		return err
 	}

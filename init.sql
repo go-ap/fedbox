@@ -103,8 +103,8 @@ create table collections (
      "count" int DEFAULT 0,
      "elements" varchar[] default NULL
 );
--- name: insert-service-actor
-insert into actors ("key", "iri", "type", "raw") values ('%s', '%s', 'Service', '%s'::jsonb);
+-- name: insert-actor
+insert into actors ("key", "iri", "type", "raw") values ('%s', '%s', '%s', '%s'::jsonb);
 -- name: insert-collection
 insert into collections ("iri", "type") values ('%s', '%s');
 -- name: add-to-collection
