@@ -9,10 +9,12 @@ import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/spacemonkeygo/httpsig"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
+	"path"
 	"runtime/debug"
 	"sort"
 	"strings"
@@ -422,6 +424,7 @@ func errOnGetRequest(t *testing.T) requestGetAssertFn {
 func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 	return func(test testPair) map[string]interface{} {
 		res := make(map[string]interface{})
+		oauthServ, _ := osinServer()
 		t.Run(test.req.met, func(t *testing.T) {
 			assertTrue := errIfNotTrue(t)
 			assertGetRequest := errOnGetRequest(t)
@@ -447,7 +450,21 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 
 			req.Header = test.req.headers
 			if test.req.account != nil {
+				signHdrs := []string{"(request-target)", "host", "date"}
+
 				req.Header.Set("Date", time.Now().Format(http.TimeFormat))
+				var err error
+				if path.Base(req.URL.Path) == "inbox" {
+					err = httpsig.NewSigner(
+						fmt.Sprintf("%s#main-key", test.req.account.id),
+						test.req.account.privateKey,
+						httpsig.RSASHA256,
+						signHdrs,
+					).Sign(req)
+				}
+				if path.Base(req.URL.Path) == "outbox" {
+					err = addOAuth2Auth(req, test.req.account, oauthServ)
+				}
 				assertTrue(err == nil, "Error: unable to sign request: %s", err)
 			}
 			resp, err := http.DefaultClient.Do(req)

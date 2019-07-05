@@ -147,10 +147,10 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 	//if err != nil {
 	//	return err
 	//}
-	err = exec("insert-collection", service.Outbox.GetLink(), activitystreams.OrderedCollectionType)
-	if err != nil {
-		return err
-	}
+	//err = exec("insert-collection", service.Outbox.GetLink(), activitystreams.OrderedCollectionType)
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }
 
@@ -209,4 +209,56 @@ func Clean(opt config.Options, rootUser string, rootPw []byte, path string) erro
 		return err
 	}
 	return nil
+}
+
+func AddTestMockActor(opt config.Options, file string, actor activitypub.Person) error {
+	log := logrus.New()
+	var conn *pgx.Conn
+	var err error
+
+	conf := opt.DB
+	if conf.User == "" {
+		return errors.Newf("empty user")
+	}
+	if conf.Name == "" {
+		return errors.Newf("empty name")
+	}
+	if conf.Host == "" {
+		return errors.Newf("empty host")
+	}
+	if opt.BaseURL == "" {
+		return errors.Newf("empty base URL")
+	}
+
+	conn, err = openConn(pgx.ConnConfig{
+		Host:     conf.Host,
+		Port:     uint16(conf.Port),
+		Database: conf.Name,
+		User:     conf.User,
+		Password: conf.Pw,
+		Logger:   DBLogger(log),
+	})
+	if err != nil {
+		return err
+	}
+	dot, err := dotsql.LoadFromFile(file)
+	if err != nil {
+		return errors.Annotatef(err, "could not open bootstrap file %s", file)
+	}
+
+	exec := func(lbl string, par ...interface{}) error {
+		qRaw, err := dot.Raw(lbl)
+		if err != nil {
+			return errors.Annotatef(err, "unable to load query: %s", lbl)
+		}
+		qSql := fmt.Sprintf(qRaw, par...)
+		_, err = conn.Exec(qSql)
+		if err != nil {
+			return errors.Annotatef(err, "unable to execute: %s", lbl)
+		}
+		return nil
+	}
+	
+	raw, _ := jsonld.Marshal(actor)
+	return exec("insert-actor", path.Base(opt.BaseURL), actor.GetType(), actor.GetLink(), raw)
 }
