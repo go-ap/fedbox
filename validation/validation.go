@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/go-ap/activitypub/client"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/storage"
 	"golang.org/x/xerrors"
 	"strings"
@@ -68,7 +68,7 @@ type invalidActivity struct {
 
 type genericValidator struct {
 	baseIRI as.IRI
-	auth    activitypub.Person
+	auth    auth.Person
 	c       client.Client
 	s       storage.Loader
 }
@@ -112,7 +112,7 @@ func (v genericValidator) ValidateServerActivity(a as.Item, inbox as.IRI) error 
 }
 
 // IRIBelongsToActor checks if the search iri represents any of the collections associated with the actor.
-func IRIBelongsToActor(iri as.IRI, actor activitypub.Person) bool {
+func IRIBelongsToActor(iri as.IRI, actor auth.Person) bool {
 	//p, _ := activitypub.ToPerson(actor)
 	if actor.Inbox == iri {
 		return true
@@ -265,7 +265,7 @@ func (v genericValidator) ValidateAudience(audience ...as.ItemCollection) error 
 			if err := v.validateLocalIRI(iri.GetLink()); err == nil {
 				return nil
 			}
-			if iri.GetLink() == activitypub.ActivityStreamsPublicNS {
+			if iri.GetLink() == auth.ActivityStreamsPublicNS {
 				return nil
 			}
 		}
@@ -282,7 +282,7 @@ func FromContext(ctx context.Context) (*genericValidator, bool) {
 	return s, ok
 }
 
-func (v *genericValidator) SetActor(p activitypub.Person) {
+func (v *genericValidator) SetActor(p auth.Person) {
 	v.auth = p
 }
 

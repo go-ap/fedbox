@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/boltdb/bolt"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/jsonld"
@@ -285,7 +286,7 @@ func delete(r *repo, it as.Item) (as.Item, error) {
 			ID:   as.ObjectID(it.GetLink()),
 			Type: as.TombstoneType,
 			To: as.ItemCollection{
-				ap.ActivityStreamsPublicNS,
+				auth.ActivityStreamsPublicNS,
 			},
 		},
 		Deleted:    time.Now().UTC(),

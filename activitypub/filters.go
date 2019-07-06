@@ -3,6 +3,7 @@ package activitypub
 import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	h "github.com/go-ap/handlers"
 	"github.com/mariusor/qstring"
@@ -53,7 +54,7 @@ func ValidActivityCollection(typ string) bool {
 
 // Filters
 type Filters struct {
-	Authenticated Person                      `qstring:"-"`
+	Authenticated auth.Person                 `qstring:"-"`
 	To            as.Actor                    `qstring:"-"`
 	Author        as.Actor                    `qstring:"-"`
 	Parent        as.Actor                    `qstring:"-"`

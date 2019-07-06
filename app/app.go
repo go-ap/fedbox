@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -33,15 +34,15 @@ func objectLoader(ctx context.Context) (st.ObjectLoader, bool) {
 	return s, ok
 }
 
-func actor(ctx context.Context) (ap.Person, bool) {
+func actor(ctx context.Context) (auth.Person, bool) {
 	ctxVal := ctx.Value(actorKey)
-	if p, ok := ctxVal.(ap.Person); ok {
+	if p, ok := ctxVal.(auth.Person); ok {
 		return p, ok
 	}
-	if p, ok := ctxVal.(*ap.Person); ok {
+	if p, ok := ctxVal.(*auth.Person); ok {
 		return *p, ok
 	}
-	return ap.AnonymousActor, false
+	return auth.AnonymousActor, false
 }
 
 

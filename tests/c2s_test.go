@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/auth"
 	"io"
 	"net/http"
 	"os"
@@ -73,7 +73,7 @@ var C2STests = testPairs{
 					typ:  string(as.ServiceType),
 					name: selfAccount.Handle,
 					audience: []string{
-						activitypub.ActivityStreamsPublicNS.String(),
+						auth.ActivityStreamsPublicNS.String(),
 					},
 					inbox: &objectVal{
 						id: fmt.Sprintf("%s/inbox", baseURL),

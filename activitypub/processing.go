@@ -3,6 +3,7 @@ package activitypub
 import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/handlers"
 	s "github.com/go-ap/storage"
@@ -49,7 +50,7 @@ func getCollection(it as.Item, c handlers.CollectionType) as.CollectionInterface
 
 func AddNewObjectCollections(r s.CollectionSaver, it as.Item) (as.Item, error) {
 	if as.ActorTypes.Contains(it.GetType()) {
-		if p, err := ToPerson(it); err == nil {
+		if p, err := auth.ToPerson(it); err == nil {
 			if in, err := r.CreateCollection(getCollection(p, handlers.Inbox)); err != nil {
 				return it, errors.Errorf("could not create bucket for collection %s", err)
 			} else {
@@ -227,7 +228,7 @@ func ContentManagementActivity(l s.Saver, act *as.Activity) (*as.Activity, error
 			a.Published = now
 
 			act.Object = a
-		} else if p, err := ToPerson(act.Object); err == nil {
+		} else if p, err := auth.ToPerson(act.Object); err == nil {
 			// See https://www.w3.org/TR/ActivityPub/#create-activity-outbox
 			// Copying the actor's IRI to the object's AttributedTo
 			p.AttributedTo = act.Actor.GetLink()

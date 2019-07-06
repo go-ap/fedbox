@@ -5,6 +5,7 @@ import (
 	"github.com/buger/jsonparser"
 	ap "github.com/go-ap/activitypub"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/handlers"
 	"github.com/pborman/uuid"
@@ -14,32 +15,15 @@ import (
 
 var ServiceIRI as.IRI
 
-const ActivityStreamsPublicNS = as.IRI("https://www.w3.org/ns/activitystreams#Public")
-
-var AnonymousActor = Person{
-	Person: ap.Person{
-		Parent: as.Parent{
-			ID:   as.ObjectID(ActivityStreamsPublicNS),
-			Type: as.PersonType,
-			Name: as.NaturalLanguageValues{
-				as.LangRefValue{
-					Ref:   as.NilLangRef,
-					Value: "Anonymous",
-				},
-			},
-		},
-	},
-}
-
-func Self(baseURL as.IRI) Service {
-	return Service{
+func Self(baseURL as.IRI) auth.Service {
+	return auth.Service{
 		Person: ap.Person{
 			Parent: as.Person{
 				ID:           as.ObjectID(baseURL),
 				Type:         as.ServiceType,
 				Name:         as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: "self"}},
 				AttributedTo: as.IRI("https://github.com/mariusor"),
-				Audience:     as.ItemCollection{ActivityStreamsPublicNS},
+				Audience:     as.ItemCollection{auth.ActivityStreamsPublicNS},
 				Content:      nil, //as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: ""}},
 				Icon:         nil,
 				Image:        nil,
@@ -64,25 +48,6 @@ func DefaultServiceIRI(baseURL string) as.IRI {
 	return as.IRI(u.String())
 }
 
-// PublicKey holds the ActivityPub compatible public key data
-type PublicKey struct {
-	ID           as.ObjectID     `jsonld:"id,omitempty"`
-	Owner        as.ObjectOrLink `jsonld:"owner,omitempty"`
-	PublicKeyPem string          `jsonld:"publicKeyPem,omitempty"`
-}
-
-// Person it should be identical to:
-//    github.com/go-ap/activitypub/actors.go#To
-// We need it here in order to be able to add to it our Score property
-type Person struct {
-	ap.Person
-	PublicKey PublicKey `jsonld:"publicKey,omitempty"`
-}
-
-type Service = Person
-type Group = Person
-type Application = Person
-
 // OrderedCollection should be identical to:
 //    github.com/go-ap/activitystreams/collections.go#OrderedCollection
 // We need it here in order to be able to implement our own UnmarshalJSON() method
@@ -92,59 +57,6 @@ type OrderedCollection as.OrderedCollection
 //    github.com/go-ap/activitystreams/collections.go#Collection
 // We need it here in order to be able to implement our own UnmarshalJSON() method
 type Collection as.Collection
-
-// GetID returns the ObjectID pointer of current Person instance
-func (p Person) GetID() *as.ObjectID {
-	id := as.ObjectID(p.ID)
-	return &id
-}
-func (p Person) GetType() as.ActivityVocabularyType {
-	return as.ActivityVocabularyType(p.Type)
-}
-func (p Person) GetLink() as.IRI {
-	return as.IRI(p.ID)
-}
-func (p Person) IsLink() bool {
-	return false
-}
-
-func (p Person) IsObject() bool {
-	return true
-}
-
-func (p *PublicKey) UnmarshalJSON(data []byte) error {
-	if id, err := jsonparser.GetString(data, "id"); err == nil {
-		p.ID = as.ObjectID(id)
-	} else {
-		return err
-	}
-	if o, err := jsonparser.GetString(data, "owner"); err == nil {
-		p.Owner = as.IRI(o)
-	} else {
-		return err
-	}
-	if pub, err := jsonparser.GetString(data, "publicKeyPem"); err == nil {
-		p.PublicKeyPem = pub
-	} else {
-		return err
-	}
-	return nil
-}
-
-// UnmarshalJSON tries to load json data to Person object
-func (p *Person) UnmarshalJSON(data []byte) error {
-	app := ap.Person{}
-	if err := app.UnmarshalJSON(data); err != nil {
-		return err
-	}
-
-	p.Person = app
-	if pubData, _, _, err := jsonparser.Get(data, "publicKey"); err == nil {
-		p.PublicKey.UnmarshalJSON(pubData)
-	}
-
-	return nil
-}
 
 // GetType returns the OrderedCollection's type
 func (o OrderedCollection) GetType() as.ActivityVocabularyType {
@@ -221,7 +133,7 @@ func (o *OrderedCollection) UnmarshalJSON(data []byte) error {
 			case as.OrganizationType:
 				fallthrough
 			case as.PersonType:
-				p := &Person{}
+				p := &auth.Person{}
 				if data, _, _, err := jsonparser.Get(data, "orderedItems", fmt.Sprintf("[%d]", i)); err == nil {
 					p.UnmarshalJSON(data)
 				}
@@ -318,7 +230,7 @@ func (c *Collection) UnmarshalJSON(data []byte) error {
 			case as.OrganizationType:
 				fallthrough
 			case as.PersonType:
-				p := &Person{}
+				p := &auth.Person{}
 				if data, _, _, err := jsonparser.Get(data, "items", fmt.Sprintf("[%d]", i)); err == nil {
 					p.UnmarshalJSON(data)
 				}
@@ -345,7 +257,7 @@ func ItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 	var ret as.Item
 
 	if as.ActorTypes.Contains(typ) {
-		o := &Person{}
+		o := &auth.Person{}
 		o.Type = typ
 		ret = o
 	} else if as.ActivityTypes.Contains(typ) {
@@ -403,33 +315,16 @@ func ToCollection(it as.Item) (*Collection, error) {
 // ToObject
 func ToObject(it as.Item) (*as.Object, error) {
 	switch o := it.(type) {
-	case *Person:
+	case *auth.Person:
 		return &o.Parent, nil
-	case Person:
+	case auth.Person:
 		return &o.Parent, nil
 	}
 	return as.ToObject(it)
 }
 
-// ToPerson
-func ToPerson(it as.Item) (*Person, error) {
-	switch o := it.(type) {
-	case *Person:
-		return o, nil
-	case Person:
-		return &o, nil
-	}
-	ob, err := ap.ToPerson(it)
-	if err != nil {
-		return nil, err
-	}
-	p := Person{}
-	p.Person = *ob
-	return &p, nil
-}
-
 // FlattenObjectProperties flattens the Object's properties from Object types to IRI
-func FlattenPersonProperties(o *Person) *Person {
+func FlattenPersonProperties(o *auth.Person) *auth.Person {
 	o.Parent = *as.FlattenObjectProperties(&o.Parent)
 	return o
 }
@@ -443,7 +338,7 @@ func FlattenProperties(it as.Item) as.Item {
 		}
 	}
 	if as.ActorTypes.Contains(it.GetType()) {
-		ob, err := ToPerson(it)
+		ob, err := auth.ToPerson(it)
 		if err == nil {
 			return FlattenPersonProperties(ob)
 		}
@@ -458,7 +353,7 @@ func FlattenProperties(it as.Item) as.Item {
 	return as.FlattenProperties(it)
 }
 
-func UpdatePersonProperties(old, new *Person) (*Person, error) {
+func UpdatePersonProperties(old, new *auth.Person) (*auth.Person, error) {
 	o, err := UpdateObjectProperties(&old.Parent, &new.Parent)
 	old.Parent = *o
 	old.Inbox = replaceIfItem(old.Inbox, new.Inbox)
@@ -552,11 +447,11 @@ func UpdateItemProperties(to, from as.Item) (as.Item, error) {
 		return to, errors.Newf("Invalid object types for update")
 	}
 	if as.ActorTypes.Contains(to.GetType()) {
-		o, err := ToPerson(to)
+		o, err := auth.ToPerson(to)
 		if err != nil {
 			return o, err
 		}
-		n, err := ToPerson(from)
+		n, err := auth.ToPerson(from)
 		if err != nil {
 			return o, err
 		}
@@ -589,7 +484,7 @@ func GenerateID(it as.Item, partOf string, by as.Item) (as.ObjectID, error) {
 		it = a
 	}
 	if as.ActorTypes.Contains(it.GetType()) {
-		p, err := ToPerson(it)
+		p, err := auth.ToPerson(it)
 		if err != nil {
 			return id, err
 		}

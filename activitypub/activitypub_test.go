@@ -98,43 +98,11 @@ func TestOrderedCollection_UnmarshalJSON(t *testing.T) {
 	t.Skipf("TODO")
 }
 
-func TestPerson_GetID(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestPerson_GetLink(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestPerson_GetType(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestPerson_IsLink(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestPerson_IsObject(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestPerson_UnmarshalJSON(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestPublicKey_UnmarshalJSON(t *testing.T) {
-	t.Skipf("TODO")
-}
-
 func TestToCollection(t *testing.T) {
 	t.Skipf("TODO")
 }
 
 func TestToObject(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestToPerson(t *testing.T) {
 	t.Skipf("TODO")
 }
 
