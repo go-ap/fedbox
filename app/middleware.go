@@ -52,7 +52,7 @@ func ActorFromAuthHeader(next http.Handler) http.Handler {
 			logger.Warnf("%s", err)
 		}
 		if act != nil {
-			r = r.WithContext(context.WithValue(r.Context(), actorKey, act))
+			r = r.WithContext(context.WithValue(r.Context(), auth.ActorKey, act))
 		}
 		next.ServeHTTP(w, r)
 	})

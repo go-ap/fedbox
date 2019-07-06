@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
@@ -82,11 +83,6 @@ func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {
 func LoadItemFilters(r *http.Request, f *ap.Filters) error {
 	f.IRI = as.IRI(reqURL(r))
 
-	f.Authenticated, _ = actor(r.Context())
-	// TODO(marius): this needs to be moved somewhere where it makes more sense
-	//ctxVal := r.Context().Value(actorKey)
-	//if a, ok := ctxVal.(as.Actor); ok {
-	//	f.To = a
-	//}
+	f.Authenticated, _ = auth.ActorContext(r.Context())
 	return nil
 }

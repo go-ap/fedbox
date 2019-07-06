@@ -10,6 +10,7 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
+	"github.com/go-ap/processing"
 	s "github.com/go-ap/storage"
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/pgtype"
@@ -285,7 +286,7 @@ func (r repo) SaveObject(it as.Item) (as.Item, error) {
 			ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
 			Type:    []as.ActivityVocabularyType{it.GetType()},
 		}); cnt != 0 {
-			err := ap.ErrDuplicateObject("%s in table %s", it.GetLink(), table)
+			err := processing.ErrDuplicateObject("%s in table %s", it.GetLink(), table)
 			r.errFn(logrus.Fields{
 				"table": table,
 				"type":  it.GetType(),

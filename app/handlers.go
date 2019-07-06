@@ -7,6 +7,7 @@ import (
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/validation"
 	h "github.com/go-ap/handlers"
+	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
 	"io/ioutil"
 	"net/http"
@@ -96,7 +97,11 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		}
 	}
 
-	if it, err = activitypub.ProcessActivity(repo, it); err != nil {
+	act, err := as.ToActivity(it)
+	if err != nil {
+		return it, http.StatusInternalServerError, errors.Annotatef(err, "Invalid activity %s", it.GetType())
+	}
+	if it, err = processing.ProcessActivity(repo, act); err != nil {
 		return it, http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 	}
 

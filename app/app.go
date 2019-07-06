@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -18,10 +17,6 @@ import (
 	"time"
 )
 
-type CtxtKey string
-
-var actorKey = CtxtKey("__actor")
-
 func actorLoader(ctx context.Context) (st.ActorLoader, bool) {
 	ctxVal := ctx.Value(handlers.RepositoryKey)
 	s, ok := ctxVal.(st.ActorLoader)
@@ -32,17 +27,6 @@ func objectLoader(ctx context.Context) (st.ObjectLoader, bool) {
 	ctxVal := ctx.Value(handlers.RepositoryKey)
 	s, ok := ctxVal.(st.ObjectLoader)
 	return s, ok
-}
-
-func actor(ctx context.Context) (auth.Person, bool) {
-	ctxVal := ctx.Value(actorKey)
-	if p, ok := ctxVal.(auth.Person); ok {
-		return p, ok
-	}
-	if p, ok := ctxVal.(*auth.Person); ok {
-		return *p, ok
-	}
-	return auth.AnonymousActor, false
 }
 
 

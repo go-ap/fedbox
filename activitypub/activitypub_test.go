@@ -10,10 +10,6 @@ func TestOrderedCollection_Count(t *testing.T) {
 	t.Skipf("TODO")
 }
 
-func TestFlattenProperties(t *testing.T) {
-	t.Skipf("TODO")
-}
-
 func TestCollection_Count(t *testing.T) {
 	t.Skipf("TODO")
 }
@@ -54,19 +50,11 @@ func TestCollection_IsObject(t *testing.T) {
 	t.Skipf("TODO")
 }
 
-func TestFlattenPersonProperties(t *testing.T) {
-	t.Skipf("TODO")
-}
-
 func TestCollection_UnmarshalJSON(t *testing.T) {
 	t.Skipf("TODO")
 }
 
 func TestOrderedCollection_Append(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestUpdateItemProperties(t *testing.T) {
 	t.Skipf("TODO")
 }
 
@@ -99,18 +87,6 @@ func TestOrderedCollection_UnmarshalJSON(t *testing.T) {
 }
 
 func TestToCollection(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestToObject(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestUpdateObjectProperties(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestUpdatePersonProperties(t *testing.T) {
 	t.Skipf("TODO")
 }
 
@@ -147,5 +123,9 @@ func TestItemByType(t *testing.T) {
 }
 
 func TestAddNewObjectCollections(t *testing.T) {
+	t.Skipf("TODO")
+}
+
+func TestSelf(t *testing.T) {
 	t.Skipf("TODO")
 }
