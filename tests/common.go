@@ -424,7 +424,6 @@ func errOnGetRequest(t *testing.T) requestGetAssertFn {
 func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 	return func(test testPair) map[string]interface{} {
 		res := make(map[string]interface{})
-		oauthServ, _ := osinServer()
 		t.Run(test.req.met, func(t *testing.T) {
 			assertTrue := errIfNotTrue(t)
 			assertGetRequest := errOnGetRequest(t)
@@ -462,8 +461,8 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 						signHdrs,
 					).Sign(req)
 				}
-				if path.Base(req.URL.Path) == "outbox" {
-					err = addOAuth2Auth(req, test.req.account, oauthServ)
+				if path.Base(req.URL.Path) == "outbox" && _oauthServer != nil {
+					err = addOAuth2Auth(req, test.req.account, _oauthServer)
 				}
 				assertTrue(err == nil, "Error: unable to sign request: %s", err)
 			}

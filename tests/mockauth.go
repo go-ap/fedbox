@@ -4,26 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/oauth"
-	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/openshift/osin"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 )
 
-func osinServer() (*osin.Server, error) {
-	path := fmt.Sprintf("%s/host-oauth-%d.bdb", os.TempDir(), os.Getpid())
-	l := logrus.New()
-	return oauth.New(boltdb.NewOAuthStore(boltdb.Config{
-		Path:       path,
-		BucketName: host,
-		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.Errorf(s, p...) },
-		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.Infof(s, p...) },
-	}), l)
-}
+var _oauthServer *osin.Server
+
 func osinAccess(s *osin.Server) (*osin.Response, error) {
 	resp := s.NewResponse()
 	defer resp.Close()

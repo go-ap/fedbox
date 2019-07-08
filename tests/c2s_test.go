@@ -139,7 +139,7 @@ var C2STests = testPairs{
 			req: testReq{
 				met:  http.MethodPost,
 				url:  fmt.Sprintf("%s/outbox", apiURL),
-				account: &defaultTestAccount,
+				//account: &defaultTestAccount,
 				body: loadMockJson("mocks/delete-actor.json", selfAccount.id, selfAccount.id),
 			},
 			res: testRes{

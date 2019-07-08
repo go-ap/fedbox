@@ -23,34 +23,45 @@ type BackendConfig struct {
 }
 
 type Options struct {
-	Env        env.Type
-	LogLevel   log.Level
-	Secure     bool
-	Host       string
-	Listen     string
-	BaseURL    string
-	Storage    StorageType
-	DB         BackendConfig
-	BoltDBPath string
+	Env       env.Type
+	LogLevel  log.Level
+	Secure    bool
+	Host      string
+	Listen    string
+	BaseURL   string
+	Storage   StorageType
+	DB        BackendConfig
+	BoltDBDir string
 }
 
 type StorageType string
 
 const (
-	KeyENV      = "ENV"
-	KeyLogLevel = "LOG_LEVEL"
-	KeyHostname = "HOSTNAME"
-	KeyHTTPS    = "HTTPS"
-	KeyListen   = "LISTEN"
-	KeyStorage  = "STORAGE"
-	KeyDBHost   = "DB_HOST"
-	KeyDBPort   = "DB_PORT"
-	KeyDBName   = "DB_NAME"
-	KeyDBUser   = "DB_USER"
-	KeyDBPw     = "DB_PASSWORD"
-	BoltDB      = StorageType("boltdb")
-	Postgres    = StorageType("postgres")
+	KeyENV       = "ENV"
+	KeyLogLevel  = "LOG_LEVEL"
+	KeyHostname  = "HOSTNAME"
+	KeyHTTPS     = "HTTPS"
+	KeyListen    = "LISTEN"
+	KeyStorage   = "STORAGE"
+	KeyDBHost    = "DB_HOST"
+	KeyDBPort    = "DB_PORT"
+	KeyDBName    = "DB_NAME"
+	KeyDBUser    = "DB_USER"
+	KeyDBPw      = "DB_PASSWORD"
+	KeyBoltDBDir = "BOLTDB_DIR"
+	BoltDB       = StorageType("boltdb")
+	Postgres     = StorageType("postgres")
 )
+
+
+
+func (o Options) BoltDB() string {
+	return fmt.Sprintf("%s/%s-%s.bdb", o.BoltDBDir, path.Clean(o.Host), o.Env)
+}
+
+func (o Options) BoltDBOAuth2() string {
+	return fmt.Sprintf("%s/%s-%s-oauth.bdb", o.BoltDBDir, path.Clean(o.Host), o.Env)
+}
 
 func k(k string) string {
 	if Prefix != "" {
@@ -104,7 +115,10 @@ func LoadFromEnv(e string) (Options, error) {
 	conf.Listen = os.Getenv(k(KeyListen))
 	envStorage := os.Getenv(k(KeyStorage))
 	conf.Storage = StorageType(strings.ToLower(envStorage))
-	conf.BoltDBPath = fmt.Sprintf("%s/%s-%s.bdb", os.TempDir(), path.Clean(conf.Host), conf.Env)
+	conf.BoltDBDir = os.Getenv(k(KeyBoltDBDir))
+	if conf.BoltDBDir == "" {
+		conf.BoltDBDir = os.TempDir()
+	}
 	conf.DB.Host = os.Getenv(k(KeyDBHost))
 	conf.DB.Pw = os.Getenv(k(KeyDBPw))
 	conf.DB.Name = os.Getenv(k(KeyDBName))

@@ -3,10 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/fedbox/storage/pgx"
+	"github.com/openshift/osin"
+	"github.com/pborman/uuid"
 	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"path"
@@ -40,11 +43,34 @@ func main() {
 	}
 	if config.StorageType(typ) == config.BoltDB {
 		if file == "" {
+			file = conf.BoltDB()
 		}
 		if reset {
-			boltdb.Clean(conf.BoltDBPath, []byte(conf.Host))
+			boltdb.Clean(file, []byte(conf.Host))
 		}
-		err = boltdb.Bootstrap(conf.BoltDBPath, []byte(conf.Host), conf.BaseURL)
+		err = boltdb.Bootstrap(file, []byte(conf.Host), conf.BaseURL)
+		if err != nil {
+			errf("Unable to update %s db: %s\n", typ, err)
+			os.Exit(1)
+		}
+		oauthPath := conf.BoltDBOAuth2()
+
+		// TODO(marius): add a local Client struct that implements Client and ClientSecretMatcher interfaces with bcrypt support
+		//   It could even be a struct composite from an activitystreams.Application + secret and callback properties
+		//savpw, _ := bcrypt.GenerateFromPassword([]byte("yuh4ckm3?!"), 14)
+		savpw := "yuh4ckm3?!"
+		id := uuid.New()
+		c := osin.DefaultClient{
+			Id:          id,
+			Secret:      savpw,
+			RedirectUri: fmt.Sprintf("http://%s/local/callback", conf.Host),
+		}
+		err = auth.BootstrapBoltDB(oauthPath, []byte(conf.Host), &c)
+		if err != nil {
+			errf("Unable to update %s db: %s\n", typ, err)
+			os.Exit(1)
+		}
+		fmt.Printf("OAUTH_CLIENT=%s", id)
 	}
 	if config.StorageType(typ) == config.Postgres {
 		// ask for root pw
@@ -60,10 +86,10 @@ func main() {
 			pgx.Clean(conf, pgRoot, pgPw, file)
 		}
 		err = pgx.Bootstrap(conf, pgRoot, pgPw, file)
-	}
-	if err != nil {
-		errf("Unable to update %s db: %s\n", typ, err)
-		os.Exit(1)
+		if err != nil {
+			errf("Unable to update %s db: %s\n", typ, err)
+			os.Exit(1)
+		}
 	}
 	fmt.Println("OK")
 }

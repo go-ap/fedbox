@@ -6,14 +6,14 @@ require (
 	github.com/boltdb/bolt v1.3.1
 	github.com/buger/jsonparser v0.0.0-20181023193515-52c6e1462ebd
 	github.com/gchaincl/dotsql v0.1.0
-	github.com/go-ap/activitypub v0.0.0-20190706170317-3d7c3076762b
-	github.com/go-ap/activitystreams v0.0.0-20190706170349-08a365ef69b7
-	github.com/go-ap/auth v0.0.0-20190706170407-ff05e808c465
-	github.com/go-ap/errors v0.0.0-20190706170415-443b4516b3df
-	github.com/go-ap/handlers v0.0.0-20190706170433-5ea427cdb97c
-	github.com/go-ap/jsonld v0.0.0-20190706170457-163bf775dfbb
-	github.com/go-ap/processing v0.0.0-20190706170520-c581b9f6dc31
-	github.com/go-ap/storage v0.0.0-20190706170552-9b16da7f0735
+	github.com/go-ap/activitypub v0.0.0-20190706181557-4d0ca9cdbe3a
+	github.com/go-ap/activitystreams v0.0.0-20190706181605-83477f342d9c
+	github.com/go-ap/auth v0.0.0-20190708151240-86633b56ac07
+	github.com/go-ap/errors v0.0.0-20190706181757-c7ac5494be8a
+	github.com/go-ap/handlers v0.0.0-20190706181808-080b5b64b6dd
+	github.com/go-ap/jsonld v0.0.0-20190706181819-da1186839e9c
+	github.com/go-ap/processing v0.0.0-20190706181848-91540b263173
+	github.com/go-ap/storage v0.0.0-20190706181904-94ce44196ff0
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/jackc/pgx v3.5.0+incompatible
 	github.com/joho/godotenv v1.3.0

@@ -80,8 +80,8 @@ func TestLoadFromEnv(t *testing.T) {
 			t.Errorf("Error loading env: %s", err)
 		}
 		var path = fmt.Sprintf("/tmp/%s-%s.bdb", hostname, env.TEST)
-		if c.BoltDBPath != path {
-			t.Errorf("Invalid loaded BaseURL value: %s, expected %s", c.BoltDBPath, path)
+		if c.BoltDB() != path {
+			t.Errorf("Invalid loaded BaseURL value: %s, expected %s", c.BoltDBDir, path)
 		}
 	}
 }
