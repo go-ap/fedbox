@@ -535,19 +535,6 @@ func (r *repo) Open() error {
 	if err != nil {
 		return errors.Annotatef(err, "could not open db")
 	}
-	err = r.d.Update(func(tx *bolt.Tx) error {
-		root := tx.Bucket(r.root)
-		if root == nil {
-			return errors.NotFoundf("root bucket %s not found", r.root)
-		}
-		if !root.Writable() {
-			return errors.NotFoundf("root bucket %s is not writeable", r.root)
-		}
-		return nil
-	})
-	if err != nil {
-		return errors.Annotatef(err, "db doesn't contain the correct bucket structure")
-	}
 	return nil
 }
 
