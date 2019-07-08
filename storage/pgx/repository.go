@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/go-ap/activitypub/client"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/auth"
+	a "github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -420,7 +420,7 @@ func (r repo) updateItem(table string, it as.Item) (as.Item, error) {
 	query := fmt.Sprintf("UPDATE %s SET type = $1, updated_at = $2::timestamptz,raw = $3::jsonb WHERE iri = $4;", table)
 	now := time.Now().UTC()
 	if as.ActorTypes.Contains(it.GetType()) {
-		if p, err := auth.ToPerson(it); err == nil {
+		if p, err := a.ToPerson(it); err == nil {
 			p.Updated = now
 			it = p
 		}
@@ -548,7 +548,7 @@ func (r repo) DeleteObject(it as.Item) (as.Item, error) {
 			ID:   as.ObjectID(it.GetLink()),
 			Type: as.TombstoneType,
 			To: as.ItemCollection{
-				auth.ActivityStreamsPublicNS,
+				a.ActivityStreamsPublicNS,
 			},
 		},
 		Deleted:    time.Now().UTC(),

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gchaincl/dotsql"
 	"github.com/go-ap/activitystreams"
+	a "github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -211,7 +212,7 @@ func Clean(opt config.Options, rootUser string, rootPw []byte, path string) erro
 	return nil
 }
 
-func AddTestMockActor(opt config.Options, file string, actor activitypub.Person) error {
+func AddTestMockActor(opt config.Options, file string, actor a.Person) error {
 	log := logrus.New()
 	var conn *pgx.Conn
 	var err error

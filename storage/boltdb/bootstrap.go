@@ -2,6 +2,7 @@ package boltdb
 
 import (
 	"github.com/boltdb/bolt"
+	a "github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
@@ -85,7 +86,7 @@ func Clean(path string, rootBucket []byte) error {
 	return err
 }
 
-func AddTestMockActor(path string, rootBucket []byte, baseURL string, actor activitypub.Person) error {
+func AddTestMockActor(path string, rootBucket []byte, baseURL string, actor a.Person) error {
 	var err error
 	db, err := bolt.Open(path, 0600, nil)
 	if err != nil {

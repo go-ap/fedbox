@@ -4,10 +4,11 @@ import (
 	"context"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/fedbox/validation"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
+	"github.com/openshift/osin"
+	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -38,22 +39,24 @@ func Validator(v validation.ActivityValidator) func(next http.Handler) http.Hand
 }
 
 // ActorFromAuthHeader tries to load a local Actor from the OAuth2 or HTTP Signatures Authorization headers
-func ActorFromAuthHeader(next http.Handler) http.Handler {
-	// TODO(marius): move this to the auth package and also add the possibility of getting the logger as a parameter
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := log.New()
-		act, err := auth.LoadActorFromAuthHeader(r, logger)
-		if err != nil {
-			if errors.IsUnauthorized(err) {
-				if challenge := errors.Challenge(err); len(challenge) > 0 {
-					w.Header().Add("WWW-Authenticate", challenge)
+func ActorFromAuthHeader(os *osin.Server, st storage.ActorLoader, l logrus.FieldLogger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		// TODO(marius): move this to the auth package and also add the possibility of getting the logger as a parameter
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			s := auth.New(reqURL(r), os, st, l)
+			act, err := s.LoadActorFromAuthHeader(r)
+			if err != nil {
+				if errors.IsUnauthorized(err) {
+					if challenge := errors.Challenge(err); len(challenge) > 0 {
+						w.Header().Add("WWW-Authenticate", challenge)
+					}
 				}
+				l.Warnf("%s", err)
 			}
-			logger.Warnf("%s", err)
-		}
-		if act != nil {
-			r = r.WithContext(context.WithValue(r.Context(), auth.ActorKey, act))
-		}
-		next.ServeHTTP(w, r)
-	})
+			if act != nil {
+				r = r.WithContext(context.WithValue(r.Context(), auth.ActorKey, act))
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

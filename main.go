@@ -40,7 +40,7 @@ func main() {
 	var err error
 	if a.Config().Storage == config.BoltDB {
 		bolt, errb := boltdb.New(boltdb.Config{
-			Path:       app.Config.BoltDBDir,
+			Path:       app.Config.BoltDB(),
 			BucketName: app.Config.Host,
 		}, a.Config().BaseURL)
 		repo = bolt
@@ -73,7 +73,7 @@ func main() {
 	r.Use(log.NewStructuredLogger(l))
 
 	v := validation.New(a.Config().BaseURL, client.NewClient(), repo)
-	r.Route("/", app.Routes(v, osin, l))
+	r.Route("/", app.Routes(v, osin, repo.(st.ActorLoader), l))
 
 	status := a.Run(r, wait)
 	if status != 0 {
