@@ -9,16 +9,22 @@ import (
 	"github.com/go-ap/handlers"
 	"github.com/pborman/uuid"
 	"net/url"
+	"path"
 	"strings"
 )
 
 var ServiceIRI as.IRI
 
 func Self(baseURL as.IRI) auth.Service {
+	url, _ := baseURL.URL()
+	inb := *url
+	inb.Path = path.Join(inb.Path, string(handlers.Inbox))
+	outb := *url
+	outb.Path = path.Join(outb.Path, string(handlers.Outbox))
 	return auth.Service{
 		Person: ap.Person{
 			Parent: as.Person{
-				ID:           as.ObjectID(baseURL),
+				ID:           as.ObjectID(url.String()),
 				Type:         as.ServiceType,
 				Name:         as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: "self"}},
 				AttributedTo: as.IRI("https://github.com/mariusor"),
@@ -31,8 +37,8 @@ func Self(baseURL as.IRI) auth.Service {
 				Tag:          nil,
 				URL:          baseURL,
 			},
-			Inbox:  as.IRI(fmt.Sprintf("%s%s", baseURL, handlers.Inbox)),
-			Outbox: as.IRI(fmt.Sprintf("%s%s", baseURL, handlers.Outbox)),
+			Inbox:  as.IRI(inb.String()),
+			Outbox: as.IRI(outb.String()),
 		},
 	}
 }

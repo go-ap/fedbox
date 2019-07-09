@@ -2,8 +2,8 @@ package activitypub
 
 import (
 	"fmt"
-	as "github.com/go-ap/activitystreams"
 	"github.com/buger/jsonparser"
+	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
 )
 
