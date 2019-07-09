@@ -29,3 +29,7 @@ func TestFromRequest(t *testing.T) {
 func TestHash_String(t *testing.T) {
 	t.Skipf("TODO")
 }
+
+func TestValidActivityCollection(t *testing.T) {
+	t.Skipf("TODO")
+}

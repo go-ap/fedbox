@@ -2,92 +2,33 @@ package activitypub
 
 import (
 	"github.com/go-ap/activitystreams"
+	"reflect"
 	"strings"
 	"testing"
 )
 
-func TestOrderedCollection_Count(t *testing.T) {
-	t.Skipf("TODO")
-}
+func TestItemByType(t *testing.T) {
+	type testPairs map[activitystreams.ActivityVocabularyType]reflect.Type
 
-func TestCollection_Count(t *testing.T) {
-	t.Skipf("TODO")
-}
+	var collectionPtrType = reflect.TypeOf(new(*Collection)).Elem()
+	var orderedCollectionPtrType = reflect.TypeOf(new(*OrderedCollection)).Elem()
 
-func TestJSONGetItemByType(t *testing.T) {
-	t.Skipf("TODO")
-}
+	var tests = testPairs{
+		activitystreams.CollectionType:        collectionPtrType,
+		activitystreams.OrderedCollectionType: orderedCollectionPtrType,
+	}
 
-func TestCollection_Append(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestCollection_Collection(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestCollection_GetID(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestCollection_GetLink(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestToOrderedCollection(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestCollection_GetType(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestCollection_IsLink(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestCollection_IsObject(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestCollection_UnmarshalJSON(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestOrderedCollection_Append(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestOrderedCollection_Collection(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestOrderedCollection_GetID(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestOrderedCollection_GetLink(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestOrderedCollection_GetType(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestOrderedCollection_IsLink(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestOrderedCollection_IsObject(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestOrderedCollection_UnmarshalJSON(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestToCollection(t *testing.T) {
-	t.Skipf("TODO")
+	for typ, test := range tests {
+		t.Run(string(typ), func(t *testing.T) {
+			v, err := ItemByType(typ)
+			if err != nil {
+				t.Error(err)
+			}
+			if reflect.TypeOf(v) != test {
+				t.Errorf("Invalid type returned %T, expected %s", v, test.String())
+			}
+		})
+	}
 }
 
 func TestGenerateID(t *testing.T) {
@@ -118,13 +59,6 @@ func TestDefaultServiceIRI(t *testing.T) {
 	t.Skipf("TODO")
 }
 
-func TestItemByType(t *testing.T) {
-	t.Skipf("TODO")
-}
-
-func TestAddNewObjectCollections(t *testing.T) {
-	t.Skipf("TODO")
-}
 
 func TestSelf(t *testing.T) {
 	t.Skipf("TODO")
