@@ -17,10 +17,13 @@ var ServiceIRI as.IRI
 
 func Self(baseURL as.IRI) auth.Service {
 	url, _ := baseURL.URL()
-	inb := *url
-	inb.Path = path.Join(inb.Path, string(handlers.Inbox))
-	outb := *url
-	outb.Path = path.Join(outb.Path, string(handlers.Outbox))
+	inbox := *url
+	inbox.Path = path.Join(inbox.Path, string(handlers.Inbox))
+	outbox := *url
+	outbox.Path = path.Join(outbox.Path, string(handlers.Outbox))
+
+	oauth := *url
+	oauth.Path = path.Join(oauth.Path, "oauth/")
 	return auth.Service{
 		Person: ap.Person{
 			Parent: as.Person{
@@ -37,8 +40,12 @@ func Self(baseURL as.IRI) auth.Service {
 				Tag:          nil,
 				URL:          baseURL,
 			},
-			Inbox:  as.IRI(inb.String()),
-			Outbox: as.IRI(outb.String()),
+			Inbox:  as.IRI(inbox.String()),
+			Outbox: as.IRI(outbox.String()),
+			Endpoints: &ap.Endpoints{
+				OauthAuthorizationEndpoint: as.IRI(fmt.Sprintf("%s/authorize", oauth.String())),
+				OauthTokenEndpoint:         as.IRI(fmt.Sprintf("%s/token", oauth.String())),
+			},
 		},
 	}
 }
