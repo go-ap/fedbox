@@ -63,14 +63,15 @@ func main() {
 		c := osin.DefaultClient{
 			Id:          id,
 			Secret:      savpw,
-			RedirectUri: fmt.Sprintf("http://%s/local/callback", conf.Host),
+			RedirectUri: fmt.Sprintf("http://%s/oauth/callback", conf.Host),
 		}
+		// TODO(marius): check if there's already a client set up for current client's RedirectURI and skip adding it
 		err = auth.BootstrapBoltDB(oauthPath, []byte(conf.Host), &c)
 		if err != nil {
 			errf("Unable to update %s db: %s\n", typ, err)
 			os.Exit(1)
 		}
-		fmt.Printf("OAUTH_CLIENT=%s", id)
+		fmt.Printf("OAUTH_CLIENT=%s\n", id)
 	}
 	if config.StorageType(typ) == config.Postgres {
 		// ask for root pw
