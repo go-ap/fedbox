@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-ap/errors"
 	"github.com/openshift/osin"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,12 +14,39 @@ import (
 
 var _oauthServer *osin.Server
 
+type logger struct {
+	l logrus.FieldLogger
+}
+func (l logger) Printf(s string, p ...interface{}) {
+	l.l.Infof(s, p...)
+}
+
+func osinServer(store osin.Storage, l logrus.FieldLogger) (*osin.Server, error) {
+	config := osin.ServerConfig{
+		AuthorizationExpiration:   86400,
+		AccessExpiration:          2678400,
+		TokenType:                 "Bearer",
+		AllowedAuthorizeTypes:     osin.AllowedAuthorizeType{osin.CODE},
+		AllowedAccessTypes:        osin.AllowedAccessType{osin.AUTHORIZATION_CODE},
+		ErrorStatusCode:           http.StatusForbidden,
+		AllowClientSecretInParams: true,
+		AllowGetAccessRequest:     false,
+		RetainTokenAfterRefresh:   true,
+		RedirectUriSeparator:      "\n",
+		//RequirePKCEForPublicClients: true,
+	}
+	s := osin.NewServer(&config, store)
+	s.Logger = &logger{ l: l }
+
+	return s, nil
+}
+
 func osinAccess(s *osin.Server) (*osin.Response, error) {
 	resp := s.NewResponse()
 	defer resp.Close()
 
 	v := url.Values{}
-	v.Add("request_uri", url.QueryEscape("http://127.0.0.3/auth/local/callback"))
+	v.Add("request_uri", url.QueryEscape(authCallbackURL))
 	v.Add("client_id", os.Getenv("OAUTH2_KEY"))
 	v.Add("response_type", "code")
 	dummyAuthReq, _ := http.NewRequest(http.MethodGet, "/oauth2/authorize", nil)
@@ -50,7 +78,7 @@ func addOAuth2Auth(r *http.Request, a *testAccount, s *osin.Server) error {
 		key := os.Getenv("OAUTH2_KEY")
 		sec := os.Getenv("OAUTH2_SECRET")
 		v := url.Values{}
-		v.Add("request_uri", url.QueryEscape("http://127.0.0.3/auth/local/callback"))
+		v.Add("request_uri", url.QueryEscape(authCallbackURL))
 		v.Add("client_id", key)
 		v.Add("client_secret", sec)
 		v.Add("access_type", "online")

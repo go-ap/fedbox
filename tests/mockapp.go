@@ -61,7 +61,7 @@ func runAPP(e string) int {
 	cl := osin.DefaultClient{
 		Id:          "default",
 		Secret:      "hahah",
-		RedirectUri: fmt.Sprintf("%s/local/callback", apiURL),
+		RedirectUri: authCallbackURL,
 		UserData:    nil,
 	}
 	auth.BootstrapBoltDB(pathOauth, []byte(host), &cl)
@@ -74,7 +74,7 @@ func runAPP(e string) int {
 	})
 
 	defer oStor.Close()
-	_oauthServer, _ = auth.NewOAuth2Server(oStor, l)
+	_oauthServer, _ = osinServer(oStor, l)
 
 	r.Use(app.Repo(b))
 	r.Use(log.NewStructuredLogger(l))

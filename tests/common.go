@@ -86,6 +86,7 @@ type objectVal struct {
 var (
 	host   = "127.0.0.1:9998"
 	apiURL = "http://127.0.0.1:9998"
+	authCallbackURL = fmt.Sprintf("%s/auth/local/callback", apiURL)
 )
 
 const testActorHash = "f00f00f00f00f00f00f00f00f00f6667"
@@ -94,7 +95,6 @@ const testActorHandle = "johndoe"
 var inboxURL = fmt.Sprintf("%s/inbox", apiURL)
 var outboxURL = fmt.Sprintf("%s/outbox", apiURL)
 var baseURL = apiURL
-var callbackURL = fmt.Sprintf("%s/auth/local/callback", baseURL)
 var rnd = rand.New(rand.NewSource(6667))
 var key, _ = rsa.GenerateKey(rnd, 512)
 var prv, _ = x509.MarshalPKCS8PrivateKey(key)
@@ -512,9 +512,9 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 
 func testSuite(t *testing.T, pairs testPairs) {
 	for typ, tests := range pairs {
-		resetDB(t, true)
 		for _, test := range tests {
 			t.Run(typ, func(t *testing.T) {
+				resetDB(t, true)
 				errOnRequest(t)(test)
 			})
 		}

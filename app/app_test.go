@@ -3,7 +3,7 @@ package app
 import "testing"
 
 func TestNew(t *testing.T) {
-	app := New(nil, "HEAD",  "test" )
+	app := New(nil, "HEAD", "test")
 	if app == nil {
 		t.Errorf("Nil app pointer returned by New")
 	}
