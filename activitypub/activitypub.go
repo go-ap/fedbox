@@ -65,17 +65,17 @@ func ItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 	var ret as.Item
 
 	if as.ActorTypes.Contains(typ) {
-		o := &auth.Person{}
-		o.Type = typ
-		ret = o
+		p := &auth.Person{}
+		p.Type = typ
+		ret = p
 	} else if as.ActivityTypes.Contains(typ) {
-		o := &as.Activity{}
-		o.Type = typ
-		ret = o
+		a := &as.Activity{}
+		a.Type = typ
+		ret = a
 	} else if typ == as.CollectionType {
-		o := &Collection{}
-		o.Type = typ
-		ret = o
+		c := &Collection{}
+		c.Type = typ
+		ret = c
 	} else if typ == as.OrderedCollectionType {
 		o := &OrderedCollection{}
 		o.Type = typ
