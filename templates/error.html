@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Error</title>
+    <style> </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="rebeccapurple" />
+</head>
+<body>
+<main>
+<section>
+<h2>Errors:</h2>
+{{ $errs := HTTPErrors . }}
+<ol>
+{{range $i, $err := $errs }}
+<li>{{$err.Message}}
+{{ if $err.Trace }}
+<details>
+<summary>{{if $err.Location}}Location : {{$err.Location}}{{else}}Details{{end}}</summary>
+<code>{{ range $line := $err.Trace}}
+{{$line.File}}:{{$line.Line}} {{$line.Callee}}<br/>
+{{end}}</code>
+</details>
+{{end}}
+</li>
+{{end}}
+</ol>
+</section>
+</main>
+<footer></footer>
+</body>
+</html>

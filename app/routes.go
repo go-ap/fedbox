@@ -52,6 +52,13 @@ func Routes(v validation.ActivityValidator, os *osin.Server, st storage.ActorLoa
 			r.Post("/authorize", h.Authorize)
 			// Access token endpoint
 			r.Post("/token", h.Token)
+
+			r.Group(func(r chi.Router) {
+				r.Get("/login", h.ShowLogin)
+				r.Post("/login", h.HandleLogin)
+
+				r.Get("/callback", h.HandleCallback)
+			})
 		})
 
 		r.NotFound(errors.HandleError(errors.NotFoundf("invalid url")).ServeHTTP)
