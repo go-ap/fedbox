@@ -47,7 +47,10 @@ func main() {
 		err = errb
 		defer bolt.Close()
 
-		oauthDB = auth.NewBoltDBStore(auth.Config{})
+		oauthDB = auth.NewBoltDBStore(auth.Config{
+			Path:       app.Config.BoltDBOAuth2(),
+			BucketName: app.Config.Host,
+		})
 		defer oauthDB.Close()
 	}
 	if a.Config().Storage == config.Postgres {
