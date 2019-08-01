@@ -120,7 +120,7 @@ func IRIBelongsToActor(iri as.IRI, actor auth.Person) bool {
 	if actor.Outbox == iri {
 		return true
 	}
-	if actor.Endpoints.SharedInbox == iri {
+	if actor.Endpoints != nil && actor.Endpoints.SharedInbox == iri {
 		return true
 	}
 	// The following should not really come into question at any point.
