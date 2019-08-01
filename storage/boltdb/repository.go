@@ -533,7 +533,7 @@ func (r *repo) Open() error {
 	var err error
 	r.d, err = bolt.Open(r.path, 0600, nil)
 	if err != nil {
-		return errors.Annotatef(err, "could not open db")
+		return errors.Annotatef(err, "could not open db %s", r.path)
 	}
 	return nil
 }
