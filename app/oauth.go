@@ -80,9 +80,9 @@ func redirectOrOutput(rs *osin.Response, w http.ResponseWriter, r *http.Request,
 			return
 		}
 
-		status := http.StatusUnauthorized
+		status := http.StatusFound
 		if err := h.saveSession(w, r); err != nil {
-			status = http.StatusFound
+			status = http.StatusUnauthorized
 			h.logger.WithFields(logrus.Fields{
 				"status": status,
 				"url":    url,
