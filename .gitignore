@@ -9,3 +9,4 @@ bin/*
 *.key
 tests/db
 *.coverprofile
+*.bdb
