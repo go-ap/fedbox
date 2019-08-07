@@ -14,7 +14,7 @@ ifneq ($(ENV), dev)
 endif
 
 ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
-export VERSION = $(shell git describe --always)
+export VERSION = $(shell git describe --always --dirty="-git")
 endif
 ifeq ($(shell git describe --tags > /dev/null 2>&1 ; echo $$?), 0)
 export VERSION = $(shell git describe --tags)
@@ -25,7 +25,7 @@ TEST := $(GO) test $(BUILDFLAGS)
 
 .PHONY: all run clean test coverage integration
 
-all: app bootstrap
+all: app bootstrap oauth
 
 app: bin/app
 bin/app: go.mod main.go $(APPSOURCES)
@@ -34,6 +34,10 @@ bin/app: go.mod main.go $(APPSOURCES)
 bootstrap: bin/bootstrap
 bin/bootstrap: go.mod cli/bootstrap/main.go $(APPSOURCES)
 	$(BUILD) -tags $(ENV) -o $@ cli/bootstrap/main.go
+
+oauth: bin/oauth
+bin/oauth: go.mod cli/oauth/main.go $(APPSOURCES)
+	$(BUILD) -tags $(ENV) -o $@ cli/oauth/main.go
 
 run: app
 	@./bin/app
