@@ -26,6 +26,7 @@ func (o *OauthCLI) AddClient(pw string, redirect []string) (string, error) {
 		Id:          id,
 		Secret:      pw,
 		RedirectUri: strings.Join(redirect, ","),
+		UserData:    "{}",
 	}
 
 	var err error

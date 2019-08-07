@@ -12,9 +12,9 @@ import (
 )
 
 func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OauthCLI) error {
-	path := c.String("path")
-	host := c.String("host")
-	typ := config.StorageType(c.String("type"))
+	path := c.GlobalString("path")
+	host := c.GlobalString("host")
+	typ := config.StorageType(c.GlobalString("type"))
 
 	if typ == "" {
 		typ = config.BoltDB
@@ -108,8 +108,8 @@ func main() {
 						if err != nil {
 							return err
 						}
-						for id := range c.Args() {
-							err := oauth.DeleteClient(string(id))
+						for _, id := range c.Args() {
+							err := oauth.DeleteClient(id)
 							if err != nil {
 							}
 						}
