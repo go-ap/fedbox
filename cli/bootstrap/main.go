@@ -74,11 +74,11 @@ func main() {
 		fmt.Printf("OAUTH_CLIENT=%s\n", id)
 	}
 	if config.StorageType(typ) == config.Postgres {
+
 		// ask for root pw
 		fmt.Printf("%s password: ", pgRoot)
 		pgPw, _ := terminal.ReadPassword(0)
 		fmt.Println()
-
 		if file == "" {
 			dir, _ := os.Getwd()
 			file = path.Join(dir, "init.sql")

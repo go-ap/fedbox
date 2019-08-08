@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/go-ap/auth"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"golang.org/x/crypto/ssh/terminal"
 	"os"
 )
 
@@ -91,8 +94,16 @@ func main() {
 							return err
 						}
 
-						savpw := "yuh4ckm3?!"
-						id, err := oauth.AddClient(savpw, c.StringSlice("redirectUri"))
+						fmt.Print("password: ")
+						pw1, _ := terminal.ReadPassword(0)
+						fmt.Println()
+						fmt.Print("   again: ")
+						savpw, _ := terminal.ReadPassword(0)
+						fmt.Println()
+						if !bytes.Equal(pw1, savpw) {
+							return errors.Errorf("Passwords do not match")
+						}
+						id, err := oauth.AddClient(string(savpw), c.StringSlice("redirectUri"))
 						if err == nil {
 							logger.Info(id)
 						}
