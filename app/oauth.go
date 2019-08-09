@@ -53,18 +53,41 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 
 	if ar := s.HandleAccessRequest(resp, r); ar != nil {
 		if who, ok := ar.UserData.(json.RawMessage); ok {
-			if err := json.Unmarshal([]byte(who), &h.account); err == nil {
-				ar.Authorized = h.account.IsLogged()
-			} else {
+			if err := json.Unmarshal(who, &h.account); err != nil {
+				err := errors.Annotatef(err, "Unable to unmarshal user-data to local actor")
 				h.logger.Errorf("%s", err)
+				errors.HandleError(err).ServeHTTP(w, r)
+				return
 			}
+			ar.Authorized = h.account.IsLogged()
 		}
 		s.FinishAccessRequest(resp, r, ar)
 	}
 	redirectOrOutput(resp, w, r, h)
 }
 
+func annotatedRsError(status int, old error, msg string, args ...interface{}) error {
+	var err error
+	switch status {
+	case http.StatusForbidden:
+		err = errors.NewForbidden(old, msg, args...)
+	case http.StatusUnauthorized:
+		err = errors.NewUnauthorized(old, msg, args...)
+	case http.StatusInternalServerError:
+		fallthrough
+	default:
+		err = errors.Annotatef(old, msg, args...)
+	}
+
+	return err
+}
+
 func redirectOrOutput(rs *osin.Response, w http.ResponseWriter, r *http.Request, h *oauthHandler) {
+	if rs.IsError {
+		err := annotatedRsError(rs.StatusCode, rs.InternalError, "Error processing OAuth2 request")
+		errors.HandleError(err).ServeHTTP(w, r)
+		return
+	}
 	// Add headers
 	for i, k := range rs.Headers {
 		for _, v := range k {
@@ -76,20 +99,23 @@ func redirectOrOutput(rs *osin.Response, w http.ResponseWriter, r *http.Request,
 		// Output redirect with parameters
 		url, err := rs.GetRedirectUrl()
 		if err != nil {
+			err := annotatedRsError(http.StatusInternalServerError, err, "Error getting OAuth2 redirect URL")
 			errors.HandleError(err).ServeHTTP(w, r)
 			return
 		}
 
-		status := http.StatusFound
 		if err := h.saveSession(w, r); err != nil {
-			status = http.StatusUnauthorized
+			st := http.StatusInternalServerError
+			w.WriteHeader(st)
 			h.logger.WithFields(logrus.Fields{
-				"status": status,
+				"status": st,
 				"url":    url,
 			}).Error(err.Error())
+			errors.HandleError(err).ServeHTTP(w, r)
+			return
 		}
 
-		http.Redirect(w, r, url, status)
+		http.Redirect(w, r, url, http.StatusFound)
 	} else {
 		// set content type if the response doesn't already have one associated with it
 		if w.Header().Get("Content-Type") == "" {
@@ -169,8 +195,8 @@ func (h *oauthHandler) RenderTemplate(r *http.Request, w http.ResponseWriter, na
 	var err error
 
 	ren := render.New(render.Options{
-		Directory:                 "templates/",
-		Extensions:                []string{".html"},
+		Directory:  "templates/",
+		Extensions: []string{".html"},
 		Funcs: []template.FuncMap{{
 			"HTTPErrors": func(err error) []errors.Http { _, errs := errors.HttpErrors(err); return errs },
 		}},
@@ -248,13 +274,13 @@ func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 type OAuth struct {
-    Provider     string
-    Code         string
-    Token        string
-    RefreshToken string
-    TokenType    string
-    Expiry       time.Time
-    State        string
+	Provider     string
+	Code         string
+	Token        string
+	RefreshToken string
+	TokenType    string
+	Expiry       time.Time
+	State        string
 }
 
 // HandleCallback serves /auth/{provider}/callback request
@@ -265,7 +291,7 @@ func (h *oauthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	providerErr := q["error"]
 	if providerErr != nil {
 		errDescriptions := q["error_description"]
-		err := errors.Errorf("Error for provider %q: %s\n", provider,  errDescriptions)
+		err := errors.Errorf("Error for provider %q: %s\n", provider, errDescriptions)
 		errRenderer.HTML(w, http.StatusInternalServerError, "error", err)
 		return
 	}
