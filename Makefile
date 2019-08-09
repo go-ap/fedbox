@@ -28,8 +28,8 @@ TEST := $(GO) test $(BUILDFLAGS)
 all: app bootstrap oauth
 
 app: bin/app
-bin/app: go.mod main.go $(APPSOURCES)
-	$(BUILD) -tags $(ENV) -o $@ ./main.go
+bin/app: go.mod cli/app/main.go $(APPSOURCES)
+	$(BUILD) -tags $(ENV) -o $@ ./cli/app/main.go
 
 bootstrap: bin/bootstrap
 bin/bootstrap: go.mod cli/bootstrap/main.go $(APPSOURCES)
