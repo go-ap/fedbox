@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/openshift/osin"
+	"github.com/sirupsen/logrus"
 	"os"
 	"time"
 )
@@ -50,6 +51,8 @@ func main() {
 		oauthDB = auth.NewBoltDBStore(auth.Config{
 			Path:       app.Config.BoltDBOAuth2(),
 			BucketName: app.Config.Host,
+			LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
+			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
 		})
 		defer oauthDB.Close()
 	}
@@ -66,7 +69,7 @@ func main() {
 		l.WithField("storage", a.Config().Storage).Error(err)
 	}
 
-	osin, err := auth.NewOAuth2Server(oauthDB,l)
+	osin, err := auth.NewOAuth2Server(oauthDB, l)
 	if err != nil {
 		l.Warn(err.Error())
 	}
