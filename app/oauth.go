@@ -3,28 +3,33 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/oauth"
+	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 	"golang.org/x/oauth2"
 	"html/template"
 	"net/http"
-	"os"
 	"time"
 )
 
-type account struct{}
+type account struct {
+	username string
+	pw       string
+	actor    *auth.Person
+}
 
 func (a account) IsLogged() bool {
-	return true
+	return a.actor != nil && a.actor.PreferredUsername.First().Value == a.username
 }
 
 type oauthHandler struct {
 	os      *osin.Server
+	loader  storage.ActorLoader
 	account account
 	logger  logrus.FieldLogger
 }
@@ -40,6 +45,14 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 			ar.Authorized = true
 			b, _ := json.Marshal(h.account)
 			ar.UserData = b
+		} else {
+			m := login{title: "Login"}
+			m.account = auth.AnonymousActor
+			m.client = ar.Client.GetId()
+			m.state = ar.State
+
+			h.renderTemplate(r, w, "login", m)
+			return
 		}
 		s.FinishAuthorizeRequest(resp, r, ar)
 	}
@@ -84,7 +97,7 @@ func annotatedRsError(status int, old error, msg string, args ...interface{}) er
 
 func redirectOrOutput(rs *osin.Response, w http.ResponseWriter, r *http.Request, h *oauthHandler) {
 	if rs.IsError {
-		err := annotatedRsError(rs.StatusCode, rs.InternalError, "Error processing OAuth2 request")
+		err := annotatedRsError(rs.StatusCode, rs.InternalError, "Error processing OAuth2 request: %s", rs.StatusText)
 		errors.HandleError(err).ServeHTTP(w, r)
 		return
 	}
@@ -157,6 +170,8 @@ func (h *oauthHandler) saveSession(w http.ResponseWriter, r *http.Request) error
 type login struct {
 	title   string
 	account auth.Person
+	state   string
+	client  string
 }
 
 func (l login) Title() string {
@@ -165,6 +180,13 @@ func (l login) Title() string {
 
 func (l login) Account() auth.Person {
 	return l.account
+}
+func (l login) State() string {
+	return l.state
+}
+
+func (l login) Client() string {
+	return l.client
 }
 
 type model interface {
@@ -191,7 +213,7 @@ var errRenderer = render.New(render.Options{
 	DisableHTTPErrorRendering: false,
 })
 
-func (h *oauthHandler) RenderTemplate(r *http.Request, w http.ResponseWriter, name string, m authModel) error {
+func (h *oauthHandler) renderTemplate(r *http.Request, w http.ResponseWriter, name string, m authModel) error {
 	var err error
 
 	ren := render.New(render.Options{
@@ -227,50 +249,52 @@ func (h *oauthHandler) RenderTemplate(r *http.Request, w http.ResponseWriter, na
 	return err
 }
 
-// ShowLogin serves GET /login requests
-func (h *oauthHandler) ShowLogin(w http.ResponseWriter, r *http.Request) {
-	a := activitypub.Self("http://fedbox.git")
-
-	m := login{title: "Login"}
-	m.account = a
-
-	h.RenderTemplate(r, w, "login", m)
-}
-
 // ShowLogin handles POST /login requests
 func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	a := activitypub.Self("http://fedbox.git")
-	st, err := oauth.New(h.os.Storage, h.logger)
-	if err != nil {
-		new := errors.Annotatef(err, "failed to load default client")
-		h.logger.WithFields(logrus.Fields{}).Error(new.Error())
-		errRenderer.HTML(w, http.StatusInternalServerError, "error", new)
-		return
-	}
-	cl, err := st.Storage.GetClient(os.Getenv("OAUTH_CLIENT"))
-	if err != nil {
-		new := errors.Annotatef(err, "failed to load default client")
-		h.logger.WithFields(logrus.Fields{}).Error(new.Error())
-		errRenderer.HTML(w, http.StatusInternalServerError, "error", new)
-		return
-	}
+
 	pw := r.PostFormValue("pw")
 	handle := r.PostFormValue("handle")
+	client := r.PostFormValue("client")
+	state := r.PostFormValue("state")
 
 	h.logger.WithFields(logrus.Fields{
 		"handle": handle,
 		"pass":   pw,
+		"client": client,
+		"state":  state,
 	}).Info("received")
 
+	filter := activitypub.Filters{
+		Name: []string{handle},
+		Type: []as.ActivityVocabularyType{
+			as.PersonType,
+		},
+	}
+	actors, count, err := h.loader.LoadActors(filter)
+	if err != nil || count != 1 {
+		err := errors.Unauthorizedf("Invalid username or password")
+		errors.HandleError(err).ServeHTTP(w, r)
+		return
+	}
+
+	if actor, ok := actors.First().(*auth.Person); ok {
+		h.account.actor = actor
+		h.account.username = handle
+	}
+	if h.account.actor == nil {
+		err := errors.Unauthorizedf("Invalid username or password")
+		errors.HandleError(err).ServeHTTP(w, r)
+		return
+	}
 	config := oauth2.Config{
-		ClientID:     cl.GetId(),
-		ClientSecret: cl.GetSecret(),
+		ClientID: client,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  a.Endpoints.OauthAuthorizationEndpoint.GetLink().String(),
 			TokenURL: a.Endpoints.OauthTokenEndpoint.GetLink().String(),
 		},
 	}
-	http.Redirect(w, r, config.AuthCodeURL("state", oauth2.AccessTypeOnline), http.StatusPermanentRedirect)
+	http.Redirect(w, r, config.AuthCodeURL(state, oauth2.AccessTypeOnline), http.StatusPermanentRedirect)
 }
 
 type OAuth struct {
@@ -283,66 +307,5 @@ type OAuth struct {
 	State        string
 }
 
-// HandleCallback serves /auth/{provider}/callback request
-func (h *oauthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	provider := "fedbox"
-
-	providerErr := q["error"]
-	if providerErr != nil {
-		errDescriptions := q["error_description"]
-		err := errors.Errorf("Error for provider %q: %s\n", provider, errDescriptions)
-		errRenderer.HTML(w, http.StatusInternalServerError, "error", err)
-		return
-	}
-	code := q.Get("code")
-	state := q.Get("state")
-	if len(code) == 0 {
-		errRenderer.HTML(w, http.StatusInternalServerError, "error", errors.Forbiddenf("%s error: Empty authentication token", provider))
-		return
-	}
-
-	a := activitypub.Self("http://fedbox.git")
-	st, err := oauth.New(h.os.Storage, h.logger)
-	if err != nil {
-		new := errors.Annotatef(err, "failed to load default client")
-		h.logger.WithFields(logrus.Fields{}).Error(new.Error())
-		errRenderer.HTML(w, http.StatusInternalServerError, "error", new)
-		return
-	}
-	cl, err := st.Storage.GetClient(os.Getenv("OAUTH_CLIENT"))
-	if err != nil {
-		new := errors.Annotatef(err, "failed to load default client")
-		h.logger.WithFields(logrus.Fields{}).Error(new.Error())
-		errRenderer.HTML(w, http.StatusInternalServerError, "error", new)
-		return
-	}
-
-	conf := oauth2.Config{
-		ClientID:     cl.GetId(),
-		ClientSecret: cl.GetSecret(),
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  a.Endpoints.OauthAuthorizationEndpoint.GetLink().String(),
-			TokenURL: a.Endpoints.OauthTokenEndpoint.GetLink().String(),
-		},
-	}
-	tok, err := conf.Exchange(r.Context(), code)
-	if err != nil {
-		h.logger.Errorf("%s", err)
-		errRenderer.HTML(w, http.StatusInternalServerError, "error", err)
-		//h.HandleErrors(w, r, err)
-		return
-	}
-
-	oauth := OAuth{
-		State:        state,
-		Code:         code,
-		Provider:     provider,
-		Token:        tok.AccessToken,
-		TokenType:    tok.TokenType,
-		RefreshToken: tok.RefreshToken,
-		Expiry:       tok.Expiry,
-	}
-	h.logger.WithField("oauth", oauth).Infof("Success")
-	http.Redirect(w, r, "/", http.StatusFound)
-}
+// HandleCallback serves /auth/callback request
+func (h *oauthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {}

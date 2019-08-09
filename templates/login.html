@@ -10,9 +10,11 @@
 <body>
 <header><h1>Fed::BOX</h1></header>
 <main>
-    <form method="post">
+    <form method="post" method="POST" action="/oauth/login">
 {{/*        <fieldset>*/}}
 {{/*            <legend>Local authentication</legend>*/}}
+            <input type="hidden" name="state" value="{{.State}}" />
+            <input type="hidden" name="client" value="{{.Client}}" />
             <label for="auth-handle">Handle:</label><br/>
             <input name="handle" id="auth-handle" type="text" size="40" required/><br/>
             <label for="auth-pw">Password: </label><br/>

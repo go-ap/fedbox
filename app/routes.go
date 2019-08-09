@@ -12,7 +12,7 @@ import (
 	"net/http"
 )
 
-func CollectionRoutes(v validation.ActivityValidator)func(chi.Router) {
+func CollectionRoutes(v validation.ActivityValidator) func(chi.Router) {
 	return func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.With(middleware.GetHead)
@@ -40,9 +40,9 @@ func Routes(v validation.ActivityValidator, os *osin.Server, st storage.ActorLoa
 		r.Method(http.MethodGet, "/", h.ItemHandlerFn(HandleItem))
 		r.Route("/{collection}", CollectionRoutes(v))
 
-
 		h := oauthHandler{
 			os:      os,
+			loader:  st,
 			account: account{},
 			logger:  l,
 		}
@@ -54,7 +54,6 @@ func Routes(v validation.ActivityValidator, os *osin.Server, st storage.ActorLoa
 			r.Post("/token", h.Token)
 
 			r.Group(func(r chi.Router) {
-				r.Get("/login", h.ShowLogin)
 				r.Post("/login", h.HandleLogin)
 
 				r.Get("/callback", h.HandleCallback)
