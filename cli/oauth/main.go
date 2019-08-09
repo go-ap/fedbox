@@ -80,6 +80,7 @@ func main() {
 			Subcommands: []cli.Command{
 				{
 					Name:  "add",
+					Aliases: []string{"new"},
 					Usage: "Adds an OAuth2 client",
 					Flags: []cli.Flag{
 						cli.StringSliceFlag{
@@ -112,6 +113,7 @@ func main() {
 				},
 				{
 					Name:  "del",
+					Aliases: []string{"delete", "remove"},
 					Usage: "Removes an existing OAuth2 client",
 					ArgsUsage: "APPLICATION_UUID...",
 					Action: func(c *cli.Context) error {
@@ -122,9 +124,22 @@ func main() {
 						for _, id := range c.Args() {
 							err := oauth.DeleteClient(id)
 							if err != nil {
+								logger.Errorf("Error deleting %s: %s", id, err)
 							}
 						}
 						return nil
+					},
+				},
+				{
+					Name:  "ls",
+					Aliases: []string{"list"},
+					Usage: "Lists existing OAuth2 clients",
+					Action: func(c *cli.Context) error {
+						err := setup(c, logger, &oauth)
+						if err != nil {
+							return err
+						}
+						return errors.NotImplementedf("Client listing is not yet implemented")
 					},
 				},
 			},

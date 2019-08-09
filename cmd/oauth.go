@@ -21,6 +21,11 @@ type ClientSaver interface {
 	RemoveClient(id string) error
 }
 
+type ClientLister interface {
+	// ListClients lists existing clients
+	ListClients() ([]osin.DefaultClient, error)
+}
+
 func (o *OauthCLI) AddClient(pw string, redirect []string) (string, error) {
 	id := uuid.New()
 	c := osin.DefaultClient{
@@ -34,7 +39,7 @@ func (o *OauthCLI) AddClient(pw string, redirect []string) (string, error) {
 	if saver, ok := o.DB.(ClientSaver); ok {
 		err = saver.CreateClient(&c)
 	} else {
-		err = errors.Newf("invalid OAuth2 client saver")
+		err = errors.Newf("invalid OAuth2 client backend")
 	}
 
 	return id, err
@@ -46,8 +51,20 @@ func (o *OauthCLI) DeleteClient(uuid string) error {
 	if saver, ok := o.DB.(ClientSaver); ok {
 		err = saver.RemoveClient(uuid)
 	} else {
-		err = errors.Newf("invalid OAuth2 client saver")
+		err = errors.Newf("invalid OAuth2 client backend")
 	}
 
 	return err
+}
+
+func (o *OauthCLI) ListClients() ([]osin.DefaultClient, error) {
+	var err error
+
+	if ls, ok := o.DB.(ClientLister); ok {
+		return ls.ListClients()
+	} else {
+		err = errors.Newf("invalid OAuth2 client backend")
+	}
+
+	return nil, err
 }
