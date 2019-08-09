@@ -54,6 +54,7 @@ func ValidActivityCollection(typ string) bool {
 
 // Filters
 type Filters struct {
+	Name          []string                    `qstring:"name,omitempty"`
 	Authenticated auth.Person                 `qstring:"-"`
 	To            as.Actor                    `qstring:"-"`
 	Author        as.Actor                    `qstring:"-"`
