@@ -13,7 +13,7 @@ type logger struct {
 func (l logger) Printf(format string, v ...interface{}) {
 	l.l.Debugf(format, v...)
 }
-
+const URISeparator = "\n"
 func New(store osin.Storage, l logrus.FieldLogger) (*osin.Server, error) {
 	config := osin.ServerConfig{
 		AuthorizationExpiration:   86400,
@@ -25,7 +25,7 @@ func New(store osin.Storage, l logrus.FieldLogger) (*osin.Server, error) {
 		AllowClientSecretInParams: false,
 		AllowGetAccessRequest:     false,
 		RetainTokenAfterRefresh:   true,
-		RedirectUriSeparator:      "\n",
+		RedirectUriSeparator:      URISeparator,
 		//RequirePKCEForPublicClients: true,
 	}
 	s := osin.NewServer(&config, store)

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox/oauth"
 	"github.com/openshift/osin"
 	"github.com/pborman/uuid"
 	"strings"
@@ -25,7 +26,7 @@ func (o *OauthCLI) AddClient(pw string, redirect []string) (string, error) {
 	c := osin.DefaultClient{
 		Id:          id,
 		Secret:      pw,
-		RedirectUri: strings.Join(redirect, ","),
+		RedirectUri: strings.Join(redirect, oauth.URISeparator),
 		UserData:    "{}",
 	}
 
