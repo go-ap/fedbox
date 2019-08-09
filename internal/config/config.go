@@ -53,14 +53,16 @@ const (
 	Postgres     = StorageType("postgres")
 )
 
-
+func GetBoltDBPath(dir, file string, env env.Type) string {
+	return fmt.Sprintf("%s/%s-%s.bdb", dir, path.Clean(file), env)
+}
 
 func (o Options) BoltDB() string {
-	return fmt.Sprintf("%s/%s-%s.bdb", o.BoltDBDir, path.Clean(o.Host), o.Env)
+	return GetBoltDBPath(o.BoltDBDir, o.Host, o.Env)
 }
 
 func (o Options) BoltDBOAuth2() string {
-	return fmt.Sprintf("%s/%s-%s-oauth.bdb", o.BoltDBDir, path.Clean(o.Host), o.Env)
+	return GetBoltDBPath(o.BoltDBDir, fmt.Sprintf("%s-oauth", o.Host), o.Env)
 }
 
 func k(k string) string {
