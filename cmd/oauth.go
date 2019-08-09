@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/oauth"
 	"github.com/openshift/osin"
@@ -26,13 +27,17 @@ type ClientLister interface {
 	ListClients() ([]osin.DefaultClient, error)
 }
 
-func (o *OauthCLI) AddClient(pw string, redirect []string) (string, error) {
+func (o *OauthCLI) AddClient(pw string, redirect []string, u interface{}) (string, error) {
 	id := uuid.New()
+
+	// TODO(marius): add a local Client struct that implements Client and ClientSecretMatcher interfaces with bcrypt support
+	//   It could even be a struct composite from an activitystreams.Application + secret and callback properties
+	userData, _ := json.Marshal(u)
 	c := osin.DefaultClient{
 		Id:          id,
 		Secret:      pw,
 		RedirectUri: strings.Join(redirect, oauth.URISeparator),
-		UserData:    "{}",
+		UserData:    userData,
 	}
 
 	var err error

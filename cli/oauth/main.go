@@ -7,22 +7,41 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/cmd"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh/terminal"
+	"gopkg.in/urfave/cli.v2"
 	"os"
 )
 
 func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OauthCLI) error {
-	path := c.GlobalString("path")
-	host := c.GlobalString("host")
-	typ := config.StorageType(c.GlobalString("type"))
-
+	dir := c.String("dir")
+	if dir == "" {
+		dir = "."
+	}
+	environ := env.Type(c.String("env"))
+	if environ == "" {
+		environ = env.DEV
+	}
+	typ := config.StorageType(c.String("type"))
 	if typ == "" {
 		typ = config.BoltDB
 	}
+	host := c.String("host")
+	if host == "" {
+		return errors.Newf("Missing host flag")
+	}
 	if typ == config.BoltDB {
+		path := config.GetBoltDBPath(dir, fmt.Sprintf("%s-oauth", host), environ)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			err := auth.BootstrapBoltDB(path, []byte(host))
+			if err != nil {
+				l.Errorf("Unable to create missing boltdb file %s: %s", path, err)
+				return err
+			}
+		}
+
 		o.DB = auth.NewBoltDBStore(auth.Config{
 			Path:       path,
 			BucketName: host,
@@ -41,7 +60,6 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OauthCLI) error {
 		defer o.DB.Close()
 	}
 
-	fmt.Printf("%s[%d]: %#v\n", c.Command.Name, c.NArg(), c.Args())
 	return nil
 }
 
@@ -51,50 +69,56 @@ func main() {
 	oauth := cmd.OauthCLI{}
 
 	logger := log.New()
-	
-	app := cli.NewApp()
+
+	app := cli.App{}
 	app.Name = "oauth"
 	app.Usage = "helper to add OAuth2 clients"
 	app.Version = version
+	app.Before = func(c *cli.Context) error {
+		return setup(c, logger, &oauth)
+	}
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
+			Name:  "host",
+			Usage: "The hostname used by application as namespace (REQUIRED)",
+		},
+		&cli.StringFlag{
+			Name: "env",
+			Usage: fmt.Sprintf("The environment to use. Possible values: %q, %q, %q", env.DEV, env.QA, env.PROD),
+			Value: string(env.DEV),
+		},
+		&cli.StringFlag{
 			Name: "type",
-			Usage: fmt.Sprintf("Type of the backend to use. Possible values: %s, %s", config.BoltDB, config.Postgres),
+			Usage: fmt.Sprintf("Type of the backend to use. Possible values: %q, %q", config.BoltDB, config.Postgres),
 			Value: string(config.BoltDB),
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "path",
-			Value: "",
-			Usage: "The file path for the Bolt DB",
-		},
-		cli.StringFlag{
-			Name:  "host",
-			Value: "",
-			Usage: "The hostname used by application as namespace",
+			Value: ".",
+			Usage: "The folder where Bolt DBs",
 		},
 	}
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		{
 			Name:  "client",
 			Usage: "OAuth2 client application management",
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:  "add",
 					Aliases: []string{"new"},
 					Usage: "Adds an OAuth2 client",
 					Flags: []cli.Flag{
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name:  "redirectUri",
 							Value: nil,
 							Usage: "The redirect URIs for current application",
 						},
 					},
 					Action: func(c *cli.Context) error {
-						err := setup(c, logger, &oauth)
-						if err != nil {
-							return err
+						redirectURIs := c.StringSlice("redirectUri")
+						if len(redirectURIs) < 1 {
+							return errors.Newf("Need to provide at least a return URI for the client")
 						}
-
 						fmt.Print("password: ")
 						pw1, _ := terminal.ReadPassword(0)
 						fmt.Println()
@@ -104,7 +128,7 @@ func main() {
 						if !bytes.Equal(pw1, savpw) {
 							return errors.Errorf("Passwords do not match")
 						}
-						id, err := oauth.AddClient(string(savpw), c.StringSlice("redirectUri"))
+						id, err := oauth.AddClient(string(savpw), redirectURIs, nil)
 						if err == nil {
 							logger.Info(id)
 						}
@@ -117,11 +141,8 @@ func main() {
 					Usage: "Removes an existing OAuth2 client",
 					ArgsUsage: "APPLICATION_UUID...",
 					Action: func(c *cli.Context) error {
-						err := setup(c, logger, &oauth)
-						if err != nil {
-							return err
-						}
-						for _, id := range c.Args() {
+						for i := 0; i <= c.Args().Len(); i++ {
+							id := c.Args().Get(i)
 							err := oauth.DeleteClient(id)
 							if err != nil {
 								logger.Errorf("Error deleting %s: %s", id, err)
@@ -135,10 +156,6 @@ func main() {
 					Aliases: []string{"list"},
 					Usage: "Lists existing OAuth2 clients",
 					Action: func(c *cli.Context) error {
-						err := setup(c, logger, &oauth)
-						if err != nil {
-							return err
-						}
 						return errors.NotImplementedf("Client listing is not yet implemented")
 					},
 				},
