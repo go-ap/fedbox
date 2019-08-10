@@ -75,7 +75,7 @@ func main() {
 	app.Usage = "helper to add OAuth2 clients"
 	app.Version = version
 	app.Before = func(c *cli.Context) error {
-		return setup(c, logger, &oauth)
+		return nil
 	}
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
@@ -102,6 +102,9 @@ func main() {
 		{
 			Name:  "client",
 			Usage: "OAuth2 client application management",
+			Before: func(c *cli.Context) error {
+				return setup(c, logger, &oauth)
+			},
 			Subcommands: []*cli.Command{
 				{
 					Name:  "add",
