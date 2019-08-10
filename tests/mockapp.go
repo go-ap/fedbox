@@ -5,11 +5,12 @@ import (
 	"github.com/go-ap/activitypub/client"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox/app"
+	"github.com/go-ap/fedbox/cmd"
+	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/fedbox/validation"
 	"github.com/go-chi/chi"
-	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"os"
 	"testing"
@@ -26,7 +27,7 @@ func resetDB(t *testing.T, testData bool) string {
 	if err != nil {
 		curPath = os.TempDir()
 	}
-	path := fmt.Sprintf("%s/%s-%d.bdb", curPath, "test", os.Getpid())
+	path := config.GetBoltDBPath(curPath, fmt.Sprintf("%s-%d", host, os.Getpid()), "test")
 
 	boltdb.Clean(path, []byte(host))
 	boltdb.Bootstrap(path, []byte(host), apiURL)
@@ -42,9 +43,7 @@ func runAPP(e string) int {
 	if err != nil {
 		curPath = os.TempDir()
 	}
-	path := fmt.Sprintf("%s/%s-%d.bdb", curPath, "test", os.Getpid())
-	pathOauth := fmt.Sprintf("%s/%s-%d-oauth.bdb", curPath, "test", os.Getpid())
-
+	path := config.GetBoltDBPath(curPath, fmt.Sprintf("%s-%d", host, os.Getpid()), "test")
 	b, err := boltdb.New(boltdb.Config{
 		Path:       path,
 		BucketName: host,
@@ -58,13 +57,13 @@ func runAPP(e string) int {
 
 	a := app.New(l, "HEAD", e)
 	r := chi.NewRouter()
-	cl := osin.DefaultClient{
-		Id:          "default",
-		Secret:      "hahah",
-		RedirectUri: authCallbackURL,
-		UserData:    nil,
+	pathOauth := config.GetBoltDBPath(curPath, fmt.Sprintf("%s-oauth-%d", host, os.Getpid()), "test")
+	if _, err := os.Stat(pathOauth); os.IsNotExist(err) {
+		err := auth.BootstrapBoltDB(pathOauth, []byte(host))
+		if err != nil {
+			l.Errorf("Unable to create missing boltdb file %s: %s", pathOauth, err)
+		}
 	}
-	auth.BootstrapBoltDB(pathOauth, []byte(host), &cl)
 
 	oStor := auth.NewBoltDBStore(auth.Config{
 		Path:       pathOauth,
@@ -72,8 +71,14 @@ func runAPP(e string) int {
 		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
 		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
 	})
-
 	defer oStor.Close()
+	o := cmd.OauthCLI{
+		DB: oStor,
+	}
+	pw := "hahah"
+	id, _ := o.AddClient(pw, []string{authCallbackURL}, nil)
+
+	defaultTestAccount.authToken, _ = o.GenAuthToken(id, defaultTestAccount.Handle, nil)
 	_oauthServer, _ = osinServer(oStor, l)
 
 	r.Use(app.Repo(b))

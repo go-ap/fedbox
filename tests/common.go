@@ -34,14 +34,16 @@ type testAccount struct {
 	Hash       string `json:"hash"`
 	publicKey  crypto.PublicKey
 	privateKey crypto.PrivateKey
+	authToken  string
 }
 
 type testReq struct {
-	met     string
-	url     string
-	headers http.Header
-	account *testAccount
-	body    string
+	met      string
+	url      string
+	headers  http.Header
+	account  *testAccount
+	clientID string
+	body     string
 }
 
 type testRes struct {
@@ -84,8 +86,8 @@ type objectVal struct {
 }
 
 var (
-	host   = "127.0.0.1:9998"
-	apiURL = "http://127.0.0.1:9998"
+	host            = "127.0.0.1:9998"
+	apiURL          = "http://127.0.0.1:9998"
 	authCallbackURL = fmt.Sprintf("%s/auth/local/callback", apiURL)
 )
 
@@ -461,8 +463,8 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 						signHdrs,
 					).Sign(req)
 				}
-				if path.Base(req.URL.Path) == "outbox" && _oauthServer != nil {
-					err = addOAuth2Auth(req, test.req.account, _oauthServer)
+				if path.Base(req.URL.Path) == "outbox" {
+					err = addOAuth2Auth(req, test.req.account)
 				}
 				assertTrue(err == nil, "Error: unable to sign request: %s", err)
 			}
