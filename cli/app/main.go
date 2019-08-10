@@ -43,6 +43,8 @@ func main() {
 		bolt, errb := boltdb.New(boltdb.Config{
 			Path:       app.Config.BoltDB(),
 			BucketName: app.Config.Host,
+			LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
+			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
 		}, a.Config().BaseURL)
 		repo = bolt
 		err = errb
