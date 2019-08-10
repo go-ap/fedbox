@@ -9,9 +9,11 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
+	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/urfave/cli.v2"
+	"net/url"
 	"os"
 )
 
@@ -28,10 +30,16 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OauthCLI) error {
 	if typ == "" {
 		typ = config.BoltDB
 	}
-	host := c.String("host")
-	if host == "" {
-		return errors.Newf("Missing host flag")
+	URI := c.String("url")
+	if URI == "" {
+		return errors.Newf("Missing url flag")
 	}
+	u, err := url.Parse(URI)
+	if err != nil {
+		l.Errorf("URL value passed is invalid: %S", err)
+		return err
+	}
+	host := u.Hostname()
 	if typ == config.BoltDB {
 		path := config.GetBoltDBPath(dir, fmt.Sprintf("%s-oauth", host), environ)
 		if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -42,22 +50,26 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OauthCLI) error {
 			}
 		}
 
-		o.DB = auth.NewBoltDBStore(auth.Config{
+		o.AuthDB = auth.NewBoltDBStore(auth.Config{
 			Path:       path,
 			BucketName: host,
 			LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
 			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
 		})
-		defer o.DB.Close()
+		defer o.AuthDB.Close()
+
+		db, _ := boltdb.New(boltdb.Config{
+			Path:       config.GetBoltDBPath(dir, host, environ),
+			BucketName: host,
+			LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
+			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		}, u.String())
+		
+		defer db.Close()
+		o.ActorDB = db
 	}
 	if typ == config.Postgres {
-		// TODO(marius): finish the pgStore implementation
-		o.DB = auth.NewPgDBStore(/*auth.Config{
-			db:    nil,
-			LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-			ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
-		})*/)
-		defer o.DB.Close()
+		return errors.NotImplementedf("%s type not implemented", typ)
 	}
 
 	return nil
@@ -79,8 +91,8 @@ func main() {
 	}
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
-			Name:  "host",
-			Usage: "The hostname used by application as namespace (REQUIRED)",
+			Name:  "url",
+			Usage: "The url used by the application (REQUIRED)",
 		},
 		&cli.StringFlag{
 			Name: "env",

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/oauth"
+	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/pborman/uuid"
 	"strings"
@@ -11,7 +12,8 @@ import (
 )
 
 type OauthCLI struct {
-	DB osin.Storage
+	AuthDB  osin.Storage
+	ActorDB storage.ActorLoader
 }
 
 type ClientSaver interface {
@@ -42,7 +44,7 @@ func (o *OauthCLI) AddClient(pw string, redirect []string, u interface{}) (strin
 	}
 
 	var err error
-	if saver, ok := o.DB.(ClientSaver); ok {
+	if saver, ok := o.AuthDB.(ClientSaver); ok {
 		err = saver.CreateClient(&c)
 	} else {
 		err = errors.Newf("invalid OAuth2 client backend")
@@ -54,7 +56,7 @@ func (o *OauthCLI) AddClient(pw string, redirect []string, u interface{}) (strin
 func (o *OauthCLI) DeleteClient(uuid string) error {
 	var err error
 
-	if saver, ok := o.DB.(ClientSaver); ok {
+	if saver, ok := o.AuthDB.(ClientSaver); ok {
 		err = saver.RemoveClient(uuid)
 	} else {
 		err = errors.Newf("invalid OAuth2 client backend")
@@ -66,7 +68,7 @@ func (o *OauthCLI) DeleteClient(uuid string) error {
 func (o *OauthCLI) ListClients() ([]osin.DefaultClient, error) {
 	var err error
 
-	if ls, ok := o.DB.(ClientLister); ok {
+	if ls, ok := o.AuthDB.(ClientLister); ok {
 		return ls.ListClients()
 	} else {
 		err = errors.Newf("invalid OAuth2 client backend")
@@ -76,7 +78,7 @@ func (o *OauthCLI) ListClients() ([]osin.DefaultClient, error) {
 }
 
 func (o *OauthCLI) GenAuthToken(clientID, handle string, dat interface{}) (string, error) {
-	cl, err := o.DB.GetClient(clientID)
+	cl, err := o.AuthDB.GetClient(clientID)
 	if err != nil {
 		return "", err
 	}
@@ -127,7 +129,7 @@ func (o *OauthCLI) GenAuthToken(clientID, handle string, dat interface{}) (strin
 		return "", err
 	}
 	// save access token
-	if err = o.DB.SaveAccess(ad); err != nil {
+	if err = o.AuthDB.SaveAccess(ad); err != nil {
 		return "", err
 	}
 

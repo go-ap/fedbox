@@ -73,7 +73,8 @@ func runAPP(e string) int {
 	})
 	defer oStor.Close()
 	o := cmd.OauthCLI{
-		DB: oStor,
+		AuthDB:  oStor,
+		ActorDB: b,
 	}
 	pw := "hahah"
 	id, _ := o.AddClient(pw, []string{authCallbackURL}, nil)
