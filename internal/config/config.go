@@ -53,8 +53,12 @@ const (
 	Postgres     = StorageType("postgres")
 )
 
+func clean(name string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(path.Clean(name), ",", "-"), ":", "-")
+}
+
 func GetBoltDBPath(dir, file string, env env.Type) string {
-	return fmt.Sprintf("%s/%s-%s.bdb", dir, path.Clean(file), env)
+	return fmt.Sprintf("%s/%s-%s.bdb", dir, clean(file), env)
 }
 
 func (o Options) BoltDB() string {
