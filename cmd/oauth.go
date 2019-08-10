@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/osin"
 	"github.com/pborman/uuid"
 	"strings"
+	"time"
 )
 
 type OauthCLI struct {
@@ -72,4 +73,63 @@ func (o *OauthCLI) ListClients() ([]osin.DefaultClient, error) {
 	}
 
 	return nil, err
+}
+
+func (o *OauthCLI) GenAuthToken(clientID, handle string, dat interface{}) (string, error) {
+	cl, err := o.DB.GetClient(clientID)
+	if err != nil {
+		return "", err
+	}
+
+	now := time.Now()
+
+	aud := &osin.AuthorizeData{
+		Client:      cl,
+		CreatedAt:   now,
+		ExpiresIn:   86400,
+		RedirectUri: cl.GetRedirectUri(),
+		State:       "state",
+		UserData:    dat,
+	}
+
+	// generate token code
+	aud.Code, err = (&osin.AuthorizeTokenGenDefault{}).GenerateAuthorizeToken(aud)
+	if err != nil {
+		return "", err
+	}
+
+	// generate token directly
+	ar := &osin.AccessRequest{
+		Type:          osin.AUTHORIZATION_CODE,
+		AuthorizeData: aud,
+		Client:        cl,
+		RedirectUri:   cl.GetRedirectUri(),
+		Scope:         "scope",
+		Authorized:    true,
+		Expiration:    86400,
+		UserData:      dat,
+	}
+
+	ad := &osin.AccessData{
+		Client:        ar.Client,
+		AuthorizeData: ar.AuthorizeData,
+		AccessData:    ar.AccessData,
+		ExpiresIn:     ar.Expiration,
+		Scope:         ar.Scope,
+		RedirectUri:   cl.GetRedirectUri(),
+		CreatedAt:     now,
+		UserData:      ar.UserData,
+	}
+
+	// generate access token
+	ad.AccessToken, ad.RefreshToken, err = (&osin.AccessTokenGenDefault{}).GenerateAccessToken(ad, ar.GenerateRefresh)
+	if err != nil {
+		return "", err
+	}
+	// save access token
+	if err = o.DB.SaveAccess(ad); err != nil {
+		return "", err
+	}
+
+	return ad.AccessToken, nil
 }

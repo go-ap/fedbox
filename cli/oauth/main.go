@@ -164,6 +164,45 @@ func main() {
 				},
 			},
 		},
+		{
+			Name:  "token",
+			Usage: "OAuth2 authorization token management",
+			Before: func(c *cli.Context) error {
+				return setup(c, logger, &oauth)
+			},
+			Subcommands: []*cli.Command{
+				{
+					Name:  "add",
+					Aliases: []string{"new", "get"},
+					Usage: "Adds an OAuth2 token",
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:  "client",
+							Usage: "The client to use for generating the token",
+						},
+						&cli.StringFlag{
+							Name:  "handle",
+							Usage: "The user handle we want to generate the authorization for",
+						},
+					},
+					Action: func(c *cli.Context) error {
+						clientID := c.String("client")
+						if clientID == "" {
+							return errors.Newf("Need to provide the client id")
+						}
+						handle := c.String("handle")
+						if clientID == "" {
+							return errors.Newf("Need to provide the actor handle")
+						}
+						tok, err := oauth.GenAuthToken(clientID, handle, nil)
+						if err == nil {
+							logger.Info(tok)
+						}
+						return err
+					},
+				},
+			},
+		},
 	}
 
 	err := app.Run(os.Args)
