@@ -72,7 +72,7 @@ func runAPP(e string) int {
 		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
 	})
 	defer oStor.Close()
-	o := cmd.OauthCLI{
+	o := cmd.OAuth{
 		AuthDB:  oStor,
 		ActorDB: b,
 	}

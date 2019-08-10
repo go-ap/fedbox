@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-type OauthCLI struct {
+type OAuth struct {
 	AuthDB  osin.Storage
 	ActorDB storage.ActorLoader
 }
@@ -30,7 +30,7 @@ type ClientLister interface {
 	ListClients() ([]osin.DefaultClient, error)
 }
 
-func (o *OauthCLI) AddClient(pw string, redirect []string, u interface{}) (string, error) {
+func (o *OAuth) AddClient(pw string, redirect []string, u interface{}) (string, error) {
 	id := uuid.New()
 
 	// TODO(marius): add a local Client struct that implements Client and ClientSecretMatcher interfaces with bcrypt support
@@ -53,7 +53,7 @@ func (o *OauthCLI) AddClient(pw string, redirect []string, u interface{}) (strin
 	return id, err
 }
 
-func (o *OauthCLI) DeleteClient(uuid string) error {
+func (o *OAuth) DeleteClient(uuid string) error {
 	var err error
 
 	if saver, ok := o.AuthDB.(ClientSaver); ok {
@@ -65,7 +65,7 @@ func (o *OauthCLI) DeleteClient(uuid string) error {
 	return err
 }
 
-func (o *OauthCLI) ListClients() ([]osin.DefaultClient, error) {
+func (o *OAuth) ListClients() ([]osin.DefaultClient, error) {
 	var err error
 
 	if ls, ok := o.AuthDB.(ClientLister); ok {
@@ -77,7 +77,7 @@ func (o *OauthCLI) ListClients() ([]osin.DefaultClient, error) {
 	return nil, err
 }
 
-func (o *OauthCLI) GenAuthToken(clientID, handle string, dat interface{}) (string, error) {
+func (o *OAuth) GenAuthToken(clientID, handle string, dat interface{}) (string, error) {
 	cl, err := o.AuthDB.GetClient(clientID)
 	if err != nil {
 		return "", err

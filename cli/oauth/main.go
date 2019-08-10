@@ -17,7 +17,7 @@ import (
 	"os"
 )
 
-func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OauthCLI) error {
+func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OAuth) error {
 	dir := c.String("dir")
 	if dir == "" {
 		dir = "."
@@ -78,7 +78,7 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OauthCLI) error {
 var version = "HEAD"
 
 func main() {
-	oauth := cmd.OauthCLI{}
+	oauth := cmd.OAuth{}
 
 	logger := log.New()
 
