@@ -117,13 +117,7 @@ func (r *repo) Load(f s.Filterable) (as.ItemCollection, uint, error) {
 
 // LoadActivities
 func (r *repo) LoadActivities(f s.Filterable) (as.ItemCollection, uint, error) {
-	var err error
-	err = r.Open()
-	if err != nil {
-		return nil, 0, err
-	}
-	defer r.Close()
-	return loadFromBucket(r.d, r.root, f)
+	return r.LoadObjects(f)
 }
 
 // LoadObjects
