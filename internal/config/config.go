@@ -54,7 +54,7 @@ const (
 )
 
 func clean(name string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(path.Clean(name), ",", "-"), ":", "-")
+	return strings.ReplaceAll(strings.ReplaceAll(path.Clean(name), ".", "-"), ":", "-")
 }
 
 func GetBoltDBPath(dir, file string, env env.Type) string {

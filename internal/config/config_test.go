@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-ap/fedbox/internal/env"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -79,9 +80,13 @@ func TestLoadFromEnv(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error loading env: %s", err)
 		}
-		var path = fmt.Sprintf("/tmp/%s-%s.bdb", hostname, env.TEST)
+		var tmp = "/tmp"
+		if c.BoltDBDir != tmp {
+			t.Errorf("Invalid loaded boltdb dir value: %s, expected %s", c.BoltDBDir, tmp)
+		}
+		var path = fmt.Sprintf("%s/%s-%s.bdb", tmp, strings.Replace(hostname, ".", "-", 1), env.TEST)
 		if c.BoltDB() != path {
-			t.Errorf("Invalid loaded BaseURL value: %s, expected %s", c.BoltDBDir, path)
+			t.Errorf("Invalid loaded boltdb file value: %s, expected %s", c.BoltDB(), path)
 		}
 	}
 }
