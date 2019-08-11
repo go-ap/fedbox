@@ -5,6 +5,7 @@ import (
 	"github.com/go-ap/activitypub"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
+	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
@@ -69,4 +70,18 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 		return nil, err
 	}
 	return saved, nil
+}
+
+func (c *Control) DeleteActor(id string) error {
+	self := ap.Self(as.IRI(c.BaseURL.String()))
+	iri := as.IRI(fmt.Sprintf("%s/%s/%s", self.ID, ap.ActorsType, id))
+	it, cnt, err := c.ActorDB.LoadActors(iri)
+	if err != nil {
+		return  err
+	}
+	if cnt == 0 {
+		return errors.Newf("")
+	}
+	_, err = c.ActorDB.DeleteActor(it)
+	return err
 }

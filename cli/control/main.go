@@ -137,6 +137,22 @@ func main() {
 						return nil
 					},
 				},
+				{
+					Name:    "del",
+					Aliases: []string{"delete", "remove", "rm"},
+					Usage:   "Deletes an ActivityPub actor",
+					Action: func(c *cli.Context) error {
+						ids := c.Args().Slice()
+
+						for _, id := range ids {
+							err := command.Ctl.DeleteActor(id)
+							if err != nil {
+								fmt.Fprintf(os.Stderr, "Error deleting %s: %s\n", id, err)
+							}
+						}
+						return nil
+					},
+				},
 			},
 		},
 		{
@@ -184,7 +200,7 @@ func main() {
 						},
 						{
 							Name:  "del",
-							Aliases: []string{"delete", "remove"},
+							Aliases: []string{"delete", "remove", "rm"},
 							Usage: "Removes an existing OAuth2 client",
 							ArgsUsage: "APPLICATION_UUID...",
 							Action: func(c *cli.Context) error {
