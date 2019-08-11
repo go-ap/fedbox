@@ -9,8 +9,8 @@ import (
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/oauth"
 	"github.com/go-ap/storage"
-	"github.com/google/uuid"
 	"github.com/openshift/osin"
+	"github.com/pborman/uuid"
 	"net/url"
 	"path"
 	"strings"
@@ -70,7 +70,7 @@ func (o *OAuth) AddClient(pw string, redirect []string, u interface{}) (string, 
 
 	o.Ctl.ActorDB.UpdateActor(app)
 	if id == "" {
-		id = uuid.New().String()
+		id = uuid.New()
 	}
 
 	// TODO(marius): add a local Client struct that implements Client and ClientSecretMatcher interfaces with bcrypt support
