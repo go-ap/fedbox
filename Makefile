@@ -25,19 +25,19 @@ TEST := $(GO) test $(BUILDFLAGS)
 
 .PHONY: all run clean test coverage integration
 
-all: app bootstrap oauth
+all: app bootstrap ctl
 
 app: bin/app
 bin/app: go.mod cli/app/main.go $(APPSOURCES)
 	$(BUILD) -tags $(ENV) -o $@ ./cli/app/main.go
 
+ctl: bin/ctl
+bin/ctl: go.mod cli/control/main.go $(APPSOURCES)
+	$(BUILD) -tags $(ENV) -o $@ ./cli/control/main.go
+
 bootstrap: bin/bootstrap
 bin/bootstrap: go.mod cli/bootstrap/main.go $(APPSOURCES)
 	$(BUILD) -tags $(ENV) -o $@ cli/bootstrap/main.go
-
-oauth: bin/oauth
-bin/oauth: go.mod cli/oauth/main.go $(APPSOURCES)
-	$(BUILD) -tags $(ENV) -o $@ cli/oauth/main.go
 
 run: app
 	@./bin/app

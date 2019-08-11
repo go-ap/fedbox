@@ -2,18 +2,24 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
+	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/oauth"
 	"github.com/go-ap/storage"
+	"github.com/google/uuid"
 	"github.com/openshift/osin"
-	"github.com/pborman/uuid"
+	"net/url"
+	"path"
 	"strings"
 	"time"
 )
 
 type OAuth struct {
-	AuthDB  osin.Storage
-	ActorDB storage.ActorLoader
+	AuthDB osin.Storage
+	Ctl    Control
 }
 
 type ClientSaver interface {
@@ -30,11 +36,45 @@ type ClientLister interface {
 	ListClients() ([]osin.DefaultClient, error)
 }
 
+func NewOAuth(baseURL *url.URL, authDB osin.Storage, actorDb storage.Repository) OAuth {
+	return OAuth{
+		AuthDB: authDB,
+		Ctl: Control{
+			BaseURL: baseURL,
+			ActorDB: actorDb,
+		},
+	}
+}
+
 func (o *OAuth) AddClient(pw string, redirect []string, u interface{}) (string, error) {
-	id := uuid.New()
+	var id string
+
+	app, err := o.Ctl.AddActor("oauth-client-app", as.ApplicationType)
+	if err != nil {
+		return "", err
+	}
+
+	id = path.Base(string(*app.GetID()))
+	// TODO(marius): allow for updates of the application actor with incoming parameters for Icon, Summary, samd.
+	app.PreferredUsername = as.NaturalLanguageValues{
+		{
+			Ref:   as.NilLangRef,
+			Value: fmt.Sprintf("%s-%s", app.PreferredUsername.First().Value, id),
+		},
+	}
+	app.Endpoints = nil
+	app.Outbox = nil
+	app.Liked = nil
+	app.Likes = nil
+	app.URL = as.IRI(redirect[0])
+
+	o.Ctl.ActorDB.UpdateActor(app)
+	if id == "" {
+		id = uuid.New().String()
+	}
 
 	// TODO(marius): add a local Client struct that implements Client and ClientSecretMatcher interfaces with bcrypt support
-	//   It could even be a struct composite from an activitystreams.Application + secret and callback properties
+	//   It could even be a struct composite from an as.Application + secret and callback properties
 	userData, _ := json.Marshal(u)
 	c := osin.DefaultClient{
 		Id:          id,
@@ -43,13 +83,11 @@ func (o *OAuth) AddClient(pw string, redirect []string, u interface{}) (string, 
 		UserData:    userData,
 	}
 
-	var err error
 	if saver, ok := o.AuthDB.(ClientSaver); ok {
 		err = saver.CreateClient(&c)
 	} else {
 		err = errors.Newf("invalid OAuth2 client backend")
 	}
-
 	return id, err
 }
 
@@ -61,6 +99,7 @@ func (o *OAuth) DeleteClient(uuid string) error {
 	} else {
 		err = errors.Newf("invalid OAuth2 client backend")
 	}
+	// TODO(marius): add remove actor in the Control command
 
 	return err
 }
@@ -85,13 +124,30 @@ func (o *OAuth) GenAuthToken(clientID, handle string, dat interface{}) (string, 
 
 	now := time.Now()
 
+	f := activitypub.Filters{
+		Name: []string{handle},
+		Type: []as.ActivityVocabularyType{
+			as.ActorType,
+		},
+	}
+	list, cnt, err := o.Ctl.ActorDB.LoadActors(f)
+	if err != nil {
+		return "", err
+	}
+	if cnt == 0 {
+		return "", errors.Newf("Handle not found")
+	}
+	actor, err := auth.ToPerson(list.First())
+	if err != nil {
+		return "", err
+	}
+
 	aud := &osin.AuthorizeData{
 		Client:      cl,
 		CreatedAt:   now,
 		ExpiresIn:   86400,
 		RedirectUri: cl.GetRedirectUri(),
 		State:       "state",
-		UserData:    dat,
 	}
 
 	// generate token code
@@ -109,7 +165,6 @@ func (o *OAuth) GenAuthToken(clientID, handle string, dat interface{}) (string, 
 		Scope:         "scope",
 		Authorized:    true,
 		Expiration:    86400,
-		UserData:      dat,
 	}
 
 	ad := &osin.AccessData{
@@ -120,7 +175,7 @@ func (o *OAuth) GenAuthToken(clientID, handle string, dat interface{}) (string, 
 		Scope:         ar.Scope,
 		RedirectUri:   cl.GetRedirectUri(),
 		CreatedAt:     now,
-		UserData:      ar.UserData,
+		UserData:      actor.GetLink(),
 	}
 
 	// generate access token
