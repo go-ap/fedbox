@@ -148,7 +148,9 @@ func main() {
 							err := command.Ctl.DeleteActor(id)
 							if err != nil {
 								fmt.Fprintf(os.Stderr, "Error deleting %s: %s\n", id, err)
+								continue
 							}
+							fmt.Printf("Deleted: %s\n", id)
 						}
 						return nil
 					},
@@ -209,7 +211,9 @@ func main() {
 									err := command.DeleteClient(id)
 									if err != nil {
 										fmt.Fprintf(os.Stderr, "Error deleting %s: %s\n", id, err)
+										continue
 									}
+									fmt.Printf("Deleted: %s\n", id)
 								}
 								return nil
 							},
