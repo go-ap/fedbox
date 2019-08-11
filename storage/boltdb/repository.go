@@ -368,11 +368,7 @@ func save(r *repo, it as.Item) (as.Item, error) {
 
 // SaveActivity
 func (r *repo) SaveActivity(it as.Item) (as.Item, error) {
-	var err error
-	if it, err = r.SaveObject(it); err == nil {
-		r.logFn(nil, "Added new activity: %s", it.GetLink())
-	}
-	return it, err
+	return r.SaveObject(it)
 }
 
 func (r *repo) SaveActor(it as.Item) (as.Item, error) {
