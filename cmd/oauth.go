@@ -92,15 +92,14 @@ func (o *OAuth) AddClient(pw string, redirect []string, u interface{}) (string, 
 }
 
 func (o *OAuth) DeleteClient(uuid string) error {
-	var err error
+	o.Ctl.DeleteActor(uuid)
 
+	var err error
 	if saver, ok := o.AuthDB.(ClientSaver); ok {
 		err = saver.RemoveClient(uuid)
 	} else {
 		err = errors.Newf("invalid OAuth2 client backend")
 	}
-	// TODO(marius): add remove actor in the Control command
-
 	return err
 }
 
