@@ -68,7 +68,7 @@ type invalidActivity struct {
 
 type genericValidator struct {
 	baseIRI as.IRI
-	auth    auth.Person
+	auth    *auth.Person
 	c       client.Client
 	s       storage.Loader
 }
@@ -85,6 +85,10 @@ type ActivityPubError struct {
 	errors.Err
 }
 
+type MissingActorError struct {
+	errors.Err
+}
+
 var errFn = func(ss string) func(s string, p ...interface{}) errors.Err {
 	fn := func(s string, p ...interface{}) errors.Err {
 		return wrapErr(nil, fmt.Sprintf("%s: %s", ss, s), p...)
@@ -93,6 +97,9 @@ var errFn = func(ss string) func(s string, p ...interface{}) errors.Err {
 }
 var InvalidActivity = func(s string, p ...interface{}) ActivityPubError {
 	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Activity is not valid: %s", s), p...)}
+}
+var MissingActivityActor = func(s string, p ...interface{}) MissingActorError {
+	return MissingActorError{wrapErr(nil, fmt.Sprintf("Missing actor %s", s), p...)}
 }
 var InvalidActivityActor = func(s string, p ...interface{}) ActivityPubError {
 	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Actor is not valid: %s", s), p...)}
@@ -107,12 +114,21 @@ var InvalidTarget = func(s string, p ...interface{}) ActivityPubError {
 	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Target is not valid: %s", s), p...)}
 }
 
+func (m *MissingActorError)Is(e error) bool {
+	_, okp := e.(*MissingActorError)
+	_, oks := e.(MissingActorError)
+	return okp || oks
+}
+
 func (v genericValidator) ValidateServerActivity(a as.Item, inbox as.IRI) error {
 	return errors.NotImplementedf("Server Activity validation is not implemented")
 }
 
 // IRIBelongsToActor checks if the search iri represents any of the collections associated with the actor.
-func IRIBelongsToActor(iri as.IRI, actor auth.Person) bool {
+func IRIBelongsToActor(iri as.IRI, actor *auth.Person) bool {
+	if actor == nil {
+		return false
+	}
 	//p, _ := activitypub.ToPerson(actor)
 	if actor.Inbox == iri {
 		return true
@@ -164,7 +180,11 @@ func (v genericValidator) ValidateClientActivity(a as.Item, outbox as.IRI) error
 		return err
 	}
 	if err := v.ValidateClientActor(act.Actor); err != nil {
-		return err
+		if (&MissingActorError{}).Is(err) && v.auth != nil {
+			act.Actor = v.auth
+		} else {
+			return err
+		}
 	}
 	if err := v.ValidateClientObject(act.Object); err != nil {
 		return err
@@ -189,11 +209,11 @@ func (v genericValidator) ValidateLink(i as.IRI) error {
 		_, err := v.c.LoadIRI(i)
 		return err
 	} else {
-		_, cnt, err := v.s.LoadObjects(i)
+		actors, cnt, err := v.s.LoadActors(i)
 		if err != nil {
 			return err
 		}
-		if cnt == 0 {
+		if cnt == 0 || len(actors) != int(cnt) {
 			return InvalidActivityActor("%s could not be found locally", i)
 		}
 	}
@@ -202,6 +222,9 @@ func (v genericValidator) ValidateLink(i as.IRI) error {
 }
 
 func (v genericValidator) ValidateClientActor(a as.Item) error {
+	if a == nil {
+		return MissingActivityActor("")
+	}
 	if err := v.validateLocalIRI(a.GetLink()); err != nil {
 		return InvalidActivityActor("%s is not local", a.GetLink())
 	}
@@ -221,6 +244,11 @@ func (v genericValidator) ValidateActor(a as.Item) error {
 	}
 	if !as.ActorTypes.Contains(a.GetType()) {
 		return InvalidActivityActor("invalid type %s", a.GetType())
+	}
+	if v.auth != nil {
+		if v.auth.GetLink().String() == a.GetLink().String() {
+			return InvalidActivityActor("current activity's actor doesn't match the authenticated one")
+		}
 	}
 	return nil
 }
@@ -282,7 +310,7 @@ func FromContext(ctx context.Context) (*genericValidator, bool) {
 	return s, ok
 }
 
-func (v *genericValidator) SetActor(p auth.Person) {
+func (v *genericValidator) SetActor(p *auth.Person) {
 	v.auth = p
 }
 

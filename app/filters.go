@@ -83,6 +83,8 @@ func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {
 func LoadItemFilters(r *http.Request, f *ap.Filters) error {
 	f.IRI = as.IRI(reqURL(r))
 
-	f.Authenticated, _ = auth.ActorContext(r.Context())
+	if auth, ok := auth.ActorContext(r.Context()); ok {
+		f.Authenticated = &auth
+	}
 	return nil
 }
