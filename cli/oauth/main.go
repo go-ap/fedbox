@@ -78,7 +78,7 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OAuth) error {
 var version = "HEAD"
 
 func main() {
-	oauth := cmd.OAuth{}
+	command := cmd.OAuth{}
 
 	logger := log.New()
 
@@ -115,7 +115,7 @@ func main() {
 			Name:  "client",
 			Usage: "OAuth2 client application management",
 			Before: func(c *cli.Context) error {
-				return setup(c, logger, &oauth)
+				return setup(c, logger, &command)
 			},
 			Subcommands: []*cli.Command{
 				{
@@ -143,7 +143,7 @@ func main() {
 						if !bytes.Equal(pw1, savpw) {
 							return errors.Errorf("Passwords do not match")
 						}
-						id, err := oauth.AddClient(string(savpw), redirectURIs, nil)
+						id, err := command.AddClient(string(savpw), redirectURIs, nil)
 						if err == nil {
 							logger.Info(id)
 						}
@@ -158,7 +158,7 @@ func main() {
 					Action: func(c *cli.Context) error {
 						for i := 0; i <= c.Args().Len(); i++ {
 							id := c.Args().Get(i)
-							err := oauth.DeleteClient(id)
+							err := command.DeleteClient(id)
 							if err != nil {
 								logger.Errorf("Error deleting %s: %s", id, err)
 							}
@@ -180,7 +180,7 @@ func main() {
 			Name:  "token",
 			Usage: "OAuth2 authorization token management",
 			Before: func(c *cli.Context) error {
-				return setup(c, logger, &oauth)
+				return setup(c, logger, &command)
 			},
 			Subcommands: []*cli.Command{
 				{
@@ -206,7 +206,7 @@ func main() {
 						if clientID == "" {
 							return errors.Newf("Need to provide the actor handle")
 						}
-						tok, err := oauth.GenAuthToken(clientID, handle, nil)
+						tok, err := command.GenAuthToken(clientID, handle, nil)
 						if err == nil {
 							logger.Info(tok)
 						}
