@@ -115,7 +115,7 @@ func (o *OAuth) ListClients() ([]osin.Client, error) {
 	return nil, err
 }
 
-func (o *OAuth) GenAuthToken(clientID, handle string, dat interface{}) (string, error) {
+func (o *OAuth) GenAuthToken(clientID, actorIdentifier string, dat interface{}) (string, error) {
 	cl, err := o.AuthDB.GetClient(clientID)
 	if err != nil {
 		return "", err
@@ -123,11 +123,14 @@ func (o *OAuth) GenAuthToken(clientID, handle string, dat interface{}) (string, 
 
 	now := time.Now()
 
-	f := activitypub.Filters{
-		Name: []string{handle},
-		Type: []as.ActivityVocabularyType{
-			as.ActorType,
-		},
+	var f storage.Filterable
+	if u, err := url.Parse(actorIdentifier); err == nil {
+		f = as.IRI(u.String())
+	} else {
+		f = activitypub.Filters{
+			Name: []string{actorIdentifier},
+			Type: as.ActorTypes,
+		}
 	}
 	list, cnt, err := o.Ctl.ActorDB.LoadActors(f)
 	if err != nil {

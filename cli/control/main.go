@@ -6,6 +6,7 @@ import (
 	"github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
@@ -80,6 +81,8 @@ var version = "HEAD"
 
 func main() {
 	var command cmd.OAuth
+	activitystreams.ItemTyperFunc = activitypub.ItemByType
+
 	logger := logrus.New()
 	logger.Level = logrus.ErrorLevel
 
@@ -252,8 +255,8 @@ func main() {
 									Usage: "The client to use for generating the token",
 								},
 								&cli.StringFlag{
-									Name:  "handle",
-									Usage: "The user handle we want to generate the authorization for",
+									Name:  "actor",
+									Usage: "The actor identifier we want to generate the authorization for (ObjectID)",
 								},
 							},
 							Action: func(c *cli.Context) error {
@@ -261,11 +264,11 @@ func main() {
 								if clientID == "" {
 									return errors.Newf("Need to provide the client id")
 								}
-								handle := c.String("handle")
+								actor := c.String("actor")
 								if clientID == "" {
-									return errors.Newf("Need to provide the actor handle")
+									return errors.Newf("Need to provide the actor identifier (ObjectID)")
 								}
-								tok, err := command.GenAuthToken(clientID, handle, nil)
+								tok, err := command.GenAuthToken(clientID, actor, nil)
 								if err == nil {
 									fmt.Printf("Authorization: Bearer %s\n", tok)
 								}
