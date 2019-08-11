@@ -393,6 +393,10 @@ func (r *repo) SaveActivity(it as.Item) (as.Item, error) {
 	return it, err
 }
 
+func (r *repo) SaveActor(it as.Item) (as.Item, error) {
+	return r.SaveObject(it)
+}
+
 // SaveObject
 func (r *repo) SaveObject(it as.Item) (as.Item, error) {
 	var err error
@@ -488,9 +492,18 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 	})
 }
 
+func (r *repo) UpdateActor(it as.Item) (as.Item, error) {
+	return r.UpdateObject(it)
+}
+
 // UpdateObject
 func (r *repo) UpdateObject(it as.Item) (as.Item, error) {
 	return r.SaveObject(it)
+}
+
+
+func (r *repo) DeleteActor(it as.Item) (as.Item, error) {
+	return r.DeleteObject(it)
 }
 
 // DeleteObject
@@ -540,5 +553,8 @@ func (r *repo) Open() error {
 
 // Close closes the boltdb database if possible.
 func (r *repo) Close() error {
+	if r.d == nil {
+		return nil
+	}
 	return r.d.Close()
 }
