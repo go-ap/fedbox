@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
+	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -34,11 +35,11 @@ func resetDB(t *testing.T, testData bool) string {
 
 	boltdb.Clean(path, []byte(host))
 	boltdb.Bootstrap(path, []byte(host), apiURL)
-	b, s := getBoldDBs(curPath, "test", logrus.New())
-	o := cmd.OAuth{
-		AuthDB:  s,
-		ActorDB: b,
-	}
+
+	u, _ := url.Parse(apiURL)
+	b, s := getBoldDBs(curPath, u, "test", logrus.New())
+
+	o := cmd.NewOAuth(u, s, b)
 	pw := "hahah"
 	id, _ := o.AddClient(pw, []string{authCallbackURL}, nil)
 
@@ -50,16 +51,16 @@ func resetDB(t *testing.T, testData bool) string {
 	return path
 }
 
-func getBoldDBs(dir string, env env.Type, l logrus.FieldLogger) (storage.Loader, osin.Storage) {
-	path := config.GetBoltDBPath(dir, host, "test")
-	b, _ := boltdb.New(boltdb.Config{
+func getBoldDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (storage.Repository, osin.Storage) {
+	path := config.GetBoltDBPath(dir, host, env)
+	b := boltdb.New(boltdb.Config{
 		Path:       path,
 		BucketName: host,
 		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.Errorf(s, p...) },
 		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.Infof(s, p...) },
-	}, apiURL)
+	}, u.String())
 
-	pathOauth := config.GetBoltDBPath(dir, fmt.Sprintf("%s-oauth", host), "test")
+	pathOauth := config.GetBoltDBPath(dir, fmt.Sprintf("%s-oauth", host), env)
 	if _, err := os.Stat(pathOauth); os.IsNotExist(err) {
 		err := auth.BootstrapBoltDB(pathOauth, []byte(host))
 		if err != nil {
@@ -86,7 +87,8 @@ func runAPP(e string) int {
 		curPath = os.TempDir()
 	}
 
-	b, s := getBoldDBs(curPath, "test", l)
+	u, _ := url.Parse(apiURL)
+	b, s := getBoldDBs(curPath, u, "test", l)
 
 	a := app.New(l, "HEAD", e)
 	r := chi.NewRouter()

@@ -20,10 +20,7 @@ func TestNew(t *testing.T) {
 		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { t.Logf(s, p...) },
 		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { t.Errorf(s, p...) },
 	}
-	repo, err := New(conf, url)
-	if err != nil {
-		t.Errorf("Unable to open boltdb %s: %s", path, err)
-	}
+	repo := New(conf, url)
 	if repo == nil {
 		t.Errorf("Nil result from opening boltdb %s", path)
 	}
@@ -60,10 +57,7 @@ func TestRepo_Open(t *testing.T) {
 		Path:       path,
 		BucketName: bucket,
 	}
-	repo, err := New(conf, url)
-	if err != nil {
-		t.Errorf("Unable to open boltdb %s: %s", path, err)
-	}
+	repo := New(conf, url)
 	err = repo.Open()
 	if err != nil {
 		t.Errorf("Unable to open boltdb %s: %s", path, err)
@@ -90,10 +84,7 @@ func TestRepo_Close(t *testing.T) {
 		Path:       path,
 		BucketName: bucket,
 	}
-	repo, err := New(conf, url)
-	if err != nil {
-		t.Errorf("Unable to open boltdb %s: %s", path, err)
-	}
+	repo := New(conf, url)
 	err = repo.Open()
 	if err != nil {
 		t.Errorf("Unable to open boltdb %s: %s", path, err)
