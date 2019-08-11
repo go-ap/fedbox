@@ -17,6 +17,7 @@ import (
 	"gopkg.in/urfave/cli.v2"
 	"net/url"
 	"os"
+	"strings"
 )
 
 func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OAuth) error {
@@ -202,7 +203,14 @@ func main() {
 							Aliases: []string{"list"},
 							Usage: "Lists existing OAuth2 clients",
 							Action: func(c *cli.Context) error {
-								return errors.NotImplementedf("Client listing is not yet implemented")
+								clients, err := command.ListClients()
+								if err != nil {
+									return err
+								}
+								for i, client := range clients {
+									fmt.Printf("%d %s - %s\n", i, client.GetId(), strings.ReplaceAll(client.GetRedirectUri(), "\n", " :: "))
+								}
+								return nil
 							},
 						},
 					},

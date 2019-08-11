@@ -33,7 +33,7 @@ type ClientSaver interface {
 
 type ClientLister interface {
 	// ListClients lists existing clients
-	ListClients() ([]osin.DefaultClient, error)
+	ListClients() ([]osin.Client, error)
 }
 
 func NewOAuth(baseURL *url.URL, authDB osin.Storage, actorDb storage.Repository) OAuth {
@@ -104,7 +104,7 @@ func (o *OAuth) DeleteClient(uuid string) error {
 	return err
 }
 
-func (o *OAuth) ListClients() ([]osin.DefaultClient, error) {
+func (o *OAuth) ListClients() ([]osin.Client, error) {
 	var err error
 
 	if ls, ok := o.AuthDB.(ClientLister); ok {
