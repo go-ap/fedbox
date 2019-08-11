@@ -74,7 +74,12 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 
 func (c *Control) DeleteActor(id string) error {
 	self := ap.Self(as.IRI(c.BaseURL.String()))
-	iri := as.IRI(fmt.Sprintf("%s/%s/%s", self.ID, ap.ActorsType, id))
+	var iri as.IRI
+	if u, err := url.Parse(id); err != nil {
+		iri = as.IRI(fmt.Sprintf("%s/%s/%s", self.ID, ap.ActorsType, id))
+	} else {
+		iri = as.IRI(u.String())
+	}
 	it, cnt, err := c.ActorDB.LoadActors(iri)
 	if err != nil {
 		return  err
@@ -82,6 +87,6 @@ func (c *Control) DeleteActor(id string) error {
 	if cnt == 0 {
 		return errors.Newf("")
 	}
-	_, err = c.ActorDB.DeleteActor(it)
+	_, err = c.ActorDB.DeleteActor(it.First())
 	return err
 }
