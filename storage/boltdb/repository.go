@@ -43,7 +43,7 @@ type Config struct {
 }
 
 // New returns a new repo repository
-func New(c Config, baseURL string) (*repo, error) {
+func New(c Config, baseURL string) *repo {
 	b := repo{
 		root:    []byte(c.BucketName),
 		path:    c.Path,
@@ -57,7 +57,7 @@ func New(c Config, baseURL string) (*repo, error) {
 	if c.LogFn != nil {
 		b.logFn = c.LogFn
 	}
-	return &b, nil
+	return &b
 }
 
 func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection, uint, error) {
@@ -407,7 +407,11 @@ func (r *repo) SaveObject(it as.Item) (as.Item, error) {
 	defer r.Close()
 
 	if it, err = save(r, it); err == nil {
-		r.logFn(nil, "Added new %s: %s", it.GetType(), it.GetLink())
+		op := "Updated"
+		if it.GetID() == nil {
+			op = "Added new"
+		}
+		r.logFn(nil, "%s %s: %s", op, it.GetType(), it.GetLink())
 	}
 
 	// TODO(marius) Move to somewhere else

@@ -40,15 +40,14 @@ func main() {
 	var oauthDB osin.Storage
 	var err error
 	if a.Config().Storage == config.BoltDB {
-		bolt, errb := boltdb.New(boltdb.Config{
+		bolt := boltdb.New(boltdb.Config{
 			Path:       app.Config.BoltDB(),
 			BucketName: app.Config.Host,
 			LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
 			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
 		}, a.Config().BaseURL)
-		repo = bolt
-		err = errb
 		defer bolt.Close()
+		repo = bolt
 
 		oauthDB = auth.NewBoltDBStore(auth.Config{
 			Path:       app.Config.BoltDBOAuth2(),
