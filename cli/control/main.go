@@ -76,7 +76,7 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.Control) error {
 	if typ == config.Postgres {
 		return errors.NotImplementedf("%s type not implemented", typ)
 	}
-	conf, err := config.LoadFromEnv(string(environ))
+	conf, err := config.LoadFromEnv(environ)
 	if err != nil {
 		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}
