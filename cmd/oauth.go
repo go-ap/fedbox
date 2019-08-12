@@ -7,6 +7,7 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/oauth"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
@@ -16,11 +17,6 @@ import (
 	"strings"
 	"time"
 )
-
-type OAuth struct {
-	AuthDB osin.Storage
-	Ctl    Control
-}
 
 type ClientSaver interface {
 	// UpdateClient updates the client (identified by it's id) and replaces the values with the values of client.
@@ -36,20 +32,19 @@ type ClientLister interface {
 	ListClients() ([]osin.Client, error)
 }
 
-func NewOAuth(baseURL *url.URL, authDB osin.Storage, actorDb storage.Repository) OAuth {
-	return OAuth{
-		AuthDB: authDB,
-		Ctl: Control{
-			BaseURL: baseURL,
-			ActorDB: actorDb,
-		},
+func New(baseURL *url.URL, authDB osin.Storage, actorDb storage.Repository, conf config.Options) Control {
+	return Control{
+		BaseURL:     baseURL,
+		Conf:        conf,
+		AuthStorage: authDB,
+		Storage:     actorDb,
 	}
 }
 
-func (o *OAuth) AddClient(pw string, redirect []string, u interface{}) (string, error) {
+func (c *Control) AddClient(pw string, redirect []string, u interface{}) (string, error) {
 	var id string
 
-	app, err := o.Ctl.AddActor("oauth-client-app", as.ApplicationType)
+	app, err := c.AddActor("oauth-client-app", as.ApplicationType)
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +63,7 @@ func (o *OAuth) AddClient(pw string, redirect []string, u interface{}) (string, 
 	app.Likes = nil
 	app.URL = as.IRI(redirect[0])
 
-	o.Ctl.ActorDB.UpdateActor(app)
+	c.Storage.UpdateActor(app)
 	if id == "" {
 		id = uuid.New()
 	}
@@ -76,26 +71,26 @@ func (o *OAuth) AddClient(pw string, redirect []string, u interface{}) (string, 
 	// TODO(marius): add a local Client struct that implements Client and ClientSecretMatcher interfaces with bcrypt support
 	//   It could even be a struct composite from an as.Application + secret and callback properties
 	userData, _ := json.Marshal(u)
-	c := osin.DefaultClient{
+	d := osin.DefaultClient{
 		Id:          id,
 		Secret:      pw,
 		RedirectUri: strings.Join(redirect, oauth.URISeparator),
 		UserData:    userData,
 	}
 
-	if saver, ok := o.AuthDB.(ClientSaver); ok {
-		err = saver.CreateClient(&c)
+	if saver, ok := c.AuthStorage.(ClientSaver); ok {
+		err = saver.CreateClient(&d)
 	} else {
 		err = errors.Newf("invalid OAuth2 client backend")
 	}
 	return id, err
 }
 
-func (o *OAuth) DeleteClient(uuid string) error {
-	o.Ctl.DeleteActor(uuid)
+func (c *Control) DeleteClient(uuid string) error {
+	c.DeleteActor(uuid)
 
 	var err error
-	if saver, ok := o.AuthDB.(ClientSaver); ok {
+	if saver, ok := c.AuthStorage.(ClientSaver); ok {
 		err = saver.RemoveClient(uuid)
 	} else {
 		err = errors.Newf("invalid OAuth2 client backend")
@@ -103,10 +98,10 @@ func (o *OAuth) DeleteClient(uuid string) error {
 	return err
 }
 
-func (o *OAuth) ListClients() ([]osin.Client, error) {
+func (c *Control) ListClients() ([]osin.Client, error) {
 	var err error
 
-	if ls, ok := o.AuthDB.(ClientLister); ok {
+	if ls, ok := c.AuthStorage.(ClientLister); ok {
 		return ls.ListClients()
 	} else {
 		err = errors.Newf("invalid OAuth2 client backend")
@@ -115,8 +110,8 @@ func (o *OAuth) ListClients() ([]osin.Client, error) {
 	return nil, err
 }
 
-func (o *OAuth) GenAuthToken(clientID, actorIdentifier string, dat interface{}) (string, error) {
-	cl, err := o.AuthDB.GetClient(clientID)
+func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}) (string, error) {
+	cl, err := c.AuthStorage.GetClient(clientID)
 	if err != nil {
 		return "", err
 	}
@@ -132,7 +127,7 @@ func (o *OAuth) GenAuthToken(clientID, actorIdentifier string, dat interface{}) 
 			Type: as.ActorTypes,
 		}
 	}
-	list, cnt, err := o.Ctl.ActorDB.LoadActors(f)
+	list, cnt, err := c.Storage.LoadActors(f)
 	if err != nil {
 		return "", err
 	}
@@ -186,7 +181,7 @@ func (o *OAuth) GenAuthToken(clientID, actorIdentifier string, dat interface{}) 
 		return "", err
 	}
 	// save access token
-	if err = o.AuthDB.SaveAccess(ad); err != nil {
+	if err = c.AuthStorage.SaveAccess(ad); err != nil {
 		return "", err
 	}
 

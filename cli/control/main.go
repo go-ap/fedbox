@@ -21,7 +21,11 @@ import (
 	"strings"
 )
 
-func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OAuth) error {
+func errf(s string, par ...interface{}) {
+	fmt.Fprintf(os.Stderr, s, par...)
+}
+
+func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.Control) error {
 	dir := c.String("dir")
 	if dir == "" {
 		dir = "."
@@ -72,7 +76,11 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OAuth) error {
 	if typ == config.Postgres {
 		return errors.NotImplementedf("%s type not implemented", typ)
 	}
-	*o = cmd.NewOAuth(u, aDb, db)
+	conf, err := config.LoadFromEnv(string(environ))
+	if err != nil {
+		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
+	}
+	*o = cmd.New(u, aDb, db, conf)
 
 	return nil
 }
@@ -80,7 +88,7 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.OAuth) error {
 var version = "HEAD"
 
 func main() {
-	var command cmd.OAuth
+	var ctl cmd.Control
 	activitystreams.ItemTyperFunc = activitypub.ItemByType
 
 	logger := logrus.New()
@@ -99,12 +107,12 @@ func main() {
 			Usage: "The url used by the application (REQUIRED)",
 		},
 		&cli.StringFlag{
-			Name: "env",
+			Name:  "env",
 			Usage: fmt.Sprintf("The environment to use. Possible values: %q, %q, %q", env.DEV, env.QA, env.PROD),
 			Value: string(env.DEV),
 		},
 		&cli.StringFlag{
-			Name: "type",
+			Name:  "type",
 			Usage: fmt.Sprintf("Type of the backend to use. Possible values: %q, %q", config.BoltDB, config.Postgres),
 			Value: string(config.BoltDB),
 		},
@@ -119,7 +127,7 @@ func main() {
 			Name:  "actor",
 			Usage: "Actor management helper",
 			Before: func(c *cli.Context) error {
-				return setup(c, logger, &command)
+				return setup(c, logger, &ctl)
 			},
 			Subcommands: []*cli.Command{
 				{
@@ -131,9 +139,9 @@ func main() {
 
 						var actors = make(activitystreams.ItemCollection, 0)
 						for _, name := range names {
-							p, err := command.Ctl.AddActor(name, activitystreams.PersonType)
+							p, err := ctl.AddActor(name, activitystreams.PersonType)
 							if err != nil {
-								fmt.Fprintf(os.Stderr, "Error adding %s: %s\n", name, err)
+								errf("Error adding %s: %s\n", name, err)
 							}
 							actors = append(actors, p)
 						}
@@ -148,9 +156,9 @@ func main() {
 						ids := c.Args().Slice()
 
 						for _, id := range ids {
-							err := command.Ctl.DeleteActor(id)
+							err := ctl.DeleteActor(id)
 							if err != nil {
-								fmt.Fprintf(os.Stderr, "Error deleting %s: %s\n", id, err)
+								errf("Error deleting %s: %s\n", id, err)
 								continue
 							}
 							fmt.Printf("Deleted: %s\n", id)
@@ -161,20 +169,20 @@ func main() {
 			},
 		},
 		{
-			Name: "oauth",
+			Name:  "oauth",
 			Usage: "OAuth2 client and access token helper",
 			Subcommands: []*cli.Command{
 				{
 					Name:  "client",
 					Usage: "OAuth2 client application management",
 					Before: func(c *cli.Context) error {
-						return setup(c, logger, &command)
+						return setup(c, logger, &ctl)
 					},
 					Subcommands: []*cli.Command{
 						{
-							Name:  "add",
+							Name:    "add",
 							Aliases: []string{"new"},
-							Usage: "Adds an OAuth2 client",
+							Usage:   "Adds an OAuth2 client",
 							Flags: []cli.Flag{
 								&cli.StringSliceFlag{
 									Name:  "redirectUri",
@@ -196,7 +204,7 @@ func main() {
 								if !bytes.Equal(pw1, savpw) {
 									return errors.Errorf("Passwords do not match")
 								}
-								id, err := command.AddClient(string(savpw), redirectURIs, nil)
+								id, err := ctl.AddClient(string(savpw), redirectURIs, nil)
 								if err == nil {
 									fmt.Sprintf("Client ID: %s", id)
 								}
@@ -204,16 +212,16 @@ func main() {
 							},
 						},
 						{
-							Name:  "del",
-							Aliases: []string{"delete", "remove", "rm"},
-							Usage: "Removes an existing OAuth2 client",
+							Name:      "del",
+							Aliases:   []string{"delete", "remove", "rm"},
+							Usage:     "Removes an existing OAuth2 client",
 							ArgsUsage: "APPLICATION_UUID...",
 							Action: func(c *cli.Context) error {
 								for i := 0; i <= c.Args().Len(); i++ {
 									id := c.Args().Get(i)
-									err := command.DeleteClient(id)
+									err := ctl.DeleteClient(id)
 									if err != nil {
-										fmt.Fprintf(os.Stderr, "Error deleting %s: %s\n", id, err)
+										errf("Error deleting %s: %s\n", id, err)
 										continue
 									}
 									fmt.Printf("Deleted: %s\n", id)
@@ -222,11 +230,11 @@ func main() {
 							},
 						},
 						{
-							Name:  "ls",
+							Name:    "ls",
 							Aliases: []string{"list"},
-							Usage: "Lists existing OAuth2 clients",
+							Usage:   "Lists existing OAuth2 clients",
 							Action: func(c *cli.Context) error {
-								clients, err := command.ListClients()
+								clients, err := ctl.ListClients()
 								if err != nil {
 									return err
 								}
@@ -242,13 +250,13 @@ func main() {
 					Name:  "token",
 					Usage: "OAuth2 authorization token management",
 					Before: func(c *cli.Context) error {
-						return setup(c, logger, &command)
+						return setup(c, logger, &ctl)
 					},
 					Subcommands: []*cli.Command{
 						{
-							Name:  "add",
+							Name:    "add",
 							Aliases: []string{"new", "get"},
-							Usage: "Adds an OAuth2 token",
+							Usage:   "Adds an OAuth2 token",
 							Flags: []cli.Flag{
 								&cli.StringFlag{
 									Name:  "client",
@@ -268,7 +276,7 @@ func main() {
 								if clientID == "" {
 									return errors.Newf("Need to provide the actor identifier (ObjectID)")
 								}
-								tok, err := command.GenAuthToken(clientID, actor, nil)
+								tok, err := ctl.GenAuthToken(clientID, actor, nil)
 								if err == nil {
 									fmt.Printf("Authorization: Bearer %s\n", tok)
 								}
@@ -279,11 +287,70 @@ func main() {
 				},
 			},
 		},
+		{
+			Name:  "bootstrap",
+			Usage: "Bootstrap a new postgres or bolt database helper",
+			Before: func(c *cli.Context) error {
+				return setup(c, logger, &ctl)
+			},
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "root",
+					Usage: "root account of postgres server (default: postgres)",
+					Value: "postgres",
+				},
+				&cli.StringFlag{
+					Name:  "sql",
+					Usage: "path to the queries for initializing the database",
+					Value: "postgres",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				dir := c.String("dir")
+				if dir == "" {
+					dir = "."
+				}
+				environ := env.Type(c.String("env"))
+				if environ == "" {
+					environ = env.DEV
+				}
+				typ := config.StorageType(c.String("type"))
+				if typ == "" {
+					typ = config.BoltDB
+				}
+				return ctl.Bootstrap(dir, typ, environ)
+			},
+			Subcommands: []*cli.Command{
+				{
+					Name:  "reset",
+					Usage: "reset an existing database",
+					Action: func(c *cli.Context) error {
+						dir := c.String("dir")
+						if dir == "" {
+							dir = "."
+						}
+						environ := env.Type(c.String("env"))
+						if environ == "" {
+							environ = env.DEV
+						}
+						typ := config.StorageType(c.String("type"))
+						if typ == "" {
+							typ = config.BoltDB
+						}
+						err := ctl.BootstrapReset(dir, typ, environ)
+						if err != nil {
+							return err
+						}
+						return ctl.Bootstrap(dir, typ, environ)
+					},
+				},
+			},
+		},
 	}
 
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		errf("Error: %s\n", err)
 		os.Exit(1)
 	}
 }

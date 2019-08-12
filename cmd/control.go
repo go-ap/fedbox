@@ -7,15 +7,20 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
+	"github.com/openshift/osin"
 	"net/url"
 	"time"
 )
 
 type Control struct {
-	BaseURL *url.URL
-	ActorDB storage.Repository
+	Conf        config.Options
+	Host        string
+	BaseURL     *url.URL
+	AuthStorage osin.Storage
+	Storage     storage.Repository
 }
 
 func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyType) (*auth.Person, error) {
@@ -24,12 +29,12 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 	p := auth.Person{
 		Person: activitypub.Person{
 			Parent: as.Parent{
-				Type:       typ,
+				Type: typ,
 				// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
 				AttributedTo: self.GetLink(),
 				Audience:     as.ItemCollection{auth.ActivityStreamsPublicNS},
-				Generator: self.GetLink(),
-				Published: now,
+				Generator:    self.GetLink(),
+				Published:    now,
 				Summary: as.NaturalLanguageValues{
 					{as.NilLangRef, "Generated actor"},
 				},
@@ -42,7 +47,7 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 	}
 
 	// TODO(marius): add annotations for the errors
-	if gen, ok := c.ActorDB.(storage.IDGenerator); ok {
+	if gen, ok := c.Storage.(storage.IDGenerator); ok {
 		id, err := gen.GenerateID(p, self)
 		if err != nil {
 			return nil, err
@@ -60,7 +65,7 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 			OauthTokenEndpoint:         as.IRI(fmt.Sprintf("%s/oauth/token", self.URL)),
 		}
 	}
-	it, err := c.ActorDB.SaveActor(p)
+	it, err := c.Storage.SaveActor(p)
 	if err != nil {
 		return nil, err
 	}
@@ -80,13 +85,13 @@ func (c *Control) DeleteActor(id string) error {
 	} else {
 		iri = as.IRI(u.String())
 	}
-	it, cnt, err := c.ActorDB.LoadActors(iri)
+	it, cnt, err := c.Storage.LoadActors(iri)
 	if err != nil {
-		return  err
+		return err
 	}
 	if cnt == 0 {
 		return errors.Newf("")
 	}
-	_, err = c.ActorDB.DeleteActor(it.First())
+	_, err = c.Storage.DeleteActor(it.First())
 	return err
 }
