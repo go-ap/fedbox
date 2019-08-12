@@ -76,10 +76,10 @@ func k(k string) string {
 	return k
 }
 
-func LoadFromEnv(e string) (Options, error) {
+func LoadFromEnv(e env.Type) (Options, error) {
 	conf := Options{}
 	if !env.ValidType(e) {
-		e = os.Getenv(k(KeyENV))
+		e = env.Type(os.Getenv(k(KeyENV)))
 	}
 
 	conf.Env = env.ValidTypeOrDev(e)

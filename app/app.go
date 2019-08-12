@@ -46,7 +46,7 @@ type FedBOX struct {
 }
 
 // New instantiates a new FedBOX instance
-func New(l logrus.FieldLogger, ver string, environment string) *FedBOX {
+func New(l logrus.FieldLogger, ver string, environment env.Type) *FedBOX {
 	app := FedBOX{ver: ver}
 	var err error
 	if l != nil {
