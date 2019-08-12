@@ -73,46 +73,46 @@ func TestType_IsTest(t *testing.T) {
 
 func TestValidTypeOrDev(t *testing.T) {
 	prod := PROD
-	if prod != ValidTypeOrDev(string(prod)) {
-		t.Errorf("%T %s should have been valid, received %s", prod, prod, ValidTypeOrDev(string(prod)))
+	if prod != ValidTypeOrDev(prod) {
+		t.Errorf("%T %s should have been valid, received %s", prod, prod, ValidTypeOrDev(prod))
 	}
 	qa := QA
-	if qa != ValidTypeOrDev(string(qa)) {
-		t.Errorf("%T %s should have been valid, received %s", qa, qa, ValidTypeOrDev(string(qa)))
+	if qa != ValidTypeOrDev(qa) {
+		t.Errorf("%T %s should have been valid, received %s", qa, qa, ValidTypeOrDev(qa))
 	}
 	test := TEST
-	if test != ValidTypeOrDev(string(test)) {
-		t.Errorf("%T %s should have been valid, received %s", test, test, ValidTypeOrDev(string(test)))
+	if test != ValidTypeOrDev(test) {
+		t.Errorf("%T %s should have been valid, received %s", test, test, ValidTypeOrDev(test))
 	}
 	dev := DEV
-	if dev != ValidTypeOrDev(string(dev)) {
-		t.Errorf("%T %s should have been valid, received %s", dev, dev, ValidTypeOrDev(string(dev)))
+	if dev != ValidTypeOrDev(dev) {
+		t.Errorf("%T %s should have been valid, received %s", dev, dev, ValidTypeOrDev(dev))
 	}
 	rand := "Random"
-	if dev != ValidTypeOrDev(rand) {
-		t.Errorf("%T %s should not have been valid, received %s", rand, rand, ValidTypeOrDev(rand))
+	if dev != ValidTypeOrDev(Type(rand)) {
+		t.Errorf("%T %s should not have been valid, received %s", rand, rand, ValidTypeOrDev(Type(rand)))
 	}
 }
 
 func TestValidType(t *testing.T) {
 	prod := PROD
-	if !ValidType(string(prod)) {
+	if !ValidType(prod) {
 		t.Errorf("%T %s should have been valid", prod, prod)
 	}
 	qa := QA
-	if !ValidType(string(qa)) {
+	if !ValidType(qa) {
 		t.Errorf("%T %s should have been valid", qa, qa)
 	}
 	dev := DEV
-	if! ValidType(string(dev)) {
+	if! ValidType(dev) {
 		t.Errorf("%T %s should have been valid", dev, dev)
 	}
 	test := TEST
-	if !ValidType(string(test)) {
+	if !ValidType(test) {
 		t.Errorf("%T %s should have been valid", test, test)
 	}
 	rand := "Random"
-	if ValidType(rand) {
-		t.Errorf("%T %s should not have been valid", rand, rand)
+	if ValidType(Type(rand)) {
+		t.Errorf("%T %s should not have been valid", Type(rand), rand)
 	}
 }
