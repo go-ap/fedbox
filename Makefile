@@ -25,7 +25,7 @@ TEST := $(GO) test $(BUILDFLAGS)
 
 .PHONY: all run clean test coverage integration
 
-all: app bootstrap ctl
+all: app ctl
 
 app: bin/app
 bin/app: go.mod cli/app/main.go $(APPSOURCES)
@@ -34,10 +34,6 @@ bin/app: go.mod cli/app/main.go $(APPSOURCES)
 ctl: bin/ctl
 bin/ctl: go.mod cli/control/main.go $(APPSOURCES)
 	$(BUILD) -tags $(ENV) -o $@ ./cli/control/main.go
-
-bootstrap: bin/bootstrap
-bin/bootstrap: go.mod cli/bootstrap/main.go $(APPSOURCES)
-	$(BUILD) -tags $(ENV) -o $@ cli/bootstrap/main.go
 
 run: app
 	@./bin/app
