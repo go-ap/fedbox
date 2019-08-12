@@ -14,7 +14,7 @@ func TestMain(m *testing.M) {
 	flag.StringVar(&environ, "env", string(env.TEST), "environment")
 	flag.Parse()
 
-	go runAPP(environ)
+	go runAPP(env.Type(environ))
 
 	time.Sleep(100 * time.Millisecond)
 

@@ -39,7 +39,7 @@ func resetDB(t *testing.T, testData bool) string {
 	u, _ := url.Parse(apiURL)
 	b, s := getBoldDBs(curPath, u, "test", logrus.New())
 
-	o := cmd.NewOAuth(u, s, b)
+	o := cmd.New(u, s, b, config.Options{})
 	pw := "hahah"
 	id, _ := o.AddClient(pw, []string{authCallbackURL}, nil)
 
@@ -78,7 +78,7 @@ func getBoldDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (sto
 	return b, s
 }
 
-func runAPP(e string) int {
+func runAPP(e env.Type) int {
 	l := logrus.New()
 	l.SetLevel(logrus.PanicLevel)
 
