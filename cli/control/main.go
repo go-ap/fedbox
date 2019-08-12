@@ -85,6 +85,21 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.Control) error {
 	return nil
 }
 
+func loadPwFromStdin(confirm bool, s string, params ...interface{}) ([]byte, error) {
+	fmt.Printf(s+" pw: ", params...)
+	pw1, _ := terminal.ReadPassword(0)
+	fmt.Println()
+	if confirm {
+		fmt.Printf("pw again: ")
+		pw2, _ := terminal.ReadPassword(0)
+		fmt.Println()
+		if !bytes.Equal(pw1, pw2) {
+			return nil, errors.Errorf("Passwords do not match")
+		}
+	}
+	return pw1, nil
+}
+
 var version = "HEAD"
 
 func main() {
@@ -139,7 +154,12 @@ func main() {
 
 						var actors = make(activitystreams.ItemCollection, 0)
 						for _, name := range names {
-							p, err := ctl.AddActor(name, activitystreams.PersonType)
+
+							pw, err := loadPwFromStdin(true, "%s's", name)
+							if err != nil {
+								errf(err.Error())
+							}
+							p, err := ctl.AddActor(name, activitystreams.PersonType, pw)
 							if err != nil {
 								errf("Error adding %s: %s\n", name, err)
 							}
@@ -195,16 +215,11 @@ func main() {
 								if len(redirectURIs) < 1 {
 									return errors.Newf("Need to provide at least a return URI for the client")
 								}
-								fmt.Print("password: ")
-								pw1, _ := terminal.ReadPassword(0)
-								fmt.Println()
-								fmt.Print("   again: ")
-								savpw, _ := terminal.ReadPassword(0)
-								fmt.Println()
-								if !bytes.Equal(pw1, savpw) {
-									return errors.Errorf("Passwords do not match")
+								pw, err := loadPwFromStdin(true, "client's")
+								if err != nil {
+									errf(err.Error())
 								}
-								id, err := ctl.AddClient(string(savpw), redirectURIs, nil)
+								id, err := ctl.AddClient(pw, redirectURIs, nil)
 								if err == nil {
 									fmt.Sprintf("Client ID: %s", id)
 								}

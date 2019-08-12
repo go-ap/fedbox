@@ -41,10 +41,10 @@ func New(baseURL *url.URL, authDB osin.Storage, actorDb storage.Repository, conf
 	}
 }
 
-func (c *Control) AddClient(pw string, redirect []string, u interface{}) (string, error) {
+func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string, error) {
 	var id string
 
-	app, err := c.AddActor("oauth-client-app", as.ApplicationType)
+	app, err := c.AddActor("oauth-client-app", as.ApplicationType, pw)
 	if err != nil {
 		return "", err
 	}
@@ -73,7 +73,7 @@ func (c *Control) AddClient(pw string, redirect []string, u interface{}) (string
 	userData, _ := json.Marshal(u)
 	d := osin.DefaultClient{
 		Id:          id,
-		Secret:      pw,
+		Secret:      string(pw),
 		RedirectUri: strings.Join(redirect, oauth.URISeparator),
 		UserData:    userData,
 	}

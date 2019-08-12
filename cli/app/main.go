@@ -101,9 +101,9 @@ func main() {
 	}
 	srv.Flags = []cli.Flag{
 		&cli.DurationFlag{
-			Name:  "wait",
-			Usage: "the duration for which the server gracefully wait for existing connections to finish",
-			Value: defaultTimeout,
+			Name:        "wait",
+			Usage:       "the duration for which the server gracefully wait for existing connections to finish",
+			Value:       defaultTimeout,
 			Destination: &wait,
 		},
 		&cli.StringFlag{

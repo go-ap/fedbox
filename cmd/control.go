@@ -23,7 +23,7 @@ type Control struct {
 	Storage     storage.Repository
 }
 
-func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyType) (*auth.Person, error) {
+func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyType, pw []byte) (*auth.Person, error) {
 	self := ap.Self(as.IRI(c.BaseURL.String()))
 	now := time.Now()
 	p := auth.Person{
@@ -74,6 +74,11 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 	if err != nil {
 		return nil, err
 	}
+
+	if pw != nil {
+		// TODO(marius): add the password somewhere in the actor's data
+	}
+
 	return saved, nil
 }
 
