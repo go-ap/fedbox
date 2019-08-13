@@ -23,6 +23,10 @@ type Control struct {
 	Storage     storage.Repository
 }
 
+type PasswordChanger interface {
+	PasswordSet(as.Item, []byte) error
+}
+
 func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyType, pw []byte) (*auth.Person, error) {
 	self := ap.Self(as.IRI(c.BaseURL.String()))
 	now := time.Now()
@@ -77,6 +81,12 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 
 	if pw != nil {
 		// TODO(marius): add the password somewhere in the actor's data
+		if pwManager, ok := c.Storage.(PasswordChanger); ok {
+			err := pwManager.PasswordSet(saved.GetLink(), pw)
+			if err != nil {
+				return saved, err
+			}
+		}
 	}
 
 	return saved, nil

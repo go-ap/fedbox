@@ -583,3 +583,8 @@ func (r *repo) Close() error {
 	r.conn.Close()
 	return nil
 }
+
+// PasswordSet
+func (r *repo) PasswordSet(it as.Item, pw []byte ) error {
+	return errors.NotImplementedf("PasswordSet is not implemented by the postgres storage layer")
+}

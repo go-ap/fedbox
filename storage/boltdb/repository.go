@@ -246,6 +246,7 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 }
 
 const objectKey = "__raw"
+const metaDataKey = "__meta_data"
 
 func delete(r *repo, it as.Item) (as.Item, error) {
 	f := ap.Filters{
@@ -263,6 +264,7 @@ func delete(r *repo, it as.Item) (as.Item, error) {
 	}
 	old := found.First()
 
+	// TODO(marius): add some mechanism for marking the collections as read-only
 	t := as.Tombstone{
 		Parent: as.Parent{
 			ID:   as.ObjectID(it.GetLink()),
@@ -483,7 +485,6 @@ func (r *repo) UpdateObject(it as.Item) (as.Item, error) {
 	return r.SaveObject(it)
 }
 
-
 func (r *repo) DeleteActor(it as.Item) (as.Item, error) {
 	return r.DeleteObject(it)
 }
@@ -539,4 +540,57 @@ func (r *repo) Close() error {
 		return nil
 	}
 	return r.d.Close()
+}
+
+// PasswordSet
+func (r *repo) PasswordSet(it as.Item, pw []byte) error {
+	url, err := it.GetLink().URL()
+	if err != nil {
+		return errors.Annotatef(err, "invalid IRI")
+	}
+	err = r.Open()
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	path := url.Path
+
+	type meta struct {
+		Pw []byte `json:"pw"`
+	}
+
+	var uuid string
+	err = r.d.Update(func(tx *bolt.Tx) error {
+		root := tx.Bucket(r.root)
+		if root == nil {
+			return errors.Errorf("Invalid bucket %s", r.root)
+		}
+		if !root.Writable() {
+			return errors.Errorf("Non writeable bucket %s", r.root)
+		}
+		var b *bolt.Bucket
+		b, uuid, err = descendInBucket(root, path, true)
+		if err != nil {
+			return errors.Newf("Unable to find %s in root bucket", path)
+		}
+		if !b.Writable() {
+			return errors.Errorf("Non writeable bucket %s", path)
+		}
+
+		m := meta{
+			Pw: pw, 
+		}
+		entryBytes, err := jsonld.Marshal(m)
+		if err != nil {
+			return errors.Annotatef(err, "could not marshal metadata")
+		}
+		err = b.Put([]byte(metaDataKey), entryBytes)
+		if err != nil {
+			return errors.Errorf("could not insert entry: %s", err)
+		}
+		return nil
+	})
+
+	return err
 }

@@ -149,6 +149,12 @@ func main() {
 					Name:    "add",
 					Aliases: []string{"new"},
 					Usage:   "Adds an ActivityPub actor",
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:  "type",
+							Usage: fmt.Sprintf("The type of activitypub actor to add"),
+						},
+					},
 					Action: func(c *cli.Context) error {
 						names := c.Args().Slice()
 
@@ -159,10 +165,15 @@ func main() {
 							if err != nil {
 								errf(err.Error())
 							}
-							p, err := ctl.AddActor(name, activitystreams.PersonType, pw)
+							typ := activitystreams.ActivityVocabularyType(c.String("type"))
+							if !activitystreams.ActorTypes.Contains(typ) {
+								typ = activitystreams.PersonType
+							}
+							p, err := ctl.AddActor(name, typ, pw)
 							if err != nil {
 								errf("Error adding %s: %s\n", name, err)
 							}
+							fmt.Printf("Added %q [%s]: %s\n", typ, name, p.GetLink())
 							actors = append(actors, p)
 						}
 						return nil
