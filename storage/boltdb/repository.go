@@ -560,7 +560,6 @@ func (r *repo) PasswordSet(it as.Item, pw []byte) error {
 		Pw []byte `json:"pw"`
 	}
 
-	var uuid string
 	err = r.d.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
 		if root == nil {
@@ -570,7 +569,7 @@ func (r *repo) PasswordSet(it as.Item, pw []byte) error {
 			return errors.Errorf("Non writeable bucket %s", r.root)
 		}
 		var b *bolt.Bucket
-		b, uuid, err = descendInBucket(root, path, true)
+		b, _, err = descendInBucket(root, path, true)
 		if err != nil {
 			return errors.Newf("Unable to find %s in root bucket", path)
 		}

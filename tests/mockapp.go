@@ -40,7 +40,7 @@ func resetDB(t *testing.T, testData bool) string {
 	b, s := getBoldDBs(curPath, u, "test", logrus.New())
 
 	o := cmd.New(u, s, b, config.Options{})
-	pw := "hahah"
+	pw := []byte("hahah")
 	id, _ := o.AddClient(pw, []string{authCallbackURL}, nil)
 
 	tok, err := o.GenAuthToken(id, defaultTestAccount.Handle, nil)
