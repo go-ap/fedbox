@@ -109,6 +109,9 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	if it.GetType() == as.DeleteType {
 		status = http.StatusGone
 	}
+	if it.GetType() == as.UpdateType {
+		status = http.StatusOK
+	}
 
 	return it, status, nil
 }

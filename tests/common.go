@@ -40,9 +40,11 @@ type testAccount struct {
 type testReq struct {
 	met      string
 	url      string
+	urlFn    func() string
 	headers  http.Header
 	account  *testAccount
 	clientID string
+	bodyFn   func() string
 	body     string
 }
 
@@ -104,23 +106,11 @@ var pub, _ = x509.MarshalPKIXPublicKey(&key.PublicKey)
 var meta interface{} = nil
 
 var defaultTestAccount = testAccount{
-	id:         fmt.Sprintf("http://%s/", host),
+	id:         fmt.Sprintf("http://%s/actors/%s", host, testActorHash),
 	Handle:     testActorHandle,
 	Hash:       testActorHash,
 	publicKey:  key.Public(),
 	privateKey: key,
-}
-var jm, _ = json.Marshal(meta)
-var data = map[string][][]interface{}{
-	"accounts": {
-		{
-			interface{}(666),
-			interface{}(testActorHash),
-			interface{}(testActorHandle),
-			interface{}(fmt.Sprintf("jd@%s", host)),
-			interface{}(string(jm)),
-		},
-	},
 }
 
 type assertFn func(v bool, msg string, args ...interface{})
@@ -442,10 +432,16 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			if test.res.code == 0 {
 				test.res.code = http.StatusCreated
 			}
+			if test.req.bodyFn != nil {
+				test.req.body = test.req.bodyFn()
+			}
 			body := []byte(test.req.body)
 			b := make([]byte, 0)
 
 			var err error
+			if test.req.urlFn != nil {
+				test.req.url = test.req.urlFn()
+			}
 			req, err := http.NewRequest(test.req.met, test.req.url, bytes.NewReader(body))
 			assertTrue(err == nil, "Error: unable to create request: %s", err)
 
@@ -503,7 +499,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			}
 			err = json.Unmarshal(b, &res)
 			assertTrue(err == nil, "Error: unmarshal failed: %s", err)
-			if test.res.val != nil && test.res.val.id != "" {
+			if test.res.val != nil && test.res.val.id != "" && test.res.val.id != req.URL.String() {
 				saved := assertGetRequest(test.res.val.id)
 				assertObjectProperties(saved, test.res.val)
 			}

@@ -88,17 +88,25 @@ var C2STests = testPairs{
 	"CreateActor": {
 		{
 			req: testReq{
-				met:  http.MethodPost,
-				url:  fmt.Sprintf("%s/outbox", apiURL),
-				body: loadMockJson("mocks/create-actor.json", selfAccount.id),
+				met:     http.MethodPost,
+				account: &defaultTestAccount,
+				urlFn: func() string {
+					return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id))
+				},
+				bodyFn: loadMockJson("mocks/create-actor.json", &defaultTestAccount.id),
 			},
 			res: testRes{
-				code: http.StatusUnauthorized,
+				code: http.StatusCreated,
 				val: &objectVal{
 					typ: string(as.CreateType),
 					act: &objectVal{
-						id:  selfAccount.id,
-						typ: string(as.ServiceType),
+						typ:               string(as.PersonType),
+						preferredUsername: "johndoe",
+					},
+					obj: &objectVal{
+						typ:               string(as.PersonType),
+						preferredUsername: "jennyjane",
+						name:              "Jane Doe",
 					},
 				},
 			},
@@ -107,27 +115,30 @@ var C2STests = testPairs{
 	"UpdateActor": {
 		{
 			req: testReq{
-				met:  http.MethodPost,
-				url:  fmt.Sprintf("%s/outbox", apiURL),
-				body: loadMockJson("mocks/update-actor.json", selfAccount.id, selfAccount.id, baseURL),
+				met:     http.MethodPost,
+				account: &defaultTestAccount,
+				urlFn: func() string {
+					return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id))
+				},
+				bodyFn: loadMockJson("mocks/update-actor.json", &defaultTestAccount.id, &defaultTestAccount.id, &defaultTestAccount.id),
 			},
 			res: testRes{
-				code: http.StatusUnauthorized,
+				code: http.StatusOK,
 				val: &objectVal{
 					typ: string(as.UpdateType),
 					act: &objectVal{
-						id: selfAccount.id,
+						id: *(&defaultTestAccount.id),
 					},
 					obj: &objectVal{
-						id:   selfAccount.id,
-						name: "Jane Doe",
+						id:                *(&defaultTestAccount.id),
+						name:              "Jane Doe",
 						preferredUsername: "jennyjane",
-						typ:  string(as.ServiceType),
+						typ:               string(as.PersonType),
 						inbox: &objectVal{
-							id: fmt.Sprintf("%s/inbox", apiURL),
+							id: fmt.Sprintf("%s/inbox", *(&defaultTestAccount.id)),
 						},
 						outbox: &objectVal{
-							id: fmt.Sprintf("%s/outbox", apiURL),
+							id: fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id)),
 						},
 					},
 				},
@@ -137,13 +148,15 @@ var C2STests = testPairs{
 	"DeleteActor": {
 		{
 			req: testReq{
-				met:  http.MethodPost,
-				url:  fmt.Sprintf("%s/outbox", apiURL),
+				met:     http.MethodPost,
 				account: &defaultTestAccount,
-				body: loadMockJson("mocks/delete-actor.json", selfAccount.id, selfAccount.id),
+				urlFn: func() string {
+					return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id))
+				},
+				bodyFn: loadMockJson("mocks/delete-actor.json", &defaultTestAccount.id, &selfAccount.id),
 			},
 			res: testRes{
-				code: http.StatusUnauthorized,
+				code: http.StatusGone,
 				val: &objectVal{
 					typ: string(as.DeleteType),
 					act: &objectVal{
@@ -161,9 +174,9 @@ var C2STests = testPairs{
 	"CreateArticle": {
 		{
 			req: testReq{
-				met:  http.MethodPost,
-				url:  fmt.Sprintf("%s/outbox", apiURL),
-				body: loadMockJson("mocks/create-article.json", selfAccount.id, selfAccount.id),
+				met:    http.MethodPost,
+				url:    fmt.Sprintf("%s/outbox", apiURL),
+				bodyFn: loadMockJson("mocks/create-article.json", &selfAccount.id, &selfAccount.id),
 			},
 			res: testRes{
 				code: http.StatusUnauthorized,
@@ -183,22 +196,28 @@ var C2STests = testPairs{
 	},
 }
 
-func loadMockJson(path string, params ...interface{}) string {
+func loadMockJson(path string, params ...*string) func() string {
 	f, err := os.Open(path)
 	if err != nil {
-		return ""
+		return func() string { return "" }
 	}
 
 	st, err := f.Stat()
 	if err != nil {
-		return ""
+		return func() string { return "" }
 	}
 
 	data := make([]byte, st.Size())
 	io.ReadFull(f, data)
 	data = bytes.Trim(data, "\x00")
 
-	return fmt.Sprintf(string(data), params...)
+	return func() string {
+		par := make([]interface{}, len(params))
+		for k, v := range params {
+			par[k] = *v
+		}
+		return fmt.Sprintf(string(data), par...)
+	}
 }
 
 func Test_C2SRequests(t *testing.T) {

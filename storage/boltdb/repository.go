@@ -517,7 +517,7 @@ func (r *repo) GenerateID(it as.Item, by as.Item) (as.ObjectID, error) {
 	var partOf string
 	if as.ActivityTypes.Contains(typ) {
 		partOf = fmt.Sprintf("%s/activities", r.baseURL)
-	} else if as.ActorTypes.Contains(typ) {
+	} else if as.ActorTypes.Contains(typ) || typ == as.ActorType {
 		partOf = fmt.Sprintf("%s/actors", r.baseURL)
 	} else if as.ObjectTypes.Contains(typ) {
 		partOf = fmt.Sprintf("%s/objects", r.baseURL)

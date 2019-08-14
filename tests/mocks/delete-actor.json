@@ -2,7 +2,5 @@
   "type": "Delete",
   "actor": "%s",
   "object": "%s",
-  "to": [
-    "https://www.w3.org/ns/activitystreams#Public"
-  ]
+  "to": [ "https://www.w3.org/ns/activitystreams#Public" ]
 }

@@ -3,6 +3,7 @@ package tests
 import (
 	"fmt"
 	"github.com/go-ap/activitypub/client"
+	"github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/cmd"
@@ -17,6 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/url"
 	"os"
+	"path"
 	"testing"
 	"time"
 )
@@ -31,24 +33,30 @@ func resetDB(t *testing.T, testData bool) string {
 	if err != nil {
 		curPath = os.TempDir()
 	}
-	path := config.GetBoltDBPath(curPath, host, "test")
+	dbPath := config.GetBoltDBPath(curPath, host, "test")
 
-	boltdb.Clean(path, []byte(host))
-	boltdb.Bootstrap(path, []byte(host), apiURL)
+	boltdb.Clean(dbPath, []byte(host))
+	boltdb.Bootstrap(dbPath, []byte(host), apiURL)
 
 	u, _ := url.Parse(apiURL)
 	b, s := getBoldDBs(curPath, u, "test", logrus.New())
 
 	o := cmd.New(u, s, b, config.Options{})
-	pw := []byte("hahah")
-	id, _ := o.AddClient(pw, []string{authCallbackURL}, nil)
 
-	tok, err := o.GenAuthToken(id, defaultTestAccount.Handle, nil)
+	pw := []byte("hahah")
+	actor, err := o.AddActor(testActorHandle, activitystreams.PersonType, pw)
+	if err == nil {
+		defaultTestAccount.id = actor.GetLink().String()
+		defaultTestAccount.Hash = path.Base(defaultTestAccount.id)
+	}
+
+	id, _ := o.AddClient(pw, []string{authCallbackURL}, nil)
+	tok, err := o.GenAuthToken(id, defaultTestAccount.id, nil)
 	if err == nil {
 		defaultTestAccount.authToken = tok
 	}
 
-	return path
+	return dbPath
 }
 
 func getBoldDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (storage.Repository, osin.Storage) {

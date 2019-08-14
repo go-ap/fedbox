@@ -39,7 +39,8 @@ func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {
 			// TODO(marius): this needs to be moved somewhere where it makes more sense
 			if loader, ok := actorLoader(r.Context()); ok {
 				ff := ap.Filters{}
-				ff.ItemKey = []ap.Hash{ap.Hash(baseIRI)}
+				ff.ItemKey = []ap.Hash{ap.Hash(hash)}
+				ff.IRI = as.IRI(baseIRI)
 				switch f.Collection {
 				case handlers.Inbox:
 					if act, _, err := loader.LoadActors(&ff); err == nil {

@@ -3,7 +3,7 @@
   "actor": "%s",
   "object": {
     "id": "%s",
-    "type": "Service",
+    "type": "Person",
     "to": [
       "%s/inbox",
       "https://www.w3.org/ns/activitystreams#Public"

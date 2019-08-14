@@ -35,6 +35,7 @@ type ClientLister interface {
 func New(baseURL *url.URL, authDB osin.Storage, actorDb storage.Repository, conf config.Options) Control {
 	return Control{
 		BaseURL:     baseURL,
+		Host:        baseURL.Host,
 		Conf:        conf,
 		AuthStorage: authDB,
 		Storage:     actorDb,
