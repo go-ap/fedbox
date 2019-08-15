@@ -1,4 +1,4 @@
-package pgx
+package log
 
 import (
 	p "github.com/jackc/pgx"
@@ -20,7 +20,7 @@ func (w *wr) String() string {
 
 func TestDBLogger(t *testing.T) {
 	lr := logrus.New()
-	l := DBLogger(lr)
+	l := NewPgxLogger(lr)
 
 	if l.l != lr {
 		t.Errorf("Invalid logrus instance %v, expected %v", l.l, lr)
@@ -33,7 +33,7 @@ func TestDbLogger_Log(t *testing.T) {
 		lr.SetLevel(logrus.TraceLevel)
 		lr.SetFormatter(&logrus.TextFormatter{DisableColors: true, DisableTimestamp: true})
 		lr.SetOutput(w)
-		l := DBLogger(lr)
+		l := NewPgxLogger(lr)
 
 		if l.l != lr {
 			t.Errorf("Invalid logrus instance %v, expected %v", l.l, lr)

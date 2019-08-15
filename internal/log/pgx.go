@@ -1,21 +1,21 @@
-package pgx
+package log
 
 import (
 	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
 )
 
-type dbLogger struct {
+type pgxLogger struct {
 	l logrus.FieldLogger
 }
 
-func DBLogger(l logrus.FieldLogger) dbLogger {
-	return dbLogger{
+func NewPgxLogger(l logrus.FieldLogger) pgxLogger {
+	return pgxLogger{
 		l: l,
 	}
 }
 
-func (d dbLogger) Log(level pgx.LogLevel, msg string, data map[string]interface{}) {
+func (d pgxLogger) Log(level pgx.LogLevel, msg string, data map[string]interface{}) {
 	var log func(string, ...interface{})
 	switch level {
 	case pgx.LogLevelNone:
