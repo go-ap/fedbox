@@ -8,6 +8,7 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/jsonld"
 	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
@@ -21,7 +22,7 @@ func openConn(c pgx.ConnConfig) (*pgx.Conn, error) {
 }
 
 func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) error {
-	log := logrus.New()
+	logger := logrus.New()
 	var conn *pgx.Conn
 	var err error
 
@@ -45,7 +46,7 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 		Database: RootDb,
 		User:     rootUser,
 		Password: string(rootPw),
-		Logger:   DBLogger(log),
+		Logger:   log.NewPgxLogger(logger),
 	})
 	if err != nil {
 		return err
@@ -86,7 +87,7 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 		Database: conf.Name,
 		User:     conf.User,
 		Password: conf.Pw,
-		Logger:   DBLogger(log),
+		Logger:   log.NewPgxLogger(logger),
 	})
 	if err != nil {
 		return err
@@ -156,7 +157,7 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 }
 
 func Clean(opt config.Options, rootUser string, rootPw []byte, path string) error {
-	log := logrus.New()
+	logger := logrus.New()
 	var conn *pgx.Conn
 	var err error
 
@@ -172,13 +173,13 @@ func Clean(opt config.Options, rootUser string, rootPw []byte, path string) erro
 	}
 
 	conn, err = openConn(pgx.ConnConfig{
-		Host:                 conf.Host,
-		Port:                 uint16(conf.Port),
-		Database:             RootDb,
-		User:                 rootUser,
-		Password:             string(rootPw),
-		Logger:               DBLogger(log),
-		LogLevel:             pgx.LogLevelWarn,
+		Host:     conf.Host,
+		Port:     uint16(conf.Port),
+		Database: RootDb,
+		User:     rootUser,
+		Password: string(rootPw),
+		Logger:   log.NewPgxLogger(logger),
+		LogLevel: pgx.LogLevelWarn,
 	})
 	if err != nil {
 		return err
@@ -213,7 +214,7 @@ func Clean(opt config.Options, rootUser string, rootPw []byte, path string) erro
 }
 
 func AddTestMockActor(opt config.Options, file string, actor a.Person) error {
-	log := logrus.New()
+	logger := logrus.New()
 	var conn *pgx.Conn
 	var err error
 
@@ -237,7 +238,7 @@ func AddTestMockActor(opt config.Options, file string, actor a.Person) error {
 		Database: conf.Name,
 		User:     conf.User,
 		Password: conf.Pw,
-		Logger:   DBLogger(log),
+		Logger:   log.NewPgxLogger(logger),
 	})
 	if err != nil {
 		return err

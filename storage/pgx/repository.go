@@ -8,6 +8,7 @@ import (
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	"github.com/go-ap/processing"
@@ -568,7 +569,7 @@ func (r *repo) Open() error {
 			Database: r.conf.Name,
 			User:     r.conf.User,
 			Password: r.conf.Pw,
-			Logger:   DBLogger(r.l),
+			Logger:   log.NewPgxLogger(r.l),
 		},
 		MaxConnections: 3,
 	})

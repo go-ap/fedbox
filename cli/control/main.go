@@ -60,7 +60,7 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.Control) error {
 			}
 		}
 
-		aDb = auth.NewBoltDBStore(auth.Config{
+		aDb = auth.NewBoltDBStore(auth.BoltConfig{
 			Path:       path,
 			BucketName: host,
 			LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },

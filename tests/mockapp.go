@@ -26,7 +26,7 @@ import (
 func resetDB(t *testing.T, testData bool) string {
 	if t != nil {
 		t.Helper()
-		t.Logf("Resetting DB")
+		t.Logf("Resetting storage backend")
 	}
 
 	curPath, err := os.Getwd()
@@ -76,7 +76,7 @@ func getBoldDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (sto
 		}
 	}
 
-	s := auth.NewBoltDBStore(auth.Config{
+	s := auth.NewBoltDBStore(auth.BoltConfig{
 		Path:       pathOauth,
 		BucketName: host,
 		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
@@ -98,7 +98,7 @@ func runAPP(e env.Type) int {
 	u, _ := url.Parse(apiURL)
 	b, s := getBoldDBs(curPath, u, "test", l)
 
-	a := app.New(l, "HEAD", e)
+	a, _ := app.New(l, "HEAD", e)
 	r := chi.NewRouter()
 
 	_oauthServer, _ = osinServer(s, l)

@@ -8,17 +8,12 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/app"
-	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
-	"github.com/go-ap/fedbox/storage/boltdb"
-	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/fedbox/validation"
 	st "github.com/go-ap/storage"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/openshift/osin"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/urfave/cli.v2"
 	"os"
 	"time"
@@ -32,9 +27,6 @@ func main() {
 	activitystreams.ItemTyperFunc = activitypub.ItemByType
 
 	var a *app.FedBOX
-	var repo st.Loader
-	var oauthDB osin.Storage
-
 	var wait time.Duration
 
 	r := chi.NewRouter()
@@ -50,53 +42,25 @@ func main() {
 			environ = env.DEV
 		}
 
-		a = app.New(l, version, environ)
-		if a.Config().Storage == config.BoltDB {
-			bolt := boltdb.New(boltdb.Config{
-				Path:       app.Config.BoltDB(),
-				BucketName: app.Config.Host,
-				LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-				ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
-			}, a.Config().BaseURL)
-			defer bolt.Close()
-			repo = bolt
-
-			oauthDB = auth.NewBoltDBStore(auth.Config{
-				Path:       app.Config.BoltDBOAuth2(),
-				BucketName: app.Config.Host,
-				LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-				ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
-			})
-			defer oauthDB.Close()
-		}
 		var err error
-
-		if a.Config().Storage == config.Postgres {
-			pg, errp := pgx.New(a.Config().DB, a.Config().BaseURL, l)
-			repo = pg
-			err = errp
-			defer pg.Close()
-
-			oauthDB = auth.NewPgDBStore()
-			defer oauthDB.Close()
-		}
+		a, err = app.New(l, version, environ)
 		if err != nil {
 			l.WithField("storage", a.Config().Storage).Error(err)
 			return err
 		}
 
-		osin, err := auth.NewOAuth2Server(oauthDB, l)
+		osin, err := auth.NewOAuth2Server(a.OAuthStorage, l)
 		if err != nil {
 			l.Warn(err.Error())
 			return err
 		}
 
-		r.Use(app.Repo(repo))
+		r.Use(app.Repo(a.Storage))
 		r.Use(middleware.RequestID)
 		r.Use(log.NewStructuredLogger(l))
 
-		v := validation.New(a.Config().BaseURL, client.NewClient(), repo)
-		r.Route("/", app.Routes(v, osin, repo.(st.ActorLoader), l))
+		v := validation.New(a.Config().BaseURL, client.NewClient(), a.Storage)
+		r.Route("/", app.Routes(v, osin, a.Storage.(st.ActorLoader), l))
 		return nil
 	}
 	srv.Flags = []cli.Flag{
