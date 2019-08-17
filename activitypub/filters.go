@@ -80,7 +80,7 @@ func (f Filters) Types() []as.ActivityVocabularyType {
 }
 
 // IRIs returns a list of IRIs to filter against
-func (f Filters) IRIs() []as.IRI {
+func (f Filters) IRIs() as.IRIs{
 	ret := make([]as.IRI, len(f.ItemKey))
 	for i, k := range f.ItemKey {
 		ret[i] = as.IRI(k)
