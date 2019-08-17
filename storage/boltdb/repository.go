@@ -174,22 +174,105 @@ func loadIt(key, raw []byte, f s.Filterable) (as.Item, error) {
 			return nil, nil
 		}
 	}
-
-	return it, err
-}
-
-// TODO(marius): this should be replaced by functionality using the Filterable interface
-// Eg: f.
-func inIRIs (i as.IRI, IRIs []as.IRI) bool {
-	if len(IRIs) == 0 {
-		return true
-	}
-	for _, iri := range IRIs {
-		if strings.ToLower(i.String()) == strings.ToLower(iri.String()) {
-			return true
+	if f2, ok := f.(s.FilterableObject); ok {
+		// TODO(marius): probably here we need to convert to AP.Person for /actors endpoint
+		//               to AP.Activity for /activities endpoint
+		ob, errO := auth.ToObject(it)
+		pers, errP := auth.ToPerson(it)
+		act, errA := as.ToActivity(it)
+		if !(errO != nil || errP != nil || errA != nil) {
+			return nil, nil
+		}
+		if ob != nil {
+			names := f2.Names()
+			if len(names) > 0 {
+				exists := false
+				for _, name := range names {
+					for _, nn := range ob.Name {
+						if strings.ToLower(nn.Value) == strings.ToLower(name) {
+							exists = true
+							break
+						}
+						if exists {
+							break
+						}
+					}
+				}
+				if !exists {
+					return nil, nil
+				}
+			}
+			authors := f2.AttributedTo()
+			if len(authors) > 0 && !authors.Contains(ob.AttributedTo.GetLink()) {
+				return nil, nil
+			}
+			inReply := f2.InReplyTo()
+			if len(inReply) > 0 && !inReply.Contains(ob.InReplyTo.GetLink()) {
+				return nil, nil
+			}
+			audFilter := f2.Audience()
+			if len(audFilter) > 0 {
+				exists := false
+				for _, aud := range ob.Audience {
+					if audFilter.Contains(aud.GetLink()) {
+						exists = true
+						break
+					}
+				}
+				for _, to := range ob.To {
+					if audFilter.Contains(to.GetLink()) {
+						exists = true
+						break
+					}
+				}
+				for _, bto := range ob.Bto {
+					if audFilter.Contains(bto.GetLink()) {
+						exists = true
+						break
+					}
+				}
+				if !exists {
+					return nil, nil
+				}
+			}
+			medTypes := f2.MediaTypes()
+			if len(medTypes) > 0 {
+				exists := false
+				for _, typ := range medTypes {
+					if typ == ob.MediaType {
+						exists = true
+					}
+				}
+				if !exists {
+					return nil, nil
+				}
+			}
+		}
+		if pers != nil {
+			names := f2.Names()
+			if len(names) > 0 {
+				exists := false
+				for _, name := range names {
+					for _, nn := range pers.PreferredUsername {
+						if strings.ToLower(nn.Value) == strings.ToLower(name) {
+							exists = true
+							break
+						}
+						if exists {
+							break
+						}
+					}
+				}
+				if !exists {
+					return nil, nil
+				}
+			}
+		}
+		if act != nil {
+			// TODO
 		}
 	}
-	return false
+	return it, err
 }
 
 // Load

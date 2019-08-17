@@ -9,7 +9,6 @@ import (
 	"github.com/go-ap/handlers"
 	"net/http"
 	"regexp"
-	"strings"
 )
 
 // LoadCollectionFilters uses specific logic for adding elements to the filters when loading
@@ -17,14 +16,13 @@ import (
 func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {
 	err := LoadItemFilters(r, f)
 
-	pr, _ := regexp.Compile(fmt.Sprintf("/(%s|%s|%s)/([a-f0-9-]+)/%s", ap.ActorsType, ap.ActivitiesType, ap.ObjectsType, f.Collection))
+	pr, _ := regexp.Compile(fmt.Sprintf("/(%s|%s|%s)(?:/([a-f0-9-]+)/%s)?", ap.ActorsType, ap.ActivitiesType, ap.ObjectsType, f.Collection))
 	matches := pr.FindSubmatch([]byte(r.URL.Path))
 	if len(matches) < 3 {
 		return errors.NotFoundf("%s collection not found", f.Collection)
 	} else {
 		topCol := handlers.CollectionType(matches[1])
 		hash := matches[2]
-		baseIRI := strings.Replace(reqURL(r), fmt.Sprintf("/%s", f.Collection), "", -1)
 		// The filter's semantics are different based on the collection type and base collection type
 		// Activities: (nothing)?
 		// Actors:
@@ -40,7 +38,6 @@ func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {
 			if loader, ok := actorLoader(r.Context()); ok {
 				ff := ap.Filters{}
 				ff.ItemKey = []ap.Hash{ap.Hash(hash)}
-				ff.IRI = as.IRI(baseIRI)
 				switch f.Collection {
 				case handlers.Inbox:
 					if act, _, err := loader.LoadActors(&ff); err == nil {
@@ -65,14 +62,18 @@ func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {
 		case ap.ObjectsType:
 			// TODO(marius): this needs to be moved somewhere where it makes more sense
 			if loader, ok := objectLoader(r.Context()); ok {
-				ff := ap.Filters{ItemKey: []ap.Hash{ap.Hash(baseIRI)}}
+				ff := ap.Filters{ItemKey: []ap.Hash{ap.Hash(f.IRI)}}
 				if act, _, err := loader.LoadObjects(&ff); err == nil {
 					f.Parent = act.First()
 				}
 			}
-			f.ItemKey = []ap.Hash{ap.Hash(hash)}
+			if hash != nil {
+				f.ItemKey = []ap.Hash{ap.Hash(hash)}
+			}
 		case ap.ActivitiesType:
-			f.Key = []ap.Hash{ap.Hash(hash)}
+			if hash != nil {
+				f.Key = []ap.Hash{ap.Hash(hash)}
+			}
 		}
 	}
 

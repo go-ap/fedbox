@@ -33,7 +33,6 @@ func objectLoader(ctx context.Context) (st.ObjectLoader, bool) {
 	return s, ok
 }
 
-
 // TODO(marius) Move away from keeping this data statically.
 var Config config.Options
 
@@ -69,7 +68,7 @@ func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin
 }
 func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	db, err := pgx.New(c.DB, c.BaseURL, l)
-	
+
 	oauth := auth.NewPgDBStore(auth.PgConfig{
 		Enabled: true,
 		Host:    c.DB.Host,
@@ -92,6 +91,7 @@ func getStorage(f FedBOX, l logrus.FieldLogger) (st.Repository, osin.Storage, er
 	}
 	return nil, nil, errors.NotImplementedf("Invalid storage type %s", f.Config().Storage)
 }
+
 // New instantiates a new FedBOX instance
 func New(l logrus.FieldLogger, ver string, environment env.Type) (*FedBOX, error) {
 	app := FedBOX{ver: ver}

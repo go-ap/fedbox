@@ -54,6 +54,7 @@ func ValidActivityCollection(typ string) bool {
 
 // Filters
 type Filters struct {
+	baseURL       as.IRI                     `qstring:"-"`
 	Name          []string                   `qstring:"name,omitempty"`
 	Authenticated *auth.Person               `qstring:"-"`
 	To            as.Actor                   `qstring:"-"`
@@ -61,12 +62,14 @@ type Filters struct {
 	Parent        as.Actor                   `qstring:"-"`
 	IRI           as.IRI                     `qstring:"-"`
 	Collection    h.CollectionType           `qstring:"-"`
-	Audience      as.IRIs                    `qstring:"-"`
+	URL           as.IRIs                    `qstring:"url,omitempty"`
+	MedTypes      []as.MimeType              `qstring:"mediaType,omitempty"`
+	Aud           as.IRIs                    `qstring:"audience,omitempty"`
 	Key           []Hash                     `qstring:"id,omitempty"`
-	ItemKey       []Hash                     `qstring:"objectid,omitempty"`
-	Type          as.ActivityVocabularyTypes `qstring:"type"`
-	AttributedTo  []Hash                     `qstring:"attributedTo,omitempty"`
-	InReplyTo     []Hash                     `qstring:"inReplyTo,omitempty"`
+	ItemKey       []Hash                     `qstring:"key,omitempty"`
+	Type          as.ActivityVocabularyTypes `qstring:"type,omitempty"`
+	AttrTo        []Hash                     `qstring:"attributedTo,omitempty"`
+	InReplTo      []Hash                     `qstring:"inReplyTo,omitempty"`
 	FollowedBy    []Hash                     `qstring:"followedBy,omitempty"` // todo(marius): not really used
 	OlderThan     time.Time                  `qstring:"olderThan,omitempty"`
 	NewerThan     time.Time                  `qstring:"newerThan,omitempty"`
@@ -101,7 +104,7 @@ func copyActivityFilters(dst *Filters, src Filters) {
 	dst.Key = src.Key
 	dst.ItemKey = src.ItemKey
 	dst.Type = src.Type
-	dst.AttributedTo = src.AttributedTo
+	dst.AttrTo = src.AttrTo
 	dst.FollowedBy = src.FollowedBy
 	dst.OlderThan = src.OlderThan
 	dst.NewerThan = src.NewerThan
@@ -125,6 +128,24 @@ var ErrNotFound = func(s string) error {
 	return errors.Newf(fmt.Sprintf("%s not found", s))
 }
 
+// TODO(marius): this function also exists in app/filters package
+func reqURL(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.Path)
+}
+
+// TODO(marius): this function also exists in app/filters package
+func reqBaseURL(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s", scheme, r.Host)
+}
+
 // FromRequest loads the filters we use for generating storage queries from the HTTP request
 func FromRequest(r *http.Request) (*Filters, error) {
 	f := Filters{}
@@ -132,10 +153,43 @@ func FromRequest(r *http.Request) (*Filters, error) {
 		return nil, err
 	}
 	f.Collection = h.Typer.Type(r)
+	f.baseURL = as.IRI(reqBaseURL(r))
+	f.IRI = as.IRI(reqURL(r))
 
 	if f.MaxItems < MaxItems {
 		f.MaxItems = MaxItems
 	}
 
 	return &f, nil
+}
+
+func (f *Filters) Audience() as.IRIs {
+	col := make(as.IRIs, len(f.Aud))
+	for k, iri := range f.Aud {
+		col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
+	}
+	return col
+}
+func (f *Filters) Names() []string {
+	return f.Name
+}
+func (f *Filters) AttributedTo() as.IRIs {
+	col := make(as.IRIs, len(f.AttrTo))
+	for k, iri := range f.AttrTo {
+		col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
+	}
+	return col
+}
+func (f *Filters) InReplyTo() as.IRIs {
+	col := make(as.IRIs, len(f.InReplTo))
+	for k, iri := range f.InReplTo {
+		col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, iri))
+	}
+	return col
+}
+func (f *Filters) MediaTypes() []as.MimeType {
+	return f.MedTypes
+}
+func (f *Filters) URLs() as.IRIs {
+	return as.IRIs{f.IRI}
 }
