@@ -54,34 +54,34 @@ func ValidActivityCollection(typ string) bool {
 
 // Filters
 type Filters struct {
-	Name          []string                    `qstring:"name,omitempty"`
-	Authenticated *auth.Person                `qstring:"-"`
-	To            as.Actor                    `qstring:"-"`
-	Author        as.Actor                    `qstring:"-"`
-	Parent        as.Actor                    `qstring:"-"`
-	IRI           as.IRI                      `qstring:"-"`
-	Collection    h.CollectionType            `qstring:"-"`
-	Audience      []as.IRI                    `qstring:"-"`
-	Key           []Hash                      `qstring:"id,omitempty"`
-	ItemKey       []Hash                      `qstring:"objectid,omitempty"`
-	Type          []as.ActivityVocabularyType `qstring:"type"`
-	AttributedTo  []Hash                      `qstring:"attributedTo,omitempty"`
-	InReplyTo     []Hash                      `qstring:"inReplyTo,omitempty"`
-	FollowedBy    []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
-	OlderThan     time.Time                   `qstring:"olderThan,omitempty"`
-	NewerThan     time.Time                   `qstring:"newerThan,omitempty"`
-	CurPage       uint                        `qstring:"page,omitempty"`
-	MaxItems      uint                        `qstring:"maxItems,omitempty"`
+	Name          []string                   `qstring:"name,omitempty"`
+	Authenticated *auth.Person               `qstring:"-"`
+	To            as.Actor                   `qstring:"-"`
+	Author        as.Actor                   `qstring:"-"`
+	Parent        as.Actor                   `qstring:"-"`
+	IRI           as.IRI                     `qstring:"-"`
+	Collection    h.CollectionType           `qstring:"-"`
+	Audience      as.IRIs                    `qstring:"-"`
+	Key           []Hash                     `qstring:"id,omitempty"`
+	ItemKey       []Hash                     `qstring:"objectid,omitempty"`
+	Type          as.ActivityVocabularyTypes `qstring:"type"`
+	AttributedTo  []Hash                     `qstring:"attributedTo,omitempty"`
+	InReplyTo     []Hash                     `qstring:"inReplyTo,omitempty"`
+	FollowedBy    []Hash                     `qstring:"followedBy,omitempty"` // todo(marius): not really used
+	OlderThan     time.Time                  `qstring:"olderThan,omitempty"`
+	NewerThan     time.Time                  `qstring:"newerThan,omitempty"`
+	CurPage       uint                       `qstring:"page,omitempty"`
+	MaxItems      uint                       `qstring:"maxItems,omitempty"`
 }
 
 // IRIs returns a list of ActivityVocabularyTypes to filter against
-func (f Filters) Types() []as.ActivityVocabularyType {
+func (f Filters) Types() as.ActivityVocabularyTypes {
 	return f.Type
 }
 
 // IRIs returns a list of IRIs to filter against
-func (f Filters) IRIs() as.IRIs{
-	ret := make([]as.IRI, len(f.ItemKey))
+func (f Filters) IRIs() as.IRIs {
+	ret := make(as.IRIs, len(f.ItemKey))
 	for i, k := range f.ItemKey {
 		ret[i] = as.IRI(k)
 	}
@@ -126,10 +126,10 @@ var ErrNotFound = func(s string) error {
 }
 
 // FromRequest loads the filters we use for generating storage queries from the HTTP request
-func FromRequest(r *http.Request) (Filters, error) {
+func FromRequest(r *http.Request) (*Filters, error) {
 	f := Filters{}
 	if err := qstring.Unmarshal(r.URL.Query(), &f); err != nil {
-		return f, err
+		return nil, err
 	}
 	f.Collection = h.Typer.Type(r)
 
@@ -137,5 +137,5 @@ func FromRequest(r *http.Request) (Filters, error) {
 		f.MaxItems = MaxItems
 	}
 
-	return f, nil
+	return &f, nil
 }

@@ -163,12 +163,14 @@ func loadIt(key, raw []byte, f s.Filterable) (as.Item, error) {
 	}
 	// TODO(marius): Actually filter the items based on all categories
 	if f1, ok := f.(s.FilterableItems); ok {
+		iris := f1.IRIs()
 		// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
-		if len(f1.IRIs()) > 0 && !f1.IRIs().Contains(it.GetLink()) {
+		if len(iris) > 0 && !iris.Contains(it.GetLink()) {
 			return nil, nil
 		}
+		types := f1.Types()
 		// FIXME(marius): this does not cover case insensitivity
-		if len(f1.Types()) > 0 && !f1.Types().Contains(it.GetType()) {
+		if len(types) > 0 && !types.Contains(it.GetType()) {
 			return nil, nil
 		}
 	}
