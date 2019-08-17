@@ -8,6 +8,7 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
 	"github.com/sirupsen/logrus"
@@ -68,16 +69,24 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 		if rb == nil {
 			return errors.Errorf("Invalid bucket %s", root)
 		}
+
+		var path string
 		iri := f.GetLink()
-		url, err := iri.URL()
-		if err != nil {
-			return errors.Newf("invalid IRI filter element %s when loading collections", iri)
-		}
-		if string(root) != url.Host {
-			return errors.Newf("trying to load from non-local root bucket %s", url.Host)
+		if iri != "" {
+			// This is the case where the Filter points to a single AP Object IRI
+			// TODO(marius): Ideally this should support the case where we use the IRI to point to a bucket path
+			//     and on top of that apply the other filters
+			url, err := iri.URL()
+			if err != nil {
+				return errors.Newf("invalid IRI filter element %s when loading collections", iri)
+			}
+			if string(root) != url.Host {
+				return errors.Newf("trying to load from non-local root bucket %s", url.Host)
+			}
+			path = url.Path
 		}
 		// Assume bucket exists and has keys
-		b, path, err := descendInBucket(rb, url.Path, false)
+		b, path, err := descendInBucket(rb, path, false)
 		if err != nil {
 			return err
 		}
@@ -89,19 +98,96 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 		if c == nil {
 			return errors.Errorf("Invalid bucket cursor %s/%s", root, path)
 		}
-		if path == "" {
-			path = objectKey
+		isObjectKey := func (k []byte) bool {
+			return string(k) == objectKey || string(k) == metaDataKey
 		}
-		prefix := []byte(path)
-		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
-			if it, err := as.UnmarshalJSON(v); err == nil {
-				col = append(col, it)
+		if path != "" {
+			// when we get a non empty path from descendIntoBucket we try to load it as a valid object key
+			prefix := []byte(path)
+			for key, raw := c.Seek(prefix); key != nil && bytes.HasPrefix(key, prefix); key, raw = c.Next() {
+				it, err := loadIt(key, raw, f)
+				if err != nil {
+					// log error and continue
+					continue
+				}
+				if it != nil {
+					col = append(col, it)
+				}
+			}
+		} else {
+			// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
+			for key, raw := c.First(); key != nil; key, raw = c.Next() {
+				if !isObjectKey(key) {
+					b := b.Bucket(key) // FIXME(marius): I guess this should not happen (as descendIntoBucket should 'descend' into 'path' if it's a valid bucket)
+					if b == nil {
+						return nil
+					}
+					raw = b.Get([]byte(objectKey))
+				}
+				it, err := loadIt(key, raw, f)
+				if err != nil {
+					// log error and continue
+					continue
+				}
+				if it != nil {
+					col = append(col, it)
+				}
 			}
 		}
 		return nil
 	})
 
 	return col, uint(len(col)), err
+}
+
+func loadIt(key, raw []byte, f s.Filterable) (as.Item, error) {
+	// key can be one of 'objectKey', 'metaKey', or collection names: 'inbox', 'outbox', 'liked', samd.
+	if string(key) == metaDataKey {
+		// this is an error
+		return nil, errors.Errorf("trying to load invalid data %s", key)
+	}
+	if handlers.ValidCollection(string(key)) {
+		// if the current key represents a valid collection name,
+		// should have been handled by the descendIntoBucket, so this is an error
+		return nil, errors.Errorf("trying to load invalid data %s", key)
+	}
+	if raw == nil || len(raw) == 0 {
+		// TODO(marius): log this instead of stopping the iteration and returning an error
+		return nil, errors.Errorf( "empty raw item")
+	}
+
+	it, err := as.UnmarshalJSON(raw)
+	if err != nil {
+		// TODO(marius): log this instead of stopping the iteration and returning an error
+		return nil, errors.Annotatef(err, "unable to unmarshal raw item")
+	}
+	// TODO(marius): Actually filter the items based on all categories
+	if f1, ok := f.(s.FilterableItems); ok {
+		// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
+		if len(f1.IRIs()) > 0 && !f1.IRIs().Contains(it.GetLink()) {
+			return nil, nil
+		}
+		// FIXME(marius): this does not cover case insensitivity
+		if len(f1.Types()) > 0 && !f1.Types().Contains(it.GetType()) {
+			return nil, nil
+		}
+	}
+
+	return it, err
+}
+
+// TODO(marius): this should be replaced by functionality using the Filterable interface
+// Eg: f.
+func inIRIs (i as.IRI, IRIs []as.IRI) bool {
+	if len(IRIs) == 0 {
+		return true
+	}
+	for _, iri := range IRIs {
+		if strings.ToLower(i.String()) == strings.ToLower(iri.String()) {
+			return true
+		}
+	}
+	return false
 }
 
 // Load
@@ -189,58 +275,19 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 	col.ID = as.ObjectID(iri)
 	col.Type = as.OrderedCollectionType
 
-	err = r.d.View(func(tx *bolt.Tx) error {
-		rb := tx.Bucket(r.root)
-		if rb == nil {
-			return errors.Newf("invalid root bucket %s", r.root)
+	elements, count, err := loadFromBucket(r.d, r.root, f)
+	if err != nil {
+		return col, errors.Annotatef(err, "Unable to load elements")
+	}
+	if count == 0 {
+		return col, nil
+	}
+	for _, it := range elements {
+		if err = col.Append(it); err == nil {
+			col.TotalItems++
 		}
-		bb, path, err := descendInBucket(rb, url.Path, false)
-		if err != nil {
-			r.errFn(nil, "unable to find %s in root bucket", path, r.root)
-		}
-		if len(path) == 0 {
-			cb := bb.Cursor()
-			if cb == nil {
-				return errors.Errorf("Invalid collection bucket path %s", path)
-			}
-			for uuid, _ := cb.First(); uuid != nil; uuid, _ = cb.Next() {
-				ib := bb.Bucket(uuid)
-				if ib == nil {
-					return nil
-				}
-				raw := ib.Get([]byte(objectKey))
-				if raw == nil || len(raw) == 0 {
-					return errors.Annotatef(err, "empty raw item")
-				}
+	}
 
-				it, err := as.UnmarshalJSON(raw)
-				if err != nil {
-					return errors.Annotatef(err, "unable to unmarshal raw item")
-				}
-				if err = col.Append(it); err == nil {
-					col.TotalItems++
-				}
-			}
-		} else {
-			raw := bb.Get([]byte(path))
-			if raw == nil || len(raw) == 0 {
-				return nil
-			}
-			return errors.NotImplementedf("TODO: unmarshal collection items in collection: %s", url.Path)
-			// This should be a marshalled json array of IRIs,
-			// I probably need to use a different marshalling/unmarshalling method than the activitystreams one.
-			// Then for each element in the array, we load the corresponding item from the base collection
-			// The base collection in this case is one of: actors, activities, objects
-			it, err := as.UnmarshalJSON(raw)
-			if err != nil {
-				return errors.Annotatef(err, "unable to unmarshal raw item")
-			}
-			if err = col.Append(it); err == nil {
-				col.TotalItems++
-			}
-		}
-		return err
-	})
 	ret = col
 	return ret, err
 }
