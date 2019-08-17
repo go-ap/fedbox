@@ -40,12 +40,6 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 
 	items, err = repo.LoadCollection(f)
 	if err != nil {
-		topLevelCollection := func(f activitypub.Filters) bool {
-			return f.Author == nil && f.Parent == nil && f.To == nil
-		}(f)
-		if topLevelCollection && (f.Collection == h.Inbox || f.Collection == h.Outbox) {
-			return nil, errors.MethodNotAllowedf("method not allowed")
-		}
 		return nil, err
 	}
 	return activitypub.PaginateCollection(items, &f)
@@ -166,16 +160,18 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(items) == 1 {
-		it, err := loadItem(items, f, reqURL(r))
-		if err != nil {
-			return nil, errors.NotFoundf("%snot found", what)
-		}
-		return it, nil
+	if len(items) == 0 {
+		return nil, errors.NotFoundf("%snot found%s", what, where)
 	}
-
-	what = fmt.Sprintf("%s ", path.Base(iri))
-	return nil, errors.NotFoundf("%snot found%s", what, where)
+	if len(items) > 1 {
+		what = fmt.Sprintf("%s", path.Base(iri))
+		return nil, errors.Errorf("Too many %s found%s", what, where)
+	}
+	it, err := loadItem(items, f, reqURL(r))
+	if err != nil {
+		return nil, errors.NotFoundf("%snot found", what)
+	}
+	return it, nil
 }
 
 func loadItem(items as.ItemCollection, f activitypub.Paginator, baseURL string) (as.Item, error) {
