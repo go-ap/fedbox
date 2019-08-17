@@ -55,7 +55,6 @@ func Routes(v validation.ActivityValidator, os *osin.Server, st storage.ActorLoa
 
 			r.Group(func(r chi.Router) {
 				r.Post("/login", h.HandleLogin)
-
 				r.Get("/callback", h.HandleCallback)
 			})
 		})
