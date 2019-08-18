@@ -197,6 +197,25 @@ func main() {
 						return nil
 					},
 				},
+				{
+					Name:    "ls",
+					Aliases: []string{"list"},
+					Usage:   "Lists existing actors",
+					Action: func(c *cli.Context) error {
+						actors, err := ctl.ListActors()
+						if err != nil {
+							return err
+						}
+						for i, it := range actors {
+							if act, err := auth.ToPerson(it); err != nil {
+								fmt.Printf("%3d [%11s] %s\n", i, it.GetType(), it.GetLink())
+							} else {
+								fmt.Printf("%3d [%11s] %s\n%s\n", i, it.GetType(), act.PreferredUsername.First(), it.GetLink())
+							}
+						}
+						return nil
+					},
+				},
 			},
 		},
 		{

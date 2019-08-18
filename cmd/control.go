@@ -110,3 +110,13 @@ func (c *Control) DeleteActor(id string) error {
 	_, err = c.Storage.DeleteActor(it.First())
 	return err
 }
+
+func (c *Control) ListActors() (as.ItemCollection, error) {
+	var err error
+	actorsIRI := as.IRI(fmt.Sprintf("%s/%s", c.BaseURL.String(), ap.ActorsType))
+	col, _, err :=  c.Storage.LoadActors(&ap.Filters{IRI: actorsIRI})
+	if err != nil {
+		return col, errors.Annotatef(err, "Unable to load actors")
+	}
+	return col, nil
+}
