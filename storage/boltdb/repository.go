@@ -98,14 +98,14 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 		if c == nil {
 			return errors.Errorf("Invalid bucket cursor %s/%s", root, path)
 		}
-		isObjectKey := func (k []byte) bool {
+		isObjectKey := func(k []byte) bool {
 			return string(k) == objectKey || string(k) == metaDataKey
 		}
 		if path != "" {
 			// when we get a non empty path from descendIntoBucket we try to load it as a valid object key
 			prefix := []byte(path)
 			for key, raw := c.Seek(prefix); key != nil && bytes.HasPrefix(key, prefix); key, raw = c.Next() {
-				it, err := loadIt(key, raw, f)
+				it, err := filterIt(key, raw, f)
 				if err != nil {
 					// log error and continue
 					continue
@@ -124,7 +124,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 					}
 					raw = b.Get([]byte(objectKey))
 				}
-				it, err := loadIt(key, raw, f)
+				it, err := filterIt(key, raw, f)
 				if err != nil {
 					// log error and continue
 					continue
@@ -140,7 +140,220 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 	return col, uint(len(col)), err
 }
 
-func loadIt(key, raw []byte, f s.Filterable) (as.Item, error) {
+func filterActivity(it as.Item, f s.Filterable) (bool, as.Item) {
+	ff, ok := f.(s.FilterableActivity)
+	if !ok {
+		return true, it
+	}
+	ok, _ = filterObject(it, f)
+	act, _ := as.ToActivity(it)
+	actors := ff.Actors()
+	if len(actors) > 0 {
+		exists := false
+		for _, actor := range actors {
+			if actor.GetLink() == act.Object {
+				exists = true
+				break
+			}
+			if exists {
+				break
+			}
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+	objects := ff.Objects()
+	if len(objects) > 0 {
+		exists := false
+		for _, object := range objects {
+			if object.GetLink() == act.Object {
+				exists = true
+				break
+			}
+			if exists {
+				break
+			}
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+	targets := ff.Targets()
+	if len(targets) > 0 {
+		exists := false
+		for _, target := range targets {
+			if target.GetLink() == act.Target {
+				exists = true
+				break
+			}
+			if exists {
+				break
+			}
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+	return ok, act
+}
+
+func filterPerson(it as.Item, f s.Filterable) (bool, as.Item) {
+	ff, ok := f.(s.FilterableObject)
+	if !ok {
+		return true, it
+	}
+	ob, _ := auth.ToPerson(it)
+	names := ff.Names()
+	if len(names) > 0 {
+		exists := false
+		for _, name := range names {
+			if len(ob.PreferredUsername) > 0 {
+				for _, nn := range ob.PreferredUsername {
+					if strings.ToLower(nn.Value) == strings.ToLower(name) {
+						exists = true
+						break
+					}
+					if exists {
+						break
+					}
+				}
+				for _, nn := range ob.Name {
+					if strings.ToLower(nn.Value) == strings.ToLower(name) {
+						exists = true
+						break
+					}
+					if exists {
+						break
+					}
+				}
+			}
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+	authors := ff.AttributedTo()
+	if len(authors) > 0 && !authors.Contains(ob.AttributedTo.GetLink()) {
+		return false, nil
+	}
+	inReply := ff.InReplyTo()
+	if len(inReply) > 0 && !inReply.Contains(ob.InReplyTo.GetLink()) {
+		return false, nil
+	}
+	audFilter := ff.Audience()
+	if len(audFilter) > 0 {
+		exists := false
+		for _, aud := range ob.Audience {
+			if audFilter.Contains(aud.GetLink()) {
+				exists = true
+				break
+			}
+		}
+		for _, to := range ob.To {
+			if audFilter.Contains(to.GetLink()) {
+				exists = true
+				break
+			}
+		}
+		for _, bto := range ob.Bto {
+			if audFilter.Contains(bto.GetLink()) {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+	medTypes := ff.MediaTypes()
+	if len(medTypes) > 0 {
+		exists := false
+		for _, typ := range medTypes {
+			if typ == ob.MediaType {
+				exists = true
+			}
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+	return ok, ob
+}
+
+func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
+	ff, ok := f.(s.FilterableObject)
+	if !ok {
+		return true, it
+	}
+	ob, _ := auth.ToObject(it)
+	names := ff.Names()
+	if len(names) > 0 {
+		exists := false
+		for _, name := range names {
+			for _, nn := range ob.Name {
+				if strings.ToLower(nn.Value) == strings.ToLower(name) {
+					exists = true
+					break
+				}
+				if exists {
+					break
+				}
+			}
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+	authors := ff.AttributedTo()
+	if len(authors) > 0 && !authors.Contains(ob.AttributedTo.GetLink()) {
+		return false, nil
+	}
+	inReply := ff.InReplyTo()
+	if len(inReply) > 0 && !inReply.Contains(ob.InReplyTo.GetLink()) {
+		return false, nil
+	}
+	audFilter := ff.Audience()
+	if len(audFilter) > 0 {
+		exists := false
+		for _, aud := range ob.Audience {
+			if audFilter.Contains(aud.GetLink()) {
+				exists = true
+				break
+			}
+		}
+		for _, to := range ob.To {
+			if audFilter.Contains(to.GetLink()) {
+				exists = true
+				break
+			}
+		}
+		for _, bto := range ob.Bto {
+			if audFilter.Contains(bto.GetLink()) {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+	medTypes := ff.MediaTypes()
+	if len(medTypes) > 0 {
+		exists := false
+		for _, typ := range medTypes {
+			if typ == ob.MediaType {
+				exists = true
+			}
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+	return true, ob
+}
+
+func filterIt(key, raw []byte, f s.Filterable) (as.Item, error) {
 	// key can be one of 'objectKey', 'metaKey', or collection names: 'inbox', 'outbox', 'liked', samd.
 	if string(key) == metaDataKey {
 		// this is an error
@@ -153,7 +366,7 @@ func loadIt(key, raw []byte, f s.Filterable) (as.Item, error) {
 	}
 	if raw == nil || len(raw) == 0 {
 		// TODO(marius): log this instead of stopping the iteration and returning an error
-		return nil, errors.Errorf( "empty raw item")
+		return nil, errors.Errorf("empty raw item")
 	}
 
 	it, err := as.UnmarshalJSON(raw)
@@ -161,7 +374,6 @@ func loadIt(key, raw []byte, f s.Filterable) (as.Item, error) {
 		// TODO(marius): log this instead of stopping the iteration and returning an error
 		return nil, errors.Annotatef(err, "unable to unmarshal raw item")
 	}
-	// TODO(marius): Actually filter the items based on all categories
 	if f1, ok := f.(s.FilterableItems); ok {
 		iris := f1.IRIs()
 		// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
@@ -174,105 +386,18 @@ func loadIt(key, raw []byte, f s.Filterable) (as.Item, error) {
 			return nil, nil
 		}
 	}
-	if f2, ok := f.(s.FilterableObject); ok {
-		// TODO(marius): probably here we need to convert to AP.Person for /actors endpoint
-		//               to AP.Activity for /activities endpoint
-		ob, errO := auth.ToObject(it)
-		pers, errP := auth.ToPerson(it)
-		act, errA := as.ToActivity(it)
-		if !(errO != nil || errP != nil || errA != nil) {
-			return nil, nil
-		}
-		if ob != nil {
-			names := f2.Names()
-			if len(names) > 0 {
-				exists := false
-				for _, name := range names {
-					for _, nn := range ob.Name {
-						if strings.ToLower(nn.Value) == strings.ToLower(name) {
-							exists = true
-							break
-						}
-						if exists {
-							break
-						}
-					}
-				}
-				if !exists {
-					return nil, nil
-				}
-			}
-			authors := f2.AttributedTo()
-			if len(authors) > 0 && !authors.Contains(ob.AttributedTo.GetLink()) {
-				return nil, nil
-			}
-			inReply := f2.InReplyTo()
-			if len(inReply) > 0 && !inReply.Contains(ob.InReplyTo.GetLink()) {
-				return nil, nil
-			}
-			audFilter := f2.Audience()
-			if len(audFilter) > 0 {
-				exists := false
-				for _, aud := range ob.Audience {
-					if audFilter.Contains(aud.GetLink()) {
-						exists = true
-						break
-					}
-				}
-				for _, to := range ob.To {
-					if audFilter.Contains(to.GetLink()) {
-						exists = true
-						break
-					}
-				}
-				for _, bto := range ob.Bto {
-					if audFilter.Contains(bto.GetLink()) {
-						exists = true
-						break
-					}
-				}
-				if !exists {
-					return nil, nil
-				}
-			}
-			medTypes := f2.MediaTypes()
-			if len(medTypes) > 0 {
-				exists := false
-				for _, typ := range medTypes {
-					if typ == ob.MediaType {
-						exists = true
-					}
-				}
-				if !exists {
-					return nil, nil
-				}
-			}
-		}
-		if pers != nil {
-			names := f2.Names()
-			if len(names) > 0 {
-				exists := false
-				for _, name := range names {
-					for _, nn := range pers.PreferredUsername {
-						if strings.ToLower(nn.Value) == strings.ToLower(name) {
-							exists = true
-							break
-						}
-						if exists {
-							break
-						}
-					}
-				}
-				if !exists {
-					return nil, nil
-				}
-			}
-		}
-		if act != nil {
-			// TODO
-		}
+	var valid bool
+	if as.ActivityTypes.Contains(it.GetType()) {
+		valid, _ = filterActivity(it, f)
+	} else if as.ActorTypes.Contains(it.GetType()) {
+		valid, _ = filterPerson(it, f)
+	} else {
+		valid, _ = filterObject(it, f)
 	}
-	return it, err
+	if !valid {
+		return nil, nil
+	}
+	return it, nil
 }
 
 // Load
@@ -710,7 +835,7 @@ func (r *repo) PasswordSet(it as.Item, pw []byte) error {
 		}
 
 		m := meta{
-			Pw: pw, 
+			Pw: pw,
 		}
 		entryBytes, err := jsonld.Marshal(m)
 		if err != nil {
