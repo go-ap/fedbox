@@ -6,8 +6,8 @@ require (
 	github.com/boltdb/bolt v1.3.1
 	github.com/buger/jsonparser v0.0.0-20181023193515-52c6e1462ebd
 	github.com/gchaincl/dotsql v0.1.0
-	github.com/go-ap/activitypub v0.0.0-20190801114043-90cf4813c999
-	github.com/go-ap/activitystreams v0.0.0-20190817131710-a89d5cf5fe18
+	github.com/go-ap/activitypub v0.0.0-20190820200237-585b5f048fef
+	github.com/go-ap/activitystreams v0.0.0-20190820195421-bd2f80c09306
 	github.com/go-ap/auth v0.0.0-20190815143835-81aee2684879
 	github.com/go-ap/errors v0.0.0-20190706181757-c7ac5494be8a
 	github.com/go-ap/handlers v0.0.0-20190706181808-080b5b64b6dd
