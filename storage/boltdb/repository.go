@@ -369,7 +369,19 @@ func filterIt(key, raw []byte, f s.Filterable) (as.Item, error) {
 		return nil, errors.Errorf("empty raw item")
 	}
 
-	it, err := as.UnmarshalJSON(raw)
+	var it as.Item
+	var err error
+	if handlers.ValidCollection(path.Base(f.GetLink().String())) {
+		col := make([]as.IRI,0)
+		err = jsonld.Unmarshal(raw, &col)
+		iris := make(as.ItemCollection, len(col))
+		for i, iri := range col {
+			iris[i] = &iri
+		}
+		it = iris
+	} else {
+		it, err = as.UnmarshalJSON(raw)
+	}
 	if err != nil {
 		// TODO(marius): log this instead of stopping the iteration and returning an error
 		return nil, errors.Annotatef(err, "unable to unmarshal raw item")
@@ -656,6 +668,12 @@ func (r *repo) SaveObject(it as.Item) (as.Item, error) {
 		for _, fw := range toFw.Recipients() {
 			colIRI := fw.GetLink()
 			if r.IsLocalIRI(colIRI) {
+				// TODO(marius): this needs some logic to add to the correct Inbox/Outbox collection
+				//   depending on the fact if it's a C2S or an S2S request.
+				//   For now we hard-code it to C2S => Outbox.
+				if !handlers.ValidCollection(path.Base(colIRI.String())) {
+					colIRI = as.IRI(fmt.Sprintf("%s/%s", colIRI, handlers.Outbox))
+				}
 				// we shadow the err variable intentionally so it does not propagate upper to the call stack
 				if errFw := r.AddToCollection(colIRI, it); err != nil {
 					r.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI, "error": errFw}, "unable to add to collection")
@@ -708,6 +726,9 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 		if err != nil {
 			return errors.Newf("Unable to find %s in root bucket", path)
 		}
+		if rem == "" {
+			rem = objectKey
+		}
 		if !b.Writable() {
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
@@ -719,7 +740,7 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 				return errors.Newf("Unable to unmarshal entries in collection %s", path)
 			}
 		}
-		iris = append(iris, col)
+		iris = append(iris, it.GetLink())
 		raw, err := jsonld.Marshal(iris)
 		if err != nil {
 			return errors.Newf("Unable to marshal entries in collection %s", path)
