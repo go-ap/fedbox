@@ -163,8 +163,8 @@ func IRIBelongsToActor(iri as.IRI, actor *auth.Person) bool {
 }
 
 func (v genericValidator) ValidateClientActivity(a as.Item, outbox as.IRI) error {
-	if !IRIBelongsToActor(outbox, v.auth) {
-		return errors.Unauthorizedf("%s actor does not own the current outbox", v.auth.Name)
+	if v.auth.GetLink() == auth.ActivityStreamsPublicNS {
+		return errors.Unauthorizedf("%s actor is not allowed posting to current outbox", v.auth.Name)
 	}
 	if a == nil {
 		return InvalidActivityActor("received nil activity")
