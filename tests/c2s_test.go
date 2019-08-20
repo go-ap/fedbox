@@ -90,10 +90,8 @@ var C2STests = testPairs{
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
-				urlFn: func() string {
-					return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id))
-				},
-				bodyFn: loadMockJson("mocks/create-actor.json", &defaultTestAccount.id),
+				url:     fmt.Sprintf("%s/outbox", apiURL),
+				bodyFn:  loadMockJson("mocks/create-actor.json", &defaultTestAccount.id),
 			},
 			res: testRes{
 				code: http.StatusCreated,
@@ -117,17 +115,17 @@ var C2STests = testPairs{
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
-				urlFn: func() string {
-					return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id))
-				},
-				bodyFn: loadMockJson("mocks/update-actor.json", &defaultTestAccount.id, &defaultTestAccount.id, &defaultTestAccount.id),
+				url:     fmt.Sprintf("%s/outbox", apiURL),
+				bodyFn:  loadMockJson("mocks/update-actor.json", &defaultTestAccount.id, &defaultTestAccount.id, &defaultTestAccount.id),
 			},
 			res: testRes{
 				code: http.StatusOK,
 				val: &objectVal{
 					typ: string(as.UpdateType),
 					act: &objectVal{
-						id: *(&defaultTestAccount.id),
+						id:                *(&defaultTestAccount.id),
+						typ:               string(as.PersonType),
+						preferredUsername: "johndoe",
 					},
 					obj: &objectVal{
 						id:                *(&defaultTestAccount.id),
@@ -150,21 +148,19 @@ var C2STests = testPairs{
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
-				urlFn: func() string {
-					return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id))
-				},
-				bodyFn: loadMockJson("mocks/delete-actor.json", &defaultTestAccount.id, &selfAccount.id),
+				url:     fmt.Sprintf("%s/outbox", apiURL),
+				bodyFn:  loadMockJson("mocks/delete-actor.json", &defaultTestAccount.id, &selfAccount.id),
 			},
 			res: testRes{
 				code: http.StatusGone,
 				val: &objectVal{
 					typ: string(as.DeleteType),
 					act: &objectVal{
-						id:  selfAccount.id,
+						id:  *(&defaultTestAccount.id),
 						typ: string(as.TombstoneType),
 					},
 					obj: &objectVal{
-						id:  selfAccount.id,
+						id:  *(&defaultTestAccount.id),
 						typ: string(as.TombstoneType),
 					},
 				},
@@ -174,17 +170,18 @@ var C2STests = testPairs{
 	"CreateArticle": {
 		{
 			req: testReq{
-				met:    http.MethodPost,
-				url:    fmt.Sprintf("%s/outbox", apiURL),
-				bodyFn: loadMockJson("mocks/create-article.json", &selfAccount.id, &selfAccount.id),
+				met:     http.MethodPost,
+				account: &defaultTestAccount,
+				url:     fmt.Sprintf("%s/outbox", apiURL),
+				bodyFn:  loadMockJson("mocks/create-article.json", &defaultTestAccount.id, &selfAccount.id),
 			},
 			res: testRes{
-				code: http.StatusUnauthorized,
+				code: http.StatusCreated,
 				val: &objectVal{
 					typ: string(as.CreateType),
 					act: &objectVal{
-						id:  selfAccount.id,
-						typ: string(as.ServiceType),
+						typ:               string(as.PersonType),
+						preferredUsername: "johndoe",
 					},
 					obj: &objectVal{
 						typ:     string(as.ArticleType),
