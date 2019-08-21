@@ -23,6 +23,23 @@ import (
 	"time"
 )
 
+func addMockObjects(r storage.Repository, obj activitystreams.ItemCollection, errFn app.LogFn) error {
+	var err error
+	for _, it := range obj {
+		if activitystreams.ActivityTypes.Contains(it.GetType()) {
+			it, err = r.SaveActivity(it)
+		} else if activitystreams.ActorTypes.Contains(it.GetType()) {
+			it, err = r.SaveActor(it)
+		} else {
+			it, err = r.SaveObject(it)
+		}
+		if err != nil {
+			errFn("%s", err)
+		}
+	}
+	return nil
+}
+
 func resetDB(t *testing.T, testData bool) string {
 	if t != nil {
 		t.Helper()
@@ -42,6 +59,7 @@ func resetDB(t *testing.T, testData bool) string {
 	b, s := getBoldDBs(curPath, u, "test", logrus.New())
 
 	o := cmd.New(u, s, b, config.Options{})
+	addMockObjects(o.Storage, nil, t.Errorf)
 
 	pw := []byte("hahah")
 	actor, err := o.AddActor(testActorHandle, activitystreams.PersonType, pw)
