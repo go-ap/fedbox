@@ -95,7 +95,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	if err != nil {
 		return it, http.StatusInternalServerError, errors.Annotatef(err, "Invalid activity %s", it.GetType())
 	}
-	if it, err = processing.ProcessActivity(repo, act); err != nil {
+	if it, err = processing.ProcessActivity(repo, act, typ); err != nil {
 		return it, http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 	}
 

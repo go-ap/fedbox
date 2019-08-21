@@ -6,13 +6,13 @@ require (
 	github.com/boltdb/bolt v1.3.1
 	github.com/buger/jsonparser v0.0.0-20181023193515-52c6e1462ebd
 	github.com/gchaincl/dotsql v0.1.0
-	github.com/go-ap/activitypub v0.0.0-20190820200237-585b5f048fef
-	github.com/go-ap/activitystreams v0.0.0-20190820195421-bd2f80c09306
+	github.com/go-ap/activitypub v0.0.0-20190821203318-1b91418e7ac2
+	github.com/go-ap/activitystreams v0.0.0-20190821202132-4a1645657eaa
 	github.com/go-ap/auth v0.0.0-20190815143835-81aee2684879
 	github.com/go-ap/errors v0.0.0-20190706181757-c7ac5494be8a
 	github.com/go-ap/handlers v0.0.0-20190706181808-080b5b64b6dd
 	github.com/go-ap/jsonld v0.0.0-20190706181819-da1186839e9c
-	github.com/go-ap/processing v0.0.0-20190811203933-689daff5c2bb
+	github.com/go-ap/processing v0.0.0-20190821215635-c9470180a6e0
 	github.com/go-ap/storage v0.0.0-20190817183215-64b92916459a
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/jackc/pgx v3.5.0+incompatible
