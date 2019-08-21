@@ -667,7 +667,7 @@ func (r *repo) SaveObject(it as.Item) (as.Item, error) {
 		r.logFn(nil, "%s %s: %s", op, it.GetType(), it.GetLink())
 	}
 
-	// TODO(marius) Move to somewhere else
+	// TODO(marius) Move to somewhere else: see the work I started at go-ap/processing/processing.go#225
 	if toFw, ok := it.(as.HasRecipients); ok {
 		for _, fw := range toFw.Recipients() {
 			colIRI := fw.GetLink()
@@ -709,6 +709,9 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 	}
 	if len(it.GetLink()) == 0 {
 		return errors.Newf("Invalid create collection does not have a valid IRI")
+	}
+	if !r.IsLocalIRI(col.GetLink()) {
+		return errors.Newf("Unable to save to non local collection %s", col)
 	}
 	url, err := col.URL()
 	if err != nil {

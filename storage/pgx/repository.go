@@ -359,6 +359,9 @@ func (r repo) AddToCollection(col as.IRI, it as.Item) error {
 	if len(it.GetLink()) == 0 {
 		return errors.Newf("Invalid create collection does not have a valid IRI")
 	}
+	if !r.IsLocalIRI(col.GetLink()) {
+		return errors.Newf("Unable to save to non local collection %s", col)
+	}
 
 	query := fmt.Sprintf("UPDATE collections SET updated_at = $1, elements = array_append(elements, $2), count = count+1 WHERE iri = $3;")
 
