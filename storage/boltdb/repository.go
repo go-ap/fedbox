@@ -130,7 +130,11 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 					continue
 				}
 				if it != nil {
-					col = append(col, it)
+					if itCol, ok := it.(as.ItemCollection); ok {
+						col = itCol
+					} else {
+						col = append(col, it)
+					}
 				}
 			}
 		}
