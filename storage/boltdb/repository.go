@@ -380,7 +380,7 @@ func filterIt(key, raw []byte, f s.Filterable) (as.Item, error) {
 		err = jsonld.Unmarshal(raw, &col)
 		iris := make(as.ItemCollection, len(col))
 		for i, iri := range col {
-			iris[i] = &iri
+			iris[i] = iri
 		}
 		it = iris
 	} else {
@@ -667,24 +667,6 @@ func (r *repo) SaveObject(it as.Item) (as.Item, error) {
 		r.logFn(nil, "%s %s: %s", op, it.GetType(), it.GetLink())
 	}
 
-	// TODO(marius) Move to somewhere else: see the work I started at go-ap/processing/processing.go#225
-	if toFw, ok := it.(as.HasRecipients); ok {
-		for _, fw := range toFw.Recipients() {
-			colIRI := fw.GetLink()
-			if r.IsLocalIRI(colIRI) {
-				// TODO(marius): this needs some logic to add to the correct Inbox/Outbox collection
-				//   depending on the fact if it's a C2S or an S2S request.
-				//   For now we hard-code it to C2S => Outbox.
-				if !handlers.ValidCollection(path.Base(colIRI.String())) {
-					colIRI = as.IRI(fmt.Sprintf("%s/%s", colIRI, handlers.Outbox))
-				}
-				// we shadow the err variable intentionally so it does not propagate upper to the call stack
-				if errFw := r.AddToCollection(colIRI, it); err != nil {
-					r.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI, "error": errFw}, "unable to add to collection")
-				}
-			}
-		}
-	}
 	return it, err
 }
 
@@ -719,6 +701,12 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 	}
 	path := url.Path
 
+	err = r.Open()
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
 	return r.d.Update(func(tx *bolt.Tx) error {
 		var rem string
 		root := tx.Bucket(r.root)
@@ -742,7 +730,7 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 		var iris []as.IRI
 		raw := b.Get([]byte(rem))
 		if len(raw) > 0 {
-			err := jsonld.Unmarshal(raw, iris)
+			err := jsonld.Unmarshal(raw, &iris)
 			if err != nil {
 				return errors.Newf("Unable to unmarshal entries in collection %s", path)
 			}
