@@ -543,7 +543,7 @@ func delete(r *repo, it as.Item) (as.Item, error) {
 			ID:   as.ObjectID(it.GetLink()),
 			Type: as.TombstoneType,
 			To: as.ItemCollection{
-				auth.ActivityStreamsPublicNS,
+				as.PublicNS,
 			},
 		},
 		Deleted:    time.Now().UTC(),

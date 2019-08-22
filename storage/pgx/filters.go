@@ -90,7 +90,7 @@ func getWhereClauses(f storage.Filterable) ([]string, []interface{}) {
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'audience' ~* $%d`, counter))
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
 		//if f.To == nil {
-		//	values = append(values, interface{}(ap.ActivityStreamsPublicNS))
+		//	values = append(values, interface{}(as.PublicNS))
 		//}
 	}
 

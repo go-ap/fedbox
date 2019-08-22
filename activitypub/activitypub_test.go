@@ -78,8 +78,8 @@ func TestSelf(t *testing.T) {
 	if s.AttributedTo.GetLink() != "https://github.com/mariusor" {
 		t.Errorf("Invalid AttributedTo %s, expected %s", s.AttributedTo, "https://github.com/mariusor")
 	}
-	if s.Audience.First().GetLink() != auth.ActivityStreamsPublicNS {
-		t.Errorf("Invalid Audience %s, expected %s", s.Audience.First(),  auth.ActivityStreamsPublicNS)
+	if s.Audience.First().GetLink() != activitystreams.PublicNS {
+		t.Errorf("Invalid Audience %s, expected %s", s.Audience.First(),  activitystreams.PublicNS)
 	}
 	if s.Content != nil {
 		t.Errorf("Invalid Audience %s, expected %v", s.Content,  nil)

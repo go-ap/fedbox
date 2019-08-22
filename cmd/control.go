@@ -36,7 +36,7 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 				Type: typ,
 				// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
 				AttributedTo: self.GetLink(),
-				Audience:     as.ItemCollection{auth.ActivityStreamsPublicNS},
+				Audience:     as.ItemCollection{as.PublicNS},
 				Generator:    self.GetLink(),
 				Published:    now,
 				Summary: as.NaturalLanguageValues{

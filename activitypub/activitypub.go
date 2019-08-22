@@ -31,7 +31,7 @@ func Self(baseURL as.IRI) auth.Service {
 				Type:         as.ServiceType,
 				Name:         as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: "self"}},
 				AttributedTo: as.IRI("https://github.com/mariusor"),
-				Audience:     as.ItemCollection{auth.ActivityStreamsPublicNS},
+				Audience:     as.ItemCollection{as.PublicNS},
 				Content:      nil, //as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: ""}},
 				Icon:         nil,
 				Image:        nil,

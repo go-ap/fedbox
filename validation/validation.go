@@ -7,8 +7,10 @@ import (
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
 	"golang.org/x/xerrors"
+	"path"
 	"strings"
 )
 
@@ -124,6 +126,14 @@ func (v genericValidator) ValidateServerActivity(a as.Item, inbox as.IRI) error 
 	return errors.NotImplementedf("Server Activity validation is not implemented")
 }
 
+func IsOutbox(i as.IRI) bool {
+	return strings.ToLower(path.Base(i.String())) == strings.ToLower(string(handlers.Outbox))
+}
+
+func IsInbox(i as.IRI) bool {
+	return strings.ToLower(path.Base(i.String())) == strings.ToLower(string(handlers.Inbox))
+}
+
 // IRIBelongsToActor checks if the search iri represents any of the collections associated with the actor.
 func IRIBelongsToActor(iri as.IRI, actor *auth.Person) bool {
 	if actor == nil {
@@ -163,8 +173,14 @@ func IRIBelongsToActor(iri as.IRI, actor *auth.Person) bool {
 }
 
 func (v genericValidator) ValidateClientActivity(a as.Item, outbox as.IRI) error {
-	if v.auth.GetLink() == auth.ActivityStreamsPublicNS {
+	if !IsOutbox(outbox) {
+		return errors.NotValidf("Trying to validate a non outbox IRI %s", outbox)
+	}
+	if v.auth.GetLink() == as.PublicNS {
 		return errors.Unauthorizedf("%s actor is not allowed posting to current outbox", v.auth.Name)
+	}
+	if !IRIBelongsToActor(outbox, v.auth) {
+		return errors.Unauthorizedf("%s actor does not own the current outbox", v.auth.Name)
 	}
 	if a == nil {
 		return InvalidActivityActor("received nil activity")
@@ -293,7 +309,7 @@ func (v genericValidator) ValidateAudience(audience ...as.ItemCollection) error 
 			if err := v.validateLocalIRI(iri.GetLink()); err == nil {
 				return nil
 			}
-			if iri.GetLink() == auth.ActivityStreamsPublicNS {
+			if iri.GetLink() == as.PublicNS {
 				return nil
 			}
 		}

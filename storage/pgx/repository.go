@@ -552,7 +552,7 @@ func (r repo) DeleteObject(it as.Item) (as.Item, error) {
 			ID:   as.ObjectID(it.GetLink()),
 			Type: as.TombstoneType,
 			To: as.ItemCollection{
-				a.ActivityStreamsPublicNS,
+				as.PublicNS,
 			},
 		},
 		Deleted:    time.Now().UTC(),
