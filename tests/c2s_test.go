@@ -89,7 +89,7 @@ var C2STests = testPairs{
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
-				url:     fmt.Sprintf("%s/outbox", apiURL),
+				urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id)) },
 				bodyFn:  loadMockJson("mocks/create-actor.json", &defaultTestAccount.id),
 			},
 			res: testRes{
@@ -114,7 +114,7 @@ var C2STests = testPairs{
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
-				url:     fmt.Sprintf("%s/outbox", apiURL),
+				urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id)) },
 				bodyFn:  loadMockJson("mocks/update-actor.json", &defaultTestAccount.id, &defaultTestAccount.id, &defaultTestAccount.id),
 			},
 			res: testRes{
@@ -147,7 +147,7 @@ var C2STests = testPairs{
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
-				url:     fmt.Sprintf("%s/outbox", apiURL),
+				urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id)) },
 				bodyFn:  loadMockJson("mocks/delete-actor.json", &defaultTestAccount.id, &selfAccount.id),
 			},
 			res: testRes{
@@ -171,7 +171,7 @@ var C2STests = testPairs{
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
-				url:     fmt.Sprintf("%s/outbox", apiURL),
+				urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id)) },
 				bodyFn:  loadMockJson("mocks/create-article.json", &defaultTestAccount.id, &selfAccount.id),
 			},
 			res: testRes{
