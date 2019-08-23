@@ -180,6 +180,7 @@ func (f Filters) AttributedTo() as.IRIs {
 	}
 	return col
 }
+
 func (f Filters) InReplyTo() as.IRIs {
 	col := make(as.IRIs, len(f.InReplTo))
 	for k, iri := range f.InReplTo {
@@ -187,9 +188,22 @@ func (f Filters) InReplyTo() as.IRIs {
 	}
 	return col
 }
+
 func (f Filters) MediaTypes() []as.MimeType {
 	return f.MedTypes
 }
+
 func (f Filters) URLs() as.IRIs {
 	return as.IRIs{f.IRI}
+}
+
+func (f Filters) Actors() as.IRIs {
+	return nil
+}
+func (f Filters) Objects() as.IRIs {
+	return nil
+}
+
+func (f Filters) Targets() as.IRIs {
+	return nil
 }
