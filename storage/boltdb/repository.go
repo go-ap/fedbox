@@ -70,7 +70,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 			return errors.Errorf("Invalid bucket %s", root)
 		}
 
-		var path string
+		var remainderPath string
 		iri := f.GetLink()
 		if iri != "" {
 			// This is the case where the Filter points to a single AP Object IRI
@@ -83,27 +83,29 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 			if string(root) != url.Host {
 				return errors.Newf("trying to load from non-local root bucket %s", url.Host)
 			}
-			path = url.Path
+			remainderPath = url.Path
 		}
+		var err error
+		var b *bolt.Bucket
 		// Assume bucket exists and has keys
-		b, path, err := descendInBucket(rb, path, false)
+		b, remainderPath, err = descendInBucket(rb, remainderPath, false)
 		if err != nil {
 			return err
 		}
 		if b == nil {
-			return errors.Errorf("Invalid bucket %s/%s", root, path)
+			return errors.Errorf("Invalid bucket %s/%s", root, remainderPath)
 		}
 
 		c := b.Cursor()
 		if c == nil {
-			return errors.Errorf("Invalid bucket cursor %s/%s", root, path)
+			return errors.Errorf("Invalid bucket cursor %s/%s", root, remainderPath)
 		}
 		isObjectKey := func(k []byte) bool {
 			return string(k) == objectKey || string(k) == metaDataKey
 		}
-		if path != "" {
+		if remainderPath != "" {
 			// when we get a non empty path from descendIntoBucket we try to load it as a valid object key
-			prefix := []byte(path)
+			prefix := []byte(remainderPath)
 			for key, raw := c.Seek(prefix); key != nil && bytes.HasPrefix(key, prefix); key, raw = c.Next() {
 				it, err := filterIt(key, raw, f)
 				if err != nil {
@@ -124,17 +126,23 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 					}
 					raw = b.Get([]byte(objectKey))
 				}
-				it, err := filterIt(key, raw, f)
-				if err != nil {
-					// log error and continue
-					continue
-				}
-				if it != nil {
-					if itCol, ok := it.(as.ItemCollection); ok {
-						col = itCol
-					} else {
-						col = append(col, it)
+				if handlers.ValidCollection(path.Base(f.GetLink().String())) {
+					colIRIs := make([]as.IRI, 0)
+					err = jsonld.Unmarshal(raw, &colIRIs)
+					for _, iri := range colIRIs {
+						it, cnt, err := loadFromBucket(db, root, ap.Filters{IRI: iri})
+						if err != nil || cnt == 0 {
+							continue
+						}
+						col = append(col, it...)
 					}
+				} else {
+					it, err := filterIt(key, raw, f)
+					if err != nil {
+						// log error and continue
+						continue
+					}
+					col = append(col, it)
 				}
 			}
 		}
@@ -373,19 +381,7 @@ func filterIt(key, raw []byte, f s.Filterable) (as.Item, error) {
 		return nil, errors.Errorf("empty raw item")
 	}
 
-	var it as.Item
-	var err error
-	if handlers.ValidCollection(path.Base(f.GetLink().String())) {
-		col := make([]as.IRI,0)
-		err = jsonld.Unmarshal(raw, &col)
-		iris := make(as.ItemCollection, len(col))
-		for i, iri := range col {
-			iris[i] = iri
-		}
-		it = iris
-	} else {
-		it, err = as.UnmarshalJSON(raw)
-	}
+	it, err := as.UnmarshalJSON(raw)
 	if err != nil {
 		// TODO(marius): log this instead of stopping the iteration and returning an error
 		return nil, errors.Annotatef(err, "unable to unmarshal raw item")
