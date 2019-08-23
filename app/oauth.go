@@ -249,6 +249,16 @@ func (h *oauthHandler) renderTemplate(r *http.Request, w http.ResponseWriter, na
 	return err
 }
 
+// ShowLogin serves GET /login requests
+func (h *oauthHandler) ShowLogin(w http.ResponseWriter, r *http.Request) {
+	a := activitypub.Self("http://fedbox.git")
+
+	m := login{title: "Login"}
+	m.account = a
+
+	h.renderTemplate(r, w, "login", m)
+}
+
 // ShowLogin handles POST /login requests
 func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	a := activitypub.Self("http://fedbox.git")
