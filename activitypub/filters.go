@@ -163,33 +163,33 @@ func FromRequest(r *http.Request) (*Filters, error) {
 	return &f, nil
 }
 
-func (f *Filters) Audience() as.IRIs {
+func (f Filters) Audience() as.IRIs {
 	col := make(as.IRIs, len(f.Aud))
 	for k, iri := range f.Aud {
 		col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
 	}
 	return col
 }
-func (f *Filters) Names() []string {
+func (f Filters) Names() []string {
 	return f.Name
 }
-func (f *Filters) AttributedTo() as.IRIs {
+func (f Filters) AttributedTo() as.IRIs {
 	col := make(as.IRIs, len(f.AttrTo))
 	for k, iri := range f.AttrTo {
 		col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
 	}
 	return col
 }
-func (f *Filters) InReplyTo() as.IRIs {
+func (f Filters) InReplyTo() as.IRIs {
 	col := make(as.IRIs, len(f.InReplTo))
 	for k, iri := range f.InReplTo {
 		col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, iri))
 	}
 	return col
 }
-func (f *Filters) MediaTypes() []as.MimeType {
+func (f Filters) MediaTypes() []as.MimeType {
 	return f.MedTypes
 }
-func (f *Filters) URLs() as.IRIs {
+func (f Filters) URLs() as.IRIs {
 	return as.IRIs{f.IRI}
 }

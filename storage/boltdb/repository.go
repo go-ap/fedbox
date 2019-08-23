@@ -134,7 +134,9 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 						if err != nil || cnt == 0 {
 							continue
 						}
-						col = append(col, it...)
+						if it != nil {
+							col = append(col, it)
+						}
 					}
 				} else {
 					it, err := filterIt(key, raw, f)
@@ -142,7 +144,9 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 						// log error and continue
 						continue
 					}
-					col = append(col, it)
+					if it != nil {
+						col = append(col, it)
+					}
 				}
 			}
 		}
@@ -241,9 +245,7 @@ func filterPerson(it as.Item, f s.Filterable) (bool, as.Item) {
 				}
 			}
 		}
-		if !exists {
-			return false, nil
-		}
+		return exists, nil
 	}
 	authors := ff.AttributedTo()
 	if len(authors) > 0 && !authors.Contains(ob.AttributedTo.GetLink()) {
