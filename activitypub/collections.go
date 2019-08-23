@@ -5,6 +5,7 @@ import (
 	"github.com/buger/jsonparser"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
+	"strings"
 )
 
 // OrderedCollection should be identical to:
@@ -209,4 +210,30 @@ func (c *Collection) UnmarshalJSON(data []byte) error {
 	c.Items = items
 	c.TotalItems = uint(len(items))
 	return nil
+}
+
+// Contains verifies if Collection array contains the received one
+func(c Collection) Contains(r as.IRI) bool {
+	if len(c.Items) == 0 {
+		return false
+	}
+	for _, iri := range c.Items {
+		if strings.ToLower(r.String()) == strings.ToLower(iri.GetLink().String()) {
+			return true
+		}
+	}
+	return false
+}
+
+// Contains verifies if OrderedCollection array contains the received one
+func(o OrderedCollection) Contains(r as.IRI) bool {
+	if len(o.OrderedItems) == 0 {
+		return false
+	}
+	for _, iri := range o.OrderedItems {
+		if strings.ToLower(r.String()) == strings.ToLower(iri.GetLink().String()) {
+			return true
+		}
+	}
+	return false
 }
