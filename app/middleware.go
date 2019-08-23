@@ -38,7 +38,7 @@ func Validator(v validation.ActivityValidator) func(next http.Handler) http.Hand
 	}
 }
 
-// ActorFromAuthHeader tries to load a local Actor from the OAuth2 or HTTP Signatures Authorization headers
+// ActorFromAuthHeader tries to load a local actor from the OAuth2 or HTTP Signatures Authorization headers
 func ActorFromAuthHeader(os *osin.Server, st storage.ActorLoader, l logrus.FieldLogger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		// TODO(marius): move this to the auth package and also add the possibility of getting the logger as a parameter
