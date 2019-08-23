@@ -43,8 +43,7 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	if ar := s.HandleAuthorizeRequest(resp, r); ar != nil {
 		if h.account.IsLogged() {
 			ar.Authorized = true
-			b, _ := json.Marshal(h.account)
-			ar.UserData = b
+			ar.UserData = h.account.actor.GetLink()
 		} else {
 			m := login{title: "Login"}
 			m.account = auth.AnonymousActor
@@ -65,14 +64,26 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 	defer resp.Close()
 
 	if ar := s.HandleAccessRequest(resp, r); ar != nil {
-		if who, ok := ar.UserData.(json.RawMessage); ok {
-			if err := json.Unmarshal(who, &h.account); err != nil {
-				err := errors.Annotatef(err, "Unable to unmarshal user-data to local actor")
+		if iri, ok := ar.UserData.(string); ok {
+			acc, cnt, err := h.loader.LoadActors(activitypub.Filters{IRI: as.IRI(iri)})
+			if err != nil {
 				h.logger.Errorf("%s", err)
 				errors.HandleError(err).ServeHTTP(w, r)
-				return
 			}
-			ar.Authorized = h.account.IsLogged()
+			if cnt != 1 {
+				h.logger.Errorf("%s", err)
+				errors.HandleError(err).ServeHTTP(w, r)
+			}
+			if acc.First() != nil {
+				auth.OnPerson(acc.First(), func(p *auth.Person) error {
+					h.account = account{
+						username: p.PreferredUsername.String(),
+						actor:    p,
+					}
+					return nil
+				})
+				ar.Authorized = h.account.IsLogged()
+			}
 		}
 		s.FinishAccessRequest(resp, r, ar)
 	}
@@ -277,6 +288,7 @@ func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	filter := activitypub.Filters{
 		Name: []string{handle},
+		IRI:  as.IRI(fmt.Sprintf("%s/actors", a.GetLink())),
 		Type: []as.ActivityVocabularyType{
 			as.PersonType,
 		},
