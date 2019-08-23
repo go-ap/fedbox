@@ -128,7 +128,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 					raw = b.Get([]byte(objectKey))
 				}
 				if handlers.ValidCollection(path.Base(f.GetLink().String())) {
-					colIRIs := make([]as.IRI, 0)
+					colIRIs := make(as.IRIs, 0)
 					err = jsonld.Unmarshal(raw, &colIRIs)
 					for _, iri := range colIRIs {
 						it, cnt, err := loadFromBucket(db, root, ap.Filters{IRI: iri})
@@ -136,7 +136,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 							continue
 						}
 						if it != nil {
-							col = append(col, it)
+							col = append(col, it.First())
 						}
 					}
 				} else {
