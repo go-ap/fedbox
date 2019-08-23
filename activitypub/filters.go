@@ -64,7 +64,7 @@ type Filters struct {
 	Collection    h.CollectionType           `qstring:"-"`
 	URL           as.IRIs                    `qstring:"url,omitempty"`
 	MedTypes      []as.MimeType              `qstring:"mediaType,omitempty"`
-	Aud           as.IRIs                    `qstring:"audience,omitempty"`
+	Aud           as.IRIs                    `qstring:"-"`
 	Key           []Hash                     `qstring:"id,omitempty"`
 	ItemKey       []Hash                     `qstring:"key,omitempty"`
 	Type          as.ActivityVocabularyTypes `qstring:"type,omitempty"`
@@ -163,16 +163,29 @@ func FromRequest(r *http.Request) (*Filters, error) {
 	return &f, nil
 }
 
+// Audience returns a filter for audience members.
+// This is important for filtering out objects that don't have a public audience.
 func (f Filters) Audience() as.IRIs {
-	col := make(as.IRIs, len(f.Aud))
-	for k, iri := range f.Aud {
-		col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
+	col := make(as.IRIs, 0)
+	for _, iri := range f.Aud {
+		rr := as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
+		if !col.Contains(rr) {
+			col = append(col, rr)
+		}
+	}
+	if f.Authenticated != nil && !col.Contains(f.Authenticated.GetLink()) {
+		col = append(col, f.Authenticated.GetLink())
+	}
+	if !col.Contains(as.PublicNS) {
+		col = append(col, as.PublicNS)
 	}
 	return col
 }
+
 func (f Filters) Names() []string {
 	return f.Name
 }
+
 func (f Filters) AttributedTo() as.IRIs {
 	col := make(as.IRIs, len(f.AttrTo))
 	for k, iri := range f.AttrTo {
