@@ -122,8 +122,7 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 	where := ""
 	what := ""
 	if len(collection) > 0 {
-		what = fmt.Sprintf("%s ", collection)
-		where = fmt.Sprintf(" in %s", what)
+		where = fmt.Sprintf(" in %s", collection)
 	}
 	if err != nil {
 		return nil, errors.NotFoundf("%snot found", what)
@@ -134,6 +133,7 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 	if len(f.IRI) == 0 {
 		f.IRI = as.IRI(iri)
 	}
+	what = fmt.Sprintf("%s ", path.Base(iri))
 	f.MaxItems = 1
 
 	if activitypub.ValidActivityCollection(string(f.Collection)) {
