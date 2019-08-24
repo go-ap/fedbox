@@ -17,6 +17,7 @@ import (
 	"path"
 	"runtime/debug"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -217,6 +218,14 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 	}
 }
 
+func _unescapeUnicodeCharactersInJSON(_jsonRaw string) (string, error) {
+	str, err := strconv.Unquote(strings.Replace(strconv.Quote(string(_jsonRaw)), `\\u`, `\u`, -1))
+	if err != nil {
+		return string(_jsonRaw), err
+	}
+	return str, nil
+}
+
 func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 	return func(ob map[string]interface{}, tVal *objectVal) {
 		t.Run(tVal.id, func(t *testing.T) {
@@ -240,6 +249,12 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			}
 			if tVal.preferredUsername != "" {
 				assertMapKey(ob, "preferredUsername", tVal.preferredUsername)
+			}
+			if tVal.content != "" {
+				assertMapKey(ob, "content", tVal.content)
+			}
+			if tVal.summary != "" {
+				assertMapKey(ob, "summary", tVal.summary)
 			}
 			if tVal.score != 0 {
 				assertMapKey(ob, "score", tVal.score)
@@ -382,6 +397,8 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 									dAct := assertGetRequest(itIRI)
 									assertObjectProperties(dAct, testIt)
 									continue foundItem
+								} else {
+									continue
 								}
 							case string:
 								if testIt.id != "" {
@@ -501,7 +518,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			}
 			err = json.Unmarshal(b, &res)
 			assertTrue(err == nil, "Error: unmarshal failed: %s", err)
-			if test.res.val != nil && test.res.val.id != "" && test.res.val.id != req.URL.String() {
+			if test.res.val != nil || (test.req.met != http.MethodGet && test.res.val.id != "" && test.res.val.id != req.URL.String()) {
 				saved := assertGetRequest(test.res.val.id)
 				assertObjectProperties(saved, test.res.val)
 			}

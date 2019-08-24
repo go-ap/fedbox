@@ -53,6 +53,9 @@ func loadMockJson(file string, model interface{}) func() string {
 func addMockObjects(r storage.Repository, obj activitystreams.ItemCollection, errFn app.LogFn) error {
 	var err error
 	for _, it := range obj {
+		if it.GetLink() == "" {
+			continue
+		}
 		if activitystreams.ActivityTypes.Contains(it.GetType()) {
 			it, err = r.SaveActivity(it)
 		} else if activitystreams.ActorTypes.Contains(it.GetType()) {
@@ -88,10 +91,17 @@ func resetDB(t *testing.T, testData []string) string {
 	o := cmd.New(u, s, b, config.Options{})
 
 	mocks := make(activitystreams.ItemCollection, 0)
-	//for _, path := range testData {
-	//	loadMockJson(path)
-	//}
-	addMockObjects(o.Storage, mocks, t.Errorf)
+	for _, path := range testData {
+		json := loadMockJson(path, nil)()
+		if json == "" {
+			continue
+		}
+		it, err := activitystreams.UnmarshalJSON([]byte(json))
+		if err == nil {
+			mocks = append(mocks, it)
+		}
+	}
+	addMockObjects(o.Storage, mocks, t.Logf)
 
 	pw := []byte("hahah")
 	actor, err := o.AddActor(testActorHandle, activitystreams.PersonType, pw)

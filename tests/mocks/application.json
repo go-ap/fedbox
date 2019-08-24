@@ -1,0 +1,15 @@
+{
+  "id": "http://127.0.0.1:9998/actors/23767f95-8ea0-40ba-a6ef-b67284e1cdb1",
+  "type": "Application",
+  "attributedTo": "http://127.0.0.1:9998",
+  "audience": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "generator": "http://127.0.0.1:9998",
+  "published": "2019-08-24T19:15:38.684863306+02:00",
+  "summary": "Generated actor",
+  "updated": "2019-08-24T19:15:38.684863306+02:00",
+  "url": "http://127.0.0.1:9998/callback",
+  "inbox": "http://127.0.0.1:9998/actors/23767f95-8ea0-40ba-a6ef-b67284e1cdb1/inbox",
+  "preferredUsername": "oauth-client-app-23767f95-8ea0-40ba-a6ef-b67284e1cdb1"
+}

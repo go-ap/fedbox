@@ -1,0 +1,24 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
+  "type": "Person",
+  "attributedTo": "http://127.0.0.1:9998",
+  "audience": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "content": "Generated actor",
+  "generator": "http://127.0.0.1:9998",
+  "published": "2019-08-11T13:14:47.726030449+02:00",
+  "summary": "Generated actor",
+  "updated": "2019-08-11T13:14:47.726030449+02:00",
+  "url": "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
+  "inbox": "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/inbox",
+  "outbox": "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/outbox",
+  "liked": "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/liked",
+  "preferredUsername": "habarnam",
+  "endpoints": {
+    "oauthAuthorizationEndpoint": "http://127.0.0.1:9998/oauth/authorize",
+    "oauthTokenEndpoint": "http://127.0.0.1:9998/oauth/token",
+    "sharedInbox": "http://127.0.0.1:9998/inbox"
+  }
+}

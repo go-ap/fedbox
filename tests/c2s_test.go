@@ -10,6 +10,10 @@ import (
 var C2STests = testPairs{
 	"ActorsCollection": {
 		{
+			mocks: []string{
+				"mocks/service.json",
+				"mocks/actor.json",
+			},
 			req: testReq{
 				met: http.MethodGet,
 				url: fmt.Sprintf("%s/actors", apiURL),
@@ -19,7 +23,26 @@ var C2STests = testPairs{
 				val: &objectVal{
 					id:        fmt.Sprintf("%s/actors", apiURL),
 					typ:       string(as.OrderedCollectionType),
-					itemCount: 0,
+					itemCount: 3,
+					items: map[string]*objectVal{
+						"e869bdca-dd5e-4de7-9c5d-37845eccc6a1": {
+							id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
+							typ: string(as.PersonType),
+							summary: "Generated actor",
+							content: "Generated actor",
+							url: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
+							inbox: &objectVal{
+								id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/inbox",
+							},
+							outbox: &objectVal{
+								id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/outbox",
+							},
+							liked: &objectVal{
+								id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/liked",
+							},
+							preferredUsername: "habarnam",
+						},
+					},
 				},
 			},
 		},
@@ -181,7 +204,7 @@ var C2STests = testPairs{
 					},
 					obj: &objectVal{
 						typ:     string(as.ArticleType),
-						content: "<p>Hello world</p>",
+						content: "\\u003cp\\u003eHello world\\u003c/p\\u003e", // FIXME(marius): This sucks balls,
 					},
 				},
 			},
