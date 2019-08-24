@@ -64,26 +64,34 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 	defer resp.Close()
 
 	if ar := s.HandleAccessRequest(resp, r); ar != nil {
-		if iri, ok := ar.UserData.(string); ok {
-			acc, cnt, err := h.loader.LoadActors(activitypub.Filters{IRI: as.IRI(iri)})
-			if err != nil {
-				h.logger.Errorf("%s", err)
-				errors.HandleError(err).ServeHTTP(w, r)
+		actorFilters := activitypub.Filters{}
+		switch ar.Type {
+		case osin.PASSWORD:
+			actorFilters.IRI = "http://fedbox.git/actors"
+			actorFilters.Name =  []string{ar.Username}
+		case osin.AUTHORIZATION_CODE:
+			if iri, ok := ar.UserData.(string); ok {
+				actorFilters.IRI = as.IRI(iri)
 			}
-			if cnt != 1 {
-				h.logger.Errorf("%s", err)
-				errors.HandleError(err).ServeHTTP(w, r)
-			}
-			if acc.First() != nil {
-				auth.OnPerson(acc.First(), func(p *auth.Person) error {
-					h.account = account{
-						username: p.PreferredUsername.String(),
-						actor:    p,
-					}
-					return nil
-				})
-				ar.Authorized = h.account.IsLogged()
-			}
+		}
+		acc, cnt, err := h.loader.LoadActors(actorFilters)
+		if err != nil {
+			h.logger.Errorf("%s", err)
+			errors.HandleError(err).ServeHTTP(w, r)
+		}
+		if cnt != 1 {
+			h.logger.Errorf("%s", err)
+			errors.HandleError(err).ServeHTTP(w, r)
+		}
+		if acc.First() != nil {
+			auth.OnPerson(acc.First(), func(p *auth.Person) error {
+				h.account = account{
+					username: p.PreferredUsername.String(),
+					actor:    p,
+				}
+				return nil
+			})
+			ar.Authorized = h.account.IsLogged()
 		}
 		s.FinishAccessRequest(resp, r, ar)
 	}
