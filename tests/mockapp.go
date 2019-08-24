@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/go-ap/activitypub/client"
 	"github.com/go-ap/activitystreams"
@@ -16,12 +17,38 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
+	"io"
 	"net/url"
 	"os"
 	"path"
 	"testing"
+	"text/template"
 	"time"
 )
+
+func loadMockJson(file string, model interface{}) func() string {
+	f, err := os.Open(file)
+	if err != nil {
+		return func() string { return "" }
+	}
+
+	st, err := f.Stat()
+	if err != nil {
+		return func() string { return "" }
+	}
+
+	data := make([]byte, st.Size())
+	io.ReadFull(f, data)
+	data = bytes.Trim(data, "\x00")
+
+	t := template.Must(template.New(fmt.Sprintf("mock_%s", path.Base(file))).Parse(string(data)))
+
+	return func() string {
+		bytes := bytes.Buffer{}
+		t.Execute(&bytes, model)
+		return bytes.String()
+	}
+}
 
 func addMockObjects(r storage.Repository, obj activitystreams.ItemCollection, errFn app.LogFn) error {
 	var err error
@@ -40,7 +67,7 @@ func addMockObjects(r storage.Repository, obj activitystreams.ItemCollection, er
 	return nil
 }
 
-func resetDB(t *testing.T, testData bool) string {
+func resetDB(t *testing.T, testData []string) string {
 	if t != nil {
 		t.Helper()
 		t.Logf("Resetting storage backend")
@@ -59,19 +86,24 @@ func resetDB(t *testing.T, testData bool) string {
 	b, s := getBoldDBs(curPath, u, "test", logrus.New())
 
 	o := cmd.New(u, s, b, config.Options{})
-	addMockObjects(o.Storage, nil, t.Errorf)
+
+	mocks := make(activitystreams.ItemCollection, 0)
+	//for _, path := range testData {
+	//	loadMockJson(path)
+	//}
+	addMockObjects(o.Storage, mocks, t.Errorf)
 
 	pw := []byte("hahah")
 	actor, err := o.AddActor(testActorHandle, activitystreams.PersonType, pw)
 	if err == nil {
-		defaultTestAccount.id = actor.GetLink().String()
-		defaultTestAccount.Hash = path.Base(defaultTestAccount.id)
+		defaultTestAccount.Id = actor.GetLink().String()
+		defaultTestAccount.Hash = path.Base(defaultTestAccount.Id)
 	}
 
 	id, _ := o.AddClient(pw, []string{authCallbackURL}, nil)
-	tok, err := o.GenAuthToken(id, defaultTestAccount.id, nil)
+	tok, err := o.GenAuthToken(id, defaultTestAccount.Id, nil)
 	if err == nil {
-		defaultTestAccount.authToken = tok
+		defaultTestAccount.AuthToken = tok
 	}
 
 	return dbPath

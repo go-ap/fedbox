@@ -37,6 +37,6 @@ func osinServer(store osin.Storage, l logrus.FieldLogger) (*osin.Server, error) 
 }
 
 func addOAuth2Auth(r *http.Request, a *testAccount) error {
-	r.Header.Add("Authorization", fmt.Sprintf("Bearer %s", a.authToken))
+	r.Header.Add("Authorization", fmt.Sprintf("Bearer %s", a.AuthToken))
 	return nil
 }

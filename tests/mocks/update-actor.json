@@ -1,11 +1,11 @@
 {
   "type": "Update",
-  "actor": "%s",
+  "actor": "{{ .Id }}",
   "object": {
-    "id": "%s",
+    "id": "{{ .Id }}",
     "type": "Person",
     "to": [
-      "%s/inbox",
+      "{{ .Id }}/inbox",
       "https://www.w3.org/ns/activitystreams#Public"
     ],
     "name": "Jane Doe",

@@ -1,12 +1,9 @@
 package tests
 
 import (
-	"bytes"
 	"fmt"
 	as "github.com/go-ap/activitystreams"
-	"io"
 	"net/http"
-	"os"
 	"testing"
 )
 
@@ -63,12 +60,12 @@ var C2STests = testPairs{
 		{
 			req: testReq{
 				met: http.MethodGet,
-				url: selfAccount.id,
+				url: selfAccount.Id,
 			},
 			res: testRes{
 				code: http.StatusOK,
 				val: &objectVal{
-					id:   selfAccount.id,
+					id:   selfAccount.Id,
 					typ:  string(as.ServiceType),
 					name: selfAccount.Handle,
 					audience: []string{
@@ -89,8 +86,8 @@ var C2STests = testPairs{
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
-				urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id)) },
-				bodyFn:  loadMockJson("mocks/create-actor.json", &defaultTestAccount.id),
+				urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
+				bodyFn:  loadMockJson("mocks/create-actor.json", &defaultTestAccount),
 			},
 			res: testRes{
 				code: http.StatusCreated,
@@ -114,28 +111,28 @@ var C2STests = testPairs{
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
-				urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id)) },
-				bodyFn:  loadMockJson("mocks/update-actor.json", &defaultTestAccount.id, &defaultTestAccount.id, &defaultTestAccount.id),
+				urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
+				bodyFn:  loadMockJson("mocks/update-actor.json", &defaultTestAccount),
 			},
 			res: testRes{
 				code: http.StatusOK,
 				val: &objectVal{
 					typ: string(as.UpdateType),
 					act: &objectVal{
-						id:                *(&defaultTestAccount.id),
+						id:                *(&defaultTestAccount.Id),
 						typ:               string(as.PersonType),
 						preferredUsername: "johndoe",
 					},
 					obj: &objectVal{
-						id:                *(&defaultTestAccount.id),
+						id:                *(&defaultTestAccount.Id),
 						name:              "Jane Doe",
 						preferredUsername: "jennyjane",
 						typ:               string(as.PersonType),
 						inbox: &objectVal{
-							id: fmt.Sprintf("%s/inbox", *(&defaultTestAccount.id)),
+							id: fmt.Sprintf("%s/inbox", *(&defaultTestAccount.Id)),
 						},
 						outbox: &objectVal{
-							id: fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id)),
+							id: fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)),
 						},
 					},
 				},
@@ -147,19 +144,19 @@ var C2STests = testPairs{
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
-				urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id)) },
-				bodyFn:  loadMockJson("mocks/delete-actor.json", &defaultTestAccount.id, &selfAccount.id),
+				urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
+				bodyFn:  loadMockJson("mocks/delete-actor.json", &defaultTestAccount),
 			},
 			res: testRes{
 				code: http.StatusGone,
 				val: &objectVal{
 					typ: string(as.DeleteType),
 					act: &objectVal{
-						id:  *(&defaultTestAccount.id),
+						id:  *(&defaultTestAccount.Id),
 						typ: string(as.TombstoneType),
 					},
 					obj: &objectVal{
-						id:  *(&defaultTestAccount.id),
+						id:  *(&defaultTestAccount.Id),
 						typ: string(as.TombstoneType),
 					},
 				},
@@ -171,8 +168,8 @@ var C2STests = testPairs{
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
-				urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.id)) },
-				bodyFn:  loadMockJson("mocks/create-article.json", &defaultTestAccount.id, &selfAccount.id),
+				urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
+				bodyFn:  loadMockJson("mocks/create-article.json", &defaultTestAccount),
 			},
 			res: testRes{
 				code: http.StatusCreated,
@@ -190,30 +187,6 @@ var C2STests = testPairs{
 			},
 		},
 	},
-}
-
-func loadMockJson(path string, params ...*string) func() string {
-	f, err := os.Open(path)
-	if err != nil {
-		return func() string { return "" }
-	}
-
-	st, err := f.Stat()
-	if err != nil {
-		return func() string { return "" }
-	}
-
-	data := make([]byte, st.Size())
-	io.ReadFull(f, data)
-	data = bytes.Trim(data, "\x00")
-
-	return func() string {
-		par := make([]interface{}, len(params))
-		for k, v := range params {
-			par[k] = *v
-		}
-		return fmt.Sprintf(string(data), par...)
-	}
 }
 
 func Test_C2SRequests(t *testing.T) {

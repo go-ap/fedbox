@@ -1,11 +1,11 @@
 {
   "type": "Create",
-  "actor": "%s",
+  "actor": "{{ .Id }}",
   "to": ["https://www.w3.org/ns/activitystreams#Public"],
   "object": {
     "type": "Article",
     "published": "2018-08-31T17:17:11Z",
-    "attributedTo": "%s",
+    "attributedTo": "{{ .Id }}",
     "content": "<p>Hello world</p>",
     "to": ["https://www.w3.org/ns/activitystreams#Public"]
   }

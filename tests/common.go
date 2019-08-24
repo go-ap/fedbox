@@ -29,12 +29,12 @@ var HeaderAccept = `application/ld+json; profile="https://www.w3.org/ns/activity
 type testPairs map[string][]testPair
 
 type testAccount struct {
-	id         string
-	Handle     string `json:handle`
+	Id         string `json:"id"`
+	Handle     string `json:"handle"`
 	Hash       string `json:"hash"`
-	publicKey  crypto.PublicKey
-	privateKey crypto.PrivateKey
-	authToken  string
+	PublicKey  crypto.PublicKey
+	PrivateKey crypto.PrivateKey
+	AuthToken  string
 }
 
 type testReq struct {
@@ -55,6 +55,7 @@ type testRes struct {
 }
 
 type testPair struct {
+	mocks []string
 	req testReq
 	res testRes
 }
@@ -106,11 +107,11 @@ var pub, _ = x509.MarshalPKIXPublicKey(&key.PublicKey)
 var meta interface{} = nil
 
 var defaultTestAccount = testAccount{
-	id:         fmt.Sprintf("http://%s/actors/%s", host, testActorHash),
+	Id:         fmt.Sprintf("http://%s/actors/%s", host, testActorHash),
 	Handle:     testActorHandle,
 	Hash:       testActorHash,
-	publicKey:  key.Public(),
-	privateKey: key,
+	PublicKey:  key.Public(),
+	PrivateKey: key,
 }
 
 type assertFn func(v bool, msg string, args ...interface{})
@@ -166,14 +167,14 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 			assertObjectProperties := errOnObjectProperties(t)
 			assertArrayValues := errOnArray(t)
 			val, ok := ob[key]
-			assertTrue(ok, "Could not load %s property of item: %#v", key, ob)
+			assertTrue(ok, "Could not load %q property of item: %#v", key, ob)
 
 			switch tt := tVal.(type) {
 			case int64, int32, int16, int8:
 				v, okA := val.(float64)
 
 				assertTrue(okA, "Unable to convert %#v to %T type, Received %#v:(%T)", val, v, val, val)
-				assertTrue(int64(v) == tt, "Invalid %s, %d expected %d", key, int64(v), tt)
+				assertTrue(int64(v) == tt, "Invalid %q, %d expected %d", key, int64(v), tt)
 			case string, []byte:
 				// the case when the mock test value is a string, but corresponds to an object in the json
 				// so we need to verify the json's object id against our mock value
@@ -181,7 +182,7 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 				v2, okB := val.(map[string]interface{})
 				assertTrue(okA || okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
 				if okA {
-					assertTrue(v1 == tt, "Invalid %s, %s expected %s", key, v1, tt)
+					assertTrue(v1 == tt, "Invalid %q, %q expected %q", key, v1, tt)
 				}
 				if okB {
 					assertMapKey(v2, "id", tt)
@@ -198,7 +199,7 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 							// the id was empty - probably an object loaded dynamically
 							tt.id = v1
 						}
-						assertTrue(v1 == tt.id, "Invalid %s, %s expected in %#v", "id", v1, tt)
+						assertTrue(v1 == tt.id, "Invalid %q, %q expected in %#v", "id", v1, tt)
 					}
 					if okB {
 						assertObjectProperties(v2, tt)
@@ -210,7 +211,7 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 				assertTrue(okA || okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
 				assertArrayValues(v1, v2)
 			default:
-				assertTrue(false, "UNKNOWN check for %s, %#v expected %#v", key, val, t)
+				assertTrue(false, "UNKNOWN check for %q, %#v expected %#v", key, val, t)
 			}
 		})
 	}
@@ -356,13 +357,13 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 				}(tVal.typ)
 				if len(tVal.items) > 0 {
 					val, ok := ob[itemsKey]
-					assertTrue(ok, "Could not load %s property of collection: %#v\n\n%#v\n\n", itemsKey, ob, tVal.items)
+					assertTrue(ok, "Could not load %q property of collection: %#v\n\n%#v\n\n", itemsKey, ob, tVal.items)
 					items, ok := val.([]interface{})
-					assertTrue(ok, "Invalid property %s %#v, expected %T", itemsKey, val, items)
+					assertTrue(ok, "Invalid property %q %#v, expected %T", itemsKey, val, items)
 					ti, ok := ob["totalItems"].(float64)
-					assertTrue(ok, "Invalid property %s %#v, expected %T", "totalItems", val, items)
+					assertTrue(ok, "Invalid property %q %#v, expected %T", "totalItems", val, items)
 					assertTrue(len(items) == int(ti),
-						"Invalid item count for collection %s %d, expected %d", itemsKey, len(items), tVal.itemCount,
+						"Invalid item count for collection %q %d, expected %d", itemsKey, len(items), tVal.itemCount,
 					)
 				foundItem:
 					for k, testIt := range tVal.items {
@@ -373,7 +374,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 							case map[string]interface{}:
 								assertTrue(ok, "Unable to convert %#v to %T type, Received %#v:(%T)", it, act, it, it)
 								itId, ok := act["id"]
-								assertTrue(ok, "Could not load id property of item: %#v", act)
+								assertTrue(ok, "Could not load %q property of item: %#v", "id", act)
 								itIRI, ok := itId.(string)
 								assertTrue(ok, "Unable to convert %#v to %T type, Received %#v:(%T)", itId, itIRI, val, val)
 								if strings.EqualFold(itIRI, iri) {
@@ -398,6 +399,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 		})
 	}
 }
+
 func errOnGetRequest(t *testing.T) requestGetAssertFn {
 	return func(iri string) map[string]interface{} {
 		tVal := testPair{
@@ -453,8 +455,8 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 				var err error
 				if path.Base(req.URL.Path) == "inbox" {
 					err = httpsig.NewSigner(
-						fmt.Sprintf("%s#main-key", test.req.account.id),
-						test.req.account.privateKey,
+						fmt.Sprintf("%s#main-key", test.req.account.Id),
+						test.req.account.PrivateKey,
 						httpsig.RSASHA256,
 						signHdrs,
 					).Sign(req)
@@ -512,7 +514,7 @@ func testSuite(t *testing.T, pairs testPairs) {
 	for typ, tests := range pairs {
 		for _, test := range tests {
 			t.Run(typ, func(t *testing.T) {
-				resetDB(t, true)
+				resetDB(t, test.mocks)
 				errOnRequest(t)(test)
 			})
 		}
