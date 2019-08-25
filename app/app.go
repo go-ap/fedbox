@@ -93,7 +93,7 @@ func getStorage(f FedBOX, l logrus.FieldLogger) (st.Repository, osin.Storage, er
 }
 
 // New instantiates a new FedBOX instance
-func New(l logrus.FieldLogger, ver string, environment env.Type) (*FedBOX, error) {
+func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 	app := FedBOX{ver: ver}
 	var err error
 	if l != nil {
@@ -102,7 +102,7 @@ func New(l logrus.FieldLogger, ver string, environment env.Type) (*FedBOX, error
 		app.warn = l.Warnf
 		app.err = l.Errorf
 	}
-	app.conf, err = config.LoadFromEnv(environment)
+	app.conf, err = config.LoadFromEnv(env.Type(environ))
 	if err == nil {
 		Config = app.conf
 		ap.Secure = app.conf.Secure

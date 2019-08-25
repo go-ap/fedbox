@@ -37,9 +37,9 @@ func main() {
 	srv.Usage = "fedbox instance server"
 	srv.Version = version
 	srv.Before = func(c *cli.Context) error {
-		environ := env.Type(c.String("env"))
+		environ := c.String("env")
 		if environ == "" {
-			environ = env.DEV
+			environ = string(env.DEV)
 		}
 
 		var err error
