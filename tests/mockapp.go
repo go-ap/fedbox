@@ -158,7 +158,7 @@ func runAPP(e env.Type) int {
 	u, _ := url.Parse(apiURL)
 	b, s := getBoldDBs(curPath, u, "test", l)
 
-	a, _ := app.New(l, "HEAD", e)
+	a, _ := app.New(l, "HEAD", string(e))
 	r := chi.NewRouter()
 
 	_oauthServer, _ = osinServer(s, l)
