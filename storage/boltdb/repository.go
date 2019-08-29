@@ -222,6 +222,10 @@ func filterPerson(it as.Item, f s.Filterable) (bool, as.Item) {
 
 	keep := true
 	err := auth.OnPerson(it, func(ob *auth.Person) error {
+		if !filterItem(ff.URLs(), ob) {
+			keep = false
+			return nil
+		}
 		names := ff.Names()
 		if len(names) > 0 && !filterNaturalLanguageValues(names, ob.Name, ob.PreferredUsername) {
 			keep = false
@@ -302,10 +306,19 @@ func filterItemCollections(filters as.IRIs, colArr ...as.ItemCollection) bool {
 
 func filterItem(filters as.IRIs, it as.Item) bool {
 	keep := true
-	if len(filters) > 0 {
+	if len(filters) > 0 && it != nil {
 		keep = filters.Contains(it.GetLink())
 	}
 	return keep
+}
+
+func (r repo) buildIRIs(c handlers.CollectionType, hashes ...ap.Hash) as.IRIs {
+	iris := make(as.IRIs, 0)
+	for _, hash := range hashes {
+		i := as.IRI(fmt.Sprintf("%s/%s/%s", r.baseURL, c, hash))
+		iris = append(iris, i)
+	}
+	return iris
 }
 
 func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
@@ -315,6 +328,10 @@ func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
 	}
 	keep := true
 	err := activitypub.OnObject(it, func(ob *as.Object) error {
+		if !filterItem(ff.URLs(), ob) {
+			keep = false
+			return nil
+		}
 		if !filterNaturalLanguageValues(ff.Names(), ob.Name) {
 			keep = false
 			return nil

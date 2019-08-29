@@ -2,13 +2,14 @@ package app
 
 import (
 	"fmt"
+	"net/http"
+	"regexp"
+
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
-	"net/http"
-	"regexp"
 )
 
 // LoadCollectionFilters uses specific logic for adding elements to the filters when loading
@@ -84,6 +85,13 @@ func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {
 // single items from the database.
 func LoadItemFilters(r *http.Request, f *ap.Filters) error {
 	f.IRI = as.IRI(reqURL(r))
+
+	if len(f.Key) != 0 {
+		for _, k := range f.Key {
+			i := as.IRI(fmt.Sprintf("%s%s", f.IRI, k))
+			f.URL = append(f.URL, i)
+		}
+	}
 
 	if auth, ok := auth.ActorContext(r.Context()); ok {
 		f.Authenticated = &auth

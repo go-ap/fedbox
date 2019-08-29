@@ -65,8 +65,8 @@ type Filters struct {
 	URL           as.IRIs                    `qstring:"url,omitempty"`
 	MedTypes      []as.MimeType              `qstring:"mediaType,omitempty"`
 	Aud           as.IRIs                    `qstring:"-"`
-	Key           []Hash                     `qstring:"id,omitempty"`
-	ItemKey       []Hash                     `qstring:"key,omitempty"`
+	Key           []Hash                     `qstring:"hash,omitempty"`
+	ItemKey       []Hash                     `qstring:"itemHash,omitempty"`
 	Type          as.ActivityVocabularyTypes `qstring:"type,omitempty"`
 	AttrTo        []Hash                     `qstring:"attributedTo,omitempty"`
 	InReplTo      []Hash                     `qstring:"inReplyTo,omitempty"`
@@ -207,7 +207,7 @@ func (f Filters) MediaTypes() []as.MimeType {
 }
 
 func (f Filters) URLs() as.IRIs {
-	return as.IRIs{f.IRI}
+	return f.URL
 }
 
 func (f Filters) Actors() as.IRIs {
