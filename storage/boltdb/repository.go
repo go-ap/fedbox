@@ -256,6 +256,10 @@ func filterPerson(it as.Item, f s.Filterable) (bool, as.Item) {
 				return nil
 			}
 		}
+		if !filterContext(ff.Context(), ob.Context) {
+			keep = false
+			return nil
+		}
 		return nil
 	})
 	if err != nil {
@@ -304,6 +308,16 @@ func filterItemCollections(filters as.IRIs, colArr ...as.ItemCollection) bool {
 	return keep
 }
 
+func filterContext(filters as.IRIs, it as.Item) bool {
+	if len(filters) == 1 && filters[0] == as.PublicNS {
+		return it == nil
+	}
+	if len(filters) > 0 {
+		return !(it == nil)
+	}
+	return filterItem(filters, it)
+}
+
 func filterItem(filters as.IRIs, it as.Item) bool {
 	keep := true
 	if len(filters) > 0 && it != nil {
@@ -333,6 +347,10 @@ func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
 			return nil
 		}
 		if !filterNaturalLanguageValues(ff.Names(), ob.Name) {
+			keep = false
+			return nil
+		}
+		if !filterContext(ff.Context(), ob.Context) {
 			keep = false
 			return nil
 		}
