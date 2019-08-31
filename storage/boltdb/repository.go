@@ -12,6 +12,7 @@ import (
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
+	"github.com/mariusor/qstring"
 	"github.com/sirupsen/logrus"
 	"net/url"
 	"path"
@@ -512,11 +513,15 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 	if err != nil {
 		r.errFn(nil, "invalid IRI filter element %s when loading collections", iri)
 	}
+
+	qstr, _ := qstring.Marshal(f)
+	url.RawQuery = qstr.Encode()
+
 	if string(r.root) != url.Host {
 		r.errFn(nil, "trying to load from non-local root bucket %s", url.Host)
 	}
 	col := &as.OrderedCollection{}
-	col.ID = as.ObjectID(iri)
+	col.ID = as.ObjectID(url.String())
 	col.Type = as.OrderedCollectionType
 
 	elements, count, err := loadFromBucket(r.d, r.root, f)

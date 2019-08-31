@@ -368,8 +368,8 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 					assertObjectProperties(derefCol, tVal.partOf)
 				}
 			}
-			if tVal.itemCount != 0 {
-				assertMapKey(ob, "totalItems", tVal.itemCount)
+			assertMapKey(ob, "totalItems", tVal.itemCount)
+			if tVal.itemCount > 0 {
 				itemsKey := func(typ string) string {
 					if typ == string(as.CollectionType) {
 						return "items"

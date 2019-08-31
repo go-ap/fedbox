@@ -3,6 +3,7 @@ package tests
 import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
+	"github.com/go-ap/fedbox/activitypub"
 	"net/http"
 	"testing"
 )
@@ -34,7 +35,6 @@ var C2STests = testPairs{
 			},
 		},
 	},
-
 	"ActorsCollection": {
 		{
 			mocks: []string{
@@ -48,7 +48,47 @@ var C2STests = testPairs{
 			res: testRes{
 				code: http.StatusOK,
 				val: &objectVal{
-					id:        fmt.Sprintf("%s/actors", apiURL),
+					id:        fmt.Sprintf("%s/actors?maxItems=%d", apiURL, activitypub.MaxItems),
+					typ:       string(as.OrderedCollectionType),
+					itemCount: 2,
+					items: map[string]*objectVal{
+						"e869bdca-dd5e-4de7-9c5d-37845eccc6a1": {
+							id:      "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
+							typ:     string(as.PersonType),
+							summary: "Generated actor",
+							content: "Generated actor",
+							url:     "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
+							inbox: &objectVal{
+								id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/inbox",
+							},
+							outbox: &objectVal{
+								id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/outbox",
+							},
+							liked: &objectVal{
+								id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/liked",
+							},
+							preferredUsername: "johndoe",
+							name:              "Johnathan Doe",
+						},
+					},
+				},
+			},
+		},
+	},
+	"ActorsCollectionTypePerson": {
+		{
+			mocks: []string{
+				"mocks/service.json",
+				"mocks/actor-johndoe.json",
+			},
+			req: testReq{
+				met: http.MethodGet,
+				url: fmt.Sprintf("%s/actors?type=%s", apiURL, as.PersonType),
+			},
+			res: testRes{
+				code: http.StatusOK,
+				val: &objectVal{
+					id:        fmt.Sprintf("%s/actors?maxItems=%d&type=%s", apiURL, activitypub.MaxItems, as.PersonType),
 					typ:       string(as.OrderedCollectionType),
 					itemCount: 1,
 					items: map[string]*objectVal{
@@ -75,6 +115,45 @@ var C2STests = testPairs{
 			},
 		},
 	},
+	"ActorsCollectionTypeGroup": {
+		{
+			mocks: []string{
+				"mocks/service.json",
+				"mocks/actor-johndoe.json",
+			},
+			req: testReq{
+				met: http.MethodGet,
+				url: fmt.Sprintf("%s/actors?type=%s", apiURL, as.GroupType),
+			},
+			res: testRes{
+				code: http.StatusOK,
+				val: &objectVal{
+					id:        fmt.Sprintf("%s/actors?maxItems=%d&type=%s", apiURL, activitypub.MaxItems, as.GroupType),
+					typ:       string(as.OrderedCollectionType),
+					itemCount: 0,
+				},
+			},
+		},
+	},
+	"ActorsCollectionTypeApplication": {
+		{
+			mocks: []string{
+				"mocks/service.json",
+			},
+			req: testReq{
+				met: http.MethodGet,
+				url: fmt.Sprintf("%s/actors?type=%s", apiURL, as.ApplicationType),
+			},
+			res: testRes{
+				code: http.StatusOK,
+				val: &objectVal{
+					id:        fmt.Sprintf("%s/actors?maxItems=%d&type=%s", apiURL, activitypub.MaxItems, as.ApplicationType),
+					typ:       string(as.OrderedCollectionType),
+					itemCount: 1,
+				},
+			},
+		},
+	},
 	"ActivitiesCollection": {
 		{
 			mocks: []string{
@@ -88,7 +167,7 @@ var C2STests = testPairs{
 			res: testRes{
 				code: http.StatusOK,
 				val: &objectVal{
-					id:        fmt.Sprintf("%s/activities", apiURL),
+					id:        fmt.Sprintf("%s/activities?maxItems=%d", apiURL, activitypub.MaxItems),
 					typ:       string(as.OrderedCollectionType),
 					itemCount: 0,
 				},
@@ -108,7 +187,7 @@ var C2STests = testPairs{
 			res: testRes{
 				code: http.StatusOK,
 				val: &objectVal{
-					id:        fmt.Sprintf("%s/objects", apiURL),
+					id:        fmt.Sprintf("%s/objects?maxItems=%d", apiURL, activitypub.MaxItems),
 					typ:       string(as.OrderedCollectionType),
 					itemCount: 0,
 				},
