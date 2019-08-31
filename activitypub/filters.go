@@ -144,7 +144,10 @@ func (f Filters) Page() uint {
 
 // Count
 func (f Filters) Count() uint {
-	return f.MaxItems
+	if f.MaxItems > 0 {
+		return f.MaxItems
+	}
+	return MaxItems
 }
 
 const MaxItems = 100
@@ -181,7 +184,7 @@ func FromRequest(r *http.Request) (*Filters, error) {
 	f.baseURL = as.IRI(reqBaseURL(r))
 	f.IRI = as.IRI(reqURL(r))
 
-	if f.MaxItems < MaxItems {
+	if f.MaxItems > MaxItems {
 		f.MaxItems = MaxItems
 	}
 
