@@ -24,7 +24,7 @@ func getURL(i as.IRI, f Paginator) as.IRI {
 				continue
 			}
 			for _, v := range el {
-				query.Add(k, v)
+				query.Set(k, v)
 			}
 		}
 		u.RawQuery = query.Encode()
