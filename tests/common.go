@@ -95,7 +95,8 @@ var (
 	authCallbackURL = fmt.Sprintf("%s/auth/local/callback", apiURL)
 )
 
-const testActorHash = "f00f00f00f00f00f00f00f00f00f6667"
+const testAppHash = "23767f95-8ea0-40ba-a6ef-b67284e1cdb1"
+const testActorHash = "e869bdca-dd5e-4de7-9c5d-37845eccc6a1"
 const testActorHandle = "johndoe"
 
 var inboxURL = fmt.Sprintf("%s/inbox", apiURL)
@@ -113,6 +114,11 @@ var defaultTestAccount = testAccount{
 	Hash:       testActorHash,
 	PublicKey:  key.Public(),
 	PrivateKey: key,
+}
+
+var defaultTestApp = testAccount{
+	Id:         fmt.Sprintf("http://%s/actors/%s", host, testAppHash),
+	Hash:       testAppHash,
 }
 
 type assertFn func(v bool, msg string, args ...interface{})

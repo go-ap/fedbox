@@ -91,6 +91,7 @@ func resetDB(t *testing.T, testData []string) string {
 	o := cmd.New(u, s, b, config.Options{})
 
 	mocks := make(activitystreams.ItemCollection, 0)
+	needsAuthToken := false
 	for _, path := range testData {
 		json := loadMockJson(path, nil)()
 		if json == "" {
@@ -100,20 +101,19 @@ func resetDB(t *testing.T, testData []string) string {
 		if err == nil {
 			mocks = append(mocks, it)
 		}
+		if string(*it.GetID()) == defaultTestApp.Id {
+			needsAuthToken = true
+		}
 	}
 	addMockObjects(o.Storage, mocks, t.Logf)
 
-	pw := []byte("hahah")
-	actor, err := o.AddActor(testActorHandle, activitystreams.PersonType, pw)
-	if err == nil {
-		defaultTestAccount.Id = actor.GetLink().String()
-		defaultTestAccount.Hash = path.Base(defaultTestAccount.Id)
-	}
-
-	id, _ := o.AddClient(pw, []string{authCallbackURL}, nil)
-	tok, err := o.GenAuthToken(id, defaultTestAccount.Id, nil)
-	if err == nil {
-		defaultTestAccount.AuthToken = tok
+	if needsAuthToken {
+		pw := []byte("hahah")
+		defaultTestApp.Id, _ = o.AddClient(pw, []string{authCallbackURL}, nil)
+		tok, err := o.GenAuthToken(defaultTestApp.Id, defaultTestAccount.Id, nil)
+		if err == nil {
+			defaultTestAccount.AuthToken = tok
+		}
 	}
 
 	return dbPath

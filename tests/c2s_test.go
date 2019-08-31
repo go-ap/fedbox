@@ -8,11 +8,38 @@ import (
 )
 
 var C2STests = testPairs{
+	"SelfService": {
+		{
+			mocks: []string{
+				"mocks/service.json",
+			},
+			req: testReq{
+				met: http.MethodGet,
+				url: fmt.Sprintf("%s/", apiURL),
+			},
+			res: testRes{
+				code: http.StatusOK,
+				val: &objectVal{
+					id:      "http://127.0.0.1:9998",
+					typ:     string(as.ServiceType),
+					summary: "Generic ActivityPub service",
+					inbox: &objectVal{
+						id: "http://127.0.0.1:9998/inbox",
+					},
+					outbox: &objectVal{
+						id: "http://127.0.0.1:9998/outbox",
+					},
+					name: "self",
+				},
+			},
+		},
+	},
+
 	"ActorsCollection": {
 		{
 			mocks: []string{
 				"mocks/service.json",
-				"mocks/actor.json",
+				"mocks/actor-johndoe.json",
 			},
 			req: testReq{
 				met: http.MethodGet,
@@ -23,14 +50,14 @@ var C2STests = testPairs{
 				val: &objectVal{
 					id:        fmt.Sprintf("%s/actors", apiURL),
 					typ:       string(as.OrderedCollectionType),
-					itemCount: 3,
+					itemCount: 1,
 					items: map[string]*objectVal{
 						"e869bdca-dd5e-4de7-9c5d-37845eccc6a1": {
-							id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
-							typ: string(as.PersonType),
+							id:      "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
+							typ:     string(as.PersonType),
 							summary: "Generated actor",
 							content: "Generated actor",
-							url: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
+							url:     "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
 							inbox: &objectVal{
 								id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/inbox",
 							},
@@ -40,7 +67,8 @@ var C2STests = testPairs{
 							liked: &objectVal{
 								id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/liked",
 							},
-							preferredUsername: "habarnam",
+							preferredUsername: "johndoe",
+							name:              "Johnathan Doe",
 						},
 					},
 				},
@@ -49,6 +77,10 @@ var C2STests = testPairs{
 	},
 	"ActivitiesCollection": {
 		{
+			mocks: []string{
+				"mocks/service.json",
+				"mocks/actor-johndoe.json",
+			},
 			req: testReq{
 				met: http.MethodGet,
 				url: fmt.Sprintf("%s/activities", apiURL),
@@ -65,6 +97,10 @@ var C2STests = testPairs{
 	},
 	"ObjectsCollection": {
 		{
+			mocks: []string{
+				"mocks/service.json",
+				"mocks/actor-johndoe.json",
+			},
 			req: testReq{
 				met: http.MethodGet,
 				url: fmt.Sprintf("%s/objects", apiURL),
@@ -79,33 +115,13 @@ var C2STests = testPairs{
 			},
 		},
 	},
-	"ServiceActor": {
-		{
-			req: testReq{
-				met: http.MethodGet,
-				url: selfAccount.Id,
-			},
-			res: testRes{
-				code: http.StatusOK,
-				val: &objectVal{
-					id:   selfAccount.Id,
-					typ:  string(as.ServiceType),
-					name: selfAccount.Handle,
-					audience: []string{
-						as.PublicNS.String(),
-					},
-					inbox: &objectVal{
-						id: fmt.Sprintf("%s/inbox", baseURL),
-					},
-					outbox: &objectVal{
-						id: fmt.Sprintf("%s/outbox", baseURL),
-					},
-				},
-			},
-		},
-	},
 	"CreateActor": {
 		{
+			mocks: []string{
+				"mocks/service.json",
+				"mocks/actor-johndoe.json",
+				"mocks/application.json",
+			},
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
@@ -131,6 +147,11 @@ var C2STests = testPairs{
 	},
 	"UpdateActor": {
 		{
+			mocks: []string{
+				"mocks/service.json",
+				"mocks/actor-johndoe.json",
+				"mocks/application.json",
+			},
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
@@ -164,6 +185,11 @@ var C2STests = testPairs{
 	},
 	"DeleteActor": {
 		{
+			mocks: []string{
+				"mocks/service.json",
+				"mocks/actor-johndoe.json",
+				"mocks/application.json",
+			},
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,
@@ -188,6 +214,11 @@ var C2STests = testPairs{
 	},
 	"CreateArticle": {
 		{
+			mocks: []string{
+				"mocks/service.json",
+				"mocks/actor-johndoe.json",
+				"mocks/application.json",
+			},
 			req: testReq{
 				met:     http.MethodPost,
 				account: &defaultTestAccount,

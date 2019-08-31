@@ -4,7 +4,6 @@ import (
 	"github.com/boltdb/bolt"
 	a "github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 )
@@ -39,32 +38,6 @@ func Bootstrap(path string, rootBucket []byte, baseURL string) error {
 	if err != nil {
 		return errors.Annotatef(err, "could not create buckets")
 	}
-
-	err = db.Update(func(tx *bolt.Tx) error {
-		{
-			root := tx.Bucket(rootBucket)
-			service := activitypub.Self(activitypub.DefaultServiceIRI(baseURL))
-			raw, _ := jsonld.Marshal(service)
-
-			root.Put([]byte(handlers.Inbox), nil)
-			//root.Put([]byte(handlers.Following), nil)
-			//root.Put([]byte(handlers.Outbox), nil)
-
-			err = root.Put([]byte(objectKey), raw)
-			if err != nil {
-				return errors.Errorf("could not insert entry: %s", err)
-			}
-
-			actors := root.Bucket([]byte(bucketActors))
-			if actors == nil {
-				return errors.Annotatef(err, "could not open %s bucket", bucketActors)
-			}
-			if !actors.Writable() {
-				return errors.Errorf("Non writeable bucket %s", bucketActors)
-			}
-		}
-		return nil
-	})
 	if err != nil {
 		return errors.Annotatef(err, "Unable to update bolt db")
 	}

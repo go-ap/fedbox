@@ -8,11 +8,6 @@
     "https://www.w3.org/ns/activitystreams#Public"
   ],
   "summary": "Generic ActivityPub service",
-  "url": "http://127.0.0.1:9998",
   "inbox": "http://127.0.0.1:9998/inbox",
-  "outbox": "http://127.0.0.1:9998/outbox",
-  "endpoints": {
-    "oauthAuthorizationEndpoint": "http://127.0.0.1:9998/oauth/authorize",
-    "oauthTokenEndpoint": "http://127.0.0.1:9998/oauth/token"
-  }
+  "outbox": "http://127.0.0.1:9998/outbox"
 }
