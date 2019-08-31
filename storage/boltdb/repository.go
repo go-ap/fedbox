@@ -465,7 +465,7 @@ func descendInBucket(root *bolt.Bucket, path string, create bool) (*bolt.Bucket,
 		return nil, path, errors.Newf("Trying to descend into nil bucket")
 	}
 	if len(path) == 0 {
-		return nil, path, errors.Newf("Trying to descend into nil bucket tree")
+		return root, path, nil
 	}
 	buckets := strings.Split(path, "/")
 
