@@ -546,7 +546,9 @@ func testSuite(t *testing.T, pairs testPairs) {
 	for typ, tests := range pairs {
 		for _, test := range tests {
 			t.Run(typ, func(t *testing.T) {
-				resetDB(t, test.mocks)
+				if test.mocks != nil {
+					resetDB(t, test.mocks)
+				}
 				errOnRequest(t)(test)
 			})
 		}
