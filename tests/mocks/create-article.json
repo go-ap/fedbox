@@ -7,6 +7,6 @@
     "published": "2018-08-31T17:17:11Z",
     "attributedTo": "{{ .Id }}",
     "content": "<p>Hello world</p>",
-    "to": ["https://www.w3.org/ns/activitystreams#Public"]
+    "to": ["https://www.w3.org/ns/activitystreams#Public", "http://127.0.0.1:9998"]
   }
 }

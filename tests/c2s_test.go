@@ -328,7 +328,7 @@ var C2STests = testPairs{
 				val: &objectVal{
 					id:        fmt.Sprintf("%s/inbox", apiURL),
 					typ:       string(as.OrderedCollectionType),
-					itemCount: 0,
+					itemCount: 1,
 				},
 			},
 		},
