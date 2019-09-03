@@ -15,5 +15,5 @@ var selfAccount = testAccount{
 var S2STests = testPairs{}
 
 func Test_S2SRequests(t *testing.T) {
-	testSuite(t, S2STests)
+	runTestSuite(t, S2STests)
 }

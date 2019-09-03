@@ -27,7 +27,13 @@ import (
 var UserAgent = "test-go-http-client"
 var HeaderAccept = `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`
 
-type testPairs map[string][]testPair
+type testSuite struct {
+	name  string
+	mocks []string
+	tests []testPair
+}
+
+type testPairs []testSuite
 
 type testAccount struct {
 	Id         string `json:"id"`
@@ -542,13 +548,13 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 	}
 }
 
-func testSuite(t *testing.T, pairs testPairs) {
-	for typ, tests := range pairs {
-		for _, test := range tests {
-			t.Run(typ, func(t *testing.T) {
-				if test.mocks != nil {
-					resetDB(t, test.mocks)
-				}
+func runTestSuite(t *testing.T, pairs testPairs) {
+	for _, suite := range pairs {
+		resetDB(t)
+		seedTestData(t, suite.mocks)
+		for _, test := range suite.tests {
+			t.Run(suite.name, func(t *testing.T) {
+				seedTestData(t, test.mocks)
 				errOnRequest(t)(test)
 			})
 		}

@@ -70,7 +70,45 @@ func addMockObjects(r storage.Repository, obj activitystreams.ItemCollection, er
 	return nil
 }
 
-func resetDB(t *testing.T, testData []string) string {
+func seedTestData(t *testing.T, testData []string) {
+	if t != nil {
+		t.Helper()
+		t.Logf("Resetting storage backend")
+	}
+
+	curPath, err := os.Getwd()
+	if err != nil {
+		curPath = os.TempDir()
+	}
+	u, _ := url.Parse(apiURL)
+	b, s := getBoldDBs(curPath, u, "test", logrus.New())
+
+	o := cmd.New(u, s, b, config.Options{})
+
+	if testData != nil {
+		mocks := make(activitystreams.ItemCollection, 0)
+		for _, path := range testData {
+			json := loadMockJson(path, nil)()
+			if json == "" {
+				continue
+			}
+			it, err := activitystreams.UnmarshalJSON([]byte(json))
+			if err == nil {
+				mocks = append(mocks, it)
+			}
+		}
+		addMockObjects(o.Storage, mocks, t.Logf)
+	}
+
+	pw := []byte("hahah")
+	defaultTestApp.Id, _ = o.AddClient(pw, []string{authCallbackURL}, nil)
+	tok, err := o.GenAuthToken(defaultTestApp.Id, defaultTestAccount.Id, nil)
+	if err == nil {
+		defaultTestAccount.AuthToken = tok
+	}
+}
+
+func resetDB(t *testing.T) string {
 	if t != nil {
 		t.Helper()
 		t.Logf("Resetting storage backend")
@@ -81,35 +119,8 @@ func resetDB(t *testing.T, testData []string) string {
 		curPath = os.TempDir()
 	}
 	dbPath := config.GetBoltDBPath(curPath, host, "test")
-
 	boltdb.Clean(dbPath, []byte(host))
 	boltdb.Bootstrap(dbPath, []byte(host), apiURL)
-
-	u, _ := url.Parse(apiURL)
-	b, s := getBoldDBs(curPath, u, "test", logrus.New())
-
-	o := cmd.New(u, s, b, config.Options{})
-
-	mocks := make(activitystreams.ItemCollection, 0)
-	for _, path := range testData {
-		json := loadMockJson(path, nil)()
-		if json == "" {
-			continue
-		}
-		it, err := activitystreams.UnmarshalJSON([]byte(json))
-		if err == nil {
-			mocks = append(mocks, it)
-		}
-	}
-	addMockObjects(o.Storage, mocks, t.Logf)
-
-	pw := []byte("hahah")
-	defaultTestApp.Id, _ = o.AddClient(pw, []string{authCallbackURL}, nil)
-	tok, err := o.GenAuthToken(defaultTestApp.Id, defaultTestAccount.Id, nil)
-	if err == nil {
-		defaultTestAccount.AuthToken = tok
-	}
-
 	return dbPath
 }
 
