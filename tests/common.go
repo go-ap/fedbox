@@ -57,8 +57,8 @@ type testRes struct {
 
 type testPair struct {
 	mocks []string
-	req testReq
-	res testRes
+	req   testReq
+	res   testRes
 }
 
 type objectVal struct {
@@ -117,8 +117,8 @@ var defaultTestAccount = testAccount{
 }
 
 var defaultTestApp = testAccount{
-	Id:         fmt.Sprintf("http://%s/actors/%s", host, testAppHash),
-	Hash:       testAppHash,
+	Id:   fmt.Sprintf("http://%s/actors/%s", host, testAppHash),
+	Hash: testAppHash,
 }
 
 type assertFn func(v bool, msg string, args ...interface{})
@@ -425,6 +425,9 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 
 func errOnGetRequest(t *testing.T) requestGetAssertFn {
 	return func(iri string) map[string]interface{} {
+		if iri == "" {
+			return nil
+		}
 		tVal := testPair{
 			req: testReq{
 				met: http.MethodGet,
@@ -524,9 +527,15 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			}
 			err = json.Unmarshal(b, &res)
 			assertTrue(err == nil, "Error: unmarshal failed: %s", err)
-			if test.res.val != nil || (test.req.met != http.MethodGet && test.res.val.id != "" && test.res.val.id != req.URL.String()) {
-				saved := assertGetRequest(test.res.val.id)
-				assertObjectProperties(saved, test.res.val)
+			assertTrue(res != nil, "Error: unmarshal failed: nil result")
+
+			if test.res.val != nil {
+				if test.req.met == http.MethodGet {
+					assertObjectProperties(res, test.res.val)
+				} else if test.res.val.id != "" && test.res.val.id != req.URL.String() {
+					saved := assertGetRequest(test.res.val.id)
+					assertObjectProperties(saved, test.res.val)
+				}
 			}
 		})
 		return res

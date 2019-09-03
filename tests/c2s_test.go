@@ -3,7 +3,6 @@ package tests
 import (
 	"fmt"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/fedbox/activitypub"
 	"net/http"
 	"testing"
 )
@@ -48,7 +47,7 @@ var C2STests = testPairs{
 			res: testRes{
 				code: http.StatusOK,
 				val: &objectVal{
-					id:        fmt.Sprintf("%s/actors?maxItems=%d", apiURL, activitypub.MaxItems),
+					id:        fmt.Sprintf("%s/actors", apiURL),
 					typ:       string(as.OrderedCollectionType),
 					itemCount: 2,
 					items: map[string]*objectVal{
@@ -88,7 +87,7 @@ var C2STests = testPairs{
 			res: testRes{
 				code: http.StatusOK,
 				val: &objectVal{
-					id:        fmt.Sprintf("%s/actors?maxItems=%d&type=%s", apiURL, activitypub.MaxItems, as.PersonType),
+					id:        fmt.Sprintf("%s/actors?type=%s", apiURL, as.PersonType),
 					typ:       string(as.OrderedCollectionType),
 					itemCount: 1,
 					items: map[string]*objectVal{
@@ -128,7 +127,7 @@ var C2STests = testPairs{
 			res: testRes{
 				code: http.StatusOK,
 				val: &objectVal{
-					id:        fmt.Sprintf("%s/actors?maxItems=%d&type=%s", apiURL, activitypub.MaxItems, as.GroupType),
+					id:        fmt.Sprintf("%s/actors?type=%s", apiURL, as.GroupType),
 					typ:       string(as.OrderedCollectionType),
 					itemCount: 0,
 				},
@@ -147,7 +146,7 @@ var C2STests = testPairs{
 			res: testRes{
 				code: http.StatusOK,
 				val: &objectVal{
-					id:        fmt.Sprintf("%s/actors?maxItems=%d&type=%s", apiURL, activitypub.MaxItems, as.ApplicationType),
+					id:        fmt.Sprintf("%s/actors?type=%s", apiURL, as.ApplicationType),
 					typ:       string(as.OrderedCollectionType),
 					itemCount: 1,
 				},
@@ -167,7 +166,7 @@ var C2STests = testPairs{
 			res: testRes{
 				code: http.StatusOK,
 				val: &objectVal{
-					id:        fmt.Sprintf("%s/activities?maxItems=%d", apiURL, activitypub.MaxItems),
+					id:        fmt.Sprintf("%s/activities", apiURL),
 					typ:       string(as.OrderedCollectionType),
 					itemCount: 0,
 				},
@@ -187,7 +186,7 @@ var C2STests = testPairs{
 			res: testRes{
 				code: http.StatusOK,
 				val: &objectVal{
-					id:        fmt.Sprintf("%s/objects?maxItems=%d", apiURL, activitypub.MaxItems),
+					id:        fmt.Sprintf("%s/objects", apiURL),
 					typ:       string(as.OrderedCollectionType),
 					itemCount: 0,
 				},
@@ -316,6 +315,20 @@ var C2STests = testPairs{
 						typ:     string(as.ArticleType),
 						content: "\\u003cp\\u003eHello world\\u003c/p\\u003e", // FIXME(marius): This sucks balls,
 					},
+				},
+			},
+		},
+		{
+			req: testReq{
+				met: http.MethodGet,
+				url: fmt.Sprintf("%s/inbox", apiURL),
+			},
+			res: testRes{
+				code: http.StatusOK,
+				val: &objectVal{
+					id:        fmt.Sprintf("%s/inbox", apiURL),
+					typ:       string(as.OrderedCollectionType),
+					itemCount: 0,
 				},
 			},
 		},
