@@ -256,6 +256,27 @@ var C2STests = []testSuite{
 		},
 	},
 	{
+		name:  "AnonymousCreateActor",
+		mocks: nil,
+		tests: []testPair{
+			{
+				mocks: []string{
+					"mocks/service.json",
+					"mocks/actor-johndoe.json",
+					"mocks/application.json",
+				},
+				req: testReq{
+					met:    http.MethodPost,
+					urlFn:  func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
+					bodyFn: loadMockJson("mocks/create-actor.json", &defaultTestAccount),
+				},
+				res: testRes{
+					code: http.StatusUnauthorized,
+				},
+			},
+		},
+	},
+	{
 		name:  "UpdateActor",
 		mocks: nil,
 		tests: []testPair{
@@ -298,14 +319,13 @@ var C2STests = []testSuite{
 		},
 	},
 	{
-		name:  "CreateArticle",
+		name:  "DeleteActor",
 		mocks: nil,
 		tests: []testPair{
 			{
 				mocks: []string{
 					"mocks/service.json",
 					"mocks/actor-johndoe.json",
-					"mocks/application.json",
 				},
 				req: testReq{
 					met:     http.MethodPost,
@@ -331,14 +351,13 @@ var C2STests = []testSuite{
 		},
 	},
 	{
-		name:  "DeleteActor",
+		name:  "CreateArticle",
 		mocks: nil,
 		tests: []testPair{
 			{
 				mocks: []string{
 					"mocks/service.json",
 					"mocks/actor-johndoe.json",
-					"mocks/application.json",
 				},
 				req: testReq{
 					met:     http.MethodPost,
@@ -358,6 +377,48 @@ var C2STests = []testSuite{
 							typ:     string(as.ArticleType),
 							content: "\\u003cp\\u003eHello world\\u003c/p\\u003e", // FIXME(marius): This sucks balls,
 						},
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)),
+						typ:       string(as.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/activities", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/activities", apiURL),
+						typ:       string(as.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects", apiURL),
+						typ:       string(as.OrderedCollectionType),
+						itemCount: 1,
 					},
 				},
 			},
