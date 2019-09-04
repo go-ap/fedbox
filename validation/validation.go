@@ -2,6 +2,7 @@ package validation
 
 import (
 	"context"
+	xerrors "errors"
 	"fmt"
 	"github.com/go-ap/activitypub/client"
 	as "github.com/go-ap/activitystreams"
@@ -9,7 +10,6 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
-	"golang.org/x/xerrors"
 	"path"
 	"strings"
 )
@@ -116,7 +116,7 @@ var InvalidTarget = func(s string, p ...interface{}) ActivityPubError {
 	return ActivityPubError{wrapErr(nil, fmt.Sprintf("Target is not valid: %s", s), p...)}
 }
 
-func (m *MissingActorError)Is(e error) bool {
+func (m *MissingActorError) Is(e error) bool {
 	_, okp := e.(*MissingActorError)
 	_, oks := e.(MissingActorError)
 	return okp || oks
@@ -318,6 +318,7 @@ func (v genericValidator) ValidateAudience(audience ...as.ItemCollection) error 
 }
 
 type CtxtKey string
+
 var ValidatorKey = CtxtKey("__validator")
 
 func FromContext(ctx context.Context) (*genericValidator, bool) {
