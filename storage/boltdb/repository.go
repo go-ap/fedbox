@@ -164,21 +164,20 @@ func filterActivity(it as.Item, f s.Filterable) (bool, as.Item) {
 		return true, it
 	}
 	keep := true
-	err := activitypub.OnActivity(it, func(a *as.Activity) error {
-		act, _ := as.ToActivity(it)
-		if !filterNaturalLanguageValues(ff.Names(), a.Name) {
+	err := activitypub.OnActivity(it, func(act *as.Activity) error {
+		if !filterNaturalLanguageValues(ff.Names(), act.Name) {
 			keep = false
 			return nil
 		}
-		if !filterItem(ff.AttributedTo(), a.AttributedTo) {
+		if !filterItem(ff.AttributedTo(), act.AttributedTo) {
 			keep = false
 			return nil
 		}
-		if !filterItem(ff.InReplyTo(), a.InReplyTo) {
+		if !filterItem(ff.InReplyTo(), act.InReplyTo) {
 			keep = false
 			return nil
 		}
-		if !filterItemCollections(ff.Audience(), a.Recipients()) {
+		if !filterItemCollections(ff.Audience(), act.Recipients()) {
 			keep = false
 			return nil
 		}
@@ -186,7 +185,7 @@ func filterActivity(it as.Item, f s.Filterable) (bool, as.Item) {
 		if len(medTypes) > 0 {
 			exists := false
 			for _, typ := range medTypes {
-				if typ == a.MediaType {
+				if typ == act.MediaType {
 					exists = true
 				}
 			}
