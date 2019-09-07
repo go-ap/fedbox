@@ -63,20 +63,21 @@ type Filters struct {
 	Parent        as.Actor                   `qstring:"-"`
 	IRI           as.IRI                     `qstring:"-"`
 	Collection    h.CollectionType           `qstring:"-"`
-	URL        as.IRIs                    `qstring:"url,omitempty"`
-	MedTypes   []as.MimeType              `qstring:"mediaType,omitempty"`
-	Aud        as.IRIs                    `qstring:"-"`
-	Key        []Hash                     `qstring:"hash,omitempty"`
-	ItemKey    []Hash                     `qstring:"itemHash,omitempty"`
-	Type       as.ActivityVocabularyTypes `qstring:"type,omitempty"`
-	AttrTo     []Hash                     `qstring:"attributedTo,omitempty"`
-	InReplTo   []Hash                     `qstring:"inReplyTo,omitempty"`
-	OP         []Hash                     `qstring:"context,omitempty"`
-	FollowedBy []Hash                     `qstring:"followedBy,omitempty"` // todo(marius): not really used
-	OlderThan  time.Time                  `qstring:"olderThan,omitempty"`
-	NewerThan  time.Time                  `qstring:"newerThan,omitempty"`
-	CurPage    uint                       `qstring:"page,omitempty"`
-	MaxItems   uint                       `qstring:"maxItems,omitempty"`
+	URL           as.IRIs                    `qstring:"url,omitempty"`
+	MedTypes      []as.MimeType              `qstring:"mediaType,omitempty"`
+	Aud           as.IRIs                    `qstring:"-"`
+	Key           []Hash                     `qstring:"hash,omitempty"`
+	ItemKey       []Hash                     `qstring:"itemHash,omitempty"`
+	ObjectKey     []Hash                     `qstring:"object,omitempty"`
+	Type          as.ActivityVocabularyTypes `qstring:"type,omitempty"`
+	AttrTo        []Hash                     `qstring:"attributedTo,omitempty"`
+	InReplTo      []Hash                     `qstring:"inReplyTo,omitempty"`
+	OP            []Hash                     `qstring:"context,omitempty"`
+	FollowedBy    []Hash                     `qstring:"followedBy,omitempty"` // todo(marius): not really used
+	OlderThan     time.Time                  `qstring:"olderThan,omitempty"`
+	NewerThan     time.Time                  `qstring:"newerThan,omitempty"`
+	CurPage       uint                       `qstring:"page,omitempty"`
+	MaxItems      uint                       `qstring:"maxItems,omitempty"`
 }
 
 // Types returns a list of ActivityVocabularyTypes to filter against
@@ -242,7 +243,20 @@ func (f Filters) Actors() as.IRIs {
 	return nil
 }
 func (f Filters) Objects() as.IRIs {
-	return nil
+	ret := make(as.IRIs, 0)
+	for _, k := range f.ObjectKey {
+		// TODO(marius): This piece of logic should be moved to loading the filters
+		var iri as.IRI
+		if u, err := url.Parse(string(k)); err == nil && u.Host != "" && u.Scheme != "" {
+			iri = as.IRI(u.String())
+		} else {
+			iri = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, k))
+		}
+		if !ret.Contains(iri) {
+			ret = append(ret, iri)
+		}
+	}
+	return ret
 }
 
 func (f Filters) Targets() as.IRIs {
