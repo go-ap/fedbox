@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"github.com/go-ap/auth"
-	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/validation"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
@@ -46,11 +45,13 @@ func ActorFromAuthHeader(os *osin.Server, st storage.ActorLoader, l logrus.Field
 			s := auth.New(reqURL(r), os, st, l)
 			act, err := s.LoadActorFromAuthHeader(r)
 			if err != nil {
-				if errors.IsUnauthorized(err) {
-					if challenge := errors.Challenge(err); len(challenge) > 0 {
-						w.Header().Add("WWW-Authenticate", challenge)
-					}
-				}
+				// FIXME(marius): This needs to be moved to someplace where we specifically require authorization
+				//    it should not trigger for every request like it does if it remains here.
+				//if errors.IsUnauthorized(err) {
+				//	if challenge := errors.Challenge(err); len(challenge) > 0 {
+				//		w.Header().Add("WWW-Authenticate", challenge)
+				//	}
+				//}
 				l.Warnf("%s", err)
 			}
 			if act != nil {
