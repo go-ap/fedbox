@@ -8,7 +8,6 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/oauth"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/pborman/uuid"
@@ -41,6 +40,8 @@ func New(authDB osin.Storage, actorDb storage.Repository, conf config.Options) C
 		Storage:     actorDb,
 	}
 }
+
+const URISeparator = "\n"
 
 func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string, error) {
 	var id string
@@ -75,7 +76,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 	d := osin.DefaultClient{
 		Id:          id,
 		Secret:      string(pw),
-		RedirectUri: strings.Join(redirect, oauth.URISeparator),
+		RedirectUri: strings.Join(redirect, URISeparator),
 		UserData:    userData,
 	}
 
