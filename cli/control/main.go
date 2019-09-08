@@ -16,7 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/urfave/cli.v2"
-	"net/url"
 	"os"
 	"strings"
 )
@@ -38,16 +37,12 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.Control) error {
 	if typ == "" {
 		typ = config.BoltDB
 	}
-	URI := c.String("url")
-	if URI == "" {
-		return errors.Newf("Missing url flag")
-	}
-	u, err := url.Parse(URI)
+	conf, err := config.LoadFromEnv(environ)
 	if err != nil {
-		l.Errorf("URL value passed is invalid: %S", err)
-		return err
+		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}
-	host := u.Hostname()
+
+	host := conf.Host
 	var aDb osin.Storage
 	var db storage.Repository
 	if typ == config.BoltDB {
@@ -67,20 +62,16 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.Control) error {
 			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
 		})
 		db = boltdb.New(boltdb.Config{
-			Path:       config.GetBoltDBPath(dir, host, environ),
-			BucketName: host,
-			LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
-		}, u.String())
+			Path:  config.GetBoltDBPath(dir, host, environ),
+			LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
+			ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		}, conf.BaseURL)
 	}
 	if typ == config.Postgres {
 		return errors.NotImplementedf("%s type not implemented", typ)
 	}
-	conf, err := config.LoadFromEnv(environ)
-	if err != nil {
-		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
-	}
-	*o = cmd.New(u, aDb, db, conf)
+
+	*o = cmd.New(aDb, db, conf)
 
 	return nil
 }
@@ -169,7 +160,7 @@ func main() {
 							if !activitystreams.ActorTypes.Contains(typ) {
 								typ = activitystreams.PersonType
 							}
-							p, err := ctl.AddActor(name, typ, pw)
+							p, err := ctl.AddActor(name, typ, nil, pw )
 							if err != nil {
 								errf("Error adding %s: %s\n", name, err)
 							}

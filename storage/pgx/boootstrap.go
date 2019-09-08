@@ -117,7 +117,10 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 	service := activitypub.Self(baseURL)
 
 	u, _ := service.GetLink().URL()
-	raw, _ := jsonld.Marshal(service)
+	raw, err := jsonld.Marshal(service)
+	if err != nil {
+		return errors.Annotatef(err, "could not marshal service json")
+	}
 	err = exec("insert-actor", path.Base(u.Path), service.GetType(), service.GetLink(), raw)
 	if err != nil {
 		return err

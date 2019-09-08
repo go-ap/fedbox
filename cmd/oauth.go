@@ -32,10 +32,10 @@ type ClientLister interface {
 	ListClients() ([]osin.Client, error)
 }
 
-func New(baseURL *url.URL, authDB osin.Storage, actorDb storage.Repository, conf config.Options) Control {
+func New(authDB osin.Storage, actorDb storage.Repository, conf config.Options) Control {
 	return Control{
-		BaseURL:     baseURL,
-		Host:        baseURL.Host,
+		BaseURL:     conf.BaseURL,
+		Host:        conf.Host,
 		Conf:        conf,
 		AuthStorage: authDB,
 		Storage:     actorDb,
@@ -45,7 +45,7 @@ func New(baseURL *url.URL, authDB osin.Storage, actorDb storage.Repository, conf
 func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string, error) {
 	var id string
 
-	app, err := c.AddActor("oauth-client-app", as.ApplicationType, pw)
+	app, err := c.AddActor("oauth-client-app", as.ApplicationType, nil, pw)
 	if err != nil {
 		return "", err
 	}

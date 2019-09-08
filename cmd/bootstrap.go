@@ -14,8 +14,8 @@ import (
 
 func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type, ) error {
 	if typ == config.BoltDB {
-		authPath := config.GetBoltDBPath(dir, c.BaseURL.Host, environ)
-		err := boltdb.Bootstrap(authPath, []byte(c.BaseURL.Host), c.Conf.BaseURL)
+		authPath := config.GetBoltDBPath(dir, c.Host, environ)
+		err := boltdb.Bootstrap(authPath, c.BaseURL)
 		if err != nil {
 			return errors.Annotatef(err, "Unable to update %s db", typ)
 		}
@@ -38,8 +38,8 @@ func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type
 
 func (c *Control) BootstrapReset(dir string, typ config.StorageType, environ env.Type) error {
 	if typ == config.BoltDB {
-		path := config.GetBoltDBPath(dir, c.BaseURL.Host, environ)
-		err := boltdb.Clean(path, []byte(c.BaseURL.Host))
+		path := config.GetBoltDBPath(dir, c.Host, environ)
+		err := boltdb.Clean(path)
 		if err != nil {
 			return errors.Annotatef(err, "Unable to update %s db", typ)
 		}

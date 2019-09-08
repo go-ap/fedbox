@@ -11,12 +11,10 @@ func TestNew(t *testing.T) {
 	dir, _ := os.Getwd()
 	name := "test.db"
 	path := fmt.Sprintf("%s/%s", dir, name)
-	bucket := "random"
 	url := "random-string-not-an-URL"
 
 	conf := Config{
 		Path:       path,
-		BucketName: bucket,
 		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { t.Logf(s, p...) },
 		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { t.Errorf(s, p...) },
 	}
@@ -45,17 +43,15 @@ func TestRepo_Open(t *testing.T) {
 	dir, _ := os.Getwd()
 	name := "test.db"
 	path := fmt.Sprintf("%s/%s", dir, name)
-	bucket := "random"
 	url := "random-string-not-an-URL"
 
-	err := Bootstrap(path, []byte(bucket), url)
+	err := Bootstrap(path, url)
 	if err != nil {
 		t.Errorf("Unable to bootstrap boltdb %s: %s", path, err)
 	}
 	defer os.Remove(path)
 	conf := Config{
 		Path:       path,
-		BucketName: bucket,
 	}
 	repo := New(conf, url)
 	err = repo.Open()
@@ -71,10 +67,9 @@ func TestRepo_Close(t *testing.T) {
 	dir, _ := os.Getwd()
 	name := "test.db"
 	path := fmt.Sprintf("%s/%s", dir, name)
-	bucket := "random"
 	url := "random-string-not-an-URL"
 
-	err := Bootstrap(path, []byte(bucket), url)
+	err := Bootstrap(path, url)
 	if err != nil {
 		t.Errorf("Unable to bootstrap boltdb %s: %s", path, err)
 	}
@@ -82,7 +77,6 @@ func TestRepo_Close(t *testing.T) {
 
 	conf := Config{
 		Path:       path,
-		BucketName: bucket,
 	}
 	repo := New(conf, url)
 	err = repo.Open()

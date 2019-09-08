@@ -83,7 +83,7 @@ func seedTestData(t *testing.T, testData []string) {
 	u, _ := url.Parse(apiURL)
 	b, s := getBoldDBs(curPath, u, "test", logrus.New())
 
-	o := cmd.New(u, s, b, config.Options{})
+	o := cmd.New(s, b, config.Options{})
 
 	if testData != nil {
 		mocks := make(activitystreams.ItemCollection, 0)
@@ -119,8 +119,8 @@ func resetDB(t *testing.T) string {
 		curPath = os.TempDir()
 	}
 	dbPath := config.GetBoltDBPath(curPath, host, "test")
-	boltdb.Clean(dbPath, []byte(host))
-	boltdb.Bootstrap(dbPath, []byte(host), apiURL)
+	boltdb.Clean(dbPath)
+	boltdb.Bootstrap(dbPath, apiURL)
 	return dbPath
 }
 
@@ -128,7 +128,6 @@ func getBoldDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (sto
 	path := config.GetBoltDBPath(dir, host, env)
 	b := boltdb.New(boltdb.Config{
 		Path:       path,
-		BucketName: host,
 		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.Errorf(s, p...) },
 		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.Infof(s, p...) },
 	}, u.String())

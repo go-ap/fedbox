@@ -32,6 +32,7 @@ type repo struct {
 type loggerFn func(logrus.Fields, string, ...interface{})
 
 const (
+	rootBucket       = ":"
 	bucketActors     = "actors"
 	bucketActivities = "activities"
 	bucketObjects    = "objects"
@@ -48,7 +49,7 @@ type Config struct {
 // New returns a new repo repository
 func New(c Config, baseURL string) *repo {
 	b := repo{
-		root:    []byte(c.BucketName),
+		root:    []byte(rootBucket),
 		path:    c.Path,
 		baseURL: baseURL,
 		logFn:   func(logrus.Fields, string, ...interface{}) {},
@@ -72,20 +73,17 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 			return errors.Errorf("Invalid bucket %s", root)
 		}
 
-		var remainderPath string
+		var remainderPath []byte
 		iri := f.GetLink()
 		if iri != "" {
+			var err error
 			// This is the case where the Filter points to a single AP Object IRI
 			// TODO(marius): Ideally this should support the case where we use the IRI to point to a bucket path
 			//     and on top of that apply the other filters
-			url, err := iri.URL()
+			remainderPath, err = itemBucketPath(iri)
 			if err != nil {
-				return errors.Newf("invalid IRI filter element %s when loading collections", iri)
+				return err
 			}
-			if string(root) != url.Host {
-				return errors.Newf("trying to load from non-local root bucket %s", url.Host)
-			}
-			remainderPath = url.Path
 		}
 		var err error
 		var b *bolt.Bucket
@@ -105,7 +103,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 		isObjectKey := func(k []byte) bool {
 			return string(k) == objectKey || string(k) == metaDataKey
 		}
-		if remainderPath != "" {
+		if len(remainderPath) > 0 {
 			// when we get a non empty path from descendIntoBucket we try to load it as a valid object key
 			prefix := []byte(remainderPath)
 			for key, raw := c.Seek(prefix); key != nil && bytes.HasPrefix(key, prefix); key, raw = c.Next() {
@@ -460,14 +458,14 @@ func (r *repo) LoadActors(f s.Filterable) (as.ItemCollection, uint, error) {
 	return r.Load(f)
 }
 
-func descendInBucket(root *bolt.Bucket, path string, create bool) (*bolt.Bucket, string, error) {
+func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket, []byte, error) {
 	if root == nil {
 		return nil, path, errors.Newf("Trying to descend into nil bucket")
 	}
 	if len(path) == 0 {
 		return root, path, nil
 	}
-	buckets := strings.Split(path, "/")
+	buckets := bytes.Split(path, []byte{'/'})
 
 	lvl := 0
 	b := root
@@ -492,7 +490,7 @@ func descendInBucket(root *bolt.Bucket, path string, create bool) (*bolt.Bucket,
 		}
 		b = cb
 	}
-	path = strings.Join(buckets[lvl:], "/")
+	path = bytes.Join(buckets[lvl:], []byte{'/'})
 
 	return b, path, nil
 }
@@ -582,31 +580,36 @@ func (r *repo) CreateCollection(col as.CollectionInterface) (as.CollectionInterf
 	}
 	defer r.Close()
 
-	url, err := col.GetLink().URL()
+	cPath, err := itemBucketPath(col.GetLink())
 	if err != nil {
 		return col, err
 	}
-	cPath := url.Path
-	c := path.Base(cPath)
+	c := []byte(path.Base(string(cPath)))
 	err = r.d.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
 		b, _, err := descendInBucket(root, cPath, true)
 		if err != nil {
 			return err
 		}
-		return b.Put([]byte(c), nil)
+		return b.Put(c, nil)
 	})
 	return col, err
 }
 
-func save(r *repo, it as.Item) (as.Item, error) {
-	url, err := it.GetLink().URL()
+func itemBucketPath(iri as.IRI) ([]byte, error) {
+	url, err := iri.URL()
 	if err != nil {
-		return it, errors.Annotatef(err, "invalid IRI")
+		return nil, errors.Annotatef(err, "invalid IRI")
 	}
-	path := url.Path
+	return []byte(url.Host + url.Path), nil
+}
 
-	var uuid string
+func save(r *repo, it as.Item) (as.Item, error) {
+	path, err := itemBucketPath(it.GetLink())
+	if err != nil {
+		return it, err
+	}
+	var uuid []byte
 	err = r.d.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
 		if root == nil {
@@ -623,8 +626,8 @@ func save(r *repo, it as.Item) (as.Item, error) {
 		if !b.Writable() {
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
-		if uuid != "" {
-			b, err = b.CreateBucket([]byte(uuid))
+		if len(uuid) > 0 {
+			b, err = b.CreateBucket(uuid)
 			if err != nil {
 				return errors.Errorf("could not create item bucket entry: %s", err)
 			}
@@ -717,11 +720,10 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 	if !r.IsLocalIRI(col.GetLink()) {
 		return errors.Newf("Unable to save to non local collection %s", col)
 	}
-	url, err := col.URL()
+	path, err := itemBucketPath(col.GetLink())
 	if err != nil {
-		return errors.Annotatef(err, "invalid IRI")
+		return err
 	}
-	path := url.Path
 
 	err = r.Open()
 	if err != nil {
@@ -730,7 +732,7 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 	defer r.Close()
 
 	return r.d.Update(func(tx *bolt.Tx) error {
-		var rem string
+		var rem []byte
 		root := tx.Bucket(r.root)
 		if root == nil {
 			return errors.Errorf("Invalid bucket %s", r.root)
@@ -743,8 +745,8 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 		if err != nil {
 			return errors.Newf("Unable to find %s in root bucket", path)
 		}
-		if rem == "" {
-			rem = objectKey
+		if len(rem) == 0 {
+			rem = []byte(objectKey)
 		}
 		if !b.Writable() {
 			return errors.Errorf("Non writeable bucket %s", path)
@@ -809,6 +811,7 @@ func (r *repo) DeleteObject(it as.Item) (as.Item, error) {
 // GenerateID
 func (r *repo) GenerateID(it as.Item, by as.Item) (as.ObjectID, error) {
 	typ := it.GetType()
+
 	var partOf string
 	if as.ActivityTypes.Contains(typ) {
 		partOf = fmt.Sprintf("%s/activities", r.baseURL)
@@ -839,17 +842,15 @@ func (r *repo) Close() error {
 
 // PasswordSet
 func (r *repo) PasswordSet(it as.Item, pw []byte) error {
-	url, err := it.GetLink().URL()
+	path, err := itemBucketPath(it.GetLink())
 	if err != nil {
-		return errors.Annotatef(err, "invalid IRI")
+		return err
 	}
 	err = r.Open()
 	if err != nil {
 		return err
 	}
 	defer r.Close()
-
-	path := url.Path
 
 	type meta struct {
 		Pw []byte `json:"pw"`
