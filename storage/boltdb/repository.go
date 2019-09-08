@@ -514,9 +514,6 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 	qstr, _ := qstring.Marshal(f)
 	url.RawQuery = qstr.Encode()
 
-	if string(r.root) != url.Host {
-		r.errFn(nil, "trying to load from non-local root bucket %s", url.Host)
-	}
 	col := &as.OrderedCollection{}
 	col.ID = as.ObjectID(url.String())
 	col.Type = as.OrderedCollectionType
