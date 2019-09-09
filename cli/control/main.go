@@ -154,13 +154,13 @@ func main() {
 
 							pw, err := loadPwFromStdin(true, "%s's", name)
 							if err != nil {
-								errf(err.Error())
+								return err
 							}
 							typ := activitystreams.ActivityVocabularyType(c.String("type"))
 							if !activitystreams.ActorTypes.Contains(typ) {
 								typ = activitystreams.PersonType
 							}
-							p, err := ctl.AddActor(name, typ, nil, pw )
+							p, err := ctl.AddActor(name, typ, nil, pw)
 							if err != nil {
 								errf("Error adding %s: %s\n", name, err)
 							}
@@ -242,7 +242,7 @@ func main() {
 								}
 								id, err := ctl.AddClient(pw, redirectURIs, nil)
 								if err == nil {
-									fmt.Sprintf("Client ID: %s", id)
+									fmt.Printf("Client ID: %s\n", id)
 								}
 								return err
 							},
