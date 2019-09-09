@@ -92,6 +92,7 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 				return nil
 			})
 			ar.Authorized = h.account.IsLogged()
+			ar.UserData = h.account.actor.GetLink()
 		}
 		s.FinishAccessRequest(resp, r, ar)
 	}
