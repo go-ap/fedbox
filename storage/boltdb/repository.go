@@ -175,7 +175,7 @@ func filterActivity(it as.Item, f s.Filterable) (bool, as.Item) {
 			keep = false
 			return nil
 		}
-		if !filterItemCollections(ff.Audience(), act.Recipients()) {
+		if !filterItemCollections(ff.Audience(), act.Recipients(), as.ItemCollection{act.AttributedTo}) {
 			keep = false
 			return nil
 		}
@@ -237,7 +237,7 @@ func filterPerson(it as.Item, f s.Filterable) (bool, as.Item) {
 			keep = false
 			return nil
 		}
-		if !filterItemCollections(ff.Audience(), ob.Recipients()) {
+		if !filterItemCollections(ff.Audience(), ob.Recipients(), as.ItemCollection{ob.AttributedTo}) {
 			keep = false
 			return nil
 		}
@@ -295,6 +295,9 @@ func filterItemCollections(filters as.IRIs, colArr ...as.ItemCollection) bool {
 	if len(filters) > 0 {
 		for _, items := range colArr {
 			for _, it := range items {
+				if it == nil {
+					continue
+				}
 				if filters.Contains(it.GetLink()) {
 					keep = true
 					break
@@ -339,7 +342,7 @@ func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
 		return true, it
 	}
 	keep := true
-	err := activitypub.OnObject(it, func(ob *as.Object) error {
+	err := activitypub.OnObject(it, func(ob *activitypub.Object) error {
 		if !filterItem(ff.URLs(), ob) {
 			keep = false
 			return nil
@@ -360,7 +363,7 @@ func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
 			keep = false
 			return nil
 		}
-		if !filterItemCollections(ff.Audience(), ob.Recipients()) {
+		if !filterItemCollections(ff.Audience(), ob.Recipients(), as.ItemCollection{ob.AttributedTo}) {
 			keep = false
 			return nil
 		}
