@@ -355,6 +355,11 @@ func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
 			keep = false
 			return nil
 		}
+		// TODO(marius): this needs to be moved in handling an item collection for inReplyTo
+		if !filterContext(ff.Context(), ob.InReplyTo) {
+			keep = false
+			return nil
+		}
 		if !filterItem(ff.AttributedTo(), ob.AttributedTo) {
 			keep = false
 			return nil
