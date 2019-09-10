@@ -113,62 +113,22 @@ func GenerateID(it as.Item, partOf string, by as.Item) (as.ObjectID, error) {
 	uuid := uuid.New()
 	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(partOf), uuid))
 	if as.ActivityTypes.Contains(it.GetType()) {
-		err := ap.OnActivity(it, func(a *as.Activity) error {
+		return id, ap.OnActivity(it, func(a *as.Activity) error {
 			a.ID = id
 			return nil
 		})
-		if err != nil {
-			return id, err
-		}
 	}
 	if as.ActorTypes.Contains(it.GetType()) {
-		err := auth.OnPerson(it, func(p *auth.Person) error {
+		return id, auth.OnPerson(it, func(p *auth.Person) error {
 			p.ID = id
 			return nil
 		})
-		if err != nil {
-			return id, err
-		}
 	}
 	if as.ObjectTypes.Contains(it.GetType()) {
-		switch it.GetType() {
-		case as.PlaceType:
-			p, err := as.ToPlace(it)
-			if err != nil {
-				return id, err
-			}
-			p.ID = id
-			it = p
-		case as.ProfileType:
-			p, err := as.ToProfile(it)
-			if err != nil {
-				return id, err
-			}
-			p.ID = id
-			it = p
-		case as.RelationshipType:
-			r, err := as.ToRelationship(it)
-			if err != nil {
-				return id, err
-			}
-			r.ID = id
-			it = r
-		case as.TombstoneType:
-			t, err := as.ToTombstone(it)
-			if err != nil {
-				return id, err
-			}
-			t.ID = id
-			it = t
-		default:
-			err := ap.OnObject(it, func(o *ap.Object) error {
-				o.ID = id
-				return nil
-			})
-			if err != nil {
-				return id, err
-			}
-		}
+		return id, ap.OnObject(it, func(o *ap.Object) error {
+			o.ID = id
+			return nil
+		})
 	}
 	return id, nil
 }
