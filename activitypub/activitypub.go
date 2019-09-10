@@ -62,28 +62,16 @@ func DefaultServiceIRI(baseURL string) as.IRI {
 
 // ItemByType
 func ItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
-	var ret as.Item
-
 	if as.ActorTypes.Contains(typ) {
-		p := &auth.Person{}
-		p.Type = typ
-		ret = p
+		return &auth.Person{Person: ap.Person{Parent: ap.Parent{Type: typ}}}, nil
 	} else if as.ActivityTypes.Contains(typ) {
-		a := &as.Activity{}
-		a.Type = typ
-		ret = a
+		return &as.Activity{Parent: as.Parent{Type: typ}}, nil
 	} else if typ == as.CollectionType {
-		c := &Collection{}
-		c.Type = typ
-		ret = c
+		return &Collection{Parent: as.Parent{Type: typ}}, nil
 	} else if typ == as.OrderedCollectionType {
-		o := &OrderedCollection{}
-		o.Type = typ
-		ret = o
-	} else {
-		return as.JSONGetItemByType(typ)
+		return &OrderedCollection{Parent: as.Parent{Type: typ}}, nil
 	}
-	return ret, nil
+	return ap.JSONGetItemByType(typ)
 }
 
 // ToOrderedCollection
@@ -125,20 +113,22 @@ func GenerateID(it as.Item, partOf string, by as.Item) (as.ObjectID, error) {
 	uuid := uuid.New()
 	id := as.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(partOf), uuid))
 	if as.ActivityTypes.Contains(it.GetType()) {
-		a, err := as.ToActivity(it)
+		err := ap.OnActivity(it, func(a *as.Activity) error {
+			a.ID = id
+			return nil
+		})
 		if err != nil {
 			return id, err
 		}
-		a.ID = id
-		it = a
 	}
 	if as.ActorTypes.Contains(it.GetType()) {
-		p, err := auth.ToPerson(it)
+		err := auth.OnPerson(it, func(p *auth.Person) error {
+			p.ID = id
+			return nil
+		})
 		if err != nil {
 			return id, err
 		}
-		p.ID = id
-		it = p
 	}
 	if as.ObjectTypes.Contains(it.GetType()) {
 		switch it.GetType() {
@@ -157,26 +147,27 @@ func GenerateID(it as.Item, partOf string, by as.Item) (as.ObjectID, error) {
 			p.ID = id
 			it = p
 		case as.RelationshipType:
-			p, err := as.ToRelationship(it)
+			r, err := as.ToRelationship(it)
 			if err != nil {
 				return id, err
 			}
-			p.ID = id
-			it = p
+			r.ID = id
+			it = r
 		case as.TombstoneType:
-			p, err := as.ToTombstone(it)
+			t, err := as.ToTombstone(it)
 			if err != nil {
 				return id, err
 			}
-			p.ID = id
-			it = p
+			t.ID = id
+			it = t
 		default:
-			p, err := as.ToObject(it)
+			err := ap.OnObject(it, func(o *ap.Object) error {
+				o.ID = id
+				return nil
+			})
 			if err != nil {
 				return id, err
 			}
-			p.ID = id
-			it = p
 		}
 	}
 	return id, nil
