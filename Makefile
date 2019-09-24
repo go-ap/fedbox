@@ -25,18 +25,18 @@ TEST := $(GO) test $(BUILDFLAGS)
 
 .PHONY: all run clean test coverage integration
 
-all: app ctl
+all: fedbox ctl
 
-app: bin/app
-bin/app: go.mod cli/app/main.go $(APPSOURCES)
+fedbox: bin/fedbox
+bin/fedbox: go.mod cli/app/main.go $(APPSOURCES)
 	$(BUILD) -tags $(ENV) -o $@ ./cli/app/main.go
 
 ctl: bin/ctl
 bin/ctl: go.mod cli/control/main.go $(APPSOURCES)
 	$(BUILD) -tags $(ENV) -o $@ ./cli/control/main.go
 
-run: app
-	@./bin/app
+run: fedbox
+	@./bin/fedbox
 
 clean:
 	-$(RM) bin/*
