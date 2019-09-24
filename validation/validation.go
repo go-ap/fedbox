@@ -123,7 +123,41 @@ func (m *MissingActorError) Is(e error) bool {
 }
 
 func (v genericValidator) ValidateServerActivity(a as.Item, inbox as.IRI) error {
-	return errors.NotImplementedf("Server Activity validation is not implemented")
+	if !IsInbox(inbox) {
+		return errors.NotValidf("Trying to validate a non inbox IRI %s", inbox)
+	}
+	if v.auth.GetLink() == as.PublicNS {
+		return errors.Unauthorizedf("%s actor is not allowed posting to current inbox", v.auth.Name)
+	}
+	if a == nil {
+		return InvalidActivityActor("received nil activity")
+	}
+	if a.IsLink() {
+		return v.ValidateLink(a.GetLink())
+	}
+	if !as.ActivityTypes.Contains(a.GetType()) {
+		return InvalidActivity("invalid type %s", a.GetType())
+	}
+	act, err := as.ToActivity(a)
+	if err != nil {
+		return err
+	}
+	if err := v.ValidateServerActor(act.Actor); err != nil {
+		if (&MissingActorError{}).Is(err) && v.auth != nil {
+			act.Actor = v.auth
+		} else {
+			return err
+		}
+	}
+	if err := v.ValidateServerObject(act.Object); err != nil {
+		return err
+	}
+	if act.Target != nil {
+		if err := v.ValidateServerObject(act.Target); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func IsOutbox(i as.IRI) bool {
