@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"github.com/go-ap/activitypub/client"
 	as "github.com/go-ap/activitystreams"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/spacemonkeygo/httpsig"
@@ -457,11 +458,17 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			if len(test.req.headers) == 0 {
 				test.req.headers = make(http.Header, 0)
 				test.req.headers.Set("User-Agent", fmt.Sprintf("-%s", UserAgent))
-				test.req.headers.Set("Accept", HeaderAccept)
+
 				test.req.headers.Set("Cache-Control", "no-cache")
 			}
 			if test.req.met == "" {
 				test.req.met = http.MethodPost
+			}
+			if test.req.met == http.MethodPost {
+				test.req.headers.Set("Content-Type", client.ContentTypeActivityJson)
+			}
+			if test.req.met == http.MethodGet {
+				test.req.headers.Set("Accept", HeaderAccept)
 			}
 			if test.res.code == 0 {
 				test.res.code = http.StatusCreated

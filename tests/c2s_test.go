@@ -375,7 +375,7 @@ var C2STests = []testSuite{
 						},
 						obj: &objectVal{
 							typ:     string(as.ArticleType),
-							content: "\\u003cp\\u003eHello world\\u003c/p\\u003e", // FIXME(marius): This sucks balls,
+							content: "<p>Hello world</p>",
 						},
 					},
 				},
