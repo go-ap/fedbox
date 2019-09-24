@@ -309,14 +309,20 @@ func filterItemCollections(filters as.IRIs, colArr ...as.ItemCollection) bool {
 	return keep
 }
 
-func filterContext(filters as.IRIs, it as.Item) bool {
+func filterContext(filters as.IRIs, items ...as.Item) bool {
 	if len(filters) == 1 && filters[0] == as.PublicNS {
-		return it == nil
+		for _, it := range items {
+			if it != nil {
+				return false
+			}
+		}
+		return true
 	}
-	if len(filters) > 0 {
-		return !(it == nil)
+	keep := true
+	for _, it := range items {
+		keep = filterItem(filters, it)
 	}
-	return filterItem(filters, it)
+	return keep
 }
 
 func filterItem(filters as.IRIs, it as.Item) bool {
@@ -356,7 +362,7 @@ func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
 			return nil
 		}
 		// TODO(marius): this needs to be moved in handling an item collection for inReplyTo
-		if !filterContext(ff.Context(), ob.InReplyTo) {
+		if !filterContext(ff.Context(), ob.InReplyTo...) {
 			keep = false
 			return nil
 		}
