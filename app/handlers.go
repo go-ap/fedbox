@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/go-ap/activitypub/client"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
@@ -45,6 +46,23 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 	return activitypub.PaginateCollection(items, f)
 }
 
+func validContentType(c string) bool {
+	if c == client.ContentTypeActivityJson || c == client.ContentTypeJsonLD {
+		return true
+	}
+
+	return false
+}
+
+func ValidateRequest(r *http.Request) (bool, error) {
+	contType := r.Header.Get("Content-Type")
+	if validContentType(contType) {
+		return true, nil
+	}
+
+	return false, errors.Newf("Invalid request")
+}
+
 // HandleRequest handles POST requests to an ActivityPub To's inbox/outbox, based on the CollectionType
 func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repository) (as.Item, int, error) {
 	var err error
@@ -56,12 +74,15 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	}
 	LoadCollectionFilters(r, f)
 
-	if body, err := ioutil.ReadAll(r.Body); err != nil || len(body) == 0 {
+	if ok, err := ValidateRequest(r); !ok {
+		return it, http.StatusInternalServerError, errors.NewNotValid(err, "unrecognized ActivityPub request")
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil || len(body) == 0 {
 		return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
-	} else {
-		if it, err = as.UnmarshalJSON(body); err != nil {
-			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
-		}
+	}
+	if it, err = as.UnmarshalJSON(body); err != nil {
+		return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 	}
 	validator, ok := validation.FromContext(r.Context())
 	if ok == false {
@@ -70,7 +91,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	validator.SetActor(f.Authenticated)
 	var validateFn func(as.Item, as.IRI) error
 	switch typ {
-	case h.Outbox :
+	case h.Outbox:
 		validateFn = validator.ValidateClientActivity
 	case h.Inbox:
 		validateFn = validator.ValidateServerActivity
@@ -147,9 +168,9 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 				items, _, err = actLoader.LoadActors(f)
 			}
 		case activitypub.ObjectsType:
-			items, _, err = repo.LoadObjects(f)
+			fallthrough
 		default:
-
+			items, _, err = repo.LoadObjects(f)
 		}
 	} else if f.Collection == "" {
 		if actLoader, ok := repo.(storage.ActorLoader); ok {
