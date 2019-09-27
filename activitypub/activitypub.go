@@ -26,19 +26,21 @@ func Self(baseURL as.IRI) auth.Service {
 	oauth.Path = path.Join(oauth.Path, "oauth/")
 	return auth.Service{
 		Person: ap.Person{
-			Parent: as.Person{
-				ID:           as.ObjectID(url.String()),
-				Type:         as.ServiceType,
-				Name:         as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: "self"}},
-				AttributedTo: as.IRI("https://github.com/mariusor"),
-				Audience:     as.ItemCollection{as.PublicNS},
-				Content:      nil, //as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: ""}},
-				Icon:         nil,
-				Image:        nil,
-				Location:     nil,
-				Summary:      as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: "Generic ActivityPub service"}},
-				Tag:          nil,
-				URL:          baseURL,
+			Parent: ap.Object{
+				Parent: as.Person{
+					ID:           as.ObjectID(url.String()),
+					Type:         as.ServiceType,
+					Name:         as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: "self"}},
+					AttributedTo: as.IRI("https://github.com/mariusor"),
+					Audience:     as.ItemCollection{as.PublicNS},
+					Content:      nil, //as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: ""}},
+					Icon:         nil,
+					Image:        nil,
+					Location:     nil,
+					Summary:      as.NaturalLanguageValues{{Ref: as.NilLangRef, Value: "Generic ActivityPub service"}},
+					Tag:          nil,
+					URL:          baseURL,
+				},
 			},
 			Inbox:  as.IRI(inbox.String()),
 			Outbox: as.IRI(outbox.String()),
@@ -63,7 +65,7 @@ func DefaultServiceIRI(baseURL string) as.IRI {
 // ItemByType
 func ItemByType(typ as.ActivityVocabularyType) (as.Item, error) {
 	if as.ActorTypes.Contains(typ) {
-		return &auth.Person{Person: ap.Person{Parent: ap.Parent{Type: typ}}}, nil
+		return &auth.Person{Person: ap.Person{Parent: ap.Object{Parent: as.Object{Type: typ}}}}, nil
 	} else if as.ActivityTypes.Contains(typ) {
 		return &as.Activity{Parent: as.Parent{Type: typ}}, nil
 	} else if typ == as.CollectionType {
