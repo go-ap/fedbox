@@ -14,7 +14,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20190912092905-f53d51859c48
 	github.com/go-ap/handlers v0.0.0-20190909184214-622f2bd6ce16
 	github.com/go-ap/jsonld v0.0.0-20190909141304-ea10fe6e7916
-	github.com/go-ap/processing v0.0.0-20190924072737-d49ea023440b
+	github.com/go-ap/processing v0.0.0-20190927144612-fe138e62080d
 	github.com/go-ap/storage v0.0.0-20190909183853-07b6c15efd97
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/jackc/pgx v3.5.0+incompatible
