@@ -294,6 +294,10 @@ func filterItemCollections(filters as.IRIs, colArr ...as.ItemCollection) bool {
 	}
 	if len(filters) > 0 {
 		for _, items := range colArr {
+			if filterAbsent(filters, items...) {
+				keep = true
+				break
+			}
 			for _, it := range items {
 				if it == nil {
 					continue
@@ -309,16 +313,19 @@ func filterItemCollections(filters as.IRIs, colArr ...as.ItemCollection) bool {
 	return keep
 }
 
-func filterContext(filters as.IRIs, items ...as.Item) bool {
+func filterAbsent(filters as.IRIs, items ...as.Item) bool {
 	if len(filters) == 1 && filters[0] == as.PublicNS {
 		for _, it := range items {
 			if it != nil {
 				return false
 			}
 		}
-		return true
 	}
-	keep := true
+	return true
+}
+
+func filterContext(filters as.IRIs, items ...as.Item) bool {
+	keep := filterAbsent(filters, items...)
 	for _, it := range items {
 		keep = filterItem(filters, it)
 	}
@@ -370,7 +377,7 @@ func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
 			keep = false
 			return nil
 		}
-		if !filterItem(ff.InReplyTo(), ob.InReplyTo) {
+		if !filterItemCollections(ff.InReplyTo(), ob.InReplyTo) {
 			keep = false
 			return nil
 		}

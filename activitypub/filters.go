@@ -226,6 +226,12 @@ func (f Filters) AttributedTo() as.IRIs {
 func (f Filters) InReplyTo() as.IRIs {
 	col := make(as.IRIs, len(f.InReplTo))
 	for k, iri := range f.InReplTo {
+		// TODO(marius): This piece of logic should be moved to loading the filters
+		if iri == "" || iri == "0" {
+			// for empty context we give it a generic filter to skip all objects that have context
+			col[k] = as.PublicNS
+			return col
+		}
 		col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, iri))
 	}
 	return col
