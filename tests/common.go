@@ -28,6 +28,11 @@ import (
 var UserAgent = "test-go-http-client"
 var HeaderAccept = `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`
 
+type actMock struct {
+	ActorId  string
+	ObjectId string
+}
+
 type testSuite struct {
 	name  string
 	mocks []string
@@ -54,6 +59,14 @@ type testReq struct {
 	clientID string
 	bodyFn   func() string
 	body     string
+}
+
+func (t testPair) name() string {
+	b := t.req.url
+	if b == "" {
+		b = t.req.urlFn()
+	}
+	return fmt.Sprintf("%s:%s", t.req.met, b)
 }
 
 type testRes struct {
@@ -164,7 +177,7 @@ func errOnArray(t *testing.T) stringArrFieldAssertFn {
 			sort.Strings(tVal)
 			sort.Strings(arr)
 			for k, iri := range tVal {
-				t.Run(fmt.Sprintf("[%d]", k), func(t *testing.T) {
+				t.Run(fmt.Sprintf("[%s]", iri), func(t *testing.T) {
 					vk := arr[k]
 					errIfNotTrue(t)(iri == vk, "array element at pos %d, %s does not match expected %s", k, vk, iri)
 				})
@@ -241,7 +254,7 @@ func _unescapeUnicodeCharactersInJSON(_jsonRaw string) (string, error) {
 
 func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 	return func(ob map[string]interface{}, tVal *objectVal) {
-		t.Run(tVal.id, func(t *testing.T) {
+		t.Run(fmt.Sprintf("[%s]%s", tVal.typ, tVal.id), func(t *testing.T) {
 			fail := errorf(t)
 			assertTrue := errIfNotTrue(t)
 			assertMapKey := errOnMapProp(t)
@@ -451,7 +464,7 @@ func errOnGetRequest(t *testing.T) requestGetAssertFn {
 func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 	return func(test testPair) map[string]interface{} {
 		res := make(map[string]interface{})
-		t.Run(test.req.met, func(t *testing.T) {
+		t.Run(test.name(), func(t *testing.T) {
 			assertTrue := errIfNotTrue(t)
 			assertGetRequest := errOnGetRequest(t)
 			assertObjectProperties := errOnObjectProperties(t)
@@ -517,19 +530,17 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 				"Error: invalid HTTP response %d, expected %d\nReq:[%s] %s\n    %v\nRes[%s]:\n    %v\n    %s",
 				resp.StatusCode, test.res.code, req.Method, req.URL, req.Header, resp.Status, resp.Header, b)
 
-			if test.req.met != http.MethodGet {
+			if test.req.met != http.MethodGet && test.res.code == http.StatusCreated {
 				location, ok := resp.Header["Location"]
 				if !ok {
 					return
 				}
-				assertTrue(ok, "Server didn't respond with a Location header even though it confirmed the Like was created")
+				assertTrue(ok, "Server didn't respond with a Location header even though it responded with a %d status", resp.StatusCode)
 				assertTrue(len(location) == 1, "Server responded with %d Location headers which is not expected", len(location))
-
 				newObj, err := url.Parse(location[0])
 				newObjURL := newObj.String()
 				assertTrue(err == nil, "Location header holds invalid URL %s", newObjURL)
 				assertTrue(strings.Contains(newObjURL, apiURL), "Location header holds invalid URL %s, expected to contain %s", newObjURL, apiURL)
-
 				if test.res.val == nil {
 					test.res.val = &objectVal{}
 				}
@@ -560,7 +571,7 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 		resetDB(t)
 		seedTestData(t, suite.mocks)
 		for _, test := range suite.tests {
-			t.Run(suite.name, func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s:%s", suite.name, test.name()), func(t *testing.T) {
 				seedTestData(t, test.mocks)
 				errOnRequest(t)(test)
 			})

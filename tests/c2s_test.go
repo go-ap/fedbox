@@ -438,6 +438,93 @@ var C2STests = []testSuite{
 			},
 		},
 	},
+	{
+		name: "LikeNote",
+		mocks: []string{
+			"mocks/service.json",
+			"mocks/actor-johndoe.json",
+			"mocks/note.json",
+		},
+		tests: []testPair{
+			{
+				req: testReq{
+					met:     http.MethodPost,
+					account: &defaultTestAccount,
+					urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
+					bodyFn:  loadMockJson("mocks/like-note.json", &actMock{ActorId: *(&defaultTestAccount.Id), ObjectId: "http://127.0.0.1:9998/objects/41e7ec45-ff92-473a-b79d-974bf30a0aba"}),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(as.LikeType),
+						act: &objectVal{
+							typ:               string(as.PersonType),
+							preferredUsername: "johndoe",
+						},
+						obj: &objectVal{
+							typ: string(as.NoteType),
+						},
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)),
+						typ:       string(as.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/activities", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/activities", apiURL),
+						typ:       string(as.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/inbox", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/inbox", apiURL),
+						typ:       string(as.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/liked", *(&defaultTestAccount.Id)),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/liked", *(&defaultTestAccount.Id)),
+						typ:       string(as.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+		},
+	},
 }
 
 func Test_C2SRequests(t *testing.T) {
