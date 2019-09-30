@@ -8,14 +8,14 @@ require (
 	github.com/dyninc/qstring v0.0.0-20160719172318-ab5840a88e81 // indirect
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
 	github.com/gchaincl/dotsql v1.0.0
-	github.com/go-ap/activitypub v0.0.0-20190927133520-ed06508b7b31
+	github.com/go-ap/activitypub v0.0.0-20190928073001-2745a3c69467
 	github.com/go-ap/activitystreams v0.0.0-20190924112949-06f068288896
 	github.com/go-ap/auth v0.0.0-20190927140906-5b52d79b3318
 	github.com/go-ap/errors v0.0.0-20190912092905-f53d51859c48
 	github.com/go-ap/handlers v0.0.0-20190909184214-622f2bd6ce16
 	github.com/go-ap/jsonld v0.0.0-20190909141304-ea10fe6e7916
-	github.com/go-ap/processing v0.0.0-20190927144612-fe138e62080d
-	github.com/go-ap/storage v0.0.0-20190909183853-07b6c15efd97
+	github.com/go-ap/processing v0.0.0-20190930191722-9e5dd71c9374
+	github.com/go-ap/storage v0.0.0-20190928120412-7fbc22b43121
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/jackc/pgx v3.5.0+incompatible
 	github.com/joho/godotenv v1.3.0
