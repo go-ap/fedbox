@@ -349,6 +349,10 @@ func (r repo) CreateCollection(it as.CollectionInterface) (as.CollectionInterfac
 	return it, nil
 }
 
+func (r repo) RemoveFromCollection(col as.IRI, it as.Item) error {
+	return errors.NotImplementedf("removing from collection is not yet implemented")
+}
+
 func (r repo) AddToCollection(col as.IRI, it as.Item) error {
 	if it == nil {
 		return errors.Newf("unable to add nil element to collection")
