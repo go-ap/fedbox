@@ -167,12 +167,8 @@ func reqURL(r *http.Request) string {
 }
 
 // TODO(marius): this function also exists in app/filters package
-func reqBaseURL(r *http.Request) string {
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-	return fmt.Sprintf("%s://%s", scheme, r.Host)
+func reqBaseURL(r *url.URL) string {
+	return fmt.Sprintf("%s://%s", r.Scheme, r.Host)
 }
 
 // FromRequest loads the filters we use for generating storage queries from the HTTP request
@@ -182,8 +178,11 @@ func FromRequest(r *http.Request) (*Filters, error) {
 		return nil, err
 	}
 	f.Collection = h.Typer.Type(r)
-	f.baseURL = as.IRI(reqBaseURL(r))
-	f.IRI = as.IRI(reqURL(r))
+	if len(f.IRI) == 0 {
+		f.IRI = as.IRI(reqURL(r))
+	}
+	i, _ := f.IRI.URL()
+	f.baseURL = as.IRI(reqBaseURL(i))
 
 	if f.MaxItems > MaxItems {
 		f.MaxItems = MaxItems

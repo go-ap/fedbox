@@ -86,8 +86,6 @@ func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {
 // LoadItemFilters uses specific logic for adding elements to the filters when loading
 // single items from the database.
 func LoadItemFilters(r *http.Request, f *ap.Filters) error {
-	f.IRI = as.IRI(reqURL(r))
-
 	if len(f.Key) != 0 {
 		for _, k := range f.Key {
 			i := as.IRI(fmt.Sprintf("%s%s", f.IRI, k))
