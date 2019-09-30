@@ -162,35 +162,10 @@ func filterActivity(it as.Item, f s.Filterable) (bool, as.Item) {
 		return true, it
 	}
 	keep := true
-	err := activitypub.OnActivity(it, func(act *as.Activity) error {
-		if !filterNaturalLanguageValues(ff.Names(), act.Name) {
+	activitypub.OnActivity(it, func(act *as.Activity) error {
+		if ok, _ := filterObject(act, ff); !ok {
 			keep = false
 			return nil
-		}
-		if !filterItem(ff.AttributedTo(), act.AttributedTo) {
-			keep = false
-			return nil
-		}
-		if !filterItem(ff.InReplyTo(), act.InReplyTo) {
-			keep = false
-			return nil
-		}
-		if !filterItemCollections(ff.Audience(), act.Recipients(), as.ItemCollection{act.AttributedTo}) {
-			keep = false
-			return nil
-		}
-		medTypes := ff.MediaTypes()
-		if len(medTypes) > 0 {
-			exists := false
-			for _, typ := range medTypes {
-				if typ == act.MediaType {
-					exists = true
-				}
-			}
-			if !exists {
-				keep = false
-				return nil
-			}
 		}
 		if !filterItem(ff.Actors(), act.Actor) {
 			keep = false
@@ -206,26 +181,32 @@ func filterActivity(it as.Item, f s.Filterable) (bool, as.Item) {
 		}
 		return nil
 	})
-	if err != nil {
-		return false, nil
-	}
 	return keep, it
 }
 
-func filterPerson(it as.Item, f s.Filterable) (bool, as.Item) {
+func filterActor(it as.Item, f s.Filterable) (bool, as.Item) {
 	ff, ok := f.(s.FilterableObject)
 	if !ok {
 		return true, it
 	}
 
 	keep := true
-	err := auth.OnPerson(it, func(ob *auth.Person) error {
+	auth.OnPerson(it, func(ob *auth.Person) error {
+		names := ff.Names()
+		if len(names) > 0 && !filterNaturalLanguageValues(names, ob.Name, ob.PreferredUsername) {
+			keep = false
+			return nil
+		}
 		if !filterItem(ff.URLs(), ob) {
 			keep = false
 			return nil
 		}
-		names := ff.Names()
-		if len(names) > 0 && !filterNaturalLanguageValues(names, ob.Name, ob.PreferredUsername) {
+		if !filterContext(ff.Context(), ob.Context) {
+			keep = false
+			return nil
+		}
+		// TODO(marius): this needs to be moved in handling an item collection for inReplyTo
+		if !filterContext(ff.Context(), ob.InReplyTo...) {
 			keep = false
 			return nil
 		}
@@ -233,7 +214,7 @@ func filterPerson(it as.Item, f s.Filterable) (bool, as.Item) {
 			keep = false
 			return nil
 		}
-		if !filterItem(ff.InReplyTo(), ob.InReplyTo) {
+		if !filterItemCollections(ff.InReplyTo(), ob.InReplyTo) {
 			keep = false
 			return nil
 		}
@@ -241,28 +222,12 @@ func filterPerson(it as.Item, f s.Filterable) (bool, as.Item) {
 			keep = false
 			return nil
 		}
-		medTypes := ff.MediaTypes()
-		if len(medTypes) > 0 {
-			exists := false
-			for _, typ := range medTypes {
-				if typ == ob.MediaType {
-					exists = true
-				}
-			}
-			if !exists {
-				keep = false
-				return nil
-			}
-		}
-		if !filterContext(ff.Context(), ob.Context) {
+		if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
 			keep = false
 			return nil
 		}
 		return nil
 	})
-	if err != nil {
-		return false, nil
-	}
 	return keep, it
 }
 
@@ -340,6 +305,22 @@ func filterItem(filters as.IRIs, it as.Item) bool {
 	return keep
 }
 
+func filterMediaTypes(medTypes []as.MimeType, typ as.MimeType) bool {
+	keep := true
+	if len(medTypes) > 0 {
+		exists := false
+		for _, filter := range medTypes {
+			if filter == typ {
+				exists = true
+			}
+		}
+		if !exists {
+			keep = false
+		}
+	}
+	return keep
+}
+
 func (r repo) buildIRIs(c handlers.CollectionType, hashes ...ap.Hash) as.IRIs {
 	iris := make(as.IRIs, 0)
 	for _, hash := range hashes {
@@ -355,12 +336,12 @@ func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
 		return true, it
 	}
 	keep := true
-	err := activitypub.OnObject(it, func(ob *activitypub.Object) error {
-		if !filterItem(ff.URLs(), ob) {
+	activitypub.OnObject(it, func(ob *activitypub.Object) error {
+		if !filterNaturalLanguageValues(ff.Names(), ob.Name) {
 			keep = false
 			return nil
 		}
-		if !filterNaturalLanguageValues(ff.Names(), ob.Name) {
+		if !filterItem(ff.URLs(), ob) {
 			keep = false
 			return nil
 		}
@@ -385,24 +366,12 @@ func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
 			keep = false
 			return nil
 		}
-		medTypes := ff.MediaTypes()
-		if len(medTypes) > 0 {
-			exists := false
-			for _, typ := range medTypes {
-				if typ == ob.MediaType {
-					exists = true
-				}
-			}
-			if !exists {
-				keep = false
-				return nil
-			}
+		if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
+			keep = false
+			return nil
 		}
 		return nil
 	})
-	if err != nil {
-		return false, nil
-	}
 	return keep, it
 }
 
@@ -442,8 +411,11 @@ func filterIt(key, raw []byte, f s.Filterable) (as.Item, error) {
 	var valid bool
 	if as.ActivityTypes.Contains(it.GetType()) {
 		valid, _ = filterActivity(it, f)
+	} else if as.IntransitiveActivityTypes.Contains(it.GetType()) {
+		// FIXME(marius): this does not work
+		valid, _ = filterActivity(it, f)
 	} else if as.ActorTypes.Contains(it.GetType()) {
-		valid, _ = filterPerson(it, f)
+		valid, _ = filterActor(it, f)
 	} else {
 		valid, _ = filterObject(it, f)
 	}
