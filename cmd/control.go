@@ -32,17 +32,19 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 	now := time.Now()
 	p := auth.Person{
 		Person: activitypub.Person{
-			Parent: as.Parent{
-				Type: typ,
-				// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
-				AttributedTo: self.GetLink(),
-				Audience:     as.ItemCollection{as.PublicNS},
-				Generator:    self.GetLink(),
-				Published:    now,
-				Summary: as.NaturalLanguageValues{
-					{as.NilLangRef, "Generated actor"},
+			Parent: activitypub.Parent{
+				Parent: as.Object{
+					Type: typ,
+					// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
+					AttributedTo: self.GetLink(),
+					Audience:     as.ItemCollection{as.PublicNS},
+					Generator:    self.GetLink(),
+					Published:    now,
+					Summary: as.NaturalLanguageValues{
+						{as.NilLangRef, "Generated actor"},
+					},
+					Updated: now,
 				},
-				Updated: now,
 			},
 			PreferredUsername: as.NaturalLanguageValues{
 				{as.NilLangRef, preferredUsername},
@@ -83,7 +85,6 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 	}
 
 	if pw != nil {
-		// TODO(marius): add the password somewhere in the actor's data
 		if pwManager, ok := c.Storage.(PasswordChanger); ok {
 			err := pwManager.PasswordSet(saved.GetLink(), pw)
 			if err != nil {
@@ -117,7 +118,7 @@ func (c *Control) DeleteActor(id string) error {
 func (c *Control) ListActors() (as.ItemCollection, error) {
 	var err error
 	actorsIRI := as.IRI(fmt.Sprintf("%s/%s", c.BaseURL, ap.ActorsType))
-	col, _, err :=  c.Storage.LoadActors(&ap.Filters{IRI: actorsIRI})
+	col, _, err := c.Storage.LoadActors(&ap.Filters{IRI: actorsIRI})
 	if err != nil {
 		return col, errors.Annotatef(err, "Unable to load actors")
 	}
