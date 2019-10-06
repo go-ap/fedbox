@@ -18,7 +18,6 @@ import (
 	"path"
 	"runtime/debug"
 	"sort"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -242,14 +241,6 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 			}
 		})
 	}
-}
-
-func _unescapeUnicodeCharactersInJSON(_jsonRaw string) (string, error) {
-	str, err := strconv.Unquote(strings.Replace(strconv.Quote(string(_jsonRaw)), `\\u`, `\u`, -1))
-	if err != nil {
-		return string(_jsonRaw), err
-	}
-	return str, nil
 }
 
 func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
