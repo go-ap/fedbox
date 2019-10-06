@@ -7,6 +7,7 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/cmd"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
@@ -74,23 +75,42 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 				actorFilters.IRI = as.IRI(iri)
 			}
 		}
+		h.account = account{
+			username: "anonymous",
+			actor:    &auth.AnonymousActor,
+		}
 		acc, cnt, err := h.loader.LoadActors(actorFilters)
 		if err != nil {
 			h.logger.Errorf("%s", err)
 			errors.HandleError(err).ServeHTTP(w, r)
+			return
 		}
 		if cnt != 1 {
 			h.logger.Errorf("%s", err)
 			errors.HandleError(err).ServeHTTP(w, r)
+			return
 		}
 		if acc.First() != nil {
-			auth.OnPerson(acc.First(), func(p *auth.Person) error {
+			err := auth.OnPerson(acc.First(), func(p *auth.Person) error {
+				if ar.Type == osin.PASSWORD {
+					if pwLoader, ok := h.loader.(cmd.PasswordChanger); ok {
+						err := pwLoader.PasswordCheck(p, []byte(ar.Password))
+						if err != nil {
+							return errors.NewUnauthorized(err, "Invalid username or password")
+						}
+					}
+				}
 				h.account = account{
 					username: p.PreferredUsername.String(),
 					actor:    p,
 				}
 				return nil
 			})
+			if err != nil {
+				h.logger.Errorf("%s", err)
+				errors.HandleError(err).ServeHTTP(w, r)
+				return
+			}
 			ar.Authorized = h.account.IsLogged()
 			ar.UserData = h.account.actor.GetLink()
 		}
