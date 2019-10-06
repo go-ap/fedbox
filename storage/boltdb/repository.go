@@ -14,6 +14,7 @@ import (
 	s "github.com/go-ap/storage"
 	"github.com/mariusor/qstring"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 	"net/url"
 	"path"
 	"strings"
@@ -899,6 +900,9 @@ func (r *repo) Close() error {
 	}
 	return r.d.Close()
 }
+type meta struct {
+	Pw []byte `json:"pw"`
+}
 
 // PasswordSet
 func (r *repo) PasswordSet(it as.Item, pw []byte) error {
@@ -911,10 +915,6 @@ func (r *repo) PasswordSet(it as.Item, pw []byte) error {
 		return err
 	}
 	defer r.Close()
-
-	type meta struct {
-		Pw []byte `json:"pw"`
-	}
 
 	err = r.d.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
@@ -933,19 +933,59 @@ func (r *repo) PasswordSet(it as.Item, pw []byte) error {
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
 
+		pw, err = bcrypt.GenerateFromPassword(pw, -1)
+		if err != nil {
+			return errors.Annotatef(err, "Could not encrypt the pw")
+		}
 		m := meta{
 			Pw: pw,
 		}
 		entryBytes, err := jsonld.Marshal(m)
 		if err != nil {
-			return errors.Annotatef(err, "could not marshal metadata")
+			return errors.Annotatef(err, "Could not marshal metadata")
 		}
 		err = b.Put([]byte(metaDataKey), entryBytes)
 		if err != nil {
-			return errors.Errorf("could not insert entry: %s", err)
+			return errors.Errorf("Could not insert entry: %s", err)
 		}
 		return nil
 	})
 
+	return err
+}
+
+// PasswordCheck
+func (r *repo) PasswordCheck(it as.Item, pw []byte) error {
+	path, err := itemBucketPath(it.GetLink())
+	if err != nil {
+		return err
+	}
+	err = r.Open()
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	m := meta{}
+	err = r.d.View(func(tx *bolt.Tx) error {
+		root := tx.Bucket(r.root)
+		if root == nil {
+			return errors.Errorf("Invalid bucket %s", r.root)
+		}
+		var b *bolt.Bucket
+		b, path, err = descendInBucket(root, path, false)
+		if err != nil {
+			return errors.Newf("Unable to find %s in root bucket", path)
+		}
+		entryBytes := b.Get([]byte(metaDataKey))
+		err := jsonld.Unmarshal(entryBytes, &m)
+		if err != nil {
+			return errors.Annotatef(err, "Could not unmarshal metadata")
+		}
+		if err := bcrypt.CompareHashAndPassword(entryBytes, pw); err != nil {
+			return errors.NewUnauthorized(err, "Invalid pw")
+		}
+		return nil
+	})
 	return err
 }

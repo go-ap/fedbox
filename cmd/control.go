@@ -25,6 +25,7 @@ type Control struct {
 
 type PasswordChanger interface {
 	PasswordSet(as.Item, []byte) error
+	PasswordCheck(as.Item, []byte) error
 }
 
 func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyType, id *as.ObjectID, pw []byte) (*auth.Person, error) {
