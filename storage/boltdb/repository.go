@@ -982,7 +982,7 @@ func (r *repo) PasswordCheck(it as.Item, pw []byte) error {
 		if err != nil {
 			return errors.Annotatef(err, "Could not unmarshal metadata")
 		}
-		if err := bcrypt.CompareHashAndPassword(entryBytes, pw); err != nil {
+		if err := bcrypt.CompareHashAndPassword(m.Pw, pw); err != nil {
 			return errors.NewUnauthorized(err, "Invalid pw")
 		}
 		return nil
