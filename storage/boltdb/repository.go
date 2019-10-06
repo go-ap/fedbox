@@ -742,8 +742,8 @@ func (r *repo) RemoveFromCollection(col as.IRI, it as.Item) error {
 		if !b.Writable() {
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
-		var iris []as.IRI
-		raw := b.Get([]byte(rem))
+		var iris as.IRIs
+		raw := b.Get(rem)
 		if len(raw) > 0 {
 			err := jsonld.Unmarshal(raw, &iris)
 			if err != nil {
@@ -753,6 +753,7 @@ func (r *repo) RemoveFromCollection(col as.IRI, it as.Item) error {
 		for k, iri := range iris {
 			if iri == it.GetLink() {
 				iris = append(iris[:k], iris[k+1:]...)
+				break
 			}
 		}
 		raw, err := jsonld.Marshal(iris)
@@ -812,7 +813,7 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 		if !b.Writable() {
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
-		var iris []as.IRI
+		var iris as.IRIs
 		raw := b.Get([]byte(rem))
 		if len(raw) > 0 {
 			err := jsonld.Unmarshal(raw, &iris)
@@ -820,16 +821,18 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 				return errors.Newf("Unable to unmarshal entries in collection %s", path)
 			}
 		}
+		if iris.Contains(it.GetLink()) {
+			return errors.Newf("Element already exists in collection %s", path)
+		}
 		iris = append(iris, it.GetLink())
 		raw, err := jsonld.Marshal(iris)
 		if err != nil {
 			return errors.Newf("Unable to marshal entries in collection %s", path)
 		}
-		err = b.Put([]byte(rem), raw)
+		err = b.Put(rem, raw)
 		if err != nil {
 			return errors.Newf("Unable to save entries to collection %s", path)
 		}
-
 		return err
 	})
 }
