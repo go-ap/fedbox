@@ -106,7 +106,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 		}
 		if len(remainderPath) > 0 {
 			// when we get a non empty path from descendIntoBucket we try to load it as a valid object key
-			prefix := []byte(remainderPath)
+			prefix := remainderPath
 			for key, raw := c.Seek(prefix); key != nil && bytes.HasPrefix(key, prefix); key, raw = c.Next() {
 				it, err := filterIt(key, raw, f)
 				if err != nil {
@@ -395,7 +395,7 @@ func filterIt(key, raw []byte, f s.Filterable) (as.Item, error) {
 	it, err := as.UnmarshalJSON(raw)
 	if err != nil {
 		// TODO(marius): log this instead of stopping the iteration and returning an error
-		return nil, errors.Annotatef(err, "unable to unmarshal raw item")
+		return nil, errors.Annotatef(err, "Unable to unmarshal raw item")
 	}
 	if f1, ok := f.(s.FilterableItems); ok {
 		iris := f1.IRIs()
@@ -549,6 +549,8 @@ func delete(r *repo, it as.Item) (as.Item, error) {
 	old := found.First()
 
 	// TODO(marius): add some mechanism for marking the collections as read-only
+	//    update 2019-10-03: I have no clue what this comment means. I can't think of why we'd need r/o collections for
+	//    cases where we want to delete things.
 	t := as.Tombstone{
 		Parent: as.Parent{
 			ID:   as.ObjectID(it.GetLink()),
@@ -573,14 +575,14 @@ func (r *repo) CreateCollection(col as.CollectionInterface) (as.CollectionInterf
 
 	cPath, err := itemBucketPath(col.GetLink())
 	if err != nil {
-		return col, err
+		return col, errors.Annotatef(err, "Unable to load a valid IRI from object")
 	}
 	c := []byte(path.Base(string(cPath)))
 	err = r.d.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
 		b, _, err := descendInBucket(root, cPath, true)
 		if err != nil {
-			return err
+			return errors.Annotatef(err, "Unable to find path %s/%s", r.root, cPath)
 		}
 		return b.Put(c, nil)
 	})
@@ -598,7 +600,7 @@ func itemBucketPath(iri as.IRI) ([]byte, error) {
 func save(r *repo, it as.Item) (as.Item, error) {
 	path, err := itemBucketPath(it.GetLink())
 	if err != nil {
-		return it, err
+		return it, errors.Annotatef(err, "Unable to load a valid IRI from object")
 	}
 	var uuid []byte
 	err = r.d.Update(func(tx *bolt.Tx) error {
@@ -612,7 +614,7 @@ func save(r *repo, it as.Item) (as.Item, error) {
 		var b *bolt.Bucket
 		b, uuid, err = descendInBucket(root, path, true)
 		if err != nil {
-			return errors.Newf("Unable to find %s in root bucket", path)
+			return errors.Annotatef(err, "Unable to find %s in root bucket", path)
 		}
 		if !b.Writable() {
 			return errors.Errorf("Non writeable bucket %s", path)
@@ -620,7 +622,7 @@ func save(r *repo, it as.Item) (as.Item, error) {
 		if len(uuid) > 0 {
 			b, err = b.CreateBucket(uuid)
 			if err != nil {
-				return errors.Errorf("could not create item bucket entry: %s", err)
+				return errors.Annotatef(err, "could not create bucket %s", uuid)
 			}
 		}
 		return nil
@@ -637,18 +639,20 @@ func save(r *repo, it as.Item) (as.Item, error) {
 		var b *bolt.Bucket
 		b, uuid, err = descendInBucket(root, path, true)
 		if err != nil {
-			return errors.Newf("Unable to find %s in root bucket", path)
+			return errors.Annotatef(err, "Unable to find %s in root bucket", path)
 		}
 		if !b.Writable() {
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
+		// TODO(marius): it's possible to set the encoding/decoding functions on the package or storage object level
+		//  instead of using jsonld.(Un)Marshal like this.
 		entryBytes, err := jsonld.Marshal(it)
 		if err != nil {
-			return errors.Annotatef(err, "could not marshal activity")
+			return errors.Annotatef(err, "could not marshal object")
 		}
 		err = b.Put([]byte(objectKey), entryBytes)
 		if err != nil {
-			return errors.Errorf("could not insert entry: %s", err)
+			return errors.Annotatef(err, "could not store encoded object")
 		}
 
 		return nil
@@ -700,10 +704,10 @@ func (r repo) IsLocalIRI(i as.IRI) bool {
 
 func (r *repo) RemoveFromCollection(col as.IRI, it as.Item) error {
 	if it == nil {
-		return errors.Newf("unable to add nil element to collection")
+		return errors.Newf("Unable to add nil element to collection")
 	}
 	if len(col) == 0 {
-		return errors.Newf("unable to find collection")
+		return errors.Newf("Unable to find collection")
 	}
 	if len(it.GetLink()) == 0 {
 		return errors.Newf("Invalid create collection does not have a valid IRI")
@@ -760,7 +764,7 @@ func (r *repo) RemoveFromCollection(col as.IRI, it as.Item) error {
 		if err != nil {
 			return errors.Newf("Unable to marshal entries in collection %s", path)
 		}
-		err = b.Put([]byte(rem), raw)
+		err = b.Put(rem, raw)
 		if err != nil {
 			return errors.Newf("Unable to save entries to collection %s", path)
 		}
@@ -771,10 +775,10 @@ func (r *repo) RemoveFromCollection(col as.IRI, it as.Item) error {
 
 func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 	if it == nil {
-		return errors.Newf("unable to add nil element to collection")
+		return errors.Newf("Unable to add nil element to collection")
 	}
 	if len(col) == 0 {
-		return errors.Newf("unable to find collection")
+		return errors.Newf("Unable to find collection")
 	}
 	if len(it.GetLink()) == 0 {
 		return errors.Newf("Invalid create collection does not have a valid IRI")
@@ -814,7 +818,7 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
 		var iris as.IRIs
-		raw := b.Get([]byte(rem))
+		raw := b.Get(rem)
 		if len(raw) > 0 {
 			err := jsonld.Unmarshal(raw, &iris)
 			if err != nil {
@@ -878,11 +882,11 @@ func (r *repo) GenerateID(it as.Item, by as.Item) (as.ObjectID, error) {
 
 	var partOf string
 	if as.ActivityTypes.Contains(typ) {
-		partOf = fmt.Sprintf("%s/activities", r.baseURL)
+		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActivitiesType)
 	} else if as.ActorTypes.Contains(typ) || typ == as.ActorType {
-		partOf = fmt.Sprintf("%s/actors", r.baseURL)
+		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActorsType)
 	} else if as.ObjectTypes.Contains(typ) {
-		partOf = fmt.Sprintf("%s/objects", r.baseURL)
+		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ObjectsType)
 	}
 	return ap.GenerateID(it, partOf, by)
 }
@@ -891,7 +895,7 @@ func (r *repo) Open() error {
 	var err error
 	r.d, err = bolt.Open(r.path, 0600, nil)
 	if err != nil {
-		return errors.Annotatef(err, "could not open db %s", r.path)
+		return errors.Annotatef(err, "Could not open db %s", r.path)
 	}
 	return nil
 }
@@ -903,6 +907,7 @@ func (r *repo) Close() error {
 	}
 	return r.d.Close()
 }
+
 type meta struct {
 	Pw []byte `json:"pw"`
 }
