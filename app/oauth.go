@@ -59,6 +59,29 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	redirectOrOutput(resp, w, r, h)
 }
 
+func checkPw(it as.Item, pw []byte, pwLoader cmd.PasswordChanger) (account, error) {
+	acc := account{
+		username: "anonymous",
+		actor:    &auth.AnonymousActor,
+	}
+	err := auth.OnPerson(it, func(p *auth.Person) error {
+		err := pwLoader.PasswordCheck(p, []byte(pw))
+		if err != nil {
+			// TODO(marius): log the received error
+			return errors.Unauthorizedf("Invalid username or password")
+		}
+		acc = account{
+			username: p.PreferredUsername.String(),
+			actor:    p,
+		}
+		return nil
+	})
+	if err != nil {
+		return acc, err
+	}
+	return acc, nil
+}
+
 func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 	s := h.os
 	resp := s.NewResponse()
@@ -69,7 +92,7 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		switch ar.Type {
 		case osin.PASSWORD:
 			actorFilters.IRI = "http://fedbox.git/actors"
-			actorFilters.Name =  []string{ar.Username}
+			actorFilters.Name = []string{ar.Username}
 		case osin.AUTHORIZATION_CODE:
 			if iri, ok := ar.UserData.(string); ok {
 				actorFilters.IRI = as.IRI(iri)
@@ -90,29 +113,17 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 			errors.HandleError(err).ServeHTTP(w, r)
 			return
 		}
-		if acc.First() != nil {
-			err := auth.OnPerson(acc.First(), func(p *auth.Person) error {
-				if ar.Type == osin.PASSWORD {
-					if pwLoader, ok := h.loader.(cmd.PasswordChanger); ok {
-						err := pwLoader.PasswordCheck(p, []byte(ar.Password))
-						if err != nil {
-							return errors.NewUnauthorized(err, "Invalid username or password")
-						}
-					}
+		if acc.First() != nil && ar.Type == osin.PASSWORD {
+			if pwLoader, ok := h.loader.(cmd.PasswordChanger); ok {
+				h.account, err = checkPw(acc.First(), []byte(ar.Password), pwLoader)
+				if err != nil {
+					h.logger.Errorf("%s", err)
+					errors.HandleError(err).ServeHTTP(w, r)
+					return
 				}
-				h.account = account{
-					username: p.PreferredUsername.String(),
-					actor:    p,
-				}
-				return nil
-			})
-			if err != nil {
-				h.logger.Errorf("%s", err)
-				errors.HandleError(err).ServeHTTP(w, r)
-				return
+				ar.Authorized = h.account.IsLogged()
+				ar.UserData = h.account.actor.GetLink()
 			}
-			ar.Authorized = h.account.IsLogged()
-			ar.UserData = h.account.actor.GetLink()
 		}
 		s.FinishAccessRequest(resp, r, ar)
 	}
@@ -329,14 +340,15 @@ func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if actor, ok := actors.First().(*auth.Person); ok {
-		h.account.actor = actor
-		h.account.username = handle
-	}
-	if h.account.actor == nil {
-		err := errors.Unauthorizedf("Invalid username or password")
-		errors.HandleError(err).ServeHTTP(w, r)
-		return
+	if actors.First() != nil {
+		if pwLoader, ok := h.loader.(cmd.PasswordChanger); ok {
+			h.account, err = checkPw(actors.First(), []byte(pw), pwLoader)
+			if err != nil {
+				h.logger.Errorf("%s", err)
+				errors.HandleError(err).ServeHTTP(w, r)
+				return
+			}
+		}
 	}
 	config := oauth2.Config{
 		ClientID: client,
