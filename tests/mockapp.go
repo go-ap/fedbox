@@ -169,7 +169,7 @@ func runAPP(e env.Type) int {
 
 	r.Use(app.Repo(b))
 	r.Use(log.NewStructuredLogger(l))
-	r.Route("/", app.Routes(validation.New(a.Config().BaseURL, client.NewClient(), b), _oauthServer, b, l))
+	r.Route("/", app.Routes(a.Config().BaseURL, validation.New(a.Config().BaseURL, client.NewClient(), b), _oauthServer, b, l))
 
 	return a.Run(r, time.Second)
 }

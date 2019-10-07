@@ -142,7 +142,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 				} else {
 					it, err := filterIt(key, raw, f)
 					if err != nil {
-						// log error and continue
+						// TODO(marius): log error and continue
 						continue
 					}
 					if it != nil {

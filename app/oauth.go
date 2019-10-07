@@ -29,6 +29,7 @@ func (a account) IsLogged() bool {
 }
 
 type oauthHandler struct {
+	baseURL string
 	os      *osin.Server
 	loader  storage.ActorLoader
 	account account
@@ -91,39 +92,48 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		actorFilters := activitypub.Filters{}
 		switch ar.Type {
 		case osin.PASSWORD:
-			actorFilters.IRI = "http://fedbox.git/actors"
+			actorFilters.IRI = as.IRI(fmt.Sprintf("%s/actors", h.baseURL))
 			actorFilters.Name = []string{ar.Username}
 		case osin.AUTHORIZATION_CODE:
 			if iri, ok := ar.UserData.(string); ok {
 				actorFilters.IRI = as.IRI(iri)
 			}
 		}
-		h.account = account{
-			username: "anonymous",
-			actor:    &auth.AnonymousActor,
-		}
-		acc, cnt, err := h.loader.LoadActors(actorFilters)
+		actors, _, err := h.loader.LoadActors(actorFilters)
 		if err != nil {
-			h.logger.Errorf("%s", err)
-			errors.HandleError(err).ServeHTTP(w, r)
+			h.logger.Error(errUnauthorized)
+			errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 			return
 		}
-		if cnt != 1 {
-			h.logger.Errorf("%s", err)
-			errors.HandleError(err).ServeHTTP(w, r)
-			return
-		}
-		if acc.First() != nil && ar.Type == osin.PASSWORD {
+		if ar.Type == osin.PASSWORD {
 			if pwLoader, ok := h.loader.(cmd.PasswordChanger); ok {
-				h.account, err = checkPw(acc.First(), []byte(ar.Password), pwLoader)
-				if err != nil {
-					h.logger.Errorf("%s", err)
-					errors.HandleError(err).ServeHTTP(w, r)
+				found := false
+				for _, actor := range actors {
+					h.account, err = checkPw(actor, []byte(ar.Password), pwLoader)
+					if err == nil {
+						ar.Authorized = h.account.IsLogged()
+						ar.UserData = h.account.actor.GetLink()
+						found = true
+						break
+					}
+				}
+				if !found {
+					h.logger.Error(errUnauthorized)
+					errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 					return
+				}
+			}
+		}
+		if ar.Type == osin.AUTHORIZATION_CODE && len(actors) == 1 {
+			auth.OnPerson(actors.First(), func(p *auth.Person) error {
+				h.account = account{
+					username: p.PreferredUsername.String(),
+					actor:    p,
 				}
 				ar.Authorized = h.account.IsLogged()
 				ar.UserData = h.account.actor.GetLink()
-			}
+				return nil
+			})
 		}
 		s.FinishAccessRequest(resp, r, ar)
 	}
@@ -168,17 +178,6 @@ func redirectOrOutput(rs *osin.Response, w http.ResponseWriter, r *http.Request,
 			return
 		}
 
-		if err := h.saveSession(w, r); err != nil {
-			st := http.StatusInternalServerError
-			w.WriteHeader(st)
-			h.logger.WithFields(logrus.Fields{
-				"status": st,
-				"url":    url,
-			}).Error(err.Error())
-			errors.HandleError(err).ServeHTTP(w, r)
-			return
-		}
-
 		http.Redirect(w, r, url, http.StatusFound)
 	} else {
 		// set content type if the response doesn't already have one associated with it
@@ -192,30 +191,7 @@ func redirectOrOutput(rs *osin.Response, w http.ResponseWriter, r *http.Request,
 			errors.HandleError(err).ServeHTTP(w, r)
 			return
 		}
-		if err := h.saveSession(w, r); err != nil {
-			errors.HandleError(err).ServeHTTP(w, r)
-			return
-		}
 	}
-}
-
-func (h *oauthHandler) saveSession(w http.ResponseWriter, r *http.Request) error {
-	//if h.sstor == nil {
-	//	err := errors.New("missing session store, unable to save session")
-	//	h.logger.Errorf("%s", err)
-	//	return err
-	//}
-	//s, err := h.sstor.Get(r, sessionName)
-	//if err != nil {
-	//	h.logger.Errorf("%s", err)
-	//	return errors.Errorf("failed to load session before redirect: %s", err)
-	//}
-	//if err := h.sstor.Save(r, w, s); err != nil {
-	//	err := errors.Errorf("failed to save session before redirect: %s", err)
-	//	h.logger.Errorf("%s", err)
-	//	return err
-	//}
-	return nil
 }
 
 type login struct {
@@ -291,18 +267,12 @@ func (h *oauthHandler) renderTemplate(r *http.Request, w http.ResponseWriter, na
 		errRenderer.HTML(w, http.StatusInternalServerError, "error", new)
 		return err
 	}
-	if err = h.saveSession(w, r); err != nil {
-		h.logger.WithFields(logrus.Fields{
-			"template": name,
-			"model":    fmt.Sprintf("%#v", m),
-		}).Error(err.Error())
-	}
 	return err
 }
 
 // ShowLogin serves GET /login requests
 func (h *oauthHandler) ShowLogin(w http.ResponseWriter, r *http.Request) {
-	a := activitypub.Self("http://fedbox.git")
+	a := activitypub.Self(as.IRI(h.baseURL))
 
 	m := login{title: "Login"}
 	m.account = a
@@ -310,9 +280,11 @@ func (h *oauthHandler) ShowLogin(w http.ResponseWriter, r *http.Request) {
 	h.renderTemplate(r, w, "login", m)
 }
 
+var errUnauthorized = errors.Unauthorizedf("Invalid username or password")
+
 // ShowLogin handles POST /login requests
 func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	a := activitypub.Self("http://fedbox.git")
+	a := activitypub.Self(as.IRI(h.baseURL))
 
 	pw := r.PostFormValue("pw")
 	handle := r.PostFormValue("handle")
@@ -334,18 +306,22 @@ func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	actors, count, err := h.loader.LoadActors(filter)
-	if err != nil || count != 1 {
-		err := errors.Unauthorizedf("Invalid username or password")
-		errors.HandleError(err).ServeHTTP(w, r)
+	if err != nil || count == 0 {
+		errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 		return
 	}
 
-	if actors.First() != nil {
-		if pwLoader, ok := h.loader.(cmd.PasswordChanger); ok {
-			h.account, err = checkPw(actors.First(), []byte(pw), pwLoader)
-			if err != nil {
-				h.logger.Errorf("%s", err)
-				errors.HandleError(err).ServeHTTP(w, r)
+	if pwLoader, ok := h.loader.(cmd.PasswordChanger); ok {
+		found := false
+		for _, actor := range actors {
+			h.account, err = checkPw(actor, []byte(pw), pwLoader)
+			if err == nil {
+				found = true
+				break
+			}
+			if !found {
+				h.logger.Error(errUnauthorized)
+				errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 				return
 			}
 		}

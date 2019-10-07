@@ -60,7 +60,7 @@ func main() {
 		r.Use(log.NewStructuredLogger(l))
 
 		v := validation.New(a.Config().BaseURL, client.NewClient(), a.Storage)
-		r.Route("/", app.Routes(v, osin, a.Storage.(st.ActorLoader), l))
+		r.Route("/", app.Routes(a.Config().BaseURL, v, osin, a.Storage.(st.ActorLoader), l))
 		return nil
 	}
 	srv.Flags = []cli.Flag{

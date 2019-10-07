@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/validation"
 	h "github.com/go-ap/handlers"
@@ -31,7 +32,12 @@ func CollectionRoutes(v validation.ActivityValidator) func(chi.Router) {
 	}
 }
 
-func Routes(v validation.ActivityValidator, os *osin.Server, st storage.ActorLoader, l logrus.FieldLogger) func(chi.Router) {
+var AnonymousAcct = account{
+	username: "anonymous",
+	actor:    &auth.AnonymousActor,
+}
+
+func Routes(baseURL string, v validation.ActivityValidator, os *osin.Server, st storage.ActorLoader, l logrus.FieldLogger) func(chi.Router) {
 	return func(r chi.Router) {
 
 		r.Use(middleware.GetHead)
@@ -41,9 +47,10 @@ func Routes(v validation.ActivityValidator, os *osin.Server, st storage.ActorLoa
 		r.Route("/{collection}", CollectionRoutes(v))
 
 		h := oauthHandler{
+			baseURL: baseURL,
 			os:      os,
 			loader:  st,
-			account: account{},
+			account: AnonymousAcct,
 			logger:  l,
 		}
 		r.Route("/oauth", func(r chi.Router) {
