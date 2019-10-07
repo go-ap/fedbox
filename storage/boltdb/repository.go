@@ -499,8 +499,12 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 	defer r.Close()
 
 	var ret as.CollectionInterface
+
+	baseURL, _ := url.Parse(r.baseURL)
 	iri := f.GetLink()
 	url, err := iri.URL()
+	url.Scheme = baseURL.Scheme
+	url.Host = baseURL.Host
 	if err != nil {
 		r.errFn(nil, "invalid IRI filter element %s when loading collections", iri)
 	}

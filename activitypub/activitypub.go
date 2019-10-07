@@ -13,8 +13,6 @@ import (
 	"strings"
 )
 
-var ServiceIRI as.IRI
-
 func Self(baseURL as.IRI) auth.Service {
 	url, _ := baseURL.URL()
 	inbox := *url

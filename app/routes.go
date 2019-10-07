@@ -39,7 +39,6 @@ var AnonymousAcct = account{
 
 func Routes(baseURL string, v validation.ActivityValidator, os *osin.Server, st storage.ActorLoader, l logrus.FieldLogger) func(chi.Router) {
 	return func(r chi.Router) {
-
 		r.Use(middleware.GetHead)
 		r.Use(ActorFromAuthHeader(os, st, l))
 

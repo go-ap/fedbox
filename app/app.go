@@ -112,7 +112,6 @@ func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 	}
 	errors.IncludeBacktrace = app.conf.Env == env.DEV || app.conf.Env == env.TEST
 	as.ItemTyperFunc = ap.ItemByType
-	ap.ServiceIRI = ap.DefaultServiceIRI(app.conf.BaseURL)
 
 	db, oauth, err := getStorage(app, l)
 	app.Storage = db
