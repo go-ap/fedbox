@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	ap "github.com/go-ap/activitypub"
 	"github.com/go-ap/activitypub/client"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
@@ -89,6 +90,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		return it, http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity validator")
 	}
 	validator.SetActor(f.Authenticated)
+
 	var validateFn func(as.Item, as.IRI) error
 	switch typ {
 	case h.Outbox:
@@ -101,6 +103,13 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	if err = validateFn(it, f.IRI); err != nil {
 		return it, 0, err
 	}
+	ap.OnActivity(it, func(a *as.Activity) error {
+		// TODO(marius): this should be handled in the processing package
+		if a.AttributedTo == nil {
+			a.AttributedTo = f.Authenticated
+		}
+		return nil
+	})
 
 	if typ == h.Outbox {
 		// C2S - get recipients and cleanup activity
