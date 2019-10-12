@@ -2,10 +2,12 @@ package activitypub
 
 import (
 	"fmt"
+	"github.com/go-ap/activitypub"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	h "github.com/go-ap/handlers"
+	s "github.com/go-ap/storage"
 	"github.com/mariusor/qstring"
 	"net/http"
 	"net/url"
@@ -66,9 +68,9 @@ type Filters struct {
 	URL           as.IRIs                    `qstring:"url,omitempty"`
 	MedTypes      []as.MimeType              `qstring:"mediaType,omitempty"`
 	Aud           as.IRIs                    `qstring:"-"`
-	Key           []Hash                     `qstring:"hash,omitempty"`
-	ItemKey       []Hash                     `qstring:"itemHash,omitempty"`
-	ObjectKey     []Hash                     `qstring:"object,omitempty"`
+	Key           []Hash                     `qstring:"-"`
+	ItemKey       []Hash                     `qstring:"-"`
+	ObjectKey     []Hash                     `qstring:"-"`
 	Type          as.ActivityVocabularyTypes `qstring:"type,omitempty"`
 	AttrTo        []Hash                     `qstring:"attributedTo,omitempty"`
 	InReplTo      []Hash                     `qstring:"inReplyTo,omitempty"`
@@ -80,20 +82,29 @@ type Filters struct {
 	MaxItems      uint                       `qstring:"maxItems,omitempty"`
 }
 
+func NewFilter(s string) Filters {
+	return Filters{
+		baseURL: as.IRI(s),
+	}
+}
+
 // Types returns a list of ActivityVocabularyTypes to filter against
 func (f Filters) Types() as.ActivityVocabularyTypes {
 	return f.Type
 }
+
+const absentValue = "-"
+var AbsentIRI = as.IRIs{as.IRI(absentValue)}
+var AbsentHash = []Hash{Hash(absentValue)}
 
 // Context returns a list of ActivityVocabularyTypes to filter against
 func (f Filters) Context() as.IRIs {
 	ret := make(as.IRIs, 0)
 	for _, k := range f.OP {
 		// TODO(marius): This piece of logic should be moved to loading the filters
-		if k == "" || k == "0" {
+		if matchAbsent(k) {
 			// for empty context we give it a generic filter to skip all objects that have context
-			ret = append(ret, as.PublicNS)
-			return ret
+			return AbsentIRI
 		}
 		var iri as.IRI
 		if u, err := url.Parse(string(k)); err == nil {
@@ -217,21 +228,38 @@ func (f Filters) Names() []string {
 func (f Filters) AttributedTo() as.IRIs {
 	col := make(as.IRIs, len(f.AttrTo))
 	for k, iri := range f.AttrTo {
-		col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
+		// TODO(marius): This piece of logic should be moved to loading the filters
+		if matchAbsent(iri) {
+			// for empty context we give it a generic filter to skip all objects that have context
+			return AbsentIRI
+		}
+		if u, err := url.Parse(iri.String()); err == nil && u.Host != "" && u.Scheme != "" {
+			col[k] = as.IRI(iri)
+		} else {
+			col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
+		}
 	}
 	return col
+}
+
+func matchAbsent(i fmt.Stringer) bool {
+	iri := i.String()
+	return iri == "" || iri == "0" || iri == absentValue
 }
 
 func (f Filters) InReplyTo() as.IRIs {
 	col := make(as.IRIs, len(f.InReplTo))
 	for k, iri := range f.InReplTo {
 		// TODO(marius): This piece of logic should be moved to loading the filters
-		if iri == "" || iri == "0" {
+		if matchAbsent(iri) {
 			// for empty context we give it a generic filter to skip all objects that have context
-			col[k] = as.PublicNS
-			return col
+			return AbsentIRI
 		}
-		col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, iri))
+		if u, err := url.Parse(iri.String()); err == nil && u.Host != "" && u.Scheme != "" {
+			col[k] = as.IRI(iri)
+		} else {
+			col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, iri))
+		}
 	}
 	return col
 }
@@ -266,4 +294,312 @@ func (f Filters) Objects() as.IRIs {
 
 func (f Filters) Targets() as.IRIs {
 	return nil
+}
+
+func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
+	ff, ok := f.(s.FilterableObject)
+	if !ok {
+		return true, it
+	}
+	keep := true
+	activitypub.OnObject(it, func(ob *activitypub.Object) error {
+		if !filterNaturalLanguageValues(ff.Names(), ob.Name) {
+			keep = false
+			return nil
+		}
+		if !filterItem(ff.URLs(), ob) {
+			keep = false
+			return nil
+		}
+		if !filterWithAbsent(ff.Context(), ob.Context) {
+			keep = false
+			return nil
+		}
+		// TODO(marius): this needs to be moved in handling an item collection for inReplyTo
+		if !filterWithAbsent(ff.Context(), ob.InReplyTo...) {
+			keep = false
+			return nil
+		}
+		if !filterWithAbsent(ff.AttributedTo(), ob.AttributedTo) {
+			keep = false
+			return nil
+		}
+		if !filterWithAbsent(ff.InReplyTo(), ob.InReplyTo...) {
+			keep = false
+			return nil
+		}
+		if !filterAudience(ff.Audience(), ob.Recipients(), as.ItemCollection{ob.AttributedTo}) {
+			keep = false
+			return nil
+		}
+		if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
+			keep = false
+			return nil
+		}
+		return nil
+	})
+	return keep, it
+}
+
+func filterIt(it as.Item, f s.Filterable) bool {
+	if f1, ok := f.(s.FilterableItems); ok {
+		iris := f1.IRIs()
+		// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
+		if len(iris) > 0 && !iris.Contains(it.GetLink()) {
+			return false
+		}
+		types := f1.Types()
+		// FIXME(marius): this does not cover case insensitivity
+		if len(types) > 0 && !types.Contains(it.GetType()) {
+			return false
+		}
+	}
+	var valid bool
+	if as.ActivityTypes.Contains(it.GetType()) {
+		valid, _ = filterActivity(it, f)
+	} else if as.IntransitiveActivityTypes.Contains(it.GetType()) {
+		// FIXME(marius): this does not work
+		valid, _ = filterActivity(it, f)
+	} else if as.ActorTypes.Contains(it.GetType()) {
+		valid, _ = filterActor(it, f)
+	} else {
+		valid, _ = filterObject(it, f)
+	}
+	return valid
+}
+
+func filterActivity(it as.Item, f s.Filterable) (bool, as.Item) {
+	ff, ok := f.(s.FilterableActivity)
+	if !ok {
+		return true, it
+	}
+	keep := true
+	activitypub.OnActivity(it, func(act *as.Activity) error {
+		if ok, _ := filterObject(act, ff); !ok {
+			keep = false
+			return nil
+		}
+		if !filterItem(ff.Actors(), act.Actor) {
+			keep = false
+			return nil
+		}
+		if !filterItem(ff.Objects(), act.Object) {
+			keep = false
+			return nil
+		}
+		if !filterItem(ff.Targets(), act.Target) {
+			keep = false
+			return nil
+		}
+		return nil
+	})
+	return keep, it
+}
+
+func filterActor(it as.Item, f s.Filterable) (bool, as.Item) {
+	ff, ok := f.(s.FilterableObject)
+	if !ok {
+		return true, it
+	}
+
+	keep := true
+	auth.OnPerson(it, func(ob *auth.Person) error {
+		names := ff.Names()
+		if len(names) > 0 && !filterNaturalLanguageValues(names, ob.Name, ob.PreferredUsername) {
+			keep = false
+			return nil
+		}
+		if !filterItem(ff.URLs(), ob) {
+			keep = false
+			return nil
+		}
+		if !filterWithAbsent(ff.Context(), ob.Context) {
+			keep = false
+			return nil
+		}
+		// TODO(marius): this needs to be moved in handling an item collection for inReplyTo
+		if !filterWithAbsent(ff.Context(), ob.InReplyTo...) {
+			keep = false
+			return nil
+		}
+		if !filterItem(ff.AttributedTo(), ob.AttributedTo) {
+			keep = false
+			return nil
+		}
+		if !filterItemCollections(ff.InReplyTo(), ob.InReplyTo) {
+			keep = false
+			return nil
+		}
+		if !filterAudience(ff.Audience(), ob.Recipients(), as.ItemCollection{ob.AttributedTo}) {
+			keep = false
+			return nil
+		}
+		if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
+			keep = false
+			return nil
+		}
+		return nil
+	})
+	return keep, it
+}
+
+func filterNaturalLanguageValues(filters []string, valArr ...as.NaturalLanguageValues) bool {
+	keep := true
+	if len(filters) > 0 {
+		keep = false
+	}
+	for _, filter := range filters {
+		for _, langValues := range valArr {
+			for _, langValue := range langValues {
+				if strings.ToLower(langValue.Value) == strings.ToLower(filter) {
+					keep = true
+					break
+				}
+				if keep {
+					break
+				}
+			}
+		}
+	}
+	return keep
+}
+
+func filterItems(filters as.IRIs, items ...as.Item) bool {
+	if len(filters) == 0 {
+		return true
+	}
+	if hasAbsentFilter(filters) && filterAbsent(filters, items...) {
+		return true
+	}
+	for _, it := range items {
+		if it == nil {
+			continue
+		}
+		lnk := it.GetLink()
+		if filters.Contains(lnk) {
+			return true
+		}
+	}
+	return false
+}
+
+func filterAudience(filters as.IRIs, colArr ...as.ItemCollection) bool {
+	if len(filters) == 0 {
+		return true
+	}
+	allItems := make(as.ItemCollection, 0)
+	for _, items := range colArr {
+		for _, it := range items {
+			if it != nil {
+				allItems = append(allItems, it)
+			}
+		}
+	}
+	allItems, _ = as.ItemCollectionDeduplication(&allItems)
+	return filterItems(filters, allItems...)
+}
+
+func filterItemCollections(filters as.IRIs, colArr ...as.ItemCollection) bool {
+	if len(filters) == 0 {
+		return true
+	}
+	allItems := make(as.ItemCollection, 0)
+	for _, items := range colArr {
+		for _, it := range items {
+			if it != nil {
+				allItems = append(allItems, it)
+			}
+		}
+	}
+	as.ItemCollectionDeduplication(&allItems)
+	return filterItems(filters, allItems...)
+}
+
+func hasAbsentFilter(filters as.IRIs) bool {
+	if len(filters) != 1 {
+		return false
+	}
+	return filters[0] == AbsentIRI[0]
+}
+
+// filterAbsent is used when searching that the incoming items collection is empty
+func filterAbsent(filters as.IRIs, items ...as.Item) bool {
+	if filters[0] == AbsentIRI[0] {
+		if len(items) == 0 {
+			return true
+		}
+		for _, it := range items {
+			if it != nil && it.GetLink() != as.PublicNS { // FIXME(marius): this is kinda ugly
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func filterWithAbsent(filters as.IRIs, items ...as.Item) bool {
+	if len(filters) == 0 {
+		return true
+	}
+	if hasAbsentFilter(filters) && filterAbsent(filters, items...) {
+		return true
+	}
+	keep := true
+	for _, it := range items {
+		keep = filterItem(filters, it)
+	}
+	return keep
+}
+
+func filterItem(filters as.IRIs, it as.Item) bool {
+	keep := true
+	if len(filters) > 0 {
+		if it == nil {
+			return false
+		}
+		keep = filters.Contains(it.GetLink())
+	}
+	return keep
+}
+
+func filterMediaTypes(medTypes []as.MimeType, typ as.MimeType) bool {
+	keep := true
+	if len(medTypes) > 0 {
+		exists := false
+		for _, filter := range medTypes {
+			if filter == typ {
+				exists = true
+			}
+		}
+		if !exists {
+			keep = false
+		}
+	}
+	return keep
+}
+
+type CollectionFilterer interface {
+	FilterCollection(col as.ItemCollection) (as.ItemCollection, int)
+}
+
+type ItemMatcher interface {
+	ItemMatches(it as.Item) bool
+}
+
+func (f Filters) FilterCollection(col as.ItemCollection) (as.ItemCollection, int) {
+	if len(col) == 0 {
+		return col, 0
+	}
+	new := make(as.ItemCollection, len(col))
+	for _, it := range col {
+		if f.ItemMatches(it) {
+			new = append(new, it)
+		}
+	}
+	col = new
+	return nil, 0
+}
+
+func (f Filters) ItemMatches(it as.Item) bool {
+	return filterIt(it, f)
 }

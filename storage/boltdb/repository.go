@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/boltdb/bolt"
-	"github.com/go-ap/activitypub"
 	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
@@ -65,6 +63,54 @@ func New(c Config, baseURL string) *repo {
 	return &b
 }
 
+func loadItem(raw []byte) (as.Item, error) {
+	if raw == nil || len(raw) == 0 {
+		// TODO(marius): log this instead of stopping the iteration and returning an error
+		return nil, errors.Errorf("empty raw item")
+	}
+	return as.UnmarshalJSON(raw)
+}
+
+func filterIt(it as.Item, f s.Filterable) (as.Item, error) {
+	if it == nil {
+		return it, nil
+	}
+	if ff, ok := f.(ap.ItemMatcher); ok {
+		if ff.ItemMatches(it) {
+			return it, nil
+		} else {
+			return nil, nil
+		}
+	}
+	if f1, ok := f.(s.Filterable); ok {
+		if f1.GetLink() == it.GetLink() {
+			return it, nil
+		}
+	}
+	if f1, ok := f.(s.FilterableItems); ok {
+		iris := f1.IRIs()
+		// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
+		if len(iris) > 0 && !iris.Contains(it.GetLink()) {
+			return nil, nil
+		}
+		types := f1.Types()
+		// FIXME(marius): this does not cover case insensitivity
+		if len(types) > 0 && !types.Contains(it.GetType()) {
+			return nil, nil
+		}
+		return it, nil
+	}
+	return nil, errors.Errorf("Invalid filter %T", f)
+}
+
+func loadOneFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.Item, error) {
+	col, cnt, err := loadFromBucket(db, root, f)
+	if err != nil || cnt == 0 {
+		return nil, err
+	}
+	return col.First(), nil
+}
+
 func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection, uint, error) {
 	col := make(as.ItemCollection, 0)
 
@@ -104,50 +150,39 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 		isObjectKey := func(k []byte) bool {
 			return string(k) == objectKey || string(k) == metaDataKey
 		}
-		if len(remainderPath) > 0 {
-			// when we get a non empty path from descendIntoBucket we try to load it as a valid object key
-			prefix := remainderPath
-			for key, raw := c.Seek(prefix); key != nil && bytes.HasPrefix(key, prefix); key, raw = c.Next() {
-				it, err := filterIt(key, raw, f)
+		// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
+		for key, raw := c.First(); key != nil; key, raw = c.Next() {
+			if !isObjectKey(key) {
+				// FIXME(marius): I guess this should not happen (as descendIntoBucket should 'descend' into 'path'
+				//    if it's a valid bucket)
+				b := b.Bucket(key)
+				if b == nil {
+					continue
+				}
+				key = []byte(objectKey)
+				raw = b.Get(key)
+			}
+			if handlers.ValidCollection(path.Base(f.GetLink().String())) {
+				colIRIs := make(as.IRIs, 0)
+				err = jsonld.Unmarshal(raw, &colIRIs)
+				for _, iri := range colIRIs {
+					it, _ := loadOneFromBucket(db, root, ap.Filters{IRI: iri})
+					it, _ = filterIt(it, f)
+					if it != nil {
+						col = append(col, it)
+					}
+				}
+			} else {
+				it, err := loadItem(raw)
 				if err != nil {
-					// log error and continue
+					continue
+				}
+				it, _ = filterIt(it, f)
+				if err != nil {
 					continue
 				}
 				if it != nil {
 					col = append(col, it)
-				}
-			}
-		} else {
-			// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
-			for key, raw := c.First(); key != nil; key, raw = c.Next() {
-				if !isObjectKey(key) {
-					b := b.Bucket(key) // FIXME(marius): I guess this should not happen (as descendIntoBucket should 'descend' into 'path' if it's a valid bucket)
-					if b == nil {
-						return nil
-					}
-					raw = b.Get([]byte(objectKey))
-				}
-				if handlers.ValidCollection(path.Base(f.GetLink().String())) {
-					colIRIs := make(as.IRIs, 0)
-					err = jsonld.Unmarshal(raw, &colIRIs)
-					for _, iri := range colIRIs {
-						it, cnt, err := loadFromBucket(db, root, ap.Filters{IRI: iri})
-						if err != nil || cnt == 0 {
-							continue
-						}
-						if it != nil {
-							col = append(col, it.First())
-						}
-					}
-				} else {
-					it, err := filterIt(key, raw, f)
-					if err != nil {
-						// TODO(marius): log error and continue
-						continue
-					}
-					if it != nil {
-						col = append(col, it)
-					}
 				}
 			}
 		}
@@ -157,171 +192,6 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 	return col, uint(len(col)), err
 }
 
-func filterActivity(it as.Item, f s.Filterable) (bool, as.Item) {
-	ff, ok := f.(s.FilterableActivity)
-	if !ok {
-		return true, it
-	}
-	keep := true
-	activitypub.OnActivity(it, func(act *as.Activity) error {
-		if ok, _ := filterObject(act, ff); !ok {
-			keep = false
-			return nil
-		}
-		if !filterItem(ff.Actors(), act.Actor) {
-			keep = false
-			return nil
-		}
-		if !filterItem(ff.Objects(), act.Object) {
-			keep = false
-			return nil
-		}
-		if !filterItem(ff.Targets(), act.Target) {
-			keep = false
-			return nil
-		}
-		return nil
-	})
-	return keep, it
-}
-
-func filterActor(it as.Item, f s.Filterable) (bool, as.Item) {
-	ff, ok := f.(s.FilterableObject)
-	if !ok {
-		return true, it
-	}
-
-	keep := true
-	auth.OnPerson(it, func(ob *auth.Person) error {
-		names := ff.Names()
-		if len(names) > 0 && !filterNaturalLanguageValues(names, ob.Name, ob.PreferredUsername) {
-			keep = false
-			return nil
-		}
-		if !filterItem(ff.URLs(), ob) {
-			keep = false
-			return nil
-		}
-		if !filterContext(ff.Context(), ob.Context) {
-			keep = false
-			return nil
-		}
-		// TODO(marius): this needs to be moved in handling an item collection for inReplyTo
-		if !filterContext(ff.Context(), ob.InReplyTo...) {
-			keep = false
-			return nil
-		}
-		if !filterItem(ff.AttributedTo(), ob.AttributedTo) {
-			keep = false
-			return nil
-		}
-		if !filterItemCollections(ff.InReplyTo(), ob.InReplyTo) {
-			keep = false
-			return nil
-		}
-		if !filterItemCollections(ff.Audience(), ob.Recipients(), as.ItemCollection{ob.AttributedTo}) {
-			keep = false
-			return nil
-		}
-		if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
-			keep = false
-			return nil
-		}
-		return nil
-	})
-	return keep, it
-}
-
-func filterNaturalLanguageValues(filters []string, valArr ...as.NaturalLanguageValues) bool {
-	keep := true
-	if len(filters) > 0 {
-		keep = false
-	}
-	for _, filter := range filters {
-		for _, langValues := range valArr {
-			for _, langValue := range langValues {
-				if strings.ToLower(langValue.Value) == strings.ToLower(filter) {
-					keep = true
-					break
-				}
-				if keep {
-					break
-				}
-			}
-		}
-	}
-	return keep
-}
-
-func filterItemCollections(filters as.IRIs, colArr ...as.ItemCollection) bool {
-	keep := true
-	if len(filters) > 0 {
-		keep = false
-	}
-	if len(filters) > 0 {
-		for _, items := range colArr {
-			if filterAbsent(filters, items...) {
-				keep = true
-				break
-			}
-			for _, it := range items {
-				if it == nil {
-					continue
-				}
-				if filters.Contains(it.GetLink()) {
-					keep = true
-					break
-				}
-			}
-		}
-	}
-
-	return keep
-}
-
-func filterAbsent(filters as.IRIs, items ...as.Item) bool {
-	if len(filters) == 1 && filters[0] == as.PublicNS {
-		for _, it := range items {
-			if it != nil {
-				return false
-			}
-		}
-	}
-	return true
-}
-
-func filterContext(filters as.IRIs, items ...as.Item) bool {
-	keep := filterAbsent(filters, items...)
-	for _, it := range items {
-		keep = filterItem(filters, it)
-	}
-	return keep
-}
-
-func filterItem(filters as.IRIs, it as.Item) bool {
-	keep := true
-	if len(filters) > 0 && it != nil {
-		keep = filters.Contains(it.GetLink())
-	}
-	return keep
-}
-
-func filterMediaTypes(medTypes []as.MimeType, typ as.MimeType) bool {
-	keep := true
-	if len(medTypes) > 0 {
-		exists := false
-		for _, filter := range medTypes {
-			if filter == typ {
-				exists = true
-			}
-		}
-		if !exists {
-			keep = false
-		}
-	}
-	return keep
-}
-
 func (r repo) buildIRIs(c handlers.CollectionType, hashes ...ap.Hash) as.IRIs {
 	iris := make(as.IRIs, 0)
 	for _, hash := range hashes {
@@ -329,101 +199,6 @@ func (r repo) buildIRIs(c handlers.CollectionType, hashes ...ap.Hash) as.IRIs {
 		iris = append(iris, i)
 	}
 	return iris
-}
-
-func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
-	ff, ok := f.(s.FilterableObject)
-	if !ok {
-		return true, it
-	}
-	keep := true
-	activitypub.OnObject(it, func(ob *activitypub.Object) error {
-		if !filterNaturalLanguageValues(ff.Names(), ob.Name) {
-			keep = false
-			return nil
-		}
-		if !filterItem(ff.URLs(), ob) {
-			keep = false
-			return nil
-		}
-		if !filterContext(ff.Context(), ob.Context) {
-			keep = false
-			return nil
-		}
-		// TODO(marius): this needs to be moved in handling an item collection for inReplyTo
-		if !filterContext(ff.Context(), ob.InReplyTo...) {
-			keep = false
-			return nil
-		}
-		if !filterItem(ff.AttributedTo(), ob.AttributedTo) {
-			keep = false
-			return nil
-		}
-		if !filterItemCollections(ff.InReplyTo(), ob.InReplyTo) {
-			keep = false
-			return nil
-		}
-		if !filterItemCollections(ff.Audience(), ob.Recipients(), as.ItemCollection{ob.AttributedTo}) {
-			keep = false
-			return nil
-		}
-		if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
-			keep = false
-			return nil
-		}
-		return nil
-	})
-	return keep, it
-}
-
-func filterIt(key, raw []byte, f s.Filterable) (as.Item, error) {
-	// key can be one of 'objectKey', 'metaKey', or collection names: 'inbox', 'outbox', 'liked', samd.
-	if string(key) == metaDataKey {
-		// this is an error
-		return nil, errors.Errorf("trying to load invalid data %s", key)
-	}
-	if handlers.ValidCollection(string(key)) {
-		// if the current key represents a valid collection name,
-		// should have been handled by the descendIntoBucket, so this is an error
-		return nil, errors.Errorf("trying to load invalid data %s", key)
-	}
-	if raw == nil || len(raw) == 0 {
-		// TODO(marius): log this instead of stopping the iteration and returning an error
-		return nil, errors.Errorf("empty raw item")
-	}
-
-	it, err := as.UnmarshalJSON(raw)
-	if err != nil {
-		// TODO(marius): log this instead of stopping the iteration and returning an error
-		return nil, errors.Annotatef(err, "Unable to unmarshal raw item")
-	}
-	if f1, ok := f.(s.FilterableItems); ok {
-		iris := f1.IRIs()
-		// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
-		if len(iris) > 0 && !iris.Contains(it.GetLink()) {
-			return nil, nil
-		}
-		types := f1.Types()
-		// FIXME(marius): this does not cover case insensitivity
-		if len(types) > 0 && !types.Contains(it.GetType()) {
-			return nil, nil
-		}
-	}
-	var valid bool
-	if as.ActivityTypes.Contains(it.GetType()) {
-		valid, _ = filterActivity(it, f)
-	} else if as.IntransitiveActivityTypes.Contains(it.GetType()) {
-		// FIXME(marius): this does not work
-		valid, _ = filterActivity(it, f)
-	} else if as.ActorTypes.Contains(it.GetType()) {
-		valid, _ = filterActor(it, f)
-	} else {
-		valid, _ = filterObject(it, f)
-	}
-	if !valid {
-		return nil, nil
-	}
-	return it, nil
 }
 
 // Load
@@ -499,12 +274,8 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 	defer r.Close()
 
 	var ret as.CollectionInterface
-
-	baseURL, _ := url.Parse(r.baseURL)
 	iri := f.GetLink()
 	url, err := iri.URL()
-	url.Scheme = baseURL.Scheme
-	url.Host = baseURL.Host
 	if err != nil {
 		r.errFn(nil, "invalid IRI filter element %s when loading collections", iri)
 	}
@@ -543,14 +314,7 @@ func delete(r *repo, it as.Item) (as.Item, error) {
 	if it.IsObject() {
 		f.Type = []as.ActivityVocabularyType{it.GetType()}
 	}
-	var cnt uint
-	var found as.ItemCollection
-	found, cnt, _ = loadFromBucket(r.d, r.root, &f)
-	if cnt == 0 {
-		err := errors.NotFoundf("%s in either actors or objects", it.GetLink())
-		return it, err
-	}
-	old := found.First()
+	old, _ := loadOneFromBucket(r.d, r.root, &f)
 
 	// TODO(marius): add some mechanism for marking the collections as read-only
 	//    update 2019-10-03: I have no clue what this comment means. I can't think of why we'd need r/o collections for
