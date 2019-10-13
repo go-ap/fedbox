@@ -68,7 +68,8 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 	p.Inbox = as.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Inbox))
 	p.Outbox = as.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Outbox))
 	p.Liked = as.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Liked))
-	p.Likes = as.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Likes))
+	p.Followers = as.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Followers))
+	p.Following = as.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Following))
 
 	p.Endpoints = &activitypub.Endpoints{
 		SharedInbox:                self.Inbox.GetLink(),
