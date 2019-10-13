@@ -1,4 +1,5 @@
-## Bugs:
+## Issues:
+* Filtering is kinda broken. I need a better abstraction for it.
 * Replying doesn't thread correctly since we modified the logic away from `Context` being the thread starter.
 * loading outbox of an account shows non-public activities too: http://fedbox.git/actors/4b39b035-e38a-4f79-a3e0-14cc0798fe42/outbox
 * ~~natural language values are broken with latest go-ap/ActivityStreams commits.~~ Eg: see Name below: 
