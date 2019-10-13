@@ -6,6 +6,7 @@ import (
 )
 
 const serviceHash = "d3ab037c-0f15-4c09-b635-3d6e201c11aa"
+
 var selfAccount = testAccount{
 	Id:     fmt.Sprintf("http://%s/", host),
 	Hash:   serviceHash,

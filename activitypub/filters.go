@@ -94,6 +94,7 @@ func (f Filters) Types() as.ActivityVocabularyTypes {
 }
 
 const absentValue = "-"
+
 var AbsentIRI = as.IRIs{as.IRI(absentValue)}
 var AbsentHash = []Hash{Hash(absentValue)}
 

@@ -246,7 +246,6 @@ func TestFilters_InReplyTo(t *testing.T) {
 	})
 }
 
-
 func TestFilters_MediaTypes(t *testing.T) {
 	t.Skipf("TODO")
 }
@@ -255,9 +254,9 @@ func TestFilters_Names(t *testing.T) {
 	t.Skipf("TODO")
 }
 
-func mockActivity()  as.Activity {
+func mockActivity() as.Activity {
 	return as.Activity{
-		Parent:     as.Parent{
+		Parent: as.Parent{
 			ID:           "",
 			Type:         "",
 			Name:         nil,

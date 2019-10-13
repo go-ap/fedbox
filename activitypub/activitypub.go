@@ -38,7 +38,7 @@ func Self(baseURL as.IRI) auth.Service {
 					URL:          baseURL,
 				},
 			},
-			Inbox:  as.IRI(inbox.String()),
+			Inbox: as.IRI(inbox.String()),
 			Endpoints: &ap.Endpoints{
 				OauthAuthorizationEndpoint: as.IRI(fmt.Sprintf("%s/authorize", oauth.String())),
 				OauthTokenEndpoint:         as.IRI(fmt.Sprintf("%s/token", oauth.String())),

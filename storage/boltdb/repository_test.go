@@ -14,9 +14,9 @@ func TestNew(t *testing.T) {
 	url := "random-string-not-an-URL"
 
 	conf := Config{
-		Path:       path,
-		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { t.Logf(s, p...) },
-		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { t.Errorf(s, p...) },
+		Path:  path,
+		LogFn: func(f logrus.Fields, s string, p ...interface{}) { t.Logf(s, p...) },
+		ErrFn: func(f logrus.Fields, s string, p ...interface{}) { t.Errorf(s, p...) },
 	}
 	repo := New(conf, url)
 	if repo == nil {
@@ -51,7 +51,7 @@ func TestRepo_Open(t *testing.T) {
 	}
 	defer os.Remove(path)
 	conf := Config{
-		Path:       path,
+		Path: path,
 	}
 	repo := New(conf, url)
 	err = repo.Open()
@@ -76,7 +76,7 @@ func TestRepo_Close(t *testing.T) {
 	defer os.Remove(path)
 
 	conf := Config{
-		Path:       path,
+		Path: path,
 	}
 	repo := New(conf, url)
 	err = repo.Open()

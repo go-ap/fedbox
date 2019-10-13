@@ -104,7 +104,7 @@ func TestValidType(t *testing.T) {
 		t.Errorf("%T %s should have been valid", qa, qa)
 	}
 	dev := DEV
-	if! ValidType(dev) {
+	if !ValidType(dev) {
 		t.Errorf("%T %s should have been valid", dev, dev)
 	}
 	test := TEST

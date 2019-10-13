@@ -35,7 +35,6 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 		return nil, errors.NewNotValid(err, "Unable to load filters from request")
 	}
 	LoadCollectionFilters(r, f)
-
 	if !activitypub.ValidActivityCollection(string(typ)) {
 		return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
 	}

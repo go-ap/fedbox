@@ -263,7 +263,7 @@ func AddTestMockActor(opt config.Options, file string, actor a.Person) error {
 		}
 		return nil
 	}
-	
+
 	raw, _ := jsonld.Marshal(actor)
 	return exec("insert-actor", path.Base(opt.BaseURL), actor.GetType(), actor.GetLink(), raw)
 }

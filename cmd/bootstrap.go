@@ -12,7 +12,7 @@ import (
 	"path"
 )
 
-func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type, ) error {
+func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type) error {
 	if typ == config.BoltDB {
 		authPath := config.GetBoltDBPath(dir, c.Host, environ)
 		err := boltdb.Bootstrap(authPath, c.BaseURL)

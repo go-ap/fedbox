@@ -52,9 +52,9 @@ type FedBOX struct {
 
 func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	db := boltdb.New(boltdb.Config{
-		Path:       c.BoltDB(),
-		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		Path:  c.BoltDB(),
+		LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
+		ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
 	}, c.BaseURL)
 
 	oauth := auth.NewBoltDBStore(auth.BoltConfig{

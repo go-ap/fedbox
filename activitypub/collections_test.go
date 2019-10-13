@@ -199,7 +199,7 @@ func TestOrderedCollection_Count(t *testing.T) {
 	if c.Count() != uint(len(c.OrderedItems)) {
 		t.Errorf("%T.Count() returned %d, expected %d", c, c.Count(), len(c.OrderedItems))
 	}
-	
+
 	c.Append(activitystreams.IRI("test"))
 	if c.TotalItems != 0 {
 		t.Errorf("Empty object should have empty TotalItems, received %d", c.TotalItems)

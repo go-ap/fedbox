@@ -12,9 +12,9 @@ import (
 
 // Storage implements interface "github.com/RangelReale/osin".Storage and interface "github.com/ory/osin-storage".Storage
 type Storage struct {
-	db *pgx.Conn
-	logFn   loggerFn
-	errFn   loggerFn
+	db    *pgx.Conn
+	logFn loggerFn
+	errFn loggerFn
 }
 
 // New returns a new postgres storage instance.
@@ -147,7 +147,7 @@ func (s *Storage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
 
 	var auth auth
 	q := "SELECT client, code, expires_in, scope, redirect_uri, state, created_at, extra FROM authorize WHERE code=? LIMIT 1"
-	if err :=  s.db.QueryRow(q, code).Scan(&auth); err == pgx.ErrNoRows {
+	if err := s.db.QueryRow(q, code).Scan(&auth); err == pgx.ErrNoRows {
 		return nil, errors.NotFoundf("")
 	} else if err != nil {
 		s.errFn(logrus.Fields{"code": code, "table": "authorize", "operation": "select"}, err.Error())
@@ -181,7 +181,7 @@ func (s *Storage) RemoveAuthorize(code string) (err error) {
 		s.errFn(logrus.Fields{"code": code, "table": "authorize", "operation": "delete"}, err.Error())
 		return errors.Annotatef(err, "")
 	}
-	s.logFn(logrus.Fields{"code": code,}, "removed authorization token")
+	s.logFn(logrus.Fields{"code": code}, "removed authorization token")
 	return nil
 }
 
@@ -277,7 +277,7 @@ func (s *Storage) LoadAccess(code string) (*osin.AccessData, error) {
 	result.UserData = acc.Extra
 	client, err := s.GetClient(acc.Client)
 	if err != nil {
-		s.errFn(logrus.Fields{"code": code, "table": "access", "operation": "select",}, err.Error())
+		s.errFn(logrus.Fields{"code": code, "table": "access", "operation": "select"}, err.Error())
 		return nil, err
 	}
 

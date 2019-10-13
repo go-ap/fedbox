@@ -12,6 +12,7 @@ var _oauthServer *osin.Server
 type logger struct {
 	l logrus.FieldLogger
 }
+
 func (l logger) Printf(s string, p ...interface{}) {
 	l.l.Infof(s, p...)
 }
@@ -31,7 +32,7 @@ func osinServer(store osin.Storage, l logrus.FieldLogger) (*osin.Server, error) 
 		//RequirePKCEForPublicClients: true,
 	}
 	s := osin.NewServer(&config, store)
-	s.Logger = &logger{ l: l }
+	s.Logger = &logger{l: l}
 
 	return s, nil
 }

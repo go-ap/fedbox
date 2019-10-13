@@ -213,7 +213,7 @@ func (c *Collection) UnmarshalJSON(data []byte) error {
 }
 
 // Contains verifies if Collection array contains the received one
-func(c Collection) Contains(r as.IRI) bool {
+func (c Collection) Contains(r as.IRI) bool {
 	if len(c.Items) == 0 {
 		return false
 	}
@@ -226,7 +226,7 @@ func(c Collection) Contains(r as.IRI) bool {
 }
 
 // Contains verifies if OrderedCollection array contains the received one
-func(o OrderedCollection) Contains(r as.IRI) bool {
+func (o OrderedCollection) Contains(r as.IRI) bool {
 	if len(o.OrderedItems) == 0 {
 		return false
 	}
