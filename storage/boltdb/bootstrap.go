@@ -17,8 +17,6 @@ func Bootstrap(path string, baseURL string) error {
 	}
 	defer db.Close()
 
-	createBuckets := false
-
 	service := activitypub.Self(activitypub.DefaultServiceIRI(baseURL))
 	raw, err := jsonld.Marshal(service)
 	if err != nil {
@@ -41,19 +39,17 @@ func Bootstrap(path string, baseURL string) error {
 		if err != nil {
 			return errors.Annotatef(err, "could not save %s[%s]", service.Name, service.Type)
 		}
-		if createBuckets {
-			_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketActivities))
-			if err != nil {
-				return errors.Annotatef(err, "could not create %s bucket", bucketActivities)
-			}
-			_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketActors))
-			if err != nil {
-				return errors.Annotatef(err, "could not create %s bucket", bucketActors)
-			}
-			_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketObjects))
-			if err != nil {
-				return errors.Annotatef(err, "could not create %s bucket", bucketObjects)
-			}
+		_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketActivities))
+		if err != nil {
+			return errors.Annotatef(err, "could not create %s bucket", bucketActivities)
+		}
+		_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketActors))
+		if err != nil {
+			return errors.Annotatef(err, "could not create %s bucket", bucketActors)
+		}
+		_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketObjects))
+		if err != nil {
+			return errors.Annotatef(err, "could not create %s bucket", bucketObjects)
 		}
 		return nil
 	})
