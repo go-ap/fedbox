@@ -105,8 +105,4 @@ func TestSelf(t *testing.T) {
 	if s.Inbox != inb {
 		t.Errorf("Invalid Inbox %s, expected %v", s.Inbox, inb)
 	}
-	outb := activitystreams.IRI(fmt.Sprintf("%s/%s", testURL, handlers.Outbox))
-	if s.Outbox != outb {
-		t.Errorf("Invalid Outbox %s, expected %v", s.Outbox, outb)
-	}
 }

@@ -29,9 +29,6 @@ var C2STests = []testSuite{
 						inbox: &objectVal{
 							id: "http://127.0.0.1:9998/inbox",
 						},
-						outbox: &objectVal{
-							id: "http://127.0.0.1:9998/outbox",
-						},
 						name: "self",
 					},
 				},
