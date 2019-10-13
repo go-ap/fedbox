@@ -17,8 +17,6 @@ func Self(baseURL as.IRI) auth.Service {
 	url, _ := baseURL.URL()
 	inbox := *url
 	inbox.Path = path.Join(inbox.Path, string(handlers.Inbox))
-	outbox := *url
-	outbox.Path = path.Join(outbox.Path, string(handlers.Outbox))
 
 	oauth := *url
 	oauth.Path = path.Join(oauth.Path, "oauth/")
@@ -41,7 +39,6 @@ func Self(baseURL as.IRI) auth.Service {
 				},
 			},
 			Inbox:  as.IRI(inbox.String()),
-			Outbox: as.IRI(outbox.String()),
 			Endpoints: &ap.Endpoints{
 				OauthAuthorizationEndpoint: as.IRI(fmt.Sprintf("%s/authorize", oauth.String())),
 				OauthTokenEndpoint:         as.IRI(fmt.Sprintf("%s/token", oauth.String())),
