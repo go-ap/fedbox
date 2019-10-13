@@ -7,10 +7,10 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	h "github.com/go-ap/handlers"
-	s "github.com/go-ap/storage"
 	"github.com/mariusor/qstring"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 )
@@ -296,11 +296,7 @@ func (f Filters) Targets() as.IRIs {
 	return nil
 }
 
-func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
-	ff, ok := f.(s.FilterableObject)
-	if !ok {
-		return true, it
-	}
+func filterObject(it as.Item, ff Filters) (bool, as.Item) {
 	keep := true
 	activitypub.OnObject(it, func(ob *activitypub.Object) error {
 		if !filterNaturalLanguageValues(ff.Names(), ob.Name) {
@@ -341,38 +337,7 @@ func filterObject(it as.Item, f s.Filterable) (bool, as.Item) {
 	return keep, it
 }
 
-func filterIt(it as.Item, f s.Filterable) bool {
-	if f1, ok := f.(s.FilterableItems); ok {
-		iris := f1.IRIs()
-		// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
-		if len(iris) > 0 && !iris.Contains(it.GetLink()) {
-			return false
-		}
-		types := f1.Types()
-		// FIXME(marius): this does not cover case insensitivity
-		if len(types) > 0 && !types.Contains(it.GetType()) {
-			return false
-		}
-	}
-	var valid bool
-	if as.ActivityTypes.Contains(it.GetType()) {
-		valid, _ = filterActivity(it, f)
-	} else if as.IntransitiveActivityTypes.Contains(it.GetType()) {
-		// FIXME(marius): this does not work
-		valid, _ = filterActivity(it, f)
-	} else if as.ActorTypes.Contains(it.GetType()) {
-		valid, _ = filterActor(it, f)
-	} else {
-		valid, _ = filterObject(it, f)
-	}
-	return valid
-}
-
-func filterActivity(it as.Item, f s.Filterable) (bool, as.Item) {
-	ff, ok := f.(s.FilterableActivity)
-	if !ok {
-		return true, it
-	}
+func filterActivity(it as.Item, ff Filters) (bool, as.Item) {
 	keep := true
 	activitypub.OnActivity(it, func(act *as.Activity) error {
 		if ok, _ := filterObject(act, ff); !ok {
@@ -396,12 +361,7 @@ func filterActivity(it as.Item, f s.Filterable) (bool, as.Item) {
 	return keep, it
 }
 
-func filterActor(it as.Item, f s.Filterable) (bool, as.Item) {
-	ff, ok := f.(s.FilterableObject)
-	if !ok {
-		return true, it
-	}
-
+func filterActor(it as.Item, ff Filters) (bool, as.Item) {
 	keep := true
 	auth.OnPerson(it, func(ob *auth.Person) error {
 		names := ff.Names()
@@ -600,6 +560,39 @@ func (f Filters) FilterCollection(col as.ItemCollection) (as.ItemCollection, int
 	return nil, 0
 }
 
+// ugly hack to check if the current filter f.IRI property is a collection or an object
+func iriIsObject(iri as.IRI) bool {
+	base := path.Base(iri.String())
+	return !ValidActivityCollection(base)
+}
+
+// ItemMatches
 func (f Filters) ItemMatches(it as.Item) bool {
-	return filterIt(it, f)
+	iris := f.IRIs()
+	// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
+	if len(iris) > 0 && !iris.Contains(it.GetLink()) {
+		return false
+	}
+	types := f.Types()
+	// FIXME(marius): this does not cover case insensitivity
+	if len(types) > 0 && !types.Contains(it.GetType()) {
+		return false
+	}
+	var valid bool
+	if as.ActivityTypes.Contains(it.GetType()) {
+		valid, _ = filterActivity(it, f)
+	} else if as.IntransitiveActivityTypes.Contains(it.GetType()) {
+		// FIXME(marius): this does not work
+		valid, _ = filterActivity(it, f)
+	} else if as.ActorTypes.Contains(it.GetType()) {
+		valid, _ = filterActor(it, f)
+	} else {
+		valid, _ = filterObject(it, f)
+	}
+	iri := f.GetLink()
+	if len(iri) > 0 && iriIsObject(iri) {
+		valid = iri == it.GetLink()
+	}
+
+	return valid
 }
