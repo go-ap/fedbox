@@ -513,12 +513,33 @@ func filterWithAbsent(filters as.IRIs, items ...as.Item) bool {
 }
 
 func filterItem(filters as.IRIs, it as.Item) bool {
-	keep := true
-	if len(filters) > 0 {
-		if it == nil {
-			return false
+	if len(filters) == 0 {
+		return true
+	}
+	keep := false
+	if it == nil {
+		return false
+	}
+	var url string
+	switch ob := it.(type) {
+	case as.Page:
+		url = ob.URL.GetLink().String()
+	case *as.Page:
+		url = ob.URL.GetLink().String()
+	}
+	if url == "" {
+		activitypub.OnObject(it, func(o *activitypub.Object) error {
+			if o.URL != nil {
+				url = o.URL.GetLink().String()
+			}
+			return nil
+		})
+	}
+	for _, filter := range filters {
+		if strings.Contains(url, filter.String()) {
+			keep = true
+			break
 		}
-		keep = filters.Contains(it.GetLink())
 	}
 	return keep
 }
