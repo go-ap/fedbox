@@ -7,7 +7,6 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	h "github.com/go-ap/handlers"
-	s "github.com/go-ap/storage"
 	"github.com/mariusor/qstring"
 	"net/http"
 	"net/url"
@@ -305,7 +304,7 @@ func filterObject(it as.Item, ff Filters) (bool, as.Item) {
 			keep = false
 			return nil
 		}
-		if !filterItem(ff.URLs(), ob) {
+		if !filterURLs(ff.URLs(), ob) {
 			keep = false
 			return nil
 		}
@@ -514,6 +513,17 @@ func filterWithAbsent(filters as.IRIs, items ...as.Item) bool {
 }
 
 func filterItem(filters as.IRIs, it as.Item) bool {
+	keep := true
+	if len(filters) > 0 {
+		if it == nil {
+			return false
+		}
+		keep = filters.Contains(it.GetLink())
+	}
+	return keep
+}
+
+func filterURLs(filters as.IRIs, it as.Item) bool {
 	if len(filters) == 0 {
 		return true
 	}
