@@ -128,12 +128,12 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		return it, http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 	}
 
-	status := http.StatusCreated
+	status := http.StatusOK
 	if it.GetType() == as.DeleteType {
 		status = http.StatusGone
 	}
-	if it.GetType() == as.UpdateType {
-		status = http.StatusOK
+	if it.GetType() == as.CreateType {
+		status = http.StatusCreated
 	}
 
 	return it, status, nil
