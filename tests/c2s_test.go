@@ -451,7 +451,7 @@ var C2STests = []testSuite{
 					bodyFn:  loadMockJson("mocks/like-note.json", &actMock{ActorId: *(&defaultTestAccount.Id), ObjectId: "http://127.0.0.1:9998/objects/41e7ec45-ff92-473a-b79d-974bf30a0aba"}),
 				},
 				res: testRes{
-					code: http.StatusCreated,
+					code: http.StatusOK,
 					val: &objectVal{
 						typ: string(as.LikeType),
 						act: &objectVal{
