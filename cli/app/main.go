@@ -38,9 +38,6 @@ func main() {
 	srv.Version = version
 	srv.Before = func(c *cli.Context) error {
 		environ := c.String("env")
-		if environ == "" {
-			environ = string(env.DEV)
-		}
 
 		var err error
 		a, err = app.New(l, version, environ)
@@ -73,7 +70,7 @@ func main() {
 		&cli.StringFlag{
 			Name:  "env",
 			Usage: fmt.Sprintf("the environment to use. Possible values: %q, %q, %q", env.DEV, env.QA, env.PROD),
-			Value: string(env.DEV),
+			Value: "",
 		},
 	}
 	srv.Action = func(c *cli.Context) error {

@@ -17,10 +17,10 @@ const QA Type = "qa"
 // testing environment
 const TEST Type = "test"
 
-var validTypes = []Type{
-	DEV,
+var Types = []Type{
 	PROD,
 	QA,
+	DEV,
 	TEST,
 }
 
@@ -33,7 +33,7 @@ func ValidTypeOrDev(typ Type) Type {
 }
 
 func ValidType(typ Type) bool {
-	for _, t := range validTypes {
+	for _, t := range Types {
 		if strings.ToLower(string(typ)) == strings.ToLower(string(t)) {
 			return true
 		}

@@ -81,12 +81,22 @@ func LoadFromEnv(e env.Type) (Options, error) {
 	if !env.ValidType(e) {
 		e = env.Type(os.Getenv(k(KeyENV)))
 	}
-
-	conf.Env = env.ValidTypeOrDev(e)
 	configs := []string{
 		".env",
-		fmt.Sprintf(".env.%s", conf.Env),
 	}
+	if !env.ValidType(e) {
+		for _, typ := range env.Types {
+			envFile := fmt.Sprintf(".env.%s", typ)
+			_, err := os.Stat(envFile)
+			if os.IsNotExist(err) {
+				continue
+			}
+			configs = append(configs, envFile)
+		}
+	} else {
+		configs = append(configs, fmt.Sprintf(".env.%s", e))
+	}
+
 
 	lvl := os.Getenv(k(KeyLogLevel))
 	switch strings.ToLower(lvl) {
@@ -108,6 +118,10 @@ func LoadFromEnv(e env.Type) (Options, error) {
 		godotenv.Overload(f)
 	}
 
+	if !env.ValidType(e) {
+		e = env.Type(os.Getenv(k(KeyENV)))
+	}
+	conf.Env = e
 	if conf.Host == "" {
 		conf.Host = os.Getenv(k(KeyHostname))
 	}
