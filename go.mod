@@ -3,7 +3,6 @@ module github.com/go-ap/fedbox
 go 1.13
 
 require (
-	github.com/boltdb/bolt v1.3.1
 	github.com/buger/jsonparser v0.0.0-20181023193515-52c6e1462ebd
 	github.com/dyninc/qstring v0.0.0-20160719172318-ab5840a88e81 // indirect
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
@@ -25,6 +24,7 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spacemonkeygo/httpsig v0.0.0-20181218213338-2605ae379e47
 	github.com/unrolled/render v1.0.0
+	go.etcd.io/bbolt v1.3.3
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717

@@ -1,7 +1,7 @@
 package boltdb
 
 import (
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
 	a "github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"

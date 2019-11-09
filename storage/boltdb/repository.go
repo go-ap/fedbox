@@ -3,7 +3,6 @@ package boltdb
 import (
 	"bytes"
 	"fmt"
-	"github.com/boltdb/bolt"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -12,6 +11,7 @@ import (
 	s "github.com/go-ap/storage"
 	"github.com/mariusor/qstring"
 	"github.com/sirupsen/logrus"
+	bolt "go.etcd.io/bbolt"
 	"golang.org/x/crypto/bcrypt"
 	"net/url"
 	"path"
