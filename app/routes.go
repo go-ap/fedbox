@@ -63,6 +63,8 @@ func Routes(baseURL string, v validation.ActivityValidator, os *osin.Server, st 
 				r.Get("/login", h.ShowLogin)
 				r.Post("/login", h.HandleLogin)
 				r.Get("/callback", h.HandleCallback)
+				r.Get("/pw", h.ShowChangePw)
+				r.Post("/pw", h.HandleChangePw)
 			})
 		})
 

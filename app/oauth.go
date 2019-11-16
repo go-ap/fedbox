@@ -36,26 +36,40 @@ type oauthHandler struct {
 	logger  logrus.FieldLogger
 }
 
+var scopeAnonymousUserCreate = "anonUserCreate"
+
 func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	s := h.os
 
 	resp := s.NewResponse()
 	defer resp.Close()
 
+	var overrideRedir = false
 	if ar := s.HandleAuthorizeRequest(resp, r); ar != nil {
 		if h.account.IsLogged() {
 			ar.Authorized = true
 			ar.UserData = h.account.actor.GetLink()
 		} else {
-			m := login{title: "Login"}
-			m.account = auth.AnonymousActor
-			m.client = ar.Client.GetId()
-			m.state = ar.State
+			if ar.Scope == scopeAnonymousUserCreate {
+				// FIXME(marius): this seems like a way to backdoor our selves, we need a better way
+				ar.Authorized = true
+				overrideRedir = true
+				iri := ar.HttpRequest.URL.Query().Get("actor")
+				ar.UserData = iri
+			} else {
+				m := login{title: "Login"}
+				m.account = auth.AnonymousActor
+				m.client = ar.Client.GetId()
+				m.state = ar.State
 
-			h.renderTemplate(r, w, "login", m)
-			return
+				h.renderTemplate(r, w, "login", m)
+				return
+			}
 		}
 		s.FinishAuthorizeRequest(resp, r, ar)
+	}
+	if overrideRedir {
+		resp.Type = osin.DATA
 	}
 	redirectOrOutput(resp, w, r, h)
 }
@@ -208,6 +222,7 @@ func (l login) Title() string {
 func (l login) Account() auth.Person {
 	return l.account
 }
+
 func (l login) State() string {
 	return l.state
 }
@@ -348,3 +363,120 @@ type OAuth struct {
 
 // HandleCallback serves /auth/callback request
 func (h *oauthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {}
+
+type pwChange struct {
+	title   string
+	account auth.Person
+}
+
+func (p pwChange) Title() string {
+	return p.title
+}
+
+func (p pwChange) Account() auth.Person {
+	return p.account
+}
+
+// ShowChangePw
+func (h *oauthHandler) ShowChangePw(w http.ResponseWriter, r *http.Request) {
+	actor := h.loadActorFromOauth2Session(w, r)
+	m := pwChange{
+		title: "Change password",
+	}
+	if actor == nil {
+		return
+	}
+	m.account = *actor
+
+	h.renderTemplate(r, w, "password", m)
+}
+
+// HandleChangePw
+func (h *oauthHandler) HandleChangePw(w http.ResponseWriter, r *http.Request) {
+	actor := h.loadActorFromOauth2Session(w, r)
+	if actor == nil {
+		h.logger.Errorf("Unable to load actor from session")
+		errors.HandleError(errors.NotValidf("Unable to load actor from session")).ServeHTTP(w, r)
+		return
+	}
+	tok := r.URL.Query().Get("s")
+	pw := r.PostFormValue("pw")
+	pwConf := r.PostFormValue("pw-confirm")
+	if pw != pwConf {
+		errors.HandleError(errors.Newf("Different passwords submitted")).ServeHTTP(w, r)
+		return
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"handle": actor.PreferredUsername.String(),
+		"pass":   pw,
+	}).Info("received")
+
+	if pwSetter, ok := h.loader.(cmd.PasswordChanger); ok {
+		err := pwSetter.PasswordSet(actor, []byte(pw))
+		if err != nil {
+			h.logger.Errorf("Error when saving password: %s", err)
+			errors.HandleError(errors.NotValidf("Unable to change password")).ServeHTTP(w, r)
+			return
+		}
+		h.os.Storage.RemoveAuthorize(tok)
+	}
+}
+
+func (h *oauthHandler) loadActorFromOauth2Session(w http.ResponseWriter, r *http.Request) *auth.Person {
+	notF := errors.NotFoundf("Not found")
+	// TODO(marius): we land on this handler, coming from an email link containing a token identifying the Actor
+	tok := r.URL.Query().Get("s")
+	if len(tok) == 0 {
+		h.logger.Errorf("Unable to load token from URL")
+		errors.HandleError(notF).ServeHTTP(w, r)
+		return nil
+	}
+
+	authSess, err := h.os.Storage.LoadAuthorize(tok)
+	if err != nil {
+		h.logger.Errorf("Error when loading authorize session: %s", err)
+		errors.HandleError(notF).ServeHTTP(w, r)
+		return nil
+	}
+	if authSess == nil {
+		h.logger.Errorf("Invalid authorize session for tok %s", tok)
+		errors.HandleError(notF).ServeHTTP(w, r)
+		return nil
+	}
+	if authSess.ExpireAt().Sub(time.Now()) < 0 {
+		h.logger.Errorf("Authorize token %s is expired %s", tok, authSess.ExpireAt().Format("2006-01-02 15:04:05"))
+		errors.HandleError(notF).ServeHTTP(w, r)
+		return nil
+	}
+	if authSess.UserData == nil {
+		h.logger.Errorf("Invalid authorize session for tok %s, user-data is empty", tok)
+		errors.HandleError(notF).ServeHTTP(w, r)
+		return nil
+	}
+
+	actorIRI, ok := authSess.UserData.(string)
+	if !ok {
+		h.logger.Errorf("Invalid authorize session for tok %s, user-data is not an IRI: %v", tok, authSess.UserData)
+		errors.HandleError(notF).ServeHTTP(w, r)
+		return nil
+	}
+	actors, cnt, err := h.loader.LoadActors(as.IRI(actorIRI))
+	if err != nil {
+		h.logger.Errorf("Error when loading actor from storage: %s", err)
+		errors.HandleError(notF).ServeHTTP(w, r)
+		return nil
+	}
+	if cnt > 1 {
+		h.logger.Errorf("Ooops, too many actors in authorization session: %d, %v", cnt, actors)
+		errors.HandleError(notF).ServeHTTP(w, r)
+		return nil
+	}
+	var actor *auth.Person
+	auth.OnPerson(actors[0], func(p *auth.Person) error {
+		actor = p
+		return nil
+	})
+
+	return actor
+}
