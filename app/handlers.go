@@ -70,7 +70,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 
 	f, err := activitypub.FromRequest(r)
 	if err != nil {
-		return it, 0, errors.NewNotValid(err, "Unable to load filters from request")
+		return it, 0, errors.NewNotValid(err, "unable to load filters from request")
 	}
 	LoadCollectionFilters(r, f)
 
@@ -86,7 +86,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	}
 	validator, ok := validation.FromContext(r.Context())
 	if ok == false {
-		return it, http.StatusInternalServerError, errors.Annotatef(err, "Unable to load activity validator")
+		return it, http.StatusInternalServerError, errors.Annotatef(err, "unable to load activity validator")
 	}
 	validator.SetActor(f.Authenticated)
 
