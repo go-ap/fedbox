@@ -108,7 +108,7 @@ func (f Filters) Context() as.IRIs {
 			return AbsentIRI
 		}
 		var iri as.IRI
-		if u, err := url.Parse(string(k)); err == nil {
+		if u, ok := validURL(string(k)); ok {
 			iri = as.IRI(u.String())
 		} else {
 			iri = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, k))
@@ -226,6 +226,11 @@ func (f Filters) Names() []string {
 	return f.Name
 }
 
+func validURL(s string) (*url.URL, bool) {
+	u, err := url.Parse(s)
+	return u, err == nil && u.Host != "" && u.Scheme != ""
+}
+
 func (f Filters) AttributedTo() as.IRIs {
 	col := make(as.IRIs, len(f.AttrTo))
 	for k, iri := range f.AttrTo {
@@ -234,7 +239,7 @@ func (f Filters) AttributedTo() as.IRIs {
 			// for empty context we give it a generic filter to skip all objects that have context
 			return AbsentIRI
 		}
-		if u, err := url.Parse(iri.String()); err == nil && u.Host != "" && u.Scheme != "" {
+		if _, ok := validURL(iri.String()); ok {
 			col[k] = as.IRI(iri)
 		} else {
 			col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
@@ -256,7 +261,7 @@ func (f Filters) InReplyTo() as.IRIs {
 			// for empty context we give it a generic filter to skip all objects that have context
 			return AbsentIRI
 		}
-		if u, err := url.Parse(iri.String()); err == nil && u.Host != "" && u.Scheme != "" {
+		if _, ok := validURL(iri.String()); ok {
 			col[k] = as.IRI(iri)
 		} else {
 			col[k] = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, iri))
@@ -281,7 +286,7 @@ func (f Filters) Objects() as.IRIs {
 	for _, k := range f.ObjectKey {
 		// TODO(marius): This piece of logic should be moved to loading the filters
 		var iri as.IRI
-		if u, err := url.Parse(string(k)); err == nil && u.Host != "" && u.Scheme != "" {
+		if u, ok := validURL(string(k)); ok {
 			iri = as.IRI(u.String())
 		} else {
 			iri = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, k))
@@ -309,11 +314,6 @@ func filterObject(it as.Item, ff Filters) (bool, as.Item) {
 			return nil
 		}
 		if !filterWithAbsent(ff.Context(), ob.Context) {
-			keep = false
-			return nil
-		}
-		// TODO(marius): this needs to be moved in handling an item collection for inReplyTo
-		if !filterWithAbsent(ff.Context(), ob.InReplyTo...) {
 			keep = false
 			return nil
 		}

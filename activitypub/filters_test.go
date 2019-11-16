@@ -209,7 +209,7 @@ func TestFilters_Context(t *testing.T) {
 		return
 	}
 	it := mockItem()
-	it.Context = as.IRI("test")
+	it.Context = as.IRI("/objects/test")
 	t.Run("exists", func(t *testing.T) {
 		if !testItInIRIs(f.Context(), it.Context) {
 			t.Errorf("filter %v doesn't contain any of %v", f.Context(), it.Context)
