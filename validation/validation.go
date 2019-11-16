@@ -126,9 +126,9 @@ func (v genericValidator) ValidateServerActivity(a as.Item, inbox as.IRI) error 
 	if !IsInbox(inbox) {
 		return errors.NotValidf("Trying to validate a non inbox IRI %s", inbox)
 	}
-	if v.auth.GetLink() == as.PublicNS {
-		return errors.Unauthorizedf("%s actor is not allowed posting to current inbox", v.auth.Name)
-	}
+	//if v.auth.GetLink() == as.PublicNS {
+	//	return errors.Unauthorizedf("%s actor is not allowed posting to current inbox", v.auth.Name)
+	//}
 	if a == nil {
 		return InvalidActivityActor("received nil activity")
 	}
