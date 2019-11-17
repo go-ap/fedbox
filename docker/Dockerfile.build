@@ -1,0 +1,13 @@
+FROM golang:1.13
+
+ARG ENV
+ARG PWD
+
+ENV GO111MODULE=on
+ENV ENV=${ENV:-dev}
+
+WORKDIR /go/src/app
+COPY ./ ./
+
+RUN go mod download || true
+RUN make all
