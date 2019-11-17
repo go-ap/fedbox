@@ -59,6 +59,7 @@ func ValidActivityCollection(typ string) bool {
 type Filters struct {
 	baseURL       as.IRI                     `qstring:"-"`
 	Name          []string                   `qstring:"name,omitempty"`
+	Cont          []string                   `qstring:"content,omitempty"`
 	Authenticated *auth.Person               `qstring:"-"`
 	To            as.Actor                   `qstring:"-"`
 	Author        as.Actor                   `qstring:"-"`
@@ -225,6 +226,9 @@ func (f Filters) Audience() as.IRIs {
 func (f Filters) Names() []string {
 	return f.Name
 }
+func (f Filters) Content() []string {
+	return f.Cont
+}
 
 func validURL(s string) (*url.URL, bool) {
 	u, err := url.Parse(s)
@@ -305,7 +309,11 @@ func (f Filters) Targets() as.IRIs {
 func filterObject(it as.Item, ff Filters) (bool, as.Item) {
 	keep := true
 	activitypub.OnObject(it, func(ob *activitypub.Object) error {
-		if !filterNaturalLanguageValues(ff.Names(), ob.Name) {
+		if !filterNaturalLanguageValuesExactMatch(ff.Names(), ob.Name) {
+			keep = false
+			return nil
+		}
+		if !filterNaturalLanguageValuesSubstring(ff.Content(), ob.Content, ob.Summary) {
 			keep = false
 			return nil
 		}
@@ -366,7 +374,7 @@ func filterActor(it as.Item, ff Filters) (bool, as.Item) {
 	keep := true
 	auth.OnPerson(it, func(ob *auth.Person) error {
 		names := ff.Names()
-		if len(names) > 0 && !filterNaturalLanguageValues(names, ob.Name, ob.PreferredUsername) {
+		if len(names) > 0 && !filterNaturalLanguageValuesExactMatch(names, ob.Name, ob.PreferredUsername) {
 			keep = false
 			return nil
 		}
@@ -404,7 +412,27 @@ func filterActor(it as.Item, ff Filters) (bool, as.Item) {
 	return keep, it
 }
 
-func filterNaturalLanguageValues(filters []string, valArr ...as.NaturalLanguageValues) bool {
+func filterNaturalLanguageValuesSubstring(filters []string, valArr ...as.NaturalLanguageValues) bool {
+	keep := true
+	if len(filters) > 0 {
+		keep = false
+	}
+	for _, filter := range filters {
+		for _, langValues := range valArr {
+			for _, langValue := range langValues {
+				if strings.Contains(strings.ToLower(langValue.Value), strings.ToLower(filter)) {
+					keep = true
+					break
+				}
+				if keep {
+					break
+				}
+			}
+		}
+	}
+	return keep
+}
+func filterNaturalLanguageValuesExactMatch(filters []string, valArr ...as.NaturalLanguageValues) bool {
 	keep := true
 	if len(filters) > 0 {
 		keep = false
