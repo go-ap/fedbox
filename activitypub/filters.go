@@ -654,7 +654,7 @@ func (f Filters) ItemMatches(it as.Item) bool {
 	iri := f.GetLink()
 	if len(iri) > 0 && iriIsObject(iri) {
 		itIRI := it.GetLink()
-		valid = iri == itIRI || iri.String() == fmt.Sprintf("%s/", itIRI)
+		valid = iri.Equals(itIRI, false) || iri.Equals(as.IRI(fmt.Sprintf("%s/", itIRI)), false)
 	}
 
 	return valid
