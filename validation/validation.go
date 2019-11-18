@@ -174,33 +174,33 @@ func IRIBelongsToActor(iri as.IRI, actor *auth.Person) bool {
 		return false
 	}
 	//p, _ := activitypub.ToPerson(actor)
-	if actor.Inbox == iri {
+	if actor.Inbox.GetLink().Equals(iri, false) {
 		return true
 	}
-	if actor.Outbox == iri {
+	if actor.Outbox.GetLink().Equals(iri, false) {
 		return true
 	}
-	if actor.Endpoints != nil && actor.Endpoints.SharedInbox == iri {
+	if actor.Endpoints != nil && actor.Endpoints.SharedInbox.GetLink().Equals(iri, false) {
 		return true
 	}
 	// The following should not really come into question at any point.
 	// This function should be used for checking inbox/outbox/sharedInbox IRIS
-	if actor.Following == iri {
+	if actor.Following.GetLink().Equals(iri, false) {
 		return true
 	}
-	if actor.Followers == iri {
+	if actor.Followers.GetLink().Equals(iri, false) {
 		return true
 	}
-	if actor.Replies == iri {
+	if actor.Replies.GetLink().Equals(iri, false) {
 		return true
 	}
-	if actor.Liked == iri {
+	if actor.Liked.GetLink().Equals(iri, false) {
 		return true
 	}
-	if actor.Shares == iri {
+	if actor.Shares.GetLink().Equals(iri, false) {
 		return true
 	}
-	if actor.Likes == iri {
+	if actor.Likes.GetLink().Equals(iri, false) {
 		return true
 	}
 	return false
