@@ -5,7 +5,6 @@ import (
 	"github.com/buger/jsonparser"
 	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
-	"strings"
 )
 
 // OrderedCollection should be identical to:
@@ -218,7 +217,7 @@ func (c Collection) Contains(r as.IRI) bool {
 		return false
 	}
 	for _, iri := range c.Items {
-		if strings.ToLower(r.String()) == strings.ToLower(iri.GetLink().String()) {
+		if r.Equals(iri.GetLink(), false) {
 			return true
 		}
 	}
@@ -231,7 +230,7 @@ func (o OrderedCollection) Contains(r as.IRI) bool {
 		return false
 	}
 	for _, iri := range o.OrderedItems {
-		if strings.ToLower(r.String()) == strings.ToLower(iri.GetLink().String()) {
+		if r.Equals(iri.GetLink(), false) {
 			return true
 		}
 	}

@@ -432,6 +432,7 @@ func filterNaturalLanguageValuesSubstring(filters []string, valArr ...as.Natural
 	}
 	return keep
 }
+
 func filterNaturalLanguageValuesExactMatch(filters []string, valArr ...as.NaturalLanguageValues) bool {
 	keep := true
 	if len(filters) > 0 {

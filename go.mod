@@ -8,7 +8,7 @@ require (
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
 	github.com/gchaincl/dotsql v1.0.0
 	github.com/go-ap/activitypub v0.0.0-20191114153600-6e7d4dc4ff5d
-	github.com/go-ap/activitystreams v0.0.0-20191013213232-8a9ddc74a4c0
+	github.com/go-ap/activitystreams v0.0.0-20191118161500-f08f14bc2b1a
 	github.com/go-ap/auth v0.0.0-20191117113929-40fa0cfbb607
 	github.com/go-ap/errors v0.0.0-20190912092905-f53d51859c48
 	github.com/go-ap/handlers v0.0.0-20191117113750-dd54a74cb45a
