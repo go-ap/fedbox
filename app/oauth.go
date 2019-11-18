@@ -28,11 +28,15 @@ func (a account) IsLogged() bool {
 	return a.actor != nil && a.actor.PreferredUsername.First().Value == a.username
 }
 
+func (a *account) FromActor(p *auth.Person) {
+	a.username = p.PreferredUsername.First().String()
+	a.actor = p
+}
+
 type oauthHandler struct {
 	baseURL string
 	os      *osin.Server
 	loader  storage.ActorLoader
-	account account
 	logger  logrus.FieldLogger
 }
 
@@ -41,14 +45,19 @@ var scopeAnonymousUserCreate = "anonUserCreate"
 func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	s := h.os
 
+	acc := AnonymousAcct
+	if actor, ok := auth.ActorContext(r.Context()); ok {
+		acc.actor = &actor
+	}
+
 	resp := s.NewResponse()
 	defer resp.Close()
 
 	var overrideRedir = false
 	if ar := s.HandleAuthorizeRequest(resp, r); ar != nil {
-		if h.account.IsLogged() {
+		if acc.IsLogged() {
 			ar.Authorized = true
-			ar.UserData = h.account.actor.GetLink()
+			ar.UserData = acc.actor.GetLink()
 		} else {
 			if ar.Scope == scopeAnonymousUserCreate {
 				// FIXME(marius): this seems like a way to backdoor our selves, we need a better way
@@ -71,24 +80,18 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	if overrideRedir {
 		resp.Type = osin.DATA
 	}
-	redirectOrOutput(resp, w, r, h)
+	redirectOrOutput(resp, w, r)
 }
 
 func checkPw(it as.Item, pw []byte, pwLoader cmd.PasswordChanger) (account, error) {
-	acc := account{
-		username: "anonymous",
-		actor:    &auth.AnonymousActor,
-	}
+	acc := account{}
 	err := auth.OnPerson(it, func(p *auth.Person) error {
-		err := pwLoader.PasswordCheck(p, []byte(pw))
+		err := pwLoader.PasswordCheck(p, pw)
 		if err != nil {
 			// TODO(marius): log the received error
-			return errors.Unauthorizedf("Invalid username or password")
+			return errUnauthorized
 		}
-		acc = account{
-			username: p.PreferredUsername.String(),
-			actor:    p,
-		}
+		acc.FromActor(p)
 		return nil
 	})
 	if err != nil {
@@ -102,6 +105,7 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 	resp := s.NewResponse()
 	defer resp.Close()
 
+	acc := AnonymousAcct
 	if ar := s.HandleAccessRequest(resp, r); ar != nil {
 		actorFilters := activitypub.Filters{}
 		switch ar.Type {
@@ -123,10 +127,10 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 			if pwLoader, ok := h.loader.(cmd.PasswordChanger); ok {
 				found := false
 				for _, actor := range actors {
-					h.account, err = checkPw(actor, []byte(ar.Password), pwLoader)
+					acc, err = checkPw(actor, []byte(ar.Password), pwLoader)
 					if err == nil {
-						ar.Authorized = h.account.IsLogged()
-						ar.UserData = h.account.actor.GetLink()
+						ar.Authorized = acc.IsLogged()
+						ar.UserData = acc.actor.GetLink()
 						found = true
 						break
 					}
@@ -140,18 +144,16 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		}
 		if ar.Type == osin.AUTHORIZATION_CODE && len(actors) == 1 {
 			auth.OnPerson(actors.First(), func(p *auth.Person) error {
-				h.account = account{
-					username: p.PreferredUsername.String(),
-					actor:    p,
-				}
-				ar.Authorized = h.account.IsLogged()
-				ar.UserData = h.account.actor.GetLink()
+				acc = account{}
+				acc.FromActor(p)
+				ar.Authorized = acc.IsLogged()
+				ar.UserData = acc.actor.GetLink()
 				return nil
 			})
 		}
 		s.FinishAccessRequest(resp, r, ar)
 	}
-	redirectOrOutput(resp, w, r, h)
+	redirectOrOutput(resp, w, r)
 }
 
 func annotatedRsError(status int, old error, msg string, args ...interface{}) error {
@@ -170,7 +172,7 @@ func annotatedRsError(status int, old error, msg string, args ...interface{}) er
 	return err
 }
 
-func redirectOrOutput(rs *osin.Response, w http.ResponseWriter, r *http.Request, h *oauthHandler) {
+func redirectOrOutput(rs *osin.Response, w http.ResponseWriter, r *http.Request) {
 	if rs.IsError {
 		err := annotatedRsError(rs.StatusCode, rs.InternalError, "Error processing OAuth2 request: %s", rs.StatusText)
 		errors.HandleError(err).ServeHTTP(w, r)
@@ -329,14 +331,17 @@ func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	if pwLoader, ok := h.loader.(cmd.PasswordChanger); ok {
 		found := false
 		for _, actor := range actors {
-			h.account, err = checkPw(actor, []byte(pw), pwLoader)
+			_, err := checkPw(actor, []byte(pw), pwLoader)
 			if err == nil {
 				found = true
 				break
 			}
 			if !found {
-				h.logger.Error(errUnauthorized)
-				errors.HandleError(errUnauthorized).ServeHTTP(w, r)
+				if err == nil {
+					err = errUnauthorized
+				}
+				h.logger.Error(err)
+				errors.HandleError(err).ServeHTTP(w, r)
 				return
 			}
 		}

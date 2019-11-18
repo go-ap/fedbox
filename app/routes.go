@@ -49,7 +49,6 @@ func Routes(baseURL string, v validation.ActivityValidator, os *osin.Server, st 
 			baseURL: baseURL,
 			os:      os,
 			loader:  st,
-			account: AnonymousAcct,
 			logger:  l,
 		}
 		r.Route("/oauth", func(r chi.Router) {
