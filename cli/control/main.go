@@ -47,14 +47,6 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.Control) error {
 	var db storage.Repository
 	if typ == config.BoltDB {
 		path := config.GetBoltDBPath(dir, fmt.Sprintf("%s-oauth", host), environ)
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			err := auth.BootstrapBoltDB(path, []byte(host))
-			if err != nil {
-				l.Errorf("Unable to create missing boltdb file %s: %s", path, err)
-				return err
-			}
-		}
-
 		aDb = auth.NewBoltDBStore(auth.BoltConfig{
 			Path:       path,
 			BucketName: host,

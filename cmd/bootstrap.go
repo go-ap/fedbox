@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
@@ -14,10 +15,17 @@ import (
 
 func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type) error {
 	if typ == config.BoltDB {
-		authPath := config.GetBoltDBPath(dir, c.Host, environ)
-		err := boltdb.Bootstrap(authPath, c.BaseURL)
+		storagePath := config.GetBoltDBPath(dir, c.Host, environ)
+		err := boltdb.Bootstrap(storagePath, c.BaseURL)
 		if err != nil {
-			return errors.Annotatef(err, "Unable to update %s db", typ)
+			return errors.Annotatef(err, "Unable to create %s db", storagePath)
+		}
+		oauthPath := config.GetBoltDBPath(dir, fmt.Sprintf("%s-oauth", c.Host), environ)
+		if _, err := os.Stat(oauthPath); os.IsNotExist(err) {
+			err := auth.BootstrapBoltDB(oauthPath, []byte(c.Host))
+			if err != nil {
+				return errors.Annotatef(err, "Unable to create %s db", oauthPath)
+			}
 		}
 	}
 	var pgRoot string
