@@ -273,6 +273,9 @@ func (v genericValidator) IsLocalIRI(i as.IRI) bool {
 }
 
 func (v genericValidator) ValidateLink(i as.IRI) error {
+	if i.Equals(as.PublicNS, false) {
+		return InvalidActivityActor("Public namespace is not a local actor")
+	}
 	if !v.IsLocalIRI(i) {
 		// try to dereference this shit
 		_, err := v.c.LoadIRI(i)
