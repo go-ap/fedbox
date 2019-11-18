@@ -247,10 +247,29 @@ func (v genericValidator) ValidateClientActivity(a as.Item, outbox as.IRI) error
 	return nil
 }
 
+func iriContains(i1, i2 as.IRI, checkScheme bool) bool {
+	u1, e1 := i1.URL()
+	u2, e2 := i2.URL()
+	if e1 != nil || e2 != nil {
+		return strings.Contains(i1.String(), i2.String())
+	}
+	if checkScheme {
+		if u1.Scheme != u2.Scheme {
+			return false
+		}
+	}
+	if u1.Host != u2.Host {
+		return false
+	}
+	p1 := path.Clean(u1.Path)
+	p2 := path.Clean(u2.Path)
+	return strings.Contains(p1, p2)
+}
+
 // IsLocalIRI shows if the received IRI belongs to the current instance
 // TODO(marius): make this not be true always
 func (v genericValidator) IsLocalIRI(i as.IRI) bool {
-	return strings.Contains(i.String(), v.baseIRI.String())
+	return iriContains(i, v.baseIRI, false)
 }
 
 func (v genericValidator) ValidateLink(i as.IRI) error {
