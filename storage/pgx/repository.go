@@ -16,7 +16,6 @@ import (
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/pgtype"
 	"github.com/sirupsen/logrus"
-	"net/url"
 	"path"
 	"strings"
 	"time"
@@ -36,14 +35,7 @@ type loggerFn func(logrus.Fields, string, ...interface{})
 
 // IsLocalIRI shows if the received IRI belongs to the current instance
 func (r repo) IsLocalIRI(i as.IRI) bool {
-	if _, err := url.Parse(i.String()); err != nil {
-		// not an url
-		r.errFn(logrus.Fields{
-			"IRI": i,
-		}, "Invalid url")
-		return false
-	}
-	return strings.Contains(i.String(), r.baseURL)
+	return i.Contains(as.IRI(r.baseURL), false)
 }
 
 func logFn(l logrus.FieldLogger, lvl logrus.Level) loggerFn {

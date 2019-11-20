@@ -13,9 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 	bolt "go.etcd.io/bbolt"
 	"golang.org/x/crypto/bcrypt"
-	"net/url"
 	"path"
-	"strings"
 	"time"
 )
 
@@ -460,14 +458,7 @@ func (r *repo) SaveObject(it as.Item) (as.Item, error) {
 
 // IsLocalIRI shows if the received IRI belongs to the current instance
 func (r repo) IsLocalIRI(i as.IRI) bool {
-	if _, err := url.Parse(i.String()); err != nil {
-		// not an url
-		r.errFn(logrus.Fields{
-			"IRI": i,
-		}, "Invalid url")
-		return false
-	}
-	return strings.Contains(i.String(), r.baseURL)
+	return i.Contains(as.IRI(r.baseURL), false)
 }
 
 func (r *repo) RemoveFromCollection(col as.IRI, it as.Item) error {
