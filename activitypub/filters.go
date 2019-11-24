@@ -71,7 +71,9 @@ type Filters struct {
 	Aud           as.IRIs                    `qstring:"-"`
 	Key           []Hash                     `qstring:"-"`
 	ItemKey       []Hash                     `qstring:"-"`
-	ObjectKey     []Hash                     `qstring:"-"`
+	ObjectKey     []Hash                     `qstring:"object,omitempty"`
+	ActorKey      []Hash                     `qstring:"actor,omitempty"`
+	TargetKey     []Hash                     `qstring:"target,omitempty"`
 	Type          as.ActivityVocabularyTypes `qstring:"type,omitempty"`
 	AttrTo        []Hash                     `qstring:"attributedTo,omitempty"`
 	InReplTo      []Hash                     `qstring:"inReplyTo,omitempty"`
@@ -283,8 +285,22 @@ func (f Filters) URLs() as.IRIs {
 }
 
 func (f Filters) Actors() as.IRIs {
-	return nil
+	ret := make(as.IRIs, 0)
+	for _, k := range f.ActorKey {
+		// TODO(marius): This piece of logic should be moved to loading the filters
+		var iri as.IRI
+		if u, ok := validURL(string(k)); ok {
+			iri = as.IRI(u.String())
+		} else {
+			iri = as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, k))
+		}
+		if !ret.Contains(iri) {
+			ret = append(ret, iri)
+		}
+	}
+	return ret
 }
+
 func (f Filters) Objects() as.IRIs {
 	ret := make(as.IRIs, 0)
 	for _, k := range f.ObjectKey {
@@ -303,7 +319,27 @@ func (f Filters) Objects() as.IRIs {
 }
 
 func (f Filters) Targets() as.IRIs {
-	return nil
+	ret := make(as.IRIs, 0)
+	for _, k := range f.TargetKey {
+		// TODO(marius): This piece of logic should be moved to loading the filters
+		var iris as.IRIs
+		if u, ok := validURL(string(k)); ok {
+			iris = as.IRIs{ as.IRI(u.String()) }
+		} else {
+			// FIXME(marius): we don't really know which type this is
+			iris = as.IRIs{
+				as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, k)),
+				as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, k)),
+				as.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActivitiesType, k)),
+			}
+		}
+		for _, iri := range iris {
+			if !ret.Contains(iri) {
+				ret = append(ret, iri)
+			}
+		}
+	}
+	return ret
 }
 
 func filterObject(it as.Item, ff Filters) (bool, as.Item) {

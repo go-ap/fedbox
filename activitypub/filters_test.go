@@ -111,35 +111,26 @@ func mockItem() activitypub.Object {
 
 func TestFilters_Actors(t *testing.T) {
 	f := Filters{
-		baseURL:       "",
-		Name:          nil,
-		Authenticated: nil,
-		To:            nil,
-		Author:        nil,
-		Parent:        nil,
-		IRI:           "",
-		Collection:    "",
-		URL:           nil,
-		MedTypes:      nil,
-		Aud:           nil,
-		Key:           nil,
-		ItemKey:       nil,
-		ObjectKey:     nil,
-		Type:          nil,
-		AttrTo:        nil,
-		InReplTo:      nil,
-		OP:            nil,
-		FollowedBy:    nil,
-		OlderThan:     time.Time{},
-		NewerThan:     time.Time{},
-		CurPage:       0,
-		MaxItems:      0,
+		ActorKey: []Hash{Hash("test")},
 	}
 
-	if f.Actors() != nil {
-		t.Errorf("Incomplete: Actors should return nil")
+	if f.Actors() == nil {
+		t.Errorf("Actors() should not return nil")
+		return
 	}
-	t.Skipf("Incomplete: Actors should return nil")
+	act := mockActivity()
+	act.Actor = as.IRI("/actors/test")
+	t.Run("exists", func(t *testing.T) {
+		if !testItInIRIs(f.Actors(), act.Actor) {
+			t.Errorf("filter %v doesn't contain any of %v", f.Objects(), act.Actor)
+		}
+	})
+	act.Actor = as.ItemCollection{as.IRI("/actors/test123"), as.IRI("https://example.com")}
+	t.Run("missing", func(t *testing.T) {
+		if testItInIRIs(f.Actors(), act.Actor) {
+			t.Errorf("filter %v shouldn't contain any of %v", f.Objects(), act.Actor)
+		}
+	})
 }
 
 func testItInIRIs(iris as.IRIs, items ...as.Item) bool {
@@ -319,24 +310,22 @@ func TestFilters_Objects(t *testing.T) {
 }
 
 func TestFilters_Targets(t *testing.T) {
-	f := Filters{}
-	if f.Targets() != nil {
-		t.Errorf("Target() should be return nil")
-		return
+	f := Filters{
+		TargetKey: []Hash{Hash("test")},
 	}
-	//act := mockActivity()
-	//act.Target = as.ItemCollection{as.IRI("/objects/test")}
-	//t.Run("exists", func(t *testing.T) {
-	//	if !testItInIRIs(f.Targets(), act.Target) {
-	//		t.Errorf("filter %v doesn't contain any of %v", f.Targets(), act.Target)
-	//	}
-	//})
-	//act.Target = as.ItemCollection{as.IRI("/objects/test123"), as.IRI("https://example.com")}
-	//t.Run("missing", func(t *testing.T) {
-	//	if testItInIRIs(f.Targets(), act.Target) {
-	//		t.Errorf("filter %v shouldn't contain any of %v", f.Targets(), act.Target)
-	//	}
-	//})
+	act := mockActivity()
+	act.Target = as.IRI("/objects/test")
+	t.Run("exists", func(t *testing.T) {
+		if !testItInIRIs(f.Targets(), act.Target) {
+			t.Errorf("filter %v doesn't contain any of %v", f.Targets(), act.Target)
+		}
+	})
+	act.Target = as.ItemCollection{as.IRI("/objects/test123"), as.IRI("https://example.com")}
+	t.Run("missing", func(t *testing.T) {
+		if testItInIRIs(f.Targets(), act.Target) {
+			t.Errorf("filter %v shouldn't contain any of %v", f.Targets(), act.Target)
+		}
+	})
 }
 func TestFilters_URLs(t *testing.T) {
 	t.Skipf("TODO")
