@@ -110,6 +110,14 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		return nil
 	})
 
+	act, err := as.ToActivity(it)
+	if err != nil {
+		return it, http.StatusInternalServerError, errors.Annotatef(err, "Invalid activity %s", it.GetType())
+	}
+	if it, err = processing.ProcessActivity(repo, act, typ); err != nil {
+		return it, http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
+	}
+
 	if typ == h.Outbox {
 		// C2S - get recipients and cleanup activity
 		if actWRecipients, ok := it.(as.HasRecipients); ok {
@@ -118,14 +126,6 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 				// TODO(marius): for C2S activities propagate them
 			}(recipients)
 		}
-	}
-
-	act, err := as.ToActivity(it)
-	if err != nil {
-		return it, http.StatusInternalServerError, errors.Annotatef(err, "Invalid activity %s", it.GetType())
-	}
-	if it, err = processing.ProcessActivity(repo, act, typ); err != nil {
-		return it, http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 	}
 
 	status := http.StatusOK
