@@ -206,6 +206,8 @@ func IRIBelongsToActor(iri as.IRI, actor *auth.Person) bool {
 	return false
 }
 
+var missingActor = new(MissingActorError)
+
 func (v genericValidator) ValidateClientActivity(a as.Item, outbox as.IRI) error {
 	if !IsOutbox(outbox) {
 		return errors.NotValidf("Trying to validate a non outbox IRI %s", outbox)
@@ -230,7 +232,7 @@ func (v genericValidator) ValidateClientActivity(a as.Item, outbox as.IRI) error
 		return err
 	}
 	if err := v.ValidateClientActor(act.Actor); err != nil {
-		if (&MissingActorError{}).Is(err) && v.auth != nil {
+		if missingActor.Is(err) && v.auth != nil {
 			act.Actor = v.auth
 		} else {
 			return err
