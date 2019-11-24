@@ -186,6 +186,12 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 		}
 		return nil
 	})
+	for _, it := range col {
+		// Remove bcc and bto
+		if s, ok := it.(as.HasRecipients); ok {
+			s.Clean()
+		}
+	}
 
 	return col, uint(len(col)), err
 }
