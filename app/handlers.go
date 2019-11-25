@@ -100,32 +100,30 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		return it, http.StatusNotAcceptable, errors.NewMethodNotAllowed(err, "Collection %s does not receive Activity requests", typ)
 	}
 	if err = validateFn(it, f.IRI); err != nil {
-		return it, 0, err
+		return it, http.StatusNotAcceptable, err
 	}
-	ap.OnActivity(it, func(a *as.Activity) error {
+
+	err = ap.OnActivity(it, func(a *as.Activity) error {
 		// TODO(marius): this should be handled in the processing package
 		if a.AttributedTo == nil {
 			a.AttributedTo = f.Authenticated
 		}
-		return nil
-	})
 
-	act, err := as.ToActivity(it)
-	if err != nil {
-		return it, http.StatusInternalServerError, errors.Annotatef(err, "Invalid activity %s", it.GetType())
-	}
-	if it, err = processing.ProcessActivity(repo, act, typ); err != nil {
-		return it, http.StatusInternalServerError, errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
-	}
-
-	if typ == h.Outbox {
-		// C2S - get recipients and cleanup activity
-		if actWRecipients, ok := it.(as.HasRecipients); ok {
-			recipients := actWRecipients.Recipients()
+		it, err = processing.ProcessActivity(repo, a, typ)
+		if err != nil {
+			return errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
+		}
+		if typ == h.Outbox {
+			// C2S - get recipients and cleanup activity
+			recipients := a.Recipients()
 			func(rec as.ItemCollection) {
 				// TODO(marius): for C2S activities propagate them
 			}(recipients)
 		}
+		return nil
+	})
+	if err != nil {
+		return it, http.StatusInternalServerError, errors.Annotatef(err, "Unable to process activity %s", it.GetType())
 	}
 
 	status := http.StatusOK
