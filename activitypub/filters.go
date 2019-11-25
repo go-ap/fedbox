@@ -70,7 +70,7 @@ type Filters struct {
 	MedTypes      []as.MimeType              `qstring:"mediaType,omitempty"`
 	Aud           as.IRIs                    `qstring:"-"`
 	Key           []Hash                     `qstring:"-"`
-	ItemKey       []Hash                     `qstring:"-"`
+	ItemKey       []Hash                     `qstring:"iri,omitempty"`
 	ObjectKey     []Hash                     `qstring:"object,omitempty"`
 	ActorKey      []Hash                     `qstring:"actor,omitempty"`
 	TargetKey     []Hash                     `qstring:"target,omitempty"`
