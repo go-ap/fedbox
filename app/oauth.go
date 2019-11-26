@@ -405,6 +405,7 @@ func (h *oauthHandler) HandleChangePw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tok := r.URL.Query().Get("s")
+
 	pw := r.PostFormValue("pw")
 	pwConf := r.PostFormValue("pw-confirm")
 	if pw != pwConf {
