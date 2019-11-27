@@ -1,28 +1,34 @@
 # Fedbox
 
-Here I will do a dump of my assumptions regarding how the "client to server" (from here on, referred to as C2S[1]) interactions should work between littr.me as a client and it's ActivityPub server, fedbox.
+Here I will do a dump of my assumptions regarding how the "client to server[1]" (or C2S) interactions should work on FedBOX.
 
-* The C2S API will be structured as close as possible to a REST API in respect to addressing objects. Ie, every object on the server will have an unique URL that can be found at.
+The first one is that the C2S API will be structured as a REST(ful) API in respect to addressing objects. 
 
-This type of URL is called an IRI (Internationalized Resource Identifier, see RFC3987[2]) in the ActivityPub spec.
+This means that every object on the server will have an unique URL that can be addressed at. 
+
+This type of URL is called an "Internationalized Resource Identifier[2]" (or IRI) in the ActivityPub spec. 
+
+It also represents the Object's ID in respect to the AP spec.
 
 ## Entry points
 
-Fedbox has as a unique entry point for any non-authorized requests. For convenience we'll assume that is the root path for the domain (eg: https://federated.id/)
+Fedbox has as a unique entry point for any non-authorized request. For convenience we'll assume that is the root path for the domain (eg: `https://federated.id/`)
 
-We'll call this entry point the "Service's IRI", as it consists of a Service Actor representing the current instance.
+We'll call this entry point the "Local Service's IRI", as it response consists of a Service Actor representing the current instance.
 
-The Service, as an Actor, must have an Inbox collection, which we expose in the https://federated.id/inbox end-point.
+The Service, as an Actor, must have an Inbox collection, which we expose in the `https://federated.id/inbox` end-point.
+
 It also represents the shared inbox for all actors created on the service.
 
-*Problem*: in the ActivityPub spec there is no schema for IRI addressing for Objects, Activities and Actors. This is an implementation detail.
-In the case of fedbox we took the option of creating three collection end-points, corresponding to each of these. 
+In the ActivityPub spec there is no schema for IRI generation for Objects, Activities and Actors. This is left as an implementation detail.
+
+In our case we took the option of creating three non-specified collection end-points, corresponding to each of these. 
 
 We have thus:
 
-* https://federated.id/objects 
-* https://federated.id/activities
-* https://federated.id/actors 
+* https://federated.id/actors - where we can query all the actors on the instance.
+* https://federated.id/activities - where we can query all the activities on the instance.
+* https://federated.id/objects - where we can query the rest of the items.
 
 ## Object and Actor filtering
 
@@ -34,5 +40,5 @@ Additionally to the Object filtering properties, an activity can be filtered add
 
 ___
 
-[1] https://www.w3.org/TR/activitypub/#client-to-server-interactions  
-[2] https://tools.ietf.org/html/rfc3987  
+[1] See ActivityPub spec: https://www.w3.org/TR/activitypub/#client-to-server-interactions  
+[2] See RFC3987: https://tools.ietf.org/html/rfc3987  
