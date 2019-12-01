@@ -62,8 +62,8 @@ func TestCollection_Collection(t *testing.T) {
 		},
 	}
 
-	if c.Collection() != &c {
-		t.Errorf("Collection should return itself %q", *c.GetID())
+	if !reflect.DeepEqual(c.Collection(), c.Items) {
+		t.Errorf("Collection itemss should be equal %v %v", c.Collection(), c.Items)
 	}
 }
 
@@ -237,8 +237,8 @@ func TestOrderedCollection_Collection(t *testing.T) {
 		},
 	}
 
-	if c.Collection() != &c {
-		t.Errorf("Collection should return itself %q", *c.GetID())
+	if !reflect.DeepEqual(c.Collection(), c.OrderedItems) {
+		t.Errorf("Collection itemss should be equal %v %v", c.Collection(), c.OrderedItems)
 	}
 }
 

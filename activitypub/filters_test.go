@@ -136,6 +136,17 @@ func TestFilters_Actors(t *testing.T) {
 func testItInIRIs(iris as.IRIs, items ...as.Item) bool {
 	contains := false
 	for _, val := range items {
+		if val.IsCollection() {
+			activitypub.OnCollection(val, func(c as.CollectionInterface) error {
+				for _, it := range c.Collection() {
+					if iris.Contains(it.GetLink()) {
+						contains = true
+						return nil
+					}
+				}
+				return nil
+			})
+		}
 		if iris.Contains(val.GetLink()) {
 			contains = true
 			break
@@ -156,13 +167,13 @@ func TestFilters_AttributedTo(t *testing.T) {
 	it := mockItem()
 	it.InReplyTo = as.ItemCollection{as.IRI("/objects/test")}
 	t.Run("exists", func(t *testing.T) {
-		if !testItInIRIs(f.InReplyTo(), it.InReplyTo...) {
+		if !testItInIRIs(f.InReplyTo(), it.InReplyTo) {
 			t.Errorf("filter %v doesn't contain any of %v", f.InReplyTo(), it.InReplyTo)
 		}
 	})
 	it.InReplyTo = as.ItemCollection{as.IRI("/objects/test123"), as.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
-		if testItInIRIs(f.InReplyTo(), it.InReplyTo...) {
+		if testItInIRIs(f.InReplyTo(), it.InReplyTo) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.InReplyTo(), it.InReplyTo)
 		}
 	})
@@ -225,13 +236,13 @@ func TestFilters_InReplyTo(t *testing.T) {
 	it := mockItem()
 	it.InReplyTo = as.ItemCollection{as.IRI("/objects/test")}
 	t.Run("exists", func(t *testing.T) {
-		if !testItInIRIs(f.InReplyTo(), it.InReplyTo...) {
+		if !testItInIRIs(f.InReplyTo(), it.InReplyTo) {
 			t.Errorf("filter %v doesn't contain any of %v", f.InReplyTo(), it.InReplyTo)
 		}
 	})
 	it.InReplyTo = as.ItemCollection{as.IRI("/objects/test123"), as.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
-		if testItInIRIs(f.InReplyTo(), it.InReplyTo...) {
+		if testItInIRIs(f.InReplyTo(), it.InReplyTo) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.InReplyTo(), it.InReplyTo)
 		}
 	})

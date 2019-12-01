@@ -535,12 +535,15 @@ func filterItemCollections(filters as.IRIs, colArr ...as.Item) bool {
 		if col == nil {
 			continue
 		}
-		if col, ok := col.(as.ItemCollection); ok {
-			for _, it := range col {
-				if it != nil {
-					allItems = append(allItems, it)
+		if col.IsCollection() {
+			activitypub.OnCollection(col, func(c as.CollectionInterface) error {
+				for _, it := range c.Collection() {
+					if it != nil {
+						allItems = append(allItems, it)
+					}
 				}
-			}
+				return nil
+			})
 		} else {
 			allItems = append(allItems, col)
 		}
@@ -563,6 +566,19 @@ func filterAbsent(filters as.IRIs, items ...as.Item) bool {
 			return true
 		}
 		for _, it := range items {
+			if it.IsCollection() {
+				result := false
+				activitypub.OnCollection(it, func(c as.CollectionInterface) error {
+					for _, it := range c.Collection(){
+						if it != nil && it.GetLink() == as.PublicNS { // FIXME(marius): this is kinda ugly
+							result = true
+							return nil
+						}
+					}
+					return nil
+				})
+				return result
+			}
 			if it != nil && it.GetLink() != as.PublicNS { // FIXME(marius): this is kinda ugly
 				return false
 			}

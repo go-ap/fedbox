@@ -37,14 +37,19 @@ func (o OrderedCollection) GetID() *as.ObjectID {
 	return &o.ID
 }
 
-// IsObject returns true for am OrderedCollection object
+// IsObject returns true for an OrderedCollection object
 func (o OrderedCollection) IsObject() bool {
 	return true
 }
 
+// IsCollection returns true for an OrderedCollection object
+func (o OrderedCollection) IsCollection() bool {
+	return true
+}
+
 // Collection returns the underlying Collection type
-func (o *OrderedCollection) Collection() as.CollectionInterface {
-	return o
+func (o *OrderedCollection) Collection() as.ItemCollection {
+	return o.OrderedItems
 }
 
 // Append adds an element to an OrderedCollection
@@ -124,7 +129,7 @@ func (c Collection) GetLink() as.IRI {
 	return as.IRI(c.ID)
 }
 
-// IsLink returns false for an Collection object
+// IsLink returns false for a Collection object
 func (c Collection) IsLink() bool {
 	return false
 }
@@ -134,14 +139,19 @@ func (c Collection) GetID() *as.ObjectID {
 	return &c.ID
 }
 
-// IsObject returns true for am Collection object
+// IsObject returns true for a Collection object
 func (c Collection) IsObject() bool {
 	return true
 }
 
+// IsCollection returns true for a Collection object
+func (c Collection) IsCollection() bool {
+	return true
+}
+
 // Collection returns the underlying Collection type
-func (c *Collection) Collection() as.CollectionInterface {
-	return c
+func (c *Collection) Collection() as.ItemCollection {
+	return c.Items
 }
 
 // Count returns the maximum between the length of Items in collection and its TotalItems property
