@@ -7,11 +7,11 @@ require (
 	github.com/dyninc/qstring v0.0.0-20160719172318-ab5840a88e81 // indirect
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
 	github.com/gchaincl/dotsql v1.0.0
-	github.com/go-ap/activitypub v0.0.0-20191114153600-6e7d4dc4ff5d
-	github.com/go-ap/activitystreams v0.0.0-20191124115651-95f184fb4ca6
-	github.com/go-ap/auth v0.0.0-20191124120137-cea914bde204
-	github.com/go-ap/errors v0.0.0-20191126160240-6fbeb1f372d4
-	github.com/go-ap/handlers v0.0.0-20191124120223-6d767f8fa46e
+	github.com/go-ap/activitypub v0.0.0-20191201155849-88e9eefd40f6
+	github.com/go-ap/activitystreams v0.0.0-20191201155635-d82e449e14e3
+	github.com/go-ap/auth v0.0.0-20191201160344-69821f7459a4
+	github.com/go-ap/errors v0.0.0-20191127092628-088896cbdb2b
+	github.com/go-ap/handlers v0.0.0-20191201160533-832c9295b940
 	github.com/go-ap/jsonld v0.0.0-20191123195936-1e43eac08b0c
 	github.com/go-ap/processing v0.0.0-20191124120527-eda515600b2f
 	github.com/go-ap/storage v0.0.0-20191124120030-50d1a6675168

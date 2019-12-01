@@ -324,7 +324,7 @@ func (f Filters) Targets() as.IRIs {
 		// TODO(marius): This piece of logic should be moved to loading the filters
 		var iris as.IRIs
 		if u, ok := validURL(string(k)); ok {
-			iris = as.IRIs{ as.IRI(u.String()) }
+			iris = as.IRIs{as.IRI(u.String())}
 		} else {
 			// FIXME(marius): we don't really know which type this is
 			iris = as.IRIs{
@@ -365,7 +365,7 @@ func filterObject(it as.Item, ff Filters) (bool, as.Item) {
 			keep = false
 			return nil
 		}
-		if !filterWithAbsent(ff.InReplyTo(), ob.InReplyTo...) {
+		if !filterWithAbsent(ff.InReplyTo(), ob.InReplyTo) {
 			keep = false
 			return nil
 		}
@@ -423,7 +423,7 @@ func filterActor(it as.Item, ff Filters) (bool, as.Item) {
 			return nil
 		}
 		// TODO(marius): this needs to be moved in handling an item collection for inReplyTo
-		if !filterWithAbsent(ff.Context(), ob.InReplyTo...) {
+		if !filterWithAbsent(ff.Context(), ob.InReplyTo) {
 			keep = false
 			return nil
 		}
@@ -525,16 +525,24 @@ func filterAudience(filters as.IRIs, colArr ...as.ItemCollection) bool {
 	return filterItems(filters, allItems...)
 }
 
-func filterItemCollections(filters as.IRIs, colArr ...as.ItemCollection) bool {
+func filterItemCollections(filters as.IRIs, colArr ...as.Item) bool {
 	if len(filters) == 0 {
 		return true
 	}
+
 	allItems := make(as.ItemCollection, 0)
-	for _, items := range colArr {
-		for _, it := range items {
-			if it != nil {
-				allItems = append(allItems, it)
+	for _, col := range colArr {
+		if col == nil {
+			continue
+		}
+		if col, ok := col.(as.ItemCollection); ok {
+			for _, it := range col {
+				if it != nil {
+					allItems = append(allItems, it)
+				}
 			}
+		} else {
+			allItems = append(allItems, col)
 		}
 	}
 	as.ItemCollectionDeduplication(&allItems)
@@ -583,7 +591,11 @@ func filterItem(filters as.IRIs, it as.Item) bool {
 		if it == nil {
 			return false
 		}
-		keep = filters.Contains(it.GetLink())
+		if c, ok := it.(as.ItemCollection); ok {
+			return filterItems(filters, c...)
+		} else {
+			keep = filters.Contains(it.GetLink())
+		}
 	}
 	return keep
 }
