@@ -1,18 +1,16 @@
 package activitypub
 
 import (
-	"github.com/go-ap/activitystreams"
+	pub "github.com/go-ap/activitypub"
 	"reflect"
 	"testing"
 )
 
 func TestCollection_Count(t *testing.T) {
-	id := activitystreams.ObjectID("test")
+	id := pub.ObjectID("test")
 
 	c := Collection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 
 	if c.TotalItems != 0 {
@@ -25,7 +23,7 @@ func TestCollection_Count(t *testing.T) {
 		t.Errorf("%T.Count() returned %d, expected %d", c, c.Count(), len(c.Items))
 	}
 
-	c.Append(activitystreams.IRI("test"))
+	c.Append(pub.IRI("test"))
 	if c.TotalItems != 0 {
 		t.Errorf("Empty object should have empty TotalItems, received %d", c.TotalItems)
 	}
@@ -35,18 +33,16 @@ func TestCollection_Count(t *testing.T) {
 }
 
 func TestCollection_Append(t *testing.T) {
-	id := activitystreams.ObjectID("test")
-	val := activitystreams.Object{ID: activitystreams.ObjectID("grrr")}
+	id := pub.ObjectID("test")
+	val := pub.Object{ID: pub.ObjectID("grrr")}
 
 	c := Collection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 	c.Append(val)
 
 	if c.Count() != 1 {
-		t.Errorf("Inbox collection of %q should have one element", *c.GetID())
+		t.Errorf("Inbox collection of %q should have one element", c.GetID())
 	}
 	if !reflect.DeepEqual(c.Items[0], val) {
 		t.Errorf("First item in Inbox is does not match %q", val.ID)
@@ -54,12 +50,10 @@ func TestCollection_Append(t *testing.T) {
 }
 
 func TestCollection_Collection(t *testing.T) {
-	id := activitystreams.ObjectID("test")
+	id := pub.ObjectID("test")
 
 	c := Collection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 
 	if !reflect.DeepEqual(c.Collection(), c.Items) {
@@ -68,27 +62,23 @@ func TestCollection_Collection(t *testing.T) {
 }
 
 func TestCollection_GetID(t *testing.T) {
-	id := activitystreams.ObjectID("test")
+	id := pub.ObjectID("test")
 
 	c := Collection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 
-	if *c.GetID() != id {
-		t.Errorf("GetID should return %q, received %q", id, *c.GetID())
+	if c.GetID() != id {
+		t.Errorf("GetID should return %q, received %q", id, c.GetID())
 	}
 }
 
 func TestCollection_GetLink(t *testing.T) {
-	id := activitystreams.ObjectID("test")
-	link := activitystreams.IRI(id)
+	id := pub.ObjectID("test")
+	link := pub.IRI(id)
 
 	c := Collection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 
 	if c.GetLink() != link {
@@ -97,26 +87,22 @@ func TestCollection_GetLink(t *testing.T) {
 }
 
 func TestCollection_GetType(t *testing.T) {
-	id := activitystreams.ObjectID("test")
+	id := pub.ObjectID("test")
 
 	c := Collection{
-		Parent: activitystreams.Parent{
-			ID:   id,
-			Type: activitystreams.CollectionType,
-		},
+		ID:   id,
+		Type: pub.CollectionType,
 	}
-	if c.GetType() != activitystreams.CollectionType {
-		t.Errorf("OrderedCollection Type should be %q, received %q", activitystreams.CollectionType, c.GetType())
+	if c.GetType() != pub.CollectionType {
+		t.Errorf("OrderedCollection Type should be %q, received %q", pub.CollectionType, c.GetType())
 	}
 }
 
 func TestCollection_IsLink(t *testing.T) {
-	id := activitystreams.ObjectID("test")
+	id := pub.ObjectID("test")
 
 	c := Collection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 
 	if c.IsLink() != false {
@@ -125,12 +111,10 @@ func TestCollection_IsLink(t *testing.T) {
 }
 
 func TestCollection_IsObject(t *testing.T) {
-	id := activitystreams.ObjectID("test")
+	id := pub.ObjectID("test")
 
 	c := Collection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 
 	if c.IsObject() != true {
@@ -182,12 +166,10 @@ func TestCollection_UnmarshalJSON(t *testing.T) {
 }
 
 func TestOrderedCollection_Count(t *testing.T) {
-	id := activitystreams.ObjectID("test")
+	id := pub.ObjectID("test")
 
 	c := OrderedCollection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 
 	if c.TotalItems != 0 {
@@ -200,7 +182,7 @@ func TestOrderedCollection_Count(t *testing.T) {
 		t.Errorf("%T.Count() returned %d, expected %d", c, c.Count(), len(c.OrderedItems))
 	}
 
-	c.Append(activitystreams.IRI("test"))
+	c.Append(pub.IRI("test"))
 	if c.TotalItems != 0 {
 		t.Errorf("Empty object should have empty TotalItems, received %d", c.TotalItems)
 	}
@@ -210,18 +192,16 @@ func TestOrderedCollection_Count(t *testing.T) {
 }
 
 func TestOrderedCollection_Append(t *testing.T) {
-	id := activitystreams.ObjectID("test")
-	val := activitystreams.Object{ID: activitystreams.ObjectID("grrr")}
+	id := pub.ObjectID("test")
+	val := pub.Object{ID: pub.ObjectID("grrr")}
 
 	c := OrderedCollection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 	c.Append(val)
 
 	if c.Count() != 1 {
-		t.Errorf("Inbox collection of %q should have one element", *c.GetID())
+		t.Errorf("Inbox collection of %q should have one element", c.GetID())
 	}
 	if !reflect.DeepEqual(c.OrderedItems[0], val) {
 		t.Errorf("First item in Inbox is does not match %q", val.ID)
@@ -229,12 +209,10 @@ func TestOrderedCollection_Append(t *testing.T) {
 }
 
 func TestOrderedCollection_Collection(t *testing.T) {
-	id := activitystreams.ObjectID("test")
+	id := pub.ObjectID("test")
 
 	c := OrderedCollection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 
 	if !reflect.DeepEqual(c.Collection(), c.OrderedItems) {
@@ -243,27 +221,23 @@ func TestOrderedCollection_Collection(t *testing.T) {
 }
 
 func TestOrderedCollection_GetID(t *testing.T) {
-	id := activitystreams.ObjectID("test")
+	id := pub.ObjectID("test")
 
 	c := OrderedCollection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 
-	if *c.GetID() != id {
-		t.Errorf("GetID should return %q, received %q", id, *c.GetID())
+	if c.GetID() != id {
+		t.Errorf("GetID should return %q, received %q", id, c.GetID())
 	}
 }
 
 func TestOrderedCollection_GetLink(t *testing.T) {
-	id := activitystreams.ObjectID("test")
-	link := activitystreams.IRI(id)
+	id := pub.ObjectID("test")
+	link := pub.IRI(id)
 
 	c := OrderedCollection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 
 	if c.GetLink() != link {
@@ -272,26 +246,22 @@ func TestOrderedCollection_GetLink(t *testing.T) {
 }
 
 func TestOrderedCollection_GetType(t *testing.T) {
-	id := activitystreams.ObjectID("test")
+	id := pub.ObjectID("test")
 
 	c := OrderedCollection{
-		Parent: activitystreams.Parent{
-			ID:   id,
-			Type: activitystreams.OrderedCollectionType,
-		},
+		ID:   id,
+		Type: pub.OrderedCollectionType,
 	}
-	if c.GetType() != activitystreams.OrderedCollectionType {
-		t.Errorf("OrderedCollection Type should be %q, received %q", activitystreams.OrderedCollectionType, c.GetType())
+	if c.GetType() != pub.OrderedCollectionType {
+		t.Errorf("OrderedCollection Type should be %q, received %q", pub.OrderedCollectionType, c.GetType())
 	}
 }
 
 func TestOrderedCollection_IsLink(t *testing.T) {
-	id := activitystreams.ObjectID("test")
+	id := pub.ObjectID("test")
 
 	c := OrderedCollection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 
 	if c.IsLink() != false {
@@ -300,12 +270,10 @@ func TestOrderedCollection_IsLink(t *testing.T) {
 }
 
 func TestOrderedCollection_IsObject(t *testing.T) {
-	id := activitystreams.ObjectID("test")
+	id := pub.ObjectID("test")
 
 	c := OrderedCollection{
-		Parent: activitystreams.Parent{
-			ID: id,
-		},
+		ID: id,
 	}
 
 	if c.IsObject() != true {

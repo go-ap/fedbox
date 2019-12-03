@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/go-ap/activitypub"
-	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/auth"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -24,32 +22,26 @@ type Control struct {
 }
 
 type PasswordChanger interface {
-	PasswordSet(as.Item, []byte) error
-	PasswordCheck(as.Item, []byte) error
+	PasswordSet(pub.Item, []byte) error
+	PasswordCheck(pub.Item, []byte) error
 }
 
-func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyType, id *as.ObjectID, pw []byte) (*auth.Person, error) {
-	self := ap.Self(as.IRI(c.BaseURL))
+func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyType, id *pub.ObjectID, pw []byte) (*pub.Person, error) {
+	self := ap.Self(pub.IRI(c.BaseURL))
 	now := time.Now()
-	p := auth.Person{
-		Person: activitypub.Person{
-			Parent: activitypub.Parent{
-				Parent: as.Object{
-					Type: typ,
-					// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
-					AttributedTo: self.GetLink(),
-					Audience:     as.ItemCollection{as.PublicNS},
-					Generator:    self.GetLink(),
-					Published:    now,
-					Summary: as.NaturalLanguageValues{
-						{as.NilLangRef, "Generated actor"},
-					},
-					Updated: now,
-				},
-			},
-			PreferredUsername: as.NaturalLanguageValues{
-				{as.NilLangRef, preferredUsername},
-			},
+	p := pub.Person{
+		Type: typ,
+		// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
+		AttributedTo: self.GetLink(),
+		Audience:     pub.ItemCollection{pub.PublicNS},
+		Generator:    self.GetLink(),
+		Published:    now,
+		Summary: pub.NaturalLanguageValues{
+			{pub.NilLangRef, "Generated actor"},
+		},
+		Updated: now,
+		PreferredUsername: pub.NaturalLanguageValues{
+			{pub.NilLangRef, preferredUsername},
 		},
 	}
 
@@ -65,23 +57,23 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 	}
 	p.ID = *id
 	p.URL = p.GetLink()
-	p.Inbox = as.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Inbox))
-	p.Outbox = as.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Outbox))
-	p.Liked = as.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Liked))
-	p.Followers = as.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Followers))
-	p.Following = as.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Following))
+	p.Inbox = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Inbox))
+	p.Outbox = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Outbox))
+	p.Liked = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Liked))
+	p.Followers = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Followers))
+	p.Following = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Following))
 
-	p.Endpoints = &activitypub.Endpoints{
+	p.Endpoints = &pub.Endpoints{
 		SharedInbox:                self.Inbox.GetLink(),
-		OauthAuthorizationEndpoint: as.IRI(fmt.Sprintf("%s/oauth/authorize", self.URL)),
-		OauthTokenEndpoint:         as.IRI(fmt.Sprintf("%s/oauth/token", self.URL)),
+		OauthAuthorizationEndpoint: pub.IRI(fmt.Sprintf("%s/oauth/authorize", self.URL)),
+		OauthTokenEndpoint:         pub.IRI(fmt.Sprintf("%s/oauth/token", self.URL)),
 	}
 	it, err := c.Storage.SaveActor(p)
 	if err != nil {
 		return nil, err
 	}
 
-	saved, err := auth.ToPerson(it)
+	saved, err := pub.ToActor(it)
 	if err != nil {
 		return nil, err
 	}
@@ -99,12 +91,12 @@ func (c *Control) AddActor(preferredUsername string, typ as.ActivityVocabularyTy
 }
 
 func (c *Control) DeleteActor(id string) error {
-	self := ap.Self(as.IRI(c.BaseURL))
-	var iri as.IRI
+	self := ap.Self(pub.IRI(c.BaseURL))
+	var iri pub.IRI
 	if u, err := url.Parse(id); err != nil {
-		iri = as.IRI(fmt.Sprintf("%s/%s/%s", self.ID, ap.ActorsType, id))
+		iri = pub.IRI(fmt.Sprintf("%s/%s/%s", self.ID, ap.ActorsType, id))
 	} else {
-		iri = as.IRI(u.String())
+		iri = pub.IRI(u.String())
 	}
 	it, cnt, err := c.Storage.LoadActors(iri)
 	if err != nil {
@@ -117,9 +109,9 @@ func (c *Control) DeleteActor(id string) error {
 	return err
 }
 
-func (c *Control) ListActors() (as.ItemCollection, error) {
+func (c *Control) ListActors() (pub.ItemCollection, error) {
 	var err error
-	actorsIRI := as.IRI(fmt.Sprintf("%s/%s", c.BaseURL, ap.ActorsType))
+	actorsIRI := pub.IRI(fmt.Sprintf("%s/%s", c.BaseURL, ap.ActorsType))
 	col, _, err := c.Storage.LoadActors(&ap.Filters{IRI: actorsIRI})
 	if err != nil {
 		return col, errors.Annotatef(err, "Unable to load actors")

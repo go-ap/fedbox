@@ -7,8 +7,8 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/activitypub/client"
-	as "github.com/go-ap/activitystreams"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/spacemonkeygo/httpsig"
 	"io/ioutil"
@@ -123,8 +123,8 @@ var outboxURL = fmt.Sprintf("%s/outbox", apiURL)
 var baseURL = apiURL
 var rnd = rand.New(rand.NewSource(6667))
 var key, _ = rsa.GenerateKey(rnd, 512)
-var prv, _ = x509.MarshalPKCS8PrivateKey(key)
-var pub, _ = x509.MarshalPKIXPublicKey(&key.PublicKey)
+var keyPrv, _ = x509.MarshalPKCS8PrivateKey(key)
+var keyPub, _ = x509.MarshalPKIXPublicKey(&key.PublicKey)
 var meta interface{} = nil
 
 var defaultTestAccount = testAccount{
@@ -338,10 +338,10 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 				assertTrue(ok, "received audience is not a []string, received %T", aud)
 				errOnArray(t)(aud, tVal.audience)
 			}
-			if tVal.typ != string(as.CollectionType) &&
-				tVal.typ != string(as.OrderedCollectionType) &&
-				tVal.typ != string(as.CollectionPageType) &&
-				tVal.typ != string(as.OrderedCollectionPageType) {
+			if tVal.typ != string(pub.CollectionType) &&
+				tVal.typ != string(pub.OrderedCollectionType) &&
+				tVal.typ != string(pub.CollectionPageType) &&
+				tVal.typ != string(pub.OrderedCollectionPageType) {
 				return
 			}
 			if tVal.first != nil {
@@ -382,7 +382,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			assertMapKey(ob, "totalItems", tVal.itemCount)
 			if tVal.itemCount > 0 {
 				itemsKey := func(typ string) string {
-					if typ == string(as.CollectionType) {
+					if typ == string(pub.CollectionType) {
 						return "items"
 					}
 					return "orderedItems"

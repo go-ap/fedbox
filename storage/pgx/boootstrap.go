@@ -3,8 +3,7 @@ package pgx
 import (
 	"fmt"
 	"github.com/gchaincl/dotsql"
-	"github.com/go-ap/activitystreams"
-	a "github.com/go-ap/auth"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -126,17 +125,17 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 		return err
 	}
 	activities := fmt.Sprintf("%s%s", baseURL, activitypub.ActivitiesType)
-	err = exec("insert-collection", activities, activitystreams.OrderedCollectionType)
+	err = exec("insert-collection", activities, pub.OrderedCollectionType)
 	if err != nil {
 		return err
 	}
 	objects := fmt.Sprintf("%s%s", baseURL, activitypub.ObjectsType)
-	err = exec("insert-collection", objects, activitystreams.OrderedCollectionType)
+	err = exec("insert-collection", objects, pub.OrderedCollectionType)
 	if err != nil {
 		return err
 	}
 	actors := fmt.Sprintf("%s%s", baseURL, activitypub.ActorsType)
-	err = exec("insert-collection", actors, activitystreams.OrderedCollectionType)
+	err = exec("insert-collection", actors, pub.OrderedCollectionType)
 	if err != nil {
 		return err
 	}
@@ -144,15 +143,15 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 	//if err != nil {
 	//	return err
 	//}
-	err = exec("insert-collection", service.Inbox.GetLink(), activitystreams.OrderedCollectionType)
+	err = exec("insert-collection", service.Inbox.GetLink(), pub.OrderedCollectionType)
 	if err != nil {
 		return err
 	}
-	//err = exec("insert-collection", service.Following.GetLink(), activitystreams.OrderedCollectionType)
+	//err = exec("insert-collection", service.Following.GetLink(), pub.OrderedCollectionType)
 	//if err != nil {
 	//	return err
 	//}
-	//err = exec("insert-collection", service.Outbox.GetLink(), activitystreams.OrderedCollectionType)
+	//err = exec("insert-collection", service.Outbox.GetLink(), pub.OrderedCollectionType)
 	//if err != nil {
 	//	return err
 	//}
@@ -216,7 +215,7 @@ func Clean(opt config.Options, rootUser string, rootPw []byte, path string) erro
 	return nil
 }
 
-func AddTestMockActor(opt config.Options, file string, actor a.Person) error {
+func AddTestMockActor(opt config.Options, file string, actor pub.Person) error {
 	logger := logrus.New()
 	var conn *pgx.Conn
 	var err error

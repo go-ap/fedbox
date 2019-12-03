@@ -1,12 +1,12 @@
 package boltdb
 
 import (
-	bolt "go.etcd.io/bbolt"
-	a "github.com/go-ap/auth"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
+	bolt "go.etcd.io/bbolt"
 )
 
 func Bootstrap(path string, baseURL string) error {
@@ -75,7 +75,7 @@ func Clean(path string) error {
 }
 
 // FIXME(marius): I feel like this hasn't been used anywhere and as such might not work
-func AddTestMockActor(path string, actor a.Person) error {
+func AddTestMockActor(path string, actor pub.Actor) error {
 	var err error
 	db, err := bolt.Open(path, 0600, nil)
 	if err != nil {

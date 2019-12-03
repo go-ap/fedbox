@@ -3,7 +3,7 @@ package boltdb
 import (
 	"bytes"
 	"fmt"
-	as "github.com/go-ap/activitystreams"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
@@ -61,15 +61,15 @@ func New(c Config, baseURL string) *repo {
 	return &b
 }
 
-func loadItem(raw []byte) (as.Item, error) {
+func loadItem(raw []byte) (pub.Item, error) {
 	if raw == nil || len(raw) == 0 {
 		// TODO(marius): log this instead of stopping the iteration and returning an error
 		return nil, errors.Errorf("empty raw item")
 	}
-	return as.UnmarshalJSON(raw)
+	return pub.UnmarshalJSON(raw)
 }
 
-func filterIt(it as.Item, f s.Filterable) (as.Item, error) {
+func filterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
 	if it == nil {
 		return it, nil
 	}
@@ -101,7 +101,7 @@ func filterIt(it as.Item, f s.Filterable) (as.Item, error) {
 	return nil, errors.Errorf("Invalid filter %T", f)
 }
 
-func loadOneFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.Item, error) {
+func loadOneFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.Item, error) {
 	col, cnt, err := loadFromBucket(db, root, f)
 	if err != nil || cnt == 0 {
 		return nil, err
@@ -109,8 +109,8 @@ func loadOneFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.Item, error
 	return col.First(), nil
 }
 
-func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection, uint, error) {
-	col := make(as.ItemCollection, 0)
+func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollection, uint, error) {
+	col := make(pub.ItemCollection, 0)
 
 	err := db.View(func(tx *bolt.Tx) error {
 		rb := tx.Bucket(root)
@@ -151,7 +151,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 		// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
 		for key, raw := c.First(); key != nil; key, raw = c.Next() {
 			if !isObjectKey(key) {
-				// FIXME(marius): I guess this should not happen (as descendIntoBucket should 'descend' into 'path'
+				// FIXME(marius): I guess this should not happen (pub descendIntoBucket should 'descend' into 'path'
 				//    if it's a valid bucket)
 				b := b.Bucket(key)
 				if b == nil {
@@ -161,7 +161,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 				raw = b.Get(key)
 			}
 			if handlers.ValidCollection(path.Base(f.GetLink().String())) {
-				colIRIs := make(as.IRIs, 0)
+				colIRIs := make(pub.IRIs, 0)
 				err = jsonld.Unmarshal(raw, &colIRIs)
 				for _, iri := range colIRIs {
 					it, _ := loadOneFromBucket(db, root, ap.Filters{IRI: iri})
@@ -188,7 +188,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 	})
 	for _, it := range col {
 		// Remove bcc and bto
-		if s, ok := it.(as.HasRecipients); ok {
+		if s, ok := it.(pub.HasRecipients); ok {
 			s.Clean()
 		}
 	}
@@ -196,17 +196,17 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (as.ItemCollection
 	return col, uint(len(col)), err
 }
 
-func (r repo) buildIRIs(c handlers.CollectionType, hashes ...ap.Hash) as.IRIs {
-	iris := make(as.IRIs, 0)
+func (r repo) buildIRIs(c handlers.CollectionType, hashes ...ap.Hash) pub.IRIs {
+	iris := make(pub.IRIs, 0)
 	for _, hash := range hashes {
-		i := as.IRI(fmt.Sprintf("%s/%s/%s", r.baseURL, c, hash))
+		i := pub.IRI(fmt.Sprintf("%s/%s/%s", r.baseURL, c, hash))
 		iris = append(iris, i)
 	}
 	return iris
 }
 
 // Load
-func (r *repo) Load(f s.Filterable) (as.ItemCollection, uint, error) {
+func (r *repo) Load(f s.Filterable) (pub.ItemCollection, uint, error) {
 	var err error
 	err = r.Open()
 	if err != nil {
@@ -217,17 +217,17 @@ func (r *repo) Load(f s.Filterable) (as.ItemCollection, uint, error) {
 }
 
 // LoadActivities
-func (r *repo) LoadActivities(f s.Filterable) (as.ItemCollection, uint, error) {
+func (r *repo) LoadActivities(f s.Filterable) (pub.ItemCollection, uint, error) {
 	return r.Load(f)
 }
 
 // LoadObjects
-func (r *repo) LoadObjects(f s.Filterable) (as.ItemCollection, uint, error) {
+func (r *repo) LoadObjects(f s.Filterable) (pub.ItemCollection, uint, error) {
 	return r.Load(f)
 }
 
 // LoadActors
-func (r *repo) LoadActors(f s.Filterable) (as.ItemCollection, uint, error) {
+func (r *repo) LoadActors(f s.Filterable) (pub.ItemCollection, uint, error) {
 	return r.Load(f)
 }
 
@@ -269,7 +269,7 @@ func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket,
 }
 
 // LoadCollection
-func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
+func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
 	var err error
 	err = r.Open()
 	if err != nil {
@@ -277,7 +277,7 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 	}
 	defer r.Close()
 
-	var ret as.CollectionInterface
+	var ret pub.CollectionInterface
 	iri := f.GetLink()
 	url, err := iri.URL()
 	if err != nil {
@@ -287,9 +287,9 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 	qstr, _ := qstring.Marshal(f)
 	url.RawQuery = qstr.Encode()
 
-	col := &as.OrderedCollection{}
-	col.ID = as.ObjectID(url.String())
-	col.Type = as.OrderedCollectionType
+	col := &pub.OrderedCollection{}
+	col.ID = pub.ObjectID(url.String())
+	col.Type = pub.OrderedCollectionType
 
 	elements, count, err := loadFromBucket(r.d, r.root, f)
 	if err != nil {
@@ -311,25 +311,23 @@ func (r *repo) LoadCollection(f s.Filterable) (as.CollectionInterface, error) {
 const objectKey = "__raw"
 const metaDataKey = "__meta_data"
 
-func delete(r *repo, it as.Item) (as.Item, error) {
+func delete(r *repo, it pub.Item) (pub.Item, error) {
 	f := ap.Filters{
 		IRI: it.GetLink(),
 	}
 	if it.IsObject() {
-		f.Type = []as.ActivityVocabularyType{it.GetType()}
+		f.Type = []pub.ActivityVocabularyType{it.GetType()}
 	}
 	old, _ := loadOneFromBucket(r.d, r.root, &f)
 
-	// TODO(marius): add some mechanism for marking the collections as read-only
+	// TODO(marius): add some mechanism for marking the collections pub read-only
 	//    update 2019-10-03: I have no clue what this comment means. I can't think of why we'd need r/o collections for
 	//    cases where we want to delete things.
-	t := as.Tombstone{
-		Parent: as.Parent{
-			ID:   as.ObjectID(it.GetLink()),
-			Type: as.TombstoneType,
-			To: as.ItemCollection{
-				as.PublicNS,
-			},
+	t := pub.Tombstone{
+		ID:   pub.ObjectID(it.GetLink()),
+		Type: pub.TombstoneType,
+		To: pub.ItemCollection{
+			pub.PublicNS,
 		},
 		Deleted:    time.Now().UTC(),
 		FormerType: old.GetType(),
@@ -337,7 +335,7 @@ func delete(r *repo, it as.Item) (as.Item, error) {
 	return save(r, t)
 }
 
-func (r *repo) CreateCollection(col as.CollectionInterface) (as.CollectionInterface, error) {
+func (r *repo) CreateCollection(col pub.CollectionInterface) (pub.CollectionInterface, error) {
 	var err error
 	err = r.Open()
 	if err != nil {
@@ -361,7 +359,7 @@ func (r *repo) CreateCollection(col as.CollectionInterface) (as.CollectionInterf
 	return col, err
 }
 
-func itemBucketPath(iri as.IRI) ([]byte, error) {
+func itemBucketPath(iri pub.IRI) ([]byte, error) {
 	url, err := iri.URL()
 	if err != nil {
 		return nil, errors.Annotatef(err, "invalid IRI")
@@ -369,7 +367,7 @@ func itemBucketPath(iri as.IRI) ([]byte, error) {
 	return []byte(url.Host + url.Path), nil
 }
 
-func save(r *repo, it as.Item) (as.Item, error) {
+func save(r *repo, it pub.Item) (pub.Item, error) {
 	path, err := itemBucketPath(it.GetLink())
 	if err != nil {
 		return it, errors.Annotatef(err, "Unable to load a valid IRI from object")
@@ -434,16 +432,16 @@ func save(r *repo, it as.Item) (as.Item, error) {
 }
 
 // SaveActivity
-func (r *repo) SaveActivity(it as.Item) (as.Item, error) {
+func (r *repo) SaveActivity(it pub.Item) (pub.Item, error) {
 	return r.SaveObject(it)
 }
 
-func (r *repo) SaveActor(it as.Item) (as.Item, error) {
+func (r *repo) SaveActor(it pub.Item) (pub.Item, error) {
 	return r.SaveObject(it)
 }
 
 // SaveObject
-func (r *repo) SaveObject(it as.Item) (as.Item, error) {
+func (r *repo) SaveObject(it pub.Item) (pub.Item, error) {
 	var err error
 	err = r.Open()
 	if err != nil {
@@ -453,7 +451,8 @@ func (r *repo) SaveObject(it as.Item) (as.Item, error) {
 
 	if it, err = save(r, it); err == nil {
 		op := "Updated"
-		if it.GetID() == nil {
+		id := it.GetID()
+		if !id.IsValid() {
 			op = "Added new"
 		}
 		r.logFn(nil, "%s %s: %s", op, it.GetType(), it.GetLink())
@@ -463,11 +462,11 @@ func (r *repo) SaveObject(it as.Item) (as.Item, error) {
 }
 
 // IsLocalIRI shows if the received IRI belongs to the current instance
-func (r repo) IsLocalIRI(i as.IRI) bool {
-	return i.Contains(as.IRI(r.baseURL), false)
+func (r repo) IsLocalIRI(i pub.IRI) bool {
+	return i.Contains(pub.IRI(r.baseURL), false)
 }
 
-func (r *repo) RemoveFromCollection(col as.IRI, it as.Item) error {
+func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 	if it == nil {
 		return errors.Newf("Unable to add nil element to collection")
 	}
@@ -511,7 +510,7 @@ func (r *repo) RemoveFromCollection(col as.IRI, it as.Item) error {
 		if !b.Writable() {
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
-		var iris as.IRIs
+		var iris pub.IRIs
 		raw := b.Get(rem)
 		if len(raw) > 0 {
 			err := jsonld.Unmarshal(raw, &iris)
@@ -538,7 +537,7 @@ func (r *repo) RemoveFromCollection(col as.IRI, it as.Item) error {
 	})
 }
 
-func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
+func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	if it == nil {
 		return errors.Newf("Unable to add nil element to collection")
 	}
@@ -582,7 +581,7 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 		if !b.Writable() {
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
-		var iris as.IRIs
+		var iris pub.IRIs
 		raw := b.Get(rem)
 		if len(raw) > 0 {
 			err := jsonld.Unmarshal(raw, &iris)
@@ -606,21 +605,21 @@ func (r *repo) AddToCollection(col as.IRI, it as.Item) error {
 	})
 }
 
-func (r *repo) UpdateActor(it as.Item) (as.Item, error) {
+func (r *repo) UpdateActor(it pub.Item) (pub.Item, error) {
 	return r.UpdateObject(it)
 }
 
 // UpdateObject
-func (r *repo) UpdateObject(it as.Item) (as.Item, error) {
+func (r *repo) UpdateObject(it pub.Item) (pub.Item, error) {
 	return r.SaveObject(it)
 }
 
-func (r *repo) DeleteActor(it as.Item) (as.Item, error) {
+func (r *repo) DeleteActor(it pub.Item) (pub.Item, error) {
 	return r.DeleteObject(it)
 }
 
 // DeleteObject
-func (r *repo) DeleteObject(it as.Item) (as.Item, error) {
+func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
 	var err error
 	err = r.Open()
 	if err != nil {
@@ -628,9 +627,9 @@ func (r *repo) DeleteObject(it as.Item) (as.Item, error) {
 	}
 	defer r.Close()
 	var bucket string
-	if as.ActivityTypes.Contains(it.GetType()) {
+	if pub.ActivityTypes.Contains(it.GetType()) {
 		bucket = bucketActivities
-	} else if as.ActorTypes.Contains(it.GetType()) {
+	} else if pub.ActorTypes.Contains(it.GetType()) {
 		bucket = bucketActors
 	} else {
 		bucket = bucketObjects
@@ -642,15 +641,15 @@ func (r *repo) DeleteObject(it as.Item) (as.Item, error) {
 }
 
 // GenerateID
-func (r *repo) GenerateID(it as.Item, by as.Item) (as.ObjectID, error) {
+func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ObjectID, error) {
 	typ := it.GetType()
 
 	var partOf string
-	if as.ActivityTypes.Contains(typ) {
+	if pub.ActivityTypes.Contains(typ) {
 		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActivitiesType)
-	} else if as.ActorTypes.Contains(typ) || typ == as.ActorType {
+	} else if pub.ActorTypes.Contains(typ) || typ == pub.ActorType {
 		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActorsType)
-	} else if as.ObjectTypes.Contains(typ) {
+	} else if pub.ObjectTypes.Contains(typ) {
 		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ObjectsType)
 	}
 	return ap.GenerateID(it, partOf, by)
@@ -678,7 +677,7 @@ type meta struct {
 }
 
 // PasswordSet
-func (r *repo) PasswordSet(it as.Item, pw []byte) error {
+func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 	path, err := itemBucketPath(it.GetLink())
 	if err != nil {
 		return err
@@ -728,7 +727,7 @@ func (r *repo) PasswordSet(it as.Item, pw []byte) error {
 }
 
 // PasswordCheck
-func (r *repo) PasswordCheck(it as.Item, pw []byte) error {
+func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 	path, err := itemBucketPath(it.GetLink())
 	if err != nil {
 		return err
