@@ -2,8 +2,8 @@ package boltdb
 
 import (
 	"fmt"
-	bolt "go.etcd.io/bbolt"
 	"github.com/go-ap/errors"
+	bolt "go.etcd.io/bbolt"
 	"os"
 	"testing"
 )
