@@ -128,8 +128,8 @@ func getBoldDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (sto
 	path := config.GetBoltDBPath(dir, host, env)
 	b := boltdb.New(boltdb.Config{
 		Path:  path,
-		LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.Errorf(s, p...) },
-		ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.Infof(s, p...) },
+		LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.Infof(s, p...) },
+		ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.Errorf(s, p...) },
 	}, u.String())
 
 	pathOauth := config.GetBoltDBPath(dir, fmt.Sprintf("%s-oauth", host), env)
