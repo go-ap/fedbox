@@ -3,13 +3,14 @@ package activitypub
 import (
 	"fmt"
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/errors"
 	"github.com/go-ap/handlers"
 	"github.com/pborman/uuid"
 	"net/url"
 	"path"
 	"strings"
 )
+
+const developer = pub.IRI("https://github.com/mariusor")
 
 func Self(baseURL pub.IRI) pub.Service {
 	url, _ := baseURL.URL()
@@ -22,7 +23,7 @@ func Self(baseURL pub.IRI) pub.Service {
 		ID:           pub.ObjectID(url.String()),
 		Type:         pub.ServiceType,
 		Name:         pub.NaturalLanguageValues{{Ref: pub.NilLangRef, Value: "self"}},
-		AttributedTo: pub.IRI("https://github.com/mariusor"),
+		AttributedTo: developer,
 		Audience:     pub.ItemCollection{pub.PublicNS},
 		Content:      nil, //pub.NaturalLanguageValues{{Ref: pub.NilLangRef, Value: ""}},
 		Icon:         nil,
@@ -47,54 +48,6 @@ func DefaultServiceIRI(baseURL string) pub.IRI {
 		u.Path = "/"
 	}
 	return pub.IRI(u.String())
-}
-
-// ItemByType
-func ItemByType(typ pub.ActivityVocabularyType) (pub.Item, error) {
-	if pub.ActorTypes.Contains(typ) {
-		return &pub.Actor{Type: typ}, nil
-	} else if pub.ActivityTypes.Contains(typ) {
-		return &pub.Activity{Type: typ}, nil
-	} else if typ == pub.CollectionType {
-		return &Collection{Type: typ}, nil
-	} else if typ == pub.OrderedCollectionType {
-		return &OrderedCollection{Type: typ}, nil
-	}
-	return pub.JSONGetItemByType(typ)
-}
-
-// ToOrderedCollection
-func ToOrderedCollection(it pub.Item) (*OrderedCollection, error) {
-	switch o := it.(type) {
-	case *OrderedCollection:
-		return o, nil
-	case OrderedCollection:
-		return &o, nil
-	case *pub.OrderedCollection:
-		col := OrderedCollection(*o)
-		return &col, nil
-	case pub.OrderedCollection:
-		col := OrderedCollection(o)
-		return &col, nil
-	}
-	return nil, errors.Newf("invalid ordered collection")
-}
-
-// ToCollection
-func ToCollection(it pub.Item) (*Collection, error) {
-	switch o := it.(type) {
-	case *Collection:
-		return o, nil
-	case Collection:
-		return &o, nil
-	case *pub.Collection:
-		col := Collection(*o)
-		return &col, nil
-	case pub.Collection:
-		col := Collection(o)
-		return &col, nil
-	}
-	return nil, errors.Newf("invalid  collection")
 }
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.

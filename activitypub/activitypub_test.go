@@ -12,8 +12,8 @@ import (
 func TestItemByType(t *testing.T) {
 	type testPairs map[pub.ActivityVocabularyType]reflect.Type
 
-	var collectionPtrType = reflect.TypeOf(new(*Collection)).Elem()
-	var orderedCollectionPtrType = reflect.TypeOf(new(*OrderedCollection)).Elem()
+	var collectionPtrType = reflect.TypeOf(new(*pub.Collection)).Elem()
+	var orderedCollectionPtrType = reflect.TypeOf(new(*pub.OrderedCollection)).Elem()
 
 	var tests = testPairs{
 		pub.CollectionType:        collectionPtrType,
@@ -22,7 +22,7 @@ func TestItemByType(t *testing.T) {
 
 	for typ, test := range tests {
 		t.Run(string(typ), func(t *testing.T) {
-			v, err := ItemByType(typ)
+			v, err := pub.JSONGetItemByType(typ)
 			if err != nil {
 				t.Error(err)
 			}
@@ -40,7 +40,7 @@ func TestGenerateID(t *testing.T) {
 	generateIDTests = append(generateIDTests, pub.ActorTypes...)
 	partOf := "http://example.com"
 	for _, typ := range generateIDTests {
-		it, err := ItemByType(typ)
+		it, err := pub.JSONGetItemByType(typ)
 		if err != nil {
 			t.Errorf("Unable to create object from type: %s", err)
 		}

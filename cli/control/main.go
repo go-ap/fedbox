@@ -6,7 +6,6 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
@@ -87,7 +86,6 @@ var version = "HEAD"
 
 func main() {
 	var ctl cmd.Control
-	pub.ItemTyperFunc = activitypub.ItemByType
 
 	logger := logrus.New()
 	logger.Level = logrus.ErrorLevel

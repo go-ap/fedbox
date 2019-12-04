@@ -169,12 +169,12 @@ func (r repo) LoadCollection(ff s.Filterable) (pub.CollectionInterface, error) {
 		var total uint
 		items, total, err = loadFromDb(r.conn, getCollectionTable(f.Collection), f)
 		if pub.ActivityVocabularyType(typ) == pub.CollectionType {
-			if col, err := ap.ToCollection(ret); err == nil {
+			if col, err := pub.ToCollection(ret); err == nil {
 				col.TotalItems = total
 			}
 		}
 		if pub.ActivityVocabularyType(typ) == pub.OrderedCollectionType {
-			if col, err := ap.ToOrderedCollection(ret); err == nil {
+			if col, err := pub.ToOrderedCollection(ret); err == nil {
 				col.TotalItems = total
 			}
 		}

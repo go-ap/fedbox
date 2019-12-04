@@ -80,7 +80,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 			firstURL = getURL(baseURL, fp)
 		}
 		if col.GetType() == pub.OrderedCollectionType {
-			oc, err := ToOrderedCollection(col)
+			oc, err := pub.ToOrderedCollection(col)
 			if err == nil && len(firstURL) > 0 {
 				oc.First = firstURL
 				oc.OrderedItems, _ = paginateItems(oc.OrderedItems, f)
@@ -88,7 +88,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 			}
 		}
 		if col.GetType() == pub.CollectionType {
-			c, err := ToCollection(col)
+			c, err := pub.ToCollection(col)
 			if err == nil && len(firstURL) > 0 {
 				c.First = firstURL
 				c.Items, _ = paginateItems(c.Items, f)
@@ -107,7 +107,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 
 		if f.Page() > 0 {
 			if col.GetType() == pub.OrderedCollectionType {
-				oc, err := ToOrderedCollection(col)
+				oc, err := pub.ToOrderedCollection(col)
 				if err == nil {
 					page := pub.OrderedCollectionPageNew(oc)
 					page.ID = pub.ObjectID(curURL)
@@ -127,7 +127,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 				}
 			}
 			if col.GetType() == pub.CollectionType {
-				c, err := ToCollection(col)
+				c, err := pub.ToCollection(col)
 				if err == nil {
 					page := pub.CollectionPageNew(c)
 					page.ID = pub.ObjectID(curURL)
