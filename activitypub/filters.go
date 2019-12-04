@@ -698,6 +698,9 @@ func iriIsObject(iri pub.IRI) bool {
 
 // ItemMatches
 func (f Filters) ItemMatches(it pub.Item) bool {
+	if it == nil {
+		return false
+	}
 	iris := f.IRIs()
 	// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
 	if len(iris) > 0 && !iris.Contains(it.GetLink()) {
