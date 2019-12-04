@@ -2,7 +2,7 @@ package tests
 
 import (
 	"fmt"
-	as "github.com/go-ap/activitystreams"
+	pub "github.com/go-ap/activitypub"
 	"net/http"
 	"testing"
 )
@@ -24,7 +24,7 @@ var C2STests = []testSuite{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:      "http://127.0.0.1:9998",
-						typ:     string(as.ServiceType),
+						typ:     string(pub.ServiceType),
 						summary: "Generic ActivityPub service",
 						inbox: &objectVal{
 							id: "http://127.0.0.1:9998/inbox",
@@ -52,12 +52,12 @@ var C2STests = []testSuite{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/actors", apiURL),
-						typ:       string(as.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 3,
 						items: map[string]*objectVal{
 							"e869bdca-dd5e-4de7-9c5d-37845eccc6a1": {
 								id:      "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
-								typ:     string(as.PersonType),
+								typ:     string(pub.PersonType),
 								summary: "Generated actor",
 								content: "Generated actor",
 								url:     "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
@@ -90,18 +90,18 @@ var C2STests = []testSuite{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?type=%s", apiURL, as.PersonType),
+					url: fmt.Sprintf("%s/actors?type=%s", apiURL, pub.PersonType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, as.PersonType),
-						typ:       string(as.OrderedCollectionType),
+						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.PersonType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 						items: map[string]*objectVal{
 							"e869bdca-dd5e-4de7-9c5d-37845eccc6a1": {
 								id:      "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
-								typ:     string(as.PersonType),
+								typ:     string(pub.PersonType),
 								summary: "Generated actor",
 								content: "Generated actor",
 								url:     "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
@@ -134,13 +134,13 @@ var C2STests = []testSuite{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?type=%s", apiURL, as.GroupType),
+					url: fmt.Sprintf("%s/actors?type=%s", apiURL, pub.GroupType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, as.GroupType),
-						typ:       string(as.OrderedCollectionType),
+						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.GroupType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 0,
 					},
 				},
@@ -157,13 +157,13 @@ var C2STests = []testSuite{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?type=%s", apiURL, as.ApplicationType),
+					url: fmt.Sprintf("%s/actors?type=%s", apiURL, pub.ApplicationType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, as.ApplicationType),
-						typ:       string(as.OrderedCollectionType),
+						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.ApplicationType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 2,
 					},
 				},
@@ -187,7 +187,7 @@ var C2STests = []testSuite{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/activities", apiURL),
-						typ:       string(as.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 0,
 					},
 				},
@@ -211,7 +211,7 @@ var C2STests = []testSuite{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects", apiURL),
-						typ:       string(as.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 0,
 					},
 				},
@@ -237,13 +237,13 @@ var C2STests = []testSuite{
 				res: testRes{
 					code: http.StatusCreated,
 					val: &objectVal{
-						typ: string(as.CreateType),
+						typ: string(pub.CreateType),
 						act: &objectVal{
-							typ:               string(as.PersonType),
+							typ:               string(pub.PersonType),
 							preferredUsername: "johndoe",
 						},
 						obj: &objectVal{
-							typ:               string(as.PersonType),
+							typ:               string(pub.PersonType),
 							preferredUsername: "jennyjane",
 							name:              "Jane Doe",
 						},
@@ -292,17 +292,17 @@ var C2STests = []testSuite{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ: string(as.UpdateType),
+						typ: string(pub.UpdateType),
 						act: &objectVal{
 							id:                *(&defaultTestAccount.Id),
-							typ:               string(as.PersonType),
+							typ:               string(pub.PersonType),
 							preferredUsername: "johndoe",
 						},
 						obj: &objectVal{
 							id:                *(&defaultTestAccount.Id),
 							name:              "Jane Doe",
 							preferredUsername: "jennyjane",
-							typ:               string(as.PersonType),
+							typ:               string(pub.PersonType),
 							inbox: &objectVal{
 								id: fmt.Sprintf("%s/inbox", *(&defaultTestAccount.Id)),
 							},
@@ -333,14 +333,14 @@ var C2STests = []testSuite{
 				res: testRes{
 					code: http.StatusGone,
 					val: &objectVal{
-						typ: string(as.DeleteType),
+						typ: string(pub.DeleteType),
 						act: &objectVal{
 							id:  *(&defaultTestAccount.Id),
-							typ: string(as.TombstoneType),
+							typ: string(pub.TombstoneType),
 						},
 						obj: &objectVal{
 							id:  *(&defaultTestAccount.Id),
-							typ: string(as.TombstoneType),
+							typ: string(pub.TombstoneType),
 						},
 					},
 				},
@@ -365,13 +365,13 @@ var C2STests = []testSuite{
 				res: testRes{
 					code: http.StatusCreated,
 					val: &objectVal{
-						typ: string(as.CreateType),
+						typ: string(pub.CreateType),
 						act: &objectVal{
-							typ:               string(as.PersonType),
+							typ:               string(pub.PersonType),
 							preferredUsername: "johndoe",
 						},
 						obj: &objectVal{
-							typ:     string(as.ArticleType),
+							typ:     string(pub.ArticleType),
 							content: "<p>Hello world</p>",
 						},
 					},
@@ -386,7 +386,7 @@ var C2STests = []testSuite{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)),
-						typ:       string(as.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -400,7 +400,7 @@ var C2STests = []testSuite{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/activities", apiURL),
-						typ:       string(as.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -414,7 +414,7 @@ var C2STests = []testSuite{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects", apiURL),
-						typ:       string(as.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -428,7 +428,7 @@ var C2STests = []testSuite{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/inbox", apiURL),
-						typ:       string(as.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -453,13 +453,13 @@ var C2STests = []testSuite{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ: string(as.LikeType),
+						typ: string(pub.LikeType),
 						act: &objectVal{
-							typ:               string(as.PersonType),
+							typ:               string(pub.PersonType),
 							preferredUsername: "johndoe",
 						},
 						obj: &objectVal{
-							typ: string(as.NoteType),
+							typ: string(pub.NoteType),
 						},
 					},
 				},
@@ -473,7 +473,7 @@ var C2STests = []testSuite{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)),
-						typ:       string(as.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -487,7 +487,7 @@ var C2STests = []testSuite{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/activities", apiURL),
-						typ:       string(as.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -501,7 +501,7 @@ var C2STests = []testSuite{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/inbox", apiURL),
-						typ:       string(as.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -515,7 +515,7 @@ var C2STests = []testSuite{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/liked", *(&defaultTestAccount.Id)),
-						typ:       string(as.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},

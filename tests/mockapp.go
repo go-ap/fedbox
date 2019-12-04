@@ -3,8 +3,8 @@ package tests
 import (
 	"bytes"
 	"fmt"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/activitypub/client"
-	"github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/cmd"
@@ -50,15 +50,15 @@ func loadMockJson(file string, model interface{}) func() string {
 	}
 }
 
-func addMockObjects(r storage.Repository, obj activitystreams.ItemCollection, errFn app.LogFn) error {
+func addMockObjects(r storage.Repository, obj pub.ItemCollection, errFn app.LogFn) error {
 	var err error
 	for _, it := range obj {
 		if it.GetLink() == "" {
 			continue
 		}
-		if activitystreams.ActivityTypes.Contains(it.GetType()) {
+		if pub.ActivityTypes.Contains(it.GetType()) {
 			it, err = r.SaveActivity(it)
-		} else if activitystreams.ActorTypes.Contains(it.GetType()) {
+		} else if pub.ActorTypes.Contains(it.GetType()) {
 			it, err = r.SaveActor(it)
 		} else {
 			it, err = r.SaveObject(it)
@@ -86,13 +86,13 @@ func seedTestData(t *testing.T, testData []string) {
 	o := cmd.New(s, b, config.Options{})
 
 	if testData != nil {
-		mocks := make(activitystreams.ItemCollection, 0)
+		mocks := make(pub.ItemCollection, 0)
 		for _, path := range testData {
 			json := loadMockJson(path, nil)()
 			if json == "" {
 				continue
 			}
-			it, err := activitystreams.UnmarshalJSON([]byte(json))
+			it, err := pub.UnmarshalJSON([]byte(json))
 			if err == nil {
 				mocks = append(mocks, it)
 			}
@@ -128,8 +128,8 @@ func getBoldDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (sto
 	path := config.GetBoltDBPath(dir, host, env)
 	b := boltdb.New(boltdb.Config{
 		Path:  path,
-		LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.Errorf(s, p...) },
-		ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.Infof(s, p...) },
+		LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.Infof(s, p...) },
+		ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.Errorf(s, p...) },
 	}, u.String())
 
 	pathOauth := config.GetBoltDBPath(dir, fmt.Sprintf("%s-oauth", host), env)

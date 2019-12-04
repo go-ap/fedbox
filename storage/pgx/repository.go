@@ -2,9 +2,8 @@ package pgx
 
 import (
 	"fmt"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/activitypub/client"
-	as "github.com/go-ap/activitystreams"
-	a "github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -34,8 +33,8 @@ type repo struct {
 type loggerFn func(logrus.Fields, string, ...interface{})
 
 // IsLocalIRI shows if the received IRI belongs to the current instance
-func (r repo) IsLocalIRI(i as.IRI) bool {
-	return i.Contains(as.IRI(r.baseURL), false)
+func (r repo) IsLocalIRI(i pub.IRI) bool {
+	return i.Contains(pub.IRI(r.baseURL), false)
 }
 
 func logFn(l logrus.FieldLogger, lvl logrus.Level) loggerFn {
@@ -61,15 +60,15 @@ func New(conf config.BackendConfig, url string, lp logrus.FieldLogger) (*repo, e
 	return &l, nil
 }
 
-func (r repo) LoadActivities(f s.Filterable) (as.ItemCollection, uint, error) {
+func (r repo) LoadActivities(f s.Filterable) (pub.ItemCollection, uint, error) {
 	return loadFromDb(r.conn, "activities", f)
 }
 
-func (r repo) LoadActors(f s.Filterable) (as.ItemCollection, uint, error) {
+func (r repo) LoadActors(f s.Filterable) (pub.ItemCollection, uint, error) {
 	return loadFromDb(r.conn, "actors", f)
 }
 
-func (r repo) LoadObjects(f s.Filterable) (as.ItemCollection, uint, error) {
+func (r repo) LoadObjects(f s.Filterable) (pub.ItemCollection, uint, error) {
 	return loadFromDb(r.conn, "objects", f)
 }
 
@@ -101,10 +100,10 @@ func getCollectionTable(typ handlers.CollectionType) string {
 	return "objects"
 }
 
-func (r repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
+func (r repo) LoadCollection(ff s.Filterable) (pub.CollectionInterface, error) {
 	clauses, values := getWhereClauses(ff)
 
-	var ret as.CollectionInterface
+	var ret pub.CollectionInterface
 	sel := fmt.Sprintf("SELECT id, iri, created_at::timestamptz, type, count, elements FROM collections WHERE %s ORDER BY created_at DESC LIMIT 1", strings.Join(clauses, " AND "))
 	rows, err := r.conn.Query(sel, values...)
 	defer rows.Close()
@@ -135,17 +134,17 @@ func (r repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 			return ret, errors.Annotatef(err, "scan values error")
 		}
 
-		if as.ActivityVocabularyType(typ) == as.CollectionType {
-			col := &as.Collection{}
-			col.ID = as.ObjectID(iri)
-			col.Type = as.CollectionType
+		if pub.ActivityVocabularyType(typ) == pub.CollectionType {
+			col := &pub.Collection{}
+			col.ID = pub.ObjectID(iri)
+			col.Type = pub.CollectionType
 			col.TotalItems = uint(count)
 			ret = col
 		}
-		if as.ActivityVocabularyType(typ) == as.OrderedCollectionType {
-			col := &as.OrderedCollection{}
-			col.ID = as.ObjectID(iri)
-			col.Type = as.OrderedCollectionType
+		if pub.ActivityVocabularyType(typ) == pub.OrderedCollectionType {
+			col := &pub.OrderedCollection{}
+			col.ID = pub.ObjectID(iri)
+			col.Type = pub.OrderedCollectionType
 			col.TotalItems = uint(count)
 			ret = col
 		}
@@ -161,7 +160,7 @@ func (r repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 			"elements":   elements,
 		}).Infof("loaded fields")
 
-		var items as.ItemCollection
+		var items pub.ItemCollection
 		f.ItemKey = f.ItemKey[:0]
 		f.IRI = ""
 		for _, elem := range elements {
@@ -169,13 +168,13 @@ func (r repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 		}
 		var total uint
 		items, total, err = loadFromDb(r.conn, getCollectionTable(f.Collection), f)
-		if as.ActivityVocabularyType(typ) == as.CollectionType {
-			if col, err := ap.ToCollection(ret); err == nil {
+		if pub.ActivityVocabularyType(typ) == pub.CollectionType {
+			if col, err := pub.ToCollection(ret); err == nil {
 				col.TotalItems = total
 			}
 		}
-		if as.ActivityVocabularyType(typ) == as.OrderedCollectionType {
-			if col, err := ap.ToOrderedCollection(ret); err == nil {
+		if pub.ActivityVocabularyType(typ) == pub.OrderedCollectionType {
+			if col, err := pub.ToOrderedCollection(ret); err == nil {
 				col.TotalItems = total
 			}
 		}
@@ -192,11 +191,11 @@ func (r repo) LoadCollection(ff s.Filterable) (as.CollectionInterface, error) {
 	return ret, err
 }
 
-func (r repo) Load(ff s.Filterable) (as.ItemCollection, uint, error) {
+func (r repo) Load(ff s.Filterable) (pub.ItemCollection, uint, error) {
 	return nil, 0, errors.NotImplementedf("not implemented loader.Load()")
 }
 
-func loadFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (as.ItemCollection, uint, error) {
+func loadFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (pub.ItemCollection, uint, error) {
 	clauses, values := getWhereClauses(f)
 	var total uint = 0
 
@@ -205,12 +204,12 @@ func loadFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (as.ItemCollec
 	defer rows.Close()
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return as.ItemCollection{}, total, nil
+			return pub.ItemCollection{}, total, nil
 		}
 		return nil, total, errors.Annotatef(err, "unable to run select")
 	}
 
-	ret := make(as.ItemCollection, 0)
+	ret := make(pub.ItemCollection, 0)
 	// Iterate through the result set
 	for rows.Next() {
 		var id int64
@@ -224,7 +223,7 @@ func loadFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (as.ItemCollec
 			return ret, total, errors.Annotatef(err, "scan values error")
 		}
 
-		it, err := as.UnmarshalJSON(raw)
+		it, err := pub.UnmarshalJSON(raw)
 		if err != nil {
 			return ret, total, errors.Annotatef(err, "unable to unmarshal raw item")
 		}
@@ -239,7 +238,7 @@ func loadFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (as.ItemCollec
 	return ret, total, err
 }
 
-func (r repo) SaveActivity(it as.Item) (as.Item, error) {
+func (r repo) SaveActivity(it pub.Item) (pub.Item, error) {
 	var err error
 
 	it, err = r.SaveObject(it)
@@ -251,24 +250,24 @@ func (r repo) SaveActivity(it as.Item) (as.Item, error) {
 	return it, err
 }
 
-func getCollectionIRI(actor as.Item, c handlers.CollectionType) as.IRI {
-	return as.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
+func getCollectionIRI(actor pub.Item, c handlers.CollectionType) pub.IRI {
+	return pub.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
 }
 
-func (r repo) SaveActor(it as.Item) (as.Item, error) {
+func (r repo) SaveActor(it pub.Item) (pub.Item, error) {
 	return r.SaveObject(it)
 }
 
-func (r repo) SaveObject(it as.Item) (as.Item, error) {
+func (r repo) SaveObject(it pub.Item) (pub.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
 	var err error
 
 	var table string
-	if as.ActivityTypes.Contains(it.GetType()) {
+	if pub.ActivityTypes.Contains(it.GetType()) {
 		table = "activities"
-	} else if as.ActorTypes.Contains(it.GetType()) {
+	} else if pub.ActorTypes.Contains(it.GetType()) {
 		table = "actors"
 	} else {
 		table = "objects"
@@ -277,7 +276,7 @@ func (r repo) SaveObject(it as.Item) (as.Item, error) {
 	if len(it.GetLink()) > 0 {
 		if _, cnt, _ := loadFromDb(r.conn, table, ap.Filters{
 			ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
-			Type:    []as.ActivityVocabularyType{it.GetType()},
+			Type:    []pub.ActivityVocabularyType{it.GetType()},
 		}); cnt != 0 {
 			err := processing.ErrDuplicateObject("%s in table %s", it.GetLink(), table)
 			r.errFn(logrus.Fields{
@@ -294,7 +293,7 @@ func (r repo) SaveObject(it as.Item) (as.Item, error) {
 		return it, err
 	}
 
-	colIRI := getCollectionIRI(as.IRI(r.baseURL), handlers.CollectionType(table))
+	colIRI := getCollectionIRI(pub.IRI(r.baseURL), handlers.CollectionType(table))
 	err = r.AddToCollection(colIRI, it)
 	if err != nil {
 		// This errs
@@ -302,7 +301,7 @@ func (r repo) SaveObject(it as.Item) (as.Item, error) {
 	}
 
 	// TODO(marius) Move to somewhere else
-	if toFw, ok := it.(as.HasRecipients); ok {
+	if toFw, ok := it.(pub.HasRecipients); ok {
 		for _, fw := range toFw.Recipients() {
 			colIRI := fw.GetLink()
 			if r.IsLocalIRI(colIRI) {
@@ -315,7 +314,7 @@ func (r repo) SaveObject(it as.Item) (as.Item, error) {
 	return it, err
 }
 
-func (r repo) CreateCollection(it as.CollectionInterface) (as.CollectionInterface, error) {
+func (r repo) CreateCollection(it pub.CollectionInterface) (pub.CollectionInterface, error) {
 	if it == nil {
 		return it, errors.Newf("unable to create nil collection")
 	}
@@ -341,11 +340,11 @@ func (r repo) CreateCollection(it as.CollectionInterface) (as.CollectionInterfac
 	return it, nil
 }
 
-func (r repo) RemoveFromCollection(col as.IRI, it as.Item) error {
+func (r repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 	return errors.NotImplementedf("removing from collection is not yet implemented")
 }
 
-func (r repo) AddToCollection(col as.IRI, it as.Item) error {
+func (r repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	if it == nil {
 		return errors.Newf("unable to add nil element to collection")
 	}
@@ -383,7 +382,7 @@ func (r repo) AddToCollection(col as.IRI, it as.Item) error {
 	return nil
 }
 
-func saveToDb(l repo, table string, it as.Item) (as.Item, error) {
+func saveToDb(l repo, table string, it pub.Item) (pub.Item, error) {
 	query := fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3::timestamptz, $4, $5::jsonb);", table)
 
 	iri := it.GetLink()
@@ -408,7 +407,7 @@ func saveToDb(l repo, table string, it as.Item) (as.Item, error) {
 	return it, nil
 }
 
-func (r repo) updateItem(table string, it as.Item) (as.Item, error) {
+func (r repo) updateItem(table string, it pub.Item) (pub.Item, error) {
 	if table == "activities" {
 		return it, errors.Newf("update action Invalid, activities are immutable")
 	}
@@ -419,13 +418,13 @@ func (r repo) updateItem(table string, it as.Item) (as.Item, error) {
 
 	query := fmt.Sprintf("UPDATE %s SET type = $1, updated_at = $2::timestamptz,raw = $3::jsonb WHERE iri = $4;", table)
 	now := time.Now().UTC()
-	if as.ActorTypes.Contains(it.GetType()) {
-		if p, err := a.ToPerson(it); err == nil {
+	if pub.ActorTypes.Contains(it.GetType()) {
+		if p, err := pub.ToActor(it); err == nil {
 			p.Updated = now
 			it = p
 		}
-	} else if as.ObjectTypes.Contains(it.GetType()) && it.GetType() != as.TombstoneType {
-		if o, err := as.ToObject(it); err == nil {
+	} else if pub.ObjectTypes.Contains(it.GetType()) && it.GetType() != pub.TombstoneType {
+		if o, err := pub.ToObject(it); err == nil {
 			o.Updated = now
 			it = o
 		}
@@ -447,20 +446,20 @@ func (r repo) updateItem(table string, it as.Item) (as.Item, error) {
 	return it, nil
 }
 
-func (r repo) UpdateActor(it as.Item) (as.Item, error) {
+func (r repo) UpdateActor(it pub.Item) (pub.Item, error) {
 	return r.UpdateObject(it)
 }
 
-func (r repo) UpdateObject(it as.Item) (as.Item, error) {
+func (r repo) UpdateObject(it pub.Item) (pub.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
 	var err error
 	var table string
 	label := "item"
-	if as.ActivityTypes.Contains(it.GetType()) {
+	if pub.ActivityTypes.Contains(it.GetType()) {
 		return nil, errors.Newf("unable to update activity")
-	} else if as.ActorTypes.Contains(it.GetType()) {
+	} else if pub.ActorTypes.Contains(it.GetType()) {
 		label = "actor"
 		table = "actors"
 	} else {
@@ -483,33 +482,33 @@ func (r repo) UpdateObject(it as.Item) (as.Item, error) {
 	return it, err
 }
 
-func (r repo) DeleteActor(it as.Item) (as.Item, error) {
+func (r repo) DeleteActor(it pub.Item) (pub.Item, error) {
 	return r.DeleteObject(it)
 }
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.
-func (r repo) GenerateID(it as.Item, by as.Item) (as.ObjectID, error) {
+func (r repo) GenerateID(it pub.Item, by pub.Item) (pub.ObjectID, error) {
 	typ := it.GetType()
 	var partOf string
-	if as.ActivityTypes.Contains(typ) {
+	if pub.ActivityTypes.Contains(typ) {
 		partOf = fmt.Sprintf("%s/activities", r.baseURL)
-	} else if as.ActorTypes.Contains(typ) {
+	} else if pub.ActorTypes.Contains(typ) {
 		partOf = fmt.Sprintf("%s/actors", r.baseURL)
-	} else if as.ObjectTypes.Contains(typ) {
+	} else if pub.ObjectTypes.Contains(typ) {
 		partOf = fmt.Sprintf("%s/objects", r.baseURL)
 	}
 	return ap.GenerateID(it, partOf, by)
 }
 
-func (r repo) DeleteObject(it as.Item) (as.Item, error) {
+func (r repo) DeleteObject(it pub.Item) (pub.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
 	var table string
 
-	if as.ActivityTypes.Contains(it.GetType()) {
+	if pub.ActivityTypes.Contains(it.GetType()) {
 		return nil, errors.Newf("unable to delete activity")
-	} else if as.ActorTypes.Contains(it.GetType()) {
+	} else if pub.ActorTypes.Contains(it.GetType()) {
 		table = "actors"
 	} else {
 		table = "objects"
@@ -519,10 +518,10 @@ func (r repo) DeleteObject(it as.Item) (as.Item, error) {
 		IRI: it.GetLink(),
 	}
 	if it.IsObject() {
-		f.Type = []as.ActivityVocabularyType{it.GetType()}
+		f.Type = []pub.ActivityVocabularyType{it.GetType()}
 	}
 	var cnt uint
-	var found as.ItemCollection
+	var found pub.ItemCollection
 	found, cnt, _ = loadFromDb(r.conn, table, f)
 	if cnt == 0 {
 		if table == "objects" {
@@ -543,13 +542,11 @@ func (r repo) DeleteObject(it as.Item) (as.Item, error) {
 	}
 	old := found.First()
 
-	t := as.Tombstone{
-		Parent: as.Parent{
-			ID:   as.ObjectID(it.GetLink()),
-			Type: as.TombstoneType,
-			To: as.ItemCollection{
-				as.PublicNS,
-			},
+	t := pub.Tombstone{
+		ID:   pub.ObjectID(it.GetLink()),
+		Type: pub.TombstoneType,
+		To: pub.ItemCollection{
+			pub.PublicNS,
 		},
 		Deleted:    time.Now().UTC(),
 		FormerType: old.GetType(),
@@ -585,6 +582,6 @@ func (r *repo) Close() error {
 }
 
 // PasswordSet
-func (r *repo) PasswordSet(it as.Item, pw []byte) error {
+func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 	return errors.NotImplementedf("PasswordSet is not implemented by the postgres storage layer")
 }

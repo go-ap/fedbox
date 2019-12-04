@@ -2,7 +2,7 @@ package app
 
 import (
 	"fmt"
-	as "github.com/go-ap/activitystreams"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"net/http"
@@ -19,7 +19,7 @@ func LoadCollectionFilters(r *http.Request, f *ap.Filters) error {
 func LoadItemFilters(r *http.Request, f *ap.Filters) error {
 	if len(f.Key) != 0 {
 		for _, k := range f.Key {
-			i := as.IRI(fmt.Sprintf("%s%s", f.IRI, k))
+			i := pub.IRI(fmt.Sprintf("%s%s", f.IRI, k))
 			f.URL = append(f.URL, i)
 		}
 	}

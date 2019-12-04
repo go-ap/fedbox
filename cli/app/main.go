@@ -3,10 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/go-ap/activitypub/client"
-	"github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
@@ -24,8 +22,6 @@ var version = "HEAD"
 const defaultTimeout = time.Second * 15
 
 func main() {
-	activitystreams.ItemTyperFunc = activitypub.ItemByType
-
 	var a *app.FedBOX
 	var wait time.Duration
 

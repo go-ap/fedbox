@@ -3,10 +3,9 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/go-ap/activitystreams"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
@@ -87,7 +86,6 @@ var version = "HEAD"
 
 func main() {
 	var ctl cmd.Control
-	activitystreams.ItemTyperFunc = activitypub.ItemByType
 
 	logger := logrus.New()
 	logger.Level = logrus.ErrorLevel
@@ -141,16 +139,16 @@ func main() {
 					Action: func(c *cli.Context) error {
 						names := c.Args().Slice()
 
-						var actors = make(activitystreams.ItemCollection, 0)
+						var actors = make(pub.ItemCollection, 0)
 						for _, name := range names {
 
 							pw, err := loadPwFromStdin(true, "%s's", name)
 							if err != nil {
 								return err
 							}
-							typ := activitystreams.ActivityVocabularyType(c.String("type"))
-							if !activitystreams.ActorTypes.Contains(typ) {
-								typ = activitystreams.PersonType
+							typ := pub.ActivityVocabularyType(c.String("type"))
+							if !pub.ActorTypes.Contains(typ) {
+								typ = pub.PersonType
 							}
 							p, err := ctl.AddActor(name, typ, nil, pw)
 							if err != nil {
@@ -190,7 +188,7 @@ func main() {
 							return err
 						}
 						for i, it := range actors {
-							if act, err := auth.ToPerson(it); err != nil {
+							if act, err := pub.ToActor(it); err != nil {
 								fmt.Printf("%3d [%11s] %s\n", i, it.GetType(), it.GetLink())
 							} else {
 								fmt.Printf("%3d [%11s] %s\n%s\n", i, it.GetType(), act.PreferredUsername.First(), it.GetLink())

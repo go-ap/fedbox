@@ -54,7 +54,8 @@ func ActorFromAuthHeader(os *osin.Server, st storage.ActorLoader, l logrus.Field
 				//}
 				l.Warnf("%s", err)
 			}
-			if act != nil {
+			id := act.GetID()
+			if id.IsValid() {
 				r = r.WithContext(context.WithValue(r.Context(), auth.ActorKey, act))
 			}
 			next.ServeHTTP(w, r)

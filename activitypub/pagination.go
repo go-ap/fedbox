@@ -1,7 +1,7 @@
 package activitypub
 
 import (
-	as "github.com/go-ap/activitystreams"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/mariusor/qstring"
 	"math"
@@ -13,7 +13,7 @@ type Paginator interface {
 	Page() uint
 }
 
-func getURL(i as.IRI, f Paginator) as.IRI {
+func getURL(i pub.IRI, f Paginator) pub.IRI {
 	q, err := qstring.Marshal(f)
 	if err != nil {
 		return i
@@ -29,12 +29,12 @@ func getURL(i as.IRI, f Paginator) as.IRI {
 			}
 		}
 		u.RawQuery = query.Encode()
-		i = as.IRI(u.String())
+		i = pub.IRI(u.String())
 	}
 	return i
 }
 
-func paginateItems(col as.ItemCollection, f Paginator) (as.ItemCollection, error) {
+func paginateItems(col pub.ItemCollection, f Paginator) (pub.ItemCollection, error) {
 	if col == nil {
 		return nil, nil
 	}
@@ -52,15 +52,15 @@ func paginateItems(col as.ItemCollection, f Paginator) (as.ItemCollection, error
 	return col, nil
 }
 
-// PaginateCollection is a function that populates the received collection as
-func PaginateCollection(col as.CollectionInterface, f Paginator) (as.CollectionInterface, error) {
+// PaginateCollection is a function that populates the received collection pub
+func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.CollectionInterface, error) {
 	if col == nil {
 		return col, errors.Newf("unable to paginate nil collection")
 	}
 
 	u, _ := col.GetLink().URL()
 	u.RawQuery = ""
-	baseURL := as.IRI(u.String())
+	baseURL := pub.IRI(u.String())
 	curURL := getURL(baseURL, f)
 
 	var haveItems, moreItems, lessItems bool
@@ -73,29 +73,29 @@ func PaginateCollection(col as.CollectionInterface, f Paginator) (as.CollectionI
 	lessItems = f.Page() > 1
 
 	if haveItems {
-		var firstURL as.IRI
+		var firstURL pub.IRI
 
 		if f != nil {
 			fp := &Filters{CurPage: 1, MaxItems: maxItems}
 			firstURL = getURL(baseURL, fp)
 		}
-		if col.GetType() == as.OrderedCollectionType {
-			oc, err := ToOrderedCollection(col)
+		if col.GetType() == pub.OrderedCollectionType {
+			oc, err := pub.ToOrderedCollection(col)
 			if err == nil && len(firstURL) > 0 {
 				oc.First = firstURL
 				oc.OrderedItems, _ = paginateItems(oc.OrderedItems, f)
 				col = oc
 			}
 		}
-		if col.GetType() == as.CollectionType {
-			c, err := ToCollection(col)
+		if col.GetType() == pub.CollectionType {
+			c, err := pub.ToCollection(col)
 			if err == nil && len(firstURL) > 0 {
 				c.First = firstURL
 				c.Items, _ = paginateItems(c.Items, f)
 				col = c
 			}
 		}
-		var nextURL, prevURL as.IRI
+		var nextURL, prevURL pub.IRI
 		if moreItems {
 			np = &Filters{CurPage: f.Page() + 1, MaxItems: maxItems}
 			nextURL = getURL(baseURL, np)
@@ -106,11 +106,11 @@ func PaginateCollection(col as.CollectionInterface, f Paginator) (as.CollectionI
 		}
 
 		if f.Page() > 0 {
-			if col.GetType() == as.OrderedCollectionType {
-				oc, err := ToOrderedCollection(col)
+			if col.GetType() == pub.OrderedCollectionType {
+				oc, err := pub.ToOrderedCollection(col)
 				if err == nil {
-					page := as.OrderedCollectionPageNew(oc)
-					page.ID = as.ObjectID(curURL)
+					page := pub.OrderedCollectionPageNew(oc)
+					page.ID = pub.ObjectID(curURL)
 					page.PartOf = baseURL
 					if firstURL != curURL {
 						page.First = oc.First
@@ -126,11 +126,11 @@ func PaginateCollection(col as.CollectionInterface, f Paginator) (as.CollectionI
 					col = page
 				}
 			}
-			if col.GetType() == as.CollectionType {
-				c, err := ToCollection(col)
+			if col.GetType() == pub.CollectionType {
+				c, err := pub.ToCollection(col)
 				if err == nil {
-					page := as.CollectionPageNew(c)
-					page.ID = as.ObjectID(curURL)
+					page := pub.CollectionPageNew(c)
+					page.ID = pub.ObjectID(curURL)
 					page.PartOf = baseURL
 					page.First = c.First
 					if moreItems {

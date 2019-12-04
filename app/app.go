@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -111,7 +110,6 @@ func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 		return nil, err
 	}
 	errors.IncludeBacktrace = app.conf.Env == env.DEV || app.conf.Env == env.TEST
-	as.ItemTyperFunc = ap.ItemByType
 
 	db, oauth, err := getStorage(app, l)
 	app.Storage = db

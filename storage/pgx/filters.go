@@ -2,7 +2,7 @@ package pgx
 
 import (
 	"fmt"
-	as "github.com/go-ap/activitystreams"
+	pub "github.com/go-ap/activitypub"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/storage"
 	"strings"
@@ -44,7 +44,7 @@ func getWhereClauses(f storage.Filterable) ([]string, []interface{}) {
 		if len(types) > 0 {
 			keyWhere := make([]string, 0)
 			for _, typ := range types {
-				canHaveAudience = as.ActivityTypes.Contains(typ) || as.ObjectTypes.Contains(typ) || as.ActorTypes.Contains(typ)
+				canHaveAudience = pub.ActivityTypes.Contains(typ) || pub.ObjectTypes.Contains(typ) || pub.ActorTypes.Contains(typ)
 
 				keyWhere = append(keyWhere, fmt.Sprintf(`"type" = $%d`, counter))
 				values = append(values, interface{}(typ))
@@ -61,7 +61,7 @@ func getWhereClauses(f storage.Filterable) ([]string, []interface{}) {
 		//			// not a valid iri
 		//			keyWhere = append(keyWhere, fmt.Sprintf(`"key" ~* $%d`, counter))
 		//		} else {
-		//			if len(types) == 1 && types[0] == as.LinkType {
+		//			if len(types) == 1 && types[0] == pub.LinkType {
 		//				keyWhere = append(keyWhere, fmt.Sprintf(`"raw"::text ~* $%d`, counter))
 		//			} else if canHaveAudience {
 		//				// For Link type we need to search the full raw column
@@ -90,7 +90,7 @@ func getWhereClauses(f storage.Filterable) ([]string, []interface{}) {
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'audience' ~* $%d`, counter))
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
 		//if f.To == nil {
-		//	values = append(values, interface{}(as.PublicNS))
+		//	values = append(values, interface{}(pub.PublicNS))
 		//}
 	}
 

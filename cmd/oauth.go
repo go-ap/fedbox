@@ -3,8 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/auth"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -46,16 +45,16 @@ const URISeparator = "\n"
 func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string, error) {
 	var id string
 
-	app, err := c.AddActor("oauth-client-app", as.ApplicationType, nil, pw)
+	app, err := c.AddActor("oauth-client-app", pub.ApplicationType, nil, pw)
 	if err != nil {
 		return "", err
 	}
 
-	id = path.Base(string(*app.GetID()))
+	id = path.Base(string(app.GetID()))
 	// TODO(marius): allow for updates of the application actor with incoming parameters for Icon, Summary, samd.
-	app.PreferredUsername = as.NaturalLanguageValues{
+	app.PreferredUsername = pub.NaturalLanguageValues{
 		{
-			Ref:   as.NilLangRef,
+			Ref:   pub.NilLangRef,
 			Value: fmt.Sprintf("%s-%s", app.PreferredUsername.First().Value, id),
 		},
 	}
@@ -63,7 +62,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 	app.Outbox = nil
 	app.Liked = nil
 	app.Likes = nil
-	app.URL = as.IRI(redirect[0])
+	app.URL = pub.IRI(redirect[0])
 
 	c.Storage.UpdateActor(app)
 	if id == "" {
@@ -71,7 +70,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 	}
 
 	// TODO(marius): add a local Client struct that implements Client and ClientSecretMatcher interfaces with bcrypt support
-	//   It could even be a struct composite from an as.Application + secret and callback properties
+	//   It could even be a struct composite from an pub.Application + secret and callback properties
 	userData, _ := json.Marshal(u)
 	d := osin.DefaultClient{
 		Id:          id,
@@ -122,11 +121,11 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 
 	var f storage.Filterable
 	if u, err := url.Parse(actorIdentifier); err == nil {
-		f = as.IRI(u.String())
+		f = pub.IRI(u.String())
 	} else {
 		f = activitypub.Filters{
 			Name: []string{actorIdentifier},
-			Type: as.ActorTypes,
+			Type: pub.ActorTypes,
 		}
 	}
 	list, cnt, err := c.Storage.LoadActors(f)
@@ -136,7 +135,7 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 	if cnt == 0 {
 		return "", errors.Newf("Handle not found")
 	}
-	actor, err := auth.ToPerson(list.First())
+	actor, err := pub.ToActor(list.First())
 	if err != nil {
 		return "", err
 	}

@@ -2,7 +2,7 @@ package activitypub
 
 import (
 	"fmt"
-	"github.com/go-ap/activitystreams"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/handlers"
 	"reflect"
 	"strings"
@@ -10,19 +10,19 @@ import (
 )
 
 func TestItemByType(t *testing.T) {
-	type testPairs map[activitystreams.ActivityVocabularyType]reflect.Type
+	type testPairs map[pub.ActivityVocabularyType]reflect.Type
 
-	var collectionPtrType = reflect.TypeOf(new(*Collection)).Elem()
-	var orderedCollectionPtrType = reflect.TypeOf(new(*OrderedCollection)).Elem()
+	var collectionPtrType = reflect.TypeOf(new(*pub.Collection)).Elem()
+	var orderedCollectionPtrType = reflect.TypeOf(new(*pub.OrderedCollection)).Elem()
 
 	var tests = testPairs{
-		activitystreams.CollectionType:        collectionPtrType,
-		activitystreams.OrderedCollectionType: orderedCollectionPtrType,
+		pub.CollectionType:        collectionPtrType,
+		pub.OrderedCollectionType: orderedCollectionPtrType,
 	}
 
 	for typ, test := range tests {
 		t.Run(string(typ), func(t *testing.T) {
-			v, err := ItemByType(typ)
+			v, err := pub.JSONGetItemByType(typ)
 			if err != nil {
 				t.Error(err)
 			}
@@ -34,13 +34,13 @@ func TestItemByType(t *testing.T) {
 }
 
 func TestGenerateID(t *testing.T) {
-	var generateIDTests activitystreams.ActivityVocabularyTypes
-	generateIDTests = append(generateIDTests, activitystreams.ObjectTypes...)
-	generateIDTests = append(generateIDTests, activitystreams.ActivityTypes...)
-	generateIDTests = append(generateIDTests, activitystreams.ActorTypes...)
+	var generateIDTests pub.ActivityVocabularyTypes
+	generateIDTests = append(generateIDTests, pub.ObjectTypes...)
+	generateIDTests = append(generateIDTests, pub.ActivityTypes...)
+	generateIDTests = append(generateIDTests, pub.ActorTypes...)
 	partOf := "http://example.com"
 	for _, typ := range generateIDTests {
-		it, err := ItemByType(typ)
+		it, err := pub.JSONGetItemByType(typ)
 		if err != nil {
 			t.Errorf("Unable to create object from type: %s", err)
 		}
@@ -51,8 +51,8 @@ func TestGenerateID(t *testing.T) {
 		if !strings.Contains(string(id), partOf) {
 			t.Errorf("Invalid ObjectID: %s, does not contain base URL %s", id, partOf)
 		}
-		if id != *it.GetID() {
-			t.Errorf("ObjectIDs don't match: %s, expected %s", *it.GetID(), id)
+		if id != it.GetID() {
+			t.Errorf("ObjectIDs don't match: %s, expected %s", it.GetID(), id)
 		}
 	}
 }
@@ -63,13 +63,13 @@ func TestDefaultServiceIRI(t *testing.T) {
 
 func TestSelf(t *testing.T) {
 	testURL := "http://example.com:666"
-	s := Self(activitystreams.IRI(testURL))
+	s := Self(pub.IRI(testURL))
 
-	if s.ID != activitystreams.ObjectID(testURL) {
+	if s.ID != pub.ObjectID(testURL) {
 		t.Errorf("Invalid ID %s, expected %s", s.ID, testURL)
 	}
-	if s.Type != activitystreams.ServiceType {
-		t.Errorf("Invalid Type %s, expected %s", s.Type, activitystreams.ServiceType)
+	if s.Type != pub.ServiceType {
+		t.Errorf("Invalid Type %s, expected %s", s.Type, pub.ServiceType)
 	}
 	if s.Name.First().Value != "self" {
 		t.Errorf("Invalid Name %s, expected %s", s.Name, "self")
@@ -77,8 +77,8 @@ func TestSelf(t *testing.T) {
 	if s.AttributedTo.GetLink() != "https://github.com/mariusor" {
 		t.Errorf("Invalid AttributedTo %s, expected %s", s.AttributedTo, "https://github.com/mariusor")
 	}
-	if s.Audience.First().GetLink() != activitystreams.PublicNS {
-		t.Errorf("Invalid Audience %s, expected %s", s.Audience.First(), activitystreams.PublicNS)
+	if s.Audience.First().GetLink() != pub.PublicNS {
+		t.Errorf("Invalid Audience %s, expected %s", s.Audience.First(), pub.PublicNS)
 	}
 	if s.Content != nil {
 		t.Errorf("Invalid Audience %s, expected %v", s.Content, nil)
@@ -98,10 +98,10 @@ func TestSelf(t *testing.T) {
 	if s.Tag != nil {
 		t.Errorf("Invalid Tag %s, expected %v", s.Tag, nil)
 	}
-	if s.URL != activitystreams.IRI(testURL) {
+	if s.URL != pub.IRI(testURL) {
 		t.Errorf("Invalid URL %s, expected %v", s.URL, testURL)
 	}
-	inb := activitystreams.IRI(fmt.Sprintf("%s/%s", testURL, handlers.Inbox))
+	inb := pub.IRI(fmt.Sprintf("%s/%s", testURL, handlers.Inbox))
 	if s.Inbox != inb {
 		t.Errorf("Invalid Inbox %s, expected %v", s.Inbox, inb)
 	}

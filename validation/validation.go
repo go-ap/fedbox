@@ -4,9 +4,8 @@ import (
 	"context"
 	xerrors "errors"
 	"fmt"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/activitypub/client"
-	as "github.com/go-ap/activitystreams"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
@@ -15,19 +14,19 @@ import (
 )
 
 type ClientActivityValidator interface {
-	ValidateClientActivity(as.Item, as.IRI) error
-	//ValidateClientObject(as.Item) error
-	ValidateClientActor(as.Item) error
-	//ValidateClientTarget(as.Item) error
-	//ValidateClientAudience(...as.ItemCollection) error
+	ValidateClientActivity(pub.Item, pub.IRI) error
+	//ValidateClientObject(pub.Item) error
+	ValidateClientActor(pub.Item) error
+	//ValidateClientTarget(pub.Item) error
+	//ValidateClientAudience(...pub.ItemCollection) error
 }
 
 type ServerActivityValidator interface {
-	ValidateServerActivity(as.Item, as.IRI) error
-	//ValidateServerObject(as.Item) error
-	ValidateServerActor(as.Item) error
-	//ValidateServerTarget(as.Item) error
-	//ValidateServerAudience(...as.ItemCollection) error
+	ValidateServerActivity(pub.Item, pub.IRI) error
+	//ValidateServerObject(pub.Item) error
+	ValidateServerActor(pub.Item) error
+	//ValidateServerTarget(pub.Item) error
+	//ValidateServerAudience(...pub.ItemCollection) error
 }
 
 // ActivityValidator is an interface used for validating activity objects.
@@ -37,24 +36,24 @@ type ActivityValidator interface {
 }
 
 //type AudienceValidator interface {
-//	ValidateAudience(...as.ItemCollection) error
+//	ValidateAudience(...pub.ItemCollection) error
 //}
 
 // ObjectValidator is an interface used for validating generic objects
 type ObjectValidator interface {
-	ValidateObject(as.Item) error
+	ValidateObject(pub.Item) error
 }
 
 // ActorValidator is an interface used for validating actor objects
 type ActorValidator interface {
-	ValidActor(as.Item) error
+	ValidActor(pub.Item) error
 }
 
 // TargetValidator is an interface used for validating an object that is an activity's target
 // TODO(marius): this seems to have a different semantic than the previous ones.
 //  Ie, any object can be a target, but in the previous cases, the main validation mechanism is based on the Type.
 //type TargetValidator interface {
-//	ValidTarget(as.Item) error
+//	ValidTarget(pub.Item) error
 //}
 
 func wrapErr(err error, s string, args ...interface{}) errors.Err {
@@ -69,15 +68,15 @@ type invalidActivity struct {
 }
 
 type genericValidator struct {
-	baseIRI as.IRI
-	auth    *auth.Person
+	baseIRI pub.IRI
+	auth    *pub.Actor
 	c       client.Client
 	s       storage.Loader
 }
 
 func New(iri string, c client.Client, s storage.Loader) *genericValidator {
 	return &genericValidator{
-		baseIRI: as.IRI(iri),
+		baseIRI: pub.IRI(iri),
 		c:       c,
 		s:       s,
 	}
@@ -122,11 +121,11 @@ func (m *MissingActorError) Is(e error) bool {
 	return okp || oks
 }
 
-func (v genericValidator) ValidateServerActivity(a as.Item, inbox as.IRI) error {
+func (v genericValidator) ValidateServerActivity(a pub.Item, inbox pub.IRI) error {
 	if !IsInbox(inbox) {
 		return errors.NotValidf("Trying to validate a non inbox IRI %s", inbox)
 	}
-	//if v.auth.GetLink() == as.PublicNS {
+	//if v.auth.GetLink() == pub.PublicNS {
 	//	return errors.Unauthorizedf("%s actor is not allowed posting to current inbox", v.auth.Name)
 	//}
 	if a == nil {
@@ -135,10 +134,10 @@ func (v genericValidator) ValidateServerActivity(a as.Item, inbox as.IRI) error 
 	if a.IsLink() {
 		return v.ValidateLink(a.GetLink())
 	}
-	if !as.ActivityTypes.Contains(a.GetType()) {
+	if !pub.ActivityTypes.Contains(a.GetType()) {
 		return InvalidActivity("invalid type %s", a.GetType())
 	}
-	act, err := as.ToActivity(a)
+	act, err := pub.ToActivity(a)
 	if err != nil {
 		return err
 	}
@@ -160,16 +159,16 @@ func (v genericValidator) ValidateServerActivity(a as.Item, inbox as.IRI) error 
 	return nil
 }
 
-func IsOutbox(i as.IRI) bool {
+func IsOutbox(i pub.IRI) bool {
 	return strings.ToLower(path.Base(i.String())) == strings.ToLower(string(handlers.Outbox))
 }
 
-func IsInbox(i as.IRI) bool {
+func IsInbox(i pub.IRI) bool {
 	return strings.ToLower(path.Base(i.String())) == strings.ToLower(string(handlers.Inbox))
 }
 
 // IRIBelongsToActor checks if the search iri represents any of the collections associated with the actor.
-func IRIBelongsToActor(iri as.IRI, actor *auth.Person) bool {
+func IRIBelongsToActor(iri pub.IRI, actor *pub.Actor) bool {
 	if actor == nil {
 		return false
 	}
@@ -208,11 +207,11 @@ func IRIBelongsToActor(iri as.IRI, actor *auth.Person) bool {
 
 var missingActor = new(MissingActorError)
 
-func (v genericValidator) ValidateClientActivity(a as.Item, outbox as.IRI) error {
+func (v genericValidator) ValidateClientActivity(a pub.Item, outbox pub.IRI) error {
 	if !IsOutbox(outbox) {
 		return errors.NotValidf("Trying to validate a non outbox IRI %s", outbox)
 	}
-	if v.auth.GetLink() == as.PublicNS {
+	if v.auth.GetLink() == pub.PublicNS {
 		return errors.Unauthorizedf("%s actor is not allowed posting to current outbox", v.auth.Name)
 	}
 	if !IRIBelongsToActor(outbox, v.auth) {
@@ -224,10 +223,10 @@ func (v genericValidator) ValidateClientActivity(a as.Item, outbox as.IRI) error
 	if a.IsLink() {
 		return v.ValidateLink(a.GetLink())
 	}
-	if !as.ActivityTypes.Contains(a.GetType()) {
+	if !pub.ActivityTypes.Contains(a.GetType()) {
 		return InvalidActivity("invalid type %s", a.GetType())
 	}
-	act, err := as.ToActivity(a)
+	act, err := pub.ToActivity(a)
 	if err != nil {
 		return err
 	}
@@ -251,12 +250,12 @@ func (v genericValidator) ValidateClientActivity(a as.Item, outbox as.IRI) error
 
 // IsLocalIRI shows if the received IRI belongs to the current instance
 // TODO(marius): make this not be true always
-func (v genericValidator) IsLocalIRI(i as.IRI) bool {
+func (v genericValidator) IsLocalIRI(i pub.IRI) bool {
 	return i.Contains(v.baseIRI, false)
 }
 
-func (v genericValidator) ValidateLink(i as.IRI) error {
-	if i.Equals(as.PublicNS, false) {
+func (v genericValidator) ValidateLink(i pub.IRI) error {
+	if i.Equals(pub.PublicNS, false) {
 		return InvalidActivityActor("Public namespace is not a local actor")
 	}
 	if !v.IsLocalIRI(i) {
@@ -276,7 +275,7 @@ func (v genericValidator) ValidateLink(i as.IRI) error {
 	return nil
 }
 
-func (v genericValidator) ValidateClientActor(a as.Item) error {
+func (v genericValidator) ValidateClientActor(a pub.Item) error {
 	if a == nil {
 		return MissingActivityActor("")
 	}
@@ -286,18 +285,18 @@ func (v genericValidator) ValidateClientActor(a as.Item) error {
 	return v.ValidateActor(a)
 }
 
-func (v genericValidator) ValidateServerActor(a as.Item) error {
+func (v genericValidator) ValidateServerActor(a pub.Item) error {
 	return v.ValidateActor(a)
 }
 
-func (v genericValidator) ValidateActor(a as.Item) error {
+func (v genericValidator) ValidateActor(a pub.Item) error {
 	if a == nil {
 		return InvalidActivityActor("is nil")
 	}
 	if a.IsLink() {
 		return v.ValidateLink(a.GetLink())
 	}
-	if !as.ActorTypes.Contains(a.GetType()) {
+	if !pub.ActorTypes.Contains(a.GetType()) {
 		return InvalidActivityActor("invalid type %s", a.GetType())
 	}
 	if v.auth != nil {
@@ -308,47 +307,47 @@ func (v genericValidator) ValidateActor(a as.Item) error {
 	return nil
 }
 
-func (v genericValidator) ValidateClientObject(o as.Item) error {
+func (v genericValidator) ValidateClientObject(o pub.Item) error {
 	return v.ValidateObject(o)
 }
 
-func (v genericValidator) ValidateServerObject(o as.Item) error {
+func (v genericValidator) ValidateServerObject(o pub.Item) error {
 	return v.ValidateObject(o)
 }
 
-func (v genericValidator) ValidateObject(o as.Item) error {
+func (v genericValidator) ValidateObject(o pub.Item) error {
 	if o == nil {
 		return InvalidActivityObject("is nil")
 	}
 	if o.IsLink() {
 		return v.ValidateLink(o.GetLink())
 	}
-	if !(as.ObjectTypes.Contains(o.GetType()) || as.ActorTypes.Contains(o.GetType())) {
+	if !(pub.ObjectTypes.Contains(o.GetType()) || pub.ActorTypes.Contains(o.GetType())) {
 		return InvalidActivityObject("invalid type %s", o.GetType())
 	}
 	return nil
 }
 
-func (v genericValidator) ValidateTarget(t as.Item) error {
+func (v genericValidator) ValidateTarget(t pub.Item) error {
 	if t == nil {
 		return InvalidActivityObject("is nil")
 	}
 	if t.IsLink() {
 		return v.ValidateLink(t.GetLink())
 	}
-	if !(as.ObjectTypes.Contains(t.GetType()) || as.ActorTypes.Contains(t.GetType()) || as.ActivityTypes.Contains(t.GetType())) {
+	if !(pub.ObjectTypes.Contains(t.GetType()) || pub.ActorTypes.Contains(t.GetType()) || pub.ActivityTypes.Contains(t.GetType())) {
 		return InvalidActivityObject("invalid type %s", t.GetType())
 	}
 	return nil
 }
 
-func (v genericValidator) ValidateAudience(audience ...as.ItemCollection) error {
+func (v genericValidator) ValidateAudience(audience ...pub.ItemCollection) error {
 	for _, elem := range audience {
 		for _, iri := range elem {
 			if err := v.validateLocalIRI(iri.GetLink()); err == nil {
 				return nil
 			}
-			if iri.GetLink() == as.PublicNS {
+			if iri.GetLink() == pub.PublicNS {
 				return nil
 			}
 		}
@@ -366,11 +365,11 @@ func FromContext(ctx context.Context) (*genericValidator, bool) {
 	return s, ok
 }
 
-func (v *genericValidator) SetActor(p *auth.Person) {
+func (v *genericValidator) SetActor(p *pub.Actor) {
 	v.auth = p
 }
 
-func (v genericValidator) validateLocalIRI(i as.IRI) error {
+func (v genericValidator) validateLocalIRI(i pub.IRI) error {
 	u1, err := i.URL()
 	if err != nil {
 		return err

@@ -2,9 +2,8 @@ package app
 
 import (
 	"fmt"
-	ap "github.com/go-ap/activitypub"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/activitypub/client"
-	as "github.com/go-ap/activitystreams"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/validation"
@@ -26,8 +25,8 @@ func reqURL(r *http.Request) string {
 
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
-func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.CollectionLoader) (as.CollectionInterface, error) {
-	var items as.CollectionInterface
+func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.CollectionLoader) (pub.CollectionInterface, error) {
+	var items pub.CollectionInterface
 	var err error
 
 	f, err := activitypub.FromRequest(r)
@@ -64,9 +63,9 @@ func ValidateRequest(r *http.Request) (bool, error) {
 }
 
 // HandleRequest handles POST requests to an ActivityPub To's inbox/outbox, based on the CollectionType
-func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repository) (as.Item, int, error) {
+func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repository) (pub.Item, int, error) {
 	var err error
-	var it as.Item
+	var it pub.Item
 
 	f, err := activitypub.FromRequest(r)
 	if err != nil {
@@ -81,7 +80,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	if err != nil || len(body) == 0 {
 		return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
 	}
-	if it, err = as.UnmarshalJSON(body); err != nil {
+	if it, err = pub.UnmarshalJSON(body); err != nil {
 		return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 	}
 	validator, ok := validation.FromContext(r.Context())
@@ -90,7 +89,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	}
 	validator.SetActor(f.Authenticated)
 
-	var validateFn func(as.Item, as.IRI) error
+	var validateFn func(pub.Item, pub.IRI) error
 	switch typ {
 	case h.Outbox:
 		validateFn = validator.ValidateClientActivity
@@ -103,7 +102,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		return it, http.StatusNotAcceptable, err
 	}
 
-	err = ap.OnActivity(it, func(a *as.Activity) error {
+	err = pub.OnActivity(it, func(a *pub.Activity) error {
 		// TODO(marius): this should be handled in the processing package
 		if a.AttributedTo == nil {
 			a.AttributedTo = f.Authenticated
@@ -116,21 +115,21 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		if typ == h.Outbox {
 			// C2S - get recipients and cleanup activity
 			recipients := a.Recipients()
-			func(rec as.ItemCollection) {
+			func(rec pub.ItemCollection) {
 				// TODO(marius): for C2S activities propagate them
 			}(recipients)
 		}
 		return nil
 	})
 	if err != nil {
-		return it, http.StatusInternalServerError, errors.Annotatef(err, "Unable to process activity %s", it.GetType())
+		return it, http.StatusInternalServerError, errors.Annotatef(err, "Unable to process %s activity", it.GetType())
 	}
 
 	status := http.StatusOK
-	if it.GetType() == as.DeleteType {
+	if it.GetType() == pub.DeleteType {
 		status = http.StatusGone
 	}
-	if it.GetType() == as.CreateType {
+	if it.GetType() == pub.CreateType {
 		status = http.StatusCreated
 	}
 
@@ -139,10 +138,10 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 
 // HandleItem serves content from the following, followers, liked, and likes end-points
 // that returns a single ActivityPub object
-func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
+func HandleItem(r *http.Request, repo storage.ObjectLoader) (pub.Item, error) {
 	collection := h.Typer.Type(r)
 
-	var items as.ItemCollection
+	var items pub.ItemCollection
 	var err error
 	f, err := activitypub.FromRequest(r)
 
@@ -158,7 +157,7 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 
 	iri := reqURL(r)
 	if len(f.IRI) == 0 {
-		f.IRI = as.IRI(iri)
+		f.IRI = pub.IRI(iri)
 	}
 	what = fmt.Sprintf("%s ", path.Base(iri))
 	f.MaxItems = 1
@@ -201,6 +200,6 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (as.Item, error) {
 	return it, nil
 }
 
-func loadItem(items as.ItemCollection, f activitypub.Paginator, baseURL string) (as.Item, error) {
+func loadItem(items pub.ItemCollection, f activitypub.Paginator, baseURL string) (pub.Item, error) {
 	return items.First(), nil
 }

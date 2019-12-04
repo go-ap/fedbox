@@ -3,7 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	as "github.com/go-ap/activitystreams"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
@@ -21,14 +21,14 @@ import (
 type account struct {
 	username string
 	pw       string
-	actor    *auth.Person
+	actor    *pub.Actor
 }
 
 func (a account) IsLogged() bool {
 	return a.actor != nil && a.actor.PreferredUsername.First().Value == a.username
 }
 
-func (a *account) FromActor(p *auth.Person) {
+func (a *account) FromActor(p *pub.Actor) {
 	a.username = p.PreferredUsername.First().String()
 	a.actor = p
 }
@@ -83,9 +83,9 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	redirectOrOutput(resp, w, r)
 }
 
-func checkPw(it as.Item, pw []byte, pwLoader cmd.PasswordChanger) (account, error) {
+func checkPw(it pub.Item, pw []byte, pwLoader cmd.PasswordChanger) (account, error) {
 	acc := account{}
-	err := auth.OnPerson(it, func(p *auth.Person) error {
+	err := pub.OnActor(it, func(p *pub.Actor) error {
 		err := pwLoader.PasswordCheck(p, pw)
 		if err != nil {
 			// TODO(marius): log the received error
@@ -110,11 +110,11 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		actorFilters := activitypub.Filters{}
 		switch ar.Type {
 		case osin.PASSWORD:
-			actorFilters.IRI = as.IRI(fmt.Sprintf("%s/actors", h.baseURL))
+			actorFilters.IRI = pub.IRI(fmt.Sprintf("%s/actors", h.baseURL))
 			actorFilters.Name = []string{ar.Username}
 		case osin.AUTHORIZATION_CODE:
 			if iri, ok := ar.UserData.(string); ok {
-				actorFilters.IRI = as.IRI(iri)
+				actorFilters.IRI = pub.IRI(iri)
 			}
 		}
 		actors, _, err := h.loader.LoadActors(actorFilters)
@@ -143,7 +143,7 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if ar.Type == osin.AUTHORIZATION_CODE && len(actors) == 1 {
-			auth.OnPerson(actors.First(), func(p *auth.Person) error {
+			pub.OnActor(actors.First(), func(p *pub.Actor) error {
 				acc = account{}
 				acc.FromActor(p)
 				ar.Authorized = acc.IsLogged()
@@ -212,7 +212,7 @@ func redirectOrOutput(rs *osin.Response, w http.ResponseWriter, r *http.Request)
 
 type login struct {
 	title   string
-	account auth.Person
+	account pub.Actor
 	state   string
 	client  string
 }
@@ -221,7 +221,7 @@ func (l login) Title() string {
 	return l.title
 }
 
-func (l login) Account() auth.Person {
+func (l login) Account() pub.Actor {
 	return l.account
 }
 
@@ -239,7 +239,7 @@ type model interface {
 
 type authModel interface {
 	model
-	Account() auth.Person
+	Account() pub.Actor
 }
 
 var errRenderer = render.New(render.Options{
@@ -289,7 +289,7 @@ func (h *oauthHandler) renderTemplate(r *http.Request, w http.ResponseWriter, na
 
 // ShowLogin serves GET /login requests
 func (h *oauthHandler) ShowLogin(w http.ResponseWriter, r *http.Request) {
-	a := activitypub.Self(as.IRI(h.baseURL))
+	a := activitypub.Self(pub.IRI(h.baseURL))
 
 	m := login{title: "Login"}
 	m.account = a
@@ -301,7 +301,7 @@ var errUnauthorized = errors.Unauthorizedf("Invalid username or password")
 
 // ShowLogin handles POST /login requests
 func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	a := activitypub.Self(as.IRI(h.baseURL))
+	a := activitypub.Self(pub.IRI(h.baseURL))
 
 	pw := r.PostFormValue("pw")
 	handle := r.PostFormValue("handle")
@@ -317,9 +317,9 @@ func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	filter := activitypub.Filters{
 		Name: []string{handle},
-		IRI:  as.IRI(fmt.Sprintf("%s/actors", a.GetLink())),
-		Type: []as.ActivityVocabularyType{
-			as.PersonType,
+		IRI:  pub.IRI(fmt.Sprintf("%s/actors", a.GetLink())),
+		Type: []pub.ActivityVocabularyType{
+			pub.PersonType,
 		},
 	}
 	actors, count, err := h.loader.LoadActors(filter)
@@ -371,14 +371,14 @@ func (h *oauthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {}
 
 type pwChange struct {
 	title   string
-	account auth.Person
+	account pub.Actor
 }
 
 func (p pwChange) Title() string {
 	return p.title
 }
 
-func (p pwChange) Account() auth.Person {
+func (p pwChange) Account() pub.Actor {
 	return p.account
 }
 
@@ -429,7 +429,7 @@ func (h *oauthHandler) HandleChangePw(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *oauthHandler) loadActorFromOauth2Session(w http.ResponseWriter, r *http.Request) *auth.Person {
+func (h *oauthHandler) loadActorFromOauth2Session(w http.ResponseWriter, r *http.Request) *pub.Actor {
 	notF := errors.NotFoundf("Not found")
 	// TODO(marius): we land on this handler, coming from an email link containing a token identifying the Actor
 	tok := r.URL.Query().Get("s")
@@ -467,7 +467,7 @@ func (h *oauthHandler) loadActorFromOauth2Session(w http.ResponseWriter, r *http
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
-	actors, cnt, err := h.loader.LoadActors(as.IRI(actorIRI))
+	actors, cnt, err := h.loader.LoadActors(pub.IRI(actorIRI))
 	if err != nil {
 		h.logger.Errorf("Error when loading actor from storage: %s", err)
 		errors.HandleError(notF).ServeHTTP(w, r)
@@ -478,8 +478,8 @@ func (h *oauthHandler) loadActorFromOauth2Session(w http.ResponseWriter, r *http
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
-	var actor *auth.Person
-	auth.OnPerson(actors[0], func(p *auth.Person) error {
+	var actor *pub.Actor
+	pub.OnActor(actors[0], func(p *pub.Actor) error {
 		actor = p
 		return nil
 	})
