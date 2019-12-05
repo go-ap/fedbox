@@ -288,7 +288,7 @@ func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
 	url.RawQuery = qstr.Encode()
 
 	col := &pub.OrderedCollection{}
-	col.ID = pub.ObjectID(url.String())
+	col.ID = pub.ID(url.String())
 	col.Type = pub.OrderedCollectionType
 
 	elements, count, err := loadFromBucket(r.d, r.root, f)
@@ -324,7 +324,7 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 	//    update 2019-10-03: I have no clue what this comment means. I can't think of why we'd need r/o collections for
 	//    cases where we want to delete things.
 	t := pub.Tombstone{
-		ID:   pub.ObjectID(it.GetLink()),
+		ID:   pub.ID(it.GetLink()),
 		Type: pub.TombstoneType,
 		To: pub.ItemCollection{
 			pub.PublicNS,
@@ -641,7 +641,7 @@ func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
 }
 
 // GenerateID
-func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ObjectID, error) {
+func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
 	typ := it.GetType()
 
 	var partOf string

@@ -23,13 +23,13 @@ func (h Hash) String() string {
 
 const (
 	// ActorsType is a constant that represents the URL path for the local actors collection.
-	// It is used as the parent for all To ObjectIDs
+	// It is used as the parent for all To IDs
 	ActorsType = h.CollectionType("actors")
 	// ActivitiesType is a constant that represents the URL path for the local activities collection
-	// It is used as the parent for all Activity ObjectIDs
+	// It is used as the parent for all Activity IDs
 	ActivitiesType = h.CollectionType("activities")
 	// ObjectsType is a constant that represents the URL path for the local objects collection
-	// It is used as the parent for all non To, non Activity Object ObjectIDs
+	// It is used as the parent for all non To, non Activity Object IDs
 	ObjectsType = h.CollectionType("objects")
 )
 

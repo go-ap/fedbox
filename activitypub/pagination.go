@@ -110,7 +110,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 				oc, err := pub.ToOrderedCollection(col)
 				if err == nil {
 					page := pub.OrderedCollectionPageNew(oc)
-					page.ID = pub.ObjectID(curURL)
+					page.ID = pub.ID(curURL)
 					page.PartOf = baseURL
 					if firstURL != curURL {
 						page.First = oc.First
@@ -130,7 +130,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 				c, err := pub.ToCollection(col)
 				if err == nil {
 					page := pub.CollectionPageNew(c)
-					page.ID = pub.ObjectID(curURL)
+					page.ID = pub.ID(curURL)
 					page.PartOf = baseURL
 					page.First = c.First
 					if moreItems {

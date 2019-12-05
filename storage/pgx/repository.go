@@ -136,14 +136,14 @@ func (r repo) LoadCollection(ff s.Filterable) (pub.CollectionInterface, error) {
 
 		if pub.ActivityVocabularyType(typ) == pub.CollectionType {
 			col := &pub.Collection{}
-			col.ID = pub.ObjectID(iri)
+			col.ID = pub.ID(iri)
 			col.Type = pub.CollectionType
 			col.TotalItems = uint(count)
 			ret = col
 		}
 		if pub.ActivityVocabularyType(typ) == pub.OrderedCollectionType {
 			col := &pub.OrderedCollection{}
-			col.ID = pub.ObjectID(iri)
+			col.ID = pub.ID(iri)
 			col.Type = pub.OrderedCollectionType
 			col.TotalItems = uint(count)
 			ret = col
@@ -388,8 +388,8 @@ func saveToDb(l repo, table string, it pub.Item) (pub.Item, error) {
 	iri := it.GetLink()
 	uuid := path.Base(iri.String())
 	if uuid == "." {
-		// broken ObjectID generation
-		return it, errors.Newf("Unable to generate ObjectID for %s[%s]", table, it.GetType())
+		// broken ID generation
+		return it, errors.Newf("Unable to generate ID for %s[%s]", table, it.GetType())
 	}
 	raw, _ := jsonld.Marshal(it)
 	nowTz := pgtype.Timestamptz{
@@ -487,7 +487,7 @@ func (r repo) DeleteActor(it pub.Item) (pub.Item, error) {
 }
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.
-func (r repo) GenerateID(it pub.Item, by pub.Item) (pub.ObjectID, error) {
+func (r repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
 	typ := it.GetType()
 	var partOf string
 	if pub.ActivityTypes.Contains(typ) {
@@ -543,7 +543,7 @@ func (r repo) DeleteObject(it pub.Item) (pub.Item, error) {
 	old := found.First()
 
 	t := pub.Tombstone{
-		ID:   pub.ObjectID(it.GetLink()),
+		ID:   pub.ID(it.GetLink()),
 		Type: pub.TombstoneType,
 		To: pub.ItemCollection{
 			pub.PublicNS,

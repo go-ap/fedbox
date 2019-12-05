@@ -49,10 +49,10 @@ func TestGenerateID(t *testing.T) {
 			t.Errorf("GenerateID failed: %s", err)
 		}
 		if !strings.Contains(string(id), partOf) {
-			t.Errorf("Invalid ObjectID: %s, does not contain base URL %s", id, partOf)
+			t.Errorf("Invalid ID: %s, does not contain base URL %s", id, partOf)
 		}
 		if id != it.GetID() {
-			t.Errorf("ObjectIDs don't match: %s, expected %s", it.GetID(), id)
+			t.Errorf("IDs don't match: %s, expected %s", it.GetID(), id)
 		}
 	}
 }
@@ -65,7 +65,7 @@ func TestSelf(t *testing.T) {
 	testURL := "http://example.com:666"
 	s := Self(pub.IRI(testURL))
 
-	if s.ID != pub.ObjectID(testURL) {
+	if s.ID != pub.ID(testURL) {
 		t.Errorf("Invalid ID %s, expected %s", s.ID, testURL)
 	}
 	if s.Type != pub.ServiceType {

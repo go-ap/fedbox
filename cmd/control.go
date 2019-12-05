@@ -26,7 +26,7 @@ type PasswordChanger interface {
 	PasswordCheck(pub.Item, []byte) error
 }
 
-func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyType, id *pub.ObjectID, pw []byte) (*pub.Person, error) {
+func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyType, id *pub.ID, pw []byte) (*pub.Person, error) {
 	self := ap.Self(pub.IRI(c.BaseURL))
 	now := time.Now()
 	p := pub.Person{

@@ -20,7 +20,7 @@ func Self(baseURL pub.IRI) pub.Service {
 	oauth := *url
 	oauth.Path = path.Join(oauth.Path, "oauth/")
 	return pub.Service{
-		ID:           pub.ObjectID(url.String()),
+		ID:           pub.ID(url.String()),
 		Type:         pub.ServiceType,
 		Name:         pub.NaturalLanguageValues{{Ref: pub.NilLangRef, Value: "self"}},
 		AttributedTo: developer,
@@ -51,9 +51,9 @@ func DefaultServiceIRI(baseURL string) pub.IRI {
 }
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.
-func GenerateID(it pub.Item, partOf string, by pub.Item) (pub.ObjectID, error) {
+func GenerateID(it pub.Item, partOf string, by pub.Item) (pub.ID, error) {
 	uuid := uuid.New()
-	id := pub.ObjectID(fmt.Sprintf("%s/%s", strings.ToLower(partOf), uuid))
+	id := pub.ID(fmt.Sprintf("%s/%s", strings.ToLower(partOf), uuid))
 	if pub.ActivityTypes.Contains(it.GetType()) {
 		return id, pub.OnActivity(it, func(a *pub.Activity) error {
 			a.ID = id

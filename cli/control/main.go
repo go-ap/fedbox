@@ -10,6 +10,7 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/storage/boltdb"
+	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
@@ -21,6 +22,27 @@ import (
 
 func errf(s string, par ...interface{}) {
 	fmt.Fprintf(os.Stderr, s, par...)
+}
+
+type pgFlags struct {
+	host string
+	port int64
+	user string
+	pw   []byte
+}
+
+type boltFlags struct {
+	path string
+	root string
+}
+
+type ctlFlags struct {
+	env      env.Type
+	dir      string
+	typ      config.StorageType
+	url      string
+	postgres pgFlags
+	bolt     boltFlags
 }
 
 func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.Control) error {
@@ -59,11 +81,50 @@ func setup(c *cli.Context, l logrus.FieldLogger, o *cmd.Control) error {
 		}, conf.BaseURL)
 	}
 	if typ == config.Postgres {
-		return errors.NotImplementedf("%s type not implemented", typ)
+		host := c.String("host")
+		if host == "" {
+			host = "localhost"
+		}
+		port := c.Int64("port")
+		if port == 0 {
+			port = 5432
+		}
+		user := c.String("user")
+		if user == "" {
+			user = "fedbox"
+		}
+		pw, err := loadPwFromStdin(true, "%s@%s's", user, host)
+		if err != nil {
+			return err
+		}
+		fedboxDBName := "fedbox"
+		oauthDBName := "oauth"
+		aDb = auth.NewPgDBStore(auth.PgConfig{
+			Enabled: true,
+			Host:    host,
+			Port:    port,
+			User:    user,
+			Pw:      string(pw),
+			Name:    fedboxDBName,
+			LogFn:   func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
+			ErrFn:   func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		})
+		db, err = pgx.New(config.BackendConfig{
+			Enabled: true,
+			Host:    host,
+			Port:    port,
+			User:    user,
+			Pw:      string(pw),
+			Name:    oauthDBName,
+		}, conf.BaseURL, l)
+		if err != nil {
+			errf("Error: %s\n", err)
+			//return err
+		}
+		return nil
 	}
 
 	*o = cmd.New(aDb, db, conf)
-
 	return nil
 }
 
@@ -116,6 +177,21 @@ func main() {
 			Name:  "path",
 			Value: ".",
 			Usage: "The folder where Bolt DBs",
+		},
+		&cli.StringFlag{
+			Name:  "host",
+			Value: "localhost",
+			Usage: "The postgres database host",
+		},
+		&cli.Int64Flag{
+			Name:  "port",
+			Value: 5432,
+			Usage: "The postgres database port",
+		},
+		&cli.StringFlag{
+			Name:  "user",
+			Value: "fedbox",
+			Usage: "The postgres database user",
 		},
 	}
 	app.Commands = []*cli.Command{
@@ -290,7 +366,7 @@ func main() {
 								},
 								&cli.StringFlag{
 									Name:  "actor",
-									Usage: "The actor identifier we want to generate the authorization for (ObjectID)",
+									Usage: "The actor identifier we want to generate the authorization for (ID)",
 								},
 							},
 							Action: func(c *cli.Context) error {
@@ -300,7 +376,7 @@ func main() {
 								}
 								actor := c.String("actor")
 								if clientID == "" {
-									return errors.Newf("Need to provide the actor identifier (ObjectID)")
+									return errors.Newf("Need to provide the actor identifier (ID)")
 								}
 								tok, err := ctl.GenAuthToken(clientID, actor, nil)
 								if err == nil {
