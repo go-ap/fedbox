@@ -179,12 +179,11 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (pub.Item, error) {
 			items, _, err = repo.LoadObjects(f)
 		}
 	} else if f.Collection == "" {
-		var cnt uint
 		// it's the service actor
 		if actLoader, ok := repo.(storage.ActorLoader); ok {
-			items, cnt, err = actLoader.LoadActors(f)
+			items, _, err = actLoader.LoadActors(f)
 		}
-		if cnt == 0 {
+		if len(items) == 0 {
 			if saver, ok := repo.(st.CanBootstrap); ok {
 				service := activitypub.Self(activitypub.DefaultServiceIRI(f.IRI.String()))
 				err := saver.CreateService(service)
