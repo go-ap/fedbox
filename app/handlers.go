@@ -6,6 +6,7 @@ import (
 	"github.com/go-ap/activitypub/client"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
+	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/fedbox/validation"
 	h "github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
@@ -162,31 +163,43 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (pub.Item, error) {
 	what = fmt.Sprintf("%s ", path.Base(iri))
 	f.MaxItems = 1
 
+	var cnt uint
 	if activitypub.ValidActivityCollection(string(f.Collection)) {
 		switch f.Collection {
 		case activitypub.ActivitiesType:
 			if actLoader, ok := repo.(storage.ActivityLoader); ok {
-				items, _, err = actLoader.LoadActivities(f)
+				items, cnt, err = actLoader.LoadActivities(f)
 			}
 		case activitypub.ActorsType:
 			if actLoader, ok := repo.(storage.ActorLoader); ok {
-				items, _, err = actLoader.LoadActors(f)
+				items, cnt, err = actLoader.LoadActors(f)
 			}
 		case activitypub.ObjectsType:
 			fallthrough
 		default:
-			items, _, err = repo.LoadObjects(f)
+			items, cnt, err = repo.LoadObjects(f)
 		}
 	} else if f.Collection == "" {
+		// it's the service actor
 		if actLoader, ok := repo.(storage.ActorLoader); ok {
-			items, _, err = actLoader.LoadActors(f)
+			items, cnt, err = actLoader.LoadActors(f)
+		}
+		if cnt == 0 {
+			if saver, ok := repo.(st.CanBootstrap); ok {
+				service := activitypub.Self(activitypub.DefaultServiceIRI(f.IRI.String()))
+				err := saver.CreateService(service)
+				if err != nil {
+					return nil, err
+				}
+				items = pub.ItemCollection{service}
+			}
 		}
 	}
 
 	if err != nil {
 		return nil, err
 	}
-	if len(items) == 0 {
+	if len(items) == 0 || cnt == 0 {
 		return nil, errors.NotFoundf("%snot found%s", what, where)
 	}
 	if len(items) > 1 {

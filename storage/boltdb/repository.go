@@ -109,6 +109,58 @@ func loadOneFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.Item, erro
 	return col.First(), nil
 }
 
+func createService(b *bolt.DB, service pub.Service) error {
+	raw, err := jsonld.Marshal(service)
+	if err != nil {
+		return errors.Annotatef(err, "could not marshal service json")
+	}
+	err = b.Update(func(tx *bolt.Tx) error {
+		root, err := tx.CreateBucketIfNotExists([]byte(rootBucket))
+		if err != nil {
+			return errors.Annotatef(err, "could not create root bucket")
+		}
+		path, err := itemBucketPath(service.GetLink())
+		if err != nil {
+			return err
+		}
+		hostBucket, _, err := descendInBucket(root, path, true)
+		if err != nil {
+			return errors.Annotatef(err, "could not create %s bucket", path)
+		}
+		err = hostBucket.Put([]byte(objectKey), raw)
+		if err != nil {
+			return errors.Annotatef(err, "could not save %s[%s]", service.Name, service.Type)
+		}
+		_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketActivities))
+		if err != nil {
+			return errors.Annotatef(err, "could not create %s bucket", bucketActivities)
+		}
+		_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketActors))
+		if err != nil {
+			return errors.Annotatef(err, "could not create %s bucket", bucketActors)
+		}
+		_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketObjects))
+		if err != nil {
+			return errors.Annotatef(err, "could not create %s bucket", bucketObjects)
+		}
+		return nil
+	})
+	if err != nil {
+		return errors.Annotatef(err, "could not create buckets")
+	}
+
+	return nil
+}
+
+func (r *repo) CreateService (service pub.Service) error {
+	var err error
+	if err = r.Open(); err != nil {
+		return err
+	}
+	defer r.Close()
+	return createService(r.d, service)
+}
+
 func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollection, uint, error) {
 	col := make(pub.ItemCollection, 0)
 
@@ -130,10 +182,11 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 				return err
 			}
 		}
+		create := false
 		var err error
 		var b *bolt.Bucket
 		// Assume bucket exists and has keys
-		b, remainderPath, err = descendInBucket(rb, remainderPath, false)
+		b, remainderPath, err = descendInBucket(rb, remainderPath, create)
 		if err != nil {
 			return err
 		}
@@ -208,8 +261,7 @@ func (r repo) buildIRIs(c handlers.CollectionType, hashes ...ap.Hash) pub.IRIs {
 // Load
 func (r *repo) Load(f s.Filterable) (pub.ItemCollection, uint, error) {
 	var err error
-	err = r.Open()
-	if err != nil {
+	if r.Open(); err != nil {
 		return nil, 0, err
 	}
 	defer r.Close()
@@ -253,9 +305,9 @@ func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket,
 		}
 		var cb *bolt.Bucket
 		if create {
-			cb, _ = b.CreateBucketIfNotExists([]byte(name))
+			cb, _ = b.CreateBucketIfNotExists(name)
 		} else {
-			cb = b.Bucket([]byte(name))
+			cb = b.Bucket(name)
 		}
 		if cb == nil {
 			lvl--
