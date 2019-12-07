@@ -712,10 +712,7 @@ func (f Filters) ItemMatches(it pub.Item) bool {
 		return false
 	}
 	var valid bool
-	if pub.ActivityTypes.Contains(it.GetType()) {
-		valid, _ = filterActivity(it, f)
-	} else if pub.IntransitiveActivityTypes.Contains(it.GetType()) {
-		// FIXME(marius): this does not work
+	if pub.ActivityTypes.Contains(it.GetType()) || pub.IntransitiveActivityTypes.Contains(it.GetType()) {
 		valid, _ = filterActivity(it, f)
 	} else if pub.ActorTypes.Contains(it.GetType()) {
 		valid, _ = filterActor(it, f)
