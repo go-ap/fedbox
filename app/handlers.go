@@ -163,23 +163,23 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (pub.Item, error) {
 	what = fmt.Sprintf("%s ", path.Base(iri))
 	f.MaxItems = 1
 
-	var cnt uint
 	if activitypub.ValidActivityCollection(string(f.Collection)) {
 		switch f.Collection {
 		case activitypub.ActivitiesType:
 			if actLoader, ok := repo.(storage.ActivityLoader); ok {
-				items, cnt, err = actLoader.LoadActivities(f)
+				items, _, err = actLoader.LoadActivities(f)
 			}
 		case activitypub.ActorsType:
 			if actLoader, ok := repo.(storage.ActorLoader); ok {
-				items, cnt, err = actLoader.LoadActors(f)
+				items, _, err = actLoader.LoadActors(f)
 			}
 		case activitypub.ObjectsType:
 			fallthrough
 		default:
-			items, cnt, err = repo.LoadObjects(f)
+			items, _, err = repo.LoadObjects(f)
 		}
 	} else if f.Collection == "" {
+		var cnt uint
 		// it's the service actor
 		if actLoader, ok := repo.(storage.ActorLoader); ok {
 			items, cnt, err = actLoader.LoadActors(f)
@@ -199,7 +199,7 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (pub.Item, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(items) == 0 || cnt == 0 {
+	if len(items) == 0 {
 		return nil, errors.NotFoundf("%snot found%s", what, where)
 	}
 	if len(items) > 1 {
