@@ -285,7 +285,7 @@ func (r *repo) LoadActors(f s.Filterable) (pub.ItemCollection, uint, error) {
 
 func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket, []byte, error) {
 	if root == nil {
-		return nil, path, errors.Newf("Trying to descend into nil bucket")
+		return nil, path, errors.Newf("trying to descend into nil bucket")
 	}
 	if len(path) == 0 {
 		return root, path, nil
@@ -315,8 +315,11 @@ func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket,
 		}
 		b = cb
 	}
-	path = bytes.Join(buckets[lvl:], []byte{'/'})
-
+	remBuckets := buckets[lvl:]
+	path = bytes.Join(remBuckets, []byte{'/'})
+	if len(remBuckets) > 1 {
+		return b, path, errors.NotFoundf("%s not found", remBuckets[0])
+	}
 	return b, path, nil
 }
 
@@ -345,7 +348,7 @@ func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
 
 	elements, count, err := loadFromBucket(r.d, r.root, f)
 	if err != nil {
-		return col, errors.Annotatef(err, "Unable to load elements")
+		return nil, err
 	}
 	if count == 0 {
 		return col, nil
