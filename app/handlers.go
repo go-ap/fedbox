@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/activitypub/client"
+	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	st "github.com/go-ap/fedbox/storage"

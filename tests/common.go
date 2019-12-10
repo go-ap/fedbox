@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/activitypub/client"
+	"github.com/go-ap/client"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/spacemonkeygo/httpsig"
 	"io/ioutil"

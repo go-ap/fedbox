@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-ap/activitypub/client"
 	"github.com/go-ap/auth"
+	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/env"
