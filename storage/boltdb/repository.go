@@ -218,7 +218,11 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 				colIRIs := make(pub.IRIs, 0)
 				err = jsonld.Unmarshal(raw, &colIRIs)
 				for _, iri := range colIRIs {
-					it, _ := loadOneFromBucket(db, root, ap.Filters{IRI: iri})
+					itF := ap.Filters{IRI: iri}
+					if ff, ok := f.(*ap.Filters); ok {
+						itF.Authenticated = ff.Authenticated
+					}
+					it, _ := loadOneFromBucket(db, root, itF)
 					it, _ = filterIt(it, f)
 					if it != nil {
 						col = append(col, it)
