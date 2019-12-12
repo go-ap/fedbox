@@ -218,12 +218,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 				colIRIs := make(pub.IRIs, 0)
 				err = jsonld.Unmarshal(raw, &colIRIs)
 				for _, iri := range colIRIs {
-					itF := ap.Filters{IRI: iri}
-					if ff, ok := f.(*ap.Filters); ok {
-						itF.Authenticated = ff.Authenticated
-					}
-					it, _ := loadOneFromBucket(db, root, itF)
-					it, _ = filterIt(it, f)
+					it, _ := loadOneFromBucket(db, root, ap.Filters{IRI: iri})
 					if it != nil {
 						col = append(col, it)
 					}
@@ -233,7 +228,6 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 				if err != nil {
 					continue
 				}
-				it, _ = filterIt(it, f)
 				if err != nil {
 					continue
 				}
@@ -251,7 +245,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 		}
 	}
 
-	return orderItems(col), uint(len(col)), err
+	return col, uint(len(col)), err
 }
 
 func itemsLess(i1, i2 pub.Item) bool {
@@ -292,7 +286,17 @@ func (r *repo) Load(f s.Filterable) (pub.ItemCollection, uint, error) {
 		return nil, 0, err
 	}
 	defer r.Close()
-	return loadFromBucket(r.d, r.root, f)
+
+	items := make(pub.ItemCollection, 0)
+	unfiltered, _, err := loadFromBucket(r.d, r.root, f)
+	for _, it := range unfiltered {
+		it, _ = filterIt(it, f)
+		if it == nil {
+			continue
+		}
+		items = append(items, it)
+	}
+	return orderItems(items), uint(len(items)), err
 }
 
 // LoadActivities
@@ -380,7 +384,11 @@ func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
 	if count == 0 {
 		return col, nil
 	}
-	for _, it := range elements {
+	for _, it := range orderItems(elements) {
+		it, _ = filterIt(it, f)
+		if it == nil {
+			continue
+		}
 		if err = col.Append(it); err == nil {
 			col.TotalItems++
 		}
