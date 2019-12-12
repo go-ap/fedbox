@@ -711,6 +711,12 @@ func (f Filters) ItemMatches(it pub.Item) bool {
 	if len(types) > 0 && !types.Contains(it.GetType()) {
 		return false
 	}
+	iri := f.GetLink()
+	if len(iri) > 0 && iriIsObject(iri) {
+		if !iri.Contains(it.GetLink(), false) {
+			return false
+		}
+	}
 	var valid bool
 	if pub.ActivityTypes.Contains(it.GetType()) || pub.IntransitiveActivityTypes.Contains(it.GetType()) {
 		valid, _ = filterActivity(it, f)
@@ -719,11 +725,5 @@ func (f Filters) ItemMatches(it pub.Item) bool {
 	} else {
 		valid, _ = filterObject(it, f)
 	}
-	iri := f.GetLink()
-	if len(iri) > 0 && iriIsObject(iri) {
-		itIRI := it.GetLink()
-		valid = iri.Equals(itIRI, false) || iri.Equals(pub.IRI(fmt.Sprintf("%s/", itIRI)), false)
-	}
-
 	return valid
 }
