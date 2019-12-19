@@ -7,14 +7,14 @@ require (
 	github.com/dyninc/qstring v0.0.0-20160719172318-ab5840a88e81 // indirect
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
 	github.com/gchaincl/dotsql v1.0.0
-	github.com/go-ap/activitypub v0.0.0-20191219161622-ed094c68d68d
-	github.com/go-ap/auth v0.0.0-20191219171902-7e30d2b8d7aa
-	github.com/go-ap/client v0.0.0-20191219163243-d3da4f21b91c
+	github.com/go-ap/activitypub v0.0.0-20191219200331-b973dafdba83
+	github.com/go-ap/auth v0.0.0-20191220075703-9b3b3ebd702d
+	github.com/go-ap/client v0.0.0-20191219185644-4a047737582c
 	github.com/go-ap/errors v0.0.0-20191127092628-088896cbdb2b
-	github.com/go-ap/handlers v0.0.0-20191219171606-d717450315e2
-	github.com/go-ap/jsonld v0.0.0-20191219163321-1dbd4e19fa3c
-	github.com/go-ap/processing v0.0.0-20191219172206-e0ba8af66bf3
-	github.com/go-ap/storage v0.0.0-20191219163448-6ef1cfb7074a
+	github.com/go-ap/handlers v0.0.0-20191220075740-8bd993700fa7
+	github.com/go-ap/jsonld v0.0.0-20191219202809-4bdaa6d26e1e
+	github.com/go-ap/processing v0.0.0-20191219191046-436cb956b03b
+	github.com/go-ap/storage v0.0.0-20191219203641-48d9e20b79ef
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/jackc/pgx v3.6.0+incompatible
 	github.com/joho/godotenv v1.3.0
