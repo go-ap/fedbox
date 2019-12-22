@@ -59,9 +59,9 @@ type Filters struct {
 	Name          []string                    `qstring:"name,omitempty"`
 	Cont          []string                    `qstring:"content,omitempty"`
 	Authenticated *pub.Actor                  `qstring:"-"`
-	To            pub.Actor                   `qstring:"-"`
-	Author        pub.Actor                   `qstring:"-"`
-	Parent        pub.Actor                   `qstring:"-"`
+	To            *pub.Actor                  `qstring:"-"`
+	Author        *pub.Actor                  `qstring:"-"`
+	Parent        *pub.Actor                  `qstring:"-"`
 	IRI           pub.IRI                     `qstring:"-"`
 	Collection    h.CollectionType            `qstring:"-"`
 	URL           pub.IRIs                    `qstring:"url,omitempty"`
@@ -125,7 +125,15 @@ func (f Filters) Context() pub.IRIs {
 func (f Filters) IRIs() pub.IRIs {
 	ret := make(pub.IRIs, len(f.ItemKey))
 	for i, k := range f.ItemKey {
-		ret[i] = pub.IRI(k)
+		var iri pub.IRI
+		if u, ok := validURL(string(k)); ok {
+			iri = pub.IRI(u.String())
+		} else {
+			iri = pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, f.Collection, k))
+		}
+		if !ret.Contains(iri) {
+			ret[i] = pub.IRI(iri)
+		}
 	}
 	return ret
 }
