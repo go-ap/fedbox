@@ -433,6 +433,33 @@ var C2STests = []testSuite{
 					},
 				},
 			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: func() string { return fmt.Sprintf("%s/following", *(&defaultTestAccount.Id)) },
+				},
+				res: testRes{
+					code: http.StatusNotFound,
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: func() string { return fmt.Sprintf("%s/followers", *(&defaultTestAccount.Id)) },
+				},
+				res: testRes{
+					code: http.StatusNotFound,
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: func() string { return fmt.Sprintf("%s/liked", *(&defaultTestAccount.Id)) },
+				},
+				res: testRes{
+					code: http.StatusNotFound,
+				},
+			},
 		},
 	},
 	{
@@ -518,6 +545,24 @@ var C2STests = []testSuite{
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: func() string { return fmt.Sprintf("%s/following", *(&defaultTestAccount.Id)) },
+				},
+				res: testRes{
+					code: http.StatusNotFound,
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: func() string { return fmt.Sprintf("%s/followers", *(&defaultTestAccount.Id)) },
+				},
+				res: testRes{
+					code: http.StatusNotFound,
 				},
 			},
 		},
