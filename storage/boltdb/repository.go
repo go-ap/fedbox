@@ -348,7 +348,7 @@ func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket,
 	}
 	remBuckets := buckets[lvl:]
 	path = bytes.Join(remBuckets, []byte{'/'})
-	if len(remBuckets) > 1 {
+	if len(remBuckets) > 0 {
 		return b, path, errors.NotFoundf("%s not found", remBuckets[0])
 	}
 	return b, path, nil
