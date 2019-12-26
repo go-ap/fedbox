@@ -46,6 +46,9 @@ func paginateItems(col pub.ItemCollection, f Paginator) (pub.ItemCollection, err
 	}
 	page := uint(math.Max(float64(f.Page()), 1.0))
 	start := (page - 1) * f.Count()
+	if start > col.Count() {
+		start = 0
+	}
 	stop := uint(math.Min(float64(f.Count()), float64(uint(len(col))-start)))
 	col = col[start : start+stop]
 
@@ -72,6 +75,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 	moreItems = count > ((f.Page()) * maxItems)
 	lessItems = f.Page() > 1
 
+	// TODO(marius): refactor this with OnCollection functions
 	if haveItems {
 		var firstURL pub.IRI
 
