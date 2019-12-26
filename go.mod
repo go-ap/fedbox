@@ -25,7 +25,7 @@ require (
 	github.com/spacemonkeygo/httpsig v0.0.0-20181218213338-2605ae379e47
 	github.com/unrolled/render v1.0.0
 	go.etcd.io/bbolt v1.3.3
-	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
+	golang.org/x/crypto v0.0.0-20191219195013-becbf705a915
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717
 )
