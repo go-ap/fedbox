@@ -226,25 +226,165 @@ func (v genericValidator) ValidateClientActivity(a pub.Item, outbox pub.IRI) err
 	if !pub.ActivityTypes.Contains(a.GetType()) {
 		return InvalidActivity("invalid type %s", a.GetType())
 	}
-	act, err := pub.ToActivity(a)
-	if err != nil {
-		return err
-	}
-	if err := v.ValidateClientActor(act.Actor); err != nil {
-		if missingActor.Is(err) && v.auth != nil {
-			act.Actor = v.auth
-		} else {
+	return pub.OnActivity(a, func(act *pub.Activity) error {
+		if err := v.ValidateClientActor(act.Actor); err != nil {
+			if missingActor.Is(err) && v.auth != nil {
+				act.Actor = v.auth
+			} else {
+				return err
+			}
+		}
+		if err := v.ValidateClientObject(act.Object); err != nil {
 			return err
 		}
-	}
-	if err := v.ValidateClientObject(act.Object); err != nil {
-		return err
-	}
-	if act.Target != nil {
-		if err := v.ValidateClientObject(act.Target); err != nil {
-			return err
+		if act.Target != nil {
+			if err := v.ValidateClientObject(act.Target); err != nil {
+				return err
+			}
 		}
+		var err error
+		if pub.ContentManagementActivityTypes.Contains(act.GetType()) && act.Object.GetType() != pub.RelationshipType {
+			err = ValidateClientContentManagementActivity(v.s, act)
+		} else if pub.CollectionManagementActivityTypes.Contains(act.GetType()) {
+			err = ValidateClientCollectionManagementActivity(v.s, act)
+		} else if pub.ReactionsActivityTypes.Contains(act.GetType()) {
+			err = ValidateClientReactionsActivity(v.s, act)
+		} else if pub.EventRSVPActivityTypes.Contains(act.GetType()) {
+			err = ValidateClientEventRSVPActivity(v.s, act)
+		} else if pub.GroupManagementActivityTypes.Contains(act.GetType()) {
+			err = ValidateClientGroupManagementActivity(v.s, act)
+		} else if pub.ContentExperienceActivityTypes.Contains(act.GetType()) {
+			err = ValidateClientContentExperienceActivity(v.s, act)
+		} else if pub.GeoSocialEventsActivityTypes.Contains(act.GetType()) {
+			err = ValidateClientGeoSocialEventsActivity(v.s, act)
+		} else if pub.NotificationActivityTypes.Contains(act.GetType()) {
+			err = ValidateClientNotificationActivity(v.s, act)
+		} else if pub.QuestionActivityTypes.Contains(act.GetType()) {
+			err = ValidateClientQuestionActivity(v.s, act)
+		} else if pub.RelationshipManagementActivityTypes.Contains(act.GetType()) {
+			err = ValidateClientRelationshipManagementActivity(v.s, act)
+		} else if pub.NegatingActivityTypes.Contains(act.GetType()) {
+			err = ValidateClientNegatingActivity(v.s, act)
+		} else if pub.OffersActivityTypes.Contains(act.GetType()) {
+			err = ValidateClientOffersActivity(v.s, act)
+		}
+		return err
+	})
+}
+
+// ValidateClientContentManagementActivity
+func ValidateClientContentManagementActivity(l storage.Loader, act *pub.Activity) error {
+	if act.Object == nil {
+		return errors.NotValidf("nil object for %s activity", act.Type)
 	}
+	ob := act.Object
+	switch act.Type {
+	case pub.UpdateType:
+		if pub.ActivityTypes.Contains(ob.GetType()) {
+			return errors.Newf("trying to update an immutable activity")
+		}
+		fallthrough
+	case pub.DeleteType:
+		if len(ob.GetLink()) == 0 {
+			return errors.Newf("invalid object id for %s activity", act.Type)
+		}
+		typ := ob.GetType()
+
+		var (
+			found pub.Item
+			err   error
+			cnt   uint
+		)
+		if pub.ActorTypes.Contains(typ) {
+			found, cnt, err = l.LoadActors(ob)
+		}
+		if pub.ObjectTypes.Contains(typ) {
+			found, cnt, err = l.LoadObjects(ob)
+		}
+		if err != nil {
+			return errors.Annotatef(err, "failed to load object from storage")
+		}
+		if cnt == 0 {
+			return errors.NotFoundf("unable to find %s %s in storage", ob.GetType(), ob.GetLink())
+		}
+		if found == nil {
+			return errors.NotFoundf("found nil object in storage")
+		}
+	case pub.CreateType:
+	default:
+	}
+
+	return nil
+}
+
+// ValidateClientCollectionManagementActivity
+func ValidateClientCollectionManagementActivity(l storage.Loader, act *pub.Activity) error {
+	return nil
+}
+
+// ValidateClientReactionsActivity
+func ValidateClientReactionsActivity(l storage.Loader, act *pub.Activity) error {
+	return nil
+}
+
+// ValidateClientEventRSVPActivity
+func ValidateClientEventRSVPActivity(l storage.Loader, act *pub.Activity) error {
+	return nil
+}
+
+// ValidateClientGroupManagementActivity
+func ValidateClientGroupManagementActivity(l storage.Loader, act *pub.Activity) error {
+	return nil
+}
+
+// ValidateClientContentExperienceActivity
+func ValidateClientContentExperienceActivity(l storage.Loader, act *pub.Activity) error {
+	return nil
+}
+
+// ValidateClientGeoSocialEventsActivity
+func ValidateClientGeoSocialEventsActivity(l storage.Loader, act *pub.Activity) error {
+	return nil
+}
+
+// ValidateClientNotificationActivity
+func ValidateClientNotificationActivity(l storage.Loader, act *pub.Activity) error {
+	return nil
+}
+
+// ValidateClientQuestionActivity
+func ValidateClientQuestionActivity(l storage.Loader, act *pub.Activity) error {
+	return nil
+}
+
+// ValidateClientRelationshipManagementActivity
+func ValidateClientRelationshipManagementActivity(l storage.Loader, act *pub.Activity) error {
+	switch act.Type {
+	case pub.FollowType:
+		_, cnt, _ := l.LoadActivities(storage.FilterItem(act))
+		if cnt > 0 {
+			return errors.Newf("%s already exists for this actor/object pair", act.Type)
+		}
+	case pub.AcceptType:
+	case pub.AddType:
+	case pub.BlockType:
+	case pub.CreateType:
+	case pub.DeleteType:
+	case pub.IgnoreType:
+	case pub.InviteType:
+	case pub.RejectType:
+	default:
+	}
+	return nil
+}
+
+// ValidateClientNegatingActivity
+func ValidateClientNegatingActivity(l storage.Loader, act *pub.Activity) error {
+	return nil
+}
+
+// ValidateClientOffersActivity
+func ValidateClientOffersActivity(l storage.Loader, act *pub.Activity) error {
 	return nil
 }
 
