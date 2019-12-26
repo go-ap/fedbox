@@ -288,13 +288,16 @@ func ValidateClientContentManagementActivity(l storage.Loader, act *pub.Activity
 		if len(ob.GetLink()) == 0 {
 			return errors.Newf("invalid object id for %s activity", act.Type)
 		}
+		if ob.IsLink() {
+			return nil
+		}		
 		typ := ob.GetType()
-
 		var (
 			found pub.Item
 			err   error
 			cnt   uint
 		)
+		
 		if pub.ActorTypes.Contains(typ) {
 			found, cnt, err = l.LoadActors(ob)
 		}
