@@ -365,14 +365,19 @@ func ValidateClientRelationshipManagementActivity(l storage.Loader, act *pub.Act
 		if cnt > 0 {
 			return errors.Newf("%s already exists for this actor/object pair", act.Type)
 		}
-	case pub.AcceptType:
 	case pub.AddType:
 	case pub.BlockType:
 	case pub.CreateType:
 	case pub.DeleteType:
 	case pub.IgnoreType:
 	case pub.InviteType:
+	case pub.AcceptType:
+		fallthrough
 	case pub.RejectType:
+		// TODO(marius): either the actor or the object needs to be local for this action to be valid
+		//   in the case of C2S... the actor needs to be local
+		//   in the case of S2S... the object needs to be local
+		// TODO(marius): Object needs to be a valid Follow activity
 	default:
 	}
 	return nil
