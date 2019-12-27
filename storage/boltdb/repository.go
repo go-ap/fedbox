@@ -102,6 +102,32 @@ func filterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
 	return nil, errors.Errorf("Invalid filter %T", f)
 }
 
+func loadItemsElements(db *bolt.DB, root []byte, iris ...pub.IRI) (pub.ItemCollection, error) {
+	col := make(pub.ItemCollection, 0)
+	err := db.View(func(tx *bolt.Tx) error {
+		rb := tx.Bucket(root)
+		if rb == nil {
+			return errors.Errorf("Invalid bucket %s", root)
+		}
+		var err error
+		for _, iri := range iris {
+			var b *bolt.Bucket
+			remainderPath := itemBucketPath(iri)
+			b, remainderPath, err = descendInBucket(rb, remainderPath, false)
+			if err != nil || b == nil {
+				continue
+			}
+			it, err := loadItem(b.Get([]byte(objectKey)))
+			if err != nil {
+				continue
+			}
+			col = append(col, it)
+		}
+		return nil
+	})
+	return col, err
+}
+
 func loadOneFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.Item, error) {
 	col, cnt, err := loadFromBucket(db, root, f)
 	if err != nil || cnt == 0 {
@@ -120,10 +146,7 @@ func createService(b *bolt.DB, service pub.Service) error {
 		if err != nil {
 			return errors.Annotatef(err, "could not create root bucket")
 		}
-		path, err := itemBucketPath(service.GetLink())
-		if err != nil {
-			return err
-		}
+		path := itemBucketPath(service.GetLink())
 		hostBucket, _, err := descendInBucket(root, path, true)
 		if err != nil {
 			return errors.Annotatef(err, "could not create %s bucket", path)
@@ -153,7 +176,7 @@ func createService(b *bolt.DB, service pub.Service) error {
 	return nil
 }
 
-func (r *repo) CreateService (service pub.Service) error {
+func (r *repo) CreateService(service pub.Service) error {
 	var err error
 	if err = r.Open(); err != nil {
 		return err
@@ -171,18 +194,12 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 			return errors.Errorf("Invalid bucket %s", root)
 		}
 
-		var remainderPath []byte
 		iri := f.GetLink()
-		if iri != "" {
-			var err error
-			// This is the case where the Filter points to a single AP Object IRI
-			// TODO(marius): Ideally this should support the case where we use the IRI to point to a bucket path
-			//     and on top of that apply the other filters
-			remainderPath, err = itemBucketPath(iri)
-			if err != nil {
-				return err
-			}
-		}
+		// This is the case where the Filter points to a single AP Object IRI
+		// TODO(marius): Ideally this should support the case where we use the IRI to point to a bucket path
+		//     and on top of that apply the other filters
+		remainderPath := itemBucketPath(iri)
+		isCollection := handlers.ValidCollection(path.Base(iri.String()))
 		create := false
 		var err error
 		var b *bolt.Bucket
@@ -194,17 +211,38 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 		if b == nil {
 			return errors.Errorf("Invalid bucket %s/%s", root, remainderPath)
 		}
-
 		c := b.Cursor()
 		if c == nil {
 			return errors.Errorf("Invalid bucket cursor %s/%s", root, remainderPath)
+		}
+
+		if isCollection {
+			colIRIs := make(pub.IRIs, 0)
+			key := []byte(objectKey)
+			raw := b.Get(key)
+			err = jsonld.Unmarshal(raw, &colIRIs)
+			if err != nil {
+				return err
+			}
+			col, err = loadItemsElements(db, root, colIRIs...)
+			if err != nil {
+				return err
+			}
+			new := make(pub.ItemCollection, 0)
+			for _, it := range col {
+				if it, _ = filterIt(it, f); it != nil {
+					new = append(new, it)
+				}
+			}
+			col = new
+			return nil
 		}
 		isObjectKey := func(k []byte) bool {
 			return string(k) == objectKey || string(k) == metaDataKey
 		}
 		// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
 		for key, raw := c.First(); key != nil; key, raw = c.Next() {
-			if !isObjectKey(key) {
+			if !isObjectKey(key) && !handlers.ValidCollection(path.Base(string(key))) {
 				// FIXME(marius): I guess this should not happen (pub descendIntoBucket should 'descend' into 'path'
 				//    if it's a valid bucket)
 				b := b.Bucket(key)
@@ -214,26 +252,15 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 				key = []byte(objectKey)
 				raw = b.Get(key)
 			}
-			if handlers.ValidCollection(path.Base(f.GetLink().String())) {
-				colIRIs := make(pub.IRIs, 0)
-				err = jsonld.Unmarshal(raw, &colIRIs)
-				for _, iri := range colIRIs {
-					it, _ := loadOneFromBucket(db, root, ap.Filters{IRI: iri})
-					if it != nil {
-						col = append(col, it)
-					}
-				}
-			} else {
-				it, err := loadItem(raw)
-				if err != nil {
-					continue
-				}
-				if err != nil {
-					continue
-				}
-				if it != nil {
-					col = append(col, it)
-				}
+			it, err := loadItem(raw)
+			if err != nil {
+				continue
+			}
+			if err != nil {
+				continue
+			}
+			if it, _ = filterIt(it, f); it != nil {
+				col = append(col, it)
 			}
 		}
 		return nil
@@ -287,16 +314,7 @@ func (r *repo) Load(f s.Filterable) (pub.ItemCollection, uint, error) {
 	}
 	defer r.Close()
 
-	items := make(pub.ItemCollection, 0)
-	unfiltered, _, err := loadFromBucket(r.d, r.root, f)
-	for _, it := range unfiltered {
-		it, _ = filterIt(it, f)
-		if it == nil {
-			continue
-		}
-		items = append(items, it)
-	}
-	return orderItems(items), uint(len(items)), err
+	return loadFromBucket(r.d, r.root, f)
 }
 
 // LoadActivities
@@ -363,7 +381,6 @@ func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
 	}
 	defer r.Close()
 
-	var ret pub.CollectionInterface
 	iri := f.GetLink()
 	url, err := iri.URL()
 	if err != nil {
@@ -384,18 +401,10 @@ func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
 	if count == 0 {
 		return col, nil
 	}
-	for _, it := range orderItems(elements) {
-		it, _ = filterIt(it, f)
-		if it == nil {
-			continue
-		}
-		if err = col.Append(it); err == nil {
-			col.TotalItems++
-		}
-	}
+	col.OrderedItems = orderItems(elements)
+	col.TotalItems = count
 
-	ret = col
-	return ret, err
+	return col, err
 }
 
 const objectKey = "__raw"
@@ -433,10 +442,7 @@ func (r *repo) CreateCollection(col pub.CollectionInterface) (pub.CollectionInte
 	}
 	defer r.Close()
 
-	cPath, err := itemBucketPath(col.GetLink())
-	if err != nil {
-		return col, errors.Annotatef(err, "Unable to load a valid IRI from object")
-	}
+	cPath := itemBucketPath(col.GetLink())
 	c := []byte(path.Base(string(cPath)))
 	err = r.d.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
@@ -449,21 +455,18 @@ func (r *repo) CreateCollection(col pub.CollectionInterface) (pub.CollectionInte
 	return col, err
 }
 
-func itemBucketPath(iri pub.IRI) ([]byte, error) {
+func itemBucketPath(iri pub.IRI) []byte {
 	url, err := iri.URL()
 	if err != nil {
-		return nil, errors.Annotatef(err, "invalid IRI")
+		return nil
 	}
-	return []byte(url.Host + url.Path), nil
+	return []byte(url.Host + url.Path)
 }
 
 func save(r *repo, it pub.Item) (pub.Item, error) {
-	path, err := itemBucketPath(it.GetLink())
-	if err != nil {
-		return it, errors.Annotatef(err, "Unable to load a valid IRI from object")
-	}
+	path := itemBucketPath(it.GetLink())
 	var uuid []byte
-	err = r.d.Update(func(tx *bolt.Tx) error {
+	err := r.d.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
 		if root == nil {
 			return errors.Errorf("Invalid bucket %s", r.root)
@@ -471,6 +474,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 		if !root.Writable() {
 			return errors.Errorf("Non writeable bucket %s", r.root)
 		}
+		var err error
 		var b *bolt.Bucket
 		b, uuid, err = descendInBucket(root, path, true)
 		if err != nil {
@@ -569,12 +573,8 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 	if !r.IsLocalIRI(col.GetLink()) {
 		return errors.Newf("Unable to save to non local collection %s", col)
 	}
-	path, err := itemBucketPath(col.GetLink())
-	if err != nil {
-		return err
-	}
-
-	err = r.Open()
+	path := itemBucketPath(col.GetLink())
+	err := r.Open()
 	if err != nil {
 		return err
 	}
@@ -640,12 +640,8 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	if !r.IsLocalIRI(col.GetLink()) {
 		return errors.Newf("Unable to save to non local collection %s", col)
 	}
-	path, err := itemBucketPath(col.GetLink())
-	if err != nil {
-		return err
-	}
-
-	err = r.Open()
+	path := itemBucketPath(col.GetLink())
+	err := r.Open()
 	if err != nil {
 		return err
 	}
@@ -768,11 +764,8 @@ type meta struct {
 
 // PasswordSet
 func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
-	path, err := itemBucketPath(it.GetLink())
-	if err != nil {
-		return err
-	}
-	err = r.Open()
+	path := itemBucketPath(it.GetLink())
+	err := r.Open()
 	if err != nil {
 		return err
 	}
@@ -818,11 +811,8 @@ func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 
 // PasswordCheck
 func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
-	path, err := itemBucketPath(it.GetLink())
-	if err != nil {
-		return err
-	}
-	err = r.Open()
+	path := itemBucketPath(it.GetLink())
+	err := r.Open()
 	if err != nil {
 		return err
 	}

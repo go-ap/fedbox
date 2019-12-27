@@ -43,10 +43,7 @@ func AddTestMockActor(path string, actor pub.Actor) error {
 	}
 	defer db.Close()
 
-	itPath, err := itemBucketPath(actor.GetLink())
-	if err != nil {
-		return errors.Annotatef(err, "invalid actor ID %s", actor.GetLink())
-	}
+	itPath := itemBucketPath(actor.GetLink())
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket([]byte(rootBucket))
