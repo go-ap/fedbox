@@ -4,8 +4,6 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	h "github.com/go-ap/handlers"
-	"github.com/go-ap/processing"
-	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/openshift/osin"
@@ -13,23 +11,21 @@ import (
 	"net/http"
 )
 
-func CollectionRoutes(v processing.ActivityValidator) func(chi.Router) {
-	return func(r chi.Router) {
-		r.Group(func(r chi.Router) {
-			r.With(middleware.GetHead)
+func CollectionRoutes(r chi.Router) {
+	r.Group(func(r chi.Router) {
+		r.With(middleware.GetHead)
 
-			r.Method(http.MethodGet, "/", h.CollectionHandlerFn(HandleCollection))
-			r.With(Validator(v)).Method(http.MethodPost, "/", h.ActivityHandlerFn(HandleRequest))
+		r.Method(http.MethodGet, "/", h.CollectionHandlerFn(HandleCollection))
+		r.Method(http.MethodPost, "/", h.ActivityHandlerFn(HandleRequest))
 
-			r.Route("/{id}", func(r chi.Router) {
-				r.Method(http.MethodGet, "/", h.ItemHandlerFn(HandleItem))
-				r.Route("/{collection}", func(r chi.Router) {
-					r.Method(http.MethodGet, "/", h.CollectionHandlerFn(HandleCollection))
-					r.With(Validator(v)).Method(http.MethodPost, "/", h.ActivityHandlerFn(HandleRequest))
-				})
+		r.Route("/{id}", func(r chi.Router) {
+			r.Method(http.MethodGet, "/", h.ItemHandlerFn(HandleItem))
+			r.Route("/{collection}", func(r chi.Router) {
+				r.Method(http.MethodGet, "/", h.CollectionHandlerFn(HandleCollection))
+				r.Method(http.MethodPost, "/", h.ActivityHandlerFn(HandleRequest))
 			})
 		})
-	}
+	})
 }
 
 var AnonymousAcct = account{
@@ -37,18 +33,18 @@ var AnonymousAcct = account{
 	actor:    &auth.AnonymousActor,
 }
 
-func Routes(baseURL string, v processing.ActivityValidator, os *osin.Server, st storage.ActorLoader, l logrus.FieldLogger) func(chi.Router) {
+func (f *FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) func(chi.Router) {
 	return func(r chi.Router) {
 		r.Use(middleware.GetHead)
-		r.Use(ActorFromAuthHeader(os, st, l))
+		r.Use(ActorFromAuthHeader(os, f.Storage, l))
 
 		r.Method(http.MethodGet, "/", h.ItemHandlerFn(HandleItem))
-		r.Route("/{collection}", CollectionRoutes(v))
+		r.Route("/{collection}", CollectionRoutes)
 
 		h := oauthHandler{
 			baseURL: baseURL,
 			os:      os,
-			loader:  st,
+			loader:  f.Storage,
 			logger:  l,
 		}
 		r.Route("/oauth", func(r chi.Router) {

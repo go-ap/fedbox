@@ -83,32 +83,40 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	if it, err = pub.UnmarshalJSON(body); err != nil {
 		return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 	}
-	validator, ok := processing.FromContext(r.Context())
-	if ok == false {
-		return it, http.StatusInternalServerError, errors.Annotatef(err, "unable to load activity validator")
+	processor, validator, err := processing.New(
+		processing.SetIRI(pub.IRI(Config.BaseURL)),
+		processing.SetClient(client.NewClient()),
+		processing.SetStorage(repo),
+	)
+	if err != nil {
+		return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize validator and processor")
 	}
 	validator.SetActor(f.Authenticated)
 
 	var validateFn func(pub.Item, pub.IRI) error
+	var processFn func(*pub.Activity) (*pub.Activity, error)
 	switch typ {
 	case h.Outbox:
 		validateFn = validator.ValidateClientActivity
+		processFn = processor.ProcessClientActivity
 	case h.Inbox:
 		validateFn = validator.ValidateServerActivity
+		processFn = func(*pub.Activity) (*pub.Activity, error) {
+			return nil, errors.NotImplementedf("S2S activities not implemented")
+		}
 	default:
 		return it, http.StatusNotAcceptable, errors.NewMethodNotAllowed(err, "Collection %s does not receive Activity requests", typ)
 	}
 	if err = validateFn(it, f.IRI); err != nil {
 		return it, http.StatusNotAcceptable, err
 	}
-
 	err = pub.OnActivity(it, func(a *pub.Activity) error {
 		// TODO(marius): this should be handled in the processing package
 		if a.AttributedTo == nil {
 			a.AttributedTo = f.Authenticated
 		}
 
-		it, err = processing.ProcessActivity(repo, a, typ)
+		it, err = processFn(a)
 		if err != nil {
 			return errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 		}

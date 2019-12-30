@@ -32,7 +32,6 @@ func objectLoader(ctx context.Context) (st.ObjectLoader, bool) {
 	return s, ok
 }
 
-// TODO(marius) Move away from keeping this data statically.
 var Config config.Options
 
 type LogFn func(string, ...interface{})
@@ -40,13 +39,11 @@ type LogFn func(string, ...interface{})
 type FedBOX struct {
 	conf         config.Options
 	ver          string
-	warn         LogFn
-	err          LogFn
-	inf          LogFn
-	dbg          LogFn
 	Storage      st.Repository
 	OAuthStorage osin.Storage
 	stopFn       func()
+	infFn        LogFn
+	errFn        LogFn
 }
 
 func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
@@ -95,10 +92,8 @@ func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 	app := FedBOX{ver: ver}
 	var err error
 	if l != nil {
-		app.dbg = l.Debugf
-		app.inf = l.Infof
-		app.warn = l.Warnf
-		app.err = l.Errorf
+		app.infFn = l.Infof
+		app.errFn = l.Errorf
 	}
 	app.conf, err = config.LoadFromEnv(env.Type(environ))
 	if err == nil {
@@ -106,7 +101,7 @@ func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 		ap.Secure = app.conf.Secure
 	}
 	if err != nil {
-		app.warn("Unable to load settings from environment variables: %s", err)
+		app.errFn("Unable to load settings from environment variables: %s", err)
 		return nil, err
 	}
 	errors.IncludeBacktrace = app.conf.Env == env.DEV || app.conf.Env == env.TEST
@@ -117,12 +112,12 @@ func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 	return &app, err
 }
 
-func (a FedBOX) Config() config.Options {
-	return a.conf
+func (f FedBOX) Config() config.Options {
+	return f.conf
 }
 
-func (a FedBOX) listen() string {
-	return a.conf.Listen
+func (f FedBOX) listen() string {
+	return f.conf.Listen
 }
 
 func setupHttpServer(listen string, m http.Handler, wait time.Duration, ctx context.Context) (func(LogFn), func(LogFn)) {
@@ -190,39 +185,39 @@ func waitForSignal(sigChan chan os.Signal, exitChan chan int) func(LogFn) {
 }
 
 // Stop
-func (a *FedBOX) Stop() {
-	if a.stopFn != nil {
-		a.stopFn()
+func (f *FedBOX) Stop() {
+	if f.stopFn != nil {
+		f.stopFn()
 	}
 }
 
 // Run is the wrapper for starting the web-server and handling signals
-func (a *FedBOX) Run(m http.Handler, wait time.Duration) int {
-	a.inf("Listening on %s", a.listen())
+func (f *FedBOX) Run(m http.Handler, wait time.Duration) int {
+	f.infFn("Listening on %s", f.listen())
 
 	// Create a deadline to wait for.
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
 
 	// Get start/stop functions for the http server
-	srvRun, srvStop := setupHttpServer(a.listen(), m, wait, ctx)
-	a.stopFn = func() {
-		srvStop(a.inf)
-		a.OAuthStorage.Close()
-		a.Storage.Close()
+	srvRun, srvStop := setupHttpServer(f.listen(), m, wait, ctx)
+	f.stopFn = func() {
+		srvStop(f.infFn)
+		f.OAuthStorage.Close()
+		f.Storage.Close()
 	}
-	go srvRun(a.err)
+	go srvRun(f.errFn)
 
 	// Add signal handlers
 	sigChan := make(chan os.Signal, 1)
 	exitChan := make(chan int)
 	signal.Notify(sigChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	go waitForSignal(sigChan, exitChan)(a.inf)
+	go waitForSignal(sigChan, exitChan)(f.infFn)
 	code := <-exitChan
 
 	// Doesn't block if no connections, but will otherwise wait until the timeout deadline.
-	go srvStop(a.err)
-	a.inf("Shutting down")
+	go srvStop(f.errFn)
+	f.infFn("Shutting down")
 
 	return code
 }

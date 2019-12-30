@@ -3,13 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/go-ap/auth"
-	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
-	"github.com/go-ap/processing"
-	st "github.com/go-ap/storage"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"gopkg.in/urfave/cli.v2"
@@ -51,9 +48,7 @@ func main() {
 		r.Use(app.Repo(a.Storage))
 		r.Use(middleware.RequestID)
 		r.Use(log.NewStructuredLogger(l))
-
-		v := processing.New(a.Config().BaseURL, client.NewClient(), a.Storage)
-		r.Route("/", app.Routes(a.Config().BaseURL, v, osin, a.Storage.(st.ActorLoader), l))
+		r.Route("/", a.Routes(a.Config().BaseURL, osin, l))
 		return nil
 	}
 	srv.Flags = []cli.Flag{
