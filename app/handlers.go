@@ -7,7 +7,6 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	st "github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/fedbox/validation"
 	h "github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
@@ -84,7 +83,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	if it, err = pub.UnmarshalJSON(body); err != nil {
 		return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 	}
-	validator, ok := validation.FromContext(r.Context())
+	validator, ok := processing.FromContext(r.Context())
 	if ok == false {
 		return it, http.StatusInternalServerError, errors.Annotatef(err, "unable to load activity validator")
 	}

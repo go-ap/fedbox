@@ -3,8 +3,8 @@ package app
 import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/validation"
 	h "github.com/go-ap/handlers"
+	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -13,7 +13,7 @@ import (
 	"net/http"
 )
 
-func CollectionRoutes(v validation.ActivityValidator) func(chi.Router) {
+func CollectionRoutes(v processing.ActivityValidator) func(chi.Router) {
 	return func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.With(middleware.GetHead)
@@ -37,7 +37,7 @@ var AnonymousAcct = account{
 	actor:    &auth.AnonymousActor,
 }
 
-func Routes(baseURL string, v validation.ActivityValidator, os *osin.Server, st storage.ActorLoader, l logrus.FieldLogger) func(chi.Router) {
+func Routes(baseURL string, v processing.ActivityValidator, os *osin.Server, st storage.ActorLoader, l logrus.FieldLogger) func(chi.Router) {
 	return func(r chi.Router) {
 		r.Use(middleware.GetHead)
 		r.Use(ActorFromAuthHeader(os, st, l))

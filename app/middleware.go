@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 	"github.com/go-ap/auth"
-	"github.com/go-ap/fedbox/validation"
 	"github.com/go-ap/handlers"
+	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
@@ -24,13 +24,13 @@ func Repo(loader storage.Loader) func(next http.Handler) http.Handler {
 	}
 }
 
-// Validator adds an implementation of the validation.ActivityValidator to a Request's context so it can be used
+// Validator adds an implementation of the processing.ActivityValidator to a Request's context so it can be used
 // further in the middleware chain
-func Validator(v validation.ActivityValidator) func(next http.Handler) http.Handler {
+func Validator(v processing.ActivityValidator) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			newCtx := context.WithValue(ctx, validation.ValidatorKey, v)
+			newCtx := context.WithValue(ctx, processing.ValidatorKey, v)
 			next.ServeHTTP(w, r.WithContext(newCtx))
 		}
 		return http.HandlerFunc(fn)

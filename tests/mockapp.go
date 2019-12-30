@@ -12,7 +12,7 @@ import (
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/fedbox/storage/boltdb"
-	"github.com/go-ap/fedbox/validation"
+	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
 	"github.com/openshift/osin"
@@ -169,7 +169,7 @@ func runAPP(e env.Type) int {
 
 	r.Use(app.Repo(b))
 	r.Use(log.NewStructuredLogger(l))
-	r.Route("/", app.Routes(a.Config().BaseURL, validation.New(a.Config().BaseURL, client.NewClient(), b), _oauthServer, b, l))
+	r.Route("/", app.Routes(a.Config().BaseURL, processing.New(a.Config().BaseURL, client.NewClient(), b), _oauthServer, b, l))
 
 	return a.Run(r, time.Second)
 }

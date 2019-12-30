@@ -8,7 +8,7 @@ import (
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
-	"github.com/go-ap/fedbox/validation"
+	"github.com/go-ap/processing"
 	st "github.com/go-ap/storage"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -52,7 +52,7 @@ func main() {
 		r.Use(middleware.RequestID)
 		r.Use(log.NewStructuredLogger(l))
 
-		v := validation.New(a.Config().BaseURL, client.NewClient(), a.Storage)
+		v := processing.New(a.Config().BaseURL, client.NewClient(), a.Storage)
 		r.Route("/", app.Routes(a.Config().BaseURL, v, osin, a.Storage.(st.ActorLoader), l))
 		return nil
 	}
