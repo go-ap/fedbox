@@ -5,14 +5,12 @@ import (
 	"fmt"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
-	"github.com/go-ap/client"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/fedbox/storage/boltdb"
-	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
 	"github.com/openshift/osin"
@@ -169,7 +167,7 @@ func runAPP(e env.Type) int {
 
 	r.Use(app.Repo(b))
 	r.Use(log.NewStructuredLogger(l))
-	r.Route("/", app.Routes(a.Config().BaseURL, processing.New(a.Config().BaseURL, client.NewClient(), b), _oauthServer, b, l))
+	r.Route("/", a.Routes(a.Config().BaseURL, _oauthServer, l))
 
 	return a.Run(r, time.Second)
 }
