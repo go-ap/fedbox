@@ -275,24 +275,9 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 	return col, uint(len(col)), err
 }
 
-func itemsLess(i1, i2 pub.Item) bool {
-	o1, e1 := pub.ToObject(i1)
-	o2, e2 := pub.ToObject(i2)
-	if e1 != nil || e2 != nil {
-		return false
-	}
-	if !o1.Updated.IsZero() || !o2.Updated.IsZero() {
-		return o1.Updated.Sub(o2.Updated) > 0
-	}
-	if !o1.Published.IsZero() || o2.Published.IsZero() {
-		return o1.Published.Sub(o2.Published) > 0
-	}
-	return false
-}
-
 func orderItems(col pub.ItemCollection) pub.ItemCollection {
 	sort.SliceStable(col, func(i, j int) bool {
-		return itemsLess(col[i], col[j])
+		return pub.ItemOrderTimestamp(col[i], col[j])
 	})
 	return col
 }
