@@ -450,7 +450,7 @@ func (h *oauthHandler) loadActorFromOauth2Session(w http.ResponseWriter, r *http
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
-	if authSess.ExpireAt().Sub(time.Now()) < 0 {
+	if authSess.ExpireAt().Sub(time.Now().UTC()) < 0 {
 		h.logger.Errorf("Authorize token %s is expired %s", tok, authSess.ExpireAt().Format("2006-01-02 15:04:05"))
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil

@@ -166,7 +166,7 @@ func (s *Storage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
 		return nil, err
 	}
 
-	if data.ExpireAt().Before(time.Now()) {
+	if data.ExpireAt().Before(time.Now().UTC()) {
 		s.errFn(logrus.Fields{"code": code}, err.Error())
 		return nil, errors.Errorf("Token expired at %s.", data.ExpireAt().String())
 	}

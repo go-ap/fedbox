@@ -117,7 +117,7 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 		return "", err
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 
 	var f storage.Filterable
 	if u, err := url.Parse(actorIdentifier); err == nil {

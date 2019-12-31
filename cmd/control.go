@@ -28,7 +28,7 @@ type PasswordChanger interface {
 
 func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyType, id *pub.ID, pw []byte) (*pub.Person, error) {
 	self := ap.Self(pub.IRI(c.BaseURL))
-	now := time.Now()
+	now := time.Now().UTC()
 	p := pub.Person{
 		Type: typ,
 		// TODO(marius): when adding authentication to the command, we can set here the actor that executes it

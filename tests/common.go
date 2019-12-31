@@ -494,7 +494,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			if test.req.account != nil {
 				signHdrs := []string{"(request-target)", "host", "date"}
 
-				req.Header.Set("Date", time.Now().Format(http.TimeFormat))
+				req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
 				var err error
 				if path.Base(req.URL.Path) == "inbox" {
 					err = httpsig.NewSigner(
