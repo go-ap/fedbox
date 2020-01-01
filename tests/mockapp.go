@@ -164,7 +164,7 @@ func runAPP(e env.Type) int {
 
 	a, _ := app.New(l, "HEAD", string(e))
 	r := chi.NewRouter()
-
+	a.Storage = b
 	_oauthServer, _ = osinServer(s, l)
 
 	r.Use(app.Repo(b))
