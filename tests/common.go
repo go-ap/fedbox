@@ -115,8 +115,12 @@ var (
 )
 
 const testAppHash = "23767f95-8ea0-40ba-a6ef-b67284e1cdb1"
+
 const testActorHash = "e869bdca-dd5e-4de7-9c5d-37845eccc6a1"
 const testActorHandle = "johndoe"
+
+const extraActorHash = "58e877c7-067f-4842-960b-3896d76aa4ed"
+const extraActorHandle = "extra"
 
 var inboxURL = fmt.Sprintf("%s/inbox", apiURL)
 var outboxURL = fmt.Sprintf("%s/outbox", apiURL)
@@ -133,6 +137,12 @@ var defaultTestAccount = testAccount{
 	Hash:       testActorHash,
 	PublicKey:  key.Public(),
 	PrivateKey: key,
+}
+
+var extraAccount = testAccount{
+	Id:         fmt.Sprintf("http://%s/actors/%s", host, extraActorHash),
+	Handle:     extraActorHandle,
+	Hash:       extraActorHash,
 }
 
 var defaultTestApp = testAccount{

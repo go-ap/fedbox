@@ -1,0 +1,17 @@
+{
+  "id": "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed",
+  "type": "Person",
+  "generator": "http://127.0.0.1:9998",
+  "url": "http://127.0.0.1:9998/~extra",
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "published": "2019-11-23T19:12:05.644483296Z",
+  "updated": "2019-11-23T19:12:05.644483296Z",
+  "inbox": "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed/inbox",
+  "outbox": "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed/outbox",
+  "following": "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed/following",
+  "followers": "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed/followers",
+  "liked": "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed/liked",
+  "preferredUsername": "extra"
+}
