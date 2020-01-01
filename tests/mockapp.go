@@ -83,23 +83,25 @@ func seedTestData(t *testing.T, testData []string) {
 
 	o := cmd.New(s, b, config.Options{})
 
-	if testData != nil {
-		mocks := make(pub.ItemCollection, 0)
-		for _, path := range testData {
-			json := loadMockJson(path, nil)()
-			if json == "" {
-				continue
-			}
-			it, err := pub.UnmarshalJSON([]byte(json))
-			if err == nil {
-				mocks = append(mocks, it)
-			}
-		}
-		addMockObjects(o.Storage, mocks, t.Logf)
-	}
-
 	pw := []byte("hahah")
 	defaultTestApp.Id, _ = o.AddClient(pw, []string{authCallbackURL}, nil)
+
+	if len(testData) == 0 {
+		return
+	}
+	mocks := make(pub.ItemCollection, 0)
+	for _, path := range testData {
+		json := loadMockJson(path, nil)()
+		if json == "" {
+			continue
+		}
+		it, err := pub.UnmarshalJSON([]byte(json))
+		if err == nil {
+			mocks = append(mocks, it)
+		}
+	}
+	addMockObjects(o.Storage, mocks, t.Logf)
+
 	tok, err := o.GenAuthToken(defaultTestApp.Id, defaultTestAccount.Id, nil)
 	if err == nil {
 		defaultTestAccount.AuthToken = tok
