@@ -28,6 +28,7 @@ var UserAgent = "test-go-http-client"
 var HeaderAccept = `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`
 
 type actMock struct {
+	Type string
 	ActorId  string
 	ObjectId string
 }
@@ -77,6 +78,7 @@ type testRes struct {
 type testPair struct {
 	mocks []string
 	req   testReq
+	act   *objectVal
 	res   testRes
 }
 
@@ -140,15 +142,17 @@ var defaultTestAccount = testAccount{
 }
 
 var extraAccount = testAccount{
-	Id:         fmt.Sprintf("http://%s/actors/%s", host, extraActorHash),
-	Handle:     extraActorHandle,
-	Hash:       extraActorHash,
+	Id:     fmt.Sprintf("http://%s/actors/%s", host, extraActorHash),
+	Handle: extraActorHandle,
+	Hash:   extraActorHash,
 }
 
 var defaultTestApp = testAccount{
 	Id:   fmt.Sprintf("http://%s/actors/%s", host, testAppHash),
 	Hash: testAppHash,
 }
+
+var lastActivity *objectVal = &objectVal{}
 
 type assertFn func(v bool, msg string, args ...interface{})
 type errFn func(format string, args ...interface{})
@@ -531,23 +535,26 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 				"Error: invalid HTTP response %d, expected %d\nReq:[%s] %s\n    %v\nRes[%s]:\n    %v\n    %s",
 				resp.StatusCode, test.res.code, req.Method, req.URL, req.Header, resp.Status, resp.Header, b)
 
-			if test.req.met != http.MethodGet && test.res.code == http.StatusCreated {
+			if test.req.met == http.MethodPost {
 				location, ok := resp.Header["Location"]
-				if !ok {
-					return
-				}
-				assertTrue(ok, "Server didn't respond with a Location header even though it responded with a %d status", resp.StatusCode)
-				assertTrue(len(location) == 1, "Server responded with %d Location headers which is not expected", len(location))
-				newObj, err := url.Parse(location[0])
-				newObjURL := newObj.String()
-				assertTrue(err == nil, "Location header holds invalid URL %s", newObjURL)
-				assertTrue(strings.Contains(newObjURL, apiURL), "Location header holds invalid URL %s, expected to contain %s", newObjURL, apiURL)
-				if test.res.val == nil {
-					test.res.val = &objectVal{}
-				}
-				if test.res.val.id == "" {
-					// this is the location of the Activity not of the created object
-					test.res.val.id = newObjURL
+				if ok {
+					assertTrue(ok, "Server didn't respond with a Location header even though it responded with a %d status", resp.StatusCode)
+					assertTrue(len(location) == 1, "Server responded with %d Location headers which is not expected", len(location))
+					newObj, err := url.Parse(location[0])
+					newObjURL := newObj.String()
+					assertTrue(err == nil, "Location header holds invalid URL %s", newObjURL)
+					assertTrue(strings.Contains(newObjURL, apiURL), "Location header holds invalid URL %s, expected to contain %s", newObjURL, apiURL)
+					test.act = &objectVal{
+						id: newObjURL,
+					}
+					lastActivity = test.act
+					if test.res.val == nil {
+						test.res.val = &objectVal{}
+					}
+					if test.res.val.id == "" {
+						// this is the location of the Activity not of the created object
+						test.res.val.id = newObjURL
+					}
 				}
 			}
 			err = json.Unmarshal(b, &res)

@@ -328,7 +328,7 @@ var C2STests = []testSuite{
 					met:     http.MethodPost,
 					account: &defaultTestAccount,
 					urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
-					bodyFn:  loadMockJson("mocks/delete-actor.json", &defaultTestAccount),
+					bodyFn:  loadMockJson("mocks/activity.json", actMock{"Delete", *(&defaultTestAccount.Id), *(&defaultTestAccount.Id)}),
 				},
 				res: testRes{
 					code: http.StatusGone,
@@ -475,10 +475,10 @@ var C2STests = []testSuite{
 					met:     http.MethodPost,
 					account: &defaultTestAccount,
 					urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
-					bodyFn:  loadMockJson("mocks/like-note.json", &actMock{ActorId: *(&defaultTestAccount.Id), ObjectId: "http://127.0.0.1:9998/objects/41e7ec45-ff92-473a-b79d-974bf30a0aba"}),
+					bodyFn:  loadMockJson("mocks/activity.json", &actMock{Type: "Like", ActorId: *(&defaultTestAccount.Id), ObjectId: "http://127.0.0.1:9998/objects/41e7ec45-ff92-473a-b79d-974bf30a0aba"}),
 				},
 				res: testRes{
-					code: http.StatusOK,
+					code: http.StatusCreated,
 					val: &objectVal{
 						typ: string(pub.LikeType),
 						act: &objectVal{
@@ -580,10 +580,10 @@ var C2STests = []testSuite{
 					met:     http.MethodPost,
 					account: &defaultTestAccount,
 					urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
-					bodyFn:  loadMockJson("mocks/follow-actor.json", &actMock{ActorId: *(&defaultTestAccount.Id), ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
+					bodyFn:  loadMockJson("mocks/activity.json", &actMock{Type: "Follow", ActorId: *(&defaultTestAccount.Id), ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
 				},
 				res: testRes{
-					code: http.StatusOK,
+					code: http.StatusCreated,
 					val: &objectVal{
 						typ: string(pub.FollowType),
 						act: &objectVal{
