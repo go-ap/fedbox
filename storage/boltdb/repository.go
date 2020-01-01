@@ -199,7 +199,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 		// TODO(marius): Ideally this should support the case where we use the IRI to point to a bucket path
 		//     and on top of that apply the other filters
 		remainderPath := itemBucketPath(iri)
-		isCollection := handlers.ValidCollection(path.Base(iri.String()))
+		isCollection := ap.ValidActivityCollection(path.Base(iri.String()))
 		create := false
 		var err error
 		var b *bolt.Bucket
@@ -220,29 +220,48 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 			colIRIs := make(pub.IRIs, 0)
 			key := []byte(objectKey)
 			raw := b.Get(key)
-			err = jsonld.Unmarshal(raw, &colIRIs)
-			if err != nil {
-				return err
-			}
-			col, err = loadItemsElements(db, root, colIRIs...)
-			if err != nil {
-				return err
-			}
-			new := make(pub.ItemCollection, 0)
-			for _, it := range col {
-				if it, _ = filterIt(it, f); it != nil {
-					new = append(new, it)
+			if raw != nil {
+				err = jsonld.Unmarshal(raw, &colIRIs)
+				if err != nil {
+					return err
 				}
+				col, err = loadItemsElements(db, root, colIRIs...)
+				if err != nil {
+					return err
+				}
+				new := make(pub.ItemCollection, 0)
+				for _, it := range col {
+					if it, _ = filterIt(it, f); it != nil {
+						new = append(new, it)
+					}
+				}
+				col = new
+				return nil
 			}
-			col = new
-			return nil
+		} else if len(remainderPath) == 0 {
+			// we have found an item
+			key := []byte(objectKey)
+			raw := b.Get(key)
+			if raw != nil {
+				it, err := loadItem(raw)
+				if err != nil {
+					return err
+				}
+				if err != nil {
+					return err
+				}
+				if it, _ = filterIt(it, f); it != nil {
+					col = append(col, it)
+				}
+				return nil
+			}
 		}
 		isObjectKey := func(k []byte) bool {
 			return string(k) == objectKey || string(k) == metaDataKey
 		}
 		// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
 		for key, raw := c.First(); key != nil; key, raw = c.Next() {
-			if !isObjectKey(key) && !handlers.ValidCollection(path.Base(string(key))) {
+			if !isObjectKey(key) && !ap.ValidActivityCollection(path.Base(string(key))) {
 				// FIXME(marius): I guess this should not happen (pub descendIntoBucket should 'descend' into 'path'
 				//    if it's a valid bucket)
 				b := b.Bucket(key)
