@@ -118,7 +118,6 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 	}
 
 	now := time.Now().UTC()
-
 	var f storage.Filterable
 	if u, err := url.Parse(actorIdentifier); err == nil {
 		f = pub.IRI(u.String())
@@ -179,6 +178,10 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 	// generate access token
 	ad.AccessToken, ad.RefreshToken, err = (&osin.AccessTokenGenDefault{}).GenerateAccessToken(ad, ar.GenerateRefresh)
 	if err != nil {
+		return "", err
+	}
+	// save authorize data
+	if err = c.AuthStorage.SaveAuthorize(aud); err != nil {
 		return "", err
 	}
 	// save access token
