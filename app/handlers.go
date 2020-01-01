@@ -120,25 +120,12 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		if err != nil {
 			return errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 		}
-		if typ == h.Outbox {
-			// C2S - get recipients and cleanup activity
-			recipients := a.Recipients()
-			func(rec pub.ItemCollection) {
-				// TODO(marius): for C2S activities propagate them
-			}(recipients)
-		}
 		return nil
 	})
-	if err != nil {
-		return it, http.StatusInternalServerError, errors.Annotatef(err, "Unable to process %s activity", it.GetType())
-	}
 
-	status := http.StatusOK
+	status := http.StatusCreated
 	if it.GetType() == pub.DeleteType {
 		status = http.StatusGone
-	}
-	if it.GetType() == pub.CreateType {
-		status = http.StatusCreated
 	}
 
 	return it, status, nil

@@ -290,13 +290,12 @@ var C2STests = []testSuite{
 					bodyFn:  loadMockJson("mocks/update-actor.json", &defaultTestAccount),
 				},
 				res: testRes{
-					code: http.StatusOK,
+					code: http.StatusCreated,
 					val: &objectVal{
 						typ: string(pub.UpdateType),
 						act: &objectVal{
-							id:                *(&defaultTestAccount.Id),
-							typ:               string(pub.PersonType),
-							preferredUsername: "johndoe",
+							id:  *(&defaultTestAccount.Id),
+							typ: string(pub.PersonType),
 						},
 						obj: &objectVal{
 							id:                *(&defaultTestAccount.Id),
@@ -591,7 +590,7 @@ var C2STests = []testSuite{
 							preferredUsername: "johndoe",
 						},
 						obj: &objectVal{
-							typ: string(pub.PersonType),
+							typ:               string(pub.PersonType),
 							preferredUsername: "extra",
 						},
 					},
@@ -634,6 +633,27 @@ var C2STests = []testSuite{
 					},
 				},
 			},
+			//{
+			//	req: testReq{
+			//		met:     http.MethodPost,
+			//		account: &defaultTestAccount,
+			//		urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&extraAccount.Id)) },
+			//		bodyFn:  loadMockJson("mocks/accept-follow.json", &actMock{ActorId: *(&extraAccount.Id), ObjectId: *(&lastActivity.id)}),
+			//	},
+			//	res: testRes{
+			//		code: http.StatusCreated,
+			//		val: &objectVal{
+			//			typ: string(pub.AcceptType),
+			//			act: &objectVal{
+			//				typ:               string(pub.PersonType),
+			//				preferredUsername: "extra",
+			//			},
+			//			obj: &objectVal{
+			//				typ: string(pub.FollowType),
+			//			},
+			//		},
+			//	},
+			//},
 		},
 	},
 }
