@@ -13,7 +13,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20191231204407-b0afe2e76e32
 	github.com/go-ap/handlers v0.0.0-20191231204730-d19044a7dca1
 	github.com/go-ap/jsonld v0.0.0-20191231204332-cc6441da7d92
-	github.com/go-ap/processing v0.0.0-20191231072826-859a817fc30e
+	github.com/go-ap/processing v0.0.0-20200102152448-5e4bee3edb5e
 	github.com/go-ap/storage v0.0.0-20191231204454-a8ff339e3b19
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/jackc/pgx v3.6.0+incompatible
