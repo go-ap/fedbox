@@ -59,9 +59,11 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 		},
 	}
 	app.Endpoints = nil
-	app.Outbox = nil
+	app.Inbox = nil
 	app.Liked = nil
 	app.Likes = nil
+	app.Followers = nil
+	app.Following = nil
 	app.URL = pub.IRI(redirect[0])
 
 	c.Storage.UpdateActor(app)
