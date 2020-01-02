@@ -185,6 +185,20 @@ func (r *repo) CreateService(service pub.Service) error {
 	return createService(r.d, service)
 }
 
+func filterItemCol(col pub.ItemCollection, filterFn func(pub.Item) bool) pub.ItemCollection {
+	// For filters which are not just the IRI of an item we can try to filter it
+	filtered := col[:0]
+	for _, it := range col {
+		if filterFn(it) {
+			filtered = append(filtered, it)
+		}
+	}
+	for i := len(filtered); i < len(col); i++ {
+		col[i] = nil
+	}
+	return filtered
+}
+
 func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollection, uint, error) {
 	col := make(pub.ItemCollection, 0)
 
@@ -198,59 +212,41 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 		// This is the case where the Filter points to a single AP Object IRI
 		// TODO(marius): Ideally this should support the case where we use the IRI to point to a bucket path
 		//     and on top of that apply the other filters
-		remainderPath := itemBucketPath(iri)
+		fullPath := itemBucketPath(iri)
+		var remainderPath []byte
 		isCollection := ap.ValidActivityCollection(path.Base(iri.String()))
 		create := false
 		var err error
 		var b *bolt.Bucket
 		// Assume bucket exists and has keys
-		b, remainderPath, err = descendInBucket(rb, remainderPath, create)
+		b, remainderPath, err = descendInBucket(rb, fullPath, create)
 		if err != nil {
 			return err
 		}
 		if b == nil {
-			return errors.Errorf("Invalid bucket %s/%s", root, remainderPath)
-		}
-		c := b.Cursor()
-		if c == nil {
-			return errors.Errorf("Invalid bucket cursor %s/%s", root, remainderPath)
+			return errors.Errorf("Invalid bucket %s", fullPath)
 		}
 
-		if isCollection {
-			colIRIs := make(pub.IRIs, 0)
-			key := []byte(objectKey)
-			raw := b.Get(key)
-			if raw != nil {
-				err = jsonld.Unmarshal(raw, &colIRIs)
-				if err != nil {
-					return err
-				}
-				col, err = loadItemsElements(db, root, colIRIs...)
-				if err != nil {
-					return err
-				}
-				new := make(pub.ItemCollection, 0)
-				for _, it := range col {
-					if it, _ = filterIt(it, f); it != nil {
-						new = append(new, it)
-					}
-				}
-				col = new
-				return nil
-			}
-		} else if len(remainderPath) == 0 {
+		if len(remainderPath) == 0 {
 			// we have found an item
 			key := []byte(objectKey)
 			raw := b.Get(key)
 			if raw != nil {
-				it, err := loadItem(raw)
-				if err != nil {
-					return err
-				}
-				if err != nil {
-					return err
-				}
-				if it, _ = filterIt(it, f); it != nil {
+				if isCollection {
+					colIRIs := make(pub.IRIs, 0)
+					err = jsonld.Unmarshal(raw, &colIRIs)
+					if err != nil {
+						return err
+					}
+					col, err = loadItemsElements(db, root, colIRIs...)
+					if err != nil {
+						return err
+					}
+				} else {
+					it, err := loadItem(raw)
+					if err != nil {
+						return err
+					}
 					col = append(col, it)
 				}
 				return nil
@@ -258,6 +254,10 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 		}
 		isObjectKey := func(k []byte) bool {
 			return string(k) == objectKey || string(k) == metaDataKey
+		}
+		c := b.Cursor()
+		if c == nil {
+			return errors.Errorf("Invalid bucket cursor %s/%s", root, remainderPath)
 		}
 		// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
 		for key, raw := c.First(); key != nil; key, raw = c.Next() {
@@ -284,11 +284,12 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 		}
 		return nil
 	})
-	for _, it := range col {
-		// Remove bcc and bto
-		if s, ok := it.(pub.HasRecipients); ok {
-			s.Clean()
-		}
+
+	if _, ok := f.(pub.IRI); !ok {
+		col = filterItemCol(col, func(it pub.Item) bool {
+			it, _ = filterIt(it, f)
+			return it != nil
+		})
 	}
 
 	return col, uint(len(col)), err
