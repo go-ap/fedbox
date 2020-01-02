@@ -108,8 +108,8 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		processFn = processor.ProcessClientActivity
 	case h.Inbox:
 		validateFn = validator.ValidateServerActivity
-		processFn = func(*pub.Activity) (*pub.Activity, error) {
-			return nil, errors.NotImplementedf("S2S activities not implemented")
+		processFn = func(a *pub.Activity) (*pub.Activity, error) {
+			return a, errors.NotImplementedf("S2S activities not implemented")
 		}
 	default:
 		return it, http.StatusNotAcceptable, errors.NewMethodNotAllowed(err, "Collection %s does not receive Activity requests", typ)
