@@ -42,6 +42,13 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 	if err != nil {
 		return nil, err
 	}
+	for _, it := range items.Collection() {
+		// Remove bcc and bto - probably should be moved to a different place
+		// TODO(marius): move this to the go-ap/activtiypub helpers: CleanRecipients(Item)
+		if s, ok := it.(pub.HasRecipients); ok {
+			s.Clean()
+		}
+	}
 	return activitypub.PaginateCollection(items, f)
 }
 
@@ -194,6 +201,12 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (pub.Item, error) {
 	}
 	if len(items) == 0 {
 		return nil, errors.NotFoundf("%snot found%s", what, where)
+	}
+	for _, it := range items {
+		// Remove bcc and bto - probably should be moved to a different place
+		if s, ok := it.(pub.HasRecipients); ok {
+			s.Clean()
+		}
 	}
 	if len(items) > 1 {
 		what = fmt.Sprintf("%s", path.Base(iri))
