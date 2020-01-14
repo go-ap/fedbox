@@ -5,7 +5,15 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/mariusor/qstring"
 	"math"
+	"path"
 )
+
+// KeysetPaginator
+type KeysetPaginator interface {
+	Before() Hash
+	After() Hash
+	Count() uint
+}
 
 // Paginator
 type Paginator interface {
@@ -41,17 +49,43 @@ func paginateItems(col pub.ItemCollection, f Paginator) (pub.ItemCollection, err
 	if f == nil {
 		return nil, nil
 	}
+	count := f.Count()
+	if count == 0 {
+		count = MaxItems
+	}
+
 	if uint(len(col)) <= f.Count() {
 		return col, nil
 	}
-	page := uint(math.Max(float64(f.Page()), 1.0))
-	start := (page - 1) * f.Count()
-	if start > col.Count() {
-		start = 0
+	var start, stop uint
+	if ff, ok := f.(KeysetPaginator); ok {
+		stop = uint(math.Min(float64(count), float64(len(col))))
+		if len(ff.Before())+len(ff.After()) > 0 {
+			for i, it := range col {
+				if len(ff.Before()) > 0 {
+					if ff.Before().Matches(it.GetLink()) {
+						start = uint(math.Max(0, float64(i - int(count))))
+					}
+				}
+				if len(ff.After()) > 0 {
+					if ff.After().Matches(it.GetLink()) {
+						start = uint(i + 1)
+					}
+				}
+			}
+		}
+	} else {f.Count()
+		page := uint(math.Max(float64(f.Page()), 1.0))
+		start = (page - 1) * f.Count()
+		if start > col.Count() {
+			start = 0
+		}
 	}
-	stop := uint(math.Min(float64(f.Count()), float64(uint(len(col))-start)))
+	stop = uint(math.Min(float64(count), float64(uint(len(col))-start)))
+	if stop == 0 {
+		stop = uint(len(col))
+	}
 	col = col[start : start+stop]
-
 	return col, nil
 }
 
@@ -71,45 +105,77 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 
 	count := col.Count()
 	maxItems := f.Count()
+	if maxItems == 0 {
+		maxItems = MaxItems
+	}
 	haveItems = count > 0
-	moreItems = count > ((f.Page()) * maxItems)
-	lessItems = f.Page() > 1
+	if _, ok := f.(KeysetPaginator); ok {
+		moreItems = count > maxItems
+		lessItems = true
+	} else {
+		moreItems = count > ((f.Page()) * maxItems)
+		lessItems = f.Page() > 1
+	}
+
+	ordered := pub.ActivityVocabularyTypes{
+		pub.OrderedCollectionPageType,
+		pub.OrderedCollectionType,
+	}
+	unOrdered := pub.ActivityVocabularyTypes{
+		pub.CollectionPageType,
+		pub.CollectionType,
+	}
 
 	// TODO(marius): refactor this with OnCollection functions
 	if haveItems {
 		var firstURL pub.IRI
 
 		if f != nil {
-			fp := &Filters{CurPage: 1, MaxItems: maxItems}
+			fp := &Filters{MaxItems: maxItems}
+			if _, ok := f.(KeysetPaginator); !ok {
+				fp.CurPage = 1
+			}
 			firstURL = getURL(baseURL, fp)
 		}
-		if col.GetType() == pub.OrderedCollectionType {
-			oc, err := pub.ToOrderedCollection(col)
-			if err == nil && len(firstURL) > 0 {
-				oc.First = firstURL
-				oc.OrderedItems, _ = paginateItems(oc.OrderedItems, f)
-				col = oc
-			}
+		if ordered.Contains(col.GetType()) {
+			pub.OnOrderedCollection(col, func(oc *pub.OrderedCollection) error {
+				if len(firstURL) > 0 {
+					oc.First = firstURL
+					oc.OrderedItems, _ = paginateItems(oc.OrderedItems, f)
+				}
+				return nil
+			})
 		}
-		if col.GetType() == pub.CollectionType {
-			c, err := pub.ToCollection(col)
-			if err == nil && len(firstURL) > 0 {
+		if unOrdered.Contains(col.GetType()) {
+			pub.OnCollection(col, func(c *pub.Collection) error {
 				c.First = firstURL
 				c.Items, _ = paginateItems(c.Items, f)
-				col = c
-			}
+				return nil
+			})
 		}
 		var nextURL, prevURL pub.IRI
 		if moreItems {
-			np = &Filters{CurPage: f.Page() + 1, MaxItems: maxItems}
+			if _, ok := f.(KeysetPaginator); ok {
+				items := col.Collection()
+				uuid := path.Base(items[len(items)-1].GetLink().String())
+				np = &Filters{First: Hash(uuid), MaxItems: maxItems}
+			} else {
+				np = &Filters{CurPage: f.Page() + 1, MaxItems: maxItems}
+			}
 			nextURL = getURL(baseURL, np)
 		}
 		if lessItems {
-			pp = &Filters{CurPage: f.Page() - 1, MaxItems: maxItems}
+			if _, ok := f.(KeysetPaginator); ok {
+				items := col.Collection()
+				uuid := path.Base(items.First().GetLink().String())
+				pp = &Filters{Last: Hash(uuid), MaxItems: maxItems}
+			} else {
+				pp = &Filters{CurPage: f.Page() - 1, MaxItems: maxItems}
+			}
 			prevURL = getURL(baseURL, pp)
 		}
 
-		if f.Page() > 0 {
+		if f.Count() > 0 {
 			if col.GetType() == pub.OrderedCollectionType {
 				oc, err := pub.ToOrderedCollection(col)
 				if err == nil {

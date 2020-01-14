@@ -20,6 +20,11 @@ type Hash string
 func (h Hash) String() string {
 	return string(h)
 }
+// String returns the hash as a string
+func (h Hash) Matches(i pub.IRI) bool {
+	return path.Base(i.String()) == string(h)
+}
+
 
 const (
 	// ActorsType is a constant that represents the URL path for the local actors collection.
@@ -79,6 +84,8 @@ type Filters struct {
 	FollowedBy    []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
 	OlderThan     time.Time                   `qstring:"olderThan,omitempty"`
 	NewerThan     time.Time                   `qstring:"newerThan,omitempty"`
+	Last          Hash                        `qstring:"before,omitempty"`
+	First         Hash                        `qstring:"after,omitempty"`
 	CurPage       uint                        `qstring:"page,omitempty"`
 	MaxItems      uint                        `qstring:"maxItems,omitempty"`
 }
@@ -164,12 +171,19 @@ func (f Filters) Page() uint {
 	return f.CurPage
 }
 
+// Page
+func (f Filters) Before() Hash {
+	return f.Last
+}
+
+// Page
+func (f Filters) After() Hash {
+	return f.First
+}
+
 // Count
 func (f Filters) Count() uint {
-	if f.MaxItems > 0 {
-		return f.MaxItems
-	}
-	return MaxItems
+	return f.MaxItems
 }
 
 const MaxItems = 100
@@ -542,7 +556,7 @@ func filterItemCollections(filters pub.IRIs, colArr ...pub.Item) bool {
 			continue
 		}
 		if col.IsCollection() {
-			pub.OnCollection(col, func(c pub.CollectionInterface) error {
+			pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
 				for _, it := range c.Collection() {
 					if it != nil {
 						allItems = append(allItems, it)
@@ -577,7 +591,7 @@ func filterAbsent(filters pub.IRIs, items ...pub.Item) bool {
 			}
 			if it.IsCollection() {
 				result := false
-				pub.OnCollection(it, func(c pub.CollectionInterface) error {
+				pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
 					for _, it := range c.Collection() {
 						if it == nil {
 							continue
