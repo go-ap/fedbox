@@ -103,7 +103,7 @@ func (c *Control) DeleteActor(id string) error {
 		return err
 	}
 	if cnt == 0 {
-		return errors.Newf("")
+		return errors.Newf("nothing found")
 	}
 	_, err = c.Storage.DeleteActor(it.First())
 	return err
@@ -117,4 +117,41 @@ func (c *Control) ListActors() (pub.ItemCollection, error) {
 		return col, errors.Annotatef(err, "Unable to load actors")
 	}
 	return col, nil
+}
+
+func (c *Control) Delete(id, typ string) error {
+	t := pub.ActivityVocabularyType(typ)
+	if !pub.GenericObjectTypes.Contains(t) {
+		return errors.Errorf("invalid ActivityPub object type %s", typ)
+	}
+	self := ap.Self(pub.IRI(c.BaseURL))
+	var iri pub.IRI
+	if u, err := url.Parse(id); err != nil {
+		iri = pub.IRI(fmt.Sprintf("%s/%s/%s", self.ID, ap.ActorsType, id))
+	} else {
+		iri = pub.IRI(u.String())
+	}
+	var it pub.ItemCollection
+	var cnt uint
+	var err error
+	if pub.ActorTypes.Contains(t) {
+		it, cnt, err = c.Storage.LoadActors(iri)
+	}
+	if pub.ObjectTypes.Contains(t) {
+		it, cnt, err = c.Storage.LoadObjects(iri)
+	}
+	if err != nil {
+		return err
+	}
+	if cnt == 0 {
+		return errors.Newf("nothing found")
+	}
+	if pub.ActorTypes.Contains(t) {
+		_, err = c.Storage.DeleteActor(it.First())
+	}
+	if pub.ObjectTypes.Contains(t) {
+		_, err = c.Storage.DeleteObject(it.First())
+	}
+
+	return err
 }
