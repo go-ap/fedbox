@@ -89,8 +89,8 @@ func paginateItems(col pub.ItemCollection, f Paginator) (pub.ItemCollection, str
 	} else {
 		stop = start + stop
 	}
-	if start > 1 {
-		prev = path.Base(col[start-1].GetLink().String())
+	if start > 0 {
+		prev = path.Base(col[start].GetLink().String())
 	}
 	if stop < len(col) {
 		next = path.Base(col[stop-1].GetLink().String())
