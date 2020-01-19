@@ -247,6 +247,9 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 					if err != nil {
 						return err
 					}
+					if it == nil {
+						return nil
+					}
 					col = append(col, it)
 				}
 				return nil
