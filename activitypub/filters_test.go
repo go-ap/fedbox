@@ -134,7 +134,7 @@ func testItInIRIs(iris pub.IRIs, items ...pub.Item) bool {
 	contains := false
 	for _, val := range items {
 		if val.IsCollection() {
-			pub.OnCollection(val, func(c pub.CollectionInterface) error {
+			pub.OnCollectionIntf(val, func(c pub.CollectionInterface) error {
 				for _, it := range c.Collection() {
 					if iris.Contains(it.GetLink()) {
 						contains = true

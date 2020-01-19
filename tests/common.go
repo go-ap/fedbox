@@ -298,49 +298,49 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			}
 			if tVal.inbox != nil {
 				assertMapKey(ob, "inbox", tVal.inbox)
-				if tVal.inbox.typ != "" {
+				if tVal.inbox.typ != ""  && len(tVal.inbox.id) > 0 {
 					dCol := assertGetRequest(tVal.inbox.id)
 					assertObjectProperties(dCol, tVal.inbox)
 				}
 			}
 			if tVal.outbox != nil {
 				assertMapKey(ob, "outbox", tVal.outbox)
-				if tVal.outbox.typ != "" {
+				if tVal.outbox.typ != ""  && len(tVal.outbox.id) > 0 {
 					dCol := assertGetRequest(tVal.outbox.id)
 					assertObjectProperties(dCol, tVal.outbox)
 				}
 			}
 			if tVal.liked != nil {
 				assertMapKey(ob, "liked", tVal.liked)
-				if tVal.liked.typ != "" {
+				if tVal.liked.typ != "" && len(tVal.liked.id) > 0  {
 					dCol := assertGetRequest(tVal.liked.id)
 					assertObjectProperties(dCol, tVal.liked)
 				}
 			}
 			if tVal.following != nil {
 				assertMapKey(ob, "following", tVal.following)
-				if tVal.following.typ != "" {
+				if tVal.following.typ != "" && len(tVal.following.id) > 0 {
 					dCol := assertGetRequest(tVal.following.id)
 					assertObjectProperties(dCol, tVal.following)
 				}
 			}
 			if tVal.followers != nil {
 				assertMapKey(ob, "followers", tVal.followers)
-				if tVal.followers.typ != "" {
+				if tVal.followers.typ != "" && len(tVal.followers.id) > 0 {
 					dCol := assertGetRequest(tVal.followers.id)
 					assertObjectProperties(dCol, tVal.followers)
 				}
 			}
 			if tVal.act != nil {
 				assertMapKey(ob, "actor", tVal.act)
-				if tVal.act.typ != "" {
+				if tVal.act.typ != "" && len(tVal.act.id) > 0 {
 					dAct := assertGetRequest(tVal.act.id)
 					assertObjectProperties(dAct, tVal.act)
 				}
 			}
 			if tVal.obj != nil {
 				assertMapKey(ob, "object", tVal.obj)
-				if tVal.obj.typ != "" {
+				if tVal.obj.typ != "" && len(tVal.obj.id) > 0 {
 					dOb := assertGetRequest(tVal.obj.id)
 					assertObjectProperties(dOb, tVal.obj)
 				}
@@ -360,35 +360,35 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			}
 			if tVal.first != nil {
 				assertMapKey(ob, "first", tVal.first)
-				if tVal.first.typ != "" {
+				if tVal.first.typ != "" && len(tVal.first.id) > 0 {
 					derefCol := assertGetRequest(tVal.first.id)
 					assertObjectProperties(derefCol, tVal.first)
 				}
 			}
 			if tVal.next != nil {
 				assertMapKey(ob, "next", tVal.next)
-				if tVal.next.typ != "" {
+				if tVal.next.typ != "" && len(tVal.next.id) > 0 {
 					derefCol := assertGetRequest(tVal.next.id)
 					assertObjectProperties(derefCol, tVal.next)
 				}
 			}
 			if tVal.current != nil {
 				assertMapKey(ob, "current", tVal.current)
-				if tVal.current.typ != "" {
+				if tVal.current.typ != "" && len(tVal.current.id) > 0 {
 					dCol := assertGetRequest(tVal.current.id)
 					assertObjectProperties(dCol, tVal.current)
 				}
 			}
 			if tVal.last != nil {
 				assertMapKey(ob, "last", tVal.last)
-				if tVal.last.typ != "" {
+				if tVal.last.typ != "" && len(tVal.last.id) > 0 {
 					derefCol := assertGetRequest(tVal.last.id)
 					assertObjectProperties(derefCol, tVal.last)
 				}
 			}
 			if tVal.partOf != nil {
 				assertMapKey(ob, "partOf", tVal.partOf)
-				if tVal.partOf.typ != "" {
+				if tVal.partOf.typ != "" && len(tVal.partOf.id) > 0 {
 					derefCol := assertGetRequest(tVal.partOf.id)
 					assertObjectProperties(derefCol, tVal.partOf)
 				}
