@@ -26,7 +26,7 @@ func reqURL(r *http.Request) string {
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.CollectionLoader) (pub.CollectionInterface, error) {
-	var items pub.CollectionInterface
+	var col pub.CollectionInterface
 	var err error
 
 	f, err := activitypub.FromRequest(r)
@@ -38,18 +38,19 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 		return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
 	}
 
-	items, err = repo.LoadCollection(f)
+	col, err = repo.LoadCollection(f)
 	if err != nil {
 		return nil, err
 	}
-	for _, it := range items.Collection() {
+	col, err = activitypub.PaginateCollection(col, f)
+	for _, it := range col.Collection() {
 		// Remove bcc and bto - probably should be moved to a different place
 		// TODO(marius): move this to the go-ap/activtiypub helpers: CleanRecipients(Item)
 		if s, ok := it.(pub.HasRecipients); ok {
 			s.Clean()
 		}
 	}
-	return activitypub.PaginateCollection(items, f)
+	return col, err
 }
 
 func validContentType(c string) bool {
