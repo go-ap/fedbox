@@ -42,12 +42,13 @@ func getURL(i pub.IRI, f Paginator) pub.IRI {
 	return i
 }
 
-func paginateItems(col pub.ItemCollection, f Paginator) (pub.ItemCollection, error) {
+func paginateItems(col pub.ItemCollection, f Paginator) (pub.ItemCollection, string, string, error) {
+	var prev, next string
 	if col == nil {
-		return nil, nil
+		return nil, prev, next, nil
 	}
 	if f == nil {
-		return nil, nil
+		return nil, prev, next, nil
 	}
 	count := f.Count()
 	if count == 0 {
@@ -55,38 +56,47 @@ func paginateItems(col pub.ItemCollection, f Paginator) (pub.ItemCollection, err
 	}
 
 	if uint(len(col)) <= f.Count() {
-		return col, nil
+		return col, prev, next, nil
 	}
-	var start, stop uint
+	var start, stop int
 	if ff, ok := f.(KeysetPaginator); ok {
-		stop = uint(math.Min(float64(count), float64(len(col))))
+		stop = int(math.Min(float64(count), float64(len(col))))
 		if len(ff.Before())+len(ff.After()) > 0 {
 			for i, it := range col {
 				if len(ff.Before()) > 0 {
 					if ff.Before().Matches(it.GetLink()) {
-						start = uint(math.Max(0, float64(i - int(count))))
+						start = int(math.Max(0, float64(i-int(count))))
 					}
 				}
 				if len(ff.After()) > 0 {
 					if ff.After().Matches(it.GetLink()) {
-						start = uint(i + 1)
+						start = int(i + 1)
 					}
 				}
 			}
 		}
-	} else {f.Count()
-		page := uint(math.Max(float64(f.Page()), 1.0))
-		start = (page - 1) * f.Count()
-		if start > col.Count() {
+	} else {
+		f.Count()
+		page := int(math.Max(float64(f.Page()), 1.0))
+		start = (page - 1) * int(f.Count())
+		if start > int(col.Count()) {
 			start = 0
 		}
 	}
-	stop = uint(math.Min(float64(count), float64(uint(len(col))-start)))
+	stop = int(math.Min(float64(count), float64(len(col)-start)))
 	if stop == 0 {
-		stop = uint(len(col))
+		stop = len(col)
+	} else {
+		stop = start + stop
 	}
-	col = col[start : start+stop]
-	return col, nil
+	if start > 1 {
+		prev = path.Base(col[start-1].GetLink().String())
+	}
+	if stop < len(col) {
+		next = path.Base(col[stop-1].GetLink().String())
+	}
+	col = col[start:stop]
+	return col, prev, next, nil
 }
 
 // PaginateCollection is a function that populates the received collection pub
@@ -100,8 +110,9 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 	baseURL := pub.IRI(u.String())
 	curURL := getURL(baseURL, f)
 
-	var haveItems, moreItems, lessItems bool
+	var haveItems bool
 	var pp, np Paginator
+	var prev, next string // uuids
 
 	count := col.Count()
 	maxItems := f.Count()
@@ -109,13 +120,6 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 		maxItems = MaxItems
 	}
 	haveItems = count > 0
-	if _, ok := f.(KeysetPaginator); ok {
-		moreItems = count > maxItems
-		lessItems = true
-	} else {
-		moreItems = count > ((f.Page()) * maxItems)
-		lessItems = f.Page() > 1
-	}
 
 	ordered := pub.ActivityVocabularyTypes{
 		pub.OrderedCollectionPageType,
@@ -141,34 +145,31 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 			pub.OnOrderedCollection(col, func(oc *pub.OrderedCollection) error {
 				if len(firstURL) > 0 {
 					oc.First = firstURL
-					oc.OrderedItems, _ = paginateItems(oc.OrderedItems, f)
 				}
+				oc.OrderedItems, prev, next, _ = paginateItems(oc.OrderedItems, f)
+
 				return nil
 			})
 		}
 		if unOrdered.Contains(col.GetType()) {
 			pub.OnCollection(col, func(c *pub.Collection) error {
 				c.First = firstURL
-				c.Items, _ = paginateItems(c.Items, f)
+				c.Items, prev, next, _ = paginateItems(c.Items, f)
 				return nil
 			})
 		}
 		var nextURL, prevURL pub.IRI
-		if moreItems {
+		if len(next) > 0 {
 			if _, ok := f.(KeysetPaginator); ok {
-				items := col.Collection()
-				uuid := path.Base(items[len(items)-1].GetLink().String())
-				np = &Filters{First: Hash(uuid), MaxItems: maxItems}
+				np = &Filters{First: Hash(next), MaxItems: maxItems}
 			} else {
 				np = &Filters{CurPage: f.Page() + 1, MaxItems: maxItems}
 			}
 			nextURL = getURL(baseURL, np)
 		}
-		if lessItems {
+		if len(prev) > 0 {
 			if _, ok := f.(KeysetPaginator); ok {
-				items := col.Collection()
-				uuid := path.Base(items.First().GetLink().String())
-				pp = &Filters{Last: Hash(uuid), MaxItems: maxItems}
+				pp = &Filters{Last: Hash(prev), MaxItems: maxItems}
 			} else {
 				pp = &Filters{CurPage: f.Page() - 1, MaxItems: maxItems}
 			}
@@ -185,13 +186,13 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 					if firstURL != curURL {
 						page.First = oc.First
 					}
-					if moreItems {
+					if len(nextURL) > 0 {
 						page.Next = nextURL
 					}
-					if lessItems {
+					if len(prevURL) > 0 {
 						page.Prev = prevURL
 					}
-					page.OrderedItems, _ = paginateItems(oc.OrderedItems, f)
+					page.OrderedItems, _, _, _ = paginateItems(oc.OrderedItems, f)
 					page.TotalItems = count
 					col = page
 				}
@@ -203,14 +204,14 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 					page.ID = pub.ID(curURL)
 					page.PartOf = baseURL
 					page.First = c.First
-					if moreItems {
+					if len(nextURL) > 0 {
 						page.Next = nextURL
 					}
-					if lessItems {
+					if len(prevURL) > 0 {
 						page.Prev = prevURL
 					}
 					page.TotalItems = count
-					page.Items, _ = paginateItems(c.Items, f)
+					page.Items, _, _, _ = paginateItems(c.Items, f)
 					col = page
 				}
 			}
