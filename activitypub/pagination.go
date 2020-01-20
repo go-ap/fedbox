@@ -99,6 +99,35 @@ func paginateItems(col pub.ItemCollection, f Paginator) (pub.ItemCollection, str
 	return col, prev, next, nil
 }
 
+func copyFilter(f *Filters, p Paginator) {
+	if ff, ok := p.(*Filters); ok {
+		f.baseURL = ff.baseURL
+		f.Name = ff.Name
+		f.Cont = ff.Cont
+		f.Authenticated = ff.Authenticated
+		f.To = ff.To
+		f.Author = ff.Author
+		f.Parent = ff.Parent
+		f.IRI = ff.IRI
+		f.Collection = ff.Collection
+		f.URL = ff.URL
+		f.MedTypes = ff.MedTypes
+		f.Aud = ff.Aud
+		f.Key = ff.Key
+		f.ItemKey = ff.ItemKey
+		f.ObjectKey = ff.ObjectKey
+		f.ActorKey = ff.ActorKey
+		f.TargetKey = ff.TargetKey
+		f.Type = ff.Type
+		f.AttrTo = ff.AttrTo
+		f.InReplTo = ff.InReplTo
+		f.OP = ff.OP
+		f.FollowedBy = ff.FollowedBy
+		f.OlderThan = ff.OlderThan
+		f.NewerThan = ff.NewerThan
+	}
+}
+
 // PaginateCollection is a function that populates the received collection pub
 func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.CollectionInterface, error) {
 	if col == nil {
@@ -111,7 +140,6 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 	curURL := getURL(baseURL, f)
 
 	var haveItems bool
-	var pp, np Paginator
 	var prev, next string // uuids
 
 	count := col.Count()
@@ -135,7 +163,9 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 		var firstURL pub.IRI
 
 		if f != nil {
-			fp := &Filters{MaxItems: maxItems}
+			fp := &Filters{}
+			copyFilter(fp, f)
+			fp.MaxItems = maxItems
 			if _, ok := f.(KeysetPaginator); !ok {
 				fp.CurPage = 1
 			}
@@ -160,18 +190,24 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 		}
 		var nextURL, prevURL pub.IRI
 		if len(next) > 0 {
+			np := &Filters{}
+			copyFilter(np, f)
+			np.MaxItems = maxItems
 			if _, ok := f.(KeysetPaginator); ok {
-				np = &Filters{First: Hash(next), MaxItems: maxItems}
+				np.Next = Hash(next)
 			} else {
-				np = &Filters{CurPage: f.Page() + 1, MaxItems: maxItems}
+				np.CurPage = f.Page() + 1
 			}
 			nextURL = getURL(baseURL, np)
 		}
 		if len(prev) > 0 {
+			pp := &Filters{}
+			copyFilter(pp, f)
+			pp.MaxItems = maxItems
 			if _, ok := f.(KeysetPaginator); ok {
-				pp = &Filters{Last: Hash(prev), MaxItems: maxItems}
+				pp.Prev = Hash(prev)
 			} else {
-				pp = &Filters{CurPage: f.Page() - 1, MaxItems: maxItems}
+				pp.CurPage = f.Page() + 1
 			}
 			prevURL = getURL(baseURL, pp)
 		}

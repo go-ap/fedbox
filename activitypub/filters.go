@@ -74,20 +74,20 @@ type Filters struct {
 	Aud           pub.IRIs                    `qstring:"-"`
 	Key           []Hash                      `qstring:"-"`
 	ItemKey       []Hash                      `qstring:"iri,omitempty"`
-	ObjectKey     []Hash                      `qstring:"object,omitempty"`
-	ActorKey      []Hash                      `qstring:"actor,omitempty"`
-	TargetKey     []Hash                      `qstring:"target,omitempty"`
-	Type          pub.ActivityVocabularyTypes `qstring:"type,omitempty"`
-	AttrTo        []Hash                      `qstring:"attributedTo,omitempty"`
-	InReplTo      []Hash                      `qstring:"inReplyTo,omitempty"`
-	OP            []Hash                      `qstring:"context,omitempty"`
-	FollowedBy    []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
-	OlderThan     time.Time                   `qstring:"olderThan,omitempty"`
-	NewerThan     time.Time                   `qstring:"newerThan,omitempty"`
-	Last          Hash                        `qstring:"before,omitempty"`
-	First         Hash                        `qstring:"after,omitempty"`
-	CurPage       uint                        `qstring:"page,omitempty"`
-	MaxItems      uint                        `qstring:"maxItems,omitempty"`
+	ObjectKey  []Hash                      `qstring:"object,omitempty"`
+	ActorKey   []Hash                      `qstring:"actor,omitempty"`
+	TargetKey  []Hash                      `qstring:"target,omitempty"`
+	Type       pub.ActivityVocabularyTypes `qstring:"type,omitempty"`
+	AttrTo     []Hash                      `qstring:"attributedTo,omitempty"`
+	InReplTo   []Hash                      `qstring:"inReplyTo,omitempty"`
+	OP         []Hash                      `qstring:"context,omitempty"`
+	FollowedBy []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
+	OlderThan  time.Time                   `qstring:"olderThan,omitempty"`
+	NewerThan  time.Time                   `qstring:"newerThan,omitempty"`
+	Prev       Hash                        `qstring:"before,omitempty"`
+	Next       Hash                        `qstring:"after,omitempty"`
+	CurPage    uint                        `qstring:"page,omitempty"`
+	MaxItems   uint                        `qstring:"maxItems,omitempty"`
 }
 
 func NewFilter(s string) Filters {
@@ -173,12 +173,12 @@ func (f Filters) Page() uint {
 
 // Page
 func (f Filters) Before() Hash {
-	return f.Last
+	return f.Prev
 }
 
 // Page
 func (f Filters) After() Hash {
-	return f.First
+	return f.Next
 }
 
 // Count
