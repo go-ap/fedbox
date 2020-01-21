@@ -20,11 +20,11 @@ type Hash string
 func (h Hash) String() string {
 	return string(h)
 }
+
 // String returns the hash as a string
 func (h Hash) Matches(i pub.IRI) bool {
 	return path.Base(i.String()) == string(h)
 }
-
 
 const (
 	// ActorsType is a constant that represents the URL path for the local actors collection.
@@ -71,23 +71,23 @@ type Filters struct {
 	Collection    h.CollectionType            `qstring:"-"`
 	URL           pub.IRIs                    `qstring:"url,omitempty"`
 	MedTypes      []pub.MimeType              `qstring:"mediaType,omitempty"`
-	Aud           pub.IRIs                    `qstring:"-"`
+	Aud           pub.IRIs                    `qstring:"recipients,omitempty"`
 	Key           []Hash                      `qstring:"-"`
 	ItemKey       []Hash                      `qstring:"iri,omitempty"`
-	ObjectKey  []Hash                      `qstring:"object,omitempty"`
-	ActorKey   []Hash                      `qstring:"actor,omitempty"`
-	TargetKey  []Hash                      `qstring:"target,omitempty"`
-	Type       pub.ActivityVocabularyTypes `qstring:"type,omitempty"`
-	AttrTo     []Hash                      `qstring:"attributedTo,omitempty"`
-	InReplTo   []Hash                      `qstring:"inReplyTo,omitempty"`
-	OP         []Hash                      `qstring:"context,omitempty"`
-	FollowedBy []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
-	OlderThan  time.Time                   `qstring:"olderThan,omitempty"`
-	NewerThan  time.Time                   `qstring:"newerThan,omitempty"`
-	Prev       Hash                        `qstring:"before,omitempty"`
-	Next       Hash                        `qstring:"after,omitempty"`
-	CurPage    uint                        `qstring:"page,omitempty"`
-	MaxItems   uint                        `qstring:"maxItems,omitempty"`
+	ObjectKey     []Hash                      `qstring:"object,omitempty"`
+	ActorKey      []Hash                      `qstring:"actor,omitempty"`
+	TargetKey     []Hash                      `qstring:"target,omitempty"`
+	Type          pub.ActivityVocabularyTypes `qstring:"type,omitempty"`
+	AttrTo        []Hash                      `qstring:"attributedTo,omitempty"`
+	InReplTo      []Hash                      `qstring:"inReplyTo,omitempty"`
+	OP            []Hash                      `qstring:"context,omitempty"`
+	FollowedBy    []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
+	OlderThan     time.Time                   `qstring:"olderThan,omitempty"`
+	NewerThan     time.Time                   `qstring:"newerThan,omitempty"`
+	Prev          Hash                        `qstring:"before,omitempty"`
+	Next          Hash                        `qstring:"after,omitempty"`
+	CurPage       uint                        `qstring:"page,omitempty"`
+	MaxItems      uint                        `qstring:"maxItems,omitempty"`
 }
 
 func NewFilter(s string) Filters {
@@ -231,9 +231,13 @@ func FromRequest(r *http.Request) (*Filters, error) {
 func (f Filters) Audience() pub.IRIs {
 	col := make(pub.IRIs, 0)
 	for _, iri := range f.Aud {
-		rr := pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
-		if !col.Contains(rr) {
-			col = append(col, rr)
+		if iri == pub.EmptyIRI || iri == "0" || iri == absentValue {
+			iri = pub.PublicNS
+		} else {
+			iri = pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
+		}
+		if !col.Contains(iri) {
+			col = append(col, iri)
 		}
 	}
 	if f.Authenticated != nil && !col.Contains(f.Authenticated.GetLink()) {
