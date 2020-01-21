@@ -7,7 +7,7 @@ require (
 	github.com/dyninc/qstring v0.0.0-20160719172318-ab5840a88e81 // indirect
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
 	github.com/gchaincl/dotsql v1.0.0
-	github.com/go-ap/activitypub v0.0.0-20200114195742-78d2a53e63a5
+	github.com/go-ap/activitypub v0.0.0-20200121183809-dc8a4c2135b3
 	github.com/go-ap/auth v0.0.0-20200114202715-7e9b5d7cf2d5
 	github.com/go-ap/client v0.0.0-20200114201638-255b427d8b1a
 	github.com/go-ap/errors v0.0.0-20200114202328-a459186c3d11
