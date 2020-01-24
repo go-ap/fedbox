@@ -14,7 +14,7 @@ require (
 	github.com/go-ap/handlers v0.0.0-20200114202932-d7c775f6bb3c
 	github.com/go-ap/jsonld v0.0.0-20200114201544-564f952ab53f
 	github.com/go-ap/processing v0.0.0-20200114203201-80d8dbad13eb
-	github.com/go-ap/storage v0.0.0-20200114202519-6204769fdcb1
+	github.com/go-ap/storage v0.0.0-20200124192515-619db78d1fdc
 	github.com/go-chi/chi v4.0.3+incompatible
 	github.com/jackc/pgx v3.6.1+incompatible
 	github.com/joho/godotenv v1.3.0

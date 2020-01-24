@@ -72,6 +72,7 @@ type Filters struct {
 	URL           pub.IRIs                    `qstring:"url,omitempty"`
 	MedTypes      []pub.MimeType              `qstring:"mediaType,omitempty"`
 	Aud           pub.IRIs                    `qstring:"recipients,omitempty"`
+	Gen           pub.IRIs                    `qstring:"generator,omitempty"`
 	Key           []Hash                      `qstring:"-"`
 	ItemKey       []Hash                      `qstring:"iri,omitempty"`
 	ObjectKey     []Hash                      `qstring:"object,omitempty"`
@@ -308,6 +309,10 @@ func (f Filters) URLs() pub.IRIs {
 	return f.URL
 }
 
+func (f Filters) Generator() pub.IRIs {
+	return f.Gen
+}
+
 func (f Filters) Actors() pub.IRIs {
 	ret := make(pub.IRIs, 0)
 	for _, k := range f.ActorKey {
@@ -374,6 +379,10 @@ func filterObject(it pub.Item, ff Filters) (bool, pub.Item) {
 			return nil
 		}
 		if !filterNaturalLanguageValuesSubstring(ff.Content(), ob.Content, ob.Summary) {
+			keep = false
+			return nil
+		}
+		if !filterWithAbsent(ff.Generator(), ob.Generator) {
 			keep = false
 			return nil
 		}
