@@ -4,6 +4,7 @@ SHELL := bash
 .DELETE_ON_ERROR:
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
+TEST_FLAGS ?= -v
 
 export CGO_ENABLED=0
 export GOOS=linux
