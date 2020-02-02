@@ -168,15 +168,17 @@ func IRIf(f Filters, iri string) string {
 				col = ActivitiesType
 			}
 		}
-		u := url.URL{}
 		if len(f.baseURL) > 0 {
-			u.Host = f.baseURL.String()
-		}
-		if len(col) > 0 && !strings.Contains(iri, string(col)){
-			u.Path = "/" + string(col)
-		}
-		if len(u.String()) > 0 {
-			iri = fmt.Sprintf("%s/%s", u.String(), iri)
+			if u, err := url.Parse(f.baseURL.String()); err == nil {
+				if len(col) > 0 {
+					u.Path = "/" + string(col)
+				}
+				if len(u.String()) > 0 {
+					iri = fmt.Sprintf("%s/%s", u.String(), iri)
+				}
+			}
+		} else if !strings.Contains(iri, string(col)) {
+			iri = fmt.Sprintf("/%s/%s", col, iri)
 		}
 	}
 	return iri
