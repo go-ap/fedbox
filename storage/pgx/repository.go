@@ -266,11 +266,11 @@ func (r repo) SaveObject(it pub.Item) (pub.Item, error) {
 
 	var table string
 	if pub.ActivityTypes.Contains(it.GetType()) {
-		table = "activities"
+		table = string(ap.ActivitiesType)
 	} else if pub.ActorTypes.Contains(it.GetType()) {
-		table = "actors"
+		table = string(ap.ActorsType)
 	} else {
-		table = "objects"
+		table = string(ap.ObjectsType)
 	}
 
 	if len(it.GetLink()) > 0 {
