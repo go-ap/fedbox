@@ -31,10 +31,10 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 
 	f, err := activitypub.FromRequest(r)
 	if err != nil {
-		return nil, errors.NewNotValid(err, "Unable to load filters from request")
+		return nil, errors.NewNotValid(err, "unable to load filters from request")
 	}
 	LoadCollectionFilters(r, f)
-	if !activitypub.ValidActivityCollection(string(typ)) {
+	if !activitypub.ValidCollection(string(typ)) {
 		return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
 	}
 
@@ -165,19 +165,16 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (pub.Item, error) {
 	what = fmt.Sprintf("%s ", path.Base(iri))
 	f.MaxItems = 1
 
-	if activitypub.ValidActivityCollection(string(f.Collection)) {
-		switch f.Collection {
-		case activitypub.ActivitiesType:
-			if actLoader, ok := repo.(storage.ActivityLoader); ok {
-				items, _, err = actLoader.LoadActivities(f)
-			}
-		case activitypub.ActorsType:
+	if activitypub.ValidCollection(string(f.Collection)) {
+		if f.Collection == activitypub.ActorsType {
 			if actLoader, ok := repo.(storage.ActorLoader); ok {
 				items, _, err = actLoader.LoadActors(f)
 			}
-		case activitypub.ObjectsType:
-			fallthrough
-		default:
+		} else if activitypub.ValidActivityCollection(string(f.Collection)) {
+			if actLoader, ok := repo.(storage.ActivityLoader); ok {
+				items, _, err = actLoader.LoadActivities(f)
+			}
+		} else {
 			items, _, err = repo.LoadObjects(f)
 		}
 	} else if f.Collection == "" {

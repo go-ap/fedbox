@@ -214,7 +214,7 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 		//     and on top of that apply the other filters
 		fullPath := itemBucketPath(iri)
 		var remainderPath []byte
-		isCollection := ap.ValidActivityCollection(path.Base(iri.String()))
+		isCollection := ap.ValidCollection(path.Base(iri.String()))
 		create := false
 		var err error
 		var b *bolt.Bucket

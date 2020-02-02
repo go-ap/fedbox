@@ -5,7 +5,7 @@ import (
 	"fmt"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/activitypub"
+	apub "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
@@ -124,8 +124,8 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 	if u, err := url.Parse(actorIdentifier); err == nil {
 		f = pub.IRI(u.String())
 	} else {
-		f = activitypub.Filters{
-			Name: []string{actorIdentifier},
+		f = apub.Filters{
+			Name: apub.CompStrs{apub.CompStr{Str: actorIdentifier}},
 			Type: pub.ActorTypes,
 		}
 	}

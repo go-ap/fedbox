@@ -164,7 +164,7 @@ func (r repo) LoadCollection(ff s.Filterable) (pub.CollectionInterface, error) {
 		f.ItemKey = f.ItemKey[:0]
 		f.IRI = ""
 		for _, elem := range elements {
-			f.ItemKey = append(f.ItemKey, ap.Hash(elem))
+			f.ItemKey = append(f.ItemKey, ap.CompStr{Str: elem})
 		}
 		var total uint
 		items, total, err = loadFromDb(r.conn, getCollectionTable(f.Collection), f)
@@ -275,7 +275,7 @@ func (r repo) SaveObject(it pub.Item) (pub.Item, error) {
 
 	if len(it.GetLink()) > 0 {
 		if _, cnt, _ := loadFromDb(r.conn, table, ap.Filters{
-			ItemKey: []ap.Hash{ap.Hash(it.GetLink().String())},
+			ItemKey: ap.CompStrs{ap.CompStr{Str: it.GetLink().String()}},
 			Type:    []pub.ActivityVocabularyType{it.GetType()},
 		}); cnt != 0 {
 			err := processing.ErrDuplicateObject("%s in table %s", it.GetLink(), table)

@@ -27,21 +27,21 @@ func TestFilters_IRIs(t *testing.T) {
 	val1 := "http://example1.com"
 	val2 := "http://example1.com/test"
 	f := Filters{
-		ItemKey: []Hash{Hash(val), Hash(val1), Hash(val2)},
+		ItemKey: CompStrs{CompStr{Str: val}, CompStr{Str: val1}, CompStr{Str: val2}},
 	}
-	fullIris := pub.IRIs{
-		pub.IRI(val),
-		pub.IRI(val1),
-		pub.IRI(val2),
+	fullIris := CompStrs{
+		CompStr{Str: val},
+		CompStr{Str: val1},
+		CompStr{Str: val2},
 	}
 
-	if !f.IRIs().Contains(pub.IRI(val)) {
+	if !f.IRIs().Contains(CompStr{Str: val}) {
 		t.Errorf("Invalid IRIs returned %v, expected %s", f.IRIs(), val)
 	}
-	if !f.IRIs().Contains(pub.IRI(val1)) {
+	if !f.IRIs().Contains(CompStr{Str: val1}) {
 		t.Errorf("Invalid IRIs returned %v, expected %s", f.IRIs(), val1)
 	}
-	if !f.IRIs().Contains(pub.IRI(val2)) {
+	if !f.IRIs().Contains(CompStr{Str: val2}) {
 		t.Errorf("Invalid IRIs returned %v, expected %s", f.IRIs(), val2)
 	}
 	if !reflect.DeepEqual(f.IRIs(), fullIris) {
@@ -106,6 +106,16 @@ func mockItem() pub.Object {
 	}
 }
 
+func EqualsString(s string) CompStr {
+	return CompStr{Operator: "=", Str: s}
+}
+func IRIsFilter(iris ...pub.IRI) CompStrs {
+	r := make(CompStrs, len(iris))
+	for i, iri := range iris {
+		r[i] = EqualsString(iri.String())
+	}
+	return r
+}
 func TestFilters_Actors(t *testing.T) {
 	f := Filters{
 		ActorKey: []Hash{Hash("test")},
@@ -118,25 +128,25 @@ func TestFilters_Actors(t *testing.T) {
 	act := mockActivity()
 	act.Actor = pub.IRI("/actors/test")
 	t.Run("exists", func(t *testing.T) {
-		if !testItInIRIs(f.Actors(), act.Actor) {
+		if !testItInIRIs(IRIsFilter(f.Actors()...), act.Actor) {
 			t.Errorf("filter %v doesn't contain any of %v", f.Objects(), act.Actor)
 		}
 	})
 	act.Actor = pub.ItemCollection{pub.IRI("/actors/test123"), pub.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
-		if testItInIRIs(f.Actors(), act.Actor) {
+		if testItInIRIs(IRIsFilter(f.Actors()...), act.Actor) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.Objects(), act.Actor)
 		}
 	})
 }
 
-func testItInIRIs(iris pub.IRIs, items ...pub.Item) bool {
+func testItInIRIs(iris CompStrs, items ...pub.Item) bool {
 	contains := false
 	for _, val := range items {
 		if val.IsCollection() {
 			pub.OnCollectionIntf(val, func(c pub.CollectionInterface) error {
 				for _, it := range c.Collection() {
-					if iris.Contains(it.GetLink()) {
+					if filterItem(iris, it) {
 						contains = true
 						return nil
 					}
@@ -144,7 +154,7 @@ func testItInIRIs(iris pub.IRIs, items ...pub.Item) bool {
 				return nil
 			})
 		}
-		if iris.Contains(val.GetLink()) {
+		if filterItemCollections(iris, val) {
 			contains = true
 			break
 		}
@@ -154,7 +164,7 @@ func testItInIRIs(iris pub.IRIs, items ...pub.Item) bool {
 
 func TestFilters_AttributedTo(t *testing.T) {
 	f := Filters{
-		InReplTo: []Hash{"test"},
+		InReplTo: CompStrs{CompStr{Str: "test"}},
 	}
 
 	if f.InReplyTo() == nil {
@@ -187,13 +197,13 @@ func TestFilters_Audience(t *testing.T) {
 	it := mockItem()
 	it.Audience = pub.ItemCollection{pub.IRI("/actors/test")}
 	t.Run("exists", func(t *testing.T) {
-		if !testItInIRIs(f.Audience(), it.Audience...) {
+		if !testItInIRIs(IRIsFilter(f.Audience()...), it.Audience...) {
 			t.Errorf("filter %v doesn't contain any of %v", f.Audience(), it.Audience)
 		}
 	})
 	it.Audience = pub.ItemCollection{pub.IRI("/actors/test123"), pub.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
-		if testItInIRIs(f.Audience(), it.Audience...) {
+		if testItInIRIs(IRIsFilter(f.Audience()...), it.Audience...) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.Audience(), it.Audience)
 		}
 	})
@@ -201,7 +211,7 @@ func TestFilters_Audience(t *testing.T) {
 
 func TestFilters_Context(t *testing.T) {
 	f := Filters{
-		OP: []Hash{Hash("test")},
+		OP: CompStrs{EqualsString("test")},
 	}
 	if f.Context() == nil {
 		t.Errorf("Context() should not return nil")
@@ -224,7 +234,7 @@ func TestFilters_Context(t *testing.T) {
 
 func TestFilters_InReplyTo(t *testing.T) {
 	f := Filters{
-		InReplTo: []Hash{Hash("test")},
+		InReplTo: CompStrs{EqualsString("test")},
 	}
 	if f.InReplyTo() == nil {
 		t.Errorf("InReplyTo() should not return nil")
@@ -303,13 +313,13 @@ func TestFilters_Objects(t *testing.T) {
 	act := mockActivity()
 	act.Object = pub.IRI("/objects/test")
 	t.Run("exists", func(t *testing.T) {
-		if !testItInIRIs(f.Objects(), act.Object) {
+		if !testItInIRIs(IRIsFilter(f.Objects()...), act.Object) {
 			t.Errorf("filter %v doesn't contain any of %v", f.Objects(), act.Object)
 		}
 	})
 	act.Object = pub.ItemCollection{pub.IRI("/objects/test123"), pub.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
-		if testItInIRIs(f.Objects(), act.Object) {
+		if testItInIRIs(IRIsFilter(f.Objects()...), act.Object) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.Objects(), act.Object)
 		}
 	})
@@ -322,13 +332,13 @@ func TestFilters_Targets(t *testing.T) {
 	act := mockActivity()
 	act.Target = pub.IRI("/objects/test")
 	t.Run("exists", func(t *testing.T) {
-		if !testItInIRIs(f.Targets(), act.Target) {
+		if !testItInIRIs(IRIsFilter(f.Targets()...), act.Target) {
 			t.Errorf("filter %v doesn't contain any of %v", f.Targets(), act.Target)
 		}
 	})
 	act.Target = pub.ItemCollection{pub.IRI("/objects/test123"), pub.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
-		if testItInIRIs(f.Targets(), act.Target) {
+		if testItInIRIs(IRIsFilter(f.Targets()...), act.Target) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.Targets(), act.Target)
 		}
 	})

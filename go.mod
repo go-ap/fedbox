@@ -4,7 +4,6 @@ go 1.13
 
 require (
 	github.com/buger/jsonparser v0.0.0-20191204142016-1a29609e0929
-	github.com/dyninc/qstring v0.0.0-20160719172318-ab5840a88e81 // indirect
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
 	github.com/gchaincl/dotsql v1.0.0
 	github.com/go-ap/activitypub v0.0.0-20200121183809-dc8a4c2135b3
@@ -18,7 +17,7 @@ require (
 	github.com/go-chi/chi v4.0.3+incompatible
 	github.com/jackc/pgx v3.6.1+incompatible
 	github.com/joho/godotenv v1.3.0
-	github.com/mariusor/qstring v0.0.0-20180919140350-29d781f85f0f
+	github.com/mariusor/qstring v0.0.0-20200201110740-0235fb7077e1
 	github.com/openshift/osin v1.0.1
 	github.com/pborman/uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2

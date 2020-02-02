@@ -16,6 +16,18 @@ import (
 // Hash
 type Hash string
 
+type CompStr = qstring.ComparativeString
+type CompStrs []CompStr
+
+func (cs CompStrs) Contains(f CompStr) bool {
+	for _, c := range cs {
+		if c.Str == f.Str {
+			return true
+		}
+	}
+	return false
+}
+
 // String returns the hash as a string
 func (h Hash) String() string {
 	return string(h)
@@ -39,8 +51,11 @@ const (
 )
 
 var validActivityCollection = []h.CollectionType{
-	ActorsType,
 	ActivitiesType,
+}
+
+var validObjectCollection = []h.CollectionType{
+	ActorsType,
 	ObjectsType,
 }
 
@@ -53,35 +68,54 @@ func getValidActivityCollection(typ string) h.CollectionType {
 	return h.Unknown
 }
 
-// ValidActivityCollection shows if the current ActivityPub end-point type is a valid one for handling Activities
+func getValidObjectCollection(typ string) h.CollectionType {
+	for _, t := range validObjectCollection {
+		if strings.ToLower(typ) == string(t) {
+			return t
+		}
+	}
+	return h.Unknown
+}
+
+// ValidCollection shows if the current ActivityPub end-point type is a valid collection
+func ValidCollection(typ string) bool {
+	return ValidActivityCollection(typ) || ValidObjectCollection(typ)
+}
+
+// ValidActivityCollection shows if the current ActivityPub end-point type is a valid collection for handling Activities
 func ValidActivityCollection(typ string) bool {
-	return getValidActivityCollection(typ) != h.Unknown || h.ValidActivityCollection(typ) || h.ValidObjectCollection(typ)
+	return getValidActivityCollection(typ) != h.Unknown || h.ValidActivityCollection(typ)
+}
+
+// ValidObjectCollection shows if the current ActivityPub end-point type is a valid collection for handling Objects
+func ValidObjectCollection(typ string) bool {
+	return getValidObjectCollection(typ) != h.Unknown || h.ValidObjectCollection(typ)
 }
 
 // Filters
 type Filters struct {
 	baseURL       pub.IRI                     `qstring:"-"`
-	Name          []string                    `qstring:"name,omitempty"`
-	Cont          []string                    `qstring:"content,omitempty"`
+	Name          CompStrs                    `qstring:"name,omitempty"`
+	Cont          CompStrs                    `qstring:"content,omitempty"`
 	Authenticated *pub.Actor                  `qstring:"-"`
 	To            *pub.Actor                  `qstring:"-"`
 	Author        *pub.Actor                  `qstring:"-"`
 	Parent        *pub.Actor                  `qstring:"-"`
 	IRI           pub.IRI                     `qstring:"-"`
 	Collection    h.CollectionType            `qstring:"-"`
-	URL           pub.IRIs                    `qstring:"url,omitempty"`
+	URL           CompStrs                    `qstring:"url,omitempty"`
 	MedTypes      []pub.MimeType              `qstring:"mediaType,omitempty"`
 	Aud           pub.IRIs                    `qstring:"recipients,omitempty"`
-	Gen           pub.IRIs                    `qstring:"generator,omitempty"`
+	Gen           CompStrs                    `qstring:"generator,omitempty"`
 	Key           []Hash                      `qstring:"-"`
-	ItemKey       []Hash                      `qstring:"iri,omitempty"`
+	ItemKey       CompStrs                    `qstring:"iri,omitempty"`
 	ObjectKey     []Hash                      `qstring:"object,omitempty"`
 	ActorKey      []Hash                      `qstring:"actor,omitempty"`
 	TargetKey     []Hash                      `qstring:"target,omitempty"`
 	Type          pub.ActivityVocabularyTypes `qstring:"type,omitempty"`
-	AttrTo        []Hash                      `qstring:"attributedTo,omitempty"`
-	InReplTo      []Hash                      `qstring:"inReplyTo,omitempty"`
-	OP            []Hash                      `qstring:"context,omitempty"`
+	AttrTo        CompStrs                    `qstring:"attributedTo,omitempty"`
+	InReplTo      CompStrs                    `qstring:"inReplyTo,omitempty"`
+	OP            CompStrs                    `qstring:"context,omitempty"`
 	FollowedBy    []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
 	OlderThan     time.Time                   `qstring:"olderThan,omitempty"`
 	NewerThan     time.Time                   `qstring:"newerThan,omitempty"`
@@ -91,12 +125,6 @@ type Filters struct {
 	MaxItems      uint                        `qstring:"maxItems,omitempty"`
 }
 
-func NewFilter(s string) Filters {
-	return Filters{
-		baseURL: pub.IRI(s),
-	}
-}
-
 // Types returns a list of ActivityVocabularyTypes to filter against
 func (f Filters) Types() pub.ActivityVocabularyTypes {
 	return f.Type
@@ -104,23 +132,24 @@ func (f Filters) Types() pub.ActivityVocabularyTypes {
 
 const absentValue = "-"
 
-var AbsentIRI = pub.IRIs{pub.IRI(absentValue)}
+var AbsentIRIs = CompStrs{AbsentIRI}
+var AbsentIRI = CompStr{Str: absentValue, Operator: "="}
 var AbsentHash = []Hash{Hash(absentValue)}
 
 // Context returns a list of ActivityVocabularyTypes to filter against
-func (f Filters) Context() pub.IRIs {
-	ret := make(pub.IRIs, 0)
+func (f Filters) Context() CompStrs {
+	ret := make(CompStrs, 0)
 	for _, k := range f.OP {
 		// TODO(marius): This piece of logic should be moved to loading the filters
 		if matchAbsent(k) {
 			// for empty context we give it a generic filter to skip all objects that have context
-			return AbsentIRI
+			return AbsentIRIs
 		}
-		var iri pub.IRI
-		if u, ok := validURL(string(k)); ok {
-			iri = pub.IRI(u.String())
+		iri := CompStr{}
+		if u, ok := validURL(k.Str); ok {
+			iri.Str = u.String()
 		} else {
-			iri = pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, k))
+			iri.Str = fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, k)
 		}
 		if !ret.Contains(iri) {
 			ret = append(ret, iri)
@@ -129,19 +158,36 @@ func (f Filters) Context() pub.IRIs {
 	return ret
 }
 
+func IRIf(f Filters, iri string) string {
+	if _, ok := validURL(iri); !ok {
+		col := f.Collection
+		if col != ActorsType && col != ActivitiesType && col != ObjectsType {
+			if h.ValidObjectCollection(string(f.Collection)) {
+				col = ObjectsType
+			} else if ValidActivityCollection(string(f.Collection)) {
+				col = ActivitiesType
+			}
+		}
+		u := url.URL{}
+		if len(f.baseURL) > 0 {
+			u.Host = f.baseURL.String()
+		}
+		if len(col) > 0 && !strings.Contains(iri, string(col)){
+			u.Path = "/" + string(col)
+		}
+		if len(u.String()) > 0 {
+			iri = fmt.Sprintf("%s/%s", u.String(), iri)
+		}
+	}
+	return iri
+}
+
 // IRIs returns a list of IRIs to filter against
-func (f Filters) IRIs() pub.IRIs {
-	ret := make(pub.IRIs, len(f.ItemKey))
+func (f Filters) IRIs() CompStrs {
+	ret := make(CompStrs, len(f.ItemKey))
 	for i, k := range f.ItemKey {
-		var iri pub.IRI
-		if u, ok := validURL(string(k)); ok {
-			iri = pub.IRI(u.String())
-		} else {
-			iri = pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, f.Collection, k))
-		}
-		if !ret.Contains(iri) {
-			ret[i] = pub.IRI(iri)
-		}
+		k.Str = IRIf(f, k.Str)
+		ret[i] = k
 	}
 	return ret
 }
@@ -153,19 +199,6 @@ func (f Filters) GetLink() pub.IRI {
 
 // TODO(marius): move this somewhere else. Or replace it with something that makes more sense.
 var Secure = false
-
-func copyActivityFilters(dst *Filters, src Filters) {
-	dst.Type = src.Type
-	dst.Key = src.Key
-	dst.ItemKey = src.ItemKey
-	dst.Type = src.Type
-	dst.AttrTo = src.AttrTo
-	dst.FollowedBy = src.FollowedBy
-	dst.OlderThan = src.OlderThan
-	dst.NewerThan = src.NewerThan
-	dst.CurPage = src.CurPage
-	dst.MaxItems = src.MaxItems
-}
 
 // Page
 func (f Filters) Page() uint {
@@ -234,9 +267,9 @@ func (f Filters) Audience() pub.IRIs {
 	for _, iri := range f.Aud {
 		if iri == pub.EmptyIRI || iri == "0" || iri == absentValue {
 			iri = pub.PublicNS
-		} else {
-			iri = pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
 		}
+		f.Collection = ActorsType
+		iri = pub.IRI(IRIf(f, iri.String()))
 		if !col.Contains(iri) {
 			col = append(col, iri)
 		}
@@ -250,10 +283,11 @@ func (f Filters) Audience() pub.IRIs {
 	return col
 }
 
-func (f Filters) Names() []string {
+func (f Filters) Names() CompStrs {
 	return f.Name
 }
-func (f Filters) Content() []string {
+
+func (f Filters) Content() CompStrs {
 	return f.Cont
 }
 
@@ -262,21 +296,18 @@ func validURL(s string) (*url.URL, bool) {
 	return u, err == nil && u.Host != "" && u.Scheme != ""
 }
 
-func (f Filters) AttributedTo() pub.IRIs {
-	col := make(pub.IRIs, len(f.AttrTo))
+func (f Filters) AttributedTo() CompStrs {
 	for k, iri := range f.AttrTo {
 		// TODO(marius): This piece of logic should be moved to loading the filters
 		if matchAbsent(iri) {
 			// for empty context we give it a generic filter to skip all objects that have context
-			return AbsentIRI
+			return AbsentIRIs
 		}
-		if _, ok := validURL(iri.String()); ok {
-			col[k] = pub.IRI(iri)
-		} else {
-			col[k] = pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, iri))
-		}
+		f.Collection = ActorsType
+		iri.Str = IRIf(f, iri.Str)
+		f.AttrTo[k] = iri
 	}
-	return col
+	return f.AttrTo
 }
 
 func matchAbsent(i fmt.Stringer) bool {
@@ -284,32 +315,29 @@ func matchAbsent(i fmt.Stringer) bool {
 	return iri == "" || iri == "0" || iri == absentValue
 }
 
-func (f Filters) InReplyTo() pub.IRIs {
-	col := make(pub.IRIs, len(f.InReplTo))
+func (f Filters) InReplyTo() CompStrs {
 	for k, iri := range f.InReplTo {
 		// TODO(marius): This piece of logic should be moved to loading the filters
 		if matchAbsent(iri) {
 			// for empty context we give it a generic filter to skip all objects that have context
-			return AbsentIRI
+			return AbsentIRIs
 		}
-		if _, ok := validURL(iri.String()); ok {
-			col[k] = pub.IRI(iri)
-		} else {
-			col[k] = pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, iri))
-		}
+		f.Collection = ObjectsType
+		iri.Str = IRIf(f, iri.Str)
+		f.InReplTo[k] = iri
 	}
-	return col
+	return f.InReplTo
 }
 
 func (f Filters) MediaTypes() []pub.MimeType {
 	return f.MedTypes
 }
 
-func (f Filters) URLs() pub.IRIs {
+func (f Filters) URLs() CompStrs {
 	return f.URL
 }
 
-func (f Filters) Generator() pub.IRIs {
+func (f Filters) Generator() CompStrs {
 	return f.Gen
 }
 
@@ -317,12 +345,8 @@ func (f Filters) Actors() pub.IRIs {
 	ret := make(pub.IRIs, 0)
 	for _, k := range f.ActorKey {
 		// TODO(marius): This piece of logic should be moved to loading the filters
-		var iri pub.IRI
-		if u, ok := validURL(string(k)); ok {
-			iri = pub.IRI(u.String())
-		} else {
-			iri = pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, k))
-		}
+		f.Collection = ActorsType
+		iri := pub.IRI(IRIf(f, k.String()))
 		if !ret.Contains(iri) {
 			ret = append(ret, iri)
 		}
@@ -334,12 +358,8 @@ func (f Filters) Objects() pub.IRIs {
 	ret := make(pub.IRIs, 0)
 	for _, k := range f.ObjectKey {
 		// TODO(marius): This piece of logic should be moved to loading the filters
-		var iri pub.IRI
-		if u, ok := validURL(string(k)); ok {
-			iri = pub.IRI(u.String())
-		} else {
-			iri = pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, k))
-		}
+		f.Collection = ObjectsType
+		iri := pub.IRI(IRIf(f, k.String()))
 		if !ret.Contains(iri) {
 			ret = append(ret, iri)
 		}
@@ -352,7 +372,7 @@ func (f Filters) Targets() pub.IRIs {
 	for _, k := range f.TargetKey {
 		// TODO(marius): This piece of logic should be moved to loading the filters
 		var iris pub.IRIs
-		if u, ok := validURL(string(k)); ok {
+		if u, ok := validURL(k.String()); ok {
 			iris = pub.IRIs{pub.IRI(u.String())}
 		} else {
 			// FIXME(marius): we don't really know which type this is
@@ -371,14 +391,22 @@ func (f Filters) Targets() pub.IRIs {
 	return ret
 }
 
+func StringFilters(iris pub.IRIs) CompStrs {
+	r := make(CompStrs, len(iris))
+	for i, iri := range iris {
+		r[i] = CompStr{Str: iri.String()}
+	}
+	return r
+}
+
 func filterObject(it pub.Item, ff Filters) (bool, pub.Item) {
 	keep := true
 	pub.OnObject(it, func(ob *pub.Object) error {
-		if !filterNaturalLanguageValuesExactMatch(ff.Names(), ob.Name) {
+		if !filterNaturalLanguageValues(ff.Names(), ob.Name) {
 			keep = false
 			return nil
 		}
-		if !filterNaturalLanguageValuesSubstring(ff.Content(), ob.Content, ob.Summary) {
+		if !filterNaturalLanguageValues(ff.Content(), ob.Content, ob.Summary) {
 			keep = false
 			return nil
 		}
@@ -402,7 +430,7 @@ func filterObject(it pub.Item, ff Filters) (bool, pub.Item) {
 			keep = false
 			return nil
 		}
-		if !filterAudience(ff.Audience(), ob.Recipients(), pub.ItemCollection{ob.AttributedTo}) {
+		if !filterAudience(StringFilters(ff.Audience()), ob.Recipients(), pub.ItemCollection{ob.AttributedTo}) {
 			keep = false
 			return nil
 		}
@@ -422,15 +450,15 @@ func filterActivity(it pub.Item, ff Filters) (bool, pub.Item) {
 			keep = false
 			return nil
 		}
-		if !filterItem(ff.Actors(), act.Actor) {
+		if !filterItem(StringFilters(ff.Actors()), act.Actor) {
 			keep = false
 			return nil
 		}
-		if !filterItem(ff.Objects(), act.Object) {
+		if !filterItem(StringFilters(ff.Objects()), act.Object) {
 			keep = false
 			return nil
 		}
-		if !filterItem(ff.Targets(), act.Target) {
+		if !filterItem(StringFilters(ff.Targets()), act.Target) {
 			keep = false
 			return nil
 		}
@@ -443,7 +471,7 @@ func filterActor(it pub.Item, ff Filters) (bool, pub.Item) {
 	keep := true
 	pub.OnActor(it, func(ob *pub.Actor) error {
 		names := ff.Names()
-		if len(names) > 0 && !filterNaturalLanguageValuesExactMatch(names, ob.Name, ob.PreferredUsername) {
+		if len(names) > 0 && !filterNaturalLanguageValues(names, ob.Name, ob.PreferredUsername) {
 			keep = false
 			return nil
 		}
@@ -468,7 +496,7 @@ func filterActor(it pub.Item, ff Filters) (bool, pub.Item) {
 			keep = false
 			return nil
 		}
-		if !filterAudience(ff.Audience(), ob.Recipients(), pub.ItemCollection{ob.AttributedTo}) {
+		if !filterAudience(StringFilters(ff.Audience()), ob.Recipients(), pub.ItemCollection{ob.AttributedTo}) {
 			keep = false
 			return nil
 		}
@@ -481,7 +509,16 @@ func filterActor(it pub.Item, ff Filters) (bool, pub.Item) {
 	return keep, it
 }
 
-func filterNaturalLanguageValuesSubstring(filters []string, valArr ...pub.NaturalLanguageValues) bool {
+func matchStringFilter(filter CompStr, s string) bool {
+	if filter.Operator == "~" {
+		return strings.Contains(strings.ToLower(s), strings.ToLower(filter.Str))
+	} else if filter.Operator == "!" {
+		return !strings.Contains(strings.ToLower(s), strings.ToLower(filter.Str))
+	}
+	return strings.ToLower(s) == strings.ToLower(filter.Str)
+}
+
+func filterNaturalLanguageValues(filters CompStrs, valArr ...pub.NaturalLanguageValues) bool {
 	keep := true
 	if len(filters) > 0 {
 		keep = false
@@ -489,11 +526,8 @@ func filterNaturalLanguageValuesSubstring(filters []string, valArr ...pub.Natura
 	for _, filter := range filters {
 		for _, langValues := range valArr {
 			for _, langValue := range langValues {
-				if strings.Contains(strings.ToLower(langValue.Value), strings.ToLower(filter)) {
+				if matchStringFilter(filter, langValue.Value) {
 					keep = true
-					break
-				}
-				if keep {
 					break
 				}
 			}
@@ -502,28 +536,7 @@ func filterNaturalLanguageValuesSubstring(filters []string, valArr ...pub.Natura
 	return keep
 }
 
-func filterNaturalLanguageValuesExactMatch(filters []string, valArr ...pub.NaturalLanguageValues) bool {
-	keep := true
-	if len(filters) > 0 {
-		keep = false
-	}
-	for _, filter := range filters {
-		for _, langValues := range valArr {
-			for _, langValue := range langValues {
-				if strings.ToLower(langValue.Value) == strings.ToLower(filter) {
-					keep = true
-					break
-				}
-				if keep {
-					break
-				}
-			}
-		}
-	}
-	return keep
-}
-
-func filterItems(filters pub.IRIs, items ...pub.Item) bool {
+func filterItems(filters CompStrs, items ...pub.Item) bool {
 	if len(filters) == 0 {
 		return true
 	}
@@ -534,22 +547,21 @@ func filterItems(filters pub.IRIs, items ...pub.Item) bool {
 		if it == nil {
 			continue
 		}
-		lnk := it.GetLink()
-		if filters.Contains(lnk) {
+		if filterItem(filters, it) {
 			return true
 		}
 	}
 	return false
 }
 
-func filterAudience(filters pub.IRIs, colArr ...pub.ItemCollection) bool {
+func filterAudience(filters CompStrs, colArr ...pub.ItemCollection) bool {
 	if len(filters) == 0 {
 		return true
 	}
 	allItems := make(pub.ItemCollection, 0)
 	for _, items := range colArr {
 		for _, it := range items {
-			if it != nil {
+			if it != nil && !allItems.Contains(it.GetLink()) {
 				allItems = append(allItems, it)
 			}
 		}
@@ -558,7 +570,7 @@ func filterAudience(filters pub.IRIs, colArr ...pub.ItemCollection) bool {
 	return filterItems(filters, allItems...)
 }
 
-func filterItemCollections(filters pub.IRIs, colArr ...pub.Item) bool {
+func filterItemCollections(filters CompStrs, colArr ...pub.Item) bool {
 	if len(filters) == 0 {
 		return true
 	}
@@ -585,16 +597,16 @@ func filterItemCollections(filters pub.IRIs, colArr ...pub.Item) bool {
 	return filterItems(filters, allItems...)
 }
 
-func hasAbsentFilter(filters pub.IRIs) bool {
+func hasAbsentFilter(filters CompStrs) bool {
 	if len(filters) != 1 {
 		return false
 	}
-	return filters[0] == AbsentIRI[0]
+	return filters[0].Str == AbsentIRI.Str
 }
 
 // filterAbsent is used when searching that the incoming items collection is empty
-func filterAbsent(filters pub.IRIs, items ...pub.Item) bool {
-	if filters[0] == AbsentIRI[0] {
+func filterAbsent(filters CompStrs, items ...pub.Item) bool {
+	if filters[0].Str == AbsentIRI.Str {
 		if len(items) == 0 {
 			return true
 		}
@@ -626,7 +638,7 @@ func filterAbsent(filters pub.IRIs, items ...pub.Item) bool {
 	return true
 }
 
-func filterWithAbsent(filters pub.IRIs, items ...pub.Item) bool {
+func filterWithAbsent(filters CompStrs, items ...pub.Item) bool {
 	if len(filters) == 0 {
 		return true
 	}
@@ -640,7 +652,7 @@ func filterWithAbsent(filters pub.IRIs, items ...pub.Item) bool {
 	return keep
 }
 
-func filterItem(filters pub.IRIs, it pub.Item) bool {
+func filterItem(filters CompStrs, it pub.Item) bool {
 	keep := true
 	if len(filters) > 0 {
 		if it == nil {
@@ -649,13 +661,22 @@ func filterItem(filters pub.IRIs, it pub.Item) bool {
 		if c, ok := it.(pub.ItemCollection); ok {
 			return filterItems(filters, c...)
 		} else {
-			keep = filters.Contains(it.GetLink())
+			good := false
+			for _, f := range filters {
+				if matchStringFilter(f, it.GetLink().String()) {
+					good = true
+					break
+				}
+			}
+			if !good {
+				keep = false
+			}
 		}
 	}
 	return keep
 }
 
-func filterURLs(filters pub.IRIs, it pub.Item) bool {
+func filterURLs(filters CompStrs, it pub.Item) bool {
 	if len(filters) == 0 {
 		return true
 	}
@@ -666,9 +687,13 @@ func filterURLs(filters pub.IRIs, it pub.Item) bool {
 	var url string
 	switch ob := it.(type) {
 	case pub.Page:
-		url = ob.URL.GetLink().String()
+		if ob.URL != nil {
+			url = ob.URL.GetLink().String()
+		}
 	case *pub.Page:
-		url = ob.URL.GetLink().String()
+		if ob.URL != nil {
+			url = ob.URL.GetLink().String()
+		}
 	}
 	if url == "" {
 		pub.OnObject(it, func(o *pub.Object) error {
@@ -679,10 +704,13 @@ func filterURLs(filters pub.IRIs, it pub.Item) bool {
 		})
 	}
 	for _, filter := range filters {
-		if strings.Contains(url, filter.String()) {
-			keep = true
-			break
+		if filter.Operator == "~" {
+			if strings.Contains(url, filter.Str) {
+				keep = true
+				break
+			}
 		}
+
 	}
 	return keep
 }
@@ -728,7 +756,7 @@ func (f Filters) FilterCollection(col pub.ItemCollection) (pub.ItemCollection, i
 // ugly hack to check if the current filter f.IRI property is a collection or an object
 func iriIsObject(iri pub.IRI) bool {
 	base := path.Base(iri.String())
-	return !ValidActivityCollection(base)
+	return !ValidCollection(base)
 }
 
 // ItemMatches
@@ -738,7 +766,7 @@ func (f Filters) ItemMatches(it pub.Item) bool {
 	}
 	iris := f.IRIs()
 	// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
-	if len(iris) > 0 && !iris.Contains(it.GetLink()) {
+	if len(iris) > 0 && !filterItem(iris, it) {
 		return false
 	}
 	types := f.Types()
