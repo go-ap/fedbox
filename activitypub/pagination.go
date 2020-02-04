@@ -115,9 +115,24 @@ func copyFilter(f *Filters, p Paginator) {
 		f.Aud = ff.Aud
 		f.Key = ff.Key
 		f.ItemKey = ff.ItemKey
-		f.ObjectKey = ff.ObjectKey
-		f.ActorKey = ff.ActorKey
-		f.TargetKey = ff.TargetKey
+		if ff.Object != nil {
+			if f.Object == nil {
+				f.Object = &Filters{}
+			}
+			copyFilter(f.Object, ff.Object)
+		}
+		if ff.Actor != nil {
+			if f.Actor == nil {
+				f.Actor = &Filters{}
+			}
+			copyFilter(f.Actor, ff.Actor)
+		}
+		if ff.Target != nil {
+			if f.Target == nil {
+				f.Target = &Filters{}
+			}
+			copyFilter(f.Target, ff.Target)
+		}
 		f.Type = ff.Type
 		f.AttrTo = ff.AttrTo
 		f.InReplTo = ff.InReplTo

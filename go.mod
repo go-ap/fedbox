@@ -17,7 +17,7 @@ require (
 	github.com/go-chi/chi v4.0.3+incompatible
 	github.com/jackc/pgx v3.6.1+incompatible
 	github.com/joho/godotenv v1.3.0
-	github.com/mariusor/qstring v0.0.0-20200201200523-71a0e748b3aa
+	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d
 	github.com/openshift/osin v1.0.1
 	github.com/pborman/uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2

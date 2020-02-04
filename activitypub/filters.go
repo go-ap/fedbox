@@ -109,9 +109,6 @@ type Filters struct {
 	Gen           CompStrs                    `qstring:"generator,omitempty"`
 	Key           []Hash                      `qstring:"-"`
 	ItemKey       CompStrs                    `qstring:"iri,omitempty"`
-	ObjectKey     []Hash                      `qstring:"object,omitempty"`
-	ActorKey      []Hash                      `qstring:"actor,omitempty"`
-	TargetKey     []Hash                      `qstring:"target,omitempty"`
 	Type          pub.ActivityVocabularyTypes `qstring:"type,omitempty"`
 	AttrTo        CompStrs                    `qstring:"attributedTo,omitempty"`
 	InReplTo      CompStrs                    `qstring:"inReplyTo,omitempty"`
@@ -121,6 +118,9 @@ type Filters struct {
 	NewerThan     time.Time                   `qstring:"newerThan,omitempty"`
 	Prev          Hash                        `qstring:"before,omitempty"`
 	Next          Hash                        `qstring:"after,omitempty"`
+	Object        *Filters                    `qstring:"object,omitempty"`
+	Actor         *Filters                    `qstring:"actor,omitempty"`
+	Target        *Filters                    `qstring:"target,omitempty"`
 	CurPage       uint                        `qstring:"page,omitempty"`
 	MaxItems      uint                        `qstring:"maxItems,omitempty"`
 }
@@ -345,7 +345,10 @@ func (f Filters) Generator() CompStrs {
 
 func (f Filters) Actors() pub.IRIs {
 	ret := make(pub.IRIs, 0)
-	for _, k := range f.ActorKey {
+	if f.Actor == nil {
+		return nil
+	}
+	for _, k := range f.Actor.Key {
 		// TODO(marius): This piece of logic should be moved to loading the filters
 		f.Collection = ActorsType
 		iri := pub.IRI(IRIf(f, k.String()))
@@ -358,7 +361,10 @@ func (f Filters) Actors() pub.IRIs {
 
 func (f Filters) Objects() pub.IRIs {
 	ret := make(pub.IRIs, 0)
-	for _, k := range f.ObjectKey {
+	if f.Object == nil {
+		return nil
+	}
+	for _, k := range f.Object.Key {
 		// TODO(marius): This piece of logic should be moved to loading the filters
 		f.Collection = ObjectsType
 		iri := pub.IRI(IRIf(f, k.String()))
@@ -371,7 +377,10 @@ func (f Filters) Objects() pub.IRIs {
 
 func (f Filters) Targets() pub.IRIs {
 	ret := make(pub.IRIs, 0)
-	for _, k := range f.TargetKey {
+	if f.Target == nil {
+		return nil
+	}
+	for _, k := range f.Target.Key {
 		// TODO(marius): This piece of logic should be moved to loading the filters
 		var iris pub.IRIs
 		if u, ok := validURL(k.String()); ok {
@@ -401,7 +410,10 @@ func StringFilters(iris pub.IRIs) CompStrs {
 	return r
 }
 
-func filterObject(it pub.Item, ff Filters) (bool, pub.Item) {
+func filterObject(it pub.Item, ff *Filters) (bool, pub.Item) {
+	if ff == nil {
+		return true, it
+	}
 	keep := true
 	pub.OnObject(it, func(ob *pub.Object) error {
 		if !filterNaturalLanguageValues(ff.Names(), ob.Name) {
@@ -445,22 +457,25 @@ func filterObject(it pub.Item, ff Filters) (bool, pub.Item) {
 	return keep, it
 }
 
-func filterActivity(it pub.Item, ff Filters) (bool, pub.Item) {
+func filterActivity(it pub.Item, ff *Filters) (bool, pub.Item) {
+	if ff == nil {
+		return true, it
+	}
 	keep := true
 	pub.OnActivity(it, func(act *pub.Activity) error {
 		if ok, _ := filterObject(act, ff); !ok {
 			keep = false
 			return nil
 		}
-		if !filterItem(StringFilters(ff.Actors()), act.Actor) {
+		if !ff.Actor.ItemMatches(act.Actor) {
 			keep = false
 			return nil
 		}
-		if !filterItem(StringFilters(ff.Objects()), act.Object) {
+		if !ff.Object.ItemMatches(act.Object) {
 			keep = false
 			return nil
 		}
-		if !filterItem(StringFilters(ff.Targets()), act.Target) {
+		if !ff.Target.ItemMatches(act.Target) {
 			keep = false
 			return nil
 		}
@@ -469,7 +484,10 @@ func filterActivity(it pub.Item, ff Filters) (bool, pub.Item) {
 	return keep, it
 }
 
-func filterActor(it pub.Item, ff Filters) (bool, pub.Item) {
+func filterActor(it pub.Item, ff *Filters) (bool, pub.Item) {
+	if ff == nil {
+		return true, it
+	}
 	keep := true
 	pub.OnActor(it, func(ob *pub.Actor) error {
 		names := ff.Names()
@@ -632,7 +650,7 @@ func filterAbsent(filters CompStrs, items ...pub.Item) bool {
 				})
 				return result
 			}
-			if it != nil && it.GetLink() != pub.PublicNS { // FIXME(marius): this is kinda ugly
+			if it.GetLink() != pub.PublicNS { // FIXME(marius): this is kinda ugly
 				return false
 			}
 		}
@@ -762,7 +780,10 @@ func iriIsObject(iri pub.IRI) bool {
 }
 
 // ItemMatches
-func (f Filters) ItemMatches(it pub.Item) bool {
+func (f *Filters) ItemMatches(it pub.Item) bool {
+	if f == nil {
+		return true
+	}
 	if it == nil {
 		return false
 	}
