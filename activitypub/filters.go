@@ -19,6 +19,16 @@ type Hash string
 type CompStr = qstring.ComparativeString
 type CompStrs []CompStr
 
+func StringEquals(s string) CompStr {
+	return CompStr{Str: s}
+}
+func StringLike(s string) CompStr {
+	return CompStr{Operator: "~", Str: s}
+}
+func StringDifferent(s string) CompStr {
+	return CompStr{Operator: "!", Str: s}
+}
+
 func (cs CompStrs) Contains(f CompStr) bool {
 	for _, c := range cs {
 		if c.Str == f.Str {
@@ -125,6 +135,34 @@ type Filters struct {
 	MaxItems      uint                        `qstring:"maxItems,omitempty"`
 }
 
+func IRI(i pub.IRI) filterFn {
+	return func(f *Filters) error {
+		f.IRI = i
+		return nil
+	}
+}
+func Name(names ...string) filterFn {
+	return func(f *Filters) error {
+		if len(f.Name) == 0 {
+			f.Name = make(CompStrs, 0)
+		}
+		for _, name := range names {
+			f.Name = append(f.Name, StringEquals(name))
+		}
+		return nil
+	}
+}
+
+type filterFn func(f *Filters) error
+
+func FiltersNew(filters ...filterFn) *Filters {
+	f := &Filters{}
+	for _, fn := range filters {
+		fn(f)
+	}
+	return f
+}
+
 // Types returns a list of ActivityVocabularyTypes to filter against
 func (f Filters) Types() pub.ActivityVocabularyTypes {
 	return f.Type
@@ -195,7 +233,7 @@ func (f Filters) IRIs() CompStrs {
 }
 
 // GetLink returns a list of IRIs to filter against
-func (f Filters) GetLink() pub.IRI {
+func (f *Filters) GetLink() pub.IRI {
 	return f.IRI
 }
 
@@ -244,8 +282,8 @@ func reqBaseURL(r *url.URL) string {
 
 // FromRequest loads the filters we use for generating storage queries from the HTTP request
 func FromRequest(r *http.Request) (*Filters, error) {
-	f := Filters{}
-	if err := qstring.Unmarshal(r.URL.Query(), &f); err != nil {
+	f := FiltersNew()
+	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
 		return nil, err
 	}
 	f.Collection = h.Typer.Type(r)
@@ -259,7 +297,7 @@ func FromRequest(r *http.Request) (*Filters, error) {
 		f.MaxItems = MaxItems
 	}
 
-	return &f, nil
+	return f, nil
 }
 
 // Audience returns a filter for audience members.

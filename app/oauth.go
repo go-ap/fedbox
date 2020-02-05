@@ -107,7 +107,7 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 
 	acc := AnonymousAcct
 	if ar := s.HandleAccessRequest(resp, r); ar != nil {
-		actorFilters := activitypub.Filters{}
+		actorFilters := activitypub.FiltersNew()
 		switch ar.Type {
 		case osin.PASSWORD:
 			actorFilters.IRI = pub.IRI(fmt.Sprintf("%s/actors", h.baseURL))
@@ -315,14 +315,13 @@ func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		"state":  state,
 	}).Info("received")
 
-	filter := activitypub.Filters{
-		Name: activitypub.CompStrs{activitypub.CompStr{Str: handle}},
-		IRI:  pub.IRI(fmt.Sprintf("%s/actors", a.GetLink())),
-		Type: []pub.ActivityVocabularyType{
-			pub.PersonType,
-		},
+	f := activitypub.FiltersNew()
+	f.Name = activitypub.CompStrs{activitypub.CompStr{Str: handle}}
+	f.IRI = pub.IRI(fmt.Sprintf("%s/actors", a.GetLink()))
+	f.Type = []pub.ActivityVocabularyType{
+		pub.PersonType,
 	}
-	actors, count, err := h.loader.LoadActors(filter)
+	actors, count, err := h.loader.LoadActors(f)
 	if err != nil || count == 0 {
 		errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 		return

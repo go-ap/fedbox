@@ -117,7 +117,7 @@ func (r repo) LoadCollection(ff s.Filterable) (pub.CollectionInterface, error) {
 		return ret, errors.Annotatef(err, "unable to run select")
 	}
 
-	f, ok := ff.(ap.Filters)
+	f, ok := ff.(*ap.Filters)
 	if !ok {
 		return ret, errors.Newf("unable to load filters")
 	}
@@ -274,7 +274,7 @@ func (r repo) SaveObject(it pub.Item) (pub.Item, error) {
 	}
 
 	if len(it.GetLink()) > 0 {
-		if _, cnt, _ := loadFromDb(r.conn, table, ap.Filters{
+		if _, cnt, _ := loadFromDb(r.conn, table, &ap.Filters{
 			ItemKey: ap.CompStrs{ap.CompStr{Str: it.GetLink().String()}},
 			Type:    []pub.ActivityVocabularyType{it.GetType()},
 		}); cnt != 0 {
@@ -514,9 +514,8 @@ func (r repo) DeleteObject(it pub.Item) (pub.Item, error) {
 		table = "objects"
 	}
 
-	f := ap.Filters{
-		IRI: it.GetLink(),
-	}
+	f := ap.FiltersNew()
+	f.IRI = it.GetLink()
 	if it.IsObject() {
 		f.Type = []pub.ActivityVocabularyType{it.GetType()}
 	}

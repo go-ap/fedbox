@@ -110,7 +110,7 @@ func getWhereClauses(f storage.Filterable) ([]string, []interface{}) {
 }
 
 func getLimit(f storage.Filterable) string {
-	if f, ok := f.(ap.Filters); ok {
+	if f, ok := f.(*ap.Filters); ok {
 		if f.MaxItems == 0 {
 			return ""
 		}

@@ -117,19 +117,19 @@ func copyFilter(f *Filters, p Paginator) {
 		f.ItemKey = ff.ItemKey
 		if ff.Object != nil {
 			if f.Object == nil {
-				f.Object = &Filters{}
+				f.Object = FiltersNew()
 			}
 			copyFilter(f.Object, ff.Object)
 		}
 		if ff.Actor != nil {
 			if f.Actor == nil {
-				f.Actor = &Filters{}
+				f.Actor = FiltersNew()
 			}
 			copyFilter(f.Actor, ff.Actor)
 		}
 		if ff.Target != nil {
 			if f.Target == nil {
-				f.Target = &Filters{}
+				f.Target = FiltersNew()
 			}
 			copyFilter(f.Target, ff.Target)
 		}
@@ -178,7 +178,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 		var firstURL pub.IRI
 
 		if f != nil {
-			fp := &Filters{}
+			fp := FiltersNew()
 			copyFilter(fp, f)
 			fp.MaxItems = maxItems
 			if _, ok := f.(KeysetPaginator); !ok {
@@ -205,7 +205,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 		}
 		var nextURL, prevURL pub.IRI
 		if len(next) > 0 {
-			np := &Filters{}
+			np := FiltersNew()
 			copyFilter(np, f)
 			np.MaxItems = maxItems
 			if _, ok := f.(KeysetPaginator); ok {
@@ -216,7 +216,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 			nextURL = getURL(baseURL, np)
 		}
 		if len(prev) > 0 {
-			pp := &Filters{}
+			pp := FiltersNew()
 			copyFilter(pp, f)
 			pp.MaxItems = maxItems
 			if _, ok := f.(KeysetPaginator); ok {

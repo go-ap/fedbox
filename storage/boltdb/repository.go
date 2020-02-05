@@ -278,9 +278,6 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 			if err != nil {
 				continue
 			}
-			if err != nil {
-				continue
-			}
 			if it, _ = filterIt(it, f); it != nil {
 				col = append(col, it)
 			}
@@ -419,13 +416,12 @@ const objectKey = "__raw"
 const metaDataKey = "__meta_data"
 
 func delete(r *repo, it pub.Item) (pub.Item, error) {
-	f := ap.Filters{
-		IRI: it.GetLink(),
-	}
+	f := ap.FiltersNew()
+	f.IRI = it.GetLink()
 	if it.IsObject() {
 		f.Type = []pub.ActivityVocabularyType{it.GetType()}
 	}
-	old, _ := loadOneFromBucket(r.d, r.root, &f)
+	old, _ := loadOneFromBucket(r.d, r.root, f)
 
 	// TODO(marius): add some mechanism for marking the collections pub read-only
 	//    update 2019-10-03: I have no clue what this comment means. I can't think of why we'd need r/o collections for
