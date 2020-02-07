@@ -28,7 +28,7 @@ These additional non-spec conforming collections are:
 
 * https://federated.id/actors - where we can query all the actors on the instance.
 * https://federated.id/activities - where we can query all the activities on the instance.
-* https://federated.id/objects - where we can query the rest of the items.
+* https://federated.id/objects - where we can query the rest of the object types.
 
 ## Object collections:
 
@@ -63,17 +63,33 @@ Besides the filters applicable to Object collections we have also:
 
 # The filtering
 
-Filtering collections is done using query parameters corresponding to the lowercased value of the property's name it matches against.
+Filtering collections is done using query parameters corresponding to the snakeCased value of the property's name it matches against.
+
+For end-points that return collection of activities, filtering can be done on the activity's actor/object/target properties 
+by composing the filter name with a matching prefix for the child property:
+
+Eg:  
+`object.url=https://example.fed`  
+`object.iri=https://example.fed/objects/{uuid}`  
 
 All filters can be used multiple times in the URL. 
 
 The matching logic is:
 
 * Multiple values of same filter are matched by doing an union on the resulting sets.
-* Different filters match by doing an intersection on the resulting sets of each filter.
+* Different filters keys match by doing an intersection on the resulting sets of each filter.
 
-We currently need to add the possibility of prepending operators to the values, so we can support negative matches, or some other types of filtering.
+The filtering values support basic operators to be used. They are:
 
+For string based properties:
+
+* `key=~value` - match `value` as a substring 
+* `key=!value` - match everything that's doesn't contain `value` as a substring
+
+For date based properties
+
+* `key=>value` - match everything that has `key` property after the `value`
+* `key=<value` - match everything that has `key` property before the `value`
 ___
 
 [1] See ActivityPub spec: https://www.w3.org/TR/activitypub/#client-to-server-interactions  
