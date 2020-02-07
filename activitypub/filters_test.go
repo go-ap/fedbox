@@ -118,7 +118,7 @@ func IRIsFilter(iris ...pub.IRI) CompStrs {
 }
 func TestFilters_Actors(t *testing.T) {
 	f := Filters{
-		ActorKey: []Hash{Hash("test")},
+		Actor: &Filters { Key: []Hash{Hash("test")}},
 	}
 
 	if f.Actors() == nil {
@@ -304,7 +304,7 @@ func mockActivity() pub.Activity {
 }
 func TestFilters_Objects(t *testing.T) {
 	f := Filters{
-		ObjectKey: []Hash{Hash("test")},
+		Object: &Filters { Key: []Hash{Hash("test")}},
 	}
 	if f.Objects() == nil {
 		t.Errorf("Object() should not return nil")
@@ -327,7 +327,7 @@ func TestFilters_Objects(t *testing.T) {
 
 func TestFilters_Targets(t *testing.T) {
 	f := Filters{
-		TargetKey: []Hash{Hash("test")},
+		Target: &Filters { Key: []Hash{Hash("test")}},
 	}
 	act := mockActivity()
 	act.Target = pub.IRI("/objects/test")
