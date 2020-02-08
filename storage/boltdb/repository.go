@@ -84,6 +84,8 @@ func filterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
 	if f1, ok := f.(s.Filterable); ok {
 		if f1.GetLink() == it.GetLink() {
 			return it, nil
+		} else {
+			return nil, nil
 		}
 	}
 	if f1, ok := f.(s.FilterableItems); ok {
