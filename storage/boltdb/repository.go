@@ -31,9 +31,9 @@ type loggerFn func(logrus.Fields, string, ...interface{})
 
 const (
 	rootBucket       = ":"
-	bucketActors     = "actors"
-	bucketActivities = "activities"
-	bucketObjects    = "objects"
+	bucketActors     = ap.ActorsType
+	bucketActivities = ap.ActivitiesType
+	bucketObjects    = ap.ObjectsType
 )
 
 // Config
@@ -716,7 +716,7 @@ func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
 		return it, err
 	}
 	defer r.Close()
-	var bucket string
+	var bucket handlers.CollectionType
 	if pub.ActivityTypes.Contains(it.GetType()) {
 		bucket = bucketActivities
 	} else if pub.ActorTypes.Contains(it.GetType()) {
