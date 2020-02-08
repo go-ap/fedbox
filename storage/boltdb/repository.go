@@ -31,9 +31,9 @@ type loggerFn func(logrus.Fields, string, ...interface{})
 
 const (
 	rootBucket       = ":"
-	bucketActors     = "actors"
-	bucketActivities = "activities"
-	bucketObjects    = "objects"
+	bucketActors     = ap.ActorsType
+	bucketActivities = ap.ActivitiesType
+	bucketObjects    = ap.ObjectsType
 )
 
 // Config
@@ -84,6 +84,8 @@ func filterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
 	if f1, ok := f.(s.Filterable); ok {
 		if f1.GetLink() == it.GetLink() {
 			return it, nil
+		} else {
+			return nil, nil
 		}
 	}
 	if f1, ok := f.(s.FilterableItems); ok {
@@ -102,23 +104,60 @@ func filterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
 	return nil, errors.Errorf("Invalid filter %T", f)
 }
 
-func loadItemsElements(db *bolt.DB, root []byte, iris ...pub.IRI) (pub.ItemCollection, error) {
+func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, error) {
+	// we have found an item
+	if len(key) == 0 {
+		key = []byte(objectKey)
+	}
+	raw := b.Get(key)
+	if raw == nil {
+		return nil, nil
+	}
+	var err error
+
+	it, err := loadItem(raw)
+	if err != nil {
+		return nil, err
+	}
+	if it == nil {
+		return nil, errors.NotFoundf("not found")
+	}
+	if it.GetType() == pub.CreateType {
+		// @todo(marius): this seems terribly not nice
+		pub.OnActivity(it, func(a *pub.Activity) error {
+			if !a.Object.IsObject() {
+				ob, err := r.loadOneFromBucket(a.Object.GetLink())
+				if err != nil {
+					return err
+				}
+				a.Object = ob
+			}
+			return nil
+		})
+	}
+	if f != nil {
+		return filterIt(it, f)
+	}
+	return it, nil
+}
+
+func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemCollection, error) {
 	col := make(pub.ItemCollection, 0)
-	err := db.View(func(tx *bolt.Tx) error {
-		rb := tx.Bucket(root)
+	err := r.d.View(func(tx *bolt.Tx) error {
+		rb := tx.Bucket(r.root)
 		if rb == nil {
-			return errors.Errorf("Invalid bucket %s", root)
+			return errors.Errorf("Invalid bucket %s", r.root)
 		}
 		var err error
 		for _, iri := range iris {
 			var b *bolt.Bucket
-			remainderPath := itemBucketPath(iri)
+			remainderPath := itemBucketPath(iri.GetLink())
 			b, remainderPath, err = descendInBucket(rb, remainderPath, false)
 			if err != nil || b == nil {
 				continue
 			}
-			it, err := loadItem(b.Get([]byte(objectKey)))
-			if err != nil {
+			it, err := r.loadItem(b, []byte(objectKey), f)
+			if err != nil || it == nil {
 				continue
 			}
 			col = append(col, it)
@@ -128,10 +167,13 @@ func loadItemsElements(db *bolt.DB, root []byte, iris ...pub.IRI) (pub.ItemColle
 	return col, err
 }
 
-func loadOneFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.Item, error) {
-	col, cnt, err := loadFromBucket(db, root, f)
-	if err != nil || cnt == 0 {
+func (r *repo) loadOneFromBucket(f s.Filterable) (pub.Item, error) {
+	col, cnt, err := r.loadFromBucket(f)
+	if err != nil {
 		return nil, err
+	}
+	if cnt == 0 {
+		return nil, errors.NotFoundf("nothing found")
 	}
 	return col.First(), nil
 }
@@ -185,27 +227,49 @@ func (r *repo) CreateService(service pub.Service) error {
 	return createService(r.d, service)
 }
 
-func filterItemCol(col pub.ItemCollection, filterFn func(pub.Item) bool) pub.ItemCollection {
-	// For filters which are not just the IRI of an item we can try to filter it
-	filtered := col[:0]
-	for _, it := range col {
-		if filterFn(it) {
-			filtered = append(filtered, it)
+func (r *repo) iterateInBucket(b *bolt.Bucket, f s.Filterable) (pub.ItemCollection, uint, error) {
+	if b == nil {
+		return nil, 0, errors.Errorf("invalid bucket to load from")
+	}
+	// try to iterate in the current collection
+	isObjectKey := func(k []byte) bool {
+		return string(k) == objectKey || string(k) == metaDataKey
+	}
+	c := b.Cursor()
+	if c == nil {
+		return nil, 0, errors.Errorf("Invalid bucket cursor")
+	}
+	col := make(pub.ItemCollection, 0)
+	// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
+	for key, _ := c.First(); key != nil; key, _ = c.Next() {
+		ob := b
+		lst := path.Base(string(key))
+		if ap.ValidActivityCollection(lst) || ap.ValidObjectCollection(lst) {
+			return nil, 0, errors.Newf("we shouldn't have a collection inside the current bucket %s", key)
 		}
+		if !isObjectKey(key) {
+			// FIXME(marius): I guess this should not happen (pub descendIntoBucket should 'descend' into 'path'
+			//    if it's a valid bucket)
+			ob = b.Bucket(key)
+			if ob == nil {
+				continue
+			}
+		}
+		it, err := r.loadItem(ob, []byte(objectKey), f)
+		if err != nil || it == nil {
+			continue
+		}
+		col = append(col, it)
 	}
-	for i := len(filtered); i < len(col); i++ {
-		col[i] = nil
-	}
-	return filtered
+	return col, uint(len(col)), nil
 }
 
-func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollection, uint, error) {
+func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) {
 	col := make(pub.ItemCollection, 0)
-
-	err := db.View(func(tx *bolt.Tx) error {
-		rb := tx.Bucket(root)
+	err := r.d.View(func(tx *bolt.Tx) error {
+		rb := tx.Bucket(r.root)
 		if rb == nil {
-			return errors.Errorf("Invalid bucket %s", root)
+			return errors.Errorf("Invalid bucket %s", r.root)
 		}
 
 		iri := f.GetLink()
@@ -214,7 +278,6 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 		//     and on top of that apply the other filters
 		fullPath := itemBucketPath(iri)
 		var remainderPath []byte
-		isCollection := ap.ValidCollection(path.Base(iri.String()))
 		create := false
 		var err error
 		var b *bolt.Bucket
@@ -226,71 +289,45 @@ func loadFromBucket(db *bolt.DB, root []byte, f s.Filterable) (pub.ItemCollectio
 		if b == nil {
 			return errors.Errorf("Invalid bucket %s", fullPath)
 		}
-
-		if len(remainderPath) == 0 {
+		lst := handlers.CollectionType(path.Base(string(fullPath)))
+		if lst == ap.ActivitiesType || lst == ap.ActorsType || lst == ap.ObjectsType {
+			fromBucket, _, err := r.iterateInBucket(b, f)
+			if err != nil {
+				return err
+			}
+			col = append(col, fromBucket...)
+		} else if len(remainderPath) == 0 {
 			// we have found an item
 			key := []byte(objectKey)
-			raw := b.Get(key)
-			if raw != nil {
-				if isCollection {
-					colIRIs := make(pub.IRIs, 0)
-					err = jsonld.Unmarshal(raw, &colIRIs)
-					if err != nil {
-						return err
-					}
-					col, err = loadItemsElements(db, root, colIRIs...)
-					if err != nil {
-						return err
-					}
-				} else {
-					it, err := loadItem(raw)
-					if err != nil {
-						return err
-					}
-					if it == nil {
-						return nil
-					}
-					col = append(col, it)
-				}
-				return nil
-			}
-		}
-		isObjectKey := func(k []byte) bool {
-			return string(k) == objectKey || string(k) == metaDataKey
-		}
-		c := b.Cursor()
-		if c == nil {
-			return errors.Errorf("Invalid bucket cursor %s/%s", root, remainderPath)
-		}
-		// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
-		for key, raw := c.First(); key != nil; key, raw = c.Next() {
-			if !isObjectKey(key) && !ap.ValidActivityCollection(path.Base(string(key))) {
-				// FIXME(marius): I guess this should not happen (pub descendIntoBucket should 'descend' into 'path'
-				//    if it's a valid bucket)
-				b := b.Bucket(key)
-				if b == nil {
-					continue
-				}
-				key = []byte(objectKey)
-				raw = b.Get(key)
-			}
-			it, err := loadItem(raw)
+			it, err := r.loadItem(b, key, nil)
 			if err != nil {
-				continue
+				return err
 			}
-			if it, _ = filterIt(it, f); it != nil {
+			if it == nil {
+				return errors.NotFoundf("not found")
+			}
+			if it.IsCollection() {
+				if colIRIs, ok := it.(pub.ItemCollection); ok {
+					col, err = r.loadItemsElements(f, colIRIs...)
+					if err != nil {
+						return err
+					}
+					return nil
+				}
+			} else {
+				it, err = r.loadItem(b, key, f)
+				if err != nil {
+					return err
+				}
+				if it == nil {
+					return nil
+				}
 				col = append(col, it)
 			}
+			return nil
 		}
 		return nil
 	})
-
-	if _, ok := f.(pub.IRI); !ok {
-		col = filterItemCol(col, func(it pub.Item) bool {
-			it, _ = filterIt(it, f)
-			return it != nil
-		})
-	}
 
 	return col, uint(len(col)), err
 }
@@ -319,7 +356,7 @@ func (r *repo) Load(f s.Filterable) (pub.ItemCollection, uint, error) {
 	}
 	defer r.Close()
 
-	return loadFromBucket(r.d, r.root, f)
+	return r.loadFromBucket(f)
 }
 
 // LoadActivities
@@ -399,7 +436,7 @@ func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
 	col.ID = pub.ID(url.String())
 	col.Type = pub.OrderedCollectionType
 
-	elements, count, err := loadFromBucket(r.d, r.root, f)
+	elements, count, err := r.loadFromBucket(f)
 	if err != nil {
 		return nil, err
 	}
@@ -421,7 +458,7 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 	if it.IsObject() {
 		f.Type = []pub.ActivityVocabularyType{it.GetType()}
 	}
-	old, _ := loadOneFromBucket(r.d, r.root, f)
+	old, _ := r.loadOneFromBucket(f)
 
 	// TODO(marius): add some mechanism for marking the collections pub read-only
 	//    update 2019-10-03: I have no clue what this comment means. I can't think of why we'd need r/o collections for
@@ -716,7 +753,7 @@ func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
 		return it, err
 	}
 	defer r.Close()
-	var bucket string
+	var bucket handlers.CollectionType
 	if pub.ActivityTypes.Contains(it.GetType()) {
 		bucket = bucketActivities
 	} else if pub.ActorTypes.Contains(it.GetType()) {
