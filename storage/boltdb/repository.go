@@ -111,7 +111,7 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 	}
 	raw := b.Get(key)
 	if raw == nil {
-		return nil, errors.NotFoundf("not found")
+		return nil, nil
 	}
 	var err error
 
