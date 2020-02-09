@@ -549,11 +549,12 @@ func filterNaturalLanguageValues(filters CompStrs, valArr ...pub.NaturalLanguage
 		keep = false
 	}
 	for _, filter := range filters {
+		valuesBreak:
 		for _, langValues := range valArr {
 			for _, langValue := range langValues {
 				if matchStringFilter(filter, langValue.Value) {
 					keep = true
-					break
+					break valuesBreak
 				}
 			}
 		}
