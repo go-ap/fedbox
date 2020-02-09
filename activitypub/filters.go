@@ -115,7 +115,7 @@ type Filters struct {
 	Collection    h.CollectionType            `qstring:"-"`
 	URL           CompStrs                    `qstring:"url,omitempty"`
 	MedTypes      []pub.MimeType              `qstring:"mediaType,omitempty"`
-	Aud           pub.IRIs                    `qstring:"recipients,omitempty"`
+	Aud           CompStrs                    `qstring:"recipients,omitempty"`
 	Gen           CompStrs                    `qstring:"generator,omitempty"`
 	Key           []Hash                      `qstring:"-"`
 	ItemKey       CompStrs                    `qstring:"iri,omitempty"`
@@ -302,23 +302,26 @@ func FromRequest(r *http.Request) (*Filters, error) {
 
 // Audience returns a filter for audience members.
 // This is important for filtering out objects that don't have a public audience.
-func (f Filters) Audience() pub.IRIs {
-	col := make(pub.IRIs, 0)
+func (f Filters) Audience() CompStrs {
+	col := make(CompStrs, 0)
 	for _, iri := range f.Aud {
-		if iri == pub.EmptyIRI || iri == "0" || iri == absentValue {
-			iri = pub.PublicNS
+		// TODO(marius): This piece of logic should be moved to loading the filters
+		if matchAbsent(iri) {
+			// for empty context we give it a generic filter to skip all objects that have context
+			return AbsentIRIs
 		}
 		f.Collection = ActorsType
-		iri = pub.IRI(IRIf(f, iri.String()))
-		if !col.Contains(iri) {
-			col = append(col, iri)
+		iri.Str = IRIf(f, iri.Str)
+	}
+	if f.Authenticated != nil {
+		user := StringEquals(f.Authenticated.GetLink().String())
+		if f.Authenticated != nil && !col.Contains(user) {
+			col = append(col, user)
 		}
 	}
-	if f.Authenticated != nil && !col.Contains(f.Authenticated.GetLink()) {
-		col = append(col, f.Authenticated.GetLink())
-	}
-	if !col.Contains(pub.PublicNS) {
-		col = append(col, pub.PublicNS)
+	public := StringEquals(pub.PublicNS.String())
+	if !col.Contains(public) {
+		col = append(col, public)
 	}
 	return col
 }
@@ -440,12 +443,33 @@ func (f Filters) Targets() pub.IRIs {
 	return ret
 }
 
-func StringFilters(iris pub.IRIs) CompStrs {
-	r := make(CompStrs, len(iris))
-	for i, iri := range iris {
-		r[i] = CompStr{Str: iri.String()}
+func filterObjectNoName(ob *pub.Object, ff *Filters) bool {
+	if ff == nil {
+		return true
 	}
-	return r
+	keep := true
+	if !filterNaturalLanguageValues(ff.Content(), ob.Content, ob.Summary) {
+		keep = false
+	}
+	if !filterWithAbsent(ff.Generator(), ob.Generator) {
+		keep = false
+	}
+	if !filterURLs(ff.URLs(), ob) {
+		keep = false
+	}
+	if !filterWithAbsent(ff.Context(), ob.Context, ob.InReplyTo) {
+		keep = false
+	}
+	if !filterWithAbsent(ff.InReplyTo(), ob.InReplyTo) {
+		keep = false
+	}
+	if !filterAudience(ff.Audience(), ob.Recipients(), pub.ItemCollection{ob.AttributedTo}) {
+		keep = false
+	}
+	if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
+		keep = false
+	}
+	return keep
 }
 
 func filterObject(it pub.Item, ff *Filters) (bool, pub.Item) {
@@ -458,38 +482,7 @@ func filterObject(it pub.Item, ff *Filters) (bool, pub.Item) {
 			keep = false
 			return nil
 		}
-		if !filterNaturalLanguageValues(ff.Content(), ob.Content, ob.Summary) {
-			keep = false
-			return nil
-		}
-		if !filterWithAbsent(ff.Generator(), ob.Generator) {
-			keep = false
-			return nil
-		}
-		if !filterURLs(ff.URLs(), ob) {
-			keep = false
-			return nil
-		}
-		if !filterWithAbsent(ff.Context(), ob.Context) {
-			keep = false
-			return nil
-		}
-		if !filterWithAbsent(ff.AttributedTo(), ob.AttributedTo) {
-			keep = false
-			return nil
-		}
-		if !filterWithAbsent(ff.InReplyTo(), ob.InReplyTo) {
-			keep = false
-			return nil
-		}
-		if !filterAudience(StringFilters(ff.Audience()), ob.Recipients(), pub.ItemCollection{ob.AttributedTo}) {
-			keep = false
-			return nil
-		}
-		if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
-			keep = false
-			return nil
-		}
+		keep = filterObjectNoName(ob, ff)
 		return nil
 	})
 	return keep, it
@@ -528,40 +521,14 @@ func filterActor(it pub.Item, ff *Filters) (bool, pub.Item) {
 	}
 	keep := true
 	pub.OnActor(it, func(ob *pub.Actor) error {
-		names := ff.Names()
-		if len(names) > 0 && !filterNaturalLanguageValues(names, ob.Name, ob.PreferredUsername) {
+		if !filterNaturalLanguageValues(ff.Names(), ob.Name, ob.PreferredUsername) {
 			keep = false
 			return nil
 		}
-		if !filterItem(ff.URLs(), ob) {
-			keep = false
+		pub.OnObject(it, func(ob *pub.Object) error {
+			keep = filterObjectNoName(ob, ff)
 			return nil
-		}
-		if !filterWithAbsent(ff.Context(), ob.Context) {
-			keep = false
-			return nil
-		}
-		// TODO(marius): this needs to be moved in handling an item collection for inReplyTo
-		if !filterWithAbsent(ff.Context(), ob.InReplyTo) {
-			keep = false
-			return nil
-		}
-		if !filterItem(ff.AttributedTo(), ob.AttributedTo) {
-			keep = false
-			return nil
-		}
-		if !filterItemCollections(ff.InReplyTo(), ob.InReplyTo) {
-			keep = false
-			return nil
-		}
-		if !filterAudience(StringFilters(ff.Audience()), ob.Recipients(), pub.ItemCollection{ob.AttributedTo}) {
-			keep = false
-			return nil
-		}
-		if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
-			keep = false
-			return nil
-		}
+		})
 		return nil
 	})
 	return keep, it
