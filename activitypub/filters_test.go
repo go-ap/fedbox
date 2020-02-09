@@ -188,7 +188,7 @@ func TestFilters_AttributedTo(t *testing.T) {
 
 func TestFilters_Audience(t *testing.T) {
 	f := Filters{
-		Aud: pub.IRIs{pub.IRI("test")},
+		Aud: CompStrs{CompStr{Str: "/actors/test"}},
 	}
 	if f.Audience() == nil {
 		t.Errorf("Audience() should not return nil")
@@ -197,13 +197,13 @@ func TestFilters_Audience(t *testing.T) {
 	it := mockItem()
 	it.Audience = pub.ItemCollection{pub.IRI("/actors/test")}
 	t.Run("exists", func(t *testing.T) {
-		if !testItInIRIs(IRIsFilter(f.Audience()...), it.Audience...) {
+		if !testItInIRIs(f.Audience(), it.Audience...) {
 			t.Errorf("filter %v doesn't contain any of %v", f.Audience(), it.Audience)
 		}
 	})
 	it.Audience = pub.ItemCollection{pub.IRI("/actors/test123"), pub.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
-		if testItInIRIs(IRIsFilter(f.Audience()...), it.Audience...) {
+		if testItInIRIs(f.Audience(), it.Audience...) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.Audience(), it.Audience)
 		}
 	})

@@ -310,8 +310,8 @@ func (f Filters) Audience() CompStrs {
 			// for empty context we give it a generic filter to skip all objects that have context
 			return AbsentIRIs
 		}
-		f.Collection = ActorsType
 		iri.Str = IRIf(f, iri.Str)
+		col = append(col, iri)
 	}
 	if f.Authenticated != nil {
 		user := StringEquals(f.Authenticated.GetLink().String())
