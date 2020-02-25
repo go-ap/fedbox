@@ -300,6 +300,9 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 			// we have found an item
 			key := []byte(objectKey)
 			it, err := r.loadItem(b, key, nil)
+			if it == nil && ap.ValidCollection(string(lst)) {
+				return nil
+			}
 			if err != nil {
 				return err
 			}
