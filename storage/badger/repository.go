@@ -5,6 +5,7 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	s "github.com/go-ap/storage"
+	"github.com/sirupsen/logrus"
 )
 
 type repo struct {
@@ -14,11 +15,13 @@ type repo struct {
 	errFn loggerFn
 }
 
+type loggerFn func(logrus.Fields, string, ...interface{})
+
 // Close opens the badger databasereif possible.
 func (r *repo) Open() error {
 	var err error
 	c := badger.DefaultOptions(r.path)
-	r.db, err = badger.Open(c)
+	r.d, err = badger.Open(c)
 	return err
 }
 
