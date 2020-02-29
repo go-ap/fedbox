@@ -5,6 +5,7 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
 	"gopkg.in/urfave/cli.v2"
@@ -108,11 +109,6 @@ func listActorsAct(ctl *Control) cli.ActionFunc {
 	}
 }
 
-type PasswordChanger interface {
-	PasswordSet(pub.Item, []byte) error
-	PasswordCheck(pub.Item, []byte) error
-}
-
 func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyType, id *pub.ID, pw []byte) (*pub.Person, error) {
 	self := ap.Self(pub.IRI(c.BaseURL))
 	now := time.Now().UTC()
@@ -166,7 +162,7 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 	}
 
 	if pw != nil {
-		if pwManager, ok := c.Storage.(PasswordChanger); ok {
+		if pwManager, ok := c.Storage.(s.PasswordChanger); ok {
 			err := pwManager.PasswordSet(saved.GetLink(), pw)
 			if err != nil {
 				return saved, err

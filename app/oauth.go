@@ -7,7 +7,7 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/cmd"
+	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
@@ -83,7 +83,7 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	redirectOrOutput(resp, w, r)
 }
 
-func checkPw(it pub.Item, pw []byte, pwLoader cmd.PasswordChanger) (account, error) {
+func checkPw(it pub.Item, pw []byte, pwLoader st.PasswordChanger) (account, error) {
 	acc := account{}
 	err := pub.OnActor(it, func(p *pub.Actor) error {
 		err := pwLoader.PasswordCheck(p, pw)
@@ -124,7 +124,7 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if ar.Type == osin.PASSWORD {
-			if pwLoader, ok := h.loader.(cmd.PasswordChanger); ok {
+			if pwLoader, ok := h.loader.(st.PasswordChanger); ok {
 				found := false
 				for _, actor := range actors {
 					acc, err = checkPw(actor, []byte(ar.Password), pwLoader)
@@ -327,7 +327,7 @@ func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if pwLoader, ok := h.loader.(cmd.PasswordChanger); ok {
+	if pwLoader, ok := h.loader.(st.PasswordChanger); ok {
 		found := false
 		for _, actor := range actors {
 			_, err := checkPw(actor, []byte(pw), pwLoader)
@@ -417,7 +417,7 @@ func (h *oauthHandler) HandleChangePw(w http.ResponseWriter, r *http.Request) {
 		"pass":   pw,
 	}).Info("received")
 
-	if pwSetter, ok := h.loader.(cmd.PasswordChanger); ok {
+	if pwSetter, ok := h.loader.(st.PasswordChanger); ok {
 		err := pwSetter.PasswordSet(actor, []byte(pw))
 		if err != nil {
 			h.logger.Errorf("Error when saving password: %s", err)
