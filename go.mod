@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/buger/jsonparser v0.0.0-20191204142016-1a29609e0929
+	github.com/dgraph-io/badger v1.6.0
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
 	github.com/gchaincl/dotsql v1.0.0
 	github.com/go-ap/activitypub v0.0.0-20200209073257-46100f4f8271
