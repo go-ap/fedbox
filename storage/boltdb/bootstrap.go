@@ -28,10 +28,9 @@ func Clean(path string) error {
 	}
 	defer db.Close()
 
-	err = db.Update(func(tx *bolt.Tx) error {
+	return db.Update(func(tx *bolt.Tx) error {
 		return tx.DeleteBucket([]byte(rootBucket))
 	})
-	return err
 }
 
 // FIXME(marius): I feel like this hasn't been used anywhere and as such might not work

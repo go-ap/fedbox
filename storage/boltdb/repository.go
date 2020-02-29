@@ -123,7 +123,7 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 		return nil, errors.NotFoundf("not found")
 	}
 	if it.GetType() == pub.CreateType {
-		// @todo(marius): this seems terribly not nice
+		// TODO(marius): this seems terribly not nice
 		pub.OnActivity(it, func(a *pub.Activity) error {
 			if !a.Object.IsObject() {
 				ob, err := r.loadOneFromBucket(a.Object.GetLink())
@@ -478,6 +478,7 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 	return save(r, t)
 }
 
+// CreateCollection
 func (r *repo) CreateCollection(col pub.CollectionInterface) (pub.CollectionInterface, error) {
 	var err error
 	err = r.Open()
@@ -574,6 +575,7 @@ func (r *repo) SaveActivity(it pub.Item) (pub.Item, error) {
 	return r.SaveObject(it)
 }
 
+// SaveActor
 func (r *repo) SaveActor(it pub.Item) (pub.Item, error) {
 	return r.SaveObject(it)
 }
@@ -604,6 +606,7 @@ func (r repo) IsLocalIRI(i pub.IRI) bool {
 	return i.Contains(pub.IRI(r.baseURL), false)
 }
 
+// RemoveFromCollection
 func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 	if it == nil {
 		return errors.Newf("Unable to add nil element to collection")
@@ -671,6 +674,7 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 	})
 }
 
+// AddToCollection
 func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	if it == nil {
 		return errors.Newf("Unable to add nil element to collection")
@@ -735,6 +739,7 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	})
 }
 
+// UpdateActor
 func (r *repo) UpdateActor(it pub.Item) (pub.Item, error) {
 	return r.UpdateObject(it)
 }
@@ -785,6 +790,7 @@ func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
 	return ap.GenerateID(it, partOf, by)
 }
 
+// Close opens the boltdb database if possible.
 func (r *repo) Open() error {
 	var err error
 	r.d, err = bolt.Open(r.path, 0600, nil)
