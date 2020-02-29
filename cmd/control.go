@@ -2,17 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/errors"
-	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/handlers"
+	"github.com/go-ap/fedbox/internal/env"
+	"github.com/go-ap/fedbox/storage/boltdb"
+	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/urfave/cli.v2"
-	"net/url"
-	"time"
 )
 
 type Control struct {
@@ -23,252 +21,93 @@ type Control struct {
 	Storage     storage.Repository
 }
 
-var Actors = &cli.Command{
-	Name:  "actor",
-	Usage: "Actor management helper",
-	Subcommands: []*cli.Command{
-		addActor,
-		delActor,
-		listActors,
-	},
+func New(authDB osin.Storage, actorDb storage.Repository, conf config.Options) *Control {
+	return &Control{
+		BaseURL:     conf.BaseURL,
+		Host:        conf.Host,
+		Conf:        conf,
+		AuthStorage: authDB,
+		Storage:     actorDb,
+	}
 }
 
-var addActor = &cli.Command{
-	Name:    "add",
-	Aliases: []string{"new"},
-	Usage:   "Adds an ActivityPub actor",
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:  "type",
-			Usage: fmt.Sprintf("The type of activitypub actor to add"),
-		},
-	},
-	Action: AddActor(&ctl),
-}
-
-var delActor = &cli.Command{
-	Name:    "del",
-	Aliases: []string{"delete", "remove", "rm"},
-	Usage:   "Deletes an ActivityPub actor",
-	Action:  DelActor(&ctl),
-}
-
-var listActors = &cli.Command{
-	Name:    "ls",
-	Aliases: []string{"list"},
-	Usage:   "Lists existing actors",
-	Action:  ListActors(&ctl),
-}
-
-func Before(c *cli.Context) error {
-	logger.Level = logrus.ErrorLevel
-	ct, err := setup(c, logger)
-	if err == nil {
-		ctl = *ct
+func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
+	dir := c.String("dir")
+	if dir == "" {
+		dir = "."
+	}
+	environ := env.Type(c.String("env"))
+	if environ == "" {
+		environ = env.DEV
+	}
+	typ := config.StorageType(c.String("type"))
+	if typ == "" {
+		typ = config.BoltDB
+	}
+	conf, err := config.LoadFromEnv(environ)
+	if err != nil {
+		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}
 
-	return err
-}
-
-func AddActor(ctl *Control) cli.ActionFunc {
-	return func(c *cli.Context) error {
-		names := c.Args().Slice()
-
-		var actors = make(pub.ItemCollection, 0)
-		for _, name := range names {
-
-			pw, err := loadPwFromStdin(true, "%s's", name)
-			if err != nil {
-				return err
-			}
-			typ := pub.ActivityVocabularyType(c.String("type"))
-			if !pub.ActorTypes.Contains(typ) {
-				typ = pub.PersonType
-			}
-			p, err := ctl.AddActor(name, typ, nil, pw)
-			if err != nil {
-				Errf("Error adding %s: %s\n", name, err)
-			}
-			fmt.Printf("Added %q [%s]: %s\n", typ, name, p.GetLink())
-			actors = append(actors, p)
+	host := conf.Host
+	var aDb osin.Storage
+	var db storage.Repository
+	if typ == config.BoltDB {
+		path := config.GetBoltDBPath(dir, fmt.Sprintf("%s-oauth", host), environ)
+		aDb = auth.NewBoltDBStore(auth.BoltConfig{
+			Path:       path,
+			BucketName: host,
+			LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
+			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		})
+		db = boltdb.New(boltdb.Config{
+			Path:  config.GetBoltDBPath(dir, host, environ),
+			LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
+			ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		}, conf.BaseURL)
+		return New(aDb, db, conf), nil
+	}
+	if typ == config.Postgres {
+		host := c.String("host")
+		if host == "" {
+			host = "localhost"
 		}
-		return nil
-	}
-}
-
-func DelActor(ctl *Control) cli.ActionFunc {
-	return func(c *cli.Context) error {
-		ids := c.Args().Slice()
-
-		for _, id := range ids {
-			err := ctl.DeleteActor(id)
-			if err != nil {
-				Errf("Error deleting %s: %s\n", id, err)
-				continue
-			}
-			fmt.Printf("Deleted: %s\n", id)
+		port := c.Int64("port")
+		if port == 0 {
+			port = 5432
 		}
-		return nil
-	}
-}
-
-func ListActors(ctl *Control) cli.ActionFunc {
-	return func(c *cli.Context) error {
-		actors, err := ctl.ListActors()
+		user := c.String("user")
+		if user == "" {
+			user = "fedbox"
+		}
+		pw, err := loadPwFromStdin(true, "%s@%s's", user, host)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		for i, it := range actors {
-			if act, err := pub.ToActor(it); err != nil {
-				fmt.Printf("%3d [%11s] %s\n", i, it.GetType(), it.GetLink())
-			} else {
-				fmt.Printf("%3d [%11s] %s\n%s\n", i, it.GetType(), act.PreferredUsername.First(), it.GetLink())
-			}
-		}
-		return nil
-	}
-}
-
-type PasswordChanger interface {
-	PasswordSet(pub.Item, []byte) error
-	PasswordCheck(pub.Item, []byte) error
-}
-
-func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyType, id *pub.ID, pw []byte) (*pub.Person, error) {
-	self := ap.Self(pub.IRI(c.BaseURL))
-	now := time.Now().UTC()
-	p := pub.Person{
-		Type: typ,
-		// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
-		AttributedTo: self.GetLink(),
-		Audience:     pub.ItemCollection{pub.PublicNS},
-		Generator:    self.GetLink(),
-		Published:    now,
-		Summary: pub.NaturalLanguageValues{
-			{pub.NilLangRef, "Generated actor"},
-		},
-		Updated: now,
-		PreferredUsername: pub.NaturalLanguageValues{
-			{pub.NilLangRef, preferredUsername},
-		},
-	}
-
-	// TODO(marius): add annotations for the errors
-	if id == nil {
-		if gen, ok := c.Storage.(storage.IDGenerator); ok {
-			newId, err := gen.GenerateID(p, self)
-			if err != nil {
-				return nil, err
-			}
-			id = &newId
+		fedboxDBName := "fedbox"
+		oauthDBName := "oauth"
+		aDb = auth.NewPgDBStore(auth.PgConfig{
+			Enabled: true,
+			Host:    host,
+			Port:    port,
+			User:    user,
+			Pw:      string(pw),
+			Name:    fedboxDBName,
+			LogFn:   func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
+			ErrFn:   func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		})
+		db, err = pgx.New(config.BackendConfig{
+			Enabled: true,
+			Host:    host,
+			Port:    port,
+			User:    user,
+			Pw:      string(pw),
+			Name:    oauthDBName,
+		}, conf.BaseURL, l)
+		if err != nil {
+			Errf("Error: %s\n", err)
+			//return err
 		}
 	}
-	p.ID = *id
-	p.URL = p.GetLink()
-	p.Inbox = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Inbox))
-	p.Outbox = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Outbox))
-	p.Liked = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Liked))
-	p.Followers = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Followers))
-	p.Following = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Following))
-
-	p.Endpoints = &pub.Endpoints{
-		SharedInbox:                self.Inbox.GetLink(),
-		OauthAuthorizationEndpoint: pub.IRI(fmt.Sprintf("%s/oauth/authorize", self.URL)),
-		OauthTokenEndpoint:         pub.IRI(fmt.Sprintf("%s/oauth/token", self.URL)),
-	}
-	it, err := c.Storage.SaveActor(p)
-	if err != nil {
-		return nil, err
-	}
-
-	saved, err := pub.ToActor(it)
-	if err != nil {
-		return nil, err
-	}
-
-	if pw != nil {
-		if pwManager, ok := c.Storage.(PasswordChanger); ok {
-			err := pwManager.PasswordSet(saved.GetLink(), pw)
-			if err != nil {
-				return saved, err
-			}
-		}
-	}
-
-	return saved, nil
-}
-
-func (c *Control) DeleteActor(id string) error {
-	self := ap.Self(pub.IRI(c.BaseURL))
-	var iri pub.IRI
-	if u, err := url.Parse(id); err != nil {
-		iri = pub.IRI(fmt.Sprintf("%s/%s/%s", self.ID, ap.ActorsType, id))
-	} else {
-		iri = pub.IRI(u.String())
-	}
-	it, cnt, err := c.Storage.LoadActors(iri)
-	if err != nil {
-		return err
-	}
-	if cnt == 0 {
-		return errors.Newf("nothing found")
-	}
-	_, err = c.Storage.DeleteActor(it.First())
-	return err
-}
-
-func (c *Control) ListActors() (pub.ItemCollection, error) {
-	var err error
-	actorsIRI := pub.IRI(fmt.Sprintf("%s/%s", c.BaseURL, ap.ActorsType))
-	col, _, err := c.Storage.LoadActors(&ap.Filters{IRI: actorsIRI})
-	if err != nil {
-		return col, errors.Annotatef(err, "Unable to load actors")
-	}
-	return col, nil
-}
-
-var ValidGenericTypes = pub.ActivityVocabularyTypes{pub.ObjectType, pub.ActorType}
-
-func (c *Control) Delete(id, typ string) error {
-	t := pub.ActivityVocabularyType(typ)
-	if !(pub.ActorTypes.Contains(t) || pub.ObjectTypes.Contains(t) || ValidGenericTypes.Contains(t)) {
-		return errors.Errorf("invalid ActivityPub object type %s", typ)
-	}
-
-	var iri pub.IRI
-	var loadFn func(storage.Filterable) (pub.ItemCollection, uint, error)
-	var delFn func(pub.Item) (pub.Item, error)
-
-	var col string
-	if pub.ActorTypes.Contains(t) || t == pub.ActorType {
-		col = "actors"
-		loadFn = c.Storage.LoadActors
-		delFn = c.Storage.DeleteActor
-	}
-	if pub.ObjectTypes.Contains(t) || t == pub.ObjectType {
-		col = "objects"
-		loadFn = c.Storage.LoadObjects
-		delFn = c.Storage.DeleteObject
-	}
-
-	if u, err := url.Parse(id); err != nil {
-		self := ap.Self(pub.IRI(c.BaseURL))
-		iri = pub.IRI(fmt.Sprintf("%s/%s/%s", self.ID, col, id))
-	} else {
-		iri = pub.IRI(u.String())
-	}
-	it, cnt, err := loadFn(iri)
-	if err != nil {
-		return err
-	}
-	if cnt == 0 {
-		return errors.Newf("nothing found")
-	}
-	_, err = delFn(it.First())
-
-	return err
-}
-
-func (c *Control) List(f storage.Filterable) error {
-	return nil
+	return nil, nil
 }

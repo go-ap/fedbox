@@ -6,7 +6,6 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	apub "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/pborman/uuid"
@@ -29,16 +28,6 @@ type ClientSaver interface {
 type ClientLister interface {
 	// ListClients lists existing clients
 	ListClients() ([]osin.Client, error)
-}
-
-func New(authDB osin.Storage, actorDb storage.Repository, conf config.Options) *Control {
-	return &Control{
-		BaseURL:     conf.BaseURL,
-		Host:        conf.Host,
-		Conf:        conf,
-		AuthStorage: authDB,
-		Storage:     actorDb,
-	}
 }
 
 var OAuth2 = &cli.Command{
