@@ -17,12 +17,10 @@ import (
 const defaultTimeout = time.Second * 15
 
 func NewApp(r chi.Router, l logrus.FieldLogger, version string) cli.App {
-	a, _ := app.New(l, version, "dev")
 	return cli.App{
 		Name:    "fedbox",
 		Usage:   "fedbox instance server",
 		Version: version,
-		Before:  beforeApp(a, r, l, version),
 		Flags: []cli.Flag{
 			&cli.DurationFlag{
 				Name:  "wait",
@@ -35,12 +33,20 @@ func NewApp(r chi.Router, l logrus.FieldLogger, version string) cli.App {
 				Value: "",
 			},
 		},
-		Action: run(a, r),
+		Action: run(r, l, version),
 	}
 }
 
-func beforeApp(a *app.FedBOX, r chi.Router, l logrus.FieldLogger, version string) cli.BeforeFunc {
+func run(r chi.Router, l logrus.FieldLogger, version string) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		w := c.Duration("wait")
+		e := c.String("env")
+		a, err := app.New(l, version, e)
+		if err != nil {
+			l.Error(err.Error())
+			return err
+		}
+
 		osin, err := auth.NewOAuth2Server(a.OAuthStorage, l)
 		if err != nil {
 			l.Warn(err.Error())
@@ -51,14 +57,7 @@ func beforeApp(a *app.FedBOX, r chi.Router, l logrus.FieldLogger, version string
 		r.Use(middleware.RequestID)
 		r.Use(log.NewStructuredLogger(l))
 		r.Route("/", a.Routes(a.Config().BaseURL, osin, l))
-		return nil
-	}
-}
-
-func run(a *app.FedBOX, r chi.Router) cli.ActionFunc {
-	return func(c *cli.Context) error {
-		wait := c.Duration("wait")
-		status := a.Run(r, wait)
+		status := a.Run(r, w)
 		if status != 0 {
 			return errors.Newf("error")
 		}
