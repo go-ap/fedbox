@@ -29,35 +29,41 @@ var Bootstrap = &cli.Command{
 			Value: "postgres",
 		},
 	},
-	Action: bootstrap(&ctl),
+	Action: bootstrapAct(&ctl),
 	Subcommands: []*cli.Command{
-		{
-			Name:  "reset",
-			Usage: "reset an existing database",
-			Action: func(c *cli.Context) error {
-				dir := c.String("dir")
-				if dir == "" {
-					dir = "."
-				}
-				environ := env.Type(c.String("env"))
-				if environ == "" {
-					environ = env.DEV
-				}
-				typ := config.StorageType(c.String("type"))
-				if typ == "" {
-					typ = config.BoltDB
-				}
-				err := ctl.BootstrapReset(dir, typ, environ)
-				if err != nil {
-					return err
-				}
-				return ctl.Bootstrap(dir, typ, environ)
-			},
-		},
+		reset,
 	},
 }
 
-func bootstrap(c *Control) cli.ActionFunc {
+var reset = &cli.Command{
+	Name:   "reset",
+	Usage:  "reset an existing database",
+	Action: resetAct(&ctl),
+}
+
+func resetAct(c *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		dir := c.String("dir")
+		if dir == "" {
+			dir = "."
+		}
+		environ := env.Type(c.String("env"))
+		if environ == "" {
+			environ = env.DEV
+		}
+		typ := config.StorageType(c.String("type"))
+		if typ == "" {
+			typ = config.BoltDB
+		}
+		err := ctl.BootstrapReset(dir, typ, environ)
+		if err != nil {
+			return err
+		}
+		return ctl.Bootstrap(dir, typ, environ)
+	}
+}
+
+func bootstrapAct(c *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		dir := c.String("dir")
 		if dir == "" {

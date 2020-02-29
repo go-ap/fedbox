@@ -32,24 +32,24 @@ var addActor = &cli.Command{
 			Usage: fmt.Sprintf("The type of activitypub actor to add"),
 		},
 	},
-	Action: AddActor(&ctl),
+	Action: addActorAct(&ctl),
 }
 
 var delActor = &cli.Command{
 	Name:    "del",
 	Aliases: []string{"delete", "remove", "rm"},
 	Usage:   "Deletes an ActivityPub actor",
-	Action:  DelActor(&ctl),
+	Action:  delActorAct(&ctl),
 }
 
 var listActors = &cli.Command{
 	Name:    "ls",
 	Aliases: []string{"list"},
 	Usage:   "Lists existing actors",
-	Action:  ListActors(&ctl),
+	Action:  listActorsAct(&ctl),
 }
 
-func AddActor(ctl *Control) cli.ActionFunc {
+func addActorAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		names := c.Args().Slice()
 
@@ -75,7 +75,7 @@ func AddActor(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func DelActor(ctl *Control) cli.ActionFunc {
+func delActorAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		ids := c.Args().Slice()
 
@@ -91,7 +91,7 @@ func DelActor(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func ListActors(ctl *Control) cli.ActionFunc {
+func listActorsAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		actors, err := ctl.ListActors()
 		if err != nil {

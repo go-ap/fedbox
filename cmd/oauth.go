@@ -30,113 +30,139 @@ type ClientLister interface {
 	ListClients() ([]osin.Client, error)
 }
 
+var client = &cli.Command{
+	Name:  "client",
+	Usage: "OAuth2 client application management",
+	Subcommands: []*cli.Command{
+		addClient,
+		del,
+		ls,
+	},
+}
+
+var ls = &cli.Command{
+	Name:    "ls",
+	Aliases: []string{"list"},
+	Usage:   "Lists existing OAuth2 clients",
+	Action:  lsAct(&ctl),
+}
+
+func lsAct(c *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		clients, err := ctl.ListClients()
+		if err != nil {
+			return err
+		}
+		for i, client := range clients {
+			fmt.Printf("%d %s - %s\n", i, client.GetId(), strings.ReplaceAll(client.GetRedirectUri(), "\n", " :: "))
+		}
+		return nil
+	}
+}
+
+var del = &cli.Command{
+	Name:      "del",
+	Aliases:   []string{"delete", "remove", "rm"},
+	Usage:     "Removes an existing OAuth2 client",
+	ArgsUsage: "APPLICATION_UUID...",
+	Action:    delAct(&ctl),
+}
+
+func delAct(c *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		for i := 0; i <= c.Args().Len(); i++ {
+			id := c.Args().Get(i)
+			err := ctl.DeleteClient(id)
+			if err != nil {
+				Errf("Error deleting %s: %s\n", id, err)
+				continue
+			}
+			fmt.Printf("Deleted: %s\n", id)
+		}
+		return nil
+	}
+}
+
+var addClient = &cli.Command{
+	Name:    "add",
+	Aliases: []string{"new"},
+	Usage:   "Adds an OAuth2 client",
+	Flags: []cli.Flag{
+		&cli.StringSliceFlag{
+			Name:  "redirectUri",
+			Value: nil,
+			Usage: "The redirect URIs for current application",
+		},
+	},
+	Action: addAct(&ctl),
+}
+
+func addAct(c *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		redirectURIs := c.StringSlice("redirectUri")
+		if len(redirectURIs) < 1 {
+			return errors.Newf("Need to provide at least a return URI for the client")
+		}
+		pw, err := loadPwFromStdin(true, "client's")
+		if err != nil {
+			Errf(err.Error())
+		}
+		id, err := ctl.AddClient(pw, redirectURIs, nil)
+		if err == nil {
+			fmt.Printf("Client ID: %s\n", id)
+		}
+		return err
+	}
+}
+
+var token = &cli.Command{
+	Name:        "token",
+	Usage:       "OAuth2 authorization token management",
+	Subcommands: []*cli.Command{tokenAdd},
+}
+
+var tokenAdd = &cli.Command{
+	Name:    "add",
+	Aliases: []string{"new", "get"},
+	Usage:   "Adds an OAuth2 token",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "client",
+			Usage: "The client to use for generating the token",
+		},
+		&cli.StringFlag{
+			Name:  "actor",
+			Usage: "The actor identifier we want to generate the authorization for (ID)",
+		},
+	},
+	Action: tokenAct(&ctl),
+}
+
 var OAuth2 = &cli.Command{
 	Name:  "oauth",
 	Usage: "OAuth2 client and access token helper",
 	Subcommands: []*cli.Command{
-		{
-			Name:  "client",
-			Usage: "OAuth2 client application management",
-			Subcommands: []*cli.Command{
-				{
-					Name:    "add",
-					Aliases: []string{"new"},
-					Usage:   "Adds an OAuth2 client",
-					Flags: []cli.Flag{
-						&cli.StringSliceFlag{
-							Name:  "redirectUri",
-							Value: nil,
-							Usage: "The redirect URIs for current application",
-						},
-					},
-					Action: func(c *cli.Context) error {
-						redirectURIs := c.StringSlice("redirectUri")
-						if len(redirectURIs) < 1 {
-							return errors.Newf("Need to provide at least a return URI for the client")
-						}
-						pw, err := loadPwFromStdin(true, "client's")
-						if err != nil {
-							Errf(err.Error())
-						}
-						id, err := ctl.AddClient(pw, redirectURIs, nil)
-						if err == nil {
-							fmt.Printf("Client ID: %s\n", id)
-						}
-						return err
-					},
-				},
-				{
-					Name:      "del",
-					Aliases:   []string{"delete", "remove", "rm"},
-					Usage:     "Removes an existing OAuth2 client",
-					ArgsUsage: "APPLICATION_UUID...",
-					Action: func(c *cli.Context) error {
-						for i := 0; i <= c.Args().Len(); i++ {
-							id := c.Args().Get(i)
-							err := ctl.DeleteClient(id)
-							if err != nil {
-								Errf("Error deleting %s: %s\n", id, err)
-								continue
-							}
-							fmt.Printf("Deleted: %s\n", id)
-						}
-						return nil
-					},
-				},
-				{
-					Name:    "ls",
-					Aliases: []string{"list"},
-					Usage:   "Lists existing OAuth2 clients",
-					Action: func(c *cli.Context) error {
-						clients, err := ctl.ListClients()
-						if err != nil {
-							return err
-						}
-						for i, client := range clients {
-							fmt.Printf("%d %s - %s\n", i, client.GetId(), strings.ReplaceAll(client.GetRedirectUri(), "\n", " :: "))
-						}
-						return nil
-					},
-				},
-			},
-		},
-		{
-			Name:  "token",
-			Usage: "OAuth2 authorization token management",
-			Subcommands: []*cli.Command{
-				{
-					Name:    "add",
-					Aliases: []string{"new", "get"},
-					Usage:   "Adds an OAuth2 token",
-					Flags: []cli.Flag{
-						&cli.StringFlag{
-							Name:  "client",
-							Usage: "The client to use for generating the token",
-						},
-						&cli.StringFlag{
-							Name:  "actor",
-							Usage: "The actor identifier we want to generate the authorization for (ID)",
-						},
-					},
-					Action: func(c *cli.Context) error {
-						clientID := c.String("client")
-						if clientID == "" {
-							return errors.Newf("Need to provide the client id")
-						}
-						actor := c.String("actor")
-						if clientID == "" {
-							return errors.Newf("Need to provide the actor identifier (ID)")
-						}
-						tok, err := ctl.GenAuthToken(clientID, actor, nil)
-						if err == nil {
-							fmt.Printf("Authorization: Bearer %s\n", tok)
-						}
-						return err
-					},
-				},
-			},
-		},
+		client,
+		token,
 	},
+}
+
+func tokenAct(c *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		clientID := c.String("client")
+		if clientID == "" {
+			return errors.Newf("Need to provide the client id")
+		}
+		actor := c.String("actor")
+		if clientID == "" {
+			return errors.Newf("Need to provide the actor identifier (ID)")
+		}
+		tok, err := ctl.GenAuthToken(clientID, actor, nil)
+		if err == nil {
+			fmt.Printf("Authorization: Bearer %s\n", tok)
+		}
+		return err
+	}
 }
 
 const URISeparator = "\n"
