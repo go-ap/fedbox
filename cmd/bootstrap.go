@@ -9,9 +9,71 @@ import (
 	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/fedbox/storage/pgx"
 	"golang.org/x/crypto/ssh/terminal"
+	"gopkg.in/urfave/cli.v2"
 	"os"
 	"path"
 )
+
+var Bootstrap = &cli.Command{
+	Name:  "bootstrap",
+	Usage: "Bootstrap a new postgres or bolt database helper",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "root",
+			Usage: "root account of postgres server (default: postgres)",
+			Value: "postgres",
+		},
+		&cli.StringFlag{
+			Name:  "sql",
+			Usage: "path to the queries for initializing the database",
+			Value: "postgres",
+		},
+	},
+	Action: bootstrap(&ctl),
+	Subcommands: []*cli.Command{
+		{
+			Name:  "reset",
+			Usage: "reset an existing database",
+			Action: func(c *cli.Context) error {
+				dir := c.String("dir")
+				if dir == "" {
+					dir = "."
+				}
+				environ := env.Type(c.String("env"))
+				if environ == "" {
+					environ = env.DEV
+				}
+				typ := config.StorageType(c.String("type"))
+				if typ == "" {
+					typ = config.BoltDB
+				}
+				err := ctl.BootstrapReset(dir, typ, environ)
+				if err != nil {
+					return err
+				}
+				return ctl.Bootstrap(dir, typ, environ)
+			},
+		},
+	},
+}
+
+func bootstrap(c *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		dir := c.String("dir")
+		if dir == "" {
+			dir = "."
+		}
+		environ := env.Type(c.String("env"))
+		if environ == "" {
+			environ = env.DEV
+		}
+		typ := config.StorageType(c.String("type"))
+		if typ == "" {
+			typ = config.BoltDB
+		}
+		return ctl.Bootstrap(dir, typ, environ)
+	}
+}
 
 func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type) error {
 	if typ == config.BoltDB {

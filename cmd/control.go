@@ -9,6 +9,8 @@ import (
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/urfave/cli.v2"
 	"net/url"
 	"time"
 )
@@ -19,6 +21,112 @@ type Control struct {
 	BaseURL     string
 	AuthStorage osin.Storage
 	Storage     storage.Repository
+}
+
+var Actors = &cli.Command{
+	Name:  "actor",
+	Usage: "Actor management helper",
+	Subcommands: []*cli.Command{
+		addActor,
+		delActor,
+		listActors,
+	},
+}
+
+var addActor = &cli.Command{
+	Name:    "add",
+	Aliases: []string{"new"},
+	Usage:   "Adds an ActivityPub actor",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "type",
+			Usage: fmt.Sprintf("The type of activitypub actor to add"),
+		},
+	},
+	Action: AddActor(&ctl),
+}
+
+var delActor = &cli.Command{
+	Name:    "del",
+	Aliases: []string{"delete", "remove", "rm"},
+	Usage:   "Deletes an ActivityPub actor",
+	Action:  DelActor(&ctl),
+}
+
+var listActors = &cli.Command{
+	Name:    "ls",
+	Aliases: []string{"list"},
+	Usage:   "Lists existing actors",
+	Action:  ListActors(&ctl),
+}
+
+func Before(c *cli.Context) error {
+	logger.Level = logrus.ErrorLevel
+	ct, err := setup(c, logger)
+	if err == nil {
+		ctl = *ct
+	}
+
+	return err
+}
+
+func AddActor(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		names := c.Args().Slice()
+
+		var actors = make(pub.ItemCollection, 0)
+		for _, name := range names {
+
+			pw, err := loadPwFromStdin(true, "%s's", name)
+			if err != nil {
+				return err
+			}
+			typ := pub.ActivityVocabularyType(c.String("type"))
+			if !pub.ActorTypes.Contains(typ) {
+				typ = pub.PersonType
+			}
+			p, err := ctl.AddActor(name, typ, nil, pw)
+			if err != nil {
+				Errf("Error adding %s: %s\n", name, err)
+			}
+			fmt.Printf("Added %q [%s]: %s\n", typ, name, p.GetLink())
+			actors = append(actors, p)
+		}
+		return nil
+	}
+}
+
+func DelActor(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		ids := c.Args().Slice()
+
+		for _, id := range ids {
+			err := ctl.DeleteActor(id)
+			if err != nil {
+				Errf("Error deleting %s: %s\n", id, err)
+				continue
+			}
+			fmt.Printf("Deleted: %s\n", id)
+		}
+		return nil
+	}
+}
+
+func ListActors(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		actors, err := ctl.ListActors()
+		if err != nil {
+			return err
+		}
+		for i, it := range actors {
+			if act, err := pub.ToActor(it); err != nil {
+				fmt.Printf("%3d [%11s] %s\n", i, it.GetType(), it.GetLink())
+			} else {
+				fmt.Printf("%3d [%11s] %s\n%s\n", i, it.GetType(), act.PreferredUsername.First(), it.GetLink())
+			}
+		}
+		return nil
+	}
 }
 
 type PasswordChanger interface {
@@ -119,39 +227,48 @@ func (c *Control) ListActors() (pub.ItemCollection, error) {
 	return col, nil
 }
 
+var ValidGenericTypes = pub.ActivityVocabularyTypes{pub.ObjectType, pub.ActorType}
+
 func (c *Control) Delete(id, typ string) error {
 	t := pub.ActivityVocabularyType(typ)
-	if !pub.GenericObjectTypes.Contains(t) {
+	if !(pub.ActorTypes.Contains(t) || pub.ObjectTypes.Contains(t) || ValidGenericTypes.Contains(t)) {
 		return errors.Errorf("invalid ActivityPub object type %s", typ)
 	}
-	self := ap.Self(pub.IRI(c.BaseURL))
+
 	var iri pub.IRI
+	var loadFn func(storage.Filterable) (pub.ItemCollection, uint, error)
+	var delFn func(pub.Item) (pub.Item, error)
+
+	var col string
+	if pub.ActorTypes.Contains(t) || t == pub.ActorType {
+		col = "actors"
+		loadFn = c.Storage.LoadActors
+		delFn = c.Storage.DeleteActor
+	}
+	if pub.ObjectTypes.Contains(t) || t == pub.ObjectType {
+		col = "objects"
+		loadFn = c.Storage.LoadObjects
+		delFn = c.Storage.DeleteObject
+	}
+
 	if u, err := url.Parse(id); err != nil {
-		iri = pub.IRI(fmt.Sprintf("%s/%s/%s", self.ID, ap.ActorsType, id))
+		self := ap.Self(pub.IRI(c.BaseURL))
+		iri = pub.IRI(fmt.Sprintf("%s/%s/%s", self.ID, col, id))
 	} else {
 		iri = pub.IRI(u.String())
 	}
-	var it pub.ItemCollection
-	var cnt uint
-	var err error
-	if pub.ActorTypes.Contains(t) {
-		it, cnt, err = c.Storage.LoadActors(iri)
-	}
-	if pub.ObjectTypes.Contains(t) {
-		it, cnt, err = c.Storage.LoadObjects(iri)
-	}
+	it, cnt, err := loadFn(iri)
 	if err != nil {
 		return err
 	}
 	if cnt == 0 {
 		return errors.Newf("nothing found")
 	}
-	if pub.ActorTypes.Contains(t) {
-		_, err = c.Storage.DeleteActor(it.First())
-	}
-	if pub.ObjectTypes.Contains(t) {
-		_, err = c.Storage.DeleteObject(it.First())
-	}
+	_, err = delFn(it.First())
 
 	return err
+}
+
+func (c *Control) List(f storage.Filterable) error {
+	return nil
 }
