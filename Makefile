@@ -36,8 +36,8 @@ TEST := $(GO) test $(BUILDFLAGS)
 all: fedbox ctl
 
 fedbox: bin/fedbox
-bin/fedbox: go.mod cli/app/main.go $(APPSOURCES)
-	$(BUILD) -tags $(ENV) -o $@ ./cli/app/main.go
+bin/fedbox: go.mod cli/fedbox/main.go $(APPSOURCES)
+	$(BUILD) -tags $(ENV) -o $@ ./cli/fedbox/main.go
 
 ctl: bin/ctl
 bin/ctl: go.mod cli/control/main.go $(APPSOURCES)
