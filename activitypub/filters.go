@@ -197,27 +197,28 @@ func (f Filters) Context() CompStrs {
 }
 
 func IRIf(f Filters, iri string) string {
-	if _, ok := validURL(iri); !ok {
-		col := f.Collection
-		if col != ActorsType && col != ActivitiesType && col != ObjectsType {
-			if h.ValidObjectCollection(string(f.Collection)) {
-				col = ObjectsType
-			} else if ValidActivityCollection(string(f.Collection)) {
-				col = ActivitiesType
+	if _, ok := validURL(iri); ok {
+		return iri
+	}
+	col := f.Collection
+	if col != ActorsType && col != ActivitiesType && col != ObjectsType {
+		if h.ValidObjectCollection(string(f.Collection)) {
+			col = ObjectsType
+		} else if ValidActivityCollection(string(f.Collection)) {
+			col = ActivitiesType
+		}
+	}
+	if len(f.baseURL) > 0 {
+		if u, err := url.Parse(f.baseURL.String()); err == nil {
+			if len(col) > 0 {
+				u.Path = "/" + string(col)
+			}
+			if len(u.String()) > 0 {
+				iri = fmt.Sprintf("%s/%s", u.String(), iri)
 			}
 		}
-		if len(f.baseURL) > 0 {
-			if u, err := url.Parse(f.baseURL.String()); err == nil {
-				if len(col) > 0 {
-					u.Path = "/" + string(col)
-				}
-				if len(u.String()) > 0 {
-					iri = fmt.Sprintf("%s/%s", u.String(), iri)
-				}
-			}
-		} else if !strings.Contains(iri, string(col)) {
-			iri = fmt.Sprintf("/%s/%s", col, iri)
-		}
+	} else if !strings.Contains(iri, string(col)) {
+		iri = fmt.Sprintf("/%s/%s", col, iri)
 	}
 	return iri
 }
@@ -295,6 +296,15 @@ func FromRequest(r *http.Request) (*Filters, error) {
 
 	if f.MaxItems > MaxItems {
 		f.MaxItems = MaxItems
+	}
+
+	if f.Object != nil {
+		f.Object.Collection = ObjectsType
+		f.Object.baseURL = f.baseURL
+	}
+	if f.Actor != nil {
+		f.Actor.Collection = ActorsType
+		f.Actor.baseURL = f.baseURL
 	}
 
 	return f, nil
@@ -549,7 +559,7 @@ func filterNaturalLanguageValues(filters CompStrs, valArr ...pub.NaturalLanguage
 		keep = false
 	}
 	for _, filter := range filters {
-		valuesBreak:
+	valuesBreak:
 		for _, langValues := range valArr {
 			for _, langValue := range langValues {
 				if matchStringFilter(filter, langValue.Value) {

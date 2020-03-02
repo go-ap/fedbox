@@ -25,6 +25,16 @@ func LoadItemFilters(r *http.Request, f *ap.Filters) error {
 
 	if auth, ok := auth.ActorContext(r.Context()); ok {
 		f.Authenticated = &auth
+		if f.Object != nil {
+			f.Object.Authenticated = f.Authenticated
+		}
+		if f.Actor != nil {
+			f.Actor.Authenticated = f.Authenticated
+		}
+		if f.Target != nil {
+			f.Target.Authenticated = f.Authenticated
+		}
 	}
+
 	return nil
 }
