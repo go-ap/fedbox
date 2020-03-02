@@ -126,11 +126,10 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 		// TODO(marius): this seems terribly not nice
 		pub.OnActivity(it, func(a *pub.Activity) error {
 			if !a.Object.IsObject() {
-				ob, err := r.loadOneFromBucket(a.Object.GetLink())
-				if err != nil {
-					return err
+				ob, _ := r.loadOneFromBucket(a.Object.GetLink())
+				if ob, _ = filterIt(ob, f); ob != nil {
+					a.Object = ob
 				}
-				a.Object = ob
 			}
 			return nil
 		})
