@@ -159,6 +159,12 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 			if err != nil || it == nil {
 				continue
 			}
+			if !it.IsObject() {
+				it, err = r.loadOneFromBucket(it.GetLink())
+				if err != nil || it == nil {
+					continue
+				}
+			}
 			col = append(col, it)
 		}
 		return nil
