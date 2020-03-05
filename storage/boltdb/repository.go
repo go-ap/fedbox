@@ -122,14 +122,15 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 	if it == nil {
 		return nil, errors.NotFoundf("not found")
 	}
+	if !it.IsObject() && !it.IsCollection() {
+		it, _ = r.loadOneFromBucket(it.GetLink())
+	}
 	if it.GetType() == pub.CreateType {
 		// TODO(marius): this seems terribly not nice
 		pub.OnActivity(it, func(a *pub.Activity) error {
 			if !a.Object.IsObject() {
 				ob, _ := r.loadOneFromBucket(a.Object.GetLink())
-				if ob, _ = filterIt(ob, f); ob != nil {
-					a.Object = ob
-				}
+				a.Object = ob
 			}
 			return nil
 		})
@@ -158,12 +159,6 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 			it, err := r.loadItem(b, []byte(objectKey), f)
 			if err != nil || it == nil {
 				continue
-			}
-			if !it.IsObject() {
-				it, err = r.loadOneFromBucket(it.GetLink())
-				if err != nil || it == nil {
-					continue
-				}
 			}
 			col = append(col, it)
 		}
