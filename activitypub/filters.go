@@ -544,6 +544,18 @@ func filterActor(it pub.Item, ff *Filters) (bool, pub.Item) {
 	return keep, it
 }
 
+func matchStringFilters(filters CompStrs, s string) bool {
+	for _, f := range filters {
+		if f.Operator == "!" && !matchStringFilter(f, s){
+			return false
+		}
+		if matchStringFilter(f, s) {
+			return true
+		}
+	}
+	return false
+}
+
 func matchStringFilter(filter CompStr, s string) bool {
 	if filter.Operator == "~" {
 		return strings.Contains(strings.ToLower(s), strings.ToLower(filter.Str))
@@ -558,14 +570,11 @@ func filterNaturalLanguageValues(filters CompStrs, valArr ...pub.NaturalLanguage
 	if len(filters) > 0 {
 		keep = false
 	}
-	for _, filter := range filters {
-	valuesBreak:
-		for _, langValues := range valArr {
-			for _, langValue := range langValues {
-				if matchStringFilter(filter, langValue.Value) {
-					keep = true
-					break valuesBreak
-				}
+	for _, langValues := range valArr {
+		for _, langValue := range langValues {
+			if matchStringFilters(filters, langValue.Value) {
+				keep = true
+				break
 			}
 		}
 	}
@@ -689,7 +698,6 @@ func filterWithAbsent(filters CompStrs, items ...pub.Item) bool {
 }
 
 func filterItem(filters CompStrs, it pub.Item) bool {
-	keep := true
 	if len(filters) > 0 {
 		if it == nil {
 			return false
@@ -697,19 +705,10 @@ func filterItem(filters CompStrs, it pub.Item) bool {
 		if c, ok := it.(pub.ItemCollection); ok {
 			return filterItems(filters, c...)
 		} else {
-			good := false
-			for _, f := range filters {
-				if matchStringFilter(f, it.GetLink().String()) {
-					good = true
-					break
-				}
-			}
-			if !good {
-				keep = false
-			}
+			return matchStringFilters(filters, it.GetLink().String())
 		}
 	}
-	return keep
+	return false
 }
 
 func filterURLs(filters CompStrs, it pub.Item) bool {
