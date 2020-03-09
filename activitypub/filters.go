@@ -227,7 +227,9 @@ func IRIf(f Filters, iri string) string {
 func (f Filters) IRIs() CompStrs {
 	ret := make(CompStrs, len(f.ItemKey))
 	for i, k := range f.ItemKey {
-		k.Str = IRIf(f, k.Str)
+		if k.Operator == "" || k.Operator == "=" {
+			k.Str = IRIf(f, k.Str)
+		}
 		ret[i] = k
 	}
 	return ret
@@ -546,7 +548,7 @@ func filterActor(it pub.Item, ff *Filters) (bool, pub.Item) {
 
 func matchStringFilters(filters CompStrs, s string) bool {
 	for _, f := range filters {
-		if f.Operator == "!" && !matchStringFilter(f, s){
+		if f.Operator == "!" && !matchStringFilter(f, s) {
 			return false
 		}
 		if matchStringFilter(f, s) {
