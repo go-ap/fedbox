@@ -5,6 +5,7 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 TEST_FLAGS ?= -v
+LOCAL_HOSTNAME ?= fedbox.git
 
 export CGO_ENABLED=0
 export GOOS=linux
@@ -61,3 +62,11 @@ coverage: test
 
 integration:
 	$(MAKE) -C tests $@
+
+$(LOCAL_HOSTNAME).key $(LOCAL_HOSTNAME).crt:
+	openssl req -subj "/C=AQ/ST=Omond/L=Omond/O=*.$(LOCAL_HOSTNAME)/OU=none/CN=*.$(LOCAL_HOSTNAME)" -newkey rsa:2048 -sha256 -keyout $(LOCAL_HOSTNAME).key -nodes -x509 -days 365 -out $(LOCAL_HOSTNAME).crt
+
+$(LOCAL_HOSTNAME).pem: $(LOCAL_HOSTNAME).key $(LOCAL_HOSTNAME).crt
+	cat $(LOCAL_HOSTNAME).key $(LOCAL_HOSTNAME).crt > $(LOCAL_HOSTNAME).pem
+
+cert: $(LOCAL_HOSTNAME).key
