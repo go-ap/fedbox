@@ -13,7 +13,17 @@ import (
 	"time"
 )
 
-var Actors = &cli.Command{
+var Pub = &cli.Command{
+	Name:    "pub",
+	Aliases: []string{"ap"},
+	Usage:   "ActivityPub management helper",
+	Subcommands: []*cli.Command{
+		actors,
+		list,
+	},
+}
+
+var actors = &cli.Command{
 	Name:  "actor",
 	Usage: "Actor management helper",
 	Subcommands: []*cli.Command{
@@ -244,6 +254,46 @@ func (c *Control) Delete(id, typ string) error {
 	return err
 }
 
-func (c *Control) List(f storage.Filterable) error {
-	return nil
+var list = &cli.Command{
+	Name:    "list",
+	Aliases: []string{"ls"},
+	Usage:   "Lists objects",
+	Flags: []cli.Flag{
+		&cli.StringSliceFlag{
+			Name:        "type",
+			Usage:       fmt.Sprintf("The type of activitypub object to list"),
+			DefaultText: fmt.Sprintf("Valid values: %v", ValidGenericTypes),
+		},
+	},
+	Action: listAct(&ctl),
+}
+
+func listAct(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		f := ap.Filters{}
+
+		typeFl := c.StringSlice("type")
+		types := make(ap.CompStrs, len(typeFl))
+		for i, typ := range typeFl {
+			fmt.Println(typ)
+			types[i] = ap.StringEquals(typ)
+		}
+
+		all, err := ctl.List(&f)
+		if err != nil {
+			return err
+		}
+		for i, it := range all {
+			ob, err := pub.ToObject(it)
+			if err != nil {
+				fmt.Printf("%3d [%11s] %s\n", i, it.GetType(), it.GetLink())
+			} else {
+				fmt.Printf("%3d [%11s] %s\n%s\n", i, it.GetType(), ob, it.GetLink())
+			}
+		}
+		return nil
+	}
+}
+func (c *Control) List(f storage.Filterable) (pub.ItemCollection, error) {
+	return nil, nil
 }

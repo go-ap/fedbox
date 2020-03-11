@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/go-ap/auth"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/storage/boltdb"
@@ -10,7 +12,9 @@ import (
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/urfave/cli.v2"
+	"os"
 )
 
 type Control struct {
@@ -29,6 +33,19 @@ func New(authDB osin.Storage, actorDb storage.Repository, conf config.Options) *
 		AuthStorage: authDB,
 		Storage:     actorDb,
 	}
+}
+
+var ctl Control
+var logger = logrus.New()
+
+func Before(c *cli.Context) error {
+	logger.Level = logrus.ErrorLevel
+	ct, err := setup(c, logger)
+	if err == nil {
+		ctl = *ct
+	}
+
+	return err
 }
 
 func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
@@ -110,4 +127,23 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 		}
 	}
 	return nil, nil
+}
+
+func loadPwFromStdin(confirm bool, s string, params ...interface{}) ([]byte, error) {
+	fmt.Printf(s+" pw: ", params...)
+	pw1, _ := terminal.ReadPassword(0)
+	fmt.Println()
+	if confirm {
+		fmt.Printf("pw again: ")
+		pw2, _ := terminal.ReadPassword(0)
+		fmt.Println()
+		if !bytes.Equal(pw1, pw2) {
+			return nil, errors.Errorf("Passwords do not match")
+		}
+	}
+	return pw1, nil
+}
+
+func Errf(s string, par ...interface{}) {
+	fmt.Fprintf(os.Stderr, s, par...)
 }

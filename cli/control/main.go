@@ -75,7 +75,7 @@ func main() {
 		},
 	}
 	app.Commands = []*cli.Command{
-		cmd.Actors,
+		cmd.Pub,
 		cmd.OAuth2,
 		cmd.Bootstrap,
 	}
