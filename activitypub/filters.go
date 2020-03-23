@@ -153,6 +153,31 @@ func Name(names ...string) filterFn {
 	}
 }
 
+func Type(types ...string) filterFn {
+	return func(f *Filters) error {
+		if len(f.Type) == 0 {
+			f.Type = make(pub.ActivityVocabularyTypes, 0)
+		}
+		for _, typ := range types {
+			t := pub.ActivityVocabularyType(typ)
+			if pub.Types.Contains(t) {
+				f.Type = append(f.Type, t)
+			} else {
+				if strings.ToLower(typ) == strings.ToLower(string(pub.ObjectType)) {
+					f.Type = append(f.Type, pub.ObjectTypes...)
+				}
+				if strings.ToLower(typ) == strings.ToLower(string(pub.ActorType)) {
+					f.Type = append(f.Type, pub.ActorTypes...)
+				}
+				if strings.ToLower(typ) == strings.ToLower(string(pub.ActivityType)) {
+					f.Type = append(f.Type, pub.ActivityTypes...)
+				}
+			}
+		}
+		return nil
+	}
+}
+
 type filterFn func(f *Filters) error
 
 func FiltersNew(filters ...filterFn) *Filters {
