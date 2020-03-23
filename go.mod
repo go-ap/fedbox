@@ -7,7 +7,7 @@ require (
 	github.com/dgraph-io/badger v1.6.0
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
-	github.com/go-ap/activitypub v0.0.0-20200323102727-11d4d3b2fd2e
+	github.com/go-ap/activitypub v0.0.0-20200323120815-333ff2b6c2b0
 	github.com/go-ap/auth v0.0.0-20200302114435-163184d6751a
 	github.com/go-ap/client v0.0.0-20200302114213-753e8a36a1bf
 	github.com/go-ap/errors v0.0.0-20200302114017-b6ee20a2b83e
