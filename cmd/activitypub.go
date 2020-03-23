@@ -268,32 +268,44 @@ var list = &cli.Command{
 	Action: listAct(&ctl),
 }
 
+func printItem(it pub.Item) {
+	typ := it.GetType()
+	if pub.ObjectTypes.Contains(typ) {}
+	if pub.ActorTypes.Contains(typ) {}
+	if pub.ActivityTypes.Contains(typ) {}
+}
+
 func listAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		f := ap.Filters{}
-
 		typeFl := c.StringSlice("type")
-		types := make(ap.CompStrs, len(typeFl))
-		for i, typ := range typeFl {
-			fmt.Println(typ)
-			types[i] = ap.StringEquals(typ)
-		}
+		f := ap.FiltersNew(
+			ap.IRI(pub.IRI(ctl.BaseURL)),
+			ap.Type(typeFl...),
+		)
 
-		all, err := ctl.List(&f)
+		all, err := ctl.List(f)
 		if err != nil {
 			return err
 		}
 		for i, it := range all {
-			ob, err := pub.ToObject(it)
-			if err != nil {
-				fmt.Printf("%3d [%11s] %s\n", i, it.GetType(), it.GetLink())
-			} else {
-				fmt.Printf("%3d [%11s] %s\n%s\n", i, it.GetType(), ob, it.GetLink())
-			}
+			fmt.Printf("%4d [%11s] %s\n", i, it.GetType(), it.GetLink())
 		}
 		return nil
 	}
 }
 func (c *Control) List(f storage.Filterable) (pub.ItemCollection, error) {
-	return nil, nil
+	col, err := c.Storage.LoadCollection(f)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var items pub.ItemCollection
+	err = pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
+		for _, tt := range c.Collection() {
+			items = append(items, tt)
+		}
+		return nil
+	})
+	return items, err
 }
