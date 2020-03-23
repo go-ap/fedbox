@@ -816,7 +816,7 @@ func (f Filters) FilterCollection(col pub.ItemCollection) (pub.ItemCollection, i
 }
 
 // ugly hack to check if the current filter f.IRI property is a collection or an object
-func iriIsObject(iri pub.IRI) bool {
+func iriPointsToCollection(iri pub.IRI) bool {
 	base := path.Base(iri.String())
 	return !ValidCollection(base)
 }
@@ -840,8 +840,8 @@ func (f *Filters) ItemMatches(it pub.Item) bool {
 		return false
 	}
 	iri := f.GetLink()
-	if len(iri) > 0 && iriIsObject(iri) {
-		if !iri.Contains(it.GetLink(), false) {
+	if len(iri) > 0 && iriPointsToCollection(iri) {
+		if !it.GetLink().Contains(iri, false) {
 			return false
 		}
 	}
