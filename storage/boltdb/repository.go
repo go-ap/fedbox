@@ -273,6 +273,26 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 		}
 
 		iri := f.GetLink()
+		if iri.Equals(pub.IRI(r.baseURL), true) {
+			accFn := func(t handlers.CollectionType) error {
+				from := ap.IRI(pub.IRI(fmt.Sprintf("%s/%s", iri, t)))
+				items, _, err := r.loadFromBucket(ap.FiltersNew(from))
+				if err != nil {
+					return err
+				}
+				for i := range items {
+					it, _ := filterIt(items[i], f)
+					if it != nil {
+						col = append(col, it)
+					}
+				}
+				return nil
+			}
+			accFn(ap.ActivitiesType)
+			accFn(ap.ActorsType)
+			accFn(ap.ObjectsType)
+			return nil
+		}
 		// This is the case where the Filter points to a single AP Object IRI
 		// TODO(marius): Ideally this should support the case where we use the IRI to point to a bucket path
 		//     and on top of that apply the other filters
@@ -432,8 +452,8 @@ func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
 		r.errFn(nil, "invalid IRI filter element %s when loading collections", iri)
 	}
 
-	qstr, _ := qstring.Marshal(f)
-	url.RawQuery = qstr.Encode()
+	q, _ := qstring.Marshal(f)
+	url.RawQuery = q.Encode()
 
 	col := &pub.OrderedCollection{}
 	col.ID = pub.ID(url.String())
