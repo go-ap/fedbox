@@ -72,6 +72,9 @@ func delAct(c *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		for i := 0; i <= c.Args().Len(); i++ {
 			id := c.Args().Get(i)
+			if id == "" {
+				continue
+			}
 			err := ctl.DeleteClient(id)
 			if err != nil {
 				Errf("Error deleting %s: %s\n", id, err)
@@ -215,9 +218,12 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 }
 
 func (c *Control) DeleteClient(uuid string) error {
-	c.DeleteActor(uuid)
+	iri := fmt.Sprintf("%s/%s/%s", c.BaseURL ,apub.ActorsType, uuid)
+	err := c.DeleteObject(iri)
+	if err != nil {
+		return err
+	}
 
-	var err error
 	if saver, ok := c.AuthStorage.(ClientSaver); ok {
 		err = saver.RemoveClient(uuid)
 	} else {
