@@ -10,6 +10,7 @@ import (
 	"github.com/go-ap/storage"
 	"gopkg.in/urfave/cli.v2"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -205,7 +206,7 @@ func (c *Control) DeleteActor(id string) error {
 func (c *Control) ListActors() (pub.ItemCollection, error) {
 	var err error
 	actorsIRI := pub.IRI(fmt.Sprintf("%s/%s", c.BaseURL, ap.ActorsType))
-	col, _, err := c.Storage.LoadActors(&ap.Filters{IRI: actorsIRI})
+	col, _, err := c.Storage.LoadActors(ap.FiltersNew(ap.IRI(actorsIRI)))
 	if err != nil {
 		return col, errors.Annotatef(err, "Unable to load actors")
 	}
@@ -270,20 +271,18 @@ var list = &cli.Command{
 
 func printItem(it pub.Item) {
 	typ := it.GetType()
-	if pub.ObjectTypes.Contains(typ) {}
-	if pub.ActorTypes.Contains(typ) {}
-	if pub.ActivityTypes.Contains(typ) {}
+	if pub.ObjectTypes.Contains(typ) {
+	}
+	if pub.ActorTypes.Contains(typ) {
+	}
+	if pub.ActivityTypes.Contains(typ) {
+	}
 }
 
 func listAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		typeFl := c.StringSlice("type")
-		f := ap.FiltersNew(
-			ap.IRI(pub.IRI(ctl.BaseURL)),
-			ap.Type(typeFl...),
-		)
-
-		all, err := ctl.List(f)
+		all, err := ctl.List(typeFl)
 		if err != nil {
 			return err
 		}
@@ -293,19 +292,69 @@ func listAct(ctl *Control) cli.ActionFunc {
 		return nil
 	}
 }
-func (c *Control) List(f storage.Filterable) (pub.ItemCollection, error) {
-	col, err := c.Storage.LoadCollection(f)
-
-	if err != nil {
-		return nil, err
+func (c *Control) List(typesFlag []string) (pub.ItemCollection, error) {
+	objectTyp := make(pub.ActivityVocabularyTypes, 0)
+	actorTyp := make(pub.ActivityVocabularyTypes, 0)
+	activityTyp := make(pub.ActivityVocabularyTypes, 0)
+	if len(typesFlag) == 0 {
+		objectTyp = pub.ObjectTypes
+		actorTyp = pub.ActorTypes
+		activityTyp = pub.ActivityTypes
+	} else {
+		for _, typ := range typesFlag {
+			t := pub.ActivityVocabularyType(typ)
+			if pub.ObjectTypes.Contains(t) {
+				objectTyp = append(objectTyp, t)
+			}
+			if pub.ActorTypes.Contains(t) {
+				actorTyp = append(actorTyp, t)
+			}
+			if pub.ActivityTypes.Contains(t) {
+				activityTyp = append(activityTyp, t)
+			}
+			if strings.ToLower(typ) == strings.ToLower(string(pub.ObjectType)) {
+				objectTyp = pub.ObjectTypes
+			}
+			if strings.ToLower(typ) == strings.ToLower(string(pub.ActorType)) {
+				actorTyp = pub.ActorTypes
+			}
+			if strings.ToLower(typ) == strings.ToLower(string(pub.ActivityType)) {
+				activityTyp = pub.ActivityTypes
+			}
+		}
 	}
 
 	var items pub.ItemCollection
-	err = pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
-		for _, tt := range c.Collection() {
-			items = append(items, tt)
+	accFn := func(colTyp handlers.CollectionType, types pub.ActivityVocabularyTypes) error {
+		if len(types) == 0 {
+			return nil
 		}
+		baseIRI := pub.IRI(fmt.Sprintf("%s/%s", ctl.BaseURL, colTyp))
+		f := ap.FiltersNew(
+			ap.IRI(baseIRI),
+			ap.Type(types...),
+		)
+		col, err := c.Storage.LoadCollection(f)
+		if err != nil {
+			return err
+		}
+
+		err = pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
+			for _, tt := range c.Collection() {
+				items = append(items, tt)
+			}
+			return nil
+		})
 		return nil
-	})
+	}
+	err := accFn(ap.ObjectsType, objectTyp)
+	if err != nil {
+		return items, err
+	}
+	err = accFn(ap.ActorsType, actorTyp)
+	if err != nil {
+		return items, err
+	}
+	err = accFn(ap.ActivitiesType, activityTyp)
 	return items, err
 }
