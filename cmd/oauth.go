@@ -249,10 +249,7 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 	if u, err := url.Parse(actorIdentifier); err == nil {
 		f = pub.IRI(u.String())
 	} else {
-		f = &apub.Filters{
-			Name: apub.CompStrs{apub.CompStr{Str: actorIdentifier}},
-			Type: pub.ActorTypes,
-		}
+		f = apub.FiltersNew(apub.Name(actorIdentifier), apub.Type(pub.ActorTypes...))
 	}
 	list, cnt, err := c.Storage.LoadActors(f)
 	if err != nil {

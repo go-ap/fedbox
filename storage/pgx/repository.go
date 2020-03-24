@@ -274,10 +274,11 @@ func (r repo) SaveObject(it pub.Item) (pub.Item, error) {
 	}
 
 	if len(it.GetLink()) > 0 {
-		if _, cnt, _ := loadFromDb(r.conn, table, &ap.Filters{
-			ItemKey: ap.CompStrs{ap.CompStr{Str: it.GetLink().String()}},
-			Type:    []pub.ActivityVocabularyType{it.GetType()},
-		}); cnt != 0 {
+		ff := ap.FiltersNew(
+			ap.ItemKey(it.GetLink().String()),
+			ap.Type(it.GetType()),
+		)
+		if _, cnt, _ := loadFromDb(r.conn, table, ff); cnt != 0 {
 			err := processing.ErrDuplicateObject("%s in table %s", it.GetLink(), table)
 			r.errFn(logrus.Fields{
 				"table": table,
