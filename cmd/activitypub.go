@@ -10,6 +10,7 @@ import (
 	"github.com/go-ap/storage"
 	"gopkg.in/urfave/cli.v2"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 )
@@ -20,7 +21,8 @@ var Pub = &cli.Command{
 	Usage:   "ActivityPub management helper",
 	Subcommands: []*cli.Command{
 		actors,
-		list,
+		listObjects,
+		delObjects,
 	},
 }
 
@@ -29,8 +31,6 @@ var actors = &cli.Command{
 	Usage: "Actor management helper",
 	Subcommands: []*cli.Command{
 		addActor,
-		delActor,
-		listActors,
 	},
 }
 
@@ -45,20 +45,6 @@ var addActor = &cli.Command{
 		},
 	},
 	Action: addActorAct(&ctl),
-}
-
-var delActor = &cli.Command{
-	Name:    "del",
-	Aliases: []string{"delete", "remove", "rm"},
-	Usage:   "Deletes an ActivityPub actor",
-	Action:  delActorAct(&ctl),
-}
-
-var listActors = &cli.Command{
-	Name:    "ls",
-	Aliases: []string{"list"},
-	Usage:   "Lists existing actors",
-	Action:  listActorsAct(&ctl),
 }
 
 func addActorAct(ctl *Control) cli.ActionFunc {
@@ -82,39 +68,6 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 			}
 			fmt.Printf("Added %q [%s]: %s\n", typ, name, p.GetLink())
 			actors = append(actors, p)
-		}
-		return nil
-	}
-}
-
-func delActorAct(ctl *Control) cli.ActionFunc {
-	return func(c *cli.Context) error {
-		ids := c.Args().Slice()
-
-		for _, id := range ids {
-			err := ctl.DeleteActor(id)
-			if err != nil {
-				Errf("Error deleting %s: %s\n", id, err)
-				continue
-			}
-			fmt.Printf("Deleted: %s\n", id)
-		}
-		return nil
-	}
-}
-
-func listActorsAct(ctl *Control) cli.ActionFunc {
-	return func(c *cli.Context) error {
-		actors, err := ctl.ListActors()
-		if err != nil {
-			return err
-		}
-		for i, it := range actors {
-			if act, err := pub.ToActor(it); err != nil {
-				fmt.Printf("%3d [%11s] %s\n", i, it.GetType(), it.GetLink())
-			} else {
-				fmt.Printf("%3d [%11s] %s\n%s\n", i, it.GetType(), act.PreferredUsername.First(), it.GetLink())
-			}
 		}
 		return nil
 	}
@@ -184,66 +137,64 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 	return saved, nil
 }
 
-func (c *Control) DeleteActor(id string) error {
-	self := ap.Self(pub.IRI(c.BaseURL))
-	var iri pub.IRI
-	if u, err := url.Parse(id); err != nil {
-		iri = pub.IRI(fmt.Sprintf("%s/%s/%s", self.ID, ap.ActorsType, id))
-	} else {
-		iri = pub.IRI(u.String())
+var ValidGenericTypes = pub.ActivityVocabularyTypes{pub.ObjectType, pub.ActorType}
+
+var delObjects = &cli.Command{
+	Name:    "delete",
+	Aliases: []string{"del", "rm"},
+	Usage:   "Deletes an ActivityPub object",
+	Flags: []cli.Flag{
+		&cli.StringSliceFlag{
+			Name:        "type",
+			Usage:       fmt.Sprintf("The type of ActivityPub object"),
+			DefaultText: fmt.Sprintf("Valid values: %v", ValidGenericTypes),
+		},
+	},
+	Action: delObjectsAct(&ctl),
+}
+
+func delObjectsAct(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		ids := c.Args().Slice()
+
+		var err error
+		for _, id := range ids {
+			err := ctl.DeleteObject(id)
+			if err != nil {
+				Errf("Error deleting %s: %s\n", id, err)
+				continue
+			}
+			fmt.Printf("Deleted: %s\n", id)
+		}
+		if err != nil {
+			return err
+		}
+		return nil
 	}
-	it, cnt, err := c.Storage.LoadActors(iri)
+}
+
+func (c *Control) DeleteObject(id string) error {
+	u, err := url.Parse(id)
 	if err != nil {
 		return err
 	}
-	if cnt == 0 {
-		return errors.Newf("nothing found")
-	}
-	_, err = c.Storage.DeleteActor(it.First())
-	return err
-}
+	base, _ := path.Split(u.Path)
+	typ := strings.Trim(base, "/")
 
-func (c *Control) ListActors() (pub.ItemCollection, error) {
-	var err error
-	actorsIRI := pub.IRI(fmt.Sprintf("%s/%s", c.BaseURL, ap.ActorsType))
-	col, _, err := c.Storage.LoadActors(ap.FiltersNew(ap.IRI(actorsIRI)))
-	if err != nil {
-		return col, errors.Annotatef(err, "Unable to load actors")
-	}
-	return col, nil
-}
-
-var ValidGenericTypes = pub.ActivityVocabularyTypes{pub.ObjectType, pub.ActorType}
-
-func (c *Control) Delete(id, typ string) error {
-	t := pub.ActivityVocabularyType(typ)
-	if !(pub.ActorTypes.Contains(t) || pub.ObjectTypes.Contains(t) || ValidGenericTypes.Contains(t)) {
-		return errors.Errorf("invalid ActivityPub object type %s", typ)
-	}
-
-	var iri pub.IRI
 	var loadFn func(storage.Filterable) (pub.ItemCollection, uint, error)
 	var delFn func(pub.Item) (pub.Item, error)
 
-	var col string
-	if pub.ActorTypes.Contains(t) || t == pub.ActorType {
-		col = "actors"
+	if strings.ToLower(typ) == strings.ToLower(string(ap.ActorsType)) {
 		loadFn = c.Storage.LoadActors
 		delFn = c.Storage.DeleteActor
-	}
-	if pub.ObjectTypes.Contains(t) || t == pub.ObjectType {
-		col = "objects"
+	} else if strings.ToLower(typ) == strings.ToLower(string(ap.ObjectsType)) {
 		loadFn = c.Storage.LoadObjects
 		delFn = c.Storage.DeleteObject
+	} else {
+		return errors.Errorf("invalid ActivityPub object type %s", typ)
 	}
 
-	if u, err := url.Parse(id); err != nil {
-		self := ap.Self(pub.IRI(c.BaseURL))
-		iri = pub.IRI(fmt.Sprintf("%s/%s/%s", self.ID, col, id))
-	} else {
-		iri = pub.IRI(u.String())
-	}
-	it, cnt, err := loadFn(iri)
+	it, cnt, err := loadFn(pub.IRI(id))
 	if err != nil {
 		return err
 	}
@@ -255,7 +206,7 @@ func (c *Control) Delete(id, typ string) error {
 	return err
 }
 
-var list = &cli.Command{
+var listObjects = &cli.Command{
 	Name:    "list",
 	Aliases: []string{"ls"},
 	Usage:   "Lists objects",
@@ -266,7 +217,7 @@ var list = &cli.Command{
 			DefaultText: fmt.Sprintf("Valid values: %v", ValidGenericTypes),
 		},
 	},
-	Action: listAct(&ctl),
+	Action: listObjectsAct(&ctl),
 }
 
 func printItem(it pub.Item) {
@@ -279,7 +230,7 @@ func printItem(it pub.Item) {
 	}
 }
 
-func listAct(ctl *Control) cli.ActionFunc {
+func listObjectsAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		typeFl := c.StringSlice("type")
 		all, err := ctl.List(typeFl)
@@ -292,16 +243,17 @@ func listAct(ctl *Control) cli.ActionFunc {
 		return nil
 	}
 }
-func (c *Control) List(typesFlag []string) (pub.ItemCollection, error) {
+
+func loadPubTypes(types []string) (pub.ActivityVocabularyTypes, pub.ActivityVocabularyTypes, pub.ActivityVocabularyTypes) {
 	objectTyp := make(pub.ActivityVocabularyTypes, 0)
 	actorTyp := make(pub.ActivityVocabularyTypes, 0)
 	activityTyp := make(pub.ActivityVocabularyTypes, 0)
-	if len(typesFlag) == 0 {
+	if len(types) == 0 {
 		objectTyp = pub.ObjectTypes
 		actorTyp = pub.ActorTypes
 		activityTyp = pub.ActivityTypes
 	} else {
-		for _, typ := range typesFlag {
+		for _, typ := range types {
 			t := pub.ActivityVocabularyType(typ)
 			if pub.ObjectTypes.Contains(t) {
 				objectTyp = append(objectTyp, t)
@@ -323,8 +275,12 @@ func (c *Control) List(typesFlag []string) (pub.ItemCollection, error) {
 			}
 		}
 	}
+	return objectTyp, actorTyp, activityTyp
+}
 
+func (c *Control) List(types []string) (pub.ItemCollection, error) {
 	var items pub.ItemCollection
+	objectTyp, actorTyp, activityTyp := loadPubTypes(types)
 	accFn := func(colTyp handlers.CollectionType, types pub.ActivityVocabularyTypes) error {
 		if len(types) == 0 {
 			return nil
