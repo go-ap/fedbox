@@ -5,7 +5,7 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/activitypub"
+	ap "github.com/go-ap/fedbox/activitypub"
 	st "github.com/go-ap/fedbox/storage"
 	h "github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
@@ -29,12 +29,12 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 	var col pub.CollectionInterface
 	var err error
 
-	f, err := activitypub.FromRequest(r)
+	f, err := ap.FromRequest(r)
 	if err != nil {
 		return nil, errors.NewNotValid(err, "unable to load filters from request")
 	}
-	LoadCollectionFilters(r, f)
-	if !activitypub.ValidCollection(string(typ)) {
+	ap.LoadCollectionFilters(r, f)
+	if !ap.ValidCollection(string(typ)) {
 		return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
 	}
 
@@ -42,7 +42,7 @@ func HandleCollection(typ h.CollectionType, r *http.Request, repo storage.Collec
 	if err != nil {
 		return nil, err
 	}
-	col, err = activitypub.PaginateCollection(col, f)
+	col, err = ap.PaginateCollection(col, f)
 	for _, it := range col.Collection() {
 		// Remove bcc and bto - probably should be moved to a different place
 		// TODO(marius): move this to the go-ap/activtiypub helpers: CleanRecipients(Item)
@@ -75,11 +75,11 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	var err error
 	var it pub.Item
 
-	f, err := activitypub.FromRequest(r)
+	f, err := ap.FromRequest(r)
 	if err != nil {
 		return it, 0, errors.NewNotValid(err, "unable to load filters from request")
 	}
-	LoadCollectionFilters(r, f)
+	ap.LoadCollectionFilters(r, f)
 
 	if ok, err := ValidateRequest(r); !ok {
 		return it, http.StatusInternalServerError, errors.NewNotValid(err, "unrecognized ActivityPub request")
@@ -146,7 +146,7 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (pub.Item, error) {
 
 	var items pub.ItemCollection
 	var err error
-	f, err := activitypub.FromRequest(r)
+	f, err := ap.FromRequest(r)
 
 	where := ""
 	what := ""
@@ -156,7 +156,7 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (pub.Item, error) {
 	if err != nil {
 		return nil, errors.NotFoundf("%snot found", what)
 	}
-	LoadItemFilters(r, f)
+	ap.LoadItemFilters(r, f)
 
 	iri := reqURL(r)
 	if len(f.IRI) == 0 {
@@ -165,12 +165,12 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (pub.Item, error) {
 	what = fmt.Sprintf("%s ", path.Base(iri))
 	f.MaxItems = 1
 
-	if activitypub.ValidCollection(string(f.Collection)) {
-		if f.Collection == activitypub.ActorsType {
+	if ap.ValidCollection(string(f.Collection)) {
+		if f.Collection == ap.ActorsType {
 			if actLoader, ok := repo.(storage.ActorLoader); ok {
 				items, _, err = actLoader.LoadActors(f)
 			}
-		} else if activitypub.ValidActivityCollection(string(f.Collection)) {
+		} else if ap.ValidActivityCollection(string(f.Collection)) {
 			if actLoader, ok := repo.(storage.ActivityLoader); ok {
 				items, _, err = actLoader.LoadActivities(f)
 			}
@@ -184,7 +184,7 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (pub.Item, error) {
 		}
 		if len(items) == 0 {
 			if saver, ok := repo.(st.CanBootstrap); ok {
-				service := activitypub.Self(activitypub.DefaultServiceIRI(f.IRI.String()))
+				service := ap.Self(ap.DefaultServiceIRI(f.IRI.String()))
 				err := saver.CreateService(service)
 				if err != nil {
 					return nil, err
@@ -217,6 +217,6 @@ func HandleItem(r *http.Request, repo storage.ObjectLoader) (pub.Item, error) {
 	return it, nil
 }
 
-func loadItem(items pub.ItemCollection, f activitypub.Paginator, baseURL string) (pub.Item, error) {
+func loadItem(items pub.ItemCollection, f ap.Paginator, baseURL string) (pub.Item, error) {
 	return items.First(), nil
 }

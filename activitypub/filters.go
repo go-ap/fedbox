@@ -3,6 +3,7 @@ package activitypub
 import (
 	"fmt"
 	pub "github.com/go-ap/activitypub"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	h "github.com/go-ap/handlers"
 	"github.com/mariusor/qstring"
@@ -103,6 +104,7 @@ func ValidObjectCollection(typ string) bool {
 }
 
 // Filters
+// TODO(marius) we can make some small changes so it's not necessary to export this struct
 type Filters struct {
 	baseURL       pub.IRI                     `qstring:"-"`
 	Name          CompStrs                    `qstring:"name,omitempty"`
@@ -135,12 +137,25 @@ type Filters struct {
 	MaxItems      uint                        `qstring:"maxItems,omitempty"`
 }
 
+func ItemKey(keys ...string) filterFn {
+	return func(f *Filters) error {
+		if len(f.ItemKey) == 0 {
+			f.ItemKey = make(CompStrs, 0)
+		}
+		for _, key := range keys {
+			f.ItemKey = append(f.ItemKey, StringEquals(key))
+		}
+		return nil
+	}
+}
+
 func IRI(i pub.IRI) filterFn {
 	return func(f *Filters) error {
 		f.IRI = i
 		return nil
 	}
 }
+
 func Name(names ...string) filterFn {
 	return func(f *Filters) error {
 		if len(f.Name) == 0 {
@@ -153,27 +168,17 @@ func Name(names ...string) filterFn {
 	}
 }
 
-func Type(types ...string) filterFn {
+func Type(types ...pub.ActivityVocabularyType) filterFn {
 	return func(f *Filters) error {
-		if len(f.Type) == 0 {
-			f.Type = make(pub.ActivityVocabularyTypes, 0)
-		}
-		for _, typ := range types {
-			t := pub.ActivityVocabularyType(typ)
-			if pub.Types.Contains(t) {
-				f.Type = append(f.Type, t)
-			} else {
-				if strings.ToLower(typ) == strings.ToLower(string(pub.ObjectType)) {
-					f.Type = append(f.Type, pub.ObjectTypes...)
-				}
-				if strings.ToLower(typ) == strings.ToLower(string(pub.ActorType)) {
-					f.Type = append(f.Type, pub.ActorTypes...)
-				}
-				if strings.ToLower(typ) == strings.ToLower(string(pub.ActivityType)) {
-					f.Type = append(f.Type, pub.ActivityTypes...)
-				}
-			}
-		}
+		f.Type = types
+		return nil
+	}
+}
+
+func BaseIRI(iri pub.IRI, col h.CollectionType) filterFn {
+	return func(f *Filters) error {
+		f.baseURL = iri
+		f.Collection = col
 		return nil
 	}
 }
@@ -854,4 +859,36 @@ func (f *Filters) ItemMatches(it pub.Item) bool {
 		valid, _ = filterObject(it, f)
 	}
 	return valid
+}
+
+// LoadCollectionFilters uses specific logic for adding elements to the filters when loading
+// collections from the database.
+func LoadCollectionFilters(r *http.Request, f *Filters) error {
+	return LoadItemFilters(r, f)
+}
+
+// LoadItemFilters uses specific logic for adding elements to the filters when loading
+// single items from the database.
+func LoadItemFilters(r *http.Request, f *Filters) error {
+	if len(f.Key) != 0 {
+		for _, k := range f.Key {
+			i := CompStr{Str: fmt.Sprintf("%s%s", f.IRI, k)}
+			f.URL = append(f.URL, i)
+		}
+	}
+
+	if auth, ok := auth.ActorContext(r.Context()); ok {
+		f.Authenticated = &auth
+		if f.Object != nil {
+			f.Object.Authenticated = f.Authenticated
+		}
+		if f.Actor != nil {
+			f.Actor.Authenticated = f.Authenticated
+		}
+		if f.Target != nil {
+			f.Target.Authenticated = f.Authenticated
+		}
+	}
+
+	return nil
 }
