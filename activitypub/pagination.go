@@ -27,16 +27,7 @@ func getURL(i pub.IRI, f Paginator) pub.IRI {
 		return i
 	}
 	if u, err := i.URL(); err == nil {
-		query := u.Query()
-		for k, el := range q {
-			if len(el) == 0 {
-				continue
-			}
-			for _, v := range el {
-				query.Set(k, v)
-			}
-		}
-		u.RawQuery = query.Encode()
+		u.RawQuery = q.Encode()
 		i = pub.IRI(u.String())
 	}
 	return i
