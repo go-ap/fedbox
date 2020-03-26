@@ -7,14 +7,14 @@ require (
 	github.com/dgraph-io/badger v1.6.0
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
-	github.com/go-ap/activitypub v0.0.0-20200326103819-0a2f9982224e
-	github.com/go-ap/auth v0.0.0-20200326105224-acf1a4e14062
-	github.com/go-ap/client v0.0.0-20200326104150-9ad1f1dc4cef
-	github.com/go-ap/errors v0.0.0-20200326104127-4dafb43ddbac
-	github.com/go-ap/handlers v0.0.0-20200326105347-66744423a2ea
-	github.com/go-ap/jsonld v0.0.0-20200326103956-d2cbd2210abb
-	github.com/go-ap/processing v0.0.0-20200326105456-3e3c70835eea
-	github.com/go-ap/storage v0.0.0-20200326104224-29c7c4458e5c
+	github.com/go-ap/activitypub v0.0.0-20200326182444-611ae1db291f
+	github.com/go-ap/auth v0.0.0-20200326183648-6b7a7c0010f5
+	github.com/go-ap/client v0.0.0-20200326183148-073166bc1307
+	github.com/go-ap/errors v0.0.0-20200326183058-e94bf619ed84
+	github.com/go-ap/handlers v0.0.0-20200326183804-7c5e420e9b8c
+	github.com/go-ap/jsonld v0.0.0-20200326183007-52af1cf0a929
+	github.com/go-ap/processing v0.0.0-20200326184034-6d2fa1a88180
+	github.com/go-ap/storage v0.0.0-20200326183238-166b13b62e81
 	github.com/go-chi/chi v4.0.4+incompatible
 	github.com/golang/protobuf v1.3.4 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible
