@@ -130,6 +130,9 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 		}
 		return nil
 	})
+	if err != nil {
+		return it, http.StatusInternalServerError, err
+	}
 
 	status := http.StatusCreated
 	if it.GetType() == pub.DeleteType {
