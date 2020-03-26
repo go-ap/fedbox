@@ -300,13 +300,13 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 			// we have found an item
 			key := []byte(objectKey)
 			it, err := r.loadItem(b, key, nil)
-			if it == nil && ap.ValidCollection(string(lst)) {
-				return nil
-			}
 			if err != nil {
 				return err
 			}
 			if it == nil {
+				if ap.ValidCollection(string(lst)) {
+					return nil
+				}
 				return errors.NotFoundf("not found")
 			}
 			if it.IsCollection() {
@@ -318,13 +318,6 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 					return nil
 				}
 			} else {
-				it, err = r.loadItem(b, key, f)
-				if err != nil {
-					return err
-				}
-				if it == nil {
-					return nil
-				}
 				col = append(col, it)
 			}
 			return nil
