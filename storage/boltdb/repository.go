@@ -501,9 +501,17 @@ func itemBucketPath(iri pub.IRI) []byte {
 	return []byte(url.Host + url.Path)
 }
 
+func createOrDeleteItemInBucket(b *bolt.Bucket, it pub.Item, h handlers.CollectionType) (pub.Item, error) {
+	p := []byte(h)
+	if it != nil {
+		_, err := b.CreateBucket(p)
+		return it.GetLink(), err
+	}
+	return nil, b.DeleteBucket(p)
+}
+
 func save(r *repo, it pub.Item) (pub.Item, error) {
-	path := itemBucketPath(it.GetLink())
-	var uuid []byte
+	pathInBucket := itemBucketPath(it.GetLink())
 	err := r.d.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
 		if root == nil {
@@ -512,40 +520,38 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 		if !root.Writable() {
 			return errors.Errorf("Non writeable bucket %s", r.root)
 		}
-		var err error
-		var b *bolt.Bucket
-		b, uuid, err = descendInBucket(root, path, true)
+		b, uuid, err := descendInBucket(root, pathInBucket, true)
 		if err != nil {
-			return errors.Annotatef(err, "Unable to find %s in root bucket", path)
+			return errors.Annotatef(err, "Unable to find %s in root bucket", pathInBucket)
 		}
 		if !b.Writable() {
-			return errors.Errorf("Non writeable bucket %s", path)
+			return errors.Errorf("Non writeable bucket %s", pathInBucket)
 		}
-		if len(uuid) > 0 {
-			b, err = b.CreateBucket(uuid)
-			if err != nil {
-				return errors.Annotatef(err, "could not create bucket %s", uuid)
+		if len(uuid) == 0 {
+			createCollectionBucket := func(i pub.Item, h handlers.CollectionType) (pub.Item, error) {
+				return createOrDeleteItemInBucket(b, i, h)
+			}
+			// create collections
+			if pub.ActorTypes.Contains(it.GetType()) {
+				pub.OnActor(it, func(p *pub.Actor) error {
+					p.Inbox, err = createCollectionBucket(p.Inbox, handlers.Inbox)
+					p.Outbox, err = createCollectionBucket(p.Outbox, handlers.Outbox)
+					p.Followers, err = createCollectionBucket(p.Followers, handlers.Followers)
+					p.Following, err = createCollectionBucket(p.Following, handlers.Following)
+					p.Liked, err = createCollectionBucket(p.Liked, handlers.Liked)
+					return nil
+				})
+			}
+			if pub.ObjectTypes.Contains(it.GetType()) {
+				pub.OnObject(it, func(o *pub.Object) error {
+					o.Replies, err = createCollectionBucket(o.Replies, handlers.Replies)
+					o.Likes, err = createCollectionBucket(o.Likes, handlers.Likes)
+					o.Shares, err = createCollectionBucket(o.Shares, handlers.Shares)
+					return nil
+				})
 			}
 		}
-		return nil
-	})
 
-	err = r.d.Update(func(tx *bolt.Tx) error {
-		root := tx.Bucket(r.root)
-		if root == nil {
-			return errors.Errorf("Invalid bucket %s", r.root)
-		}
-		if !root.Writable() {
-			return errors.Errorf("Non writeable bucket %s", r.root)
-		}
-		var b *bolt.Bucket
-		b, uuid, err = descendInBucket(root, path, true)
-		if err != nil {
-			return errors.Annotatef(err, "Unable to find %s in root bucket", path)
-		}
-		if !b.Writable() {
-			return errors.Errorf("Non writeable bucket %s", path)
-		}
 		// TODO(marius): it's possible to set the encoding/decoding functions on the package or storage object level
 		//  instead of using jsonld.(Un)Marshal like this.
 		entryBytes, err := jsonld.Marshal(it)
