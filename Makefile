@@ -52,7 +52,7 @@ clean:
 	$(MAKE) -C tests $@
 
 
-test: TEST_TARGET := ./{activitypub,app,storage,internal}/...
+test: TEST_TARGET := ./{activitypub,app,storage,internal,cmd}/...
 test:
 	$(TEST) $(TEST_FLAGS) $(TEST_TARGET)
 
