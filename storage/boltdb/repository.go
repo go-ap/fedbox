@@ -82,7 +82,7 @@ func filterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
 		}
 	}
 	if f1, ok := f.(s.Filterable); ok {
-		if f1.GetLink() == it.GetLink() {
+		if f1.GetLink().Equals(it.GetLink(), false) {
 			return it, nil
 		} else {
 			return nil, nil
@@ -310,16 +310,19 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 				return errors.NotFoundf("not found")
 			}
 			if it.IsCollection() {
-				if colIRIs, ok := it.(pub.ItemCollection); ok {
-					col, err = r.loadItemsElements(f, colIRIs...)
-					if err != nil {
-						return err
-					}
-					return nil
+				isColFn := func(ff s.Filterable) bool {
+					_, ok := ff.(pub.IRI)
+					return ok
 				}
-			} else {
-				col = append(col, it)
+				return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+					if isColFn(f) {
+						f = c.Collection()
+					}
+					col, err = r.loadItemsElements(f, c.Collection()...)
+					return err
+				})
 			}
+			col = append(col, it)
 			return nil
 		}
 		return nil
