@@ -822,8 +822,11 @@ func (f Filters) FilterCollection(col pub.ItemCollection) (pub.ItemCollection, i
 
 // ugly hack to check if the current filter f.IRI property is a collection or an object
 func iriPointsToCollection(iri pub.IRI) bool {
-	base := path.Base(iri.String())
-	return !ValidCollection(base)
+	if u, err := iri.URL(); err == nil {
+		base := path.Base(u.Path)
+		return !ValidCollection(base) && base != "/"
+	} 
+	return false
 }
 
 // ItemMatches
