@@ -18,7 +18,7 @@ var C2STests = []testSuite{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/", apiURL),
+					url: fmt.Sprintf("%s", apiURL),
 				},
 				res: testRes{
 					code: http.StatusOK,

@@ -299,7 +299,7 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 		} else if len(remainderPath) == 0 {
 			// we have found an item
 			key := []byte(objectKey)
-			it, err := r.loadItem(b, key, nil)
+			it, err := r.loadItem(b, key, f)
 			if err != nil {
 				return err
 			}
