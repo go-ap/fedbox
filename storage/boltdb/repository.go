@@ -113,8 +113,6 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 	if raw == nil {
 		return nil, nil
 	}
-	var err error
-
 	it, err := loadItem(raw)
 	if err != nil {
 		return nil, err
@@ -122,7 +120,11 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 	if it == nil {
 		return nil, errors.NotFoundf("not found")
 	}
-	if !it.IsObject() && !it.IsCollection() {
+	if it.IsCollection() {
+		// we need to dereference them, so no further filtering/processing is needed here
+		return it, nil
+	}
+	if !it.IsObject() {
 		it, _ = r.loadOneFromBucket(it.GetLink())
 	}
 	if it.GetType() == pub.CreateType {
