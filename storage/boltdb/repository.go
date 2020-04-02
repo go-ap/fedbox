@@ -180,46 +180,6 @@ func (r *repo) loadOneFromBucket(f s.Filterable) (pub.Item, error) {
 	return col.First(), nil
 }
 
-func createService(b *bolt.DB, service pub.Service) error {
-	raw, err := jsonld.Marshal(service)
-	if err != nil {
-		return errors.Annotatef(err, "could not marshal service json")
-	}
-	err = b.Update(func(tx *bolt.Tx) error {
-		root, err := tx.CreateBucketIfNotExists([]byte(rootBucket))
-		if err != nil {
-			return errors.Annotatef(err, "could not create root bucket")
-		}
-		path := itemBucketPath(service.GetLink())
-		hostBucket, _, err := descendInBucket(root, path, true)
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s bucket", path)
-		}
-		err = hostBucket.Put([]byte(objectKey), raw)
-		if err != nil {
-			return errors.Annotatef(err, "could not save %s[%s]", service.Name, service.Type)
-		}
-		_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketActivities))
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s bucket", bucketActivities)
-		}
-		_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketActors))
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s bucket", bucketActors)
-		}
-		_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketObjects))
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s bucket", bucketObjects)
-		}
-		return nil
-	})
-	if err != nil {
-		return errors.Annotatef(err, "could not create buckets")
-	}
-
-	return nil
-}
-
 func (r *repo) CreateService(service pub.Service) error {
 	var err error
 	if err = r.Open(); err != nil {
@@ -794,7 +754,7 @@ func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
 	return ap.GenerateID(it, partOf, by)
 }
 
-// Close opens the boltdb database if possible.
+// Open opens the boltdb database if possible.
 func (r *repo) Open() error {
 	var err error
 	r.d, err = bolt.Open(r.path, 0600, nil)
