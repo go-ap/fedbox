@@ -108,6 +108,8 @@ func seedTestData(t *testing.T, testData []string) {
 	}
 }
 
+const boltdbExt = "bdb"
+
 func resetDB(t *testing.T) string {
 	if t != nil {
 		t.Helper()
@@ -118,21 +120,21 @@ func resetDB(t *testing.T) string {
 	if err != nil {
 		curPath = os.TempDir()
 	}
-	dbPath := config.GetBoltDBPath(curPath, host, "test")
+	dbPath := config.GetDBPath(curPath, host, "test", boltdbExt)
 	boltdb.Clean(dbPath)
 	boltdb.Bootstrap(dbPath, apiURL)
 	return dbPath
 }
 
 func getBoldDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (storage.Repository, osin.Storage) {
-	path := config.GetBoltDBPath(dir, host, env)
+	path := config.GetDBPath(dir, host, env, "bdb")
 	b := boltdb.New(boltdb.Config{
 		Path:  path,
-		LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.Infof(s, p...) },
-		ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.Errorf(s, p...) },
+		LogFn: app.InfoLogFn(l),
+		ErrFn: app.ErrLogFn(l),
 	}, u.String())
 
-	pathOauth := config.GetBoltDBPath(dir, fmt.Sprintf("%s-oauth", host), env)
+	pathOauth := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), env, boltdbExt)
 	if _, err := os.Stat(pathOauth); os.IsNotExist(err) {
 		err := auth.BootstrapBoltDB(pathOauth, []byte(host))
 		if err != nil {
@@ -143,8 +145,8 @@ func getBoldDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (sto
 	s := auth.NewBoltDBStore(auth.BoltConfig{
 		Path:       pathOauth,
 		BucketName: host,
-		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		LogFn:      app.InfoLogFn(l),
+		ErrFn:      app.ErrLogFn(l),
 	})
 
 	return b, s

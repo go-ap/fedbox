@@ -81,14 +81,16 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 	}
 }
 
+const boltExt = "bdb"
+
 func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type) error {
 	if typ == config.BoltDB {
-		storagePath := config.GetBoltDBPath(dir, c.Host, environ)
+		storagePath := config.GetDBPath(dir, c.Host, environ, boltExt)
 		err := boltdb.Bootstrap(storagePath, c.BaseURL)
 		if err != nil {
 			return errors.Annotatef(err, "Unable to create %s db", storagePath)
 		}
-		oauthPath := config.GetBoltDBPath(dir, fmt.Sprintf("%s-oauth", c.Host), environ)
+		oauthPath := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", c.Host), environ, boltExt)
 		if _, err := os.Stat(oauthPath); os.IsNotExist(err) {
 			err := auth.BootstrapBoltDB(oauthPath, []byte(c.Host))
 			if err != nil {
@@ -114,7 +116,7 @@ func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type
 
 func (c *Control) BootstrapReset(dir string, typ config.StorageType, environ env.Type) error {
 	if typ == config.BoltDB {
-		path := config.GetBoltDBPath(dir, c.Host, environ)
+		path := config.GetDBPath(dir, c.Host, environ, boltExt)
 		err := boltdb.Clean(path)
 		if err != nil {
 			return errors.Annotatef(err, "Unable to update %s db", typ)

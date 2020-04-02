@@ -23,50 +23,52 @@ type BackendConfig struct {
 }
 
 type Options struct {
-	Env       env.Type
-	LogLevel  log.Level
-	Secure    bool
-	Host      string
-	Listen    string
-	BaseURL   string
-	Storage   StorageType
-	DB        BackendConfig
-	BoltDBDir string
+	Env         env.Type
+	LogLevel    log.Level
+	Secure      bool
+	Host        string
+	Listen      string
+	BaseURL     string
+	DB          BackendConfig
+	Storage     StorageType
+	StoragePath string
 }
 
 type StorageType string
 
 const (
-	KeyENV       = "ENV"
-	KeyLogLevel  = "LOG_LEVEL"
-	KeyHostname  = "HOSTNAME"
-	KeyHTTPS     = "HTTPS"
-	KeyListen    = "LISTEN"
-	KeyStorage   = "STORAGE"
-	KeyDBHost    = "DB_HOST"
-	KeyDBPort    = "DB_PORT"
-	KeyDBName    = "DB_NAME"
-	KeyDBUser    = "DB_USER"
-	KeyDBPw      = "DB_PASSWORD"
-	KeyBoltDBDir = "BOLTDB_DIR"
-	BoltDB       = StorageType("boltdb")
-	Postgres     = StorageType("postgres")
+	KeyENV         = "ENV"
+	KeyLogLevel    = "LOG_LEVEL"
+	KeyHostname    = "HOSTNAME"
+	KeyHTTPS       = "HTTPS"
+	KeyListen      = "LISTEN"
+	KeyDBHost      = "DB_HOST"
+	KeyDBPort      = "DB_PORT"
+	KeyDBName      = "DB_NAME"
+	KeyDBUser      = "DB_USER"
+	KeyDBPw        = "DB_PASSWORD"
+	KeyStorage     = "STORAGE"
+	KeyStoragePath = "STORAGE_PATH"
+	BoltDB         = StorageType("boltdb")
+	Postgres       = StorageType("postgres")
 )
 
 func clean(name string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(path.Clean(name), ".", "-"), ":", "-")
 }
 
-func GetBoltDBPath(dir, file string, env env.Type) string {
-	return fmt.Sprintf("%s/%s-%s.bdb", dir, clean(file), env)
+func GetDBPath(dir, file string, env env.Type, ext string) string {
+	return fmt.Sprintf("%s/%s-%s.%s", dir, clean(file), env, ext)
 }
 
+const boltExt = "bdb"
+
 func (o Options) BoltDB() string {
-	return GetBoltDBPath(o.BoltDBDir, o.Host, o.Env)
+	return GetDBPath(o.StoragePath, o.Host, o.Env, boltExt)
 }
 
 func (o Options) BoltDBOAuth2() string {
-	return GetBoltDBPath(o.BoltDBDir, fmt.Sprintf("%s-oauth", o.Host), o.Env)
+	return GetDBPath(o.StoragePath, fmt.Sprintf("%s-oauth", o.Host), o.Env, boltExt)
 }
 
 func k(k string) string {
@@ -96,7 +98,6 @@ func LoadFromEnv(e env.Type) (Options, error) {
 	} else {
 		configs = append(configs, fmt.Sprintf(".env.%s", e))
 	}
-
 
 	lvl := os.Getenv(k(KeyLogLevel))
 	switch strings.ToLower(lvl) {
@@ -135,9 +136,9 @@ func LoadFromEnv(e env.Type) (Options, error) {
 	conf.Listen = os.Getenv(k(KeyListen))
 	envStorage := os.Getenv(k(KeyStorage))
 	conf.Storage = StorageType(strings.ToLower(envStorage))
-	conf.BoltDBDir = os.Getenv(k(KeyBoltDBDir))
-	if conf.BoltDBDir == "" {
-		conf.BoltDBDir = os.TempDir()
+	conf.StoragePath = os.Getenv(k(KeyStoragePath))
+	if conf.StoragePath == "" {
+		conf.StoragePath = os.TempDir()
 	}
 	conf.DB.Host = os.Getenv(k(KeyDBHost))
 	conf.DB.Pw = os.Getenv(k(KeyDBPw))

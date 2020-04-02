@@ -46,18 +46,27 @@ type FedBOX struct {
 	errFn        LogFn
 }
 
+var (
+	InfoLogFn = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
+		return func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) }
+	}
+	ErrLogFn = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
+		return func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) }
+	}
+)
+
 func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	db := boltdb.New(boltdb.Config{
 		Path:  c.BoltDB(),
-		LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-		ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		LogFn: InfoLogFn(l),
+		ErrFn: ErrLogFn(l),
 	}, c.BaseURL)
 
 	oauth := auth.NewBoltDBStore(auth.BoltConfig{
 		Path:       c.BoltDBOAuth2(),
 		BucketName: c.Host,
-		LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-		ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		LogFn:      InfoLogFn(l),
+		ErrFn:      ErrLogFn(l),
 	})
 	return db, oauth, nil
 }
@@ -71,8 +80,8 @@ func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.
 		User:    c.DB.User,
 		Pw:      c.DB.Pw,
 		Name:    c.DB.Name,
-		LogFn:   func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-		ErrFn:   func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		LogFn:   InfoLogFn(l),
+		ErrFn:   ErrLogFn(l),
 	})
 	return db, oauth, err
 }
