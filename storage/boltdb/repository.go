@@ -425,7 +425,7 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 	//    update 2019-10-03: I have no clue what this comment means. I can't think of why we'd need r/o collections for
 	//    cases where we want to delete things.
 	t := pub.Tombstone{
-		ID:   pub.ID(it.GetLink()),
+		ID:   it.GetLink(),
 		Type: pub.TombstoneType,
 		To: pub.ItemCollection{
 			pub.PublicNS,
