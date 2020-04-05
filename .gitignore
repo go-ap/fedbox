@@ -10,3 +10,4 @@ bin/*
 tests/db
 *.coverprofile
 *.bdb
+.cache/
