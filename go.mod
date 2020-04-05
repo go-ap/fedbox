@@ -3,8 +3,8 @@ module github.com/go-ap/fedbox
 go 1.13
 
 require (
-	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
-	github.com/dgraph-io/badger v1.6.0
+	github.com/dgraph-io/badger/v2 v2.0.3
+	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
 	github.com/go-ap/activitypub v0.0.0-20200329162727-fba872da771b
