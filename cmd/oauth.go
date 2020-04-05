@@ -194,7 +194,10 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 	app.Following = nil
 	app.URL = pub.IRI(redirect[0])
 
-	c.Storage.UpdateActor(app)
+	_, err = c.Storage.UpdateActor(app)
+	if err != nil {
+		return "", err
+	}
 	if id == "" {
 		id = uuid.New()
 	}
