@@ -13,7 +13,6 @@ import (
 	"gopkg.in/urfave/cli.v2"
 	"os"
 	"path"
-	"strings"
 )
 
 var Bootstrap = &cli.Command{
@@ -102,20 +101,11 @@ func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type
 		}
 	}
 	if typ == config.Badger {
-		storagePath := fmt.Sprintf("%s/%s/%s", dir, c.Conf.Env, c.Conf.Host)
-		crumbs := strings.Split(storagePath, "/")
-		for i := range crumbs {
-			current := strings.Join(crumbs[:i], "/")
-			if current == "" {
-				continue
-			}
-			if _, err := os.Stat(current); os.IsNotExist(err) {
-				if err := os.Mkdir(current, 0700); err != nil {
-					return err
-				}
-			}
+		storagePath, err := badger.Path(dir, c.Conf)
+		if err != nil {
+			return err
 		}
-		err := badger.Bootstrap(storagePath, c.Conf.BaseURL)
+		err = badger.Bootstrap(storagePath, c.Conf.BaseURL)
 		if err != nil {
 			return err
 		}

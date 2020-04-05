@@ -67,6 +67,9 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 	if err != nil {
 		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}
+	if dir == "." && conf.StoragePath != "" {
+		dir = conf.StoragePath
+	}
 
 	host := conf.Host
 	var aDb osin.Storage
@@ -87,6 +90,10 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 		return New(aDb, db, conf), nil
 	}
 	if typ == config.Badger {
+		storagePath, err := badger.Path(dir, conf)
+		if err != nil {
+			return nil, err
+		}
 		aDb = auth.NewBoltDBStore(auth.BoltConfig{
 			Path:       config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ),
 			BucketName: host,
@@ -94,7 +101,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 			ErrFn: app.ErrLogFn(l),
 		})
 		db = badger.New(badger.Config{
-			Path:  dir,
+			Path:  storagePath,
 			LogFn: app.InfoLogFn(l),
 			ErrFn: app.ErrLogFn(l),
 		}, conf.BaseURL)
