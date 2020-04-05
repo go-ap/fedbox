@@ -50,6 +50,7 @@ const (
 	KeyStorage     = "STORAGE"
 	KeyStoragePath = "STORAGE_PATH"
 	BoltDB         = StorageType("boltdb")
+	Badger         = StorageType("badger")
 	Postgres       = StorageType("postgres")
 )
 
@@ -57,18 +58,24 @@ func clean(name string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(path.Clean(name), ".", "-"), ":", "-")
 }
 
-func GetDBPath(dir, file string, env env.Type, ext string) string {
-	return fmt.Sprintf("%s/%s-%s.%s", dir, clean(file), env, ext)
+func GetDBPath(dir, file string, env env.Type) string {
+	return fmt.Sprintf("%s/%s-%s.bdb", dir, clean(file), env)
 }
 
-const boltExt = "bdb"
-
 func (o Options) BoltDB() string {
-	return GetDBPath(o.StoragePath, o.Host, o.Env, boltExt)
+	return GetDBPath(o.StoragePath, o.Host, o.Env)
 }
 
 func (o Options) BoltDBOAuth2() string {
-	return GetDBPath(o.StoragePath, fmt.Sprintf("%s-oauth", o.Host), o.Env, boltExt)
+	return GetDBPath(o.StoragePath, fmt.Sprintf("%s-oauth", o.Host), o.Env)
+}
+
+func (o Options) Badger() string {
+	return fmt.Sprintf("%s/%s/%s", o.StoragePath, o.Env, o.Host)
+}
+
+func (o Options) BadgerOAuth2() string {
+	return fmt.Sprintf("%s/%s/%s", o.StoragePath, o.Env, "oauth")
 }
 
 func k(k string) string {

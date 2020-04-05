@@ -6,12 +6,14 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
+	"github.com/go-ap/fedbox/storage/badger"
 	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/fedbox/storage/pgx"
 	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/urfave/cli.v2"
 	"os"
 	"path"
+	"strings"
 )
 
 var Bootstrap = &cli.Command{
@@ -77,25 +79,45 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 		if typ == "" {
 			typ = config.BoltDB
 		}
+		if opt, err := config.LoadFromEnv(env.Type(typ)); err == nil {
+			dir = opt.StoragePath
+		}
 		return ctl.Bootstrap(dir, typ, environ)
 	}
 }
 
-const boltExt = "bdb"
-
 func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type) error {
 	if typ == config.BoltDB {
-		storagePath := config.GetDBPath(dir, c.Host, environ, boltExt)
+		storagePath := config.GetDBPath(dir, c.Host, environ)
 		err := boltdb.Bootstrap(storagePath, c.BaseURL)
 		if err != nil {
 			return errors.Annotatef(err, "Unable to create %s db", storagePath)
 		}
-		oauthPath := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", c.Host), environ, boltExt)
+		oauthPath := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", c.Host), environ)
 		if _, err := os.Stat(oauthPath); os.IsNotExist(err) {
 			err := auth.BootstrapBoltDB(oauthPath, []byte(c.Host))
 			if err != nil {
 				return errors.Annotatef(err, "Unable to create %s db", oauthPath)
 			}
+		}
+	}
+	if typ == config.Badger {
+		storagePath := fmt.Sprintf("%s/%s/%s", dir, c.Conf.Env, c.Conf.Host)
+		crumbs := strings.Split(storagePath, "/")
+		for i := range crumbs {
+			current := strings.Join(crumbs[:i], "/")
+			if current == "" {
+				continue
+			}
+			if _, err := os.Stat(current); os.IsNotExist(err) {
+				if err := os.Mkdir(current, 0700); err != nil {
+					return err
+				}
+			}
+		}
+		err := badger.Bootstrap(storagePath, c.Conf.BaseURL)
+		if err != nil {
+			return err
 		}
 	}
 	var pgRoot string
@@ -116,7 +138,7 @@ func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type
 
 func (c *Control) BootstrapReset(dir string, typ config.StorageType, environ env.Type) error {
 	if typ == config.BoltDB {
-		path := config.GetDBPath(dir, c.Host, environ, boltExt)
+		path := config.GetDBPath(dir, c.Host, environ)
 		err := boltdb.Clean(path)
 		if err != nil {
 			return errors.Annotatef(err, "Unable to update %s db", typ)

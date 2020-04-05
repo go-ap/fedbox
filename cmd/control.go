@@ -8,6 +8,7 @@ import (
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
+	"github.com/go-ap/fedbox/storage/badger"
 	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/storage"
@@ -71,7 +72,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 	var aDb osin.Storage
 	var db storage.Repository
 	if typ == config.BoltDB {
-		path := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ, boltExt)
+		path := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ)
 		aDb = auth.NewBoltDBStore(auth.BoltConfig{
 			Path:       path,
 			BucketName: host,
@@ -79,9 +80,23 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
 		})
 		db = boltdb.New(boltdb.Config{
-			Path:  config.GetDBPath(dir, host, environ, boltExt),
-			LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-			ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+			Path:  config.GetDBPath(dir, host, environ),
+			LogFn: app.InfoLogFn(l),
+			ErrFn: app.ErrLogFn(l),
+		}, conf.BaseURL)
+		return New(aDb, db, conf), nil
+	}
+	if typ == config.Badger {
+		aDb = auth.NewBoltDBStore(auth.BoltConfig{
+			Path:       config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ),
+			BucketName: host,
+			LogFn: app.InfoLogFn(l),
+			ErrFn: app.ErrLogFn(l),
+		})
+		db = badger.New(badger.Config{
+			Path:  dir,
+			LogFn: app.InfoLogFn(l),
+			ErrFn: app.ErrLogFn(l),
 		}, conf.BaseURL)
 		return New(aDb, db, conf), nil
 	}

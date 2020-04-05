@@ -7,6 +7,7 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
+	"github.com/go-ap/fedbox/storage/badger"
 	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/handlers"
@@ -55,6 +56,21 @@ var (
 	}
 )
 
+func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+	db := badger.New(badger.Config{
+		Path:  c.Badger(),
+		LogFn: InfoLogFn(l),
+		ErrFn: ErrLogFn(l),
+	}, c.BaseURL)
+	oauth := auth.NewBoltDBStore(auth.BoltConfig{
+		Path:       c.BoltDBOAuth2(),
+		BucketName: c.Host,
+		LogFn:      InfoLogFn(l),
+		ErrFn:      ErrLogFn(l),
+	})
+	return db, oauth, nil
+}
+
 func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	db := boltdb.New(boltdb.Config{
 		Path:  c.BoltDB(),
@@ -89,6 +105,9 @@ func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.
 func getStorage(f FedBOX, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	if f.Config().Storage == config.BoltDB {
 		return getBoltStorage(f.Config(), l)
+	}
+	if f.Config().Storage == config.Badger {
+		return getBadgerStorage(f.Config(), l)
 	}
 	if f.Config().Storage == config.Postgres {
 		return getPgxStorage(f.Config(), l)

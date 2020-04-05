@@ -120,21 +120,21 @@ func resetDB(t *testing.T) string {
 	if err != nil {
 		curPath = os.TempDir()
 	}
-	dbPath := config.GetDBPath(curPath, host, "test", boltdbExt)
+	dbPath := config.GetDBPath(curPath, host, "test")
 	boltdb.Clean(dbPath)
 	boltdb.Bootstrap(dbPath, apiURL)
 	return dbPath
 }
 
 func getBoldDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (storage.Repository, osin.Storage) {
-	path := config.GetDBPath(dir, host, env, "bdb")
+	path := config.GetDBPath(dir, host, env)
 	b := boltdb.New(boltdb.Config{
 		Path:  path,
 		LogFn: app.InfoLogFn(l),
 		ErrFn: app.ErrLogFn(l),
 	}, u.String())
 
-	pathOauth := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), env, boltdbExt)
+	pathOauth := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), env)
 	if _, err := os.Stat(pathOauth); os.IsNotExist(err) {
 		err := auth.BootstrapBoltDB(pathOauth, []byte(host))
 		if err != nil {
