@@ -79,7 +79,9 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 			typ = config.BoltDB
 		}
 		if opt, err := config.LoadFromEnv(env.Type(typ)); err == nil {
-			dir = opt.StoragePath
+			if opt.StoragePath != os.TempDir() {
+				dir = opt.StoragePath
+			}
 		}
 		return ctl.Bootstrap(dir, typ, environ)
 	}

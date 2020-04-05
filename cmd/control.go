@@ -67,7 +67,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 	if err != nil {
 		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}
-	if dir == "." && conf.StoragePath != "" {
+	if dir == "." && conf.StoragePath != os.TempDir() {
 		dir = conf.StoragePath
 	}
 
@@ -90,16 +90,16 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 		return New(aDb, db, conf), nil
 	}
 	if typ == config.Badger {
-		storagePath, err := badger.Path(dir, conf)
-		if err != nil {
-			return nil, err
-		}
 		aDb = auth.NewBoltDBStore(auth.BoltConfig{
 			Path:       config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ),
 			BucketName: host,
 			LogFn: app.InfoLogFn(l),
 			ErrFn: app.ErrLogFn(l),
 		})
+		storagePath, err := badger.Path(dir, conf)
+		if err != nil {
+			return nil, err
+		}
 		db = badger.New(badger.Config{
 			Path:  storagePath,
 			LogFn: app.InfoLogFn(l),
@@ -149,7 +149,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 			//return err
 		}
 	}
-	return nil, nil
+	return nil, errors.Newf("invalid type %s", typ)
 }
 
 func loadPwFromStdin(confirm bool, s string, params ...interface{}) ([]byte, error) {
