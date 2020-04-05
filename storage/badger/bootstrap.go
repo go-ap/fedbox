@@ -2,12 +2,33 @@ package badger
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/dgraph-io/badger/v2"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/jsonld"
+	"os"
+	"strings"
 )
+
+func Path (dir string, c config.Options) (string, error){
+	p := fmt.Sprintf("%s/%s/%s", dir, c.Env, c.Host)
+	crumbs := strings.Split(p, "/")
+	for i := range crumbs {
+		current := strings.Join(crumbs[:i], "/")
+		if current == "" {
+			continue
+		}
+		if _, err := os.Stat(current); os.IsNotExist(err) {
+			if err := os.Mkdir(current, 0700); err != nil {
+				return "", err
+			}
+		}
+	}
+	return p, nil
+}
 
 func Bootstrap(path string, baseURL string) error {
 	db, err := badger.Open(badger.DefaultOptions(path))

@@ -520,7 +520,7 @@ func createOrDeleteItemInPath(b *badger.Txn, it pub.Item, h handlers.CollectionT
 func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(val []byte) error {
 	return func(val []byte) error {
 		it, err := loadItem(val)
-		if err != nil {
+		if err != nil || it == nil {
 			return errors.NewNotFound(err, "not found")
 		}
 		if it.IsCollection() {
@@ -548,6 +548,14 @@ func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(va
 
 var sep = []byte{'/'}
 
+func isObjectKey (k []byte) bool {
+	return bytes.HasSuffix(k, []byte(objectKey))
+}
+
+func isMetadataKey (k []byte) bool {
+	return bytes.HasSuffix(k, []byte(metaDataKey))
+}
+
 func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *badger.Txn) error {
@@ -562,6 +570,10 @@ func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 		// Assume path exists and has keys
 		for it.Seek(fullPath); it.ValidForPrefix(fullPath); it.Next() {
 			i := it.Item()
+			k := i.Key()
+			if !isObjectKey(k) {
+				continue
+			}
 			err := i.Value(r.loadFromIterator(&col, f))
 			if err != nil {
 				continue
