@@ -42,11 +42,15 @@ type Config struct {
 	ErrFn    loggerFn
 }
 
+var emptyLogFn = func(logrus.Fields, string, ...interface{}) {}
+
 // New returns a new repo repository
 func New(c Config, baseURL string) *repo {
 	b := repo{
 		path:    c.Path,
 		baseURL: baseURL,
+		logFn:   emptyLogFn,
+		errFn:   emptyLogFn,
 	}
 	if c.ErrFn != nil {
 		b.errFn = c.ErrFn
@@ -190,6 +194,7 @@ func (r *repo) SaveObject(it pub.Item) (pub.Item, error) {
 
 	return it, err
 }
+
 // IsLocalIRI shows if the received IRI belongs to the current instance
 func (r repo) IsLocalIRI(i pub.IRI) bool {
 	return i.Contains(pub.IRI(r.baseURL), false)
@@ -363,9 +368,11 @@ func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
 type meta struct {
 	Pw []byte `json:"pw"`
 }
+
 func getMetadataKey(p []byte) []byte {
 	return bytes.Join([][]byte{p, []byte(metaDataKey)}, []byte{'/'})
 }
+
 // PasswordSet
 func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 	path := itemPath(it.GetLink())
@@ -456,37 +463,50 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 func save(r *repo, it pub.Item) (pub.Item, error) {
 	pathInPath := itemPath(it.GetLink())
 	err := r.d.Update(func(tx *badger.Txn) error {
-		_, uuid := path.Split(string(pathInPath))
-		if len(uuid) == 0 {
-			createCollectionPath := func(i pub.Item, h handlers.CollectionType) (pub.Item, error) {
-				return createOrDeleteItemInPath(tx, i, h)
-			}
-			// create collections
-			if pub.ActorTypes.Contains(it.GetType()) {
-				err := pub.OnActor(it, func(p *pub.Actor) error {
-					var err error
-					p.Inbox, err = createCollectionPath(p.Inbox, handlers.Inbox)
-					p.Outbox, err = createCollectionPath(p.Outbox, handlers.Outbox)
-					p.Followers, err = createCollectionPath(p.Followers, handlers.Followers)
-					p.Following, err = createCollectionPath(p.Following, handlers.Following)
-					p.Liked, err = createCollectionPath(p.Liked, handlers.Liked)
-					return err
-				})
-				if err != nil {
-					r.errFn(nil, err.Error())
+		createCollectionPath := func(i pub.Item) (pub.Item, error) {
+			return createOrDeleteItemInPath(tx, i)
+		}
+		// create collections
+		if pub.ActorTypes.Contains(it.GetType()) {
+			err := pub.OnActor(it, func(p *pub.Actor) error {
+				var err error
+				if p.Inbox != nil {
+					p.Inbox, err = createCollectionPath(p.Inbox)
 				}
-			}
-			if pub.ObjectTypes.Contains(it.GetType()) {
-				err := pub.OnObject(it, func(o *pub.Object) error {
-					var err error
-					o.Replies, err = createCollectionPath(o.Replies, handlers.Replies)
-					o.Likes, err = createCollectionPath(o.Likes, handlers.Likes)
-					o.Shares, err = createCollectionPath(o.Shares, handlers.Shares)
-					return err
-				})
-				if err != nil {
-					r.errFn(nil, err.Error())
+				if p.Outbox != nil {
+					p.Outbox, err = createCollectionPath(p.Outbox)
 				}
+				if p.Followers != nil {
+					p.Followers, err = createCollectionPath(p.Followers)
+				}
+				if p.Following != nil {
+					p.Following, err = createCollectionPath(p.Following)
+				}
+				if p.Liked != nil {
+					p.Liked, err = createCollectionPath(p.Liked)
+				}
+				return err
+			})
+			if err != nil {
+				r.errFn(nil, err.Error())
+			}
+		}
+		if pub.ObjectTypes.Contains(it.GetType()) {
+			err := pub.OnObject(it, func(o *pub.Object) error {
+				var err error
+				if o.Replies != nil {
+					o.Replies, err = createCollectionPath(o.Replies)
+				}
+				if o.Likes != nil {
+					o.Likes, err = createCollectionPath(o.Likes)
+				}
+				if o.Shares != nil {
+					o.Shares, err = createCollectionPath(o.Shares)
+				}
+				return err
+			})
+			if err != nil {
+				r.errFn(nil, err.Error())
 			}
 		}
 
@@ -508,8 +528,13 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 	return it, err
 }
 
-func createOrDeleteItemInPath(b *badger.Txn, it pub.Item, h handlers.CollectionType) (pub.Item, error) {
-	p := []byte(h)
+func getCollectionKey(it pub.Item, h handlers.CollectionType) []byte {
+	p := itemPath(it.GetLink())
+	return bytes.Join([][]byte{p, []byte(h)}, []byte{'/'})
+}
+
+func createOrDeleteItemInPath(b *badger.Txn, it pub.Item) (pub.Item, error) {
+	p := itemPath(it.GetLink())
 	if it != nil {
 		err := b.Set(p, nil)
 		return it.GetLink(), err
@@ -548,11 +573,11 @@ func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(va
 
 var sep = []byte{'/'}
 
-func isObjectKey (k []byte) bool {
+func isObjectKey(k []byte) bool {
 	return bytes.HasSuffix(k, []byte(objectKey))
 }
 
-func isMetadataKey (k []byte) bool {
+func isMetadataKey(k []byte) bool {
 	return bytes.HasSuffix(k, []byte(metaDataKey))
 }
 
