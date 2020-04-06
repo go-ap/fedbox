@@ -9,4 +9,24 @@ FedBOX is a very simple ActivityPub enabled service. Its main purpose is as a re
 
 The secondary purpose is to abstract some of the common functionality that such a service would use, such as: HTTP handlers and middlewares, storage and filtering etc.
 
-The current iteration can persist data to PostgreSQL and BoltDB, but I want to also add support for a filesystem based method.
+The current iteration can persist data to [BoltDB](https://go.etcd.io/bbolt) and [Badger](https://github.com/dgraph-io/badger), but I want to also add support for PostgreSQL and filesystem based method.
+
+## Features
+
+### Support for C2S ActivityPub:
+
+ * Support for content management actitivies: `Create`, `Update`, `Delete`.
+ All Object types are supported, but they have no local side-effects like caching images, video and audio.
+ * `Follow`, `Accept`, `Block` with actors as objects.
+ * Appreciation activities: `Like`, `Dislike`.
+ * Negating content management and appreciation activities using `Undo`.
+ * OAuth2 authentication
+
+
+### Support for S2S ActivityPub
+
+`TODO`
+
+## Install
+
+See [INSTALL](./doc/INSTALL.md) file.
