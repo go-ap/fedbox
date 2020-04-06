@@ -469,7 +469,7 @@ func itemBucketPath(iri pub.IRI) []byte {
 func createOrDeleteItemInBucket(b *bolt.Bucket, it pub.Item, h handlers.CollectionType) (pub.Item, error) {
 	p := []byte(h)
 	if it != nil {
-		_, err := b.CreateBucket(p)
+		_, err := b.CreateBucketIfNotExists(p)
 		return it.GetLink(), err
 	}
 	return nil, b.DeleteBucket(p)
@@ -498,22 +498,45 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 			}
 			// create collections
 			if pub.ActorTypes.Contains(it.GetType()) {
-				pub.OnActor(it, func(p *pub.Actor) error {
-					p.Inbox, err = createCollectionBucket(p.Inbox, handlers.Inbox)
-					p.Outbox, err = createCollectionBucket(p.Outbox, handlers.Outbox)
-					p.Followers, err = createCollectionBucket(p.Followers, handlers.Followers)
-					p.Following, err = createCollectionBucket(p.Following, handlers.Following)
-					p.Liked, err = createCollectionBucket(p.Liked, handlers.Liked)
-					return nil
+				err := pub.OnActor(it, func(p *pub.Actor) error {
+					var err error
+					if p.Inbox != nil {
+						p.Inbox, err = createCollectionBucket(p.Inbox, handlers.Inbox)
+					}
+					if p.Outbox != nil {
+						p.Outbox, err = createCollectionBucket(p.Outbox, handlers.Outbox)
+					}
+					if p.Followers != nil {
+						p.Followers, err = createCollectionBucket(p.Followers, handlers.Followers)
+					}
+					if p.Following != nil {
+						p.Following, err = createCollectionBucket(p.Following, handlers.Following)
+					}
+					if p.Liked != nil {
+						p.Liked, err = createCollectionBucket(p.Liked, handlers.Liked)
+					}
+					return err
 				})
+				if err != nil {
+					r.errFn(nil, err.Error())
+				}
 			}
 			if pub.ObjectTypes.Contains(it.GetType()) {
-				pub.OnObject(it, func(o *pub.Object) error {
-					o.Replies, err = createCollectionBucket(o.Replies, handlers.Replies)
-					o.Likes, err = createCollectionBucket(o.Likes, handlers.Likes)
-					o.Shares, err = createCollectionBucket(o.Shares, handlers.Shares)
-					return nil
+				err := pub.OnObject(it, func(o *pub.Object) error {
+					if o.Replies != nil {
+						o.Replies, err = createCollectionBucket(o.Replies, handlers.Replies)
+					}
+					if o.Likes != nil {
+						o.Likes, err = createCollectionBucket(o.Likes, handlers.Likes)
+					}
+					if o.Shares != nil {
+						o.Shares, err = createCollectionBucket(o.Shares, handlers.Shares)
+					}
+					return err
 				})
+				if err != nil {
+					r.errFn(nil, err.Error())
+				}
 			}
 		}
 
