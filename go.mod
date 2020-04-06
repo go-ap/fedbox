@@ -13,12 +13,13 @@ require (
 	github.com/go-ap/errors v0.0.0-20200327122229-53c42fe04723
 	github.com/go-ap/handlers v0.0.0-20200329163205-a3773c88ca17
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20200329163257-4e660a6b6089
+	github.com/go-ap/processing v0.0.0-20200406152154-edcb000eeadf
 	github.com/go-ap/storage v0.0.0-20200329163012-b81a75a9c4b0
 	github.com/go-chi/chi v4.0.4+incompatible
 	github.com/golang/protobuf v1.3.4 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.3.0
+	github.com/kr/pretty v0.2.0 // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d
 	github.com/openshift/osin v1.0.1
 	github.com/pborman/uuid v1.2.0
