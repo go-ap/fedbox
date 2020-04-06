@@ -44,14 +44,16 @@ type Config struct {
 	ErrFn      loggerFn
 }
 
+var emptyLogFn = func(logrus.Fields, string, ...interface{}) {}
+
 // New returns a new repo repository
 func New(c Config, baseURL string) *repo {
 	b := repo{
 		root:    []byte(rootBucket),
 		path:    c.Path,
 		baseURL: baseURL,
-		logFn:   func(logrus.Fields, string, ...interface{}) {},
-		errFn:   func(logrus.Fields, string, ...interface{}) {},
+		logFn:   emptyLogFn,
+		errFn:   emptyLogFn,
 	}
 	if c.ErrFn != nil {
 		b.errFn = c.ErrFn
