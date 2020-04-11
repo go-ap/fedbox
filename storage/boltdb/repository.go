@@ -72,40 +72,6 @@ func loadItem(raw []byte) (pub.Item, error) {
 	return pub.UnmarshalJSON(raw)
 }
 
-func filterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
-	if it == nil {
-		return it, nil
-	}
-	if ff, ok := f.(ap.ItemMatcher); ok {
-		if ff.ItemMatches(it) {
-			return it, nil
-		} else {
-			return nil, nil
-		}
-	}
-	if f1, ok := f.(s.Filterable); ok {
-		if f1.GetLink().Equals(it.GetLink(), false) {
-			return it, nil
-		} else {
-			return nil, nil
-		}
-	}
-	if f1, ok := f.(s.FilterableItems); ok {
-		iris := f1.IRIs()
-		// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
-		if len(iris) > 0 && !iris.Contains(it.GetLink()) {
-			return nil, nil
-		}
-		types := f1.Types()
-		// FIXME(marius): this does not cover case insensitivity
-		if len(types) > 0 && !types.Contains(it.GetType()) {
-			return nil, nil
-		}
-		return it, nil
-	}
-	return nil, errors.Errorf("Invalid filter %T", f)
-}
-
 func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, error) {
 	// we have found an item
 	if len(key) == 0 {
@@ -140,7 +106,7 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 		})
 	}
 	if f != nil {
-		return filterIt(it, f)
+		return ap.FilterIt(it, f)
 	}
 	return it, nil
 }

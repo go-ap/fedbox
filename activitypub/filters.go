@@ -6,6 +6,7 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	h "github.com/go-ap/handlers"
+	s "github.com/go-ap/storage"
 	"github.com/mariusor/qstring"
 	"net/http"
 	"net/url"
@@ -777,7 +778,6 @@ func filterURLs(filters CompStrs, it pub.Item) bool {
 				break
 			}
 		}
-
 	}
 	return keep
 }
@@ -894,4 +894,39 @@ func LoadItemFilters(r *http.Request, f *Filters) error {
 	}
 
 	return nil
+}
+
+// FilterIt
+func FilterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
+	if it == nil {
+		return it, nil
+	}
+	if ff, ok := f.(ItemMatcher); ok {
+		if ff.ItemMatches(it) {
+			return it, nil
+		} else {
+			return nil, nil
+		}
+	}
+	if f1, ok := f.(s.Filterable); ok {
+		if f1.GetLink().Equals(it.GetLink(), false) {
+			return it, nil
+		} else {
+			return nil, nil
+		}
+	}
+	if f1, ok := f.(s.FilterableItems); ok {
+		iris := f1.IRIs()
+		// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
+		if len(iris) > 0 && !iris.Contains(it.GetLink()) {
+			return nil, nil
+		}
+		types := f1.Types()
+		// FIXME(marius): this does not cover case insensitivity
+		if len(types) > 0 && !types.Contains(it.GetType()) {
+			return nil, nil
+		}
+		return it, nil
+	}
+	return nil, errors.Errorf("Invalid filter %T", f)
 }
