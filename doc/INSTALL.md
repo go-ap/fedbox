@@ -23,7 +23,7 @@ $ $EDITOR .env
 ```sh
 $ ./bin/ctl bootstrap
 
-$ ./bin/ctl actor add admin
+$ ./bin/ctl ap actor add admin
 admin's pw: 
 pw again: 
 
