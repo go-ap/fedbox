@@ -1,7 +1,6 @@
 package badger
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/dgraph-io/badger/v2"
 	pub "github.com/go-ap/activitypub"
@@ -40,57 +39,32 @@ func Bootstrap(path string, baseURL string) error {
 	return createService(db, activitypub.Self(activitypub.DefaultServiceIRI(baseURL)))
 }
 
-func getActivitiesKey(p []byte) []byte {
-	return bytes.Join([][]byte{p, []byte(pathActivities)}, []byte{'/'})
-}
-func getActorsKey(p []byte) []byte {
-	return bytes.Join([][]byte{p, []byte(pathActors)}, []byte{'/'})
-}
-func getObjectsKey(p []byte) []byte {
-	return bytes.Join([][]byte{p, []byte(pathObjects)}, []byte{'/'})
-}
-
 func createService(b *badger.DB, service pub.Service) error {
 	raw, err := jsonld.Marshal(service)
 	if err != nil {
 		return errors.Annotatef(err, "could not marshal service json")
 	}
-	err = b.Update(func(tx *badger.Txn) error {
+	return b.Update(func(tx *badger.Txn) error {
+		var err error
 		path := itemPath(service.GetLink())
-		err = tx.Set(getActivitiesKey(path), nil)
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s path", getActivitiesKey(path))
+		fn := func(k []byte, v []byte) {
+			if err = tx.Set(k, v); err != nil {
+				err = errors.Annotatef(err, "could not create %s path", k)
+			}
 		}
-		err = tx.Set(getActorsKey(path), nil)
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s path", getActorsKey(path))
-		}
-		err = tx.Set(getObjectsKey(path), nil)
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s path", getObjectsKey(path))
-		}
-		err = tx.Set(getObjectKey(path), raw)
-		if err != nil {
-			return errors.Annotatef(err, "could not save %s[%s] %s", service.Name, service.Type, getObjectKey(path))
-		}
-		return nil
-	})
-	if err != nil {
-		return errors.Annotatef(err, "could not create paths")
-	}
+		fn(getObjectKey(path), raw)
+		fn(getObjectKey(itemPath(service.Inbox.GetLink())), emptyCollection)
 
-	return nil
+		return err
+	})
 }
 
 func Clean(path string) error {
-	var err error
 	db, err := badger.Open(badger.DefaultOptions(path))
 	if err != nil {
-		return errors.Annotatef(err, "could not open db")
+		return errors.Annotatef(err, "could not open db %s", path)
 	}
-	defer db.Close()
+	db.Close()
 
-	return db.Update(func(tx *badger.Txn) error {
-		return nil
-	})
+	return os.RemoveAll(path)
 }

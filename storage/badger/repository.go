@@ -11,6 +11,7 @@ import (
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
 	"github.com/mariusor/qstring"
+	"github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"path"
@@ -69,6 +70,9 @@ func (r *repo) Open() error {
 		errFn: r.errFn,
 	})
 	r.d, err = badger.Open(c)
+	if err != nil {
+		err = errors.Annotatef(err, "unable to open storage")
+	}
 	return err
 }
 
@@ -272,7 +276,7 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	if !r.IsLocalIRI(col.GetLink()) {
 		return errors.Newf("Unable to save to non local collection %s", col)
 	}
-	path := itemPath(col.GetLink())
+	p := itemPath(col.GetLink())
 	err := r.Open()
 	if err != nil {
 		return err
@@ -280,35 +284,36 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	defer r.Close()
 
 	return r.d.Update(func(tx *badger.Txn) error {
-		var iris pub.IRIs
+		iris := make(pub.IRIs, 0)
 		// Assume path exists and has keys
-		fullPath := itemPath(col)
 		t := tx.NewIterator(badger.DefaultIteratorOptions)
 		defer t.Close()
-		for t.Seek(fullPath); t.ValidForPrefix(fullPath); t.Next() {
-			i := t.Item()
-			err := i.Value(func(raw []byte) error {
-				err := jsonld.Unmarshal(raw, &iris)
-				if err != nil {
-					return errors.Newf("Unable to unmarshal entries in collection %s", path)
-				}
-				return nil
-			})
-			if err != nil {
-				continue
-			}
+
+		path := getObjectKey(p)
+		i, err := tx.Get(path)
+		if err != nil {
+			return errors.Annotatef(err, "Unable to load path %s", p)
 		}
+		err = i.Value(func(raw []byte) error {
+			err := jsonld.Unmarshal(raw, &iris)
+			if err != nil {
+				return errors.Annotatef(err, "Unable to unmarshal collection %s", p)
+			}
+			return nil
+		})
 		if iris.Contains(it.GetLink()) {
-			return errors.Newf("Element already exists in collection %s", path)
+			return errors.Newf("Element already exists in collection %s", p)
 		}
 		iris = append(iris, it.GetLink())
-		raw, err := jsonld.Marshal(iris)
+
+		var raw []byte
+		raw, err = jsonld.Marshal(iris)
 		if err != nil {
-			return errors.Newf("Unable to marshal entries in collection %s", path)
+			return errors.Newf("Unable to marshal entries in collection %s", p)
 		}
-		err = tx.Set(fullPath, raw)
+		err = tx.Set(p, raw)
 		if err != nil {
-			return errors.Newf("Unable to save entries to collection %s", path)
+			return errors.Annotatef(err, "Unable to save entries to collection %s", p)
 		}
 		return err
 	})
@@ -370,7 +375,7 @@ type meta struct {
 }
 
 func getMetadataKey(p []byte) []byte {
-	return bytes.Join([][]byte{p, []byte(metaDataKey)}, []byte{'/'})
+	return bytes.Join([][]byte{p, []byte(metaDataKey)}, sep)
 }
 
 // PasswordSet
@@ -461,7 +466,7 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 }
 
 func save(r *repo, it pub.Item) (pub.Item, error) {
-	pathInPath := itemPath(it.GetLink())
+	itPath := itemPath(it.GetLink())
 	err := r.d.Update(func(tx *badger.Txn) error {
 		createCollectionPath := func(i pub.Item) (pub.Item, error) {
 			return createOrDeleteItemInPath(tx, i)
@@ -516,7 +521,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 		if err != nil {
 			return errors.Annotatef(err, "could not marshal object")
 		}
-		k := bytes.Join([][]byte{pathInPath, []byte(objectKey)}, []byte{'/'})
+		k := getObjectKey(itPath)
 		err = tx.Set(k, entryBytes)
 		if err != nil {
 			return errors.Annotatef(err, "could not store encoded object")
@@ -530,13 +535,15 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 
 func getCollectionKey(it pub.Item, h handlers.CollectionType) []byte {
 	p := itemPath(it.GetLink())
-	return bytes.Join([][]byte{p, []byte(h)}, []byte{'/'})
+	return bytes.Join([][]byte{p, []byte(h)}, sep)
 }
 
+var emptyCollection = []byte{'[', ']'}
+
 func createOrDeleteItemInPath(b *badger.Txn, it pub.Item) (pub.Item, error) {
-	p := itemPath(it.GetLink())
+	p := getObjectKey(itemPath(it.GetLink()))
 	if it != nil {
-		err := b.Set(p, nil)
+		err := b.Set(p, emptyCollection)
 		return it.GetLink(), err
 	}
 	return nil, b.Delete(p)
@@ -561,11 +568,23 @@ func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(va
 				return err
 			})
 		} else {
-			it, err = filterIt(it, f)
-			if err != nil || it == nil {
+			if it.GetType() == pub.CreateType {
+				// TODO(marius): this seems terribly not nice
+				pub.OnActivity(it, func(a *pub.Activity) error {
+					if !a.Object.IsObject() {
+						ob, _ := r.loadOneFromPath(a.Object.GetLink())
+						a.Object = ob
+					}
+					return nil
+				})
+			}
+			it, err = ap.FilterIt(it, f)
+			if err != nil {
 				return err
 			}
-			*col = append(*col, it)
+			if it != nil {
+				*col = append(*col, it)
+			}
 		}
 		return nil
 	}
@@ -581,27 +600,59 @@ func isMetadataKey(k []byte) bool {
 	return bytes.HasSuffix(k, []byte(metaDataKey))
 }
 
+var fedboxCollections = handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
+
+func isStorageCollectionKey(p []byte) bool {
+	lst := handlers.CollectionType(path.Base(string(p)))
+	return fedboxCollections.Contains(lst)
+}
+
+func isIRIsKey(p []byte) bool {
+	base := path.Base(string(p))
+	return ap.ValidCollection(base) && !fedboxCollections.Contains(handlers.CollectionType(base))
+}
+
+func isItemKey(p []byte) bool {
+	dir, file := path.Split(string(p))
+	base := path.Base(dir)
+	if base == "." {
+		// special case for root path
+		return true
+	}
+	u := uuid.Parse(file)
+	return ap.ValidCollection(base) && !fedboxCollections.Contains(handlers.CollectionType(base)) && len(u) == 36
+}
+
+func iterKeyIsTooDeep(base, k []byte, depth int) bool {
+	res := bytes.TrimPrefix(k, append(base, sep...))
+	res = bytes.TrimSuffix(res, []byte(objectKey))
+	cnt := bytes.Count(res, sep)
+	return cnt > depth
+}
+
 func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *badger.Txn) error {
 		iri := f.GetLink()
-		// This is the case where the Filter points to a single AP Object IRI
-		// TODO(marius): Ideally this should support the case where we use the IRI to point to a path path
-		//     and on top of that apply the other filters
 		fullPath := itemPath(iri)
 		it := tx.NewIterator(badger.DefaultIteratorOptions)
 		defer it.Close()
 
-		// Assume path exists and has keys
+		depth := 0
+		if isStorageCollectionKey(fullPath) {
+			depth = 1
+		}
 		for it.Seek(fullPath); it.ValidForPrefix(fullPath); it.Next() {
 			i := it.Item()
 			k := i.Key()
-			if !isObjectKey(k) {
+			if iterKeyIsTooDeep(fullPath, k, depth) {
 				continue
 			}
-			err := i.Value(r.loadFromIterator(&col, f))
-			if err != nil {
-				continue
+			if isObjectKey(k) {
+				err := i.Value(r.loadFromIterator(&col, f))
+				if err != nil {
+					continue
+				}
 			}
 		}
 		return nil
@@ -651,16 +702,15 @@ func (r *repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {
 }
 
 func getObjectKey(p []byte) []byte {
-	return bytes.Join([][]byte{p, []byte(objectKey)}, []byte{'/'})
+	return bytes.Join([][]byte{p, []byte(objectKey)}, sep)
 }
 
 func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemCollection, error) {
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *badger.Txn) error {
 		for _, iri := range iris {
-			var b *badger.Txn
 			remainderPath := itemPath(iri.GetLink())
-			it, err := r.loadItem(b, getObjectKey(remainderPath), f)
+			it, err := r.loadItem(tx, getObjectKey(remainderPath), f)
 			if err != nil || it == nil {
 				continue
 			}
@@ -672,10 +722,6 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 }
 
 func (r *repo) loadItem(b *badger.Txn, key []byte, f s.Filterable) (pub.Item, error) {
-	// we have found an item
-	if len(key) == 0 {
-		key = []byte(objectKey)
-	}
 	i, err := b.Get(key)
 	if err != nil {
 		return nil, err
@@ -714,43 +760,9 @@ func (r *repo) loadItem(b *badger.Txn, key []byte, f s.Filterable) (pub.Item, er
 		})
 	}
 	if f != nil {
-		return filterIt(it, f)
+		return ap.FilterIt(it, f)
 	}
 	return it, nil
-}
-
-func filterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
-	if it == nil {
-		return it, nil
-	}
-	if ff, ok := f.(ap.ItemMatcher); ok {
-		if ff.ItemMatches(it) {
-			return it, nil
-		} else {
-			return nil, nil
-		}
-	}
-	if f1, ok := f.(s.Filterable); ok {
-		if f1.GetLink().Equals(it.GetLink(), false) {
-			return it, nil
-		} else {
-			return nil, nil
-		}
-	}
-	if f1, ok := f.(s.FilterableItems); ok {
-		iris := f1.IRIs()
-		// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
-		if len(iris) > 0 && !iris.Contains(it.GetLink()) {
-			return nil, nil
-		}
-		types := f1.Types()
-		// FIXME(marius): this does not cover case insensitivity
-		if len(types) > 0 && !types.Contains(it.GetType()) {
-			return nil, nil
-		}
-		return it, nil
-	}
-	return nil, errors.Errorf("Invalid filter %T", f)
 }
 
 func loadItem(raw []byte) (pub.Item, error) {
@@ -766,5 +778,5 @@ func itemPath(iri pub.IRI) []byte {
 	if err != nil {
 		return nil
 	}
-	return []byte(url.Host + url.Path)
+	return []byte(path.Join(url.Host, url.Path))
 }
