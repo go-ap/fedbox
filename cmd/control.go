@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"github.com/go-ap/auth"
@@ -93,8 +94,8 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 		aDb = auth.NewBoltDBStore(auth.BoltConfig{
 			Path:       config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ),
 			BucketName: host,
-			LogFn: app.InfoLogFn(l),
-			ErrFn: app.ErrLogFn(l),
+			LogFn:      app.InfoLogFn(l),
+			ErrFn:      app.ErrLogFn(l),
 		})
 		storagePath, err := badger.Path(dir, conf)
 		if err != nil {
@@ -165,6 +166,14 @@ func loadPwFromStdin(confirm bool, s string, params ...interface{}) ([]byte, err
 		}
 	}
 	return pw1, nil
+}
+
+func loadFromStdin(s string, params ...interface{}) ([]byte, error) {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Printf(s+": ", params...)
+	input, _ := reader.ReadBytes('\n')
+	fmt.Println()
+	return input[:len(input)-1], nil
 }
 
 func Errf(s string, par ...interface{}) {

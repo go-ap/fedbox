@@ -42,20 +42,31 @@ var reset = &cli.Command{
 	Action: resetAct(&ctl),
 }
 
+func getConfig(c *cli.Context) (string, config.StorageType, env.Type) {
+	// @todo(marius): move this to a Before function
+	dir := c.String("dir")
+	if dir == "" {
+		dir = "."
+	}
+	environ := env.Type(c.String("env"))
+	if environ == "" {
+		environ = env.DEV
+	}
+	typ := config.StorageType(c.String("type"))
+	if typ == "" {
+		typ = config.BoltDB
+	}
+	if opt, err := config.LoadFromEnv(env.Type(typ)); err == nil {
+		if opt.StoragePath != os.TempDir() {
+			dir = opt.StoragePath
+		}
+	}
+	return dir, typ, environ
+}
+
 func resetAct(c *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		dir := c.String("dir")
-		if dir == "" {
-			dir = "."
-		}
-		environ := env.Type(c.String("env"))
-		if environ == "" {
-			environ = env.DEV
-		}
-		typ := config.StorageType(c.String("type"))
-		if typ == "" {
-			typ = config.BoltDB
-		}
+		dir, typ, environ := getConfig(c)
 		err := ctl.BootstrapReset(dir, typ, environ)
 		if err != nil {
 			return err
@@ -66,23 +77,7 @@ func resetAct(c *Control) cli.ActionFunc {
 
 func bootstrapAct(c *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		dir := c.String("dir")
-		if dir == "" {
-			dir = "."
-		}
-		environ := env.Type(c.String("env"))
-		if environ == "" {
-			environ = env.DEV
-		}
-		typ := config.StorageType(c.String("type"))
-		if typ == "" {
-			typ = config.BoltDB
-		}
-		if opt, err := config.LoadFromEnv(env.Type(typ)); err == nil {
-			if opt.StoragePath != os.TempDir() {
-				dir = opt.StoragePath
-			}
-		}
+		dir, typ, environ := getConfig(c)
 		return ctl.Bootstrap(dir, typ, environ)
 	}
 }
@@ -147,6 +142,16 @@ func (c *Control) BootstrapReset(dir string, typ config.StorageType, environ env
 		err := pgx.Clean(c.Conf, pgRoot, pgPw, path)
 		if err != nil {
 			return errors.Annotatef(err, "Unable to update %s db", typ)
+		}
+	}
+	if typ == config.Badger {
+		path, err := badger.Path(dir, c.Conf)
+		if err != nil {
+			return fmt.Errorf("unable to update %s db: %w", typ, err)
+		}
+		err = badger.Clean(path)
+		if err != nil {
+			return fmt.Errorf("unable to update %s db: %w", typ, err)
 		}
 	}
 	return nil

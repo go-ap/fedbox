@@ -109,6 +109,7 @@ func addAct(c *Control) cli.ActionFunc {
 		pw, err := loadPwFromStdin(true, "client's")
 		if err != nil {
 			Errf(err.Error())
+			return err
 		}
 		id, err := ctl.AddClient(pw, redirectURIs, nil)
 		if err == nil {
@@ -221,7 +222,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 }
 
 func (c *Control) DeleteClient(uuid string) error {
-	iri := fmt.Sprintf("%s/%s/%s", c.BaseURL ,apub.ActorsType, uuid)
+	iri := fmt.Sprintf("%s/%s/%s", c.BaseURL, apub.ActorsType, uuid)
 	err := c.DeleteObject(iri)
 	if err != nil {
 		return err

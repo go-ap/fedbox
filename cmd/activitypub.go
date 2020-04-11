@@ -21,6 +21,7 @@ var Pub = &cli.Command{
 	Usage:   "ActivityPub management helper",
 	Subcommands: []*cli.Command{
 		actors,
+		addObject,
 		listObjects,
 		delObjects,
 	},
@@ -50,12 +51,15 @@ var addActor = &cli.Command{
 func addActorAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		names := c.Args().Slice()
+		if len(names) == 0 {
+			return errors.Errorf("Missing actor name")
+		}
 
 		var actors = make(pub.ItemCollection, 0)
 		for _, name := range names {
-
 			pw, err := loadPwFromStdin(true, "%s's", name)
 			if err != nil {
+				Errf(err.Error())
 				return err
 			}
 			typ := pub.ActivityVocabularyType(c.String("type"))
@@ -313,4 +317,42 @@ func (c *Control) List(types []string) (pub.ItemCollection, error) {
 	}
 	err = accFn(ap.ActivitiesType, activityTyp)
 	return items, err
+}
+
+var addObject = &cli.Command{
+	Name:    "add",
+	Aliases: []string{"new"},
+	Usage:   "Adds a new object",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:        "type",
+			Usage:       fmt.Sprintf("The type of activitypub object to create"),
+			DefaultText: fmt.Sprintf("Valid values: %v", ValidGenericTypes),
+		},
+	},
+	Action: addObjectAct(&ctl),
+}
+
+func addObjectAct(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		typ := pub.ActivityVocabularyType(c.String("type"))
+		if pub.ActorTypes.Contains(typ) {
+			name, err := loadFromStdin("Enter the %s name", typ)
+			pw, err := loadPwFromStdin(true, "%s's", name)
+			if err != nil {
+				return err
+			}
+			p, err := ctl.AddActor(string(name), typ, nil, pw)
+			if err != nil {
+				Errf("Error adding %s: %s\n", name, err)
+			}
+			fmt.Printf("Added %s [%s]: %s\n", typ, name, p.GetLink())
+			return nil
+		}
+		return errors.Errorf("Unknown type %s", typ)
+	}
+}
+
+func (c *Control) Add(types []string) (pub.ItemCollection, error) {
+	return nil, nil
 }
