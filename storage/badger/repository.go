@@ -550,16 +550,16 @@ func createOrDeleteItemInPath(b *badger.Txn, it pub.Item) (pub.Item, error) {
 }
 
 func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(val []byte) error {
+	isColFn := func(ff s.Filterable) bool {
+		_, ok := ff.(pub.IRI)
+		return ok
+	}
 	return func(val []byte) error {
 		it, err := loadItem(val)
 		if err != nil || it == nil {
 			return errors.NewNotFound(err, "not found")
 		}
 		if it.IsCollection() {
-			isColFn := func(ff s.Filterable) bool {
-				_, ok := ff.(pub.IRI)
-				return ok
-			}
 			return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
 				if isColFn(f) {
 					f = c.Collection()
