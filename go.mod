@@ -7,7 +7,7 @@ require (
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
-	github.com/go-ap/activitypub v0.0.0-20200411185511-020b19dc9762
+	github.com/go-ap/activitypub v0.0.0-20200412085704-8ff0e652dd7b
 	github.com/go-ap/auth v0.0.0-20200329163118-ead153377549
 	github.com/go-ap/client v0.0.0-20200329162934-465dc105893a
 	github.com/go-ap/errors v0.0.0-20200327122229-53c42fe04723
