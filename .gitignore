@@ -7,7 +7,6 @@ bin/*
 *.pem
 *.crt
 *.key
-tests/db
 *.coverprofile
 *.bdb
-.cache/
+./.cache/

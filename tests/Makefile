@@ -5,9 +5,10 @@ TEST := $(GO) test -v
 .PHONY: test integration clean
 
 clean:
-	@-$(RM) -rf ./test-*.bdb
+	@-$(RM) -rf ./.cache/test*
 
 test: clean
+	mkdir -p .cache
 	$(TEST) ./...
 
 integration: test

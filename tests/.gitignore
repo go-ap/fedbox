@@ -1,2 +1,2 @@
-.cache/
+.cache/test*
 .env.test
