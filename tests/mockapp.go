@@ -131,6 +131,32 @@ func resetDB(t *testing.T) string {
 }
 
 func getBadgerDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (storage.Repository, osin.Storage) {
+	path, _ := badger.Path(dir, config.Options{
+		Env: env,
+		Host: u.Path,
+	})
+	b := badger.New(badger.Config{
+		Path:  path,
+		LogFn: app.InfoLogFn(l),
+		ErrFn: app.ErrLogFn(l),
+	}, u.String())
+
+	pathOauth := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), env)
+	if _, err := os.Stat(pathOauth); os.IsNotExist(err) {
+		err := auth.BootstrapBoltDB(pathOauth, []byte(host))
+		if err != nil {
+			l.Errorf("Unable to create missing boltdb file %s: %s", pathOauth, err)
+		}
+	}
+
+	s := auth.NewBoltDBStore(auth.BoltConfig{
+		Path:       pathOauth,
+		BucketName: host,
+		LogFn:      app.InfoLogFn(l),
+		ErrFn:      app.ErrLogFn(l),
+	})
+
+	return b, s
 	return storage.Repository(nil), osin.Storage(nil)
 }
 
