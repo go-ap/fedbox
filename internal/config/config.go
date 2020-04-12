@@ -147,6 +147,7 @@ func LoadFromEnv(e env.Type) (Options, error) {
 	if conf.StoragePath == "" {
 		conf.StoragePath = os.TempDir()
 	}
+	conf.StoragePath = path.Clean(conf.StoragePath)
 	conf.DB.Host = os.Getenv(k(KeyDBHost))
 	conf.DB.Pw = os.Getenv(k(KeyDBPw))
 	conf.DB.Name = os.Getenv(k(KeyDBName))
