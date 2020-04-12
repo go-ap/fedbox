@@ -73,16 +73,15 @@ func seedTestData(t *testing.T, testData []string) {
 		t.Helper()
 		t.Logf("Resetting storage backend")
 	}
-
-	curPath, err := os.Getwd()
-	if err != nil {
-		curPath = os.TempDir()
-	}
+	opt, _ := config.LoadFromEnv("test")
+	var b storage.Repository
+	var s osin.Storage
 	u, _ := url.Parse(apiURL)
-	b, s := getBoldDBs(curPath, u, "test", logrus.New())
+	if opt.Storage == config.BoltDB {
+		b, s = getBoldDBs(opt.StoragePath, u, "test", logrus.New())
+	}
 
 	o := cmd.New(s, b, config.Options{})
-
 	pw := []byte("hahah")
 	defaultTestApp.Id, _ = o.AddClient(pw, []string{authCallbackURL}, nil)
 
@@ -108,21 +107,19 @@ func seedTestData(t *testing.T, testData []string) {
 	}
 }
 
-const boltdbExt = "bdb"
-
 func resetDB(t *testing.T) string {
 	if t != nil {
 		t.Helper()
 		t.Logf("Resetting storage backend")
 	}
 
-	curPath, err := os.Getwd()
-	if err != nil {
-		curPath = os.TempDir()
+	opt, _ := config.LoadFromEnv("test")
+	var dbPath string
+	if opt.Storage == config.BoltDB {
+		dbPath = config.GetDBPath(opt.StoragePath, host, "test")
+		boltdb.Clean(dbPath)
+		boltdb.Bootstrap(dbPath, apiURL)
 	}
-	dbPath := config.GetDBPath(curPath, host, "test")
-	boltdb.Clean(dbPath)
-	boltdb.Bootstrap(dbPath, apiURL)
 	return dbPath
 }
 
@@ -156,13 +153,13 @@ func runAPP(e env.Type) int {
 	l := logrus.New()
 	l.SetLevel(logrus.PanicLevel)
 
-	curPath, err := os.Getwd()
-	if err != nil {
-		curPath = os.TempDir()
-	}
-
+	opt, _ := config.LoadFromEnv("test")
 	u, _ := url.Parse(apiURL)
-	b, s := getBoldDBs(curPath, u, "test", l)
+	var b storage.Repository
+	var s osin.Storage
+	if opt.Storage == config.BoltDB {
+		b, s = getBoldDBs(opt.StoragePath, u, "test", l)
+	}
 
 	a, _ := app.New(l, "HEAD", string(e))
 	r := chi.NewRouter()
