@@ -10,6 +10,7 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
+	"github.com/go-ap/fedbox/storage/badger"
 	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
@@ -80,6 +81,9 @@ func seedTestData(t *testing.T, testData []string) {
 	if opt.Storage == config.BoltDB {
 		b, s = getBoldDBs(opt.StoragePath, u, "test", logrus.New())
 	}
+	if opt.Storage == config.Badger {
+		b, s = getBadgerDBs(opt.StoragePath, u, "test", logrus.New())
+	}
 
 	o := cmd.New(s, b, config.Options{})
 	pw := []byte("hahah")
@@ -120,7 +124,14 @@ func resetDB(t *testing.T) string {
 		boltdb.Clean(dbPath)
 		boltdb.Bootstrap(dbPath, apiURL)
 	}
+	if opt.Storage == config.Badger {
+		dbPath, _ = badger.Path(opt.StoragePath, opt)
+	}
 	return dbPath
+}
+
+func getBadgerDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (storage.Repository, osin.Storage) {
+	return storage.Repository(nil), osin.Storage(nil)
 }
 
 func getBoldDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (storage.Repository, osin.Storage) {
@@ -159,6 +170,9 @@ func runAPP(e env.Type) int {
 	var s osin.Storage
 	if opt.Storage == config.BoltDB {
 		b, s = getBoldDBs(opt.StoragePath, u, "test", l)
+	}
+	if opt.Storage == config.Badger {
+		b, s = getBadgerDBs(opt.StoragePath, u, "test", l)
 	}
 
 	a, _ := app.New(l, "HEAD", string(e))
