@@ -126,6 +126,8 @@ func resetDB(t *testing.T) string {
 	}
 	if opt.Storage == config.Badger {
 		dbPath, _ = badger.Path(opt.StoragePath, opt)
+		badger.Clean(dbPath)
+		badger.Bootstrap(dbPath, apiURL)
 	}
 	return dbPath
 }
@@ -133,12 +135,10 @@ func resetDB(t *testing.T) string {
 func getBadgerDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (storage.Repository, osin.Storage) {
 	path, _ := badger.Path(dir, config.Options{
 		Env: env,
-		Host: u.Path,
+		Host: u.Host,
 	})
 	b := badger.New(badger.Config{
 		Path:  path,
-		LogFn: app.InfoLogFn(l),
-		ErrFn: app.ErrLogFn(l),
 	}, u.String())
 
 	pathOauth := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), env)
