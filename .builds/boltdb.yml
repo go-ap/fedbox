@@ -13,8 +13,9 @@ tasks:
   - build: |
       cd fedbox && make all
   - tests: |
+      cd fedbox
       cp tests/.env.boltdb tests/.env.test
-      cd fedbox && make test
+      make test
   - coverage: |
       set -a +x
       cd fedbox && make coverage
