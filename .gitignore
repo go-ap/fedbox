@@ -9,4 +9,4 @@ bin/*
 *.key
 *.coverprofile
 *.bdb
-./.cache/
+.cache
