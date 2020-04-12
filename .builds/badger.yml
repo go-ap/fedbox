@@ -1,0 +1,29 @@
+image: archlinux
+secrets:
+- 72c9ab0b-ed5f-4291-bab7-30b361be94a6
+packages:
+  - go
+sources:
+  - https://github.com/go-ap/fedbox
+environment:
+  GO111MODULE: 'on'
+tasks:
+  - setup: |
+      cd fedbox && go mod download
+  - build: |
+      cd fedbox && make all
+  - tests: |
+      cd fedbox && make test
+  - coverage: |
+      set -a +x
+      cd fedbox && make coverage
+      GIT_SHA=$(git rev-parse --verify HEAD)
+      GIT_BRANCH=$(git name-rev --name-only HEAD)
+      source ~/.code-cov.sh
+      curl -X POST \
+          --data-binary @fedbox.coverprofile \
+           -H 'Accept: application/json' \
+          "https://codecov.io/upload/v2?commit=${GIT_SHA}&token=${FEDBOX_TOKEN}&branch=${GIT_BRANCH}&service=custom" || true
+  - integration: |
+      env
+      cd fedbox && make integration
