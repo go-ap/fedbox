@@ -1,1 +1,2 @@
-test-*.bdb
+.cache/
+.env.test
