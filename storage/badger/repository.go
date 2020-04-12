@@ -559,7 +559,10 @@ func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(va
 		if err != nil || it == nil {
 			return errors.NewNotFound(err, "not found")
 		}
-		if it.IsCollection() {
+		if !it.IsObject() && it.IsLink() {
+			*col, err = r.loadItemsElements(f, it.GetLink())
+			return err
+		} else if it.IsCollection() {
 			return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
 				if isColFn(f) {
 					f = c.Collection()
