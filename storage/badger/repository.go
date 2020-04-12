@@ -311,7 +311,7 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 		if err != nil {
 			return errors.Newf("Unable to marshal entries in collection %s", p)
 		}
-		err = tx.Set(p, raw)
+		err = tx.Set(path, raw)
 		if err != nil {
 			return errors.Annotatef(err, "Unable to save entries to collection %s", p)
 		}
