@@ -75,15 +75,10 @@ func seedTestData(t *testing.T, testData []string) {
 		t.Logf("Resetting storage backend")
 	}
 	opt, _ := config.LoadFromEnv("test")
-	var b storage.Repository
-	var s osin.Storage
 	u, _ := url.Parse(apiURL)
-	if opt.Storage == config.BoltDB {
-		b, s = getBoldDBs(opt.StoragePath, u, "test", logrus.New())
-	}
-	if opt.Storage == config.Badger {
-		b, s = getBadgerDBs(opt.StoragePath, u, "test", logrus.New())
-	}
+
+	b := getStorage(opt, u)
+	s := getOAuthStorage(opt, u)
 
 	o := cmd.New(s, b, config.Options{})
 	pw := []byte("hahah")
@@ -132,83 +127,70 @@ func resetDB(t *testing.T) string {
 	return dbPath
 }
 
-func getBadgerDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (storage.Repository, osin.Storage) {
-	path, _ := badger.Path(dir, config.Options{
-		Env: env,
+func getBadgerStorage(opt config.Options, u *url.URL) storage.Repository {
+	path, _ := badger.Path(opt.StoragePath, config.Options{
+		Env:  opt.Env,
 		Host: u.Host,
 	})
-	b := badger.New(badger.Config{
-		Path:  path,
+	return badger.New(badger.Config{
+		Path: path,
 	}, u.String())
-
-	pathOauth := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), env)
-	if _, err := os.Stat(pathOauth); os.IsNotExist(err) {
-		err := auth.BootstrapBoltDB(pathOauth, []byte(host))
-		if err != nil {
-			l.Errorf("Unable to create missing boltdb file %s: %s", pathOauth, err)
-		}
-	}
-
-	s := auth.NewBoltDBStore(auth.BoltConfig{
-		Path:       pathOauth,
-		BucketName: host,
-		LogFn:      app.InfoLogFn(l),
-		ErrFn:      app.ErrLogFn(l),
-	})
-
-	return b, s
-	return storage.Repository(nil), osin.Storage(nil)
 }
 
-func getBoldDBs(dir string, u *url.URL, env env.Type, l logrus.FieldLogger) (storage.Repository, osin.Storage) {
-	path := config.GetDBPath(dir, host, env)
-	b := boltdb.New(boltdb.Config{
+func getBoltDBStorage(opt config.Options, u *url.URL) storage.Repository {
+	path := config.GetDBPath(opt.StoragePath, u.Host, opt.Env)
+	l := logrus.New()
+	return boltdb.New(boltdb.Config{
 		Path:  path,
 		LogFn: app.InfoLogFn(l),
 		ErrFn: app.ErrLogFn(l),
 	}, u.String())
+}
 
-	pathOauth := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), env)
+func getOAuthStorage(opt config.Options, u *url.URL) osin.Storage {
+	l := logrus.New()
+	pathOauth := config.GetDBPath(opt.StoragePath, fmt.Sprintf("%s-oauth", u.Host), opt.Env)
 	if _, err := os.Stat(pathOauth); os.IsNotExist(err) {
 		err := auth.BootstrapBoltDB(pathOauth, []byte(host))
 		if err != nil {
 			l.Errorf("Unable to create missing boltdb file %s: %s", pathOauth, err)
 		}
 	}
-
-	s := auth.NewBoltDBStore(auth.BoltConfig{
+	return auth.NewBoltDBStore(auth.BoltConfig{
 		Path:       pathOauth,
-		BucketName: host,
+		BucketName: u.Host,
 		LogFn:      app.InfoLogFn(l),
 		ErrFn:      app.ErrLogFn(l),
 	})
+}
 
-	return b, s
+func getStorage(opt config.Options, u *url.URL) storage.Repository {
+	if opt.Storage == config.BoltDB {
+		return getBoltDBStorage(opt, u)
+	}
+	if opt.Storage == config.Badger {
+		return getBadgerStorage(opt, u)
+	}
+	return nil
 }
 
 func runAPP(e env.Type) int {
 	l := logrus.New()
 	l.SetLevel(logrus.PanicLevel)
 
-	opt, _ := config.LoadFromEnv("test")
+	opt, _ := config.LoadFromEnv(env.TEST)
 	u, _ := url.Parse(apiURL)
-	var b storage.Repository
-	var s osin.Storage
-	if opt.Storage == config.BoltDB {
-		b, s = getBoldDBs(opt.StoragePath, u, "test", l)
-	}
-	if opt.Storage == config.Badger {
-		b, s = getBadgerDBs(opt.StoragePath, u, "test", l)
-	}
+
+	r := chi.NewRouter()
+	r.Use(log.NewStructuredLogger(l))
+
+	o := osinServer(getOAuthStorage(opt, u), l)
 
 	a, _ := app.New(l, "HEAD", string(e))
-	r := chi.NewRouter()
-	a.Storage = b
-	_oauthServer, _ = osinServer(s, l)
+	a.Storage = getStorage(opt, u)
 
-	r.Use(app.Repo(b))
-	r.Use(log.NewStructuredLogger(l))
-	r.Route("/", a.Routes(a.Config().BaseURL, _oauthServer, l))
+	r.Use(app.Repo(a.Storage))
+	r.Route("/", a.Routes(a.Config().BaseURL, o, l))
 
 	return a.Run(r, time.Second)
 }
