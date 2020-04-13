@@ -1,7 +1,6 @@
 package activitypub
 
 import (
-	"fmt"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/handlers"
 	"reflect"
@@ -98,10 +97,11 @@ func TestSelf(t *testing.T) {
 	if s.Tag != nil {
 		t.Errorf("Invalid Tag %s, expected %v", s.Tag, nil)
 	}
-	if s.URL != pub.IRI(testURL) {
+	testIRI := pub.IRI(testURL)
+	if s.URL != testIRI {
 		t.Errorf("Invalid URL %s, expected %v", s.URL, testURL)
 	}
-	inb := pub.IRI(fmt.Sprintf("%s/%s", testURL, handlers.Inbox))
+	inb := handlers.Inbox.IRI(testIRI)
 	if s.Inbox != inb {
 		t.Errorf("Invalid Inbox %s, expected %v", s.Inbox, inb)
 	}

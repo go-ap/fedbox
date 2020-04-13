@@ -108,11 +108,11 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 	}
 	p.ID = *id
 	p.URL = p.GetLink()
-	p.Inbox = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Inbox))
-	p.Outbox = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Outbox))
-	p.Liked = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Liked))
-	p.Followers = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Followers))
-	p.Following = pub.IRI(fmt.Sprintf("%s/%s", p.ID, handlers.Following))
+	p.Inbox = handlers.Inbox.IRI(p.ID)
+	p.Outbox = handlers.Outbox.IRI(p.ID)
+	p.Liked = handlers.Liked.IRI(p.ID)
+	p.Followers = handlers.Followers.IRI(p.ID)
+	p.Following = handlers.Following.IRI(p.ID)
 
 	p.Endpoints = &pub.Endpoints{
 		SharedInbox:                self.Inbox.GetLink(),
@@ -289,7 +289,7 @@ func (c *Control) List(types []string) (pub.ItemCollection, error) {
 		if len(types) == 0 {
 			return nil
 		}
-		baseIRI := pub.IRI(fmt.Sprintf("%s/%s", ctl.BaseURL, colTyp))
+		baseIRI := colTyp.IRI(pub.IRI(ctl.BaseURL))
 		f := ap.FiltersNew(
 			ap.IRI(baseIRI),
 			ap.Type(types...),

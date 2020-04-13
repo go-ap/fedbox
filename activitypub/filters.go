@@ -472,9 +472,9 @@ func (f Filters) Targets() pub.IRIs {
 		} else {
 			// FIXME(marius): we don't really know which type this is
 			iris = pub.IRIs{
-				pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ObjectsType, k)),
-				pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActorsType, k)),
-				pub.IRI(fmt.Sprintf("%s/%s/%s", f.baseURL, ActivitiesType, k)),
+				ObjectsType.IRI(f.baseURL).AddPath(k.String()),
+				ActorsType.IRI(f.baseURL).AddPath(k.String()),
+				ActivitiesType.IRI(f.baseURL).AddPath(k.String()),
 			}
 		}
 		for _, iri := range iris {
@@ -825,7 +825,7 @@ func iriPointsToCollection(iri pub.IRI) bool {
 	if u, err := iri.URL(); err == nil {
 		base := path.Base(u.Path)
 		return !ValidCollection(base) && base != "/"
-	} 
+	}
 	return false
 }
 

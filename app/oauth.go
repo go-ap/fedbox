@@ -110,7 +110,7 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		actorFilters := activitypub.FiltersNew()
 		switch ar.Type {
 		case osin.PASSWORD:
-			actorFilters.IRI = pub.IRI(fmt.Sprintf("%s/actors", h.baseURL))
+			actorFilters.IRI = activitypub.ActorsType.IRI(pub.IRI(h.baseURL))
 			actorFilters.Name = activitypub.CompStrs{activitypub.CompStr{Str: ar.Username}}
 		case osin.AUTHORIZATION_CODE:
 			if iri, ok := ar.UserData.(string); ok {
@@ -317,7 +317,7 @@ func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	f := activitypub.FiltersNew()
 	f.Name = activitypub.CompStrs{activitypub.CompStr{Str: handle}}
-	f.IRI = pub.IRI(fmt.Sprintf("%s/actors", a.GetLink()))
+	f.IRI = activitypub.ActorsType.IRI(a)
 	f.Type = []pub.ActivityVocabularyType{
 		pub.PersonType,
 	}

@@ -251,7 +251,7 @@ func (r repo) SaveActivity(it pub.Item) (pub.Item, error) {
 }
 
 func getCollectionIRI(actor pub.Item, c handlers.CollectionType) pub.IRI {
-	return pub.IRI(fmt.Sprintf("%s/%s", actor.GetLink(), c))
+	return c.IRI(actor)
 }
 
 func (r repo) SaveActor(it pub.Item) (pub.Item, error) {
@@ -294,7 +294,7 @@ func (r repo) SaveObject(it pub.Item) (pub.Item, error) {
 		return it, err
 	}
 
-	colIRI := getCollectionIRI(pub.IRI(r.baseURL), handlers.CollectionType(table))
+	colIRI := handlers.CollectionType(table).IRI(pub.IRI(r.baseURL))
 	err = r.AddToCollection(colIRI, it)
 	if err != nil {
 		// This errs

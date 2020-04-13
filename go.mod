@@ -11,9 +11,9 @@ require (
 	github.com/go-ap/auth v0.0.0-20200413081220-b1f4e6af0eca
 	github.com/go-ap/client v0.0.0-20200405112035-e04beaefee4f
 	github.com/go-ap/errors v0.0.0-20200402124111-0e465c0b25bc
-	github.com/go-ap/handlers v0.0.0-20200413081428-1ccf106616b9
+	github.com/go-ap/handlers v0.0.0-20200413100250-0a1567cdd422
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20200413081548-b632f949a1d5
+	github.com/go-ap/processing v0.0.0-20200413101646-8531a9156603
 	github.com/go-ap/storage v0.0.0-20200413080935-1597f15d02c4
 	github.com/go-chi/chi v4.1.0+incompatible
 	github.com/golang/protobuf v1.3.4 // indirect

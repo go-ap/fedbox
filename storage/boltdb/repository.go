@@ -270,7 +270,7 @@ func orderItems(col pub.ItemCollection) pub.ItemCollection {
 func (r repo) buildIRIs(c handlers.CollectionType, hashes ...ap.Hash) pub.IRIs {
 	iris := make(pub.IRIs, 0)
 	for _, hash := range hashes {
-		i := pub.IRI(fmt.Sprintf("%s/%s/%s", r.baseURL, c, hash))
+		i := c.IRI(pub.IRI(r.baseURL)).AddPath(hash.String())
 		iris = append(iris, i)
 	}
 	return iris
