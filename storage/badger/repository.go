@@ -285,25 +285,21 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 
 	return r.d.Update(func(tx *badger.Txn) error {
 		iris := make(pub.IRIs, 0)
-		// Assume path exists and has keys
-		t := tx.NewIterator(badger.DefaultIteratorOptions)
-		defer t.Close()
 
-		path := getObjectKey(p)
-		i, err := tx.Get(path)
-		if err != nil {
-			return errors.Annotatef(err, "Unable to load path %s", p)
-		}
-		err = i.Value(func(raw []byte) error {
-			err := jsonld.Unmarshal(raw, &iris)
-			if err != nil {
-				return errors.Annotatef(err, "Unable to unmarshal collection %s", p)
+		rawKey := getObjectKey(p)
+		if i, err := tx.Get(rawKey); err == nil {
+			err = i.Value(func(raw []byte) error {
+				err := jsonld.Unmarshal(raw, &iris)
+				if err != nil {
+					return errors.Annotatef(err, "Unable to unmarshal collection %s", p)
+				}
+				return nil
+			})
+			if iris.Contains(it.GetLink()) {
+				return errors.Newf("Element already exists in collection %s", p)
 			}
-			return nil
-		})
-		if iris.Contains(it.GetLink()) {
-			return errors.Newf("Element already exists in collection %s", p)
 		}
+
 		iris = append(iris, it.GetLink())
 
 		var raw []byte
@@ -311,7 +307,7 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 		if err != nil {
 			return errors.Newf("Unable to marshal entries in collection %s", p)
 		}
-		err = tx.Set(path, raw)
+		err = tx.Set(rawKey, raw)
 		if err != nil {
 			return errors.Annotatef(err, "Unable to save entries to collection %s", p)
 		}
@@ -664,35 +660,6 @@ func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 	return col, uint(len(col)), err
 }
 
-func (r *repo) iterateInPath(b *badger.Txn, f s.Filterable) (pub.ItemCollection, uint, error) {
-	if b == nil {
-		return nil, 0, errors.Errorf("invalid path to load from")
-	}
-	// try to iterate in the current collection
-	c := b.NewIterator(badger.DefaultIteratorOptions)
-	defer c.Close()
-	if c == nil {
-		return nil, 0, errors.Errorf("Invalid path cursor")
-	}
-	col := make(pub.ItemCollection, 0)
-	// if no path was returned from descendIntoPath we iterate over all keys in the current path
-	for c.Rewind(); c.Valid(); c.Next() {
-		item := c.Item()
-		key := item.Key()
-		ob := b
-		lst := path.Base(string(key))
-		if ap.ValidActivityCollection(lst) || ap.ValidObjectCollection(lst) {
-			return nil, 0, errors.Newf("we shouldn't have a collection inside the current path %s", key)
-		}
-		it, err := r.loadItem(ob, []byte(objectKey), f)
-		if err != nil || it == nil {
-			continue
-		}
-		col = append(col, it)
-	}
-	return col, uint(len(col)), nil
-}
-
 func (r *repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {
 	col, cnt, err := r.loadFromPath(f)
 	if err != nil {
@@ -712,8 +679,7 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *badger.Txn) error {
 		for _, iri := range iris {
-			remainderPath := itemPath(iri.GetLink())
-			it, err := r.loadItem(tx, getObjectKey(remainderPath), f)
+			it, err := r.loadItem(tx, itemPath(iri.GetLink()), f)
 			if err != nil || it == nil {
 				continue
 			}
@@ -724,10 +690,10 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 	return col, err
 }
 
-func (r *repo) loadItem(b *badger.Txn, key []byte, f s.Filterable) (pub.Item, error) {
-	i, err := b.Get(key)
+func (r *repo) loadItem(b *badger.Txn, path []byte, f s.Filterable) (pub.Item, error) {
+	i, err := b.Get(getObjectKey(path))
 	if err != nil {
-		return nil, err
+		return nil,  errors.NewNotFound(err, "Unable to load path %s", path)
 	}
 	var raw []byte
 	i.Value(func(val []byte) error {
