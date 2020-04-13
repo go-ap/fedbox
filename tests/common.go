@@ -352,10 +352,8 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 				assertTrue(ok, "received audience is not a []string, received %T", aud)
 				errOnArray(t)(aud, tVal.audience)
 			}
-			if tVal.typ != string(pub.CollectionType) &&
-				tVal.typ != string(pub.OrderedCollectionType) &&
-				tVal.typ != string(pub.CollectionPageType) &&
-				tVal.typ != string(pub.OrderedCollectionPageType) {
+			colTypes := pub.ActivityVocabularyTypes{pub.CollectionType, pub.OrderedCollectionType, pub.CollectionPageType, pub.OrderedCollectionPageType}
+			if !colTypes.Contains(pub.ActivityVocabularyType(tVal.typ)) {
 				return
 			}
 			if tVal.first != nil {
