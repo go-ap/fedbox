@@ -452,7 +452,12 @@ var C2STests = []testSuite{
 					urlFn: func() string { return fmt.Sprintf("%s/followers", *(&defaultTestAccount.Id)) },
 				},
 				res: testRes{
-					code: http.StatusNotFound,
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/followers", *(&defaultTestAccount.Id)),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 0,
+					},
 				},
 			},
 			{
@@ -576,7 +581,12 @@ var C2STests = []testSuite{
 					urlFn: func() string { return fmt.Sprintf("%s/followers", *(&defaultTestAccount.Id)) },
 				},
 				res: testRes{
-					code: http.StatusNotFound,
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/followers", *(&defaultTestAccount.Id)),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 0,
+					},
 				},
 			},
 		},

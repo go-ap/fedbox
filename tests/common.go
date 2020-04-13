@@ -152,7 +152,7 @@ var defaultTestApp = testAccount{
 	Hash: testAppHash,
 }
 
-var lastActivity *objectVal = &objectVal{}
+var lastActivity = &objectVal{}
 
 type assertFn func(v bool, msg string, args ...interface{})
 type errFn func(format string, args ...interface{})

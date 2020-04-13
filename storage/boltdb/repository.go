@@ -39,7 +39,6 @@ const (
 // Config
 type Config struct {
 	Path       string
-	BucketName string
 	LogFn      loggerFn
 	ErrFn      loggerFn
 }
