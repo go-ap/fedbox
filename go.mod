@@ -34,12 +34,3 @@ require (
 	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717
 )
-
-replace (
-	github.com/go-ap/activitypub => /home/habarnam/workspace/go-ap/activitypub
-	github.com/go-ap/auth => /home/habarnam/workspace/go-ap/auth
-	github.com/go-ap/errors => /home/habarnam/workspace/go-ap/errors
-	github.com/go-ap/jsonld => /home/habarnam/workspace/go-ap/jsonld
-	github.com/go-ap/processing => /home/habarnam/workspace/go-ap/processing
-	github.com/go-ap/storage => /home/habarnam/workspace/go-ap/storage
-)
