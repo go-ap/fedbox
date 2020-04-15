@@ -5,7 +5,7 @@ services:
     image: ${HOSTNAME}/fedbox:${ENV}
     build:
       context: .
-      dockerfile: ./fedbox/Dockerfile
+      dockerfile: Dockerfile
       args:
         ENV: ${ENV}
         LISTEN: ${LISTEN}

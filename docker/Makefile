@@ -2,7 +2,12 @@ include ./.env
 
 APPSOURCES := $(wildcard ../app/*.go ../activitypub/*.go ../internal/*/*.go ../cli/*/main.go ../cmd/*.go ../storage/*/*.go ../validation/*.go)
 
-.PHONY: imagebuilder clean images cert
+#BUILD=buildah build-using-dockerfile
+#RUN=buildah run
+BUILD=docker build
+RUN=docker run
+
+.PHONY: clean build run cert
 
 $(HOSTNAME).key $(HOSTNAME).crt:
 	openssl req -subj "/C=AQ/ST=Omond/L=Omond/O=$(HOSTNAME)/OU=none/CN=$(HOSTNAME)" \
@@ -16,11 +21,8 @@ cert: $(HOSTNAME).pem
 clean:
 	@-$(RM) $(HOSTNAME).{key,crt,pem}
 
-imagebuilder: ../go.mod $(APPSSOURCES)
-	docker build --force-rm --build-arg ENV=prod -t $(HOSTNAME)/builder:$(ENV)  .. -f Dockerfile.build
+build:
+	$(BUILD) --build-arg ENV=$(ENV) -f Dockerfile -t $(HOSTNAME)/app:$(ENV) ..
 
-build: imagebuilder
-	docker run $(HOSTNAME)/builder:$(ENV)
-
-images: imagebuilder
-	docker-compose up --build
+run: build
+	$(RUN) -v $(realpath ../.cache):/storage -p 4000:4000 $(HOSTNAME)/app:$(ENV)
