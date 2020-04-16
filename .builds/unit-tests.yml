@@ -1,10 +1,10 @@
 image: archlinux
 secrets:
 - 72c9ab0b-ed5f-4291-bab7-30b361be94a6
-- e3f79ebd-b49b-4240-bacd-9bf649ed68f8
+- 0e431348-6a5c-4404-bd3e-5cdd5ea9e7d6
 packages:
   - go
-  - docker
+  - buildah
 sources:
   - https://github.com/go-ap/fedbox
 environment:
@@ -28,4 +28,6 @@ tasks:
            -H 'Accept: application/json' \
           "https://codecov.io/upload/v2?commit=${GIT_SHA}&token=${FEDBOX_TOKEN}&branch=${GIT_BRANCH}&service=custom" || true
   - docker: |
-     cd fedbox && make -C docker push
+      set -a +x
+      source ~/.buildah.env
+      cd fedbox && make -C docker push

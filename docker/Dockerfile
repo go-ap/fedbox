@@ -1,6 +1,6 @@
 FROM golang:1.14 as builder
 
-ARG ENV
+ARG ENV=dev
 
 ENV GO111MODULE=on
 ENV ENV=${ENV:-dev}
@@ -12,14 +12,12 @@ RUN make ENV=${ENV} all
 
 FROM gcr.io/distroless/base
 
-ARG LISTEN
-ARG ENV
+ARG LISTEN=:4000
+ARG ENV=dev
 
 EXPOSE $LISTEN
 
 VOLUME /storage
-
-ENV ENV $ENV
 
 COPY --from=builder /go/src/app/bin/* /bin/
 

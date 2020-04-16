@@ -1,12 +1,17 @@
 ENV ?= dev
 HOSTNAME ?= fedbox
+LISTEN ?= 4000
 
 APPSOURCES := $(wildcard ../app/*.go ../activitypub/*.go ../internal/*/*.go ../cli/*/main.go ../cmd/*.go ../storage/*/*.go)
 
-#BUILD=buildah build-using-dockerfile
-#RUN=buildah run
-BUILD=docker build
-RUN=docker run
+BUILD=buildah build-using-dockerfile
+RUN=buildah run
+TAG=buildah tag
+PUSH=buildah push
+#BUILD=docker build
+#RUN=docker run
+#TAG=docker tag
+#PUSH=docker push
 
 .PHONY: clean build run cert
 
@@ -23,14 +28,14 @@ clean:
 	@-$(RM) $(HOSTNAME).{key,crt,pem}
 
 build:
-	$(BUILD) --build-arg ENV=$(ENV) -f Dockerfile -t $(HOSTNAME)/app:$(ENV) ..
+	$(BUILD) --build-arg ENV=$(ENV) --build-arg LISTEN=:$(LISTEN) -f Dockerfile -t $(HOSTNAME)/app:$(ENV) ..
 
 run: build
 	$(RUN) -v $(realpath ../.cache):/storage -e ENV=$(ENV) -e HOSTNAME=$(HOSTNAME) $(HOSTNAME)/app:$(ENV) /bin/ctl bootstrap
-	$(RUN) -v $(realpath ../.cache):/storage -e ENV=$(ENV) -e HOSTNAME=$(HOSTNAME) -p 4000:4000 $(HOSTNAME)/app:$(ENV)
+	$(RUN) -v $(realpath ../.cache):/storage -e ENV=$(ENV) -e HOSTNAME=$(HOSTNAME) -p $(LISTEN):$(LISTEN) $(HOSTNAME)/app:$(ENV)
 
 push: build
-	docker tag $(HOSTNAME)/app:$(ENV) quay.io/fedbox/fedbox:latest
-	docker tag $(HOSTNAME)/app:$(ENV) quay.io/fedbox/fedbox:$(ENV)
-	docker push quay.io/fedbox/fedbox:latest
-	docker push quay.io/fedbox/fedbox:$(ENV)
+	$(TAG) $(HOSTNAME)/app:$(ENV) quay.io/fedbox/fedbox:latest
+	$(TAG) $(HOSTNAME)/app:$(ENV) quay.io/fedbox/fedbox:$(ENV)
+	$(PUSH) quay.io/fedbox/fedbox:latest
+	$(PUSH) quay.io/fedbox/fedbox:$(ENV)
