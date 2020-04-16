@@ -1,6 +1,7 @@
-include ./.env
+ENV ?= dev
+HOSTNAME ?= fedbox
 
-APPSOURCES := $(wildcard ../app/*.go ../activitypub/*.go ../internal/*/*.go ../cli/*/main.go ../cmd/*.go ../storage/*/*.go ../validation/*.go)
+APPSOURCES := $(wildcard ../app/*.go ../activitypub/*.go ../internal/*/*.go ../cli/*/main.go ../cmd/*.go ../storage/*/*.go)
 
 #BUILD=buildah build-using-dockerfile
 #RUN=buildah run
@@ -25,4 +26,11 @@ build:
 	$(BUILD) --build-arg ENV=$(ENV) -f Dockerfile -t $(HOSTNAME)/app:$(ENV) ..
 
 run: build
-	$(RUN) -v $(realpath ../.cache):/storage -p 4000:4000 $(HOSTNAME)/app:$(ENV)
+	$(RUN) -v $(realpath ../.cache):/storage -e ENV=$(ENV) -e HOSTNAME=$(HOSTNAME) $(HOSTNAME)/app:$(ENV) /bin/ctl bootstrap
+	$(RUN) -v $(realpath ../.cache):/storage -e ENV=$(ENV) -e HOSTNAME=$(HOSTNAME) -p 4000:4000 $(HOSTNAME)/app:$(ENV)
+
+push: build
+	docker tag $(HOSTNAME)/app:$(ENV) quay.io/fedbox/fedbox:latest
+	docker tag $(HOSTNAME)/app:$(ENV) quay.io/fedbox/fedbox:$(ENV)
+	docker push quay.io/fedbox/fedbox:latest
+	docker push quay.io/fedbox/fedbox:$(ENV)

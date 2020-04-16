@@ -23,6 +23,6 @@ ENV ENV $ENV
 
 COPY --from=builder /go/src/app/bin/* /bin/
 
-ADD docker/.env* ./
+ADD docker/.env.default /.env
 
 CMD ["/bin/fedbox"]
