@@ -30,4 +30,4 @@ tasks:
   - docker: |
       set -a +x
       source ~/.buildah.env
-      cd fedbox && make -C docker push
+      cd fedbox && sudo make -C docker push
