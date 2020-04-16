@@ -75,7 +75,7 @@ func (l *StructuredLoggerEntry) Write(status, bytes int, header http.Header, ela
 	l.Logger = l.Logger.WithFields(logrus.Fields{
 		"status":  status,
 		"len":     bytes,
-		"elapsed": float64(elapsed.Nanoseconds()) / 1000000.0,
+		"elapsed": elapsed,
 	})
 
 	var logFn func(args ...interface{})
