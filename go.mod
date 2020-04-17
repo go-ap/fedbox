@@ -13,7 +13,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20200402124111-0e465c0b25bc
 	github.com/go-ap/handlers v0.0.0-20200413111813-56dad56c352d
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20200417190422-9f23f50fe7be
+	github.com/go-ap/processing v0.0.0-20200417190543-c4c5f96fc623
 	github.com/go-ap/storage v0.0.0-20200413111454-0f6bed80be4e
 	github.com/go-chi/chi v4.1.1+incompatible
 	github.com/golang/protobuf v1.3.4 // indirect
