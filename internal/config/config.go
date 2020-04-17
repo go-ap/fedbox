@@ -26,6 +26,8 @@ type Options struct {
 	Env         env.Type
 	LogLevel    log.Level
 	Secure      bool
+	CertPath    string
+	KeyPath     string
 	Host        string
 	Listen      string
 	BaseURL     string
@@ -41,6 +43,8 @@ const (
 	KeyLogLevel    = "LOG_LEVEL"
 	KeyHostname    = "HOSTNAME"
 	KeyHTTPS       = "HTTPS"
+	KeyCertPath    = "CERT_PATH"
+	KeyKeyPath     = "KEY_PATH"
 	KeyListen      = "LISTEN"
 	KeyDBHost      = "DB_HOST"
 	KeyDBPort      = "DB_PORT"
@@ -139,6 +143,8 @@ func LoadFromEnv(e env.Type) (Options, error) {
 	} else {
 		conf.BaseURL = fmt.Sprintf("http://%s", conf.Host)
 	}
+	conf.KeyPath = os.Getenv(k(KeyKeyPath))
+	conf.CertPath = os.Getenv(k(KeyCertPath))
 
 	conf.Listen = os.Getenv(k(KeyListen))
 	envStorage := os.Getenv(k(KeyStorage))

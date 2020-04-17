@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"crypto/tls"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -144,24 +145,42 @@ func (f FedBOX) Config() config.Options {
 	return f.conf
 }
 
-func (f FedBOX) listen() string {
-	return f.conf.Listen
-}
-
-func setupHttpServer(listen string, m http.Handler, wait time.Duration, ctx context.Context) (func(LogFn), func(LogFn)) {
-	// TODO(marius): move server run to a separate function,
-	//   so we can add other tasks that can run independently.
+func setupHttpServer(conf config.Options, m http.Handler, ctx context.Context) (func(LogFn), func(LogFn)) {
+	// TODO(marius): move server run to a separate function, so we can add other tasks that can run independently.
 	//   Like a queue system for lazy loading of IRIs.
-	srv := &http.Server{
-		Addr:         listen,
-		WriteTimeout: time.Second * 15,
-		ReadTimeout:  time.Second * 15,
-		IdleTimeout:  time.Second * 60,
-		Handler:      m,
+	var serveFn func() error
+	var srv *http.Server
+
+	if conf.Secure {
+		srv = &http.Server{
+			Addr:    conf.Listen,
+			Handler: m,
+			TLSConfig: &tls.Config{
+				MinVersion:               tls.VersionTLS12,
+				CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+				PreferServerCipherSuites: true,
+				CipherSuites: []uint16{
+					tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+					tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+					tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+					tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+				},
+			},
+			TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
+		}
+		serveFn = func() error {
+			return srv.ListenAndServeTLS(conf.CertPath, conf.KeyPath)
+		}
+	} else {
+		srv = &http.Server{
+			Addr:    conf.Listen,
+			Handler: m,
+		}
+		serveFn = srv.ListenAndServe
 	}
 
 	run := func(l LogFn) {
-		if err := srv.ListenAndServe(); err != nil {
+		if err := serveFn(); err != nil {
 			if l != nil {
 				l("%s", err)
 			}
@@ -221,14 +240,14 @@ func (f *FedBOX) Stop() {
 
 // Run is the wrapper for starting the web-server and handling signals
 func (f *FedBOX) Run(m http.Handler, wait time.Duration) int {
-	f.infFn("Listening on %s", f.listen())
+	f.infFn("Listening on %s", f.conf.Listen)
 
 	// Create a deadline to wait for.
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
 
 	// Get start/stop functions for the http server
-	srvRun, srvStop := setupHttpServer(f.listen(), m, wait, ctx)
+	srvRun, srvStop := setupHttpServer(f.conf, m, ctx)
 	f.stopFn = func() {
 		srvStop(f.infFn)
 		f.OAuthStorage.Close()
