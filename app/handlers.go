@@ -93,7 +93,7 @@ func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repositor
 	}
 	processor, validator, err := processing.New(
 		processing.SetIRI(pub.IRI(Config.BaseURL)),
-		processing.SetClient(client.NewClient()),
+		processing.SetClient(client.New()),
 		processing.SetStorage(repo),
 	)
 	if err != nil {

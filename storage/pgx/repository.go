@@ -3,7 +3,6 @@ package pgx
 import (
 	"fmt"
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -24,7 +23,6 @@ type repo struct {
 	baseURL string
 	conn    *pgx.ConnPool
 	conf    config.BackendConfig
-	d       client.Client
 	l       logrus.FieldLogger
 	logFn   loggerFn
 	errFn   loggerFn
@@ -49,7 +47,6 @@ func New(conf config.BackendConfig, url string, lp logrus.FieldLogger) (*repo, e
 	l := repo{
 		baseURL: url,
 		conf:    conf,
-		d:       client.NewClient(),
 		l:       lp,
 		errFn:   logFn(lp, logrus.ErrorLevel),
 	}
