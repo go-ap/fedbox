@@ -27,7 +27,7 @@ cert: $(HOSTNAME).pem
 clean:
 	@-$(RM) $(HOSTNAME).{key,crt,pem}
 
-build:
+build: cert
 	$(BUILD) --build-arg ENV=$(ENV) --build-arg LISTEN=:$(LISTEN) -f Dockerfile -t $(HOSTNAME)/app:$(ENV) ..
 
 run: build

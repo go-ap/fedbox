@@ -1,9 +1,12 @@
 FROM golang:1.14 as builder
 
 ARG ENV=dev
+ARG HOSTNAME=fedbox
 
 ENV GO111MODULE=on
 ENV ENV=${ENV:-dev}
+ENV KEY_PATH=/etc/ssl/certs/$(HOSTNAME).key
+ENV CERT_PATH=/etc/ssl/certs/$(HOSTNAME).crt
 
 ADD ./ /go/src/app
 
@@ -20,6 +23,8 @@ EXPOSE $LISTEN
 VOLUME /storage
 
 COPY --from=builder /go/src/app/bin/* /bin/
+ADD ./docker/*.key /etc/ssl/certs
+ADD ./docker/*.pem /etc/ssl/certs
 
 ADD docker/.env.default /.env
 
