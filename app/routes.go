@@ -35,6 +35,7 @@ var AnonymousAcct = account{
 
 func (f *FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) func(chi.Router) {
 	return func(r chi.Router) {
+		r.Use(middleware.RealIP)
 		r.Use(middleware.GetHead)
 		r.Use(ActorFromAuthHeader(os, f.Storage, l))
 
