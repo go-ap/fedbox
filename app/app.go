@@ -150,8 +150,14 @@ func setupHttpServer(conf config.Options, m http.Handler, ctx context.Context) (
 	//   Like a queue system for lazy loading of IRIs.
 	var serveFn func() error
 	var srv *http.Server
+	fileExists := func(dir string) bool {
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			return false
+		}
+		return true
+	}
 
-	if conf.Secure {
+	if conf.Secure && fileExists(conf.CertPath) && fileExists(conf.KeyPath) {
 		srv = &http.Server{
 			Addr:    conf.Listen,
 			Handler: m,
