@@ -560,16 +560,15 @@ func (r repo) IsLocalIRI(i pub.IRI) bool {
 	return i.Contains(pub.IRI(r.baseURL), false)
 }
 
-// RemoveFromCollection
-func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
+func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub.IRIs, error)) error {
 	if it == nil {
-		return errors.Newf("Unable to add nil element to collection")
+		return errors.Newf("Unable to operate on nil element")
 	}
 	if len(col) == 0 {
 		return errors.Newf("Unable to find collection")
 	}
 	if len(it.GetLink()) == 0 {
-		return errors.Newf("Invalid create collection does not have a valid IRI")
+		return errors.Newf("Invalid collection, it does not have a valid IRI")
 	}
 	if !r.IsLocalIRI(col.GetLink()) {
 		return errors.Newf("Unable to save to non local collection %s", col)
@@ -609,13 +608,11 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 				return errors.Newf("Unable to unmarshal entries in collection %s", path)
 			}
 		}
-		for k, iri := range iris {
-			if iri == it.GetLink() {
-				iris = append(iris[:k], iris[k+1:]...)
-				break
-			}
+		iris, err = fn(iris)
+		if err != nil {
+			return errors.Annotatef(err, "Unable operate on collection %s", path)
 		}
-		raw, err := jsonld.Marshal(iris)
+		raw, err = jsonld.Marshal(iris)
 		if err != nil {
 			return errors.Newf("Unable to marshal entries in collection %s", path)
 		}
@@ -623,73 +620,30 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 		if err != nil {
 			return errors.Newf("Unable to save entries to collection %s", path)
 		}
-
 		return err
+	})
+}
+
+// RemoveFromCollection
+func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
+	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error){
+		for k, iri := range iris {
+			if iri.GetLink().Equals(it.GetLink(), false) {
+				iris = append(iris[:k], iris[k+1:]...)
+				break
+			}
+		}
+		return iris, nil
 	})
 }
 
 // AddToCollection
 func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
-	if it == nil {
-		return errors.Newf("Unable to add nil element to collection")
-	}
-	if len(col) == 0 {
-		return errors.Newf("Unable to find collection")
-	}
-	if len(it.GetLink()) == 0 {
-		return errors.Newf("Invalid create collection does not have a valid IRI")
-	}
-	if !r.IsLocalIRI(col.GetLink()) {
-		return errors.Newf("Unable to save to non local collection %s", col)
-	}
-	path := itemBucketPath(col.GetLink())
-	err := r.Open()
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	return r.d.Update(func(tx *bolt.Tx) error {
-		var rem []byte
-		root := tx.Bucket(r.root)
-		if root == nil {
-			return errors.Errorf("Invalid bucket %s", r.root)
-		}
-		if !root.Writable() {
-			return errors.Errorf("Non writeable bucket %s", r.root)
-		}
-		var b *bolt.Bucket
-		b, rem, err = descendInBucket(root, path, true)
-		if err != nil {
-			return errors.Newf("Unable to find %s in root bucket", path)
-		}
-		if len(rem) == 0 {
-			rem = []byte(objectKey)
-		}
-		if !b.Writable() {
-			return errors.Errorf("Non writeable bucket %s", path)
-		}
-		var iris pub.IRIs
-		raw := b.Get(rem)
-		if len(raw) > 0 {
-			err := jsonld.Unmarshal(raw, &iris)
-			if err != nil {
-				return errors.Newf("Unable to unmarshal entries in collection %s", path)
-			}
-		}
+	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error){
 		if iris.Contains(it.GetLink()) {
-			return errors.Newf("Element already exists in collection %s", path)
+			return iris, errors.Newf("Element already exists in collection")
 		}
-		iris = append(iris, it.GetLink())
-		raw, err := jsonld.Marshal(iris)
-		if err != nil {
-			return errors.Newf("Unable to marshal entries in collection %s", path)
-		}
-		err = b.Put(rem, raw)
-		if err != nil {
-			return errors.Newf("Unable to save entries to collection %s", path)
-		}
-		return err
+		return append(iris, it.GetLink()), nil
 	})
 }
 
