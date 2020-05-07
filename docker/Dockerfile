@@ -23,8 +23,8 @@ EXPOSE $LISTEN
 VOLUME /storage
 
 COPY --from=builder /go/src/app/bin/* /bin/
-ADD ./docker/*.key /etc/ssl/certs
-ADD ./docker/*.pem /etc/ssl/certs
+ADD ./docker/*.key /etc/ssl/certs/
+ADD ./docker/*.pem /etc/ssl/certs/
 
 ADD docker/.env.default /.env
 
