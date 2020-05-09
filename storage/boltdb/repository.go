@@ -15,11 +15,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"path"
 	"sort"
+	"sync"
 	"time"
 )
 
 type repo struct {
 	d       *bolt.DB
+	m       sync.Mutex
 	baseURL string
 	root    []byte
 	path    string
@@ -38,9 +40,9 @@ const (
 
 // Config
 type Config struct {
-	Path       string
-	LogFn      loggerFn
-	ErrFn      loggerFn
+	Path  string
+	LogFn loggerFn
+	ErrFn loggerFn
 }
 
 var emptyLogFn = func(logrus.Fields, string, ...interface{}) {}
@@ -49,6 +51,7 @@ var emptyLogFn = func(logrus.Fields, string, ...interface{}) {}
 func New(c Config, baseURL string) *repo {
 	b := repo{
 		root:    []byte(rootBucket),
+		m:       sync.Mutex{},
 		path:    c.Path,
 		baseURL: baseURL,
 		logFn:   emptyLogFn,
@@ -701,6 +704,7 @@ func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
 // Open opens the boltdb database if possible.
 func (r *repo) Open() error {
 	var err error
+	r.m.Lock()
 	r.d, err = bolt.Open(r.path, 0600, nil)
 	if err != nil {
 		return errors.Annotatef(err, "Could not open db %s", r.path)
@@ -713,7 +717,9 @@ func (r *repo) Close() error {
 	if r.d == nil {
 		return nil
 	}
-	return r.d.Close()
+	err := r.d.Close()
+	r.m.Unlock()
+	return err
 }
 
 type meta struct {
