@@ -45,28 +45,17 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:  "env",
-			Usage: fmt.Sprintf("The environment to use. Possible values: %q, %q, %q", env.DEV, env.QA, env.PROD),
+			Usage: fmt.Sprintf("The environment to use. Possible values: %q", []env.Type{env.DEV, env.QA, env.PROD}),
 			Value: string(env.DEV),
 		},
 		&cli.StringFlag{
 			Name:  "type",
-			Usage: fmt.Sprintf("Type of the backend to use. Possible values: %q, %q", config.BoltDB, config.Postgres),
-			Value: string(config.BoltDB),
+			Usage: fmt.Sprintf("Type of the backend to use. Possible values: %q", []config.StorageType{config.BoltDB, config.Badger, config.Postgres}),
 		},
 		&cli.StringFlag{
 			Name:  "path",
 			Value: ".",
-			Usage: "The folder where Bolt DBs",
-		},
-		&cli.StringFlag{
-			Name:  "host",
-			Value: "localhost",
-			Usage: "The postgres database host",
-		},
-		&cli.Int64Flag{
-			Name:  "port",
-			Value: 5432,
-			Usage: "The postgres database port",
+			Usage: fmt.Sprintf("The path for the storage folder orsocket"),
 		},
 		&cli.StringFlag{
 			Name:  "user",

@@ -60,10 +60,6 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 	if environ == "" {
 		environ = env.DEV
 	}
-	typ := config.StorageType(c.String("type"))
-	if typ == "" {
-		typ = config.BoltDB
-	}
 	conf, err := config.LoadFromEnv(environ)
 	if err != nil {
 		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
@@ -71,7 +67,10 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 	if dir == "." && conf.StoragePath != os.TempDir() {
 		dir = conf.StoragePath
 	}
-
+	typ := config.StorageType(c.String("type"))
+	if typ == "" {
+		typ = conf.Storage
+	}
 	host := conf.Host
 	var aDb osin.Storage
 	var db storage.Repository
@@ -115,7 +114,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 		}
 		port := c.Int64("port")
 		if port == 0 {
-			port = 5432
+			host = dir
 		}
 		user := c.String("user")
 		if user == "" {
