@@ -278,7 +278,7 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
 		if iris.Contains(it.GetLink()) {
-			return iris, errors.Newf("Element already exists in collection")
+			return iris, nil//errors.Newf("Element already exists in collection")
 		}
 		return append(iris, it.GetLink()), nil
 	})
