@@ -644,8 +644,7 @@ func filterAudience(filters CompStrs, colArr ...pub.ItemCollection) bool {
 			}
 		}
 	}
-	allItems, _ = pub.ItemCollectionDeduplication(&allItems)
-	return filterItems(filters, allItems...)
+	return filterItems(filters, pub.ItemCollectionDeduplication(&allItems)...)
 }
 
 func filterItemCollections(filters CompStrs, colArr ...pub.Item) bool {
