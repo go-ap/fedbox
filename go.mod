@@ -7,14 +7,14 @@ require (
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
-	github.com/go-ap/activitypub v0.0.0-20200507144943-fac868b7c2f3
-	github.com/go-ap/auth v0.0.0-20200507145249-4e4a3f788494
-	github.com/go-ap/client v0.0.0-20200507145130-fd86f8deae80
+	github.com/go-ap/activitypub v0.0.0-20200515132036-48d16c143b2d
+	github.com/go-ap/auth v0.0.0-20200515132609-62884eb8c889
+	github.com/go-ap/client v0.0.0-20200514115850-fcd805d9d5f0
 	github.com/go-ap/errors v0.0.0-20200402124111-0e465c0b25bc
-	github.com/go-ap/handlers v0.0.0-20200507145318-f9e00f3af3d2
+	github.com/go-ap/handlers v0.0.0-20200515132640-f77b105f5e08
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20200507190746-ad52494fc051
-	github.com/go-ap/storage v0.0.0-20200507145153-93fe49dcbf7a
+	github.com/go-ap/processing v0.0.0-20200515132830-ef0da522eb69
+	github.com/go-ap/storage v0.0.0-20200515132422-308b8d74229b
 	github.com/go-chi/chi v4.1.1+incompatible
 	github.com/golang/protobuf v1.3.4 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible
