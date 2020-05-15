@@ -80,10 +80,11 @@ func paginateItems(col pub.ItemCollection, f Paginator) (pub.ItemCollection, str
 	} else {
 		stop = start + stop
 	}
-	if start > 0 {
+	cnt := len(col)
+	if start > 0 && start < cnt {
 		prev = path.Base(col[start].GetLink().String())
 	}
-	if stop < len(col) {
+	if stop < cnt {
 		next = path.Base(col[stop-1].GetLink().String())
 	}
 	col = col[start:stop]
