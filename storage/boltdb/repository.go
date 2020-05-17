@@ -445,6 +445,47 @@ func createOrDeleteItemInBucket(b *bolt.Bucket, it pub.Item, h handlers.Collecti
 	return nil, b.DeleteBucket(p)
 }
 
+func createCollections(b *bolt.Bucket, it pub.Item) error {
+	// create collections
+	if pub.ActorTypes.Contains(it.GetType()) {
+		return pub.OnActor(it, func(p *pub.Actor) error {
+			var err error
+			if p.Inbox != nil {
+				p.Inbox, err = createOrDeleteItemInBucket(b, p.Inbox, handlers.Inbox)
+			}
+			if p.Outbox != nil {
+				p.Outbox, err = createOrDeleteItemInBucket(b, p.Outbox, handlers.Outbox)
+			}
+			if p.Followers != nil {
+				p.Followers, err = createOrDeleteItemInBucket(b, p.Followers, handlers.Followers)
+			}
+			if p.Following != nil {
+				p.Following, err = createOrDeleteItemInBucket(b, p.Following, handlers.Following)
+			}
+			if p.Liked != nil {
+				p.Liked, err = createOrDeleteItemInBucket(b, p.Liked, handlers.Liked)
+			}
+			return err
+		})
+	}
+	if pub.ObjectTypes.Contains(it.GetType()) {
+		return pub.OnObject(it, func(o *pub.Object) error {
+			var err error
+			if o.Replies != nil {
+				o.Replies, err = createOrDeleteItemInBucket(b, o.Replies, handlers.Replies)
+			}
+			if o.Likes != nil {
+				o.Likes, err = createOrDeleteItemInBucket(b, o.Likes, handlers.Likes)
+			}
+			if o.Shares != nil {
+				o.Shares, err = createOrDeleteItemInBucket(b, o.Shares, handlers.Shares)
+			}
+			return err
+		})
+	}
+	return nil
+}
+
 func save(r *repo, it pub.Item) (pub.Item, error) {
 	pathInBucket := itemBucketPath(it.GetLink())
 	err := r.d.Update(func(tx *bolt.Tx) error {
@@ -463,50 +504,8 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 			return errors.Errorf("Non writeable bucket %s", pathInBucket)
 		}
 		if len(uuid) == 0 {
-			createCollectionBucket := func(i pub.Item, h handlers.CollectionType) (pub.Item, error) {
-				return createOrDeleteItemInBucket(b, i, h)
-			}
-			// create collections
-			if pub.ActorTypes.Contains(it.GetType()) {
-				err := pub.OnActor(it, func(p *pub.Actor) error {
-					var err error
-					if p.Inbox != nil {
-						p.Inbox, err = createCollectionBucket(p.Inbox, handlers.Inbox)
-					}
-					if p.Outbox != nil {
-						p.Outbox, err = createCollectionBucket(p.Outbox, handlers.Outbox)
-					}
-					if p.Followers != nil {
-						p.Followers, err = createCollectionBucket(p.Followers, handlers.Followers)
-					}
-					if p.Following != nil {
-						p.Following, err = createCollectionBucket(p.Following, handlers.Following)
-					}
-					if p.Liked != nil {
-						p.Liked, err = createCollectionBucket(p.Liked, handlers.Liked)
-					}
-					return err
-				})
-				if err != nil {
-					r.errFn(nil, err.Error())
-				}
-			}
-			if pub.ObjectTypes.Contains(it.GetType()) {
-				err := pub.OnObject(it, func(o *pub.Object) error {
-					if o.Replies != nil {
-						o.Replies, err = createCollectionBucket(o.Replies, handlers.Replies)
-					}
-					if o.Likes != nil {
-						o.Likes, err = createCollectionBucket(o.Likes, handlers.Likes)
-					}
-					if o.Shares != nil {
-						o.Shares, err = createCollectionBucket(o.Shares, handlers.Shares)
-					}
-					return err
-				})
-				if err != nil {
-					r.errFn(nil, err.Error())
-				}
+			if err := createCollections(b, it); err != nil {
+				return errors.Annotatef(err, "could not create object's collections")
 			}
 		}
 
@@ -629,7 +628,7 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub
 
 // RemoveFromCollection
 func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
-	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error){
+	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
 		for k, iri := range iris {
 			if iri.GetLink().Equals(it.GetLink(), false) {
 				iris = append(iris[:k], iris[k+1:]...)
@@ -642,7 +641,7 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 
 // AddToCollection
 func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
-	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error){
+	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
 		if iris.Contains(it.GetLink()) {
 			return iris, nil //errors.Newf("Element already exists in collection")
 		}

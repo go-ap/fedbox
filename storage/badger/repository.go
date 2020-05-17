@@ -263,7 +263,7 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub
 
 // RemoveFromCollection
 func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
-	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error){
+	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
 		for k, iri := range iris {
 			if iri.GetLink().Equals(it.GetLink(), false) {
 				iris = append(iris[:k], iris[k+1:]...)
@@ -278,7 +278,7 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
 		if iris.Contains(it.GetLink()) {
-			return iris, nil//errors.Newf("Element already exists in collection")
+			return iris, nil //errors.Newf("Element already exists in collection")
 		}
 		return append(iris, it.GetLink()), nil
 	})
@@ -430,56 +430,53 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 	return save(r, t)
 }
 
+// createCollections
+func createCollections(tx *badger.Txn, it pub.Item) error {
+	if pub.ActorTypes.Contains(it.GetType()) {
+		return pub.OnActor(it, func(p *pub.Actor) error {
+			var err error
+			if p.Inbox != nil {
+				p.Inbox, err = createOrDeleteItemInPath(tx, p.Inbox)
+			}
+			if p.Outbox != nil {
+				p.Outbox, err = createOrDeleteItemInPath(tx, p.Outbox)
+			}
+			if p.Followers != nil {
+				p.Followers, err = createOrDeleteItemInPath(tx, p.Followers)
+			}
+			if p.Following != nil {
+				p.Following, err = createOrDeleteItemInPath(tx, p.Following)
+			}
+			if p.Liked != nil {
+				p.Liked, err = createOrDeleteItemInPath(tx, p.Liked)
+			}
+			return err
+		})
+	}
+	if pub.ObjectTypes.Contains(it.GetType()) {
+		return pub.OnObject(it, func(o *pub.Object) error {
+			var err error
+			if o.Replies != nil {
+				o.Replies, err = createOrDeleteItemInPath(tx, o.Replies)
+			}
+			if o.Likes != nil {
+				o.Likes, err = createOrDeleteItemInPath(tx, o.Likes)
+			}
+			if o.Shares != nil {
+				o.Shares, err = createOrDeleteItemInPath(tx, o.Shares)
+			}
+			return err
+		})
+	}
+	return nil
+}
+
 func save(r *repo, it pub.Item) (pub.Item, error) {
 	itPath := itemPath(it.GetLink())
 	err := r.d.Update(func(tx *badger.Txn) error {
-		createCollectionPath := func(i pub.Item) (pub.Item, error) {
-			return createOrDeleteItemInPath(tx, i)
+		if err := createCollections(tx, it); err != nil {
+			return errors.Annotatef(err, "could not create object's collections")
 		}
-		// create collections
-		if pub.ActorTypes.Contains(it.GetType()) {
-			err := pub.OnActor(it, func(p *pub.Actor) error {
-				var err error
-				if p.Inbox != nil {
-					p.Inbox, err = createCollectionPath(p.Inbox)
-				}
-				if p.Outbox != nil {
-					p.Outbox, err = createCollectionPath(p.Outbox)
-				}
-				if p.Followers != nil {
-					p.Followers, err = createCollectionPath(p.Followers)
-				}
-				if p.Following != nil {
-					p.Following, err = createCollectionPath(p.Following)
-				}
-				if p.Liked != nil {
-					p.Liked, err = createCollectionPath(p.Liked)
-				}
-				return err
-			})
-			if err != nil {
-				r.errFn(nil, err.Error())
-			}
-		}
-		if pub.ObjectTypes.Contains(it.GetType()) {
-			err := pub.OnObject(it, func(o *pub.Object) error {
-				var err error
-				if o.Replies != nil {
-					o.Replies, err = createCollectionPath(o.Replies)
-				}
-				if o.Likes != nil {
-					o.Likes, err = createCollectionPath(o.Likes)
-				}
-				if o.Shares != nil {
-					o.Shares, err = createCollectionPath(o.Shares)
-				}
-				return err
-			})
-			if err != nil {
-				r.errFn(nil, err.Error())
-			}
-		}
-
 		// TODO(marius): it's possible to set the encoding/decoding functions on the package or storage object level
 		//  instead of using jsonld.(Un)Marshal like this.
 		entryBytes, err := jsonld.Marshal(it)
