@@ -9,6 +9,8 @@ import (
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
 	"gopkg.in/urfave/cli.v2"
+	"math"
+	"net/http"
 	"net/url"
 	"path"
 	"strings"
@@ -24,6 +26,7 @@ var Pub = &cli.Command{
 		addObject,
 		listObjects,
 		delObjects,
+		exportObjects,
 	},
 }
 
@@ -355,4 +358,60 @@ func addObjectAct(ctl *Control) cli.ActionFunc {
 
 func (c *Control) Add(types []string) (pub.ItemCollection, error) {
 	return nil, nil
+}
+
+var importObjects = &cli.Command{
+	Name:    "export",
+	Aliases: []string{"load"},
+	Usage:   "Imports ActivityPub objects",
+	Flags:   []cli.Flag{},
+	Action:  importAct(&ctl),
+}
+
+func importAct(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		return nil
+	}
+}
+
+var exportObjects = &cli.Command{
+	Name:    "export",
+	Aliases: []string{"dump"},
+	Usage:   "Exports ActivityPub objects",
+	Flags: []cli.Flag{
+		&cli.StringSliceFlag{
+			Name:        "format",
+			Usage:       fmt.Sprintf("The format in which to output the items"),
+			DefaultText: fmt.Sprintf("Valid values: %v", []string{"json"}),
+		},
+	},
+	Action: exportAct(&ctl),
+}
+
+func outJSON(it pub.Item) error {
+	out, err := pub.MarshalJSON(it)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s", out)
+	return nil
+}
+
+func exportAct(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		ids := c.Args().Slice()
+
+		var err error
+		var ob pub.ItemCollection
+		for _, id := range ids {
+			r, _ := http.NewRequest(http.MethodGet, id, nil) //{URL: u}
+			f, _ := ap.FromRequest(r)
+			f.MaxItems = math.MaxUint32
+			ob, _, err = ctl.Storage.LoadObjects(f)
+		}
+		if err != nil {
+			return err
+		}
+		return outJSON(ob)
+	}
 }

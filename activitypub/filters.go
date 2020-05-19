@@ -294,7 +294,7 @@ func (f Filters) Count() uint {
 	return f.MaxItems
 }
 
-const MaxItems = 100
+const MaxItems uint = 100
 
 var ErrNotFound = func(s string) error {
 	return errors.Newf(fmt.Sprintf("%s not found", s))
