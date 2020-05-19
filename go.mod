@@ -11,7 +11,7 @@ require (
 	github.com/go-ap/auth v0.0.0-20200515132609-62884eb8c889
 	github.com/go-ap/client v0.0.0-20200515132242-018f9c4eaf22
 	github.com/go-ap/errors v0.0.0-20200402124111-0e465c0b25bc
-	github.com/go-ap/handlers v0.0.0-20200515132640-f77b105f5e08
+	github.com/go-ap/handlers v0.0.0-20200519161310-ac4538752704
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
 	github.com/go-ap/processing v0.0.0-20200519161829-dd98d0dc6f6e
 	github.com/go-ap/storage v0.0.0-20200515132422-308b8d74229b
@@ -27,7 +27,7 @@ require (
 	github.com/spacemonkeygo/httpsig v0.0.0-20181218213338-2605ae379e47
 	github.com/unrolled/render v1.0.2
 	go.etcd.io/bbolt v1.3.4
-	golang.org/x/crypto v0.0.0-20200429183012-4b2356b1ed79
+	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	google.golang.org/appengine v1.6.5 // indirect
