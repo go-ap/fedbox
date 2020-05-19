@@ -209,7 +209,34 @@ func (r *repo) SaveObject(it pub.Item) (pub.Item, error) {
 func (r repo) IsLocalIRI(i pub.IRI) bool {
 	return i.Contains(pub.IRI(r.baseURL), false)
 }
+func getCollection(it pub.Item, c handlers.CollectionType) pub.CollectionInterface {
+	return &pub.OrderedCollection{
+		ID:   c.IRI(it).GetLink(),
+		Type: pub.OrderedCollectionType,
+	}
+}
 
+func addNewObjectCollections(it pub.Item) (pub.Item, error) {
+	if pub.ActorTypes.Contains(it.GetType()) {
+		pub.OnActor(it, func(p *pub.Actor) error {
+			p.Inbox = getCollection(p, handlers.Inbox)
+			p.Outbox = getCollection(p, handlers.Outbox)
+			p.Followers = getCollection(p, handlers.Followers)
+			p.Following = getCollection(p, handlers.Following)
+			p.Liked = getCollection(p, handlers.Liked)
+			return nil
+		})
+	}
+	if pub.ObjectTypes.Contains(it.GetType()) {
+		pub.OnObject(it, func(o *pub.Object) error {
+			o.Replies = getCollection(o, handlers.Replies)
+			o.Likes = getCollection(o, handlers.Likes)
+			o.Shares = getCollection(o, handlers.Shares)
+			return nil
+		})
+	}
+	return it, nil
+}
 func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub.IRIs, error)) error {
 	if it == nil {
 		return errors.Newf("Unable to operate on nil element")
@@ -220,16 +247,16 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub
 	if len(it.GetLink()) == 0 {
 		return errors.Newf("Invalid collection, it does not have a valid IRI")
 	}
-	if !r.IsLocalIRI(col.GetLink()) {
+	if !r.IsLocalIRI(col) {
 		return errors.Newf("Unable to save to non local collection %s", col)
 	}
-	p := itemPath(col.GetLink())
+	p := itemPath(col)
+
 	err := r.Open()
 	if err != nil {
 		return err
 	}
 	defer r.Close()
-
 	return r.d.Update(func(tx *badger.Txn) error {
 		iris := make(pub.IRIs, 0)
 
@@ -243,7 +270,7 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub
 				return nil
 			})
 		}
-
+		var err error
 		iris, err = fn(iris)
 		if err != nil {
 			return errors.Annotatef(err, "Unable operate on collection %s", p)
@@ -276,9 +303,17 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 
 // AddToCollection
 func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
+	ob, t := path.Split(col.String())
+	if handlers.ValidCollection(t) {
+		// Create the collection on the object, if it doesn't exist
+		i, _ := r.LoadOne(pub.IRI(ob))
+		if handlers.CollectionType(t).AddTo(i) {
+			r.SaveObject(i)
+		}
+	}
 	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
 		if iris.Contains(it.GetLink()) {
-			return iris, nil //errors.Newf("Element already exists in collection")
+			return iris, nil
 		}
 		return append(iris, it.GetLink()), nil
 	})
@@ -624,6 +659,15 @@ func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 	})
 
 	return col, uint(len(col)), err
+}
+
+func (r *repo) LoadOne(f s.Filterable) (pub.Item, error) {
+	err := r.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	return r.loadOneFromPath(f)
 }
 
 func (r *repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {

@@ -139,6 +139,15 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 	return col, err
 }
 
+func (r *repo) LoadOne(f s.Filterable) (pub.Item, error) {
+	err := r.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	return r.loadOneFromBucket(f)
+}
+
 func (r *repo) loadOneFromBucket(f s.Filterable) (pub.Item, error) {
 	col, cnt, err := r.loadFromBucket(f)
 	if err != nil {
@@ -641,6 +650,14 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 
 // AddToCollection
 func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
+	ob, t := path.Split(col.String())
+	if handlers.ValidCollection(t) {
+		// Create the collection on the object, if it doesn't exist
+		i, _ := r.LoadOne(pub.IRI(ob))
+		if handlers.CollectionType(t).AddTo(i) {
+			r.SaveObject(i)
+		}
+	}
 	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
 		if iris.Contains(it.GetLink()) {
 			return iris, nil //errors.Newf("Element already exists in collection")
