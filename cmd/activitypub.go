@@ -9,8 +9,6 @@ import (
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
 	"gopkg.in/urfave/cli.v2"
-	"math"
-	"net/http"
 	"net/url"
 	"path"
 	"strings"
@@ -399,15 +397,35 @@ func outJSON(it pub.Item) error {
 
 func exportAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		ids := c.Args().Slice()
+		irif := func (t handlers.CollectionType) pub.IRI { return pub.IRI(fmt.Sprintf("%s/%s", ctl.Conf.BaseURL, t)) }
+		fActors := &ap.Filters{IRI: irif(ap.ActorsType)}
+		fActivities := &ap.Filters{IRI: irif(ap.ActivitiesType)}
+		fObjects := &ap.Filters{IRI: irif(ap.ObjectsType)}
+		var (
+			actors     pub.ItemCollection
+			activities pub.ItemCollection
+			objects    pub.ItemCollection
+			err error
+		)
+		ob := make(pub.ItemCollection, 0)
 
-		var err error
-		var ob pub.ItemCollection
-		for _, id := range ids {
-			r, _ := http.NewRequest(http.MethodGet, id, nil) //{URL: u}
-			f, _ := ap.FromRequest(r)
-			f.MaxItems = math.MaxUint32
-			ob, _, err = ctl.Storage.LoadObjects(f)
+		actors, _, err = ctl.Storage.LoadObjects(fActors)
+		if len(actors) > 0 {
+			ob = append(ob, actors...)
+		}
+		if err != nil {
+			return err
+		}
+		objects, _, err = ctl.Storage.LoadObjects(fObjects)
+		if len(objects) > 0 {
+			ob = append(ob, objects...)
+		}
+		if err != nil {
+			return err
+		}
+		activities, _, err = ctl.Storage.LoadObjects(fActivities)
+		if len(activities) > 0 {
+			ob = append(ob, activities...)
 		}
 		if err != nil {
 			return err
