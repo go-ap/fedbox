@@ -72,7 +72,6 @@ func ValidateRequest(r *http.Request) (bool, error) {
 
 // HandleRequest handles POST requests to an ActivityPub To's inbox/outbox, based on the CollectionType
 func HandleRequest(typ h.CollectionType, r *http.Request, repo storage.Repository) (pub.Item, int, error) {
-	var err error
 	var it pub.Item
 
 	f, err := ap.FromRequest(r)

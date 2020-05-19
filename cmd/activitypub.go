@@ -1,15 +1,18 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
+	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
 	"gopkg.in/urfave/cli.v2"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -25,6 +28,7 @@ var Pub = &cli.Command{
 		listObjects,
 		delObjects,
 		exportObjects,
+		importObjects,
 	},
 }
 
@@ -359,15 +363,92 @@ func (c *Control) Add(types []string) (pub.ItemCollection, error) {
 }
 
 var importObjects = &cli.Command{
-	Name:    "export",
+	Name:    "import",
 	Aliases: []string{"load"},
 	Usage:   "Imports ActivityPub objects",
-	Flags:   []cli.Flag{},
-	Action:  importAct(&ctl),
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "base",
+			Usage: fmt.Sprintf("The base IRI to replace"),
+		},
+	},
+	Action: importAct(&ctl),
 }
 
 func importAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		baseIRI := ctl.Conf.BaseURL
+		toReplace := c.String("base")
+		files := c.Args().Slice()
+		for _, name := range files {
+			f, err := os.Open(name)
+			if err != nil {
+				if os.IsNotExist(err) {
+					Errf("Invalid path %s", name)
+				} else {
+					Errf("Error %s", err)
+				}
+			}
+
+			s, err := f.Stat()
+			if err != nil {
+				Errf("Error %s", err)
+			}
+			buf := make([]byte, s.Size())
+			size, err := f.Read(buf)
+			if err != nil {
+				Errf("Error %s", err)
+			}
+			if size == 0 {
+				Errf("Empty file %s", name)
+			}
+
+			if len(toReplace) > 0 {
+				buf = bytes.Replace(buf, []byte(toReplace), []byte(baseIRI), -1)
+			}
+			ob, err := pub.UnmarshalJSON(buf)
+			if err != nil {
+				Errf("Error unmarshaling JSON: %s", err)
+			}
+
+			processor, _, err := processing.New(
+				processing.SetIRI(pub.IRI(baseIRI)),
+				processing.SetStorage(ctl.Storage),
+			)
+
+			if err != nil {
+				Errf("Error initializing ActivityPub processor: %s", err)
+			}
+			col := ob
+			if !ob.IsCollection() {
+				col = pub.ItemCollection{ob}
+			}
+			start := time.Now()
+			count := 0
+			pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
+				for _, it := range c.Collection() {
+					fmt.Printf("Saving %s\n", it.GetID())
+					typ := it.GetType()
+					if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
+						err := pub.OnActivity(it, func(a *pub.Activity) error {
+							_, err := processor.ProcessClientActivity(a)
+							count++
+							return err
+						})
+						if err != nil {
+							Errf("unable to save activity %s: %s", it.GetID(), err)
+						}
+					}
+				}
+				return nil
+			})
+			tot := time.Now().Sub(start)
+			fmt.Printf("Ellapsed time:          %s\n", tot)
+			if count > 0 {
+				perIt := time.Duration(int64(tot) / int64(count))
+				fmt.Printf("Ellapsed time per item: %s\n", perIt)
+			}
+		}
 		return nil
 	}
 }
@@ -397,7 +478,8 @@ func outJSON(it pub.Item) error {
 
 func exportAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		irif := func (t handlers.CollectionType) pub.IRI { return pub.IRI(fmt.Sprintf("%s/%s", ctl.Conf.BaseURL, t)) }
+		irif := func(t handlers.CollectionType) pub.IRI { return pub.IRI(fmt.Sprintf("%s/%s", ctl.Conf.BaseURL, t)) }
+
 		fActors := &ap.Filters{IRI: irif(ap.ActorsType)}
 		fActivities := &ap.Filters{IRI: irif(ap.ActivitiesType)}
 		fObjects := &ap.Filters{IRI: irif(ap.ObjectsType)}
@@ -405,7 +487,7 @@ func exportAct(ctl *Control) cli.ActionFunc {
 			actors     pub.ItemCollection
 			activities pub.ItemCollection
 			objects    pub.ItemCollection
-			err error
+			err        error
 		)
 		ob := make(pub.ItemCollection, 0)
 
