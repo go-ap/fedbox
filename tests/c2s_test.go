@@ -67,9 +67,6 @@ var C2STests = []testSuite{
 								outbox: &objectVal{
 									id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/outbox",
 								},
-								liked: &objectVal{
-									id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/liked",
-								},
 								preferredUsername: "johndoe",
 								name:              "Johnathan Doe",
 							},
@@ -110,9 +107,6 @@ var C2STests = []testSuite{
 								},
 								outbox: &objectVal{
 									id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/outbox",
-								},
-								liked: &objectVal{
-									id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/liked",
 								},
 								preferredUsername: "johndoe",
 								name:              "Johnathan Doe",
@@ -183,14 +177,7 @@ var C2STests = []testSuite{
 					met: http.MethodGet,
 					url: fmt.Sprintf("%s/activities", apiURL),
 				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        fmt.Sprintf("%s/activities", apiURL),
-						typ:       string(pub.OrderedCollectionType),
-						itemCount: 0,
-					},
-				},
+				res: testRes{code: http.StatusNotFound},
 			},
 		},
 	},
@@ -207,14 +194,7 @@ var C2STests = []testSuite{
 					met: http.MethodGet,
 					url: fmt.Sprintf("%s/objects", apiURL),
 				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects", apiURL),
-						typ:       string(pub.OrderedCollectionType),
-						itemCount: 0,
-					},
-				},
+				res: testRes{code: http.StatusNotFound},
 			},
 		},
 	},
@@ -437,42 +417,21 @@ var C2STests = []testSuite{
 					met:   http.MethodGet,
 					urlFn: func() string { return fmt.Sprintf("%s/following", *(&defaultTestAccount.Id)) },
 				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        fmt.Sprintf("%s/following", *(&defaultTestAccount.Id)),
-						typ:       string(pub.OrderedCollectionType),
-						itemCount: 0,
-					},
-				},
+				res: testRes{code: http.StatusNotFound},
 			},
 			{
 				req: testReq{
 					met:   http.MethodGet,
 					urlFn: func() string { return fmt.Sprintf("%s/followers", *(&defaultTestAccount.Id)) },
 				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        fmt.Sprintf("%s/followers", *(&defaultTestAccount.Id)),
-						typ:       string(pub.OrderedCollectionType),
-						itemCount: 0,
-					},
-				},
+				res: testRes{code: http.StatusNotFound},
 			},
 			{
 				req: testReq{
 					met:   http.MethodGet,
 					urlFn: func() string { return fmt.Sprintf("%s/liked", *(&defaultTestAccount.Id)) },
 				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        fmt.Sprintf("%s/liked", *(&defaultTestAccount.Id)),
-						typ:       string(pub.OrderedCollectionType),
-						itemCount: 0,
-					},
-				},
+				res: testRes{code: http.StatusNotFound},
 			},
 		},
 	},
@@ -566,28 +525,14 @@ var C2STests = []testSuite{
 					met:   http.MethodGet,
 					urlFn: func() string { return fmt.Sprintf("%s/following", *(&defaultTestAccount.Id)) },
 				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        fmt.Sprintf("%s/following", *(&defaultTestAccount.Id)),
-						typ:       string(pub.OrderedCollectionType),
-						itemCount: 0,
-					},
-				},
+				res: testRes{code: http.StatusNotFound},
 			},
 			{
 				req: testReq{
 					met:   http.MethodGet,
 					urlFn: func() string { return fmt.Sprintf("%s/followers", *(&defaultTestAccount.Id)) },
 				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        fmt.Sprintf("%s/followers", *(&defaultTestAccount.Id)),
-						typ:       string(pub.OrderedCollectionType),
-						itemCount: 0,
-					},
-				},
+				res: testRes{code: http.StatusNotFound},
 			},
 		},
 	},
@@ -640,14 +585,7 @@ var C2STests = []testSuite{
 					met:   http.MethodGet,
 					urlFn: func() string { return fmt.Sprintf("%s/following", *(&defaultTestAccount.Id)) },
 				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        fmt.Sprintf("%s/following", *(&defaultTestAccount.Id)),
-						typ:       string(pub.OrderedCollectionType),
-						itemCount: 0,
-					},
-				},
+				res: testRes{code: http.StatusNotFound},
 			},
 			{
 				req: testReq{

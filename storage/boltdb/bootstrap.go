@@ -39,18 +39,6 @@ func createService(b *bolt.DB, service pub.Service) error {
 		if err != nil {
 			return errors.Annotatef(err, "could not save %s[%s]", service.Name, service.Type)
 		}
-		_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketActivities))
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s bucket", bucketActivities)
-		}
-		_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketActors))
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s bucket", bucketActors)
-		}
-		_, err = hostBucket.CreateBucketIfNotExists([]byte(bucketObjects))
-		if err != nil {
-			return errors.Annotatef(err, "could not create %s bucket", bucketObjects)
-		}
 		return nil
 	})
 	if err != nil {
