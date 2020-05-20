@@ -207,7 +207,10 @@ func (c *Control) DeleteObject(id string) error {
 	if cnt == 0 {
 		return errors.Newf("nothing found")
 	}
-	_, err = delFn(it.First())
+	if it.GetType() == pub.TombstoneType {
+		return errors.Newf("Item %s already deleted", it.GetLink())
+	}
+	_, err = delFn(pub.IRI(id))
 
 	return err
 }
@@ -243,9 +246,7 @@ func listObjectsAct(ctl *Control) cli.ActionFunc {
 		if err != nil {
 			return err
 		}
-		for i, it := range all {
-			fmt.Printf("%4d [%11s] %s\n", i, it.GetType(), it.GetLink())
-		}
+		outJSON(all)
 		return nil
 	}
 }
