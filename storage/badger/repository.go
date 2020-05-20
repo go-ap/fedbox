@@ -450,9 +450,7 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 	}
 	old, _ := r.loadOneFromPath(f)
 
-	// TODO(marius): add some mechanism for marking the collections pub read-only
-	//    update 2019-10-03: I have no clue what this comment means. I can't think of why we'd need r/o collections for
-	//    cases where we want to delete things.
+	deleteCollections(r, old)
 	t := pub.Tombstone{
 		ID:   it.GetLink(),
 		Type: pub.TombstoneType,
@@ -469,41 +467,66 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 func createCollections(tx *badger.Txn, it pub.Item) error {
 	if pub.ActorTypes.Contains(it.GetType()) {
 		return pub.OnActor(it, func(p *pub.Actor) error {
-			var err error
 			if p.Inbox != nil {
-				p.Inbox, err = createOrDeleteItemInPath(tx, p.Inbox)
+				p.Inbox, _ = createCollectionInPath(tx, p.Inbox)
 			}
 			if p.Outbox != nil {
-				p.Outbox, err = createOrDeleteItemInPath(tx, p.Outbox)
+				p.Outbox, _ = createCollectionInPath(tx, p.Outbox)
 			}
 			if p.Followers != nil {
-				p.Followers, err = createOrDeleteItemInPath(tx, p.Followers)
+				p.Followers, _ = createCollectionInPath(tx, p.Followers)
 			}
 			if p.Following != nil {
-				p.Following, err = createOrDeleteItemInPath(tx, p.Following)
+				p.Following, _ = createCollectionInPath(tx, p.Following)
 			}
 			if p.Liked != nil {
-				p.Liked, err = createOrDeleteItemInPath(tx, p.Liked)
+				p.Liked, _ = createCollectionInPath(tx, p.Liked)
 			}
-			return err
+			return nil
 		})
 	}
 	if pub.ObjectTypes.Contains(it.GetType()) {
 		return pub.OnObject(it, func(o *pub.Object) error {
-			var err error
 			if o.Replies != nil {
-				o.Replies, err = createOrDeleteItemInPath(tx, o.Replies)
+				o.Replies, _ = createCollectionInPath(tx, o.Replies)
 			}
 			if o.Likes != nil {
-				o.Likes, err = createOrDeleteItemInPath(tx, o.Likes)
+				o.Likes, _ = createCollectionInPath(tx, o.Likes)
 			}
 			if o.Shares != nil {
-				o.Shares, err = createOrDeleteItemInPath(tx, o.Shares)
+				o.Shares, _ = createCollectionInPath(tx, o.Shares)
 			}
-			return err
+			return nil
 		})
 	}
 	return nil
+}
+
+// deleteCollections
+func deleteCollections(r *repo, it pub.Item) error {
+	return r.d.Update(func(tx *badger.Txn) error {
+		if pub.ActorTypes.Contains(it.GetType()) {
+			return pub.OnActor(it, func(p *pub.Actor) error {
+				var err error
+				err = deleteCollectionFromPath(tx, handlers.Inbox.IRI(p))
+				err = deleteCollectionFromPath(tx, handlers.Outbox.IRI(p))
+				err = deleteCollectionFromPath(tx, handlers.Followers.IRI(p))
+				err = deleteCollectionFromPath(tx, handlers.Following.IRI(p))
+				err = deleteCollectionFromPath(tx, handlers.Liked.IRI(p))
+				return err
+			})
+		}
+		if pub.ObjectTypes.Contains(it.GetType()) {
+			return pub.OnObject(it, func(o *pub.Object) error {
+				var err error
+				err = deleteCollectionFromPath(tx, handlers.Replies.IRI(o))
+				err = deleteCollectionFromPath(tx, handlers.Likes.IRI(o))
+				err = deleteCollectionFromPath(tx, handlers.Shares.IRI(o))
+				return err
+			})
+		}
+		return nil
+	})
 }
 
 func save(r *repo, it pub.Item) (pub.Item, error) {
@@ -537,13 +560,24 @@ func getCollectionKey(it pub.Item, h handlers.CollectionType) []byte {
 
 var emptyCollection = []byte{'[', ']'}
 
-func createOrDeleteItemInPath(b *badger.Txn, it pub.Item) (pub.Item, error) {
-	p := getObjectKey(itemPath(it.GetLink()))
-	if it != nil {
-		err := b.Set(p, emptyCollection)
-		return it.GetLink(), err
+func createCollectionInPath(b *badger.Txn, it pub.Item) (pub.Item, error) {
+	if it == nil {
+		return nil, nil
 	}
-	return nil, b.Delete(p)
+	p := getObjectKey(itemPath(it.GetLink()))
+	err := b.Set(p, emptyCollection)
+	if err != nil {
+		return nil, err
+	}
+	return it.GetLink(), nil
+}
+
+func deleteCollectionFromPath(b *badger.Txn, it pub.Item) error {
+	if it == nil {
+		return nil
+	}
+	p := getObjectKey(itemPath(it.GetLink()))
+	return b.Delete(p)
 }
 
 func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(val []byte) error {
@@ -642,9 +676,11 @@ func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 		if isStorageCollectionKey(fullPath) {
 			depth = 1
 		}
+		pathExists := false
 		for it.Seek(fullPath); it.ValidForPrefix(fullPath); it.Next() {
 			i := it.Item()
 			k := i.Key()
+			pathExists = true
 			if iterKeyIsTooDeep(fullPath, k, depth) {
 				continue
 			}
@@ -654,6 +690,9 @@ func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 					continue
 				}
 			}
+		}
+		if !pathExists {
+			return errors.NotFoundf("%s does not exist", fullPath)
 		}
 		return nil
 	})

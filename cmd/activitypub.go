@@ -113,16 +113,13 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 	}
 	p.ID = *id
 	p.URL = p.GetLink()
-	p.Inbox = handlers.Inbox.IRI(p.ID)
-	p.Outbox = handlers.Outbox.IRI(p.ID)
-	p.Liked = handlers.Liked.IRI(p.ID)
-	p.Followers = handlers.Followers.IRI(p.ID)
-	p.Following = handlers.Following.IRI(p.ID)
 
-	p.Endpoints = &pub.Endpoints{
-		SharedInbox:                self.Inbox.GetLink(),
-		OauthAuthorizationEndpoint: pub.IRI(fmt.Sprintf("%s/oauth/authorize", self.URL)),
-		OauthTokenEndpoint:         pub.IRI(fmt.Sprintf("%s/oauth/token", self.URL)),
+	if p.Type == pub.PersonType {
+		p.Endpoints = &pub.Endpoints{
+			SharedInbox:                self.Inbox.GetLink(),
+			OauthAuthorizationEndpoint: pub.IRI(fmt.Sprintf("%s/oauth/authorize", self.URL)),
+			OauthTokenEndpoint:         pub.IRI(fmt.Sprintf("%s/oauth/token", self.URL)),
+		}
 	}
 	it, err := c.Storage.SaveActor(p)
 	if err != nil {

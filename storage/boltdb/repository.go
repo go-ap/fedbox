@@ -205,6 +205,8 @@ func (r *repo) iterateInBucket(b *bolt.Bucket, f s.Filterable) (pub.ItemCollecti
 	return col, uint(len(col)), nil
 }
 
+var fedboxCollections = handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
+
 func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) {
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *bolt.Tx) error {
@@ -231,7 +233,7 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 			return errors.Errorf("Invalid bucket %s", fullPath)
 		}
 		lst := handlers.CollectionType(path.Base(string(fullPath)))
-		if lst == ap.ActivitiesType || lst == ap.ActorsType || lst == ap.ObjectsType {
+		if fedboxCollections.Contains(lst) {
 			fromBucket, _, err := r.iterateInBucket(b, f)
 			if err != nil {
 				return err
@@ -400,9 +402,7 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 	}
 	old, _ := r.loadOneFromBucket(f)
 
-	// TODO(marius): add some mechanism for marking the collections pub read-only
-	//    update 2019-10-03: I have no clue what this comment means. I can't think of why we'd need r/o collections for
-	//    cases where we want to delete things.
+	deleteCollections(r, it)
 	t := pub.Tombstone{
 		ID:   it.GetLink(),
 		Type: pub.TombstoneType,
@@ -445,56 +445,111 @@ func itemBucketPath(iri pub.IRI) []byte {
 	return []byte(url.Host + url.Path)
 }
 
-func createOrDeleteItemInBucket(b *bolt.Bucket, it pub.Item, h handlers.CollectionType) (pub.Item, error) {
-	p := []byte(h)
-	if it != nil {
-		_, err := b.CreateBucketIfNotExists(p)
-		return it.GetLink(), err
+func createCollectionInBucket(b *bolt.Bucket, it pub.Item) (pub.Item, error) {
+	if it == nil {
+		return nil, nil
 	}
-	return nil, b.DeleteBucket(p)
+	p := []byte(it.GetLink())
+	_, err := b.CreateBucketIfNotExists(p)
+	if err != nil {
+		return nil, err
+	}
+	return it.GetLink(), nil
 }
 
-func createCollections(b *bolt.Bucket, it pub.Item) error {
+func deleteCollectionFromBucket(b *bolt.Bucket, it pub.Item) error {
+	if it == nil {
+		return nil
+	}
+	p := []byte(it.GetLink())
+	return b.DeleteBucket(p)
+}
+
+func createCollectionsInBucket(b *bolt.Bucket, it pub.Item) error {
 	// create collections
 	if pub.ActorTypes.Contains(it.GetType()) {
 		return pub.OnActor(it, func(p *pub.Actor) error {
-			var err error
 			if p.Inbox != nil {
-				p.Inbox, err = createOrDeleteItemInBucket(b, p.Inbox, handlers.Inbox)
+				p.Inbox, _ = createCollectionInBucket(b, handlers.Inbox.IRI(p))
 			}
 			if p.Outbox != nil {
-				p.Outbox, err = createOrDeleteItemInBucket(b, p.Outbox, handlers.Outbox)
+				p.Outbox, _ = createCollectionInBucket(b, handlers.Outbox.IRI(p))
 			}
 			if p.Followers != nil {
-				p.Followers, err = createOrDeleteItemInBucket(b, p.Followers, handlers.Followers)
+				p.Followers, _ = createCollectionInBucket(b, handlers.Followers.IRI(p))
 			}
 			if p.Following != nil {
-				p.Following, err = createOrDeleteItemInBucket(b, p.Following, handlers.Following)
+				p.Following, _ = createCollectionInBucket(b, handlers.Liked.IRI(p))
 			}
 			if p.Liked != nil {
-				p.Liked, err = createOrDeleteItemInBucket(b, p.Liked, handlers.Liked)
+				p.Liked, _ = createCollectionInBucket(b, handlers.Liked.IRI(p))
 			}
+			return nil
+		})
+	}
+	if pub.ObjectTypes.Contains(it.GetType()) {
+		return pub.OnObject(it, func(o *pub.Object) error {
+			if o.Replies != nil {
+				o.Replies, _ = createCollectionInBucket(b, handlers.Replies.IRI(o))
+			}
+			if o.Likes != nil {
+				o.Likes, _ = createCollectionInBucket(b, handlers.Likes.IRI(o))
+			}
+			if o.Shares != nil {
+				o.Shares, _ = createCollectionInBucket(b, handlers.Shares.IRI(o))
+			}
+			return nil
+		})
+	}
+	return nil
+}
+
+// deleteCollections
+func deleteCollections(r *repo, it pub.Item) error {
+	pathInBucket := itemBucketPath(it.GetLink())
+	return r.d.Update(func(tx *bolt.Tx) error {
+		root := tx.Bucket(r.root)
+		if root == nil {
+			return errors.Errorf("Invalid bucket %s", r.root)
+		}
+		if !root.Writable() {
+			return errors.Errorf("Non writeable bucket %s", r.root)
+		}
+		b, _, err := descendInBucket(root, pathInBucket, true)
+		if err != nil {
+			return errors.Annotatef(err, "Unable to find %s in root bucket", pathInBucket)
+		}
+		if !b.Writable() {
+			return errors.Errorf("Non writeable bucket %s", pathInBucket)
+		}
+		return deleteCollectionsFromBucket(b, it)
+	})
+}
+
+// deleteCollectionsFromBucket
+func deleteCollectionsFromBucket(b *bolt.Bucket, it pub.Item) error {
+	if pub.ActorTypes.Contains(it.GetType()) {
+		return pub.OnActor(it, func(p *pub.Actor) error {
+			var err error
+			err = deleteCollectionFromBucket(b, handlers.Inbox.IRI(p))
+			err = deleteCollectionFromBucket(b, handlers.Outbox.IRI(p))
+			err = deleteCollectionFromBucket(b, handlers.Followers.IRI(p))
+			err = deleteCollectionFromBucket(b, handlers.Following.IRI(p))
+			err = deleteCollectionFromBucket(b, handlers.Liked.IRI(p))
 			return err
 		})
 	}
 	if pub.ObjectTypes.Contains(it.GetType()) {
 		return pub.OnObject(it, func(o *pub.Object) error {
 			var err error
-			if o.Replies != nil {
-				o.Replies, err = createOrDeleteItemInBucket(b, o.Replies, handlers.Replies)
-			}
-			if o.Likes != nil {
-				o.Likes, err = createOrDeleteItemInBucket(b, o.Likes, handlers.Likes)
-			}
-			if o.Shares != nil {
-				o.Shares, err = createOrDeleteItemInBucket(b, o.Shares, handlers.Shares)
-			}
+			err = deleteCollectionFromBucket(b, handlers.Replies.IRI(o))
+			err = deleteCollectionFromBucket(b, handlers.Likes.IRI(o))
+			err = deleteCollectionFromBucket(b, handlers.Shares.IRI(o))
 			return err
 		})
 	}
 	return nil
 }
-
 func save(r *repo, it pub.Item) (pub.Item, error) {
 	pathInBucket := itemBucketPath(it.GetLink())
 	err := r.d.Update(func(tx *bolt.Tx) error {
@@ -513,7 +568,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 			return errors.Errorf("Non writeable bucket %s", pathInBucket)
 		}
 		if len(uuid) == 0 {
-			if err := createCollections(b, it); err != nil {
+			if err := createCollectionsInBucket(b, it); err != nil {
 				return errors.Annotatef(err, "could not create object's collections")
 			}
 		}
