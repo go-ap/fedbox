@@ -12,5 +12,4 @@ tasks:
       cd fedbox && go mod download
   - integration: |
       cd fedbox
-      cp tests/.env.boltdb tests/.env.test
-      make integration
+      make STORAGE=boltdb integration

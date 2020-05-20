@@ -1,6 +1,7 @@
 export CGO_ENABLED=0
 GO := go
 TEST := $(GO) test -v
+STORAGE ?= boltdb
 
 .PHONY: test integration clean
 
@@ -9,6 +10,6 @@ clean:
 
 test: clean
 	mkdir -p .cache
-	$(TEST) ./...
+	STORAGE=$(STORAGE) $(TEST) ./...
 
 integration: test

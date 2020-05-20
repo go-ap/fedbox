@@ -12,5 +12,4 @@ tasks:
       cd fedbox && go mod download
   - integration: |
       cd fedbox
-      cp tests/.env.badger tests/.env.test
-      make integration
+      make STORAGE=badger integration
