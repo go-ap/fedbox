@@ -57,6 +57,11 @@ var (
 	}
 )
 
+var AnonymousAcct = account{
+	username: "anonymous",
+	actor:    &auth.AnonymousActor,
+}
+
 func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	db := badger.New(badger.Config{
 		Path:  c.Badger(),

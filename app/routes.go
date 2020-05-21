@@ -1,9 +1,7 @@
 package app
 
 import (
-	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	h "github.com/go-ap/handlers"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/openshift/osin"
@@ -11,36 +9,31 @@ import (
 	"net/http"
 )
 
-func CollectionRoutes(r chi.Router) {
+func (f FedBOX) CollectionRoutes(r chi.Router) {
 	r.Group(func(r chi.Router) {
 		r.With(middleware.GetHead)
 
-		r.Method(http.MethodGet, "/", h.CollectionHandlerFn(HandleCollection))
-		r.Method(http.MethodPost, "/", h.ActivityHandlerFn(HandleRequest))
+		r.Method(http.MethodGet, "/", HandleCollection(f))
+		r.Method(http.MethodPost, "/", HandleRequest(f))
 
 		r.Route("/{id}", func(r chi.Router) {
-			r.Method(http.MethodGet, "/", h.ItemHandlerFn(HandleItem))
+			r.Method(http.MethodGet, "/", HandleItem(f))
 			r.Route("/{collection}", func(r chi.Router) {
-				r.Method(http.MethodGet, "/", h.CollectionHandlerFn(HandleCollection))
-				r.Method(http.MethodPost, "/", h.ActivityHandlerFn(HandleRequest))
+				r.Method(http.MethodGet, "/", HandleCollection(f))
+				r.Method(http.MethodPost, "/", HandleRequest(f))
 			})
 		})
 	})
 }
 
-var AnonymousAcct = account{
-	username: "anonymous",
-	actor:    &auth.AnonymousActor,
-}
-
-func (f *FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) func(chi.Router) {
+func (f FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) func(chi.Router) {
 	return func(r chi.Router) {
 		r.Use(middleware.RealIP)
 		r.Use(middleware.GetHead)
 		r.Use(ActorFromAuthHeader(os, f.Storage, l))
 
-		r.Method(http.MethodGet, "/", h.ItemHandlerFn(HandleItem))
-		r.Route("/{collection}", CollectionRoutes)
+		r.Method(http.MethodGet, "/", HandleItem(f))
+		r.Route("/{collection}", f.CollectionRoutes)
 
 		h := oauthHandler{
 			baseURL: baseURL,

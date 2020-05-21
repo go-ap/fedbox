@@ -8,12 +8,12 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
 	github.com/go-ap/activitypub v0.0.0-20200515132036-48d16c143b2d
-	github.com/go-ap/auth v0.0.0-20200515132609-62884eb8c889
-	github.com/go-ap/client v0.0.0-20200515132242-018f9c4eaf22
+	github.com/go-ap/auth v0.0.0-20200521130732-0735f65f339f
+	github.com/go-ap/client v0.0.0-20200521111500-49134ab4c4c6
 	github.com/go-ap/errors v0.0.0-20200402124111-0e465c0b25bc
 	github.com/go-ap/handlers v0.0.0-20200519181040-ff75fcd092ee
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20200519181210-c1387d05eeef
+	github.com/go-ap/processing v0.0.0-20200521115511-fec2379fe7ce
 	github.com/go-ap/storage v0.0.0-20200515132422-308b8d74229b
 	github.com/go-chi/chi v4.1.1+incompatible
 	github.com/golang/protobuf v1.3.4 // indirect
