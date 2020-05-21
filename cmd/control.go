@@ -96,7 +96,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 			LogFn:      app.InfoLogFn(l),
 			ErrFn:      app.ErrLogFn(l),
 		})
-		storagePath, err := badger.Path(dir, conf)
+		storagePath, err := badger.Path(conf)
 		if err != nil {
 			return nil, err
 		}

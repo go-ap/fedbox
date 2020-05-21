@@ -12,8 +12,8 @@ import (
 	"strings"
 )
 
-func Path (dir string, c config.Options) (string, error){
-	p := fmt.Sprintf("%s/%s/%s", dir, c.Env, c.Host)
+func Path (c config.Options) (string, error){
+	p := fmt.Sprintf("%s/%s/%s", c.StoragePath, c.Env, c.Host)
 	crumbs := strings.Split(p, "/")
 	for i := range crumbs {
 		current := strings.Join(crumbs[:i], "/")

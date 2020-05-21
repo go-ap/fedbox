@@ -98,7 +98,7 @@ func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type
 		}
 	}
 	if typ == config.Badger {
-		storagePath, err := badger.Path(dir, c.Conf)
+		storagePath, err := badger.Path(c.Conf)
 		if err != nil {
 			return err
 		}
@@ -145,7 +145,7 @@ func (c *Control) BootstrapReset(dir string, typ config.StorageType, environ env
 		}
 	}
 	if typ == config.Badger {
-		path, err := badger.Path(dir, c.Conf)
+		path, err := badger.Path(c.Conf)
 		if err != nil {
 			return fmt.Errorf("unable to update %s db: %w", typ, err)
 		}

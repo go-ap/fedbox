@@ -120,7 +120,7 @@ func resetDB(t *testing.T) string {
 		boltdb.Bootstrap(dbPath, apiURL)
 	}
 	if opt.Storage == config.Badger {
-		dbPath, _ = badger.Path(opt.StoragePath, opt)
+		dbPath, _ = badger.Path(opt)
 		badger.Clean(dbPath)
 		badger.Bootstrap(dbPath, apiURL)
 	}
@@ -128,7 +128,8 @@ func resetDB(t *testing.T) string {
 }
 
 func getBadgerStorage(opt config.Options, u *url.URL) storage.Repository {
-	path, _ := badger.Path(opt.StoragePath, config.Options{
+	path, _ := badger.Path(config.Options{
+		StoragePath: opt.StoragePath,
 		Env:  opt.Env,
 		Host: u.Host,
 	})
