@@ -709,7 +709,7 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	if handlers.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
 		i, _ := r.LoadOne(pub.IRI(ob))
-		if handlers.CollectionType(t).AddTo(i) {
+		if _, ok := handlers.CollectionType(t).AddTo(i); ok {
 			r.SaveObject(i)
 		}
 	}
