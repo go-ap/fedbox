@@ -11,6 +11,7 @@ import (
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/storage/badger"
 	"github.com/go-ap/fedbox/storage/boltdb"
+	"github.com/go-ap/fedbox/storage/fs"
 	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
@@ -88,6 +89,17 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 			ErrFn: app.ErrLogFn(l),
 		}, conf.BaseURL)
 		return New(aDb, db, conf), nil
+	}
+	if typ == config.FS {
+		path := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ)
+		aDb = auth.NewBoltDBStore(auth.BoltConfig{
+			Path:       path,
+			BucketName: host,
+			LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
+			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		})
+		db, err = fs.New(conf)
+		return New(aDb, db, conf), err
 	}
 	if typ == config.Badger {
 		aDb = auth.NewBoltDBStore(auth.BoltConfig{

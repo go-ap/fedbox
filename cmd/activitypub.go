@@ -83,6 +83,9 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 }
 
 func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyType, id *pub.ID, pw []byte) (*pub.Person, error) {
+	if c.Storage == nil {
+		return nil, errors.Errorf("invalid storage backend")
+	}
 	self := ap.Self(pub.IRI(c.BaseURL))
 	now := time.Now().UTC()
 	p := pub.Person{
@@ -109,9 +112,9 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 				return nil, err
 			}
 			id = &newId
+			p.ID = *id
 		}
 	}
-	p.ID = *id
 	p.URL = p.GetLink()
 
 	if p.Type == pub.PersonType {

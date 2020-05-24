@@ -12,6 +12,7 @@ import (
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/fedbox/storage/badger"
 	"github.com/go-ap/fedbox/storage/boltdb"
+	"github.com/go-ap/fedbox/storage/fs"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
 	"github.com/openshift/osin"
@@ -70,14 +71,20 @@ func addMockObjects(r storage.Repository, obj pub.ItemCollection, errFn app.LogF
 }
 
 func seedTestData(t *testing.T, testData []string) {
-	if t != nil {
-		t.Helper()
-		t.Logf("Resetting storage backend")
+	if t == nil {
+		panic("invalid test context")
 	}
+	t.Helper()
+	t.Logf("Resetting storage backend")
+
 	opt, _ := config.LoadFromEnv("test")
 	u, _ := url.Parse(apiURL)
 
-	b := getStorage(opt, u)
+	b, err := getStorage(opt, u)
+	if err != nil {
+		t.Errorf("Unable to initialize storage for tests: %s", err)
+		return
+	}
 	s := getOAuthStorage(opt, u)
 
 	o := cmd.New(s, b, config.Options{})
@@ -124,18 +131,26 @@ func resetDB(t *testing.T) string {
 		badger.Clean(dbPath)
 		badger.Bootstrap(dbPath, apiURL)
 	}
+	if opt.Storage == config.FS {
+		dbPath := path.Join(opt.StoragePath, string(opt.Env))
+		fs.Clean(dbPath)
+	}
 	return dbPath
 }
 
 func getBadgerStorage(opt config.Options, u *url.URL) storage.Repository {
 	path, _ := badger.Path(config.Options{
 		StoragePath: opt.StoragePath,
-		Env:  opt.Env,
-		Host: u.Host,
+		Env:         opt.Env,
+		Host:        u.Host,
 	})
 	return badger.New(badger.Config{
 		Path: path,
 	}, u.String())
+}
+
+func getFsStorage(opt config.Options, u *url.URL) (storage.Repository, error) {
+	return fs.New(opt)
 }
 
 func getBoltDBStorage(opt config.Options, u *url.URL) storage.Repository {
@@ -165,14 +180,17 @@ func getOAuthStorage(opt config.Options, u *url.URL) osin.Storage {
 	})
 }
 
-func getStorage(opt config.Options, u *url.URL) storage.Repository {
+func getStorage(opt config.Options, u *url.URL) (storage.Repository, error) {
 	if opt.Storage == config.BoltDB {
-		return getBoltDBStorage(opt, u)
+		return getBoltDBStorage(opt, u), nil
 	}
 	if opt.Storage == config.Badger {
-		return getBadgerStorage(opt, u)
+		return getBadgerStorage(opt, u), nil
 	}
-	return nil
+	if opt.Storage == config.FS {
+		return getFsStorage(opt, u)
+	}
+	return nil, nil
 }
 
 func runAPP(e env.Type) int {
@@ -188,7 +206,7 @@ func runAPP(e env.Type) int {
 	o := osinServer(getOAuthStorage(opt, u), l)
 
 	a, _ := app.New(l, "HEAD", string(e))
-	a.Storage = getStorage(opt, u)
+	a.Storage, _ = getStorage(opt, u)
 
 	r.Use(app.Repo(a.Storage))
 	r.Route("/", a.Routes(a.Config().BaseURL, o, l))

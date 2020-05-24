@@ -54,6 +54,7 @@ const (
 	KeyStorage     = "STORAGE"
 	KeyStoragePath = "STORAGE_PATH"
 	BoltDB         = StorageType("boltdb")
+	FS             = StorageType("fs")
 	Badger         = StorageType("badger")
 	Postgres       = StorageType("postgres")
 )

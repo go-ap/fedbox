@@ -10,6 +10,7 @@ import (
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/storage/badger"
 	"github.com/go-ap/fedbox/storage/boltdb"
+	"github.com/go-ap/fedbox/storage/fs"
 	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/handlers"
 	st "github.com/go-ap/storage"
@@ -92,6 +93,21 @@ func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin
 	})
 	return db, oauth, nil
 }
+
+func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+	oauth := auth.NewBoltDBStore(auth.BoltConfig{
+		Path:       c.BoltDBOAuth2(),
+		BucketName: c.Host,
+		LogFn:      InfoLogFn(l),
+		ErrFn:      ErrLogFn(l),
+	})
+	db, err := fs.New(c)
+	if err != nil {
+		return nil, oauth, err
+	}
+	return db, oauth, nil
+}
+
 func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	db, err := pgx.New(c.DB, c.BaseURL, l)
 
@@ -117,6 +133,9 @@ func getStorage(f FedBOX, l logrus.FieldLogger) (st.Repository, osin.Storage, er
 	}
 	if f.Config().Storage == config.Postgres {
 		return getPgxStorage(f.Config(), l)
+	}
+	if f.Config().Storage == config.FS {
+		return getFsStorage(f.Config(), l)
 	}
 	return nil, nil, errors.NotImplementedf("Invalid storage type %s", f.Config().Storage)
 }
