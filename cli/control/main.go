@@ -50,7 +50,7 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:  "type",
-			Usage: fmt.Sprintf("Type of the backend to use. Possible values: %q", []config.StorageType{config.BoltDB, config.Badger, config.Postgres}),
+			Usage: fmt.Sprintf("Type of the backend to use. Possible values: %q", []config.StorageType{config.BoltDB, config.Badger, config.FS}),
 		},
 		&cli.StringFlag{
 			Name:  "path",
