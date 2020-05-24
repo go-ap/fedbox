@@ -15,17 +15,17 @@ func (l logger) Warningf(s string, p ...interface{}) {
 	if l.logFn == nil {
 		return
 	}
-	l.logFn(nil, s, p...)
+	l.logFn(nil, "WARN: "+s, p...)
 }
 func (l logger) Infof(s string, p ...interface{}) {
-	if l.logFn == nil {
-		return
-	}
-	l.logFn(nil, s, p...)
+	//if l.logFn == nil {
+	//	return
+	//}
+	//l.logFn(nil, "INFO: " + s, p...)
 }
 func (l logger) Debugf(s string, p ...interface{}) {
-	if l.logFn == nil {
-		return
-	}
-	l.logFn(nil, s, p...)
+	//if l.logFn == nil {
+	//	return
+	//}
+	//l.logFn(nil, "DEBUG: " + s, p...)
 }
