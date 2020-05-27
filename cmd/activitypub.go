@@ -8,12 +8,12 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
-	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
 	"gopkg.in/urfave/cli.v2"
 	"net/url"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"time"
 )
@@ -477,42 +477,44 @@ func outJSON(it pub.Item) error {
 	return nil
 }
 
+func dumpAll(f *ap.Filters) (pub.ItemCollection, error) {
+	col := make(pub.ItemCollection, 0)
+	objects, _, err := ctl.Storage.LoadObjects(f)
+	if err != nil {
+		return col, err
+	}
+	if len(objects) > 0 {
+		col = append(col, objects...)
+	}
+	return col, nil
+}
+
 func exportAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		irif := func(t handlers.CollectionType) pub.IRI { return pub.IRI(fmt.Sprintf("%s/%s", ctl.Conf.BaseURL, t)) }
 
-		fActors := &ap.Filters{IRI: irif(ap.ActorsType)}
-		fActivities := &ap.Filters{IRI: irif(ap.ActivitiesType)}
-		fObjects := &ap.Filters{IRI: irif(ap.ObjectsType)}
-		var (
-			actors     pub.ItemCollection
-			activities pub.ItemCollection
-			objects    pub.ItemCollection
-			err        error
-		)
-		ob := make(pub.ItemCollection, 0)
-
-		actors, _, err = ctl.Storage.LoadObjects(fActors)
-		if len(actors) > 0 {
-			ob = append(ob, actors...)
+		objects := make(pub.ItemCollection, 0)
+		allCollections := handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
+		for _, c := range allCollections {
+			dump, err := dumpAll(&ap.Filters{
+				IRI: irif(c),
+			})
+			if err != nil {
+				return err
+			}
+			objects = append(objects, dump...)
 		}
-		if err != nil {
-			return err
-		}
-		objects, _, err = ctl.Storage.LoadObjects(fObjects)
-		if len(objects) > 0 {
-			ob = append(ob, objects...)
-		}
-		if err != nil {
-			return err
-		}
-		activities, _, err = ctl.Storage.LoadObjects(fActivities)
-		if len(activities) > 0 {
-			ob = append(ob, activities...)
-		}
-		if err != nil {
-			return err
-		}
-		return outJSON(ob)
+		sort.Slice(objects, func(i, j int) bool {
+			o1, err1 := pub.ToObject(objects[i])
+			if err1 != nil {
+				return false
+			}
+			o2, err2 := pub.ToObject(objects[j])
+			if err2 != nil {
+				return false
+			}
+			return o1.Published.Sub(o2.Published) < 0
+		})
+		return outJSON(objects)
 	}
 }
