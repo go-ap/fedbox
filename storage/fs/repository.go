@@ -63,6 +63,7 @@ func New(c config.Options) (*repo, error) {
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
 	}
+	b.prevPath, _ = os.Getwd()
 	return &b, nil
 }
 
@@ -77,29 +78,14 @@ type repo struct {
 
 // Open opens the boltdb database if possible.
 func (r *repo) Open() error {
-	//r.m.Lock()
-	var err error
-	r.prevPath, err = os.Getwd()
-	if err != nil {
-		return err
-	}
-	if r.prevPath != r.path {
-		return os.Chdir(r.path)
-	}
-	return nil
+	r.m.Lock()
+	return os.Chdir(r.path)
 }
 
 // Close closes the boltdb database if possible.
 func (r *repo) Close() error {
-	//defer r.m.Unlock()
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	if cwd != r.prevPath {
-		return os.Chdir(r.prevPath)
-	}
-	return nil
+	defer r.m.Unlock()
+	return os.Chdir(r.prevPath)
 }
 
 // LoadOne
@@ -341,8 +327,9 @@ func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
 	if it.IsObject() {
 		t.FormerType = it.GetType()
 	} else {
-		it, _ = loadOneFromPath(f)
-		t.FormerType = it.GetType()
+		if old, err := loadOneFromPath(f); err == nil {
+			t.FormerType = old.GetType()
+		}
 	}
 
 	deleteCollections(it)
@@ -696,6 +683,9 @@ func loadItem(p string, f s.Filterable) (pub.Item, error) {
 	if it.GetType() == pub.CreateType {
 		// TODO(marius): this seems terribly not nice
 		pub.OnActivity(it, func(a *pub.Activity) error {
+			if a.Object == nil {
+				return nil
+			}
 			if !a.Object.IsObject() {
 				ob, _ := loadOneFromPath(a.Object.GetLink())
 				a.Object = ob
