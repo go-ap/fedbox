@@ -19,21 +19,21 @@ import (
 	"time"
 )
 
-var Pub = &cli.Command{
+var PubCmd = &cli.Command{
 	Name:    "pub",
 	Aliases: []string{"ap"},
 	Usage:   "ActivityPub management helper",
 	Subcommands: []*cli.Command{
-		actors,
-		addObject,
-		listObjects,
-		delObjects,
-		exportObjects,
-		importObjects,
+		actorsCmd,
+		addObjectCmd,
+		listObjectsCmd,
+		delObjectsCmd,
+		exportCmd,
+		importCmd,
 	},
 }
 
-var actors = &cli.Command{
+var actorsCmd = &cli.Command{
 	Name:  "actor",
 	Usage: "Actor management helper",
 	Subcommands: []*cli.Command{
@@ -149,7 +149,7 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 
 var ValidGenericTypes = pub.ActivityVocabularyTypes{pub.ObjectType, pub.ActorType}
 
-var delObjects = &cli.Command{
+var delObjectsCmd = &cli.Command{
 	Name:    "delete",
 	Aliases: []string{"del", "rm"},
 	Usage:   "Deletes an ActivityPub object",
@@ -219,7 +219,7 @@ func (c *Control) DeleteObject(id string) error {
 	return err
 }
 
-var listObjects = &cli.Command{
+var listObjectsCmd = &cli.Command{
 	Name:    "list",
 	Aliases: []string{"ls"},
 	Usage:   "Lists objects",
@@ -326,7 +326,7 @@ func (c *Control) List(types []string) (pub.ItemCollection, error) {
 	return items, err
 }
 
-var addObject = &cli.Command{
+var addObjectCmd = &cli.Command{
 	Name:    "add",
 	Aliases: []string{"new"},
 	Usage:   "Adds a new object",
@@ -364,7 +364,7 @@ func (c *Control) Add(types []string) (pub.ItemCollection, error) {
 	return nil, nil
 }
 
-var importObjects = &cli.Command{
+var importCmd = &cli.Command{
 	Name:    "import",
 	Aliases: []string{"load"},
 	Usage:   "Imports ActivityPub objects",
@@ -462,7 +462,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 	}
 }
 
-var exportObjects = &cli.Command{
+var exportCmd = &cli.Command{
 	Name:    "export",
 	Aliases: []string{"dump"},
 	Usage:   "Exports ActivityPub objects",
@@ -473,7 +473,7 @@ var exportObjects = &cli.Command{
 			DefaultText: fmt.Sprintf("Valid values: %v", []string{"json"}),
 		},
 	},
-	Action: exportAct(&ctl),
+	Action: exportPubObjects(&ctl),
 }
 
 func outJSON(it pub.Item) error {
@@ -497,7 +497,7 @@ func dumpAll(f *ap.Filters) (pub.ItemCollection, error) {
 	return col, nil
 }
 
-func exportAct(ctl *Control) cli.ActionFunc {
+func exportPubObjects(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		irif := func(t handlers.CollectionType) pub.IRI { return pub.IRI(fmt.Sprintf("%s/%s", ctl.Conf.BaseURL, t)) }
 

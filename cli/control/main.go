@@ -64,9 +64,10 @@ func main() {
 		},
 	}
 	app.Commands = []*cli.Command{
-		cmd.Pub,
-		cmd.OAuth2,
-		cmd.Bootstrap,
+		cmd.PubCmd,
+		cmd.OAuth2Cmd,
+		cmd.BootstrapCmd,
+		cmd.AccountsCmd,
 	}
 
 	err := app.Run(os.Args)

@@ -142,7 +142,7 @@ var tokenAdd = &cli.Command{
 	Action: tokenAct(&ctl),
 }
 
-var OAuth2 = &cli.Command{
+var OAuth2Cmd = &cli.Command{
 	Name:  "oauth",
 	Usage: "OAuth2 client and access token helper",
 	Subcommands: []*cli.Command{

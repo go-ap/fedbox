@@ -188,5 +188,5 @@ func loadFromStdin(s string, params ...interface{}) ([]byte, error) {
 }
 
 func Errf(s string, par ...interface{}) {
-	fmt.Fprintf(os.Stderr, s, par...)
+	fmt.Fprintf(os.Stderr, s + "\n", par...)
 }

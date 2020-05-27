@@ -15,7 +15,7 @@ import (
 	"path"
 )
 
-var Bootstrap = &cli.Command{
+var BootstrapCmd = &cli.Command{
 	Name:  "bootstrap",
 	Usage: "Bootstrap a new postgres or bolt database helper",
 	Flags: []cli.Flag{
