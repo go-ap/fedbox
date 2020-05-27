@@ -8,6 +8,7 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
+	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
 	"gopkg.in/urfave/cli.v2"
 	"net/url"
@@ -373,14 +374,22 @@ var importObjects = &cli.Command{
 			Usage: fmt.Sprintf("The base IRI to replace"),
 		},
 	},
-	Action: importAct(&ctl),
+	Action: importPubObjects(&ctl),
 }
 
-func importAct(ctl *Control) cli.ActionFunc {
+func importPubObjects(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		baseIRI := ctl.Conf.BaseURL
 		toReplace := c.String("base")
 		files := c.Args().Slice()
+
+		processor, _, err := processing.New(
+			processing.SetIRI(pub.IRI(baseIRI)),
+			processing.SetStorage(ctl.Storage),
+		)
+		if err != nil {
+			Errf("Error initializing ActivityPub processor: %s", err)
+		}
 		for _, name := range files {
 			f, err := os.Open(name)
 			if err != nil {
@@ -412,14 +421,6 @@ func importAct(ctl *Control) cli.ActionFunc {
 				Errf("Error unmarshaling JSON: %s", err)
 			}
 
-			processor, _, err := processing.New(
-				processing.SetIRI(pub.IRI(baseIRI)),
-				processing.SetStorage(ctl.Storage),
-			)
-
-			if err != nil {
-				Errf("Error initializing ActivityPub processor: %s", err)
-			}
 			col := ob
 			if !ob.IsCollection() {
 				col = pub.ItemCollection{ob}
@@ -428,17 +429,24 @@ func importAct(ctl *Control) cli.ActionFunc {
 			count := 0
 			pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
 				for _, it := range c.Collection() {
-					fmt.Printf("Saving %s\n", it.GetID())
 					typ := it.GetType()
+					fmt.Printf("Saving %s\n", it.GetID())
+
+					var err error
 					if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
-						err := pub.OnActivity(it, func(a *pub.Activity) error {
+						err = pub.OnActivity(it, func(a *pub.Activity) error {
+							if a == nil {
+								return nil
+							}
 							_, err := processor.ProcessClientActivity(a)
-							count++
 							return err
 						})
-						if err != nil {
-							Errf("unable to save activity %s: %s", it.GetID(), err)
-						}
+					} else {
+						_, err = ctl.Storage.SaveObject(it)
+					}
+					if err != nil {
+						Errf("Unable to save %s %s: %s", it.GetType(), it.GetID(), err)
+						continue
 					}
 				}
 				return nil
