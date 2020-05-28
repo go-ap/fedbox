@@ -113,14 +113,14 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 		validator.SetActor(f.Authenticated)
 
 		var validateFn func(pub.Item, pub.IRI) error
-		var processFn func(*pub.Activity) (*pub.Activity, error)
+		var processFn func(pub.Item) (pub.Item, error)
 		switch typ {
 		case h.Outbox:
 			validateFn = validator.ValidateClientActivity
 			processFn = processor.ProcessClientActivity
 		case h.Inbox:
 			validateFn = validator.ValidateServerActivity
-			processFn = func(a *pub.Activity) (*pub.Activity, error) {
+			processFn = func(a pub.Item) (pub.Item, error) {
 				return a, errors.NotImplementedf("S2S activities not implemented")
 			}
 		default:
