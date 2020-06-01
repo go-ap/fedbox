@@ -876,10 +876,71 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 
 // LoadMetadata
 func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
-	return nil, errors.NotImplementedf("LoadMetadata is not implemented by the boltdb storage layer")
+	path := itemBucketPath(iri)
+	err := r.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+
+	var m *storage.Metadata
+	err = r.d.View(func(tx *bolt.Tx) error {
+		root := tx.Bucket(r.root)
+		if root == nil {
+			return errors.Errorf("Invalid bucket %s", r.root)
+		}
+		var b *bolt.Bucket
+		b, path, err = descendInBucket(root, path, false)
+		if err != nil {
+			return errors.Newf("Unable to find %s in root bucket", path)
+		}
+		entryBytes := b.Get([]byte(metaDataKey))
+		m = new(storage.Metadata)
+		err := jsonld.Unmarshal(entryBytes, m)
+		if err != nil {
+			return errors.Annotatef(err, "Could not unmarshal metadata")
+		}
+		return nil
+	})
+	return m, err
 }
 
 // SaveMetadata
 func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
-	return errors.NotImplementedf("SaveMetadata is not implemented by the boltdb storage layer")
+	err := r.Open()
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	path := itemBucketPath(iri)
+	err = r.d.Update(func(tx *bolt.Tx) error {
+		root := tx.Bucket(r.root)
+		if root == nil {
+			return errors.Errorf("Invalid bucket %s", r.root)
+		}
+		if !root.Writable() {
+			return errors.Errorf("Non writeable bucket %s", r.root)
+		}
+		var b *bolt.Bucket
+		b, _, err = descendInBucket(root, path, true)
+		if err != nil {
+			return errors.Newf("Unable to find %s in root bucket", path)
+		}
+		if !b.Writable() {
+			return errors.Errorf("Non writeable bucket %s", path)
+		}
+
+		entryBytes, err := jsonld.Marshal(m)
+		if err != nil {
+			return errors.Annotatef(err, "Could not marshal metadata")
+		}
+		err = b.Put([]byte(metaDataKey), entryBytes)
+		if err != nil {
+			return errors.Errorf("Could not insert entry: %s", err)
+		}
+		return nil
+	})
+
+	return err
 }

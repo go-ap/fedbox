@@ -353,66 +353,21 @@ func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
 
 // PasswordSet
 func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
-	err := r.Open()
-	defer r.Close()
+	pw, err := bcrypt.GenerateFromPassword(pw, -1)
 	if err != nil {
-		return err
-	}
-
-	pw, err = bcrypt.GenerateFromPassword(pw, -1)
-	if err != nil {
-		return errors.Annotatef(err, "Could not encrypt the pw")
+		return errors.Annotatef(err, "could not generate pw hash")
 	}
 	m := storage.Metadata{
 		Pw: pw,
 	}
-	entryBytes, err := jsonld.Marshal(m)
-	if err != nil {
-		return errors.Annotatef(err, "Could not marshal metadata")
-	}
-	if err != nil {
-		return errors.Annotatef(err, "could not marshal object")
-	}
-
-	p := itemPath(it.GetLink())
-	// create json file
-	f, err := os.Create(getMetadataKey(p))
-	if err != nil {
-		return errors.Annotatef(err, "could not create file")
-	}
-	defer f.Close()
-	wrote, err := f.Write(entryBytes)
-	if err != nil {
-		return errors.Annotatef(err, "could not store encoded object")
-	}
-	if wrote != len(entryBytes) {
-		return errors.Annotatef(err, "failed writing object")
-	}
-
-	if err != nil {
-		return errors.Annotatef(err, "Could not insert entry: %s", p)
-	}
-
-	return err
+	return r.SaveMetadata(m, it.GetLink())
 }
 
 // PasswordCheck
 func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
-	err := r.Open()
-	defer r.Close()
+	m, err := r.LoadMetadata(it.GetLink())
 	if err != nil {
-		return err
-	}
-
-	m := storage.Metadata{}
-	p := itemPath(it.GetLink())
-	raw, err := loadRawFromPath(getMetadataKey(p))
-	if err != nil {
-		errors.Annotatef(err, "Could not find metadata in path %s", p)
-	}
-	err = jsonld.Unmarshal(raw, &m)
-	if err != nil {
-		return errors.Annotatef(err, "Could not unmarshal metadata")
+		return errors.Annotatef(err, "Could not find load metadata for %s", it)
 	}
 	if err := bcrypt.CompareHashAndPassword(m.Pw, pw); err != nil {
 		return errors.NewUnauthorized(err, "Invalid pw")
@@ -422,12 +377,65 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 
 // LoadMetadata
 func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
-	return nil, errors.NotImplementedf("PasswordSet is not implemented by the fs storage layer")
+	err := r.Open()
+	defer r.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	m := new(storage.Metadata)
+	p := itemPath(iri)
+	raw, err := loadRawFromPath(getMetadataKey(p))
+	if err != nil {
+		return nil, errors.Annotatef(err, "Could not find metadata in path %s", p)
+	}
+	err = jsonld.Unmarshal(raw, m)
+	if err != nil {
+		return nil, errors.Annotatef(err, "Could not unmarshal metadata")
+	}
+	return m, nil
 }
 
 // SaveMetadata
 func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
-	return errors.NotImplementedf("SaveMetadata is not implemented by the fs storage layer")
+	err := r.Open()
+	defer r.Close()
+	if err != nil {
+		return err
+	}
+
+	p := getMetadataKey(itemPath(iri))
+	f, err := createOrOpenFile(p)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	entryBytes, err := jsonld.Marshal(m)
+	if err != nil {
+		return errors.Annotatef(err, "Could not marshal metadata")
+	}
+	wrote, err := f.Write(entryBytes)
+	if err != nil {
+		return errors.Annotatef(err, "could not store encoded object")
+	}
+	if wrote != len(entryBytes) {
+		return errors.Annotatef(err, "failed writing full object")
+	}
+	return nil
+}
+
+func createOrOpenFile(p string) (*os.File, error) {
+	f, err := os.Open(p)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			// create json file
+			return os.Create(p)
+		} else {
+			return nil, errors.Annotatef(err, "invalid file %s", p)
+		}
+	}
+	return f, err
 }
 
 var fedboxCollections = handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
@@ -590,7 +598,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 	}
 
 	// create json file
-	f, err := os.Create(getObjectKey(itPath))
+	f, err := createOrOpenFile(getObjectKey(itPath))
 	if err != nil {
 		return it, errors.Annotatef(err, "could not create file")
 	}

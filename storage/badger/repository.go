@@ -438,12 +438,54 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 
 // LoadMetadata
 func (r *repo)LoadMetadata (iri pub.IRI) (*storage.Metadata, error) {
-	return nil, errors.NotImplementedf("LoadMetadata is not implemented by the badger storage layer")
+	err := r.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	path := itemPath(iri)
+
+	var m *storage.Metadata
+	err = r.d.View(func(tx *badger.Txn) error {
+		i, err := tx.Get(getMetadataKey(path))
+		if err != nil {
+			errors.Annotatef(err, "Could not find metadata in path %s", path)
+		}
+		m = new(storage.Metadata)
+		i.Value(func(raw []byte) error {
+			err := jsonld.Unmarshal(raw, m)
+			if err != nil {
+				return errors.Annotatef(err, "Could not unmarshal metadata")
+			}
+			return nil
+		})
+		return nil
+	})
+	return m, err
 }
 
 // SaveMetadata
 func (r *repo)SaveMetadata (m storage.Metadata, iri pub.IRI) error {
-	return errors.NotImplementedf("SaveMetadata is not implemented by the badger storage layer")
+	err := r.Open()
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	path := itemPath(iri)
+	err = r.d.Update(func(tx *badger.Txn) error {
+		entryBytes, err := jsonld.Marshal(m)
+		if err != nil {
+			return errors.Annotatef(err, "Could not marshal metadata")
+		}
+		err = tx.Set(getMetadataKey(path), entryBytes)
+		if err != nil {
+			return errors.Annotatef(err, "Could not insert entry: %s", path)
+		}
+		return nil
+	})
+
+	return err
 }
 
 const objectKey = "__raw"
