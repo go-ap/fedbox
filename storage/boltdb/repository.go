@@ -6,6 +6,7 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
@@ -793,10 +794,6 @@ func (r *repo) Close() error {
 	return err
 }
 
-type meta struct {
-	Pw []byte `json:"pw"`
-}
-
 // PasswordSet
 func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 	path := itemBucketPath(it.GetLink())
@@ -827,7 +824,7 @@ func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 		if err != nil {
 			return errors.Annotatef(err, "Could not encrypt the pw")
 		}
-		m := meta{
+		m := storage.Metadata{
 			Pw: pw,
 		}
 		entryBytes, err := jsonld.Marshal(m)
@@ -853,7 +850,7 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 	}
 	defer r.Close()
 
-	m := meta{}
+	m := storage.Metadata{}
 	err = r.d.View(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
 		if root == nil {
@@ -875,4 +872,14 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 		return nil
 	})
 	return err
+}
+
+// LoadMetadata
+func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
+	return nil, errors.NotImplementedf("LoadMetadata is not implemented by the boltdb storage layer")
+}
+
+// SaveMetadata
+func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
+	return errors.NotImplementedf("SaveMetadata is not implemented by the boltdb storage layer")
 }

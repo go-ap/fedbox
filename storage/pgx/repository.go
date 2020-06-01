@@ -7,6 +7,7 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/log"
+	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	"github.com/go-ap/processing"
@@ -581,4 +582,14 @@ func (r *repo) Close() error {
 // PasswordSet
 func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 	return errors.NotImplementedf("PasswordSet is not implemented by the postgres storage layer")
+}
+
+// LoadMetadata
+func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
+	return nil, errors.NotImplementedf("LoadMetadata is not implemented by the postgres storage layer")
+}
+
+// SaveMetadata
+func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
+	return errors.NotImplementedf("SaveMetadata is not implemented by the postgres storage layer")
 }

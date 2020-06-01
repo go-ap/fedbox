@@ -6,6 +6,7 @@ import (
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
@@ -76,13 +77,13 @@ type repo struct {
 	errFn    loggerFn
 }
 
-// Open opens the boltdb database if possible.
+// Open
 func (r *repo) Open() error {
 	r.m.Lock()
 	return os.Chdir(r.path)
 }
 
-// Close closes the boltdb database if possible.
+// Close
 func (r *repo) Close() error {
 	defer r.m.Unlock()
 	return os.Chdir(r.prevPath)
@@ -350,10 +351,6 @@ func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
 	return ap.GenerateID(it, partOf, by)
 }
 
-type meta struct {
-	Pw []byte `json:"pw"`
-}
-
 // PasswordSet
 func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 	err := r.Open()
@@ -366,7 +363,7 @@ func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 	if err != nil {
 		return errors.Annotatef(err, "Could not encrypt the pw")
 	}
-	m := meta{
+	m := storage.Metadata{
 		Pw: pw,
 	}
 	entryBytes, err := jsonld.Marshal(m)
@@ -407,7 +404,7 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 		return err
 	}
 
-	m := meta{}
+	m := storage.Metadata{}
 	p := itemPath(it.GetLink())
 	raw, err := loadRawFromPath(getMetadataKey(p))
 	if err != nil {
@@ -421,6 +418,16 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 		return errors.NewUnauthorized(err, "Invalid pw")
 	}
 	return err
+}
+
+// LoadMetadata
+func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
+	return nil, errors.NotImplementedf("PasswordSet is not implemented by the fs storage layer")
+}
+
+// SaveMetadata
+func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
+	return errors.NotImplementedf("SaveMetadata is not implemented by the fs storage layer")
 }
 
 var fedboxCollections = handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}

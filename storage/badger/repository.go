@@ -7,6 +7,7 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
@@ -370,10 +371,6 @@ func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
 	return ap.GenerateID(it, partOf, by)
 }
 
-type meta struct {
-	Pw []byte `json:"pw"`
-}
-
 func getMetadataKey(p []byte) []byte {
 	return bytes.Join([][]byte{p, []byte(metaDataKey)}, sep)
 }
@@ -392,7 +389,7 @@ func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 		if err != nil {
 			return errors.Annotatef(err, "Could not encrypt the pw")
 		}
-		m := meta{
+		m := storage.Metadata{
 			Pw: pw,
 		}
 		entryBytes, err := jsonld.Marshal(m)
@@ -418,7 +415,7 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 	}
 	defer r.Close()
 
-	m := meta{}
+	m := storage.Metadata{}
 	err = r.d.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
@@ -437,6 +434,16 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 		return nil
 	})
 	return err
+}
+
+// LoadMetadata
+func (r *repo)LoadMetadata (iri pub.IRI) (*storage.Metadata, error) {
+	return nil, errors.NotImplementedf("LoadMetadata is not implemented by the badger storage layer")
+}
+
+// SaveMetadata
+func (r *repo)SaveMetadata (m storage.Metadata, iri pub.IRI) error {
+	return errors.NotImplementedf("SaveMetadata is not implemented by the badger storage layer")
 }
 
 const objectKey = "__raw"
