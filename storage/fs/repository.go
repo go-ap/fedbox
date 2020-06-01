@@ -428,11 +428,11 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 func createOrOpenFile(p string) (*os.File, error) {
 	f, err := os.Open(p)
 	if err != nil {
-		if !os.IsNotExist(err) {
+		if os.IsNotExist(err) {
 			// create json file
 			return os.Create(p)
 		} else {
-			return nil, errors.Annotatef(err, "invalid file %s", p)
+			return f, err
 		}
 	}
 	return f, err
@@ -598,7 +598,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 	}
 
 	// create json file
-	f, err := createOrOpenFile(getObjectKey(itPath))
+	f, err := os.Create(getObjectKey(itPath))
 	if err != nil {
 		return it, errors.Annotatef(err, "could not create file")
 	}
