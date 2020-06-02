@@ -2,6 +2,7 @@ package badger
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/dgraph-io/badger/v2"
 	pub "github.com/go-ap/activitypub"
@@ -419,7 +420,7 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 	err = r.d.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
-			errors.Annotatef(err, "Could not find metadata in path %s", path)
+			return errors.Annotatef(err, "Could not find metadata in path %s", path)
 		}
 		i.Value(func(raw []byte) error {
 			err := jsonld.Unmarshal(raw, &m)
@@ -449,11 +450,11 @@ func (r *repo)LoadMetadata (iri pub.IRI) (*storage.Metadata, error) {
 	err = r.d.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
-			errors.Annotatef(err, "Could not find metadata in path %s", path)
+			return errors.Annotatef(err, "Could not find metadata in path %s", path)
 		}
 		m = new(storage.Metadata)
 		i.Value(func(raw []byte) error {
-			err := jsonld.Unmarshal(raw, m)
+			err := json.Unmarshal(raw, m)
 			if err != nil {
 				return errors.Annotatef(err, "Could not unmarshal metadata")
 			}
