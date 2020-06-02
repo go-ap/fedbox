@@ -438,7 +438,7 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 }
 
 // LoadMetadata
-func (r *repo)LoadMetadata (iri pub.IRI) (*storage.Metadata, error) {
+func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 	err := r.Open()
 	if err != nil {
 		return nil, err
@@ -453,20 +453,15 @@ func (r *repo)LoadMetadata (iri pub.IRI) (*storage.Metadata, error) {
 			return errors.Annotatef(err, "Could not find metadata in path %s", path)
 		}
 		m = new(storage.Metadata)
-		i.Value(func(raw []byte) error {
-			err := json.Unmarshal(raw, m)
-			if err != nil {
-				return errors.Annotatef(err, "Could not unmarshal metadata")
-			}
-			return nil
+		return i.Value(func(raw []byte) error {
+			return json.Unmarshal(raw, m)
 		})
-		return nil
 	})
 	return m, err
 }
 
 // SaveMetadata
-func (r *repo)SaveMetadata (m storage.Metadata, iri pub.IRI) error {
+func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 	err := r.Open()
 	if err != nil {
 		return err

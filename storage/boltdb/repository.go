@@ -2,6 +2,7 @@ package boltdb
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
@@ -876,12 +877,12 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 
 // LoadMetadata
 func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
-	path := itemBucketPath(iri)
 	err := r.Open()
 	if err != nil {
 		return nil, err
 	}
 	defer r.Close()
+	path := itemBucketPath(iri)
 
 	var m *storage.Metadata
 	err = r.d.View(func(tx *bolt.Tx) error {
@@ -896,11 +897,7 @@ func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 		}
 		entryBytes := b.Get([]byte(metaDataKey))
 		m = new(storage.Metadata)
-		err := jsonld.Unmarshal(entryBytes, m)
-		if err != nil {
-			return errors.Annotatef(err, "Could not unmarshal metadata")
-		}
-		return nil
+		return json.Unmarshal(entryBytes, m)
 	})
 	return m, err
 }
