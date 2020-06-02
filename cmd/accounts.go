@@ -8,6 +8,8 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/storage"
 	"gopkg.in/urfave/cli.v2"
+	"os"
+	"time"
 )
 
 var AccountsCmd = &cli.Command{
@@ -27,6 +29,11 @@ var exportAccountsMetadataCmd = &cli.Command{
 
 func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		metaLoader, ok := ctl.Storage.(storage.MetadataTyper)
+		if !ok {
+			return errors.Newf("")
+		}
+
 		baseIRI := ap.ActorsType.IRI(pub.IRI(ctl.BaseURL))
 		f := ap.FiltersNew(
 			ap.IRI(baseIRI),
@@ -45,25 +52,21 @@ func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 			return nil
 		})
 
-		metaLoader, ok := ctl.Storage.(storage.MetadataTyper)
-		if !ok {
-			return errors.Newf("")
-		}
-
 		allMeta := make(map[pub.IRI]storage.Metadata, len(items))
 		for _, it := range items {
-			if it.GetType() == pub.PersonType {
-				m, err := metaLoader.LoadMetadata(it.GetLink())
-				if err != nil {
-					Errf("Error loading metadata for %s: %s", it.GetLink(), err)
-					continue
-				}
-				if m == nil {
-					Errf("Error loading metadata for %s, nil metadata", it.GetLink())
-					continue
-				}
-				allMeta[it.GetLink()] = *m
+			if it.GetType() != pub.PersonType {
+				continue
 			}
+			m, err := metaLoader.LoadMetadata(it.GetLink())
+			if err != nil {
+				//Errf("Error loading metadata for %s: %s", it.GetLink(), err)
+				continue
+			}
+			if m == nil {
+				//Errf("Error loading metadata for %s, nil metadata", it.GetLink())
+				continue
+			}
+			allMeta[it.GetLink()] = *m
 		}
 		bytes, err := json.Marshal(allMeta)
 		if err != nil {
@@ -82,6 +85,57 @@ var importAccountsMetadataCmd = &cli.Command{
 
 func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		files := c.Args().Slice()
+		metaLoader, ok := ctl.Storage.(storage.MetadataTyper)
+		if !ok {
+			return errors.Newf("")
+		}
+		for _, name := range files {
+			f, err := os.Open(name)
+			if err != nil {
+				if os.IsNotExist(err) {
+					Errf("Invalid path %s", name)
+				} else {
+					Errf("Error %s", err)
+				}
+				continue
+			}
+
+			s, err := f.Stat()
+			if err != nil {
+				Errf("Error %s", err)
+				continue
+			}
+			buf := make([]byte, s.Size())
+			size, err := f.Read(buf)
+			if err != nil {
+				Errf("Error %s", err)
+				continue
+			}
+			if size == 0 {
+				Errf("Empty file %s", name)
+				continue
+			}
+
+			metadata := make(map[pub.IRI]storage.Metadata, 0)
+			err = json.Unmarshal(buf, &metadata)
+			if err != nil {
+				Errf("Error unmarshaling JSON: %s", err)
+				continue
+			}
+			start := time.Now()
+			count := 0
+			for iri, m := range metadata {
+				metaLoader.SaveMetadata(m, iri)
+			}
+
+			tot := time.Now().Sub(start)
+			fmt.Printf("Ellapsed time:          %s\n", tot)
+			if count > 0 {
+				perIt := time.Duration(int64(tot) / int64(count))
+				fmt.Printf("Ellapsed time per item: %s\n", perIt)
+			}
+		}
 		return nil
 	}
 }
