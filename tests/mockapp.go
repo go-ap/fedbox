@@ -85,6 +85,10 @@ func seedTestData(t *testing.T, testData []string) {
 		t.Errorf("Unable to initialize storage for tests: %s", err)
 		return
 	}
+	if b != nil {
+		t.Errorf("Unable to initialize storage for tests: nil returned")
+		return
+	}
 	s := getOAuthStorage(opt, u)
 
 	o := cmd.New(s, b, config.Options{})
