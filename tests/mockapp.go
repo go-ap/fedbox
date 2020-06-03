@@ -122,18 +122,17 @@ func resetDB(t *testing.T) string {
 	opt, _ := config.LoadFromEnv("test")
 	var dbPath string
 	if opt.Storage == config.BoltDB {
-		dbPath = config.GetDBPath(opt.StoragePath, host, "test")
-		boltdb.Clean(dbPath)
-		boltdb.Bootstrap(dbPath, apiURL)
+		boltdb.Clean(opt)
+		boltdb.Bootstrap(opt)
 	}
 	if opt.Storage == config.Badger {
 		dbPath, _ = badger.Path(opt)
-		badger.Clean(dbPath)
-		badger.Bootstrap(dbPath, apiURL)
+		badger.Clean(opt)
+		badger.Bootstrap(opt)
 	}
 	if opt.Storage == config.FS {
-		dbPath := path.Join(opt.StoragePath, string(opt.Env))
-		fs.Clean(dbPath)
+		fs.Clean(opt)
+		fs.Bootstrap(opt)
 	}
 	return dbPath
 }
