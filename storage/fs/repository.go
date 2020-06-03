@@ -217,20 +217,38 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 		return err
 	}
 
-	_, t := path.Split(col.String())
-	link := handlers.CollectionType(t).IRI(it)
+	ob, t := path.Split(col.String())
+	var link pub.IRI
+	if handlers.ValidCollection(t) {
+		ob = strings.TrimRight(ob, "/")
+		// Create the collection on the object, if it doesn't exist
+		i, err := loadOneFromPath(pub.IRI(ob))
+		if err != nil {
+			return err
+		}
+		if p, ok := handlers.CollectionType(t).AddTo(i); ok {
+			save(r, i)
+			link = p
+		} else {
+			link = handlers.CollectionType(t).IRI(i)
+		}
+	}
+
 	linkPath := itemPath(link)
+	name := path.Base(itemPath(it.GetLink()))
 	// we create a symlink to the persisted object in the current collection
 	return onCollection(r, col, it, func(p string) error {
 		inCollection := false
-		filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
-			if path == linkPath && (info.Mode()&os.ModeSymlink == os.ModeSymlink) {
-				inCollection = true
+		if fileInfo, err := ioutil.ReadDir(p); err == nil {
+			for _, fi := range fileInfo {
+				if fi.Name() == name && (fi.Mode()&os.ModeSymlink == os.ModeSymlink) {
+					inCollection = true
+				}
 			}
-			return nil
-		})
+		}
 		if inCollection {
-			return os.Remove(linkPath)
+			link := path.Join(linkPath, name)
+			return os.RemoveAll(link)
 		}
 		return nil
 	})
