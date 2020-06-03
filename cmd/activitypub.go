@@ -389,6 +389,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 		)
 		if err != nil {
 			Errf("Error initializing ActivityPub processor: %s", err)
+			return err
 		}
 		for _, name := range files {
 			f, err := os.Open(name)
@@ -403,14 +404,17 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 			s, err := f.Stat()
 			if err != nil {
 				Errf("Error %s", err)
+				continue
 			}
 			buf := make([]byte, s.Size())
 			size, err := f.Read(buf)
 			if err != nil {
 				Errf("Error %s", err)
+				continue
 			}
 			if size == 0 {
 				Errf("Empty file %s", name)
+				continue
 			}
 
 			if len(toReplace) > 0 {
@@ -419,6 +423,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 			ob, err := pub.UnmarshalJSON(buf)
 			if err != nil {
 				Errf("Error unmarshaling JSON: %s", err)
+				continue
 			}
 
 			col := ob
