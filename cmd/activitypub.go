@@ -87,7 +87,7 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	self := ap.Self(pub.IRI(c.BaseURL))
+	self := ap.Self(pub.IRI(c.Conf.BaseURL))
 	now := time.Now().UTC()
 	p := pub.Person{
 		Type: typ,
@@ -296,7 +296,7 @@ func (c *Control) List(types []string) (pub.ItemCollection, error) {
 		if len(types) == 0 {
 			return nil
 		}
-		baseIRI := colTyp.IRI(pub.IRI(ctl.BaseURL))
+		baseIRI := colTyp.IRI(pub.IRI(ctl.Conf.BaseURL))
 		f := ap.FiltersNew(
 			ap.IRI(baseIRI),
 			ap.Type(types...),

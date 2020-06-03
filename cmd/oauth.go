@@ -222,7 +222,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 }
 
 func (c *Control) DeleteClient(uuid string) error {
-	iri := fmt.Sprintf("%s/%s/%s", c.BaseURL, apub.ActorsType, uuid)
+	iri := fmt.Sprintf("%s/%s/%s", c.Conf.BaseURL, apub.ActorsType, uuid)
 	err := c.DeleteObject(iri)
 	if err != nil {
 		return err

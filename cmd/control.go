@@ -23,16 +23,12 @@ import (
 
 type Control struct {
 	Conf        config.Options
-	Host        string
-	BaseURL     string
 	AuthStorage osin.Storage
 	Storage     storage.Repository
 }
 
 func New(authDB osin.Storage, actorDb storage.Repository, conf config.Options) *Control {
 	return &Control{
-		BaseURL:     conf.BaseURL,
-		Host:        conf.Host,
 		Conf:        conf,
 		AuthStorage: authDB,
 		Storage:     actorDb,

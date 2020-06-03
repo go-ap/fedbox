@@ -5,9 +5,9 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/storage/badger"
 	"github.com/go-ap/fedbox/storage/boltdb"
+	"github.com/go-ap/fedbox/storage/fs"
 	"github.com/go-ap/fedbox/storage/pgx"
 	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/urfave/cli.v2"
@@ -42,117 +42,77 @@ var reset = &cli.Command{
 	Action: resetAct(&ctl),
 }
 
-func getConfig(c *cli.Context) (string, config.StorageType, env.Type) {
-	// @todo(marius): move this to a Before function
-	dir := c.String("dir")
-	if dir == "" {
-		dir = "."
-	}
-	environ := env.Type(c.String("env"))
-	if environ == "" {
-		environ = env.DEV
-	}
-	typ := config.StorageType(c.String("type"))
-	if typ == "" {
-		typ = config.BoltDB
-	}
-	if opt, err := config.LoadFromEnv(env.Type(typ)); err == nil {
-		if opt.StoragePath != os.TempDir() {
-			dir = opt.StoragePath
-		}
-	}
-	return dir, typ, environ
-}
-
 func resetAct(c *Control) cli.ActionFunc {
-	return func(c *cli.Context) error {
-		dir, typ, environ := getConfig(c)
-		err := ctl.BootstrapReset(dir, typ, environ)
+	return func(ctx *cli.Context) error {
+		err := bootstrapReset(c.Conf)
 		if err != nil {
 			return err
 		}
-		return ctl.Bootstrap(dir, typ, environ)
+		return bootstrap(c.Conf)
 	}
 }
 
 func bootstrapAct(c *Control) cli.ActionFunc {
-	return func(c *cli.Context) error {
-		dir, typ, environ := getConfig(c)
-		return ctl.Bootstrap(dir, typ, environ)
+	return func(ctx *cli.Context) error {
+		return bootstrap(c.Conf)
 	}
 }
 
-func (c *Control) Bootstrap(dir string, typ config.StorageType, environ env.Type) error {
-	if typ == config.BoltDB {
-		storagePath := config.GetDBPath(dir, c.Host, environ)
-		err := boltdb.Bootstrap(storagePath, c.BaseURL)
+func bootstrap(conf config.Options) error {
+	if conf.Storage == config.BoltDB {
+		err := boltdb.Bootstrap(conf)
 		if err != nil {
-			return errors.Annotatef(err, "Unable to create %s db", storagePath)
+			return errors.Annotatef(err, "Unable to create %s db", conf.StoragePath)
 		}
-		oauthPath := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", c.Host), environ)
+		oauthPath := config.GetDBPath(conf.StoragePath, fmt.Sprintf("%s-oauth", conf.Host), conf.Env)
 		if _, err := os.Stat(oauthPath); os.IsNotExist(err) {
-			err := auth.BootstrapBoltDB(oauthPath, []byte(c.Host))
+			err := auth.BootstrapBoltDB(oauthPath, []byte(conf.Host))
 			if err != nil {
 				return errors.Annotatef(err, "Unable to create %s db", oauthPath)
 			}
 		}
 	}
-	if typ == config.Badger {
-		storagePath, err := badger.Path(c.Conf)
-		if err != nil {
-			return err
-		}
-		err = badger.Bootstrap(storagePath, c.Conf.BaseURL)
-		if err != nil {
-			return err
-		}
+	if conf.Storage == config.Badger {
+		return badger.Bootstrap(conf)
+	}
+	if conf.Storage == config.FS {
+		return fs.Bootstrap(conf)
 	}
 	var pgRoot string
-	if typ == config.Postgres {
+	if conf.Storage == config.Postgres {
 		// ask for root pw
 		fmt.Printf("%s password: ", pgRoot)
 		pgPw, _ := terminal.ReadPassword(0)
 		fmt.Println()
 		dir, _ := os.Getwd()
 		path := path.Join(dir, "init.sql")
-		err := pgx.Bootstrap(c.Conf, pgRoot, pgPw, path)
+		err := pgx.Bootstrap(conf, pgRoot, pgPw, path)
 		if err != nil {
-			return errors.Annotatef(err, "Unable to update %s db", typ)
+			return errors.Annotatef(err, "Unable to update %s db", conf.Storage)
 		}
 	}
 	return nil
 }
 
-func (c *Control) BootstrapReset(dir string, typ config.StorageType, environ env.Type) error {
-	if typ == config.BoltDB {
-		path := config.GetDBPath(dir, c.Host, environ)
-		err := boltdb.Clean(path)
-		if err != nil {
-			return errors.Annotatef(err, "Unable to update %s db", typ)
-		}
+func bootstrapReset(conf config.Options) error {
+	if conf.Storage == config.BoltDB {
+		return boltdb.Clean(conf)
 	}
-	var pgRoot string
-	if typ == config.Postgres {
+	if conf.Storage == config.Postgres {
+		var pgRoot string
 		// ask for root pw
 		fmt.Printf("%s password: ", pgRoot)
 		pgPw, _ := terminal.ReadPassword(0)
 		fmt.Println()
 		dir, _ := os.Getwd()
 		path := path.Join(dir, "init.sql")
-		err := pgx.Clean(c.Conf, pgRoot, pgPw, path)
+		err := pgx.Clean(conf, pgRoot, pgPw, path)
 		if err != nil {
-			return errors.Annotatef(err, "Unable to update %s db", typ)
+			return errors.Annotatef(err, "Unable to update %s db", conf.Storage)
 		}
 	}
-	if typ == config.Badger {
-		path, err := badger.Path(c.Conf)
-		if err != nil {
-			return fmt.Errorf("unable to update %s db: %w", typ, err)
-		}
-		err = badger.Clean(path)
-		if err != nil {
-			return fmt.Errorf("unable to update %s db: %w", typ, err)
-		}
+	if conf.Storage == config.Badger {
+		return badger.Clean(conf)
 	}
 	return nil
 }

@@ -34,7 +34,7 @@ func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 			return errors.Newf("")
 		}
 
-		baseIRI := ap.ActorsType.IRI(pub.IRI(ctl.BaseURL))
+		baseIRI := ap.ActorsType.IRI(pub.IRI(ctl.Conf.BaseURL))
 		f := ap.FiltersNew(
 			ap.IRI(baseIRI),
 			ap.Type(pub.PersonType),

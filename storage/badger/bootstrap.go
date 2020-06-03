@@ -29,14 +29,18 @@ func Path (c config.Options) (string, error){
 	return p, nil
 }
 
-func Bootstrap(path string, baseURL string) error {
+func Bootstrap(conf config.Options) error {
+	path, err := Path(conf)
+	if err != nil {
+		return err
+	}
 	db, err := badger.Open(badger.DefaultOptions(path))
 	if err != nil {
 		return errors.Annotatef(err, "could not open db: %s", err)
 	}
 	defer db.Close()
 
-	return createService(db, activitypub.Self(activitypub.DefaultServiceIRI(baseURL)))
+	return createService(db, activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL)))
 }
 
 func createService(b *badger.DB, service pub.Service) error {
@@ -59,7 +63,11 @@ func createService(b *badger.DB, service pub.Service) error {
 	})
 }
 
-func Clean(path string) error {
+func Clean(conf config.Options) error {
+	path, err := Path(conf)
+	if err != nil {
+		return fmt.Errorf("unable to update %s db: %w", conf.Storage, err)
+	}
 	db, err := badger.Open(badger.DefaultOptions(path))
 	if err != nil {
 		return errors.Annotatef(err, "could not open db %s", path)

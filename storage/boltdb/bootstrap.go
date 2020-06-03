@@ -4,20 +4,21 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	bolt "go.etcd.io/bbolt"
 )
 
-func Bootstrap(path string, baseURL string) error {
-	var err error
+func Bootstrap(conf config.Options) error {
+	path := config.GetDBPath(conf.StoragePath, conf.Host, conf.Env)
 	db, err := bolt.Open(path, 0600, nil)
 	if err != nil {
 		return errors.Annotatef(err, "could not open db")
 	}
 	defer db.Close()
 
-	return createService(db, activitypub.Self(activitypub.DefaultServiceIRI(baseURL)))
+	return createService(db, activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL)))
 }
 
 func createService(b *bolt.DB, service pub.Service) error {
@@ -48,7 +49,8 @@ func createService(b *bolt.DB, service pub.Service) error {
 	return nil
 }
 
-func Clean(path string) error {
+func Clean(conf config.Options) error {
+	path := config.GetDBPath(conf.StoragePath, conf.Host, conf.Env)
 	var err error
 	db, err := bolt.Open(path, 0600, nil)
 	if err != nil {
