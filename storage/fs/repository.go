@@ -247,8 +247,12 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	ob, t := path.Split(col.String())
 	var link pub.IRI
 	if handlers.ValidCollection(t) {
+		ob = strings.TrimRight(ob, "/")
 		// Create the collection on the object, if it doesn't exist
-		i, _ := loadOneFromPath(pub.IRI(ob[:len(ob)-1]))
+		i, err := loadOneFromPath(pub.IRI(ob))
+		if err != nil {
+			return err
+		}
 		if p, ok := handlers.CollectionType(t).AddTo(i); ok {
 			save(r, i)
 			link = p
