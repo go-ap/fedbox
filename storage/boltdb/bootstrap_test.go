@@ -1,21 +1,26 @@
 package boltdb
 
 import (
-	"fmt"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/env"
 	bolt "go.etcd.io/bbolt"
 	"os"
 	"testing"
 )
 
 func TestBootstrap(t *testing.T) {
-	dir, _ := os.Getwd()
-	name := "test.db"
-	path := fmt.Sprintf("%s/%s", dir, name)
+	dir := os.TempDir()
 	bucket := []byte(rootBucket)
 	url := "random-string-not-an-URL"
-
-	err := Bootstrap(path, url)
+	conf := config.Options{
+		StoragePath: dir,
+		Host:        "example.com",
+		Env:         env.TEST,
+		BaseURL:     url,
+	}
+	path := config.GetDBPath(conf.StoragePath, conf.Host, conf.Env)
+	err := Bootstrap(conf)
 	if err != nil {
 		t.Errorf("Error received when cleaning valid boltdb %s with valid root bucket %s: %s", path, bucket, err)
 	}
@@ -59,12 +64,17 @@ func TestBootstrap(t *testing.T) {
 }
 
 func TestClean(t *testing.T) {
-	dir, _ := os.Getwd()
-	name := "test.db"
-	path := fmt.Sprintf("%s/%s", dir, name)
-
+	dir := os.TempDir()
+	url := "random-string-not-an-URL"
+	conf := config.Options{
+		StoragePath: dir,
+		Host:        "example.com",
+		Env:         env.TEST,
+		BaseURL:     url,
+	}
+	path := config.GetDBPath(conf.StoragePath, conf.Host, conf.Env)
 	{
-		err := Clean(path)
+		err := Clean(conf)
 		if err == nil {
 			t.Errorf("Nil error received when cleaning invalid path %s", path)
 		}
@@ -76,7 +86,7 @@ func TestClean(t *testing.T) {
 		}
 		db.Close()
 
-		err = Clean(path)
+		err = Clean(conf)
 		if err == nil {
 			t.Errorf("Nil error received when cleaning valid boltdb path %s with invalid root bucket %s", path, rootBucket)
 		}
@@ -99,7 +109,7 @@ func TestClean(t *testing.T) {
 		}
 		db.Close()
 
-		err = Clean(path)
+		err = Clean(conf)
 		if err != nil {
 			t.Errorf("Error received when cleaning valid boltdb %s with valid root bucket %s: %s", path, rootBucket, err)
 		}

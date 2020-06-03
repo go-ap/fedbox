@@ -2,6 +2,8 @@ package boltdb
 
 import (
 	"fmt"
+	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/env"
 	"github.com/sirupsen/logrus"
 	"os"
 	"testing"
@@ -40,12 +42,16 @@ func TestNew(t *testing.T) {
 }
 
 func TestRepo_Open(t *testing.T) {
-	dir, _ := os.Getwd()
-	name := "test.db"
-	path := fmt.Sprintf("%s/%s", dir, name)
+	dir := os.TempDir()
 	url := "random-string-not-an-URL"
-
-	err := Bootstrap(path, url)
+	c := config.Options{
+		StoragePath: dir,
+		Host:        "example.com",
+		Env:         env.TEST,
+		BaseURL:     url,
+	}
+	path := config.GetDBPath(c.StoragePath, c.Host, c.Env)
+	err := Bootstrap(c)
 	if err != nil {
 		t.Errorf("Unable to bootstrap boltdb %s: %s", path, err)
 	}
@@ -64,12 +70,16 @@ func TestRepo_Open(t *testing.T) {
 }
 
 func TestRepo_Close(t *testing.T) {
-	dir, _ := os.Getwd()
-	name := "test.db"
-	path := fmt.Sprintf("%s/%s", dir, name)
+	dir := os.TempDir()
 	url := "random-string-not-an-URL"
-
-	err := Bootstrap(path, url)
+	c := config.Options{
+		StoragePath: dir,
+		Host:        "example.com",
+		Env:         env.TEST,
+		BaseURL:     url,
+	}
+	path := config.GetDBPath(c.StoragePath, c.Host, c.Env)
+	err := Bootstrap(c)
 	if err != nil {
 		t.Errorf("Unable to bootstrap boltdb %s: %s", path, err)
 	}
