@@ -85,7 +85,7 @@ func seedTestData(t *testing.T, testData []string) {
 		t.Errorf("Unable to initialize storage for tests: %s", err)
 		return
 	}
-	if b != nil {
+	if b == nil {
 		t.Errorf("Unable to initialize storage for tests: nil returned")
 		return
 	}
