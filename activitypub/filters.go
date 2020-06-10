@@ -60,6 +60,9 @@ const (
 	// ObjectsType is a constant that represents the URL path for the local objects collection
 	// It is used as the parent for all non To, non Activity Object IDs
 	ObjectsType = h.CollectionType("objects")
+
+	blockedType = h.CollectionType("blocked")
+	ignoredType = h.CollectionType("ignored")
 )
 
 var validActivityCollection = []h.CollectionType{
@@ -69,6 +72,8 @@ var validActivityCollection = []h.CollectionType{
 var validObjectCollection = []h.CollectionType{
 	ActorsType,
 	ObjectsType,
+	blockedType,
+	ignoredType,
 }
 
 func getValidActivityCollection(typ string) h.CollectionType {
