@@ -306,7 +306,7 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 // AddToCollection
 func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	ob, t := path.Split(col.String())
-	if handlers.ValidCollection(t) {
+	if ap.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
 		i, _ := r.LoadOne(pub.IRI(ob))
 		if _, ok := handlers.CollectionType(t).AddTo(i); ok {

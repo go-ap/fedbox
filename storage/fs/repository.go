@@ -219,7 +219,7 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 
 	ob, t := path.Split(col.String())
 	var link pub.IRI
-	if handlers.ValidCollection(t) {
+	if ap.ValidCollection(t) {
 		ob = strings.TrimRight(ob, "/")
 		// Create the collection on the object, if it doesn't exist
 		i, err := loadOneFromPath(pub.IRI(ob))
