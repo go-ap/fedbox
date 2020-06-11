@@ -70,12 +70,15 @@ func addMockObjects(r storage.Repository, obj pub.ItemCollection, errFn app.LogF
 	return nil
 }
 
-func seedTestData(t *testing.T, testData []string) {
+func seedTestData(t *testing.T, testData []string, reset bool) {
 	if t == nil {
 		panic("invalid test context")
 	}
 	t.Helper()
-	t.Logf("Resetting storage backend")
+	if reset {
+		t.Logf("Reset storage backend")
+		resetDB()
+	}
 
 	opt, _ := config.LoadFromEnv("test")
 	u, _ := url.Parse(apiURL)
@@ -117,12 +120,7 @@ func seedTestData(t *testing.T, testData []string) {
 	}
 }
 
-func resetDB(t *testing.T) string {
-	if t != nil {
-		t.Helper()
-		t.Logf("Resetting storage backend")
-	}
-
+func resetDB() string {
 	opt, _ := config.LoadFromEnv("test")
 	var dbPath string
 	if opt.Storage == config.BoltDB {

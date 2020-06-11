@@ -28,7 +28,7 @@ var UserAgent = "test-go-http-client"
 var HeaderAccept = `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`
 
 type actMock struct {
-	Type string
+	Type     string
 	ActorId  string
 	ObjectId string
 }
@@ -298,21 +298,21 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			}
 			if tVal.inbox != nil {
 				assertMapKey(ob, "inbox", tVal.inbox)
-				if tVal.inbox.typ != ""  && len(tVal.inbox.id) > 0 {
+				if tVal.inbox.typ != "" && len(tVal.inbox.id) > 0 {
 					dCol := assertGetRequest(tVal.inbox.id)
 					assertObjectProperties(dCol, tVal.inbox)
 				}
 			}
 			if tVal.outbox != nil {
 				assertMapKey(ob, "outbox", tVal.outbox)
-				if tVal.outbox.typ != ""  && len(tVal.outbox.id) > 0 {
+				if tVal.outbox.typ != "" && len(tVal.outbox.id) > 0 {
 					dCol := assertGetRequest(tVal.outbox.id)
 					assertObjectProperties(dCol, tVal.outbox)
 				}
 			}
 			if tVal.liked != nil {
 				assertMapKey(ob, "liked", tVal.liked)
-				if tVal.liked.typ != "" && len(tVal.liked.id) > 0  {
+				if tVal.liked.typ != "" && len(tVal.liked.id) > 0 {
 					dCol := assertGetRequest(tVal.liked.id)
 					assertObjectProperties(dCol, tVal.liked)
 				}
@@ -574,11 +574,10 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 
 func runTestSuite(t *testing.T, pairs testPairs) {
 	for _, suite := range pairs {
-		resetDB(t)
-		seedTestData(t, suite.mocks)
+		seedTestData(t, suite.mocks, true)
 		for _, test := range suite.tests {
 			t.Run(fmt.Sprintf("%s:%s", suite.name, test.name()), func(t *testing.T) {
-				seedTestData(t, test.mocks)
+				seedTestData(t, test.mocks, false)
 				errOnRequest(t)(test)
 			})
 		}
