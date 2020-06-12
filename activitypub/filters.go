@@ -65,16 +65,25 @@ const (
 	ignoredType = h.CollectionType("ignored")
 )
 
-var validActivityCollection = []h.CollectionType{
-	ActivitiesType,
-}
+var (
+	FedboxCollections = h.CollectionTypes{
+		ActivitiesType,
+		ActorsType,
+		ObjectsType,
+		blockedType,
+		ignoredType,
+	}
 
-var validObjectCollection = []h.CollectionType{
-	ActorsType,
-	ObjectsType,
-	blockedType,
-	ignoredType,
-}
+	validActivityCollection = []h.CollectionType{
+		ActivitiesType,
+	}
+	validObjectCollection = []h.CollectionType{
+		ActorsType,
+		ObjectsType,
+		blockedType,
+		ignoredType,
+	}
+)
 
 func getValidActivityCollection(typ string) h.CollectionType {
 	for _, t := range validActivityCollection {

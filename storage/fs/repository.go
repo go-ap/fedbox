@@ -462,11 +462,9 @@ func createOrOpenFile(p string) (*os.File, error) {
 	return f, err
 }
 
-var fedboxCollections = handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
-
 func isStorageCollectionKey(p string) bool {
 	lst := handlers.CollectionType(path.Base(p))
-	return fedboxCollections.Contains(lst) || handlers.OnActor.Contains(lst) || handlers.OnObject.Contains(lst)
+	return ap.FedboxCollections.Contains(lst) || handlers.OnActor.Contains(lst) || handlers.OnObject.Contains(lst)
 }
 
 func isIDKey(p string) bool {
@@ -745,10 +743,8 @@ func loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 	itPath := itemPath(f.GetLink())
 	if isStorageCollectionKey(itPath) {
 		err = filepath.Walk(itPath, func(p string, info os.FileInfo, err error) error {
-			if err != nil {
-				if os.IsNotExist(err) {
-					return errors.NotFoundf("%s not found", p)
-				}
+			if err != nil && os.IsNotExist(err)  {
+				return errors.NotFoundf("%s not found", p)
 			}
 			dir, _ := path.Split(p)
 			if dir[:len(dir)-1] != itPath {

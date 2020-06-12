@@ -679,16 +679,14 @@ func isMetadataKey(k []byte) bool {
 	return bytes.HasSuffix(k, []byte(metaDataKey))
 }
 
-var fedboxCollections = handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
-
 func isStorageCollectionKey(p []byte) bool {
 	lst := handlers.CollectionType(path.Base(string(p)))
-	return fedboxCollections.Contains(lst)
+	return ap.FedboxCollections.Contains(lst)
 }
 
 func isIRIsKey(p []byte) bool {
 	base := path.Base(string(p))
-	return ap.ValidCollection(base) && !fedboxCollections.Contains(handlers.CollectionType(base))
+	return ap.ValidCollection(base) && !ap.FedboxCollections.Contains(handlers.CollectionType(base))
 }
 
 func isItemKey(p []byte) bool {
@@ -699,7 +697,7 @@ func isItemKey(p []byte) bool {
 		return true
 	}
 	u := uuid.Parse(file)
-	return ap.ValidCollection(base) && !fedboxCollections.Contains(handlers.CollectionType(base)) && len(u) == 36
+	return ap.ValidCollection(base) && !ap.FedboxCollections.Contains(handlers.CollectionType(base)) && len(u) == 36
 }
 
 func iterKeyIsTooDeep(base, k []byte, depth int) bool {

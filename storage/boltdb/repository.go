@@ -207,8 +207,6 @@ func (r *repo) iterateInBucket(b *bolt.Bucket, f s.Filterable) (pub.ItemCollecti
 	return col, uint(len(col)), nil
 }
 
-var fedboxCollections = handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
-
 func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) {
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *bolt.Tx) error {
@@ -235,7 +233,7 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 			return errors.Errorf("Invalid bucket %s", fullPath)
 		}
 		lst := handlers.CollectionType(path.Base(string(fullPath)))
-		if fedboxCollections.Contains(lst) {
+		if ap.FedboxCollections.Contains(lst) {
 			fromBucket, _, err := r.iterateInBucket(b, f)
 			if err != nil {
 				return err
