@@ -61,27 +61,30 @@ const (
 	// It is used as the parent for all non To, non Activity Object IDs
 	ObjectsType = h.CollectionType("objects")
 
-	blockedType = h.CollectionType("blocked")
-	ignoredType = h.CollectionType("ignored")
+	// BlockedType is an internally used collection, to store a list of actors the actor has blocked
+	BlockedType = h.CollectionType("blocked")
+	// IgnoredType is an internally used collection, to store a list of actors the actor has ignored
+	IgnoredType = h.CollectionType("ignored")
 )
 
+// @todo(marius): here we need a better separation between the collections which are exposed in the HTTP API
+//   (activities,actors,objects) and the ones that are internal (blocked,ignored)
 var (
 	FedboxCollections = h.CollectionTypes{
 		ActivitiesType,
 		ActorsType,
 		ObjectsType,
-		blockedType,
-		ignoredType,
+		BlockedType,
+		IgnoredType,
 	}
 
 	validActivityCollection = []h.CollectionType{
 		ActivitiesType,
 	}
+
 	validObjectCollection = []h.CollectionType{
 		ActorsType,
 		ObjectsType,
-		blockedType,
-		ignoredType,
 	}
 )
 
