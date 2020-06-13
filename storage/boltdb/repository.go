@@ -247,7 +247,7 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 				return err
 			}
 			if it == nil {
-				if ap.ValidCollection(string(lst)) {
+				if isStorageCollectionKey(string(lst)) {
 					return nil
 				}
 				return errors.NotFoundf("not found")
@@ -703,10 +703,15 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 	})
 }
 
+func isStorageCollectionKey(p string) bool {
+	lst := handlers.CollectionType(path.Base(p))
+	return ap.FedboxCollections.Contains(lst) || handlers.OnActor.Contains(lst) || handlers.OnObject.Contains(lst)
+}
+
 // AddToCollection
 func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	ob, t := path.Split(col.String())
-	if ap.ValidCollection(t) {
+	if isStorageCollectionKey(t) {
 		// Create the collection on the object, if it doesn't exist
 		i, _ := r.LoadOne(pub.IRI(ob))
 		if _, ok := handlers.CollectionType(t).AddTo(i); ok {
