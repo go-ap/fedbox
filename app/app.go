@@ -277,6 +277,8 @@ func (f *FedBOX) Run(m http.Handler, wait time.Duration) int {
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
 
+	// set local path typer to validate collections
+	handlers.Typer = pathTyper{}
 	// Get start/stop functions for the http server
 	srvRun, srvStop := setupHttpServer(f.conf, m, ctx)
 	f.stopFn = func() {

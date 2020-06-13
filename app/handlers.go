@@ -13,7 +13,29 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
+	"strings"
 )
+
+type pathTyper struct{}
+
+func (d pathTyper) Type(r *http.Request) h.CollectionType {
+	if r.URL == nil || len(r.URL.Path) == 0 {
+		return h.Unknown
+	}
+	col := h.Unknown
+	pathElements := strings.Split(r.URL.Path[1:], "/") // Skip first /
+	for i := len(pathElements) - 1; i >= 0; i-- {
+		col = h.CollectionType(strings.ToLower(pathElements[i]))
+		if h.ActivityPubCollections.Contains(col) {
+			return col
+		}
+		if ap.FedboxCollections.Contains(col) {
+			return col
+		}
+	}
+
+	return col
+}
 
 func reqURL(r *http.Request) string {
 	scheme := "http"
@@ -28,7 +50,6 @@ func reqURL(r *http.Request) string {
 func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 	return func(typ h.CollectionType, r *http.Request, repo storage.CollectionLoader) (pub.CollectionInterface, error) {
 		var col pub.CollectionInterface
-		var err error
 
 		f, err := ap.FromRequest(r)
 		if err != nil {
