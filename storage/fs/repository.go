@@ -746,9 +746,15 @@ func loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 			if err != nil && os.IsNotExist(err)  {
 				return errors.NotFoundf("%s not found", p)
 			}
-			dir, _ := path.Split(p)
-			if dir[:len(dir)-1] != itPath {
+			dirPath, _ := path.Split(p)
+			dir := strings.TrimRight(dirPath, "/")
+			if dir != itPath {
 				return nil
+			}
+			if _, ok := f.(pub.IRI); ok {
+				// when loading a collection by path, we want to avoid filtering out IRIs that don't specifically
+				// contain the path, so we nil the filter
+				f = nil
 			}
 			it, _ := loadItem(getObjectKey(p), f)
 			if it != nil {
