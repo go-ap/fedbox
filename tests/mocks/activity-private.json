@@ -1,0 +1,5 @@
+{
+  "type": "{{ .Type }}",
+  "actor": "{{ .ActorId }}",
+  "object": "{{ .ObjectId }}"
+}

@@ -9,21 +9,22 @@ import (
 	"net/http"
 )
 
-func (f FedBOX) CollectionRoutes(r chi.Router) {
-	r.Group(func(r chi.Router) {
-		r.With(middleware.GetHead)
+func (f FedBOX) CollectionRoutes(descend bool) func (chi.Router) {
+	return func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.With(middleware.GetHead)
 
-		r.Method(http.MethodGet, "/", HandleCollection(f))
-		r.Method(http.MethodPost, "/", HandleRequest(f))
+			r.Method(http.MethodGet, "/", HandleCollection(f))
+			r.Method(http.MethodPost, "/", HandleRequest(f))
 
-		r.Route("/{id}", func(r chi.Router) {
-			r.Method(http.MethodGet, "/", HandleItem(f))
-			r.Route("/{collection}", func(r chi.Router) {
-				r.Method(http.MethodGet, "/", HandleCollection(f))
-				r.Method(http.MethodPost, "/", HandleRequest(f))
+			r.Route("/{id}", func(r chi.Router) {
+				r.Method(http.MethodGet, "/", HandleItem(f))
+				if descend {
+					r.Route("/{collection}", f.CollectionRoutes(false))
+				}
 			})
 		})
-	})
+	}
 }
 
 func (f FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) func(chi.Router) {
@@ -33,7 +34,7 @@ func (f FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) fu
 		r.Use(ActorFromAuthHeader(os, f.Storage, l))
 
 		r.Method(http.MethodGet, "/", HandleItem(f))
-		r.Route("/{collection}", f.CollectionRoutes)
+		r.Route("/{collection}", f.CollectionRoutes(true))
 
 		h := oauthHandler{
 			baseURL: baseURL,

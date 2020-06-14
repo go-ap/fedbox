@@ -156,7 +156,7 @@ var lastActivity = &objectVal{}
 
 type assertFn func(v bool, msg string, args ...interface{})
 type errFn func(format string, args ...interface{})
-type requestGetAssertFn func(iri string) map[string]interface{}
+type requestGetAssertFn func(iri string, acc *testAccount) map[string]interface{}
 type objectPropertiesAssertFn func(ob map[string]interface{}, testVal *objectVal)
 type mapFieldAssertFn func(ob map[string]interface{}, key string, testVal interface{})
 type stringArrFieldAssertFn func(ob []interface{}, testVal []string)
@@ -299,49 +299,49 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			if tVal.inbox != nil {
 				assertMapKey(ob, "inbox", tVal.inbox)
 				if tVal.inbox.typ != "" && len(tVal.inbox.id) > 0 {
-					dCol := assertGetRequest(tVal.inbox.id)
+					dCol := assertGetRequest(tVal.inbox.id, nil)
 					assertObjectProperties(dCol, tVal.inbox)
 				}
 			}
 			if tVal.outbox != nil {
 				assertMapKey(ob, "outbox", tVal.outbox)
 				if tVal.outbox.typ != "" && len(tVal.outbox.id) > 0 {
-					dCol := assertGetRequest(tVal.outbox.id)
+					dCol := assertGetRequest(tVal.outbox.id, nil)
 					assertObjectProperties(dCol, tVal.outbox)
 				}
 			}
 			if tVal.liked != nil {
 				assertMapKey(ob, "liked", tVal.liked)
 				if tVal.liked.typ != "" && len(tVal.liked.id) > 0 {
-					dCol := assertGetRequest(tVal.liked.id)
+					dCol := assertGetRequest(tVal.liked.id, nil)
 					assertObjectProperties(dCol, tVal.liked)
 				}
 			}
 			if tVal.following != nil {
 				assertMapKey(ob, "following", tVal.following)
 				if tVal.following.typ != "" && len(tVal.following.id) > 0 {
-					dCol := assertGetRequest(tVal.following.id)
+					dCol := assertGetRequest(tVal.following.id, nil)
 					assertObjectProperties(dCol, tVal.following)
 				}
 			}
 			if tVal.followers != nil {
 				assertMapKey(ob, "followers", tVal.followers)
 				if tVal.followers.typ != "" && len(tVal.followers.id) > 0 {
-					dCol := assertGetRequest(tVal.followers.id)
+					dCol := assertGetRequest(tVal.followers.id, nil)
 					assertObjectProperties(dCol, tVal.followers)
 				}
 			}
 			if tVal.act != nil {
 				assertMapKey(ob, "actor", tVal.act)
 				if tVal.act.typ != "" && len(tVal.act.id) > 0 {
-					dAct := assertGetRequest(tVal.act.id)
+					dAct := assertGetRequest(tVal.act.id, nil)
 					assertObjectProperties(dAct, tVal.act)
 				}
 			}
 			if tVal.obj != nil {
 				assertMapKey(ob, "object", tVal.obj)
 				if tVal.obj.typ != "" && len(tVal.obj.id) > 0 {
-					dOb := assertGetRequest(tVal.obj.id)
+					dOb := assertGetRequest(tVal.obj.id, nil)
 					assertObjectProperties(dOb, tVal.obj)
 				}
 			}
@@ -359,35 +359,35 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			if tVal.first != nil {
 				assertMapKey(ob, "first", tVal.first)
 				if tVal.first.typ != "" && len(tVal.first.id) > 0 {
-					derefCol := assertGetRequest(tVal.first.id)
+					derefCol := assertGetRequest(tVal.first.id, nil)
 					assertObjectProperties(derefCol, tVal.first)
 				}
 			}
 			if tVal.next != nil {
 				assertMapKey(ob, "next", tVal.next)
 				if tVal.next.typ != "" && len(tVal.next.id) > 0 {
-					derefCol := assertGetRequest(tVal.next.id)
+					derefCol := assertGetRequest(tVal.next.id, nil)
 					assertObjectProperties(derefCol, tVal.next)
 				}
 			}
 			if tVal.current != nil {
 				assertMapKey(ob, "current", tVal.current)
 				if tVal.current.typ != "" && len(tVal.current.id) > 0 {
-					dCol := assertGetRequest(tVal.current.id)
+					dCol := assertGetRequest(tVal.current.id, nil)
 					assertObjectProperties(dCol, tVal.current)
 				}
 			}
 			if tVal.last != nil {
 				assertMapKey(ob, "last", tVal.last)
 				if tVal.last.typ != "" && len(tVal.last.id) > 0 {
-					derefCol := assertGetRequest(tVal.last.id)
+					derefCol := assertGetRequest(tVal.last.id, nil)
 					assertObjectProperties(derefCol, tVal.last)
 				}
 			}
 			if tVal.partOf != nil {
 				assertMapKey(ob, "partOf", tVal.partOf)
 				if tVal.partOf.typ != "" && len(tVal.partOf.id) > 0 {
-					derefCol := assertGetRequest(tVal.partOf.id)
+					derefCol := assertGetRequest(tVal.partOf.id, nil)
 					assertObjectProperties(derefCol, tVal.partOf)
 				}
 			}
@@ -423,7 +423,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 								assertTrue(ok, "Unable to convert %#v to %T type, Received %#v:(%T)", itId, itIRI, val, val)
 								if strings.EqualFold(itIRI, iri) {
 									assertObjectProperties(act, testIt)
-									dAct := assertGetRequest(itIRI)
+									dAct := assertGetRequest(itIRI, nil)
 									assertObjectProperties(dAct, testIt)
 									continue foundItem
 								} else {
@@ -447,7 +447,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 }
 
 func errOnGetRequest(t *testing.T) requestGetAssertFn {
-	return func(iri string) map[string]interface{} {
+	return func(iri string, acc *testAccount) map[string]interface{} {
 		if iri == "" {
 			return nil
 		}
@@ -459,6 +459,9 @@ func errOnGetRequest(t *testing.T) requestGetAssertFn {
 			res: testRes{
 				code: http.StatusOK,
 			},
+		}
+		if acc != nil {
+			tVal.req.account = acc
 		}
 		return errOnRequest(t)(tVal)
 	}
@@ -515,8 +518,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 						httpsig.RSASHA256,
 						signHdrs,
 					).Sign(req)
-				}
-				if path.Base(req.URL.Path) == "outbox" {
+				} else {
 					err = addOAuth2Auth(req, test.req.account)
 				}
 				assertTrue(err == nil, "Error: unable to sign request: %s", err)
@@ -562,14 +564,18 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			if test.res.val != nil {
 				if test.req.met == http.MethodGet {
 					assertObjectProperties(res, test.res.val)
-				} else if test.res.val.id != "" && test.res.val.id != req.URL.String() {
-					saved := assertGetRequest(test.res.val.id)
+				} else if loadAfterPost(test, req) {
+					saved := assertGetRequest(test.res.val.id, test.req.account)
 					assertObjectProperties(saved, test.res.val)
 				}
 			}
 		})
 		return res
 	}
+}
+
+func loadAfterPost(test testPair, req *http.Request) bool {
+	return test.res.val.id != "" && test.res.val.id != req.URL.String()
 }
 
 func runTestSuite(t *testing.T, pairs testPairs) {

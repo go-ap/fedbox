@@ -601,27 +601,68 @@ var C2STests = []testSuite{
 					},
 				},
 			},
-			//{
-			//	req: testReq{
-			//		met:     http.MethodPost,
-			//		account: &defaultTestAccount,
-			//		urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&extraAccount.Id)) },
-			//		bodyFn:  loadMockJson("mocks/accept-follow.json", &actMock{ActorId: *(&extraAccount.Id), ObjectId: *(&lastActivity.id)}),
-			//	},
-			//	res: testRes{
-			//		code: http.StatusCreated,
-			//		val: &objectVal{
-			//			typ: string(pub.AcceptType),
-			//			act: &objectVal{
-			//				typ:               string(pub.PersonType),
-			//				preferredUsername: "extra",
-			//			},
-			//			obj: &objectVal{
-			//				typ: string(pub.FollowType),
-			//			},
-			//		},
-			//	},
-			//},
+		},
+	},
+	{
+		name: "BlockActor",
+		mocks: []string{
+			"mocks/service.json",
+			"mocks/actor-johndoe.json",
+			"mocks/actor-extra.json",
+		},
+		tests: []testPair{
+			{
+				req: testReq{
+					met:     http.MethodPost,
+					account: &defaultTestAccount,
+					urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
+					bodyFn:  loadMockJson("mocks/activity-private.json", &actMock{Type: "Block", ActorId: *(&defaultTestAccount.Id), ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(pub.BlockType),
+						act: &objectVal{
+							typ:               string(pub.PersonType),
+							preferredUsername: "johndoe",
+						},
+						obj: &objectVal{
+							typ:               string(pub.PersonType),
+							preferredUsername: "extra",
+						},
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					account: &defaultTestAccount,
+					urlFn: func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					account: &defaultTestAccount,
+					urlFn: func() string { return fmt.Sprintf("%s/inbox", *(&extraAccount.Id)) },
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/inbox", *(&extraAccount.Id)),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 0,
+					},
+				},
+			},
 		},
 	},
 }

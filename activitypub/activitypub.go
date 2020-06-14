@@ -55,10 +55,19 @@ func GenerateID(it pub.Item, partOf string, by pub.Item) (pub.ID, error) {
 	uuid := uuid.New()
 	id := pub.ID(fmt.Sprintf("%s/%s", strings.ToLower(partOf), uuid))
 	if pub.ActivityTypes.Contains(it.GetType()) {
-		return id, pub.OnActivity(it, func(a *pub.Activity) error {
+		err := pub.OnActivity(it, func(a *pub.Activity) error {
+			if !a.Recipients().Contains(pub.PublicNS) {
+				if by == nil {
+					by = a.Actor
+				}
+				// if it's not a public activity, save it to it's actor outbox instead of global activities collection
+				outbox := handlers.Outbox.IRI(by)
+				id = pub.ID(fmt.Sprintf("%s/%s", outbox, uuid))
+			}
 			a.ID = id
 			return nil
 		})
+		return id, err
 	}
 	if pub.ActorTypes.Contains(it.GetType()) {
 		return id, pub.OnActor(it, func(p *pub.Actor) error {
