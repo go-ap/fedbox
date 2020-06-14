@@ -188,7 +188,7 @@ func (r *repo) iterateInBucket(b *bolt.Bucket, f s.Filterable) (pub.ItemCollecti
 		ob := b
 		lst := path.Base(string(key))
 		if ap.ValidActivityCollection(lst) || ap.ValidObjectCollection(lst) {
-			return nil, 0, errors.Newf("we shouldn't have a collection inside the current bucket %s", key)
+			return col, uint(len(col)), errors.Newf("we shouldn't have a collection inside the current bucket %s", key)
 		}
 		if !isObjectKey(key) {
 			// FIXME(marius): I guess this should not happen (pub descendIntoBucket should 'descend' into 'path'
@@ -202,7 +202,17 @@ func (r *repo) iterateInBucket(b *bolt.Bucket, f s.Filterable) (pub.ItemCollecti
 		if err != nil || it == nil {
 			continue
 		}
-		col = append(col, it)
+		if it.IsCollection() {
+			pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+				itCol, err := r.loadItemsElements(f, c.Collection()...)
+				if len(itCol) > 0 {
+					col = append(col, itCol...)
+				}
+				return err
+			})
+		} else {
+			col = append(col, it)
+		}
 	}
 	return col, uint(len(col)), nil
 }
@@ -233,7 +243,7 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 			return errors.Errorf("Invalid bucket %s", fullPath)
 		}
 		lst := handlers.CollectionType(path.Base(string(fullPath)))
-		if ap.FedboxCollections.Contains(lst) {
+		if isStorageCollectionKey(lst) {
 			fromBucket, _, err := r.iterateInBucket(b, f)
 			if err != nil {
 				return err
@@ -247,7 +257,7 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 				return err
 			}
 			if it == nil {
-				if isStorageCollectionKey(string(lst)) {
+				if isStorageCollectionKey(lst) {
 					return nil
 				}
 				return errors.NotFoundf("not found")
@@ -449,7 +459,7 @@ func createCollectionInBucket(b *bolt.Bucket, it pub.Item) (pub.Item, error) {
 	if it == nil {
 		return nil, nil
 	}
-	p := []byte(it.GetLink())
+	p := []byte(path.Base(it.GetLink().String()))
 	_, err := b.CreateBucketIfNotExists(p)
 	if err != nil {
 		return nil, err
@@ -703,24 +713,23 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 	})
 }
 
-func isStorageCollectionKey(p string) bool {
-	lst := handlers.CollectionType(path.Base(p))
+func isStorageCollectionKey(lst handlers.CollectionType) bool {
 	return ap.FedboxCollections.Contains(lst) || handlers.OnActor.Contains(lst) || handlers.OnObject.Contains(lst)
 }
 
 // AddToCollection
 func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
-	ob, t := path.Split(col.String())
+	ob, t := handlers.Split(col)
 	if isStorageCollectionKey(t) {
 		// Create the collection on the object, if it doesn't exist
-		i, _ := r.LoadOne(pub.IRI(ob))
-		if _, ok := handlers.CollectionType(t).AddTo(i); ok {
+		i, _ := r.LoadOne(ob)
+		if _, ok := t.AddTo(i); ok {
 			r.SaveObject(i)
 		}
 	}
 	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
 		if iris.Contains(it.GetLink()) {
-			return iris, nil //errors.Newf("Element already exists in collection")
+			return iris, nil
 		}
 		return append(iris, it.GetLink()), nil
 	})
