@@ -60,9 +60,11 @@ func GenerateID(it pub.Item, partOf string, by pub.Item) (pub.ID, error) {
 				if by == nil {
 					by = a.Actor
 				}
-				// if it's not a public activity, save it to it's actor outbox instead of global activities collection
-				outbox := handlers.Outbox.IRI(by)
-				id = pub.ID(fmt.Sprintf("%s/%s", outbox, uuid))
+				if by != nil {
+					// if it's not a public activity, save it to it's actor outbox instead of global activities collection
+					outbox := handlers.Outbox.IRI(by)
+					id = pub.ID(fmt.Sprintf("%s/%s", outbox, uuid))
+				}
 			}
 			a.ID = id
 			return nil
