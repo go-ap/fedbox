@@ -88,18 +88,18 @@ var (
 	}
 )
 
-func getValidActivityCollection(typ string) h.CollectionType {
+func getValidActivityCollection(typ h.CollectionType) h.CollectionType {
 	for _, t := range validActivityCollection {
-		if strings.ToLower(typ) == string(t) {
+		if strings.ToLower(string(typ)) == string(t) {
 			return t
 		}
 	}
 	return h.Unknown
 }
 
-func getValidObjectCollection(typ string) h.CollectionType {
+func getValidObjectCollection(typ h.CollectionType) h.CollectionType {
 	for _, t := range validObjectCollection {
-		if strings.ToLower(typ) == string(t) {
+		if strings.ToLower(string(typ)) == string(t) {
 			return t
 		}
 	}
@@ -107,17 +107,17 @@ func getValidObjectCollection(typ string) h.CollectionType {
 }
 
 // ValidCollection shows if the current ActivityPub end-point type is a valid collection
-func ValidCollection(typ string) bool {
+func ValidCollection(typ h.CollectionType) bool {
 	return ValidActivityCollection(typ) || ValidObjectCollection(typ)
 }
 
 // ValidActivityCollection shows if the current ActivityPub end-point type is a valid collection for handling Activities
-func ValidActivityCollection(typ string) bool {
+func ValidActivityCollection(typ h.CollectionType) bool {
 	return getValidActivityCollection(typ) != h.Unknown || h.ValidActivityCollection(typ)
 }
 
 // ValidObjectCollection shows if the current ActivityPub end-point type is a valid collection for handling Objects
-func ValidObjectCollection(typ string) bool {
+func ValidObjectCollection(typ h.CollectionType) bool {
 	return getValidObjectCollection(typ) != h.Unknown || h.ValidObjectCollection(typ)
 }
 
@@ -250,9 +250,9 @@ func IRIf(f Filters, iri string) string {
 	}
 	col := f.Collection
 	if col != ActorsType && col != ActivitiesType && col != ObjectsType {
-		if h.ValidObjectCollection(string(f.Collection)) {
+		if h.ValidObjectCollection(f.Collection) {
 			col = ObjectsType
-		} else if ValidActivityCollection(string(f.Collection)) {
+		} else if ValidActivityCollection(f.Collection) {
 			col = ActivitiesType
 		}
 	}
@@ -840,7 +840,7 @@ func (f Filters) FilterCollection(col pub.ItemCollection) (pub.ItemCollection, i
 func iriPointsToCollection(iri pub.IRI) bool {
 	if u, err := iri.URL(); err == nil {
 		base := path.Base(u.Path)
-		return !ValidCollection(base) && base != "/"
+		return !ValidCollection(h.CollectionType(base)) && base != "/"
 	}
 	return false
 }

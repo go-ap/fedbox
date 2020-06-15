@@ -186,7 +186,7 @@ func (r *repo) iterateInBucket(b *bolt.Bucket, f s.Filterable) (pub.ItemCollecti
 	// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
 	for key, _ := c.First(); key != nil; key, _ = c.Next() {
 		ob := b
-		lst := path.Base(string(key))
+		lst := handlers.CollectionType(path.Base(string(key)))
 		if ap.ValidActivityCollection(lst) || ap.ValidObjectCollection(lst) {
 			return col, uint(len(col)), errors.Newf("we shouldn't have a collection inside the current bucket %s", key)
 		}
@@ -717,16 +717,21 @@ func isStorageCollectionKey(lst handlers.CollectionType) bool {
 	return ap.FedboxCollections.Contains(lst) || handlers.OnActor.Contains(lst) || handlers.OnObject.Contains(lst)
 }
 
-// AddToCollection
-func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
-	ob, t := handlers.Split(col)
-	if isStorageCollectionKey(t) {
+func addCollectionOnObject(r *repo, col pub.IRI) error {
+	var err error
+	if ob, t := handlers.Split(col); handlers.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
 		i, _ := r.LoadOne(ob)
 		if _, ok := t.AddTo(i); ok {
-			r.SaveObject(i)
+			_, err = r.SaveObject(i)
 		}
 	}
+	return err
+}
+
+// AddToCollection
+func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
+	addCollectionOnObject(r, col)
 	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
 		if iris.Contains(it.GetLink()) {
 			return iris, nil

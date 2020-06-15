@@ -303,16 +303,22 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 	})
 }
 
-// AddToCollection
-func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
-	ob, t := path.Split(col.String())
-	if isStorageCollectionKey([]byte(t)) {
+func addCollectionOnObject(r *repo, col pub.IRI) error {
+	if ob, t := handlers.Split(col); handlers.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
-		i, _ := r.LoadOne(pub.IRI(ob))
-		if _, ok := handlers.CollectionType(t).AddTo(i); ok {
-			r.SaveObject(i)
+		if i, _ := r.LoadOne(ob); i != nil {
+			if _, ok := t.AddTo(i); ok {
+				_, err := r.SaveObject(i)
+				return err
+			}
 		}
 	}
+	return nil
+}
+
+// AddToCollection
+func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
+	addCollectionOnObject(r, col)
 	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
 		if iris.Contains(it.GetLink()) {
 			return iris, nil
@@ -685,19 +691,19 @@ func isStorageCollectionKey(p []byte) bool {
 }
 
 func isIRIsKey(p []byte) bool {
-	base := path.Base(string(p))
-	return ap.ValidCollection(base) && !ap.FedboxCollections.Contains(handlers.CollectionType(base))
+	base := handlers.CollectionType(path.Base(string(p)))
+	return ap.ValidCollection(base) && !ap.FedboxCollections.Contains(base)
 }
 
 func isItemKey(p []byte) bool {
 	dir, file := path.Split(string(p))
-	base := path.Base(dir)
+	base := handlers.CollectionType(path.Base(dir))
 	if base == "." {
 		// special case for root path
 		return true
 	}
 	u := uuid.Parse(file)
-	return ap.ValidCollection(base) && !ap.FedboxCollections.Contains(handlers.CollectionType(base)) && len(u) == 36
+	return ap.ValidCollection(base) && !ap.FedboxCollections.Contains(base) && len(u) == 36
 }
 
 func iterKeyIsTooDeep(base, k []byte, depth int) bool {

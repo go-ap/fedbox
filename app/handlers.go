@@ -56,7 +56,7 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 			return nil, errors.NewNotValid(err, "unable to load filters from request")
 		}
 		ap.LoadCollectionFilters(r, f)
-		if !ap.ValidCollection(string(typ)) {
+		if !ap.ValidCollection(typ) {
 			return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
 		}
 
@@ -202,12 +202,12 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 		what = fmt.Sprintf("%s ", path.Base(iri))
 		f.MaxItems = 1
 
-		if ap.ValidCollection(string(f.Collection)) {
+		if ap.ValidCollection(f.Collection) {
 			if f.Collection == ap.ActorsType {
 				if actLoader, ok := repo.(storage.ActorLoader); ok {
 					items, _, err = actLoader.LoadActors(f)
 				}
-			} else if ap.ValidActivityCollection(string(f.Collection)) {
+			} else if ap.ValidActivityCollection(f.Collection) {
 				if actLoader, ok := repo.(storage.ActivityLoader); ok {
 					items, _, err = actLoader.LoadActivities(f)
 				}
