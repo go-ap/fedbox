@@ -725,6 +725,9 @@ func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 		if isStorageCollectionKey(fullPath) {
 			depth = 1
 		}
+		if handlers.ValidCollectionIRI(pub.IRI(fullPath)) {
+			depth = 2
+		}
 		pathExists := false
 		for it.Seek(fullPath); it.ValidForPrefix(fullPath); it.Next() {
 			i := it.Item()
