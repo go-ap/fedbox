@@ -217,20 +217,19 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 		return err
 	}
 
-	ob, t := path.Split(col.String())
+	ob, t := handlers.Split(col)
 	var link pub.IRI
-	if ap.ValidCollection(handlers.CollectionType(t)) {
-		ob = strings.TrimRight(ob, "/")
+	if ap.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
-		i, err := loadOneFromPath(pub.IRI(ob))
+		i, err := loadOneFromPath(ob)
 		if err != nil {
 			return err
 		}
-		if p, ok := handlers.CollectionType(t).AddTo(i); ok {
+		if p, ok := t.AddTo(i); ok {
 			save(r, i)
 			link = p
 		} else {
-			link = handlers.CollectionType(t).IRI(i)
+			link = t.IRI(i)
 		}
 	}
 
@@ -254,6 +253,19 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 	})
 }
 
+func addCollectionOnObject(r *repo, col pub.IRI) error {
+	if ob, t := handlers.Split(col); handlers.ValidCollection(t) {
+		// Create the collection on the object, if it doesn't exist
+		if i, _ := r.LoadOne(ob); i != nil {
+			if _, ok := t.AddTo(i); ok {
+				_, err := r.SaveObject(i)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // AddToCollection
 func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	err := r.Open()
@@ -262,20 +274,19 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 		return err
 	}
 
-	ob, t := path.Split(col.String())
+	ob, t := handlers.Split(col)
 	var link pub.IRI
-	if isStorageCollectionKey(t) {
-		ob = strings.TrimRight(ob, "/")
+	if isStorageCollectionKey(string(t)) {
 		// Create the collection on the object, if it doesn't exist
-		i, err := loadOneFromPath(pub.IRI(ob))
+		i, err := loadOneFromPath(ob)
 		if err != nil {
 			return err
 		}
-		if p, ok := handlers.CollectionType(t).AddTo(i); ok {
+		if p, ok := t.AddTo(i); ok {
 			save(r, i)
 			link = p
 		} else {
-			link = handlers.CollectionType(t).IRI(i)
+			link = t.IRI(i)
 		}
 	} else {
 		return errors.Newf("Invalid collection %s", t)
