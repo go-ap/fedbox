@@ -76,7 +76,6 @@ func seedTestData(t *testing.T, testData []string, reset bool) {
 	}
 	t.Helper()
 	if reset {
-		t.Logf("Reset storage backend")
 		resetDB()
 	}
 
