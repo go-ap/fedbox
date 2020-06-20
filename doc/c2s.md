@@ -32,24 +32,22 @@ These additional non-spec conforming collections are:
 
 ## Object collections:
 
+An object collection, represents any collection that contains only ActivityPub Objects.
 The object collections in the ActivitypPub spec are: `following`, `followers`, `liked`.
 Additionally FedBOX has the previously mentioned `/actors` and `/objects` root end-points.
 
 On these collections we can use the following filters:
 
-  * *iri*: list of IRIs representing specific object ID's we want to load
-  * *publishedDate*: [*] timestamp and operator for timestamp
-  * *type*: list of Object types
-  * *to*: list of IRIs
-  * *cc*: list of IRIs
-  * *audience*: list of IRIs
-  * *generator*: list of IRIs, representing the Application actors that pushed the object
-  * *url*: list of URLs
-
-[*] Filter not yet implemented  
+  * **iri**: list of IRIs representing specific object ID's we want to load
+  * **type**: list of Object types
+  * **to**: list of IRIs
+  * **cc**: list of IRIs
+  * **audience**: list of IRIs
+  * **url**: list of URLs
 
 ## Activity collections:
 
+An activity collection, represents any collection that contains only ActivityPub Activities.
 The activity collections in the ActivitypPub spec are: `outbox`, `inbox`, `likes`, `shares`, `replies`.
 Additionally FedBOX supports the `/activities` root end-point.
 
@@ -57,9 +55,9 @@ In order to get the full representation of the items, after loading one of these
 
 Besides the filters applicable to Object collections we have also:
 
-  * *actor*: list of IRIs
-  * *object* list of IRIs
-  * *target*: list of IRIs
+  * **actor**: list of IRIs
+  * **object** list of IRIs
+  * **target**: list of IRIs
 
 # The filtering
 
@@ -76,7 +74,7 @@ All filters can be used multiple times in the URL.
 
 The matching logic is:
 
-* Multiple values of same filter are matched by doing an union on the resulting sets.
+* Multiple values of same filter are matched by doing a union on the resulting sets.
 * Different filters keys match by doing an intersection on the resulting sets of each filter.
 
 The filtering values support basic operators to be used. They are:
