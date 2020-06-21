@@ -19,7 +19,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -58,35 +57,29 @@ func New(c config.Options) (*repo, error) {
 		return nil, err
 	}
 	b := repo{
-		m:       sync.Mutex{},
 		path:    p,
 		baseURL: c.BaseURL,
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
 	}
-	b.prevPath, _ = os.Getwd()
 	return &b, nil
 }
 
 type repo struct {
-	m        sync.Mutex
 	baseURL  string
 	path     string
-	prevPath string
 	logFn    loggerFn
 	errFn    loggerFn
 }
 
 // Open
 func (r *repo) Open() error {
-	r.m.Lock()
-	return os.Chdir(r.path)
+	return nil
 }
 
 // Close
 func (r *repo) Close() error {
-	defer r.m.Unlock()
-	return os.Chdir(r.prevPath)
+	return nil
 }
 
 // LoadOne
@@ -96,7 +89,7 @@ func (r *repo) LoadOne(f s.Filterable) (pub.Item, error) {
 	if err != nil {
 		return nil, err
 	}
-	return loadOneFromPath(f)
+	return r.loadOneFromPath(f)
 }
 
 func (r *repo) CreateService(service pub.Service) error {
@@ -124,7 +117,7 @@ func (r *repo) Load(f s.Filterable) (pub.ItemCollection, uint, error) {
 		return nil, 0, err
 	}
 
-	return loadFromPath(f)
+	return r.loadFromPath(f)
 }
 
 // LoadActivities
@@ -163,7 +156,7 @@ func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
 	col.ID = pub.ID(url.String())
 	col.Type = pub.OrderedCollectionType
 
-	elements, count, err := loadFromPath(f)
+	elements, count, err := r.loadFromPath(f)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +214,7 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 	var link pub.IRI
 	if ap.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
-		i, err := loadOneFromPath(ob)
+		i, err := r.loadOneFromPath(ob)
 		if err != nil {
 			return err
 		}
@@ -233,8 +226,8 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 		}
 	}
 
-	linkPath := itemPath(link)
-	name := path.Base(itemPath(it.GetLink()))
+	linkPath := r.itemPath(link)
+	name := path.Base(r.itemPath(it.GetLink()))
 	// we create a symlink to the persisted object in the current collection
 	return onCollection(r, col, it, func(p string) error {
 		inCollection := false
@@ -278,7 +271,7 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	var link pub.IRI
 	if isStorageCollectionKey(string(t)) {
 		// Create the collection on the object, if it doesn't exist
-		i, err := loadOneFromPath(ob)
+		i, err := r.loadOneFromPath(ob)
 		if err != nil {
 			return err
 		}
@@ -292,8 +285,8 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 		return errors.Newf("Invalid collection %s", t)
 	}
 
-	linkPath := itemPath(link)
-	itPath := itemPath(it.GetLink())
+	linkPath := r.itemPath(link)
+	itPath := r.itemPath(it.GetLink())
 	fullLink := path.Join(linkPath, path.Base(itPath))
 
 	// we create a symlink to the persisted object in the current collection
@@ -363,12 +356,12 @@ func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
 	if it.IsObject() {
 		t.FormerType = it.GetType()
 	} else {
-		if old, err := loadOneFromPath(f); err == nil {
+		if old, err := r.loadOneFromPath(f); err == nil {
 			t.FormerType = old.GetType()
 		}
 	}
 
-	deleteCollections(it)
+	deleteCollections(*r, it)
 	return save(r, t)
 }
 
@@ -419,7 +412,7 @@ func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 	}
 
 	m := new(storage.Metadata)
-	p := itemPath(iri)
+	p := r.itemPath(iri)
 	raw, err := loadRawFromPath(getMetadataKey(p))
 	if err != nil {
 		return nil, errors.Annotatef(err, "Could not find metadata in path %s", p)
@@ -439,7 +432,7 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 		return err
 	}
 
-	p := getMetadataKey(itemPath(iri))
+	p := getMetadataKey(r.itemPath(iri))
 	f, err := createOrOpenFile(p)
 	if err != nil {
 		return err
@@ -488,34 +481,33 @@ func isIDKey(p string) bool {
 	return false
 }
 
-func itemPath(iri pub.IRI) string {
+func (r repo)itemPath(iri pub.IRI) string {
 	url, err := iri.URL()
 	if err != nil {
 		return ""
 	}
-	//p := strings.ReplaceAll(url.Path, "-", "/")
 	p := url.Path
-	return path.Join(url.Host, p)
+	return path.Join(r.path, url.Host, p)
 }
 
 // createCollections
-func createCollections(it pub.Item) error {
+func createCollections(r repo, it pub.Item) error {
 	if pub.ActorTypes.Contains(it.GetType()) {
 		return pub.OnActor(it, func(p *pub.Actor) error {
 			if p.Inbox != nil {
-				p.Inbox, _ = createCollectionInPath(p.Inbox)
+				p.Inbox, _ = createCollectionInPath(r, p.Inbox)
 			}
 			if p.Outbox != nil {
-				p.Outbox, _ = createCollectionInPath(p.Outbox)
+				p.Outbox, _ = createCollectionInPath(r, p.Outbox)
 			}
 			if p.Followers != nil {
-				p.Followers, _ = createCollectionInPath(p.Followers)
+				p.Followers, _ = createCollectionInPath(r, p.Followers)
 			}
 			if p.Following != nil {
-				p.Following, _ = createCollectionInPath(p.Following)
+				p.Following, _ = createCollectionInPath(r, p.Following)
 			}
 			if p.Liked != nil {
-				p.Liked, _ = createCollectionInPath(p.Liked)
+				p.Liked, _ = createCollectionInPath(r, p.Liked)
 			}
 			return nil
 		})
@@ -523,13 +515,13 @@ func createCollections(it pub.Item) error {
 	if pub.ObjectTypes.Contains(it.GetType()) {
 		return pub.OnObject(it, func(o *pub.Object) error {
 			if o.Replies != nil {
-				o.Replies, _ = createCollectionInPath(o.Replies)
+				o.Replies, _ = createCollectionInPath(r, o.Replies)
 			}
 			if o.Likes != nil {
-				o.Likes, _ = createCollectionInPath(o.Likes)
+				o.Likes, _ = createCollectionInPath(r, o.Likes)
 			}
 			if o.Shares != nil {
-				o.Shares, _ = createCollectionInPath(o.Shares)
+				o.Shares, _ = createCollectionInPath(r, o.Shares)
 			}
 			return nil
 		})
@@ -558,16 +550,16 @@ func getObjectKey(p string) string {
 	return path.Join(p, objectKey)
 }
 
-func createCollectionInPath(it pub.Item) (pub.Item, error) {
-	itPath := itemPath(it.GetLink())
+func createCollectionInPath(r repo, it pub.Item) (pub.Item, error) {
+	itPath := r.itemPath(it.GetLink())
 	return it.GetLink(), mkDirIfNotExists(itPath)
 }
 
-func deleteCollectionFromPath(it pub.Item) error {
+func deleteCollectionFromPath(r repo, it pub.Item) error {
 	if it == nil {
 		return nil
 	}
-	itPath := itemPath(it.GetLink())
+	itPath := r.itemPath(it.GetLink())
 	if fi, err := os.Stat(itPath); err != nil {
 		if !os.IsNotExist(err) {
 			return err
@@ -579,24 +571,24 @@ func deleteCollectionFromPath(it pub.Item) error {
 }
 
 // deleteCollections
-func deleteCollections(it pub.Item) error {
+func deleteCollections(r repo, it pub.Item) error {
 	if pub.ActorTypes.Contains(it.GetType()) {
 		return pub.OnActor(it, func(p *pub.Actor) error {
 			var err error
-			err = deleteCollectionFromPath(handlers.Inbox.IRI(p))
-			err = deleteCollectionFromPath(handlers.Outbox.IRI(p))
-			err = deleteCollectionFromPath(handlers.Followers.IRI(p))
-			err = deleteCollectionFromPath(handlers.Following.IRI(p))
-			err = deleteCollectionFromPath(handlers.Liked.IRI(p))
+			err = deleteCollectionFromPath(r, handlers.Inbox.IRI(p))
+			err = deleteCollectionFromPath(r, handlers.Outbox.IRI(p))
+			err = deleteCollectionFromPath(r, handlers.Followers.IRI(p))
+			err = deleteCollectionFromPath(r, handlers.Following.IRI(p))
+			err = deleteCollectionFromPath(r, handlers.Liked.IRI(p))
 			return err
 		})
 	}
 	if pub.ObjectTypes.Contains(it.GetType()) {
 		return pub.OnObject(it, func(o *pub.Object) error {
 			var err error
-			err = deleteCollectionFromPath(handlers.Replies.IRI(o))
-			err = deleteCollectionFromPath(handlers.Likes.IRI(o))
-			err = deleteCollectionFromPath(handlers.Shares.IRI(o))
+			err = deleteCollectionFromPath(r, handlers.Replies.IRI(o))
+			err = deleteCollectionFromPath(r, handlers.Likes.IRI(o))
+			err = deleteCollectionFromPath(r, handlers.Shares.IRI(o))
 			return err
 		})
 	}
@@ -617,10 +609,10 @@ func mkDirIfNotExists(p string) error {
 }
 
 func save(r *repo, it pub.Item) (pub.Item, error) {
-	itPath := itemPath(it.GetLink())
+	itPath := r.itemPath(it.GetLink())
 	mkDirIfNotExists(itPath)
 
-	if err := createCollections(it); err != nil {
+	if err := createCollections(*r, it); err != nil {
 		return it, errors.Annotatef(err, "could not create object's collections")
 	}
 	// TODO(marius): it's possible to set the encoding/decoding functions on the package or storage object level
@@ -661,7 +653,7 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(p string) error) er
 		return errors.Newf("Unable to save to non local collection %s", col)
 	}
 
-	itPath := itemPath(col)
+	itPath := r.itemPath(col)
 	err := fn(itPath)
 	if err != nil {
 		return errors.Annotatef(err, "Unable to save entries to collection %s", itPath)
@@ -697,8 +689,8 @@ func loadFromRaw(raw []byte) (pub.Item, error) {
 	return pub.UnmarshalJSON(raw)
 }
 
-func loadOneFromPath(f s.Filterable) (pub.Item, error) {
-	col, cnt, err := loadFromPath(f)
+func (r repo)loadOneFromPath(f s.Filterable) (pub.Item, error) {
+	col, cnt, err := r.loadFromPath(f)
 	if err != nil {
 		return nil, err
 	}
@@ -708,7 +700,7 @@ func loadOneFromPath(f s.Filterable) (pub.Item, error) {
 	return col.First(), nil
 }
 
-func loadItem(p string, f s.Filterable) (pub.Item, error) {
+func (r repo)loadItem(p string, f s.Filterable) (pub.Item, error) {
 	raw, err := loadRawFromPath(p)
 	if raw == nil {
 		return nil, nil
@@ -726,7 +718,7 @@ func loadItem(p string, f s.Filterable) (pub.Item, error) {
 		return it, nil
 	}
 	if !it.IsObject() {
-		it, _ = loadOneFromPath(it.GetLink())
+		it, _ = r.loadOneFromPath(it.GetLink())
 	}
 	if it.GetType() == pub.CreateType {
 		// TODO(marius): this seems terribly not nice
@@ -735,7 +727,7 @@ func loadItem(p string, f s.Filterable) (pub.Item, error) {
 				return nil
 			}
 			if !a.Object.IsObject() {
-				ob, _ := loadOneFromPath(a.Object.GetLink())
+				ob, _ := r.loadOneFromPath(a.Object.GetLink())
 				a.Object = ob
 			}
 			return nil
@@ -747,11 +739,11 @@ func loadItem(p string, f s.Filterable) (pub.Item, error) {
 	return it, nil
 }
 
-func loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
+func (r repo)loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 	var err error
 	col := make(pub.ItemCollection, 0)
 
-	itPath := itemPath(f.GetLink())
+	itPath := r.itemPath(f.GetLink())
 	if isStorageCollectionKey(itPath) {
 		err = filepath.Walk(itPath, func(p string, info os.FileInfo, err error) error {
 			if err != nil && os.IsNotExist(err)  {
@@ -767,7 +759,7 @@ func loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 				// contain the path, so we nil the filter
 				f = nil
 			}
-			it, _ := loadItem(getObjectKey(p), f)
+			it, _ := r.loadItem(getObjectKey(p), f)
 			if it != nil {
 				col = append(col, it)
 			}
@@ -775,7 +767,7 @@ func loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 		})
 	} else {
 		var it pub.Item
-		it, err = loadItem(getObjectKey(itPath), f)
+		it, err = r.loadItem(getObjectKey(itPath), f)
 		if err != nil {
 			return nil, 0, errors.NewNotFound(err, "not found")
 		}
