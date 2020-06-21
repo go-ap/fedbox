@@ -33,7 +33,7 @@ tasks:
   - integration-boltdb: |
       cd fedbox
       make STORAGE=boltdb integration
-  - integration: |
+  - integration-fs: |
       cd fedbox
       make STORAGE=fs integration
   - image: |
