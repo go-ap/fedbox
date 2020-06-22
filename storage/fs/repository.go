@@ -171,7 +171,15 @@ func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
 
 // CreateCollection
 func (r *repo) CreateCollection(col pub.CollectionInterface) (pub.CollectionInterface, error) {
-	return nil, errNotImplemented
+	if col == nil {
+		return col, errors.Newf("Unable to operate on nil element")
+	}
+	if len(col.GetLink()) == 0 {
+		return col, errors.Newf("Invalid collection, it does not have a valid IRI")
+	}
+	return col, pub.OnCollection(col, func(c *pub.Collection) error {
+		return mkDirIfNotExists(r.itemPath(c.GetLink()))
+	})
 }
 
 // SaveActivity
