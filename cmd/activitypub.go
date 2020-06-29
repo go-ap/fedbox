@@ -154,10 +154,13 @@ var delObjectsCmd = &cli.Command{
 	Aliases: []string{"del", "rm"},
 	Usage:   "Deletes an ActivityPub object",
 	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "reason",
+			Usage: fmt.Sprintf("The reason why we want to delete the item"),
+		},
 		&cli.StringSliceFlag{
-			Name:        "type",
-			Usage:       fmt.Sprintf("The type of ActivityPub object"),
-			DefaultText: fmt.Sprintf("Valid values: %v", ValidGenericTypes),
+			Name:  "inReplyTo",
+			Usage: fmt.Sprintf("If deletion is a followup on moderation activities"),
 		},
 	},
 	Action: delObjectsAct(&ctl),
@@ -165,57 +168,75 @@ var delObjectsCmd = &cli.Command{
 
 func delObjectsAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		ids := c.Args().Slice()
-
-		var err error
-		for _, id := range ids {
-			err := ctl.DeleteObject(id)
-			if err != nil {
-				Errf("Error deleting %s: %s\n", id, err)
-				continue
-			}
-			fmt.Printf("Deleted: %s\n", id)
-		}
-		if err != nil {
-			return err
-		}
-		return nil
+		return ctl.DeleteObjects(c.String("reason"), c.StringSlice("inReplyTo"), c.Args().Slice()...)
 	}
 }
 
-func (c *Control) DeleteObject(id string) error {
-	u, err := url.Parse(id)
+func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string) error {
+	self := ap.Self(pub.IRI(c.Conf.BaseURL))
+	p, _, err := processing.New(processing.SetStorage(c.Storage), processing.SetIRI(self.ID))
 	if err != nil {
 		return err
 	}
-	base, _ := path.Split(u.Path)
-	typ := strings.Trim(base, "/")
 
-	var loadFn func(storage.Filterable) (pub.ItemCollection, uint, error)
-	var delFn func(pub.Item) (pub.Item, error)
+	d := new(pub.Delete)
+	d.Type = pub.DeleteType
+	d.To = pub.ItemCollection{pub.PublicNS}
+	d.CC = make(pub.ItemCollection, 0)
+	if reason != "" {
+		d.Content = pub.NaturalLanguageValuesNew()
+		d.Content.Append(pub.NilLangRef, reason)
+	}
+	if len(inReplyTo) > 0 {
+		replIRI := make(pub.ItemCollection, 0)
+		for _, repl := range inReplyTo {
+			if _, err := url.Parse(repl); err != nil {
+				continue
+			}
+			replIRI = append(replIRI, pub.IRI(repl))
+		}
+		d.InReplyTo = replIRI
+	}
+	d.Actor = self
+	d.CC = append(d.CC, handlers.Inbox.IRI(self))
 
-	if strings.ToLower(typ) == strings.ToLower(string(ap.ActorsType)) {
-		loadFn = c.Storage.LoadActors
-		delFn = c.Storage.DeleteActor
-	} else if strings.ToLower(typ) == strings.ToLower(string(ap.ObjectsType)) {
-		loadFn = c.Storage.LoadObjects
-		delFn = c.Storage.DeleteObject
-	} else {
-		return errors.Errorf("invalid ActivityPub object type %s", typ)
-	}
+	delItems := make(pub.ItemCollection, 0)
+	for _, id := range ids {
+		iri := pub.IRI(id)
+		u, err := iri.URL()
+		if err != nil {
+			continue
+		}
+		base, _ := path.Split(u.Path)
+		typ := strings.Trim(base, "/")
 
-	it, cnt, err := loadFn(pub.IRI(id))
-	if err != nil {
-		return err
+		var it pub.ItemCollection
+		var cnt uint
+		if strings.ToLower(typ) != strings.ToLower(string(ap.ActorsType)) && strings.ToLower(typ) != strings.ToLower(string(ap.ObjectsType)) {
+			continue
+		}
+		it, cnt, err = c.Storage.LoadObjects(iri)
+		if err != nil || cnt == 0 || it.GetType() == pub.TombstoneType {
+			continue
+		}
+		for _, ob := range it {
+			pub.OnObject(ob, func(o *pub.Object) error {
+				if o.AttributedTo != nil {
+					d.CC = append(d.CC, o.AttributedTo.GetLink())
+				}
+				return nil
+			})
+			delItems = append(delItems, ob.GetLink())
+		}
 	}
-	if cnt == 0 {
-		return errors.Newf("nothing found")
+	if len(delItems) == 0 {
+		return errors.NotFoundf("No items found to delete")
 	}
-	if it.GetType() == pub.TombstoneType {
-		return errors.Newf("Item %s already deleted", it.GetLink())
-	}
-	_, err = delFn(pub.IRI(id))
+	d.Object = delItems
 
+	act, err := p.ProcessClientActivity(d)
+
+	printItem(act, "text")
 	return err
 }
 
