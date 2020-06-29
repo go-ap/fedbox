@@ -349,6 +349,18 @@ func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
 		return nil, err
 	}
 
+	if it.IsCollection() {
+		err := pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+			var err error
+			for _, it := range c.Collection() {
+				if it, err = r.DeleteObject(it); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		return it, err
+	}
 	f := ap.FiltersNew()
 	f.IRI = it.GetLink()
 
