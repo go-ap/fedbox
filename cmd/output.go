@@ -5,6 +5,7 @@ import (
 	"fmt"
 	pub "github.com/go-ap/activitypub"
 	"io"
+	"strings"
 	"time"
 )
 
@@ -14,8 +15,23 @@ func bytef(s string, p ...interface{}) []byte {
 
 func outObject(o *pub.Object, b io.Writer) error {
 	b.Write(bytef("[%s] %s // %s", o.Type, o.ID, o.Published.Format(time.Stamp)))
+	if o.Summary != nil {
+		for _, s := range o.Summary {
+			ss := strings.Trim(s.Value, "\n\r\t ")
+			if s.Ref != pub.NilLangRef {
+				b.Write(bytef("\n\tSummary[%s]: %s", s.Ref, ss))
+			}
+			b.Write(bytef("\n\tSummary: %s", ss))
+		}
+	}
 	if o.Content != nil {
-		b.Write(bytef("\n\tContent: %s", o.Content))
+		for _, c := range o.Content {
+			cc := strings.Trim(c.Value, "\n\r\t ")
+			if c.Ref != pub.NilLangRef {
+				b.Write(bytef("\n\tContent[%s]: %s", c.Ref, cc))
+			}
+			b.Write(bytef("\n\tContent: %s", cc))
+		}
 	}
 	return nil
 }
@@ -28,7 +44,7 @@ func outActivity(a *pub.Activity, b io.Writer) error {
 		return err
 	}
 	if a.Actor != nil {
-		b.Write(bytef("\tActor: "))
+		b.Write(bytef("\n\tActor: "))
 		outItem(a.Actor, b)
 	}
 	if a.Object != nil {
