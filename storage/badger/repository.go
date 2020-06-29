@@ -494,6 +494,18 @@ const objectKey = "__raw"
 const metaDataKey = "__meta_data"
 
 func delete(r *repo, it pub.Item) (pub.Item, error) {
+	if it.IsCollection() {
+		err := pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+			var err error
+			for _, it := range c.Collection() {
+				if it, err = delete(r, it); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		return it, err
+	}
 	f := ap.FiltersNew()
 	f.IRI = it.GetLink()
 	if it.IsObject() {
