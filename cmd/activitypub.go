@@ -229,28 +229,37 @@ var listObjectsCmd = &cli.Command{
 			Usage:       fmt.Sprintf("The type of activitypub object to list"),
 			DefaultText: fmt.Sprintf("Valid values: %v", ValidGenericTypes),
 		},
+		&cli.StringFlag{
+			Name:        "output",
+			Usage:       fmt.Sprintf("The format in which to output the items"),
+			DefaultText: fmt.Sprintf("Valid values: %v", []string{"json", "text"}),
+			Value:       "json",
+		},
+		&cli.StringFlag{
+			Name:  "path",
+			Usage: "Pass the path at which to start.",
+			Value: "/",
+		},
 	},
 	Action: listObjectsAct(&ctl),
 }
 
-func printItem(it pub.Item) {
-	typ := it.GetType()
-	if pub.ObjectTypes.Contains(typ) {
+func printItem(it pub.Item, outType string) error {
+	if outType == "json" {
+		return outJSON(it)
 	}
-	if pub.ActorTypes.Contains(typ) {
-	}
-	if pub.ActivityTypes.Contains(typ) {
-	}
+	return outText(it)
 }
 
 func listObjectsAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		initialPath := c.String("path")
 		typeFl := c.StringSlice("type")
-		all, err := ctl.List(typeFl)
+		all, err := ctl.List(initialPath, typeFl...)
 		if err != nil {
 			return err
 		}
-		outJSON(all)
+		printItem(all, c.String("output"))
 		return nil
 	}
 }
@@ -289,16 +298,15 @@ func loadPubTypes(types []string) (pub.ActivityVocabularyTypes, pub.ActivityVoca
 	return objectTyp, actorTyp, activityTyp
 }
 
-func (c *Control) List(types []string) (pub.ItemCollection, error) {
+func (c *Control) List(initialPath string, types ...string) (pub.ItemCollection, error) {
 	var items pub.ItemCollection
 	objectTyp, actorTyp, activityTyp := loadPubTypes(types)
-	accFn := func(colTyp handlers.CollectionType, types pub.ActivityVocabularyTypes) error {
+	accFn := func(baseIRI pub.IRI, types pub.ActivityVocabularyTypes) error {
 		if len(types) == 0 {
 			return nil
 		}
-		baseIRI := colTyp.IRI(pub.IRI(ctl.Conf.BaseURL))
 		f := ap.FiltersNew(
-			ap.IRI(baseIRI),
+			ap.BaseIRI(handlers.Split(baseIRI)),
 			ap.Type(types...),
 		)
 		col, err := c.Storage.LoadCollection(f)
@@ -314,15 +322,28 @@ func (c *Control) List(types []string) (pub.ItemCollection, error) {
 		})
 		return nil
 	}
-	err := accFn(ap.ObjectsType, objectTyp)
-	if err != nil {
-		return items, err
+	var err error
+	if initialPath == "" || initialPath == "/" {
+		obIRI := ap.ObjectsType.IRI(pub.IRI(ctl.Conf.BaseURL))
+		err = accFn(obIRI, objectTyp)
+		if err != nil {
+			return items, err
+		}
+		actorsIRI := ap.ActorsType.IRI(pub.IRI(ctl.Conf.BaseURL))
+		err = accFn(actorsIRI, actorTyp)
+		if err != nil {
+			return items, err
+		}
+		activitiesIRI := ap.ActivitiesType.IRI(pub.IRI(ctl.Conf.BaseURL))
+		err = accFn(activitiesIRI, activityTyp)
+	} else {
+		if initialPath[0] != '/' {
+			initialPath = "/" + initialPath
+		}
+		pathIRI := pub.IRI(fmt.Sprintf("%s%s", ctl.Conf.BaseURL, initialPath))
+		err = accFn(pathIRI, activityTyp)
 	}
-	err = accFn(ap.ActorsType, actorTyp)
-	if err != nil {
-		return items, err
-	}
-	err = accFn(ap.ActivitiesType, activityTyp)
+
 	return items, err
 }
 
@@ -342,7 +363,8 @@ var addObjectCmd = &cli.Command{
 
 func addObjectAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		typ := pub.ActivityVocabularyType(c.String("type"))
+		f, _ := LoadFilters(c)
+		typ := f.Type[0]
 		if pub.ActorTypes.Contains(typ) {
 			name, err := loadFromStdin("Enter the %s name", typ)
 			pw, err := loadPwFromStdin(true, "%s's", name)
@@ -472,22 +494,14 @@ var exportCmd = &cli.Command{
 	Aliases: []string{"dump"},
 	Usage:   "Exports ActivityPub objects",
 	Flags: []cli.Flag{
-		&cli.StringSliceFlag{
-			Name:        "format",
+		&cli.StringFlag{
+			Name:        "output",
 			Usage:       fmt.Sprintf("The format in which to output the items"),
-			DefaultText: fmt.Sprintf("Valid values: %v", []string{"json"}),
+			DefaultText: fmt.Sprintf("Valid values: %v", []string{"json", "text"}),
+			Value:       "json",
 		},
 	},
 	Action: exportPubObjects(&ctl),
-}
-
-func outJSON(it pub.Item) error {
-	out, err := pub.MarshalJSON(it)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%s", out)
-	return nil
 }
 
 func dumpAll(f *ap.Filters) (pub.ItemCollection, error) {
@@ -528,6 +542,6 @@ func exportPubObjects(ctl *Control) cli.ActionFunc {
 			}
 			return o1.Published.Sub(o2.Published) < 0
 		})
-		return outJSON(objects)
+		return printItem(objects, c.String("output"))
 	}
 }

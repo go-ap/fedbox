@@ -285,7 +285,10 @@ func (f Filters) IRIs() CompStrs {
 
 // GetLink returns a list of IRIs to filter against
 func (f *Filters) GetLink() pub.IRI {
-	return f.IRI
+	if f.IRI != "" {
+		return f.IRI
+	}
+	return f.baseURL.AddPath(string(f.Collection))
 }
 
 // TODO(marius): move this somewhere else. Or replace it with something that makes more sense.
