@@ -15,6 +15,15 @@ func bytef(s string, p ...interface{}) []byte {
 
 func outObject(o *pub.Object, b io.Writer) error {
 	b.Write(bytef("[%s] %s // %s", o.Type, o.ID, o.Published.Format(time.Stamp)))
+	if len(o.Name) > 0 {
+		for _, s := range o.Name {
+			ss := strings.Trim(s.Value, "\n\r\t ")
+			if s.Ref != pub.NilLangRef {
+				b.Write(bytef("\n\tName[%s]: %s", s.Ref, ss))
+			}
+			b.Write(bytef("\n\tName: %s", ss))
+		}
+	}
 	if o.Summary != nil {
 		for _, s := range o.Summary {
 			ss := strings.Trim(s.Value, "\n\r\t ")
@@ -62,7 +71,15 @@ func outActor(a *pub.Actor, b io.Writer) error {
 	if err != nil {
 		return err
 	}
-	b.Write(bytef("\n\tName: %s", a.Name))
+	if len(a.PreferredUsername) > 0 {
+		for _, s := range a.PreferredUsername {
+			ss := strings.Trim(s.Value, "\n\r\t ")
+			if s.Ref != pub.NilLangRef {
+				b.Write(bytef("\n\tPreferredUsername[%s]: %s", s.Ref, ss))
+			}
+			b.Write(bytef("\n\tPreferredUsername: %s", ss))
+		}
+	}
 	return nil
 }
 func outItem(it pub.Item, b io.Writer) error {
