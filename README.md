@@ -18,8 +18,9 @@ but I want to also add support for sqlite and PostgreSQL.
 
  * Support for content management actitivies: `Create`, `Update`, `Delete`.
  All Object types are supported, but they have no local side-effects like caching images, video and audio.
- * `Follow`, `Accept`, `Block` with actors as objects.
+ * `Follow`, `Accept`, `Reject` with actors as objects.
  * Appreciation activities: `Like`, `Dislike`.
+ * Reaction activities: `Block` on actors, `Flag` on objects.
  * Negating content management and appreciation activities using `Undo`.
  * OAuth2 authentication
 
