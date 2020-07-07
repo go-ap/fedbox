@@ -8,8 +8,6 @@ TEST_FLAGS ?= -v
 LOCAL_HOSTNAME ?= fedbox.git
 
 export CGO_ENABLED=0
-export GOOS=linux
-export GOARCH=amd64
 export VERSION=(unknown)
 GO := go
 ENV ?= dev
