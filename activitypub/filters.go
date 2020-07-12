@@ -949,3 +949,17 @@ func FilterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
 	}
 	return nil, errors.Errorf("Invalid filter %T", f)
 }
+
+func FiltersOnActivityObject(f s.Filterable) bool {
+	if ff, ok := f.(*Filters); ok {
+		return ff.Object != nil
+	}
+	return false
+}
+
+func FiltersOnActivityActor(f s.Filterable) bool {
+	if ff, ok := f.(*Filters); ok {
+		return ff.Actor != nil
+	}
+	return false
+}

@@ -66,10 +66,10 @@ func New(c config.Options) (*repo, error) {
 }
 
 type repo struct {
-	baseURL  string
-	path     string
-	logFn    loggerFn
-	errFn    loggerFn
+	baseURL string
+	path    string
+	logFn   loggerFn
+	errFn   loggerFn
 }
 
 // Open
@@ -501,7 +501,7 @@ func isIDKey(p string) bool {
 	return false
 }
 
-func (r repo)itemPath(iri pub.IRI) string {
+func (r repo) itemPath(iri pub.IRI) string {
 	url, err := iri.URL()
 	if err != nil {
 		return ""
@@ -709,7 +709,7 @@ func loadFromRaw(raw []byte) (pub.Item, error) {
 	return pub.UnmarshalJSON(raw)
 }
 
-func (r repo)loadOneFromPath(f s.Filterable) (pub.Item, error) {
+func (r repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {
 	col, cnt, err := r.loadFromPath(f)
 	if err != nil {
 		return nil, err
@@ -720,7 +720,7 @@ func (r repo)loadOneFromPath(f s.Filterable) (pub.Item, error) {
 	return col.First(), nil
 }
 
-func (r repo)loadItem(p string, f s.Filterable) (pub.Item, error) {
+func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 	raw, err := loadRawFromPath(p)
 	if raw == nil {
 		return nil, nil
@@ -740,33 +740,38 @@ func (r repo)loadItem(p string, f s.Filterable) (pub.Item, error) {
 	if !it.IsObject() {
 		it, _ = r.loadOneFromPath(it.GetLink())
 	}
-	if it.GetType() == pub.CreateType {
-		// TODO(marius): this seems terribly not nice
+	if pub.ActivityTypes.Contains(it.GetType()) {
 		pub.OnActivity(it, func(a *pub.Activity) error {
-			if a.Object == nil {
-				return nil
+			if it.GetType() == pub.CreateType || ap.FiltersOnActivityObject(f) {
+				// TODO(marius): this seems terribly not nice
+				if a.Object != nil && !a.Object.IsObject() {
+					a.Object, _ = r.loadOneFromPath(a.Object.GetLink())
+				}
 			}
-			if !a.Object.IsObject() {
-				ob, _ := r.loadOneFromPath(a.Object.GetLink())
-				a.Object = ob
+			if ap.FiltersOnActivityActor(f) {
+				// TODO(marius): this seems terribly not nice
+				if a.Actor != nil && !a.Actor.IsObject() {
+					a.Actor, _ = r.loadOneFromPath(a.Actor.GetLink())
+				}
 			}
 			return nil
 		})
 	}
+
 	if f != nil {
 		return ap.FilterIt(it, f)
 	}
 	return it, nil
 }
 
-func (r repo)loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
+func (r repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 	var err error
 	col := make(pub.ItemCollection, 0)
 
 	itPath := r.itemPath(f.GetLink())
 	if isStorageCollectionKey(itPath) {
 		err = filepath.Walk(itPath, func(p string, info os.FileInfo, err error) error {
-			if err != nil && os.IsNotExist(err)  {
+			if err != nil && os.IsNotExist(err) {
 				return errors.NotFoundf("%s not found", p)
 			}
 			dirPath, _ := path.Split(p)

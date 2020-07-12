@@ -831,12 +831,19 @@ func (r *repo) loadItem(b *badger.Txn, path []byte, f s.Filterable) (pub.Item, e
 	if !it.IsObject() {
 		it, _ = r.loadOneFromPath(it.GetLink())
 	}
-	if it.GetType() == pub.CreateType {
-		// TODO(marius): this seems terribly not nice
+	if pub.ActivityTypes.Contains(it.GetType()) {
 		pub.OnActivity(it, func(a *pub.Activity) error {
-			if !a.Object.IsObject() {
-				ob, _ := r.loadOneFromPath(a.Object.GetLink())
-				a.Object = ob
+			if it.GetType() == pub.CreateType || ap.FiltersOnActivityObject(f) {
+				// TODO(marius): this seems terribly not nice
+				if a.Object != nil && !a.Object.IsObject() {
+					a.Object, _ = r.loadOneFromPath(a.Object.GetLink())
+				}
+			}
+			if ap.FiltersOnActivityActor(f) {
+				// TODO(marius): this seems terribly not nice
+				if a.Actor != nil && !a.Actor.IsObject() {
+					a.Actor, _ = r.loadOneFromPath(a.Actor.GetLink())
+				}
 			}
 			return nil
 		})
