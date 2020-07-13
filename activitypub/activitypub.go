@@ -56,7 +56,8 @@ func GenerateID(it pub.Item, partOf string, by pub.Item) (pub.ID, error) {
 	id := pub.ID(fmt.Sprintf("%s/%s", strings.ToLower(partOf), uuid))
 	if pub.ActivityTypes.Contains(it.GetType()) {
 		err := pub.OnActivity(it, func(a *pub.Activity) error {
-			if !a.Recipients().Contains(pub.PublicNS) {
+			rec := append(a.To, append(a.CC, append(a.Bto, a.BCC...)...)...)
+			if !rec.Contains(pub.PublicNS) {
 				if by == nil {
 					by = a.Actor
 				}
