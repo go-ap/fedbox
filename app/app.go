@@ -16,9 +16,11 @@ import (
 	st "github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -203,6 +205,19 @@ func setupHttpServer(conf config.Options, m http.Handler, ctx context.Context) (
 		}
 		serveFn = func() error {
 			return srv.ListenAndServeTLS(conf.CertPath, conf.KeyPath)
+		}
+	} else if strings.HasPrefix(conf.Listen, "/") {
+		// Unix domain socket
+		srv = &http.Server{
+			Handler: m,
+		}
+
+		serveFn = func() error {
+			unixListener, err := net.Listen("unix", conf.Listen)
+			if err != nil {
+				return err
+			}
+			return srv.Serve(unixListener)
 		}
 	} else {
 		srv = &http.Server{
