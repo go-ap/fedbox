@@ -24,6 +24,7 @@ const (
 
 func TestLoadFromEnv(t *testing.T) {
 	{
+		t.Skipf("we're no longer loading SQL db config env variables")
 		os.Setenv(KeyDBHost, dbHost)
 		os.Setenv(KeyDBPort, fmt.Sprintf("%d", dbPort))
 		os.Setenv(KeyDBName, dbName)
@@ -41,7 +42,8 @@ func TestLoadFromEnv(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error loading env: %s", err)
 		}
-		db := c.DB
+		// @todo(marius): we're no longer loading SQL db config env variables
+		db := BackendConfig{}
 		if db.Host != dbHost {
 			t.Errorf("Invalid loaded value for %s: %s, expected %s", KeyDBHost, db.Host, dbHost)
 		}

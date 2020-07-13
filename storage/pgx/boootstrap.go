@@ -25,7 +25,8 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 	var conn *pgx.Conn
 	var err error
 
-	conf := opt.DB
+	// @todo(marius): we're no longer loading SQL db config env variables
+	conf := config.BackendConfig{}
 	if conf.User == "" {
 		return errors.Newf("empty user")
 	}
@@ -163,7 +164,8 @@ func Clean(opt config.Options, rootUser string, rootPw []byte, path string) erro
 	var conn *pgx.Conn
 	var err error
 
-	conf := opt.DB
+	// @todo(marius): we're no longer loading SQL db config env variables
+	conf := config.BackendConfig{}
 	if conf.User == "" {
 		return errors.Newf("empty user")
 	}
@@ -220,7 +222,8 @@ func AddTestMockActor(opt config.Options, file string, actor pub.Person) error {
 	var conn *pgx.Conn
 	var err error
 
-	conf := opt.DB
+	// @todo(marius): we're no longer loading SQL db config env variables
+	conf := config.BackendConfig{}
 	if conf.User == "" {
 		return errors.Newf("empty user")
 	}

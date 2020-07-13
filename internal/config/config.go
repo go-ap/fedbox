@@ -31,7 +31,6 @@ type Options struct {
 	Host        string
 	Listen      string
 	BaseURL     string
-	DB          BackendConfig
 	Storage     StorageType
 	StoragePath string
 }
@@ -155,14 +154,6 @@ func LoadFromEnv(e env.Type) (Options, error) {
 		conf.StoragePath = os.TempDir()
 	}
 	conf.StoragePath = path.Clean(conf.StoragePath)
-	conf.DB.Host = os.Getenv(k(KeyDBHost))
-	conf.DB.Pw = os.Getenv(k(KeyDBPw))
-	conf.DB.Name = os.Getenv(k(KeyDBName))
-	conf.DB.User = os.Getenv(k(KeyDBUser))
-	var err error
-	if conf.DB.Port, err = strconv.ParseInt(os.Getenv(k(KeyDBPort)), 10, 32); err != nil {
-		conf.DB.Port = 5432
-	}
 
 	return conf, nil
 }

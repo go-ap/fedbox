@@ -109,15 +109,17 @@ func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.S
 }
 
 func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	db, err := pgx.New(c.DB, c.BaseURL, l)
+	// @todo(marius): we're no longer loading SQL db config env variables
+	conf := config.BackendConfig{}
+	db, err := pgx.New(conf, c.BaseURL, l)
 
 	oauth := auth.NewPgDBStore(auth.PgConfig{
 		Enabled: true,
-		Host:    c.DB.Host,
-		Port:    c.DB.Port,
-		User:    c.DB.User,
-		Pw:      c.DB.Pw,
-		Name:    c.DB.Name,
+		Host:    conf.Host,
+		Port:    conf.Port,
+		User:    conf.User,
+		Pw:      conf.Pw,
+		Name:    conf.Name,
 		LogFn:   InfoLogFn(l),
 		ErrFn:   ErrLogFn(l),
 	})
