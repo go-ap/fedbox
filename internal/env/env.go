@@ -50,3 +50,6 @@ func (e Type) IsQA() bool {
 func (e Type) IsTest() bool {
 	return strings.Contains(string(e), string(TEST))
 }
+func (e Type) IsDev() bool {
+	return strings.Contains(string(e), string(DEV))
+}

@@ -159,7 +159,7 @@ func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 		app.errFn("Unable to load settings from environment variables: %s", err)
 		return nil, err
 	}
-	errors.IncludeBacktrace = app.conf.Env == env.DEV || app.conf.Env == env.TEST
+	errors.IncludeBacktrace = app.conf.Env.IsDev() || app.conf.Env.IsTest()
 
 	db, oauth, err := getStorage(app, l)
 	app.Storage = db
