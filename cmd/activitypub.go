@@ -198,7 +198,7 @@ func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string
 		d.InReplyTo = replIRI
 	}
 	d.Actor = self
-	d.CC = append(d.CC, handlers.Inbox.IRI(self))
+	d.CC = append(d.CC, self.GetLink())
 
 	delItems := make(pub.ItemCollection, 0)
 	for _, id := range ids {
