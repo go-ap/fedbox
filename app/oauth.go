@@ -3,6 +3,10 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"net/http"
+	"time"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
@@ -13,9 +17,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 	"golang.org/x/oauth2"
-	"html/template"
-	"net/http"
-	"time"
 )
 
 type account struct {
@@ -94,10 +95,8 @@ func checkPw(it pub.Item, pw []byte, pwLoader st.PasswordChanger) (account, erro
 		acc.FromActor(p)
 		return nil
 	})
-	if err != nil {
-		return acc, err
-	}
-	return acc, nil
+
+	return acc, err
 }
 
 func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
@@ -282,8 +281,8 @@ func (h *oauthHandler) renderTemplate(r *http.Request, w http.ResponseWriter, na
 			"model":    fmt.Sprintf("%T", m),
 		}).Error(new.Error())
 		errRenderer.HTML(w, http.StatusInternalServerError, "error", new)
-		return err
 	}
+
 	return err
 }
 
