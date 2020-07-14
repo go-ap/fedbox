@@ -59,17 +59,17 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 }
 
 func bootstrap(conf config.Options) error {
-	var pgRoot string
+	var err error
 	if conf.Storage == config.Postgres {
+		var pgRoot string
 		// ask for root pw
 		fmt.Printf("%s password: ", pgRoot)
 		pgPw, _ := terminal.ReadPassword(0)
 		fmt.Println()
 		dir, _ := os.Getwd()
 		path := path.Join(dir, "init.sql")
-		return pgx.Bootstrap(conf, pgRoot, pgPw, path)
+		err = pgx.Bootstrap(conf, pgRoot, pgPw, path)
 	}
-	var err error
 	if conf.Storage == config.BoltDB {
 		err = boltdb.Bootstrap(conf)
 	}
