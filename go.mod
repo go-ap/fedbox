@@ -10,8 +10,8 @@ require (
 	github.com/go-ap/activitypub v0.0.0-20200630113504-57c015a8e96f
 	github.com/go-ap/auth v0.0.0-20200706142539-2c4265874638
 	github.com/go-ap/client v0.0.0-20200630120716-06b1bc0a973a
-	github.com/go-ap/errors v0.0.0-20200610194301-39b7d0cbba26
-	github.com/go-ap/handlers v0.0.0-20200630121116-d3d7a2315572
+	github.com/go-ap/errors v0.0.0-20200702155720-f662512ba418
+	github.com/go-ap/handlers v0.0.0-20200714165411-130c59ae4147
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
 	github.com/go-ap/processing v0.0.0-20200630121200-ee0b225a8047
 	github.com/go-ap/storage v0.0.0-20200630120808-67027b158860

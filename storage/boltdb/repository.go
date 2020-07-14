@@ -738,7 +738,8 @@ func isStorageCollectionKey(lst handlers.CollectionType) bool {
 
 func addCollectionOnObject(r *repo, col pub.IRI) error {
 	var err error
-	if ob, t := handlers.Split(col); handlers.ValidCollection(t) {
+	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedboxCollections...)
+	if ob, t := allStorageCollections.Split(col); handlers.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
 		i, _ := r.LoadOne(ob)
 		if _, ok := t.AddTo(i); ok {
