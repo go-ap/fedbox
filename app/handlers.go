@@ -2,6 +2,11 @@ package app
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"path"
+	"strings"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
@@ -10,10 +15,6 @@ import (
 	h "github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
-	"io/ioutil"
-	"net/http"
-	"path"
-	"strings"
 )
 
 type pathTyper struct{}
@@ -182,7 +183,6 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 		collection := h.Typer.Type(r)
 
 		var items pub.ItemCollection
-		var err error
 		f, err := ap.FromRequest(r)
 
 		where := ""

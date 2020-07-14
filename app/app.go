@@ -4,6 +4,12 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -17,11 +23,6 @@ import (
 	st "github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func actorLoader(ctx context.Context) (st.ActorLoader, bool) {
@@ -52,7 +53,7 @@ type FedBOX struct {
 
 var (
 	emptyLogFn = func(string, ...interface{}) {}
-	InfoLogFn = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
+	InfoLogFn  = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
 		return func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) }
 	}
 	ErrLogFn = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
@@ -146,7 +147,7 @@ func getStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Sto
 // New instantiates a new FedBOX instance
 func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 	app := FedBOX{
-		ver: ver,
+		ver:   ver,
 		infFn: emptyLogFn,
 		errFn: emptyLogFn,
 	}
@@ -164,6 +165,9 @@ func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 	if err != nil {
 		app.errFn("Unable to load settings from environment variables: %s", err)
 		return nil, err
+	} else {
+		Config = app.conf
+		ap.Secure = app.conf.Secure
 	}
 	errors.IncludeBacktrace = app.conf.Env.IsDev() || app.conf.Env.IsTest()
 
