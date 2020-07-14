@@ -59,36 +59,34 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 }
 
 func bootstrap(conf config.Options) error {
-	if conf.Storage == config.BoltDB {
-		err := boltdb.Bootstrap(conf)
-		if err != nil {
-			return errors.Annotatef(err, "Unable to create %s db", conf.StoragePath)
-		}
-		oauthPath := config.GetDBPath(conf.StoragePath, fmt.Sprintf("%s-oauth", conf.Host), conf.Env)
-		if _, err := os.Stat(oauthPath); os.IsNotExist(err) {
-			err := auth.BootstrapBoltDB(oauthPath, []byte(conf.Host))
-			if err != nil {
-				return errors.Annotatef(err, "Unable to create %s db", oauthPath)
-			}
-		}
-	}
-	if conf.Storage == config.Badger {
-		return badger.Bootstrap(conf)
-	}
-	if conf.Storage == config.FS {
-		return fs.Bootstrap(conf)
-	}
-	var pgRoot string
+	var err error
 	if conf.Storage == config.Postgres {
+		var pgRoot string
 		// ask for root pw
 		fmt.Printf("%s password: ", pgRoot)
 		pgPw, _ := terminal.ReadPassword(0)
 		fmt.Println()
 		dir, _ := os.Getwd()
 		path := path.Join(dir, "init.sql")
-		err := pgx.Bootstrap(conf, pgRoot, pgPw, path)
+		err = pgx.Bootstrap(conf, pgRoot, pgPw, path)
+	}
+	if conf.Storage == config.BoltDB {
+		err = boltdb.Bootstrap(conf)
+	}
+	if conf.Storage == config.Badger {
+		 err = badger.Bootstrap(conf)
+	}
+	if conf.Storage == config.FS {
+		err = fs.Bootstrap(conf)
+	}
+	if err != nil {
+		return errors.Annotatef(err, "Unable to create %s db for storage %s", conf.StoragePath, conf.Storage)
+	}
+	oauthPath := config.GetDBPath(conf.StoragePath, fmt.Sprintf("%s-oauth", conf.Host), conf.Env)
+	if _, err = os.Stat(oauthPath); os.IsNotExist(err) {
+		err = auth.BootstrapBoltDB(oauthPath, []byte(conf.Host))
 		if err != nil {
-			return errors.Annotatef(err, "Unable to update %s db", conf.Storage)
+			return errors.Annotatef(err, "Unable to create %s db", oauthPath)
 		}
 	}
 	return nil

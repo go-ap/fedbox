@@ -304,7 +304,8 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 }
 
 func addCollectionOnObject(r *repo, col pub.IRI) error {
-	if ob, t := handlers.Split(col); handlers.ValidCollection(t) {
+	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedboxCollections...)
+	if ob, t := allStorageCollections.Split(col); handlers.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
 		if i, _ := r.LoadOne(ob); i != nil {
 			if _, ok := t.AddTo(i); ok {

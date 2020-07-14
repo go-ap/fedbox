@@ -275,7 +275,8 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 		return err
 	}
 
-	ob, t := handlers.Split(col)
+	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedboxCollections...)
+	ob, t := allStorageCollections.Split(col)
 	var link pub.IRI
 	if isStorageCollectionKey(string(t)) {
 		// Create the collection on the object, if it doesn't exist
