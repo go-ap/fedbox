@@ -51,6 +51,7 @@ type FedBOX struct {
 }
 
 var (
+	emptyLogFn = func(string, ...interface{}) {}
 	InfoLogFn = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
 		return func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) }
 	}
@@ -144,12 +145,16 @@ func getStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Sto
 
 // New instantiates a new FedBOX instance
 func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
-	app := FedBOX{ver: ver}
-	var err error
+	app := FedBOX{
+		ver: ver,
+		infFn: emptyLogFn,
+		errFn: emptyLogFn,
+	}
 	if l != nil {
 		app.infFn = l.Infof
 		app.errFn = l.Errorf
 	}
+	var err error
 	app.conf, err = config.LoadFromEnv(env.Type(environ))
 	if err == nil {
 		Config = app.conf
