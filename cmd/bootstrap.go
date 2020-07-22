@@ -60,7 +60,7 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 
 func bootstrap(conf config.Options) error {
 	var err error
-	if conf.Storage == config.Postgres {
+	if conf.Storage == config.StoragePostgres {
 		var pgRoot string
 		// ask for root pw
 		fmt.Printf("%s password: ", pgRoot)
@@ -70,13 +70,13 @@ func bootstrap(conf config.Options) error {
 		path := path.Join(dir, "init.sql")
 		err = pgx.Bootstrap(conf, pgRoot, pgPw, path)
 	}
-	if conf.Storage == config.BoltDB {
+	if conf.Storage == config.StorageBoltDB {
 		err = boltdb.Bootstrap(conf)
 	}
-	if conf.Storage == config.Badger {
+	if conf.Storage == config.StorageBadger {
 		 err = badger.Bootstrap(conf)
 	}
-	if conf.Storage == config.FS {
+	if conf.Storage == config.StorageFS {
 		err = fs.Bootstrap(conf)
 	}
 	if err != nil {
@@ -93,10 +93,10 @@ func bootstrap(conf config.Options) error {
 }
 
 func bootstrapReset(conf config.Options) error {
-	if conf.Storage == config.BoltDB {
+	if conf.Storage == config.StorageBoltDB {
 		return boltdb.Clean(conf)
 	}
-	if conf.Storage == config.Postgres {
+	if conf.Storage == config.StoragePostgres {
 		var pgRoot string
 		// ask for root pw
 		fmt.Printf("%s password: ", pgRoot)
@@ -109,7 +109,7 @@ func bootstrapReset(conf config.Options) error {
 			return errors.Annotatef(err, "Unable to update %s db", conf.Storage)
 		}
 	}
-	if conf.Storage == config.Badger {
+	if conf.Storage == config.StorageBadger {
 		return badger.Clean(conf)
 	}
 	return nil

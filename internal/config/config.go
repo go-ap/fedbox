@@ -38,24 +38,24 @@ type Options struct {
 type StorageType string
 
 const (
-	KeyENV         = "ENV"
-	KeyLogLevel    = "LOG_LEVEL"
-	KeyHostname    = "HOSTNAME"
-	KeyHTTPS       = "HTTPS"
-	KeyCertPath    = "CERT_PATH"
-	KeyKeyPath     = "KEY_PATH"
-	KeyListen      = "LISTEN"
-	KeyDBHost      = "DB_HOST"
-	KeyDBPort      = "DB_PORT"
-	KeyDBName      = "DB_NAME"
-	KeyDBUser      = "DB_USER"
-	KeyDBPw        = "DB_PASSWORD"
-	KeyStorage     = "STORAGE"
-	KeyStoragePath = "STORAGE_PATH"
-	BoltDB         = StorageType("boltdb")
-	FS             = StorageType("fs")
-	Badger         = StorageType("badger")
-	Postgres       = StorageType("postgres")
+	KeyENV          = "ENV"
+	KeyLogLevel     = "LOG_LEVEL"
+	KeyHostname     = "HOSTNAME"
+	KeyHTTPS        = "HTTPS"
+	KeyCertPath     = "CERT_PATH"
+	KeyKeyPath      = "KEY_PATH"
+	KeyListen       = "LISTEN"
+	KeyDBHost       = "DB_HOST"
+	KeyDBPort       = "DB_PORT"
+	KeyDBName       = "DB_NAME"
+	KeyDBUser       = "DB_USER"
+	KeyDBPw         = "DB_PASSWORD"
+	KeyStorage      = "STORAGE"
+	KeyStoragePath  = "STORAGE_PATH"
+	StorageBoltDB   = StorageType("boltdb")
+	StorageFS       = StorageType("fs")
+	StorageBadger   = StorageType("badger")
+	StoragePostgres = StorageType("postgres")
 )
 
 func clean(name string) string {
@@ -97,17 +97,18 @@ func LoadFromEnv(e env.Type) (Options, error) {
 	configs := []string{
 		".env",
 	}
-	if !env.ValidType(e) {
-		for _, typ := range env.Types {
-			envFile := fmt.Sprintf(".env.%s", typ)
-			_, err := os.Stat(envFile)
-			if os.IsNotExist(err) {
-				continue
-			}
+	appendIfFile := func(typ env.Type) {
+		envFile := fmt.Sprintf(".env.%s", typ)
+		if _, err := os.Stat(envFile); err == nil {
 			configs = append(configs, envFile)
 		}
+	}
+	if !env.ValidType(e) {
+		for _, typ := range env.Types {
+			appendIfFile(typ)
+		}
 	} else {
-		configs = append(configs, fmt.Sprintf(".env.%s", e))
+		appendIfFile(e)
 	}
 
 	lvl := os.Getenv(k(KeyLogLevel))

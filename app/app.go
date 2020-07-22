@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -126,20 +127,19 @@ func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.
 	return db, oauth, err
 }
 
-func getStorage(f FedBOX, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	if f.Config().Storage == config.BoltDB {
-		return getBoltStorage(f.Config(), l)
+func getStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+	switch c.Storage {
+	case config.StorageBoltDB:
+		return getBoltStorage(c, l)
+	case config.StorageBadger:
+		return getBadgerStorage(c, l)
+	case config.StoragePostgres:
+		return getPgxStorage(c, l)
+	case config.StorageFS:
+		return getFsStorage(c, l)
 	}
-	if f.Config().Storage == config.Badger {
-		return getBadgerStorage(f.Config(), l)
-	}
-	if f.Config().Storage == config.Postgres {
-		return getPgxStorage(f.Config(), l)
-	}
-	if f.Config().Storage == config.FS {
-		return getFsStorage(f.Config(), l)
-	}
-	return nil, nil, errors.NotImplementedf("Invalid storage type %s", f.Config().Storage)
+	fmt.Printf("WTF: %s\n\n", c.Storage)
+	return nil, nil, errors.NotImplementedf("Invalid storage type %s", c.Storage)
 }
 
 // New instantiates a new FedBOX instance
@@ -155,13 +155,17 @@ func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 		Config = app.conf
 		ap.Secure = app.conf.Secure
 	}
+
 	if err != nil {
 		app.errFn("Unable to load settings from environment variables: %s", err)
 		return nil, err
 	}
 	errors.IncludeBacktrace = app.conf.Env.IsDev() || app.conf.Env.IsTest()
 
-	db, oauth, err := getStorage(app, l)
+	db, oauth, err := getStorage(app.conf, l)
+	if err != nil {
+		app.errFn("Unable to initialize storage backend: %s", err)
+	}
 	app.Storage = db
 	app.OAuthStorage = oauth
 	return &app, err

@@ -39,11 +39,14 @@ var ctl Control
 var logger = logrus.New()
 
 func Before(c *cli.Context) error {
-	logger.Level = logrus.ErrorLevel
+	logger.Level = logrus.WarnLevel
 	ct, err := setup(c, logger)
-	if err == nil {
-		ctl = *ct
+	if err != nil {
+		return err
 	}
+	ctl = *ct
+	// the level enums have same values
+	logger.Level = logrus.Level(ct.Conf.LogLevel)
 
 	return err
 }
@@ -64,14 +67,15 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 	if dir == "." && conf.StoragePath != os.TempDir() {
 		dir = conf.StoragePath
 	}
-	typ := config.StorageType(c.String("type"))
-	if typ == "" {
-		typ = conf.Storage
+	typ := c.String("type")
+	if typ != "" {
+		conf.Storage = config.StorageType(typ)
 	}
 	host := conf.Host
 	var aDb osin.Storage
 	var db storage.Repository
-	if typ == config.BoltDB {
+	switch conf.Storage {
+	case config.StorageBoltDB:
 		path := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ)
 		aDb = auth.NewBoltDBStore(auth.BoltConfig{
 			Path:       path,
@@ -85,8 +89,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 			ErrFn: app.ErrLogFn(l),
 		}, conf.BaseURL)
 		return New(aDb, db, conf), nil
-	}
-	if typ == config.FS {
+	case config.StorageFS:
 		path := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ)
 		aDb = auth.NewBoltDBStore(auth.BoltConfig{
 			Path:       path,
@@ -94,10 +97,10 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 			LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
 			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
 		})
+		l.Printf("fs paths: %s %s\n", path, aDb)
 		db, err = fs.New(conf)
 		return New(aDb, db, conf), err
-	}
-	if typ == config.Badger {
+	case config.StorageBadger:
 		aDb = auth.NewBoltDBStore(auth.BoltConfig{
 			Path:       config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ),
 			BucketName: host,
@@ -114,8 +117,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 			ErrFn: app.ErrLogFn(l),
 		}, conf.BaseURL)
 		return New(aDb, db, conf), nil
-	}
-	if typ == config.Postgres {
+	case config.StoragePostgres:
 		host := c.String("host")
 		if host == "" {
 			host = "localhost"
@@ -153,11 +155,10 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 			Name:    oauthDBName,
 		}, conf.BaseURL, l)
 		if err != nil {
-			Errf("Error: %s\n", err)
-			//return err
+			return nil, err
 		}
 	}
-	return nil, errors.Newf("invalid type %s", typ)
+	return nil, errors.Newf("invalid storage type %s", typ)
 }
 
 func loadPwFromStdin(confirm bool, s string, params ...interface{}) ([]byte, error) {
@@ -184,5 +185,5 @@ func loadFromStdin(s string, params ...interface{}) ([]byte, error) {
 }
 
 func Errf(s string, par ...interface{}) {
-	fmt.Fprintf(os.Stderr, s + "\n", par...)
+	fmt.Fprintf(os.Stderr, s+"\n", par...)
 }

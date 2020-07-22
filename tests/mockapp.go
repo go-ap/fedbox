@@ -122,16 +122,16 @@ func seedTestData(t *testing.T, testData []string, reset bool) {
 func resetDB() string {
 	opt, _ := config.LoadFromEnv("test")
 	var dbPath string
-	if opt.Storage == config.BoltDB {
+	if opt.Storage == config.StorageBoltDB {
 		boltdb.Clean(opt)
 		boltdb.Bootstrap(opt)
 	}
-	if opt.Storage == config.Badger {
+	if opt.Storage == config.StorageBadger {
 		dbPath, _ = badger.Path(opt)
 		badger.Clean(opt)
 		badger.Bootstrap(opt)
 	}
-	if opt.Storage == config.FS {
+	if opt.Storage == config.StorageFS {
 		fs.Clean(opt)
 		fs.Bootstrap(opt)
 	}
@@ -181,13 +181,13 @@ func getOAuthStorage(opt config.Options, u *url.URL) osin.Storage {
 }
 
 func getStorage(opt config.Options, u *url.URL) (storage.Repository, error) {
-	if opt.Storage == config.BoltDB {
+	if opt.Storage == config.StorageBoltDB {
 		return getBoltDBStorage(opt, u), nil
 	}
-	if opt.Storage == config.Badger {
+	if opt.Storage == config.StorageBadger {
 		return getBadgerStorage(opt, u), nil
 	}
-	if opt.Storage == config.FS {
+	if opt.Storage == config.StorageFS {
 		return getFsStorage(opt, u)
 	}
 	return nil, nil
