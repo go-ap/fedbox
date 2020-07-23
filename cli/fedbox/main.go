@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"github.com/go-ap/fedbox/cmd"
-	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-chi/chi"
 	"os"
 )
@@ -11,10 +9,7 @@ import (
 var version = "HEAD"
 
 func main() {
-	srv := cmd.NewApp(chi.NewRouter(), log.New(), version)
-	err := srv.Run(os.Args)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s", err)
+	if err := cmd.NewApp(chi.NewRouter(), version).Run(os.Args); err != nil {
 		os.Exit(1)
 	}
 }

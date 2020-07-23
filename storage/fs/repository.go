@@ -770,7 +770,7 @@ func (r repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 	col := make(pub.ItemCollection, 0)
 
 	itPath := r.itemPath(f.GetLink())
-	if isStorageCollectionKey(itPath) {
+	if isStorageCollectionKey(itPath) || itPath == r.path {
 		err = filepath.Walk(itPath, func(p string, info os.FileInfo, err error) error {
 			if err != nil && os.IsNotExist(err) {
 				return errors.NotFoundf("%s not found", p)
