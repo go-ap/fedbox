@@ -16,8 +16,8 @@ import (
 
 const defaultTimeout = time.Second * 15
 
-func NewApp(r chi.Router, l logrus.FieldLogger, version string) cli.App {
-	return cli.App{
+func NewApp(r chi.Router,version string) *cli.App {
+	return &cli.App{
 		Name:    "fedbox",
 		Usage:   "fedbox instance server",
 		Version: version,
@@ -33,19 +33,22 @@ func NewApp(r chi.Router, l logrus.FieldLogger, version string) cli.App {
 				Value: "",
 			},
 		},
-		Action: run(r, l, version),
+		Action: run(r, version),
 	}
 }
 
-func run(r chi.Router, l logrus.FieldLogger, version string) cli.ActionFunc {
+func run(r chi.Router, version string) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		w := c.Duration("wait")
 		e := c.String("env")
+		l := log.New()
 		a, err := app.New(l, version, e)
 		if err != nil {
-			l.Error(err.Error())
+			l.Errorf("Unable to initialize: %s", err)
 			return err
 		}
+		// the level enums have same values
+		logger.Level = logrus.Level(a.Config().LogLevel)
 
 		osin, err := auth.NewOAuth2Server(a.OAuthStorage, l)
 		if err != nil {

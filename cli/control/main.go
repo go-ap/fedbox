@@ -50,7 +50,7 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:  "type",
-			Usage: fmt.Sprintf("Type of the backend to use. Possible values: %q", []config.StorageType{config.BoltDB, config.Badger, config.FS}),
+			Usage: fmt.Sprintf("Type of the backend to use. Possible values: %q", []config.StorageType{config.StorageBoltDB, config.StorageBadger, config.StorageFS}),
 		},
 		&cli.StringFlag{
 			Name:  "path",
@@ -70,9 +70,7 @@ func main() {
 		cmd.AccountsCmd,
 	}
 
-	err := app.Run(os.Args)
-	if err != nil {
-		cmd.Errf("Error: %s\n", err)
+	if err := app.Run(os.Args); err != nil {
 		os.Exit(1)
 	}
 }
