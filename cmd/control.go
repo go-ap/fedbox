@@ -42,13 +42,16 @@ func Before(c *cli.Context) error {
 	logger.Level = logrus.WarnLevel
 	ct, err := setup(c, logger)
 	if err != nil {
+		// Ensure we don't print the default help message, which is not useful here
+		c.App.CustomAppHelpTemplate = "Failed"
+		logger.Errorf("Error: %s", err)
 		return err
 	}
 	ctl = *ct
 	// the level enums have same values
 	logger.Level = logrus.Level(ct.Conf.LogLevel)
 
-	return err
+	return nil
 }
 
 func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {

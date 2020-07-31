@@ -52,7 +52,7 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 	return func(typ h.CollectionType, r *http.Request, repo storage.CollectionLoader) (pub.CollectionInterface, error) {
 		var col pub.CollectionInterface
 
-		f, err := ap.FromRequest(r)
+		f, err := ap.FromRequest(r, fb.Config().BaseURL)
 		if err != nil {
 			return nil, errors.NewNotValid(err, "unable to load filters from request")
 		}
@@ -102,7 +102,7 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 	return func(typ h.CollectionType, r *http.Request, repo storage.Repository) (pub.Item, int, error) {
 		var it pub.Item
 
-		f, err := ap.FromRequest(r)
+		f, err := ap.FromRequest(r, fb.Config().BaseURL)
 		if err != nil {
 			return it, 0, errors.NewNotValid(err, "unable to load filters from request")
 		}
@@ -183,7 +183,7 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 		collection := h.Typer.Type(r)
 
 		var items pub.ItemCollection
-		f, err := ap.FromRequest(r)
+		f, err := ap.FromRequest(r, fb.Config().BaseURL)
 
 		where := ""
 		what := ""

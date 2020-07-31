@@ -320,32 +320,34 @@ var ErrNotFound = func(s string) error {
 	return errors.Newf(fmt.Sprintf("%s not found", s))
 }
 
-// TODO(marius): this function also exists in app/filters package
-func reqURL(r *http.Request) string {
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-	return fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.Path)
+func fullURL(u *url.URL) string {
+	return fmt.Sprintf("%s://%s%s", u.Scheme, u.Host, u.Path)
 }
 
-// TODO(marius): this function also exists in app/filters package
-func reqBaseURL(r *url.URL) string {
-	return fmt.Sprintf("%s://%s", r.Scheme, r.Host)
+func baseURL(u *url.URL) string {
+	return fmt.Sprintf("%s://%s", u.Scheme, u.Host)
 }
 
 // FromRequest loads the filters we use for generating storage queries from the HTTP request
-func FromRequest(r *http.Request) (*Filters, error) {
+func FromRequest(r *http.Request, baseUrl string) (*Filters, error) {
 	f := FiltersNew()
 	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
 		return nil, err
 	}
-	f.Collection = h.Typer.Type(r)
-	if len(f.IRI) == 0 {
-		f.IRI = pub.IRI(reqURL(r))
+
+	var u *url.URL
+	if baseUrl != "" {
+		f.baseURL = pub.IRI(baseUrl)
+		u, _ = f.baseURL.URL()
+		u.Path = r.URL.Path
+	} else {
+		f.baseURL = pub.IRI(baseURL(r.URL))
+		u = r.URL
 	}
-	i, _ := f.IRI.URL()
-	f.baseURL = pub.IRI(reqBaseURL(i))
+	if len(f.IRI) == 0 {
+		f.IRI = pub.IRI(fullURL(u))
+	}
+	f.Collection = h.Typer.Type(r)
 
 	if f.MaxItems > MaxItems {
 		f.MaxItems = MaxItems
