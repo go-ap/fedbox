@@ -4,9 +4,9 @@ ARG ENV=dev
 ARG HOSTNAME=fedbox
 
 ENV GO111MODULE=on
-ENV ENV=${ENV:-dev}
-ENV KEY_PATH=/etc/ssl/certs/$(HOSTNAME).key
-ENV CERT_PATH=/etc/ssl/certs/$(HOSTNAME).crt
+ENV FEDBOX_ENV=${ENV:-dev}
+ENV FEDBOX_KEY_PATH=/etc/ssl/certs/$(HOSTNAME).key
+ENV FEDBOX_CERT_PATH=/etc/ssl/certs/$(HOSTNAME).crt
 
 ADD ./ /go/src/app
 
