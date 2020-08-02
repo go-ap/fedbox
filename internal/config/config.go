@@ -90,10 +90,10 @@ func prefKey(k string) string {
 }
 
 func loadKeyFromEnv(name, def string) string {
-	if val := os.Getenv(name); len(val) > 0 {
+	if val := os.Getenv(prefKey(name)); len(val) > 0 {
 		return val
 	}
-	if val := os.Getenv(prefKey(name)); len(val) > 0 {
+	if val := os.Getenv(name); len(val) > 0 {
 		return val
 	}
 	return def
