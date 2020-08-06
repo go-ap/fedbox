@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-var Prefix = ""
+var Prefix = "fedbox"
 
 type BackendConfig struct {
 	Enabled bool
@@ -82,17 +82,27 @@ func (o Options) BadgerOAuth2() string {
 	return fmt.Sprintf("%s/%s/%s", o.StoragePath, o.Env, "oauth")
 }
 
-func k(k string) string {
+func prefKey(k string) string {
 	if Prefix != "" {
-		return fmt.Sprintf("%s_%s", Prefix, k)
+		return fmt.Sprintf("%s_%s", strings.ToUpper(Prefix), k)
 	}
 	return k
+}
+
+func loadKeyFromEnv(name, def string) string {
+	if val := os.Getenv(prefKey(name)); len(val) > 0 {
+		return val
+	}
+	if val := os.Getenv(name); len(val) > 0 {
+		return val
+	}
+	return def
 }
 
 func LoadFromEnv(e env.Type) (Options, error) {
 	conf := Options{}
 	if !env.ValidType(e) {
-		e = env.Type(os.Getenv(k(KeyENV)))
+		e = env.Type(loadKeyFromEnv(KeyENV, ""))
 	}
 	configs := []string{
 		".env",
@@ -111,7 +121,7 @@ func LoadFromEnv(e env.Type) (Options, error) {
 		appendIfFile(e)
 	}
 
-	lvl := os.Getenv(k(KeyLogLevel))
+	lvl := loadKeyFromEnv(KeyLogLevel, "")
 	switch strings.ToLower(lvl) {
 	case "trace":
 		conf.LogLevel = log.TraceLevel
@@ -132,25 +142,25 @@ func LoadFromEnv(e env.Type) (Options, error) {
 	}
 
 	if !env.ValidType(e) {
-		e = env.Type(os.Getenv(k(KeyENV)))
+		e = env.Type(loadKeyFromEnv(KeyENV, "dev"))
 	}
 	conf.Env = e
 	if conf.Host == "" {
-		conf.Host = os.Getenv(k(KeyHostname))
+		conf.Host = loadKeyFromEnv(KeyHostname, conf.Host)
 	}
-	conf.Secure, _ = strconv.ParseBool(os.Getenv(k(KeyHTTPS)))
+	conf.Secure, _ = strconv.ParseBool(loadKeyFromEnv(KeyHTTPS, "false"))
 	if conf.Secure {
 		conf.BaseURL = fmt.Sprintf("https://%s", conf.Host)
 	} else {
 		conf.BaseURL = fmt.Sprintf("http://%s", conf.Host)
 	}
-	conf.KeyPath = os.Getenv(k(KeyKeyPath))
-	conf.CertPath = os.Getenv(k(KeyCertPath))
+	conf.KeyPath = loadKeyFromEnv(KeyKeyPath, "")
+	conf.CertPath = loadKeyFromEnv(KeyCertPath, "")
 
-	conf.Listen = os.Getenv(k(KeyListen))
-	envStorage := os.Getenv(k(KeyStorage))
+	conf.Listen = loadKeyFromEnv(KeyListen, "")
+	envStorage := loadKeyFromEnv(KeyStorage, "")
 	conf.Storage = StorageType(strings.ToLower(envStorage))
-	conf.StoragePath = os.Getenv(k(KeyStoragePath))
+	conf.StoragePath = loadKeyFromEnv(KeyStoragePath, "")
 	if conf.StoragePath == "" {
 		conf.StoragePath = os.TempDir()
 	}
