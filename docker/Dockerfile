@@ -4,9 +4,7 @@ ARG ENV=dev
 ARG HOSTNAME=fedbox
 
 ENV GO111MODULE=on
-ENV FEDBOX_ENV=${ENV:-dev}
-ENV FEDBOX_KEY_PATH=/etc/ssl/certs/$(HOSTNAME).key
-ENV FEDBOX_CERT_PATH=/etc/ssl/certs/$(HOSTNAME).crt
+ENV ENV=${ENV:-dev}
 
 ADD ./ /go/src/app
 
@@ -15,17 +13,25 @@ RUN make ENV=${ENV} all
 
 FROM gcr.io/distroless/base
 
-ARG LISTEN=:4000
+ARG PORT=4000
 ARG ENV=dev
 
-EXPOSE $LISTEN
+ENV ENV=${ENV}
+ENV STORAGE_PATH=/storage
+ENV HTTPS=true
+ENV KEY_PATH=/etc/ssl/certs/fedbox.key
+ENV CERT_PATH=/etc/ssl/certs/fedbox.crt
+ENV STORAGE=fs
+ENV LISTEN=:${PORT}
+ENV HOSTNAME=fedbox
+
+EXPOSE $PORT
 
 VOLUME /storage
+VOLUME /.env
 
 COPY --from=builder /go/src/app/bin/* /bin/
-ADD ./docker/*.key /etc/ssl/certs/
-ADD ./docker/*.pem /etc/ssl/certs/
-
-ADD docker/.env.default /.env
+ADD ./docker/*.key /etc/ssl/certs/fedbox.key
+ADD ./docker/*.pem /etc/ssl/certs/fedbox.pem
 
 CMD ["/bin/fedbox"]
