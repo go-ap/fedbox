@@ -6,14 +6,18 @@ STORAGE_OBJECTS = $(STORAGE)/objects
 
 APPSOURCES := $(wildcard ../app/*.go ../activitypub/*.go ../internal/*/*.go ../cli/*/main.go ../cmd/*.go ../storage/*/*.go)
 
-#BUILD=buildah build-using-dockerfile
-#RUN=buildah run
-#TAG=buildah tag
-#PUSH=buildah push
-BUILD=docker build
-RUN=docker run
-TAG=docker tag
-PUSH=docker push
+HAVE_BUILDAH := $(shell buildah -v dot 2> /dev/null)
+ifdef HAVE_BUILDAH
+	BUILD=buildah build-using-dockerfile
+	RUN=buildah run
+	TAG=buildah tag
+	PUSH=buildah push
+else
+	BUILD=docker build
+	RUN=docker run
+	TAG=docker tag
+	PUSH=docker push
+endif
 
 .PHONY: clean build run cert
 
