@@ -120,6 +120,9 @@ func LoadFromEnv(e env.Type) (Options, error) {
 	} else {
 		appendIfFile(e)
 	}
+	for _, f := range configs {
+		godotenv.Overload(f)
+	}
 
 	lvl := loadKeyFromEnv(KeyLogLevel, "")
 	switch strings.ToLower(lvl) {
@@ -135,10 +138,6 @@ func LoadFromEnv(e env.Type) (Options, error) {
 		fallthrough
 	default:
 		conf.LogLevel = log.InfoLevel
-	}
-
-	for _, f := range configs {
-		godotenv.Overload(f)
 	}
 
 	if !env.ValidType(e) {
