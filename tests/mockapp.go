@@ -165,6 +165,13 @@ func getBoltDBStorage(opt config.Options, u *url.URL) storage.Repository {
 
 func getOAuthStorage(opt config.Options, u *url.URL) osin.Storage {
 	l := logrus.New()
+	if opt.Storage == config.StorageFS {
+		return auth.NewFSStore(auth.FSConfig{
+			Path:  opt.BaseStoragePath(),
+			LogFn: app.InfoLogFn(l),
+			ErrFn: app.ErrLogFn(l),
+		})
+	}
 	pathOauth := config.GetDBPath(opt.StoragePath, fmt.Sprintf("%s-oauth", u.Host), opt.Env)
 	if _, err := os.Stat(pathOauth); os.IsNotExist(err) {
 		err := auth.BootstrapBoltDB(pathOauth, []byte(host))

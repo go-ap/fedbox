@@ -3,10 +3,10 @@ package app
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"syscall"
 	"time"
 
@@ -98,11 +98,10 @@ func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin
 }
 
 func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	oauth := auth.NewBoltDBStore(auth.BoltConfig{
-		Path:       c.BoltDBOAuth2(),
-		BucketName: c.Host,
-		LogFn:      InfoLogFn(l),
-		ErrFn:      ErrLogFn(l),
+	oauth := auth.NewFSStore(auth.FSConfig{
+		Path:  path.Join(c.BaseStoragePath(), "oauth"),
+		LogFn: InfoLogFn(l),
+		ErrFn: ErrLogFn(l),
 	})
 	db, err := fs.New(c)
 	if err != nil {
@@ -140,7 +139,6 @@ func getStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Sto
 	case config.StorageFS:
 		return getFsStorage(c, l)
 	}
-	fmt.Printf("WTF: %s\n\n", c.Storage)
 	return nil, nil, errors.NotImplementedf("Invalid storage type %s", c.Storage)
 }
 

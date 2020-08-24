@@ -2,11 +2,13 @@ package config
 
 import (
 	"fmt"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/joho/godotenv"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -62,6 +64,27 @@ func clean(name string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(path.Clean(name), ".", "-"), ":", "-")
 }
 
+const defaultPerm = os.ModeDir | os.ModePerm | 0700
+
+func (o Options) BaseStoragePath() string {
+	if !filepath.IsAbs(o.StoragePath) {
+		o.StoragePath, _ = filepath.Abs(o.StoragePath)
+	}
+	basePath := path.Clean(path.Join(o.StoragePath, string(o.Env), o.Host))
+	fi, err := os.Stat(basePath)
+	if err != nil && os.IsNotExist(err) {
+		err = os.MkdirAll(basePath, defaultPerm)
+	}
+	if err != nil {
+		panic(err)
+	}
+	fi, err = os.Stat(basePath)
+	if !fi.IsDir() {
+		panic(errors.NotValidf("path %s is invalid for storage", o.StoragePath))
+	}
+	return basePath
+}
+
 func GetDBPath(dir, file string, env env.Type) string {
 	return fmt.Sprintf("%s/%s-%s.bdb", dir, clean(file), env)
 }
@@ -75,7 +98,7 @@ func (o Options) BoltDBOAuth2() string {
 }
 
 func (o Options) Badger() string {
-	return fmt.Sprintf("%s/%s/%s", o.StoragePath, o.Env, o.Host)
+	return o.BaseStoragePath()
 }
 
 func (o Options) BadgerOAuth2() string {

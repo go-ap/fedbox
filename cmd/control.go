@@ -93,14 +93,11 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 		}, conf.BaseURL)
 		return New(aDb, db, conf), nil
 	case config.StorageFS:
-		path := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ)
-		aDb = auth.NewBoltDBStore(auth.BoltConfig{
-			Path:       path,
-			BucketName: host,
-			LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
+		aDb = auth.NewFSStore(auth.FSConfig{
+			Path:  conf.BaseStoragePath(),
+			LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
+			ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
 		})
-		l.Printf("fs paths: %s %s\n", path, aDb)
 		db, err = fs.New(conf)
 		return New(aDb, db, conf), err
 	case config.StorageBadger:

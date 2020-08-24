@@ -8,7 +8,7 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
 	github.com/go-ap/activitypub v0.0.0-20200716195446-656c40c1a789
-	github.com/go-ap/auth v0.0.0-20200716184210-9594bb9b7b6a
+	github.com/go-ap/auth v0.0.0-20200824150440-17e5ce7d184e
 	github.com/go-ap/client v0.0.0-20200716195921-1f0c21684afc
 	github.com/go-ap/errors v0.0.0-20200702155720-f662512ba418
 	github.com/go-ap/handlers v0.0.0-20200716200214-53637e4f38c1
