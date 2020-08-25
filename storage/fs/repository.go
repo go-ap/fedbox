@@ -35,8 +35,6 @@ func getAbsStoragePath(p string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-	} else {
-		p = p
 	}
 	if fi, err := os.Stat(p); err != nil {
 		return "", err
@@ -617,12 +615,16 @@ func deleteCollections(r repo, it pub.Item) error {
 }
 
 func mkDirIfNotExists(p string) error {
-	if fi, err := os.Stat(p); err != nil {
-		if os.IsNotExist(err) {
-			if err = os.MkdirAll(p, os.ModeDir|os.ModePerm|0700); err != nil {
-				return err
-			}
-		}
+	fi, err := os.Stat(p)
+	if err != nil && os.IsNotExist(err) {
+		err = os.MkdirAll(p, os.ModeDir|os.ModePerm|0700)
+	}
+	if err != nil {
+		return err
+	}
+	fi, err = os.Stat(p)
+	if err != nil {
+		return err
 	} else if !fi.IsDir() {
 		return errors.Errorf("path exists, and is not a folder %s", p)
 	}
