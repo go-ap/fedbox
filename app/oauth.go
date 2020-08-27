@@ -26,7 +26,7 @@ type account struct {
 }
 
 func (a account) IsLogged() bool {
-	return a.actor != nil && a.actor.PreferredUsername.First().Value == a.username
+	return a.actor != nil && a.actor.PreferredUsername.First().Value.String() == a.username
 }
 
 func (a *account) FromActor(p *pub.Actor) {

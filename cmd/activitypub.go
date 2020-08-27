@@ -101,7 +101,7 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 		},
 		Updated: now,
 		PreferredUsername: pub.NaturalLanguageValues{
-			{pub.NilLangRef, preferredUsername},
+			{pub.NilLangRef, pub.Content(preferredUsername)},
 		},
 	}
 
@@ -185,7 +185,7 @@ func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string
 	d.CC = make(pub.ItemCollection, 0)
 	if reason != "" {
 		d.Content = pub.NaturalLanguageValuesNew()
-		d.Content.Append(pub.NilLangRef, reason)
+		d.Content.Append(pub.NilLangRef, pub.Content(reason))
 	}
 	if len(inReplyTo) > 0 {
 		replIRI := make(pub.ItemCollection, 0)

@@ -627,7 +627,7 @@ func filterNaturalLanguageValues(filters CompStrs, valArr ...pub.NaturalLanguage
 	}
 	for _, langValues := range valArr {
 		for _, langValue := range langValues {
-			if matchStringFilters(filters, langValue.Value) {
+			if matchStringFilters(filters, langValue.Value.String()) {
 				keep = true
 				break
 			}

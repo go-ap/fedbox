@@ -184,7 +184,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 	app.PreferredUsername = pub.NaturalLanguageValues{
 		{
 			Ref:   pub.NilLangRef,
-			Value: fmt.Sprintf("%s-%s", app.PreferredUsername.First().Value, id),
+			Value: pub.Content(fmt.Sprintf("%s-%s", app.PreferredUsername.First().Value, id)),
 		},
 	}
 	app.Endpoints = nil

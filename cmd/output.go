@@ -17,7 +17,7 @@ func outObject(o *pub.Object, b io.Writer) error {
 	b.Write(bytef("[%s] %s // %s", o.Type, o.ID, o.Published.Format(time.Stamp)))
 	if len(o.Name) > 0 {
 		for _, s := range o.Name {
-			ss := strings.Trim(s.Value, "\n\r\t ")
+			ss := strings.Trim(s.Value.String(), "\n\r\t ")
 			if s.Ref != pub.NilLangRef {
 				b.Write(bytef("\n\tName[%s]: %s", s.Ref, ss))
 			}
@@ -26,7 +26,7 @@ func outObject(o *pub.Object, b io.Writer) error {
 	}
 	if o.Summary != nil {
 		for _, s := range o.Summary {
-			ss := strings.Trim(s.Value, "\n\r\t ")
+			ss := strings.Trim(s.Value.String(), "\n\r\t ")
 			if s.Ref != pub.NilLangRef {
 				b.Write(bytef("\n\tSummary[%s]: %s", s.Ref, ss))
 			}
@@ -35,7 +35,7 @@ func outObject(o *pub.Object, b io.Writer) error {
 	}
 	if o.Content != nil {
 		for _, c := range o.Content {
-			cc := strings.Trim(c.Value, "\n\r\t ")
+			cc := strings.Trim(c.Value.String(), "\n\r\t ")
 			if c.Ref != pub.NilLangRef {
 				b.Write(bytef("\n\tContent[%s]: %s", c.Ref, cc))
 			}
@@ -73,7 +73,7 @@ func outActor(a *pub.Actor, b io.Writer) error {
 	}
 	if len(a.PreferredUsername) > 0 {
 		for _, s := range a.PreferredUsername {
-			ss := strings.Trim(s.Value, "\n\r\t ")
+			ss := strings.Trim(s.Value.String(), "\n\r\t ")
 			if s.Ref != pub.NilLangRef {
 				b.Write(bytef("\n\tPreferredUsername[%s]: %s", s.Ref, ss))
 			}
