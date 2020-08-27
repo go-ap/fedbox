@@ -97,7 +97,7 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 		Generator:    self.GetLink(),
 		Published:    now,
 		Summary: pub.NaturalLanguageValues{
-			{pub.NilLangRef, "Generated actor"},
+			{pub.NilLangRef, pub.Content("Generated actor")},
 		},
 		Updated: now,
 		PreferredUsername: pub.NaturalLanguageValues{

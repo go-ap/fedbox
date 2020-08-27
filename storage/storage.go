@@ -19,3 +19,8 @@ type MetadataTyper interface {
 	LoadMetadata (pub.IRI) (*Metadata, error)
 	SaveMetadata (Metadata, pub.IRI) error
 }
+
+type MimeTypeSaver interface {
+	SaveNaturalLanguageValues(pub.NaturalLanguageValues) error
+	SaveMimeTypeContent(pub.MimeType, pub.NaturalLanguageValues) error
+}

@@ -70,7 +70,7 @@ func TestSelf(t *testing.T) {
 	if s.Type != pub.ServiceType {
 		t.Errorf("Invalid Type %s, expected %s", s.Type, pub.ServiceType)
 	}
-	if s.Name.First().Value != "self" {
+	if !s.Name.First().Value.Equals(pub.Content("self")) {
 		t.Errorf("Invalid Name %s, expected %s", s.Name, "self")
 	}
 	if s.AttributedTo.GetLink() != "https://github.com/mariusor" {
@@ -91,7 +91,7 @@ func TestSelf(t *testing.T) {
 	if s.Location != nil {
 		t.Errorf("Invalid Location %s, expected %v", s.Location, nil)
 	}
-	if s.Summary.First().Value != "Generic ActivityPub service" {
+	if !s.Summary.First().Value.Equals(pub.Content("Generic ActivityPub service")) {
 		t.Errorf("Invalid Summary %s, expected %v", s.Summary, "Generic ActivityPub service")
 	}
 	if s.Tag != nil {
