@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
 	"syscall"
 	"time"
 
@@ -99,7 +98,7 @@ func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin
 
 func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	oauth := auth.NewFSStore(auth.FSConfig{
-		Path:  path.Join(c.BaseStoragePath(), "oauth"),
+		Path:  c.BaseStoragePath(),
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),
 	})
