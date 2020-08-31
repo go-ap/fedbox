@@ -14,7 +14,9 @@ ENV ?= dev
 LDFLAGS ?= -X main.version=$(VERSION)
 BUILDFLAGS ?= -trimpath -a -ldflags '$(LDFLAGS)'
 APPSOURCES := $(wildcard app/*.go storage/*/*.go activitypub/*.go internal/*/*.go cmd/*.go)
+ASSETFILES := $(wildcard templates/*)
 PROJECT_NAME := $(shell basename $(PWD))
+APPSOURCES += internal/assets/assets.gen.go
 
 ifneq ($(ENV), dev)
 	LDFLAGS += -s -w -extldflags "-static"
@@ -33,6 +35,9 @@ TEST := $(GO) test $(BUILDFLAGS)
 .PHONY: all run clean test coverage integration
 
 all: fedbox ctl
+
+internal/assets/assets.gen.go: $(ASSETFILES)
+	go generate -tags $(ENV) ./assets.go
 
 fedbox: bin/fedbox
 bin/fedbox: go.mod cli/fedbox/main.go $(APPSOURCES)

@@ -3,6 +3,8 @@ module github.com/go-ap/fedbox
 go 1.14
 
 require (
+	aletheia.icu/broccoli v1.0.4-0.20200506212414-5bc1e2f86a59 // indirect
+	aletheia.icu/broccoli/fs v0.0.0-20200420162907-e7ff440cf358
 	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect

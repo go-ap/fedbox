@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-ap/fedbox/internal/assets"
 	"html/template"
 	"net/http"
 	"time"
@@ -260,7 +261,8 @@ func (h *oauthHandler) renderTemplate(r *http.Request, w http.ResponseWriter, na
 	var err error
 
 	ren := render.New(render.Options{
-		Directory:  "templates/",
+		AssetNames: assets.Files,
+		Asset:      assets.Template,
 		Extensions: []string{".html"},
 		Funcs: []template.FuncMap{{
 			"HTTPErrors": func(err error) []errors.Http { _, errs := errors.HttpErrors(err); return errs },

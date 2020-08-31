@@ -10,3 +10,4 @@ bin/*
 *.coverprofile
 *.bdb
 .cache
+internal/assets/assets.gen.go
