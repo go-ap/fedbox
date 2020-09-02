@@ -44,7 +44,7 @@ func (f FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) fu
 		}
 		r.Route("/oauth", func(r chi.Router) {
 			// Authorization code endpoint
-			r.Get("/authorize", h.Authorize)
+			r.Get("/authorize", h.ShowLogin)
 			r.Post("/authorize", h.Authorize)
 			// Access token endpoint
 			r.Post("/token", h.Token)
@@ -52,7 +52,6 @@ func (f FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) fu
 			r.Group(func(r chi.Router) {
 				r.Get("/login", h.ShowLogin)
 				r.Post("/login", h.HandleLogin)
-				r.Get("/callback", h.HandleCallback)
 				r.Get("/pw", h.ShowChangePw)
 				r.Post("/pw", h.HandleChangePw)
 			})

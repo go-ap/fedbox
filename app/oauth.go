@@ -44,20 +44,53 @@ type oauthHandler struct {
 
 var scopeAnonymousUserCreate = "anonUserCreate"
 
+func (h *oauthHandler) loadAccountFromPost(r *http.Request) (*account, error) {
+	pw := r.PostFormValue("pw")
+	handle := r.PostFormValue("handle")
+
+	h.logger.WithFields(logrus.Fields{
+		"handle": handle,
+		"pass":   pw,
+	}).Info("received")
+
+	a := activitypub.Self(pub.IRI(h.baseURL))
+
+	f := activitypub.FiltersNew()
+	f.Name = activitypub.CompStrs{activitypub.CompStr{Str: handle}}
+	f.IRI = activitypub.ActorsType.IRI(a)
+	f.Type = []pub.ActivityVocabularyType{
+		pub.PersonType,
+	}
+	actors, count, err := h.loader.LoadActors(f)
+	if err != nil || count == 0 {
+		return nil, errUnauthorized
+	}
+
+	if pwLoader, ok := h.loader.(st.PasswordChanger); ok {
+		for _, actor := range actors {
+			act, err := checkPw(actor, []byte(pw), pwLoader)
+			if err == nil {
+				return act, nil
+			}
+		}
+	}
+	return nil, errUnauthorized
+}
+
 func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	s := h.os
-
-	acc := AnonymousAcct
-	if actor, ok := auth.ActorContext(r.Context()); ok {
-		acc.actor = &actor
-	}
 
 	resp := s.NewResponse()
 	defer resp.Close()
 
 	var overrideRedir = false
 	if ar := s.HandleAuthorizeRequest(resp, r); ar != nil {
-		if acc.IsLogged() {
+		acc, err := h.loadAccountFromPost(r)
+		if err != nil {
+			errors.HandleError(err).ServeHTTP(w, r)
+			return
+		}
+		if acc != nil {
 			ar.Authorized = true
 			ar.UserData = acc.actor.GetLink()
 		} else {
@@ -85,8 +118,8 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	redirectOrOutput(resp, w, r)
 }
 
-func checkPw(it pub.Item, pw []byte, pwLoader st.PasswordChanger) (account, error) {
-	acc := account{}
+func checkPw(it pub.Item, pw []byte, pwLoader st.PasswordChanger) (*account, error) {
+	acc := new(account)
 	err := pub.OnActor(it, func(p *pub.Actor) error {
 		err := pwLoader.PasswordCheck(p, pw)
 		if err != nil {
@@ -105,7 +138,7 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 	resp := s.NewResponse()
 	defer resp.Close()
 
-	acc := AnonymousAcct
+	acc := &AnonymousAcct
 	if ar := s.HandleAccessRequest(resp, r); ar != nil {
 		actorFilters := activitypub.FiltersNew()
 		switch ar.Type {
@@ -144,7 +177,7 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		}
 		if ar.Type == osin.AUTHORIZATION_CODE && len(actors) == 1 {
 			pub.OnActor(actors.First(), func(p *pub.Actor) error {
-				acc = account{}
+				acc = new(account)
 				acc.FromActor(p)
 				ar.Authorized = acc.IsLogged()
 				ar.UserData = acc.actor.GetLink()
@@ -302,50 +335,14 @@ var errUnauthorized = errors.Unauthorizedf("Invalid username or password")
 
 // ShowLogin handles POST /login requests
 func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	a := activitypub.Self(pub.IRI(h.baseURL))
-
-	pw := r.PostFormValue("pw")
-	handle := r.PostFormValue("handle")
-	client := r.PostFormValue("client")
-	state := r.PostFormValue("state")
-
-	h.logger.WithFields(logrus.Fields{
-		"handle": handle,
-		"pass":   pw,
-		"client": client,
-		"state":  state,
-	}).Info("received")
-
-	f := activitypub.FiltersNew()
-	f.Name = activitypub.CompStrs{activitypub.CompStr{Str: handle}}
-	f.IRI = activitypub.ActorsType.IRI(a)
-	f.Type = []pub.ActivityVocabularyType{
-		pub.PersonType,
-	}
-	actors, count, err := h.loader.LoadActors(f)
-	if err != nil || count == 0 {
-		errors.HandleError(errUnauthorized).ServeHTTP(w, r)
+	acc, err := h.loadAccountFromPost(r)
+	if err != nil {
+		errors.HandleError(err).ServeHTTP(w, r)
 		return
 	}
-
-	if pwLoader, ok := h.loader.(st.PasswordChanger); ok {
-		found := false
-		for _, actor := range actors {
-			_, err := checkPw(actor, []byte(pw), pwLoader)
-			if err == nil {
-				found = true
-				break
-			}
-			if !found {
-				if err == nil {
-					err = errUnauthorized
-				}
-				h.logger.Error(err)
-				errors.HandleError(err).ServeHTTP(w, r)
-				return
-			}
-		}
-	}
+	client := r.PostFormValue("client")
+	state := r.PostFormValue("state")
+	a := acc.actor
 	config := oauth2.Config{
 		ClientID: client,
 		Endpoint: oauth2.Endpoint{
@@ -365,9 +362,6 @@ type OAuth struct {
 	Expiry       time.Time
 	State        string
 }
-
-// HandleCallback serves /auth/callback request
-func (h *oauthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {}
 
 type pwChange struct {
 	title   string
