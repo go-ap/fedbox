@@ -36,6 +36,8 @@ TEST := $(GO) test $(BUILDFLAGS)
 
 all: fedbox ctl
 
+assets: internal/assets/assets.gen.go
+
 internal/assets/assets.gen.go: $(ASSETFILES)
 	go generate -tags $(ENV) ./assets.go
 
