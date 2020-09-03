@@ -645,9 +645,15 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 		return it, errors.Annotatef(err, "could not marshal object")
 	}
 
+	if err := mkDirIfNotExists(itPath); err != nil {
+		r.errFn("unable to create path: %s, %s", itPath, err)
+		return it, errors.Annotatef(err, "could not create file")
+	}
+	objPath := getObjectKey(itPath)
 	// create json file
-	f, err := os.Create(getObjectKey(itPath))
+	f, err := os.Create(objPath)
 	if err != nil {
+		r.errFn("unable to create file path: %s, %s", objPath, err)
 		return it, errors.Annotatef(err, "could not create file")
 	}
 	defer f.Close()
