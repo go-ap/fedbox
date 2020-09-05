@@ -10,13 +10,13 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
 	github.com/go-ap/activitypub v0.0.0-20200830140334-e0b519daad28
-	github.com/go-ap/auth v0.0.0-20200827150515-985b0fec1569
+	github.com/go-ap/auth v0.0.0-20200830140729-0567f7e020e9
 	github.com/go-ap/client v0.0.0-20200830140528-47b46740241a
 	github.com/go-ap/errors v0.0.0-20200702155720-f662512ba418
-	github.com/go-ap/handlers v0.0.0-20200827150601-7213521c2577
+	github.com/go-ap/handlers v0.0.0-20200830140800-f769ff168629
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20200827150658-d59c0191d300
-	github.com/go-ap/storage v0.0.0-20200827150308-f14f3650b1e3
+	github.com/go-ap/processing v0.0.0-20200830140835-dba528eb6ed9
+	github.com/go-ap/storage v0.0.0-20200830140640-73cfa1d1477b
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/protobuf v1.3.4 // indirect
 	github.com/google/uuid v1.1.2 // indirect
@@ -33,7 +33,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20200831180312-196b9ba8737a // indirect
+	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717
 )
