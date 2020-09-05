@@ -10,20 +10,23 @@ ADD ./ /go/src/app
 
 WORKDIR /go/src/app
 RUN make ENV=${ENV} all
+RUN docker/gen-certs.sh ${HOSTNAME}
+
 
 FROM gcr.io/distroless/base
 
 ARG PORT=4000
 ARG ENV=dev
+ARG HOSTNAME=fedbox
 
-ENV ENV=${ENV}
+ENV ENV=${ENV:-dev}
 ENV STORAGE_PATH=/storage
-ENV HTTPS=true
-ENV KEY_PATH=/etc/ssl/certs/fedbox.key
-ENV CERT_PATH=/etc/ssl/certs/fedbox.crt
-ENV STORAGE=fs
+ENV HOSTNAME=${HOSTNAME:-fedbox}
 ENV LISTEN=:${PORT}
-ENV HOSTNAME=fedbox
+ENV KEY_PATH=/etc/ssl/certs/${HOSTNAME:-fedbox}.key
+ENV CERT_PATH=/etc/ssl/certs/${HOSTNAME:-fedbox}.crt
+ENV HTTPS=true
+ENV STORAGE=fs
 
 EXPOSE $PORT
 
@@ -31,7 +34,6 @@ VOLUME /storage
 VOLUME /.env
 
 COPY --from=builder /go/src/app/bin/* /bin/
-ADD ./docker/*.key /etc/ssl/certs/fedbox.key
-ADD ./docker/*.pem /etc/ssl/certs/fedbox.pem
+COPY --from=builder /go/src/app/*.key /go/src/app/*.crt /go/src/app/*.pem /etc/ssl/certs/
 
 CMD ["/bin/fedbox"]

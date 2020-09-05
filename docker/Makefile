@@ -6,10 +6,10 @@ STORAGE_OBJECTS = $(STORAGE)/objects
 
 APPSOURCES := $(wildcard ../app/*.go ../activitypub/*.go ../internal/*/*.go ../cli/*/main.go ../cmd/*.go ../storage/*/*.go)
 
-HAVE_BUILDAH := $(shell buildah -v dot 2> /dev/null)
+HAVE_BUILDAH := $(shell buildah1 -v dot 2> /dev/null)
 ifdef HAVE_BUILDAH
-	BUILD=buildah build-using-dockerfile
-	RUN=buildah run
+	BUILD=buildah bud
+	RUN=docker run
 	TAG=buildah tag
 	PUSH=buildah push
 else
@@ -21,19 +21,15 @@ endif
 
 .PHONY: clean build run cert
 
-$(HOSTNAME).key $(HOSTNAME).crt:
-	openssl req -subj "/C=AQ/ST=Omond/L=Omond/O=$(HOSTNAME)/OU=none/CN=$(HOSTNAME)" \
-	-newkey rsa:2048 -sha256 -keyout $(HOSTNAME).key -nodes -x509 -days 365 -out $(HOSTNAME).crt
-
-$(HOSTNAME).pem: $(HOSTNAME).key $(HOSTNAME).crt
-	cat $(HOSTNAME).key $(HOSTNAME).crt > $(HOSTNAME).pem
+$(HOSTNAME).pem:
+	./gen-certs.sh $(HOSTNAME)
 
 cert: $(HOSTNAME).pem
 
 clean:
 	@-$(RM) $(HOSTNAME).{key,crt,pem}
 
-build: cert
+build:
 	$(BUILD) --build-arg ENV=$(ENV) --build-arg PORT=$(PORT) -f Dockerfile -t $(HOSTNAME)/app:$(ENV) ..
 
 storage: $(STORAGE)
@@ -54,7 +50,7 @@ bootstrap: storage
 
 run: build $(STORAGE_OBJECTS)
 	$(RUN) -v $(STORAGE):/storage \
-		-v $(realpath ../.env.dev):/.env \
+		-v $(realpath ./.env.default):/.env \
 		-p $(PORT):$(PORT) \
 		-e ENV=$(ENV) \
 		-e LISTEN=:$(PORT) \
