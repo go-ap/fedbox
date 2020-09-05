@@ -184,8 +184,11 @@ func (f FedBOX) Config() config.Options {
 func setupHttpServer(conf config.Options, m http.Handler, ctx context.Context) (func(LogFn), func(LogFn)) {
 	// TODO(marius): move server run to a separate function, so we can add other tasks that can run independently.
 	//   Like a queue system for lazy loading of IRIs.
-	var serveFn func() error
-	var srv *http.Server
+	var serveFn func(LogFn) error
+	srv := &http.Server{
+		Addr:    conf.Listen,
+		Handler: m,
+	}
 	fileExists := func(dir string) bool {
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			return false
@@ -194,36 +197,32 @@ func setupHttpServer(conf config.Options, m http.Handler, ctx context.Context) (
 	}
 
 	if conf.Secure && fileExists(conf.CertPath) && fileExists(conf.KeyPath) {
-		srv = &http.Server{
-			Addr:    conf.Listen,
-			Handler: m,
-			TLSConfig: &tls.Config{
-				MinVersion:               tls.VersionTLS12,
-				CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-				PreferServerCipherSuites: true,
-				CipherSuites: []uint16{
-					tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-					tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-					tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-					tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-					tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-				},
+		srv.TLSConfig = &tls.Config{
+			MinVersion:               tls.VersionTLS12,
+			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+			PreferServerCipherSuites: true,
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 			},
 		}
-		serveFn = func() error {
+		serveFn = func(l LogFn) error {
+			l("Listening on HTTPS %s", conf.Listen)
 			return srv.ListenAndServeTLS(conf.CertPath, conf.KeyPath)
 		}
 	} else {
-		srv = &http.Server{
-			Addr:    conf.Listen,
-			Handler: m,
+		serveFn = func(l LogFn) error {
+			l("Listening on HTTP %s", conf.Listen)
+			return srv.ListenAndServe()
 		}
-		serveFn = srv.ListenAndServe
 	}
 
 	run := func(l LogFn) {
-		if err := serveFn(); err != nil {
+		if err := serveFn(l); err != nil {
 			if l != nil {
 				l("%s", err)
 			}
@@ -283,8 +282,6 @@ func (f *FedBOX) Stop() {
 
 // Run is the wrapper for starting the web-server and handling signals
 func (f *FedBOX) Run(m http.Handler, wait time.Duration) int {
-	f.infFn("Listening on %s", f.conf.Listen)
-
 	// Create a deadline to wait for.
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
