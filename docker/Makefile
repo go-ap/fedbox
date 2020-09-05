@@ -6,7 +6,7 @@ STORAGE_OBJECTS = $(STORAGE)/objects
 
 APPSOURCES := $(wildcard ../app/*.go ../activitypub/*.go ../internal/*/*.go ../cli/*/main.go ../cmd/*.go ../storage/*/*.go)
 
-HAVE_BUILDAH := $(shell buildah1 -v dot 2> /dev/null)
+HAVE_BUILDAH := $(shell buildah -v dot 2> /dev/null)
 ifdef HAVE_BUILDAH
 	BUILD=buildah bud
 	RUN=docker run
