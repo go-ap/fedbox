@@ -650,11 +650,9 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 		return it, errors.Annotatef(err, "could not create file")
 	}
 	objPath := getObjectKey(itPath)
-	// create json file
-	f, err := os.Create(objPath)
+	f, err := os.OpenFile(objPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		r.errFn("unable to create file path: %s, %s", objPath, err)
-		return it, errors.Annotatef(err, "could not create file")
+		return it, err
 	}
 	defer f.Close()
 	wrote, err := f.Write(entryBytes)
