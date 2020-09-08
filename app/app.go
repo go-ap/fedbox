@@ -181,10 +181,10 @@ func (f FedBOX) Config() config.Options {
 	return f.conf
 }
 
-func setupHttpServer(conf config.Options, m http.Handler, ctx context.Context) (func(LogFn), func(LogFn)) {
+func setupHttpServer(conf config.Options, m http.Handler, ctx context.Context) (func(LogFn, LogFn), func(LogFn, LogFn)) {
 	// TODO(marius): move server run to a separate function, so we can add other tasks that can run independently.
 	//   Like a queue system for lazy loading of IRIs.
-	var serveFn func(LogFn) error
+	var serveFn func(LogFn, LogFn) error
 	srv := &http.Server{
 		Addr:    conf.Listen,
 		Handler: m,
@@ -210,36 +210,32 @@ func setupHttpServer(conf config.Options, m http.Handler, ctx context.Context) (
 				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 			},
 		}
-		serveFn = func(l LogFn) error {
-			l("Listening on HTTPS %s", conf.Listen)
+		serveFn = func(infoFn LogFn, errFn LogFn) error {
+			infoFn("Listening on HTTPS %s", conf.Listen)
 			return srv.ListenAndServeTLS(conf.CertPath, conf.KeyPath)
 		}
 	} else {
-		serveFn = func(l LogFn) error {
-			l("Listening on HTTP %s", conf.Listen)
+		serveFn = func(infoFn LogFn, errFn LogFn) error {
+			infoFn("Listening on HTTP %s", conf.Listen)
 			return srv.ListenAndServe()
 		}
 	}
 
-	run := func(l LogFn) {
-		if err := serveFn(l); err != nil {
-			if l != nil {
-				l("%s", err)
-			}
+	run := func(infoFn LogFn, errFn LogFn) {
+		if err := serveFn(infoFn, errFn); err != nil {
+			errFn("%s", err)
 			os.Exit(1)
 		}
 	}
 
-	stop := func(l LogFn) {
+	stop := func(infoFn LogFn, errFn LogFn) {
 		err := srv.Shutdown(ctx)
-		if err != nil && l != nil {
-			l("%s", err)
+		if err != nil {
+			errFn("%s", err)
 		}
 		select {
 		case <-ctx.Done():
-			if l != nil {
-				l("%s", ctx.Err())
-			}
+			errFn("%s", ctx.Err())
 		}
 	}
 	// Run our server in a goroutine so that it doesn't block.
@@ -291,11 +287,11 @@ func (f *FedBOX) Run(m http.Handler, wait time.Duration) int {
 	// Get start/stop functions for the http server
 	srvRun, srvStop := setupHttpServer(f.conf, m, ctx)
 	f.stopFn = func() {
-		srvStop(f.infFn)
+		srvStop(f.infFn, f.errFn)
 		f.OAuthStorage.Close()
 		f.Storage.Close()
 	}
-	go srvRun(f.errFn)
+	go srvRun(f.infFn, f.errFn)
 
 	// Add signal handlers
 	sigChan := make(chan os.Signal, 1)
@@ -305,7 +301,7 @@ func (f *FedBOX) Run(m http.Handler, wait time.Duration) int {
 	code := <-exitChan
 
 	// Doesn't block if no connections, but will otherwise wait until the timeout deadline.
-	go srvStop(f.errFn)
+	go srvStop(f.infFn, f.errFn)
 	f.infFn("Shutting down")
 
 	return code
