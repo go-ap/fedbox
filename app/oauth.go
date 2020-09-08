@@ -3,13 +3,13 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox/internal/assets"
 	"html/template"
 	"net/http"
 	"time"
 
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	st "github.com/go-ap/fedbox/storage"
@@ -85,15 +85,7 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 
 	var overrideRedir = false
 	if ar := s.HandleAuthorizeRequest(resp, r); ar != nil {
-		acc, err := h.loadAccountFromPost(r)
-		if err != nil {
-			errors.HandleError(err).ServeHTTP(w, r)
-			return
-		}
-		if acc != nil {
-			ar.Authorized = true
-			ar.UserData = acc.actor.GetLink()
-		} else {
+		if r.Method == http.MethodGet {
 			if ar.Scope == scopeAnonymousUserCreate {
 				// FIXME(marius): this seems like a way to backdoor our selves, we need a better way
 				ar.Authorized = true
@@ -101,6 +93,7 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 				iri := ar.HttpRequest.URL.Query().Get("actor")
 				ar.UserData = iri
 			} else {
+				// this is basically the login page, with client being set
 				m := login{title: "Login"}
 				m.account = auth.AnonymousActor
 				m.client = ar.Client.GetId()
@@ -108,6 +101,16 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 
 				h.renderTemplate(r, w, "login", m)
 				return
+			}
+		} else {
+			acc, err := h.loadAccountFromPost(r)
+			if err != nil {
+				errors.HandleError(err).ServeHTTP(w, r)
+				return
+			}
+			if acc != nil {
+				ar.Authorized = true
+				ar.UserData = acc.actor.GetLink()
 			}
 		}
 		s.FinishAuthorizeRequest(resp, r, ar)
