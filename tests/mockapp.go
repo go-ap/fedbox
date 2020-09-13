@@ -163,28 +163,51 @@ func getBoltDBStorage(opt config.Options, u *url.URL) storage.Repository {
 	}, u.String())
 }
 
-func getOAuthStorage(opt config.Options, u *url.URL) osin.Storage {
+func getOAuthBadgerStorage(opt config.Options, u *url.URL) osin.Storage {
 	l := logrus.New()
-	if opt.Storage == config.StorageFS {
-		return auth.NewFSStore(auth.FSConfig{
-			Path:  opt.BaseStoragePath(),
-			LogFn: app.InfoLogFn(l),
-			ErrFn: app.ErrLogFn(l),
-		})
-	}
+	return auth.NewBadgerStore(auth.BadgerConfig{
+		Path:  opt.BaseStoragePath(),
+		Host:  opt.Host,
+		LogFn: app.InfoLogFn(l),
+		ErrFn: app.ErrLogFn(l),
+	})
+}
+
+func getOAuthFsStorage(opt config.Options, u *url.URL) osin.Storage {
+	l := logrus.New()
+	return auth.NewFSStore(auth.FSConfig{
+		Path:  opt.BaseStoragePath(),
+		LogFn: app.InfoLogFn(l),
+		ErrFn: app.ErrLogFn(l),
+	})
+}
+
+func getOAuthBoltdbStorage(opt config.Options, u *url.URL) osin.Storage {
 	pathOauth := config.GetDBPath(opt.StoragePath, fmt.Sprintf("%s-oauth", u.Host), opt.Env)
+	l := logrus.New()
 	if _, err := os.Stat(pathOauth); os.IsNotExist(err) {
 		err := auth.BootstrapBoltDB(pathOauth, []byte(host))
 		if err != nil {
 			l.Errorf("Unable to create missing boltdb file %s: %s", pathOauth, err)
 		}
 	}
+
 	return auth.NewBoltDBStore(auth.BoltConfig{
 		Path:       pathOauth,
 		BucketName: u.Host,
 		LogFn:      app.InfoLogFn(l),
 		ErrFn:      app.ErrLogFn(l),
 	})
+}
+
+func getOAuthStorage(opt config.Options, u *url.URL) osin.Storage {
+	if opt.Storage == config.StorageBoltDB {
+		return getOAuthBoltdbStorage(opt, u)
+	}
+	if opt.Storage == config.StorageBadger {
+		return getOAuthBadgerStorage(opt, u)
+	}
+	return getOAuthFsStorage(opt, u)
 }
 
 func getStorage(opt config.Options, u *url.URL) (storage.Repository, error) {
@@ -194,10 +217,7 @@ func getStorage(opt config.Options, u *url.URL) (storage.Repository, error) {
 	if opt.Storage == config.StorageBadger {
 		return getBadgerStorage(opt, u), nil
 	}
-	if opt.Storage == config.StorageFS {
-		return getFsStorage(opt, u)
-	}
-	return nil, nil
+	return getFsStorage(opt, u)
 }
 
 func runAPP(e env.Type) int {
