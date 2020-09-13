@@ -11,7 +11,7 @@ require (
 	github.com/gchaincl/dotsql v1.0.0
 	github.com/go-ap/activitypub v0.0.0-20200830140334-e0b519daad28
 	github.com/go-ap/auth v0.0.0-20200830140729-0567f7e020e9
-	github.com/go-ap/client v0.0.0-20200830140528-47b46740241a
+	github.com/go-ap/client v0.0.0-20200909115600-ad8ab62d361c
 	github.com/go-ap/errors v0.0.0-20200702155720-f662512ba418
 	github.com/go-ap/handlers v0.0.0-20200830140800-f769ff168629
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660

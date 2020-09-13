@@ -174,7 +174,12 @@ func ValidateRequest(r *http.Request) (bool, error) {
 func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 	errLogger := client.LogFn(fb.errFn)
 	infoLogger := client.LogFn(fb.infFn)
-
+	clientErrLogger := func(...client.Ctx) client.LogFn {
+		return errLogger
+	}
+	clientInfoLogger := func(...client.Ctx) client.LogFn {
+		return infoLogger
+	}
 	return func(typ h.CollectionType, r *http.Request, repo storage.Repository) (pub.Item, int, error) {
 		var it pub.Item
 
@@ -198,8 +203,8 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 		processor, validator, err := processing.New(
 			processing.SetIRI(pub.IRI(Config.BaseURL)),
 			processing.SetClient(client.New(
-				client.SetInfoLogger(infoLogger),
-				client.SetErrorLogger(errLogger),
+				client.SetInfoLogger(clientInfoLogger),
+				client.SetErrorLogger(clientErrLogger),
 			)),
 			processing.SetStorage(repo),
 			processing.SetInfoLogger(infoLogger),
