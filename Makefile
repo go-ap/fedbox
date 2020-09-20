@@ -6,6 +6,7 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 TEST_FLAGS ?= -v
 LOCAL_HOSTNAME ?= fedbox.git
+STORAGE ?= storage_all
 
 export CGO_ENABLED=0
 export VERSION=(unknown)
@@ -17,6 +18,7 @@ APPSOURCES := $(wildcard app/*.go storage/*/*.go activitypub/*.go internal/*/*.g
 ASSETFILES := $(wildcard templates/*)
 PROJECT_NAME := $(shell basename $(PWD))
 APPSOURCES += internal/assets/assets.gen.go
+TAGS := $(ENV) $(STORAGE)
 
 ifneq ($(ENV), dev)
 	LDFLAGS += -s -w -extldflags "-static"
@@ -39,15 +41,15 @@ all: fedbox ctl
 assets: internal/assets/assets.gen.go
 
 internal/assets/assets.gen.go: $(ASSETFILES)
-	go generate -tags $(ENV) ./assets.go
+	go generate -tags "$(TAGS)" ./assets.go
 
 fedbox: bin/fedbox
 bin/fedbox: go.mod cli/fedbox/main.go $(APPSOURCES)
-	$(BUILD) -tags $(ENV) -o $@ ./cli/fedbox/main.go
+	$(BUILD) -tags "$(TAGS)" -o $@ ./cli/fedbox/main.go
 
 ctl: bin/ctl
 bin/ctl: go.mod cli/control/main.go $(APPSOURCES)
-	$(BUILD) -tags $(ENV) -o $@ ./cli/control/main.go
+	$(BUILD) -tags "$(TAGS)" -o $@ ./cli/control/main.go
 
 run: fedbox
 	@./bin/fedbox
@@ -59,7 +61,7 @@ clean:
 
 test: TEST_TARGET := ./{activitypub,app,storage,internal,cmd}/...
 test:
-	$(TEST) $(TEST_FLAGS) $(TEST_TARGET)
+	$(TEST) $(TEST_FLAGS) -tags "$(STORAGE)" $(TEST_TARGET)
 
 coverage: TEST_TARGET := .
 coverage: TEST_FLAGS += -covermode=count -coverprofile $(PROJECT_NAME).coverprofile

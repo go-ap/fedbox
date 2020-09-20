@@ -1,3 +1,5 @@
+// +build storage_boltdb storage_all
+
 package boltdb
 
 import (

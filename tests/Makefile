@@ -10,6 +10,6 @@ clean:
 
 test: clean
 	mkdir -p .cache
-	STORAGE=$(STORAGE) $(TEST) ./...
+	STORAGE=$(STORAGE) $(TEST) -tags storage_all ./...
 
 integration: test

@@ -1,3 +1,5 @@
+// +build storage_badger storage_all
+
 package badger
 
 type logger struct {

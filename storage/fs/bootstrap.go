@@ -1,3 +1,5 @@
+// +build !storage_boltdb,!storage_badger,!storage_pgx
+
 package fs
 
 import (

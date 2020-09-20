@@ -1,3 +1,5 @@
+// +build storage_pgx storage_all
+
 package pgx
 
 import "testing"
