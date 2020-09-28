@@ -17,7 +17,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
-	"io"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
@@ -27,18 +27,10 @@ import (
 )
 
 func loadMockJson(file string, model interface{}) func() string {
-	f, err := os.Open(file)
+	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		return func() string { return "" }
 	}
-
-	st, err := f.Stat()
-	if err != nil {
-		return func() string { return "" }
-	}
-
-	data := make([]byte, st.Size())
-	io.ReadFull(f, data)
 	data = bytes.Trim(data, "\x00")
 
 	t := template.Must(template.New(fmt.Sprintf("mock_%s", path.Base(file))).Parse(string(data)))

@@ -697,24 +697,7 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(p string) error) er
 }
 
 func loadRawFromPath(itPath string) ([]byte, error) {
-	f, err := os.Open(itPath)
-	defer f.Close()
-	if err != nil {
-		return nil, errors.Annotatef(err, "Unable find path %s", itPath)
-	}
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, errors.Annotatef(err, "Unable stat file at path %s", itPath)
-	}
-	raw := make([]byte, fi.Size())
-	cnt, err := f.Read(raw)
-	if err != nil {
-		return nil, errors.Annotatef(err, "Unable read file at path %s", itPath)
-	}
-	if cnt != len(raw) {
-		return nil, errors.Annotatef(err, "Unable read the whole file at path %s", itPath)
-	}
-	return raw, nil
+	return ioutil.ReadFile(itPath)
 }
 
 func loadFromRaw(raw []byte) (pub.Item, error) {
