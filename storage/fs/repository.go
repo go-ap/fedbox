@@ -56,8 +56,13 @@ func New(c config.Options) (*repo, error) {
 	if err := mkDirIfNotExists(p); err != nil {
 		return nil, err
 	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
 	b := repo{
 		path:    p,
+		cwd:     cwd,
 		baseURL: c.BaseURL,
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
@@ -68,18 +73,19 @@ func New(c config.Options) (*repo, error) {
 type repo struct {
 	baseURL string
 	path    string
+	cwd     string
 	logFn   loggerFn
 	errFn   loggerFn
 }
 
 // Open
 func (r *repo) Open() error {
-	return nil
+	return os.Chdir(r.path)
 }
 
 // Close
 func (r *repo) Close() error {
-	return nil
+	return os.Chdir(r.cwd)
 }
 
 // LoadOne
