@@ -692,6 +692,7 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(p string) error) er
 
 func loadRawFromPath(itPath string) ([]byte, error) {
 	f, err := os.Open(itPath)
+	defer f.Close()
 	if err != nil {
 		return nil, errors.Annotatef(err, "Unable find path %s", itPath)
 	}
