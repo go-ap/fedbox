@@ -263,7 +263,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			fail := errorf(t)
 			assertTrue := errIfNotTrue(t)
 			assertMapKey := errOnMapProp(t)
-			assertGetRequest := errOnGetRequest(t)
+			assertGetRequest := errNotOKGetRequest(t)
 			assertObjectProperties := errOnObjectProperties(t)
 
 			if tVal == nil {
@@ -334,14 +334,24 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			if tVal.act != nil {
 				assertMapKey(ob, "actor", tVal.act)
 				if tVal.act.typ != "" && len(tVal.act.id) > 0 {
-					dAct := assertGetRequest(tVal.act.id, nil)
+					var dAct  map[string]interface{}
+					if tVal.act.typ == "Tombstone" {
+						dAct = errNotGoneGetRequest(t)(tVal.act.id, nil)
+					} else {
+						dAct = assertGetRequest(tVal.act.id, nil)
+					}
 					assertObjectProperties(dAct, tVal.act)
 				}
 			}
 			if tVal.obj != nil {
 				assertMapKey(ob, "object", tVal.obj)
 				if tVal.obj.typ != "" && len(tVal.obj.id) > 0 {
-					dOb := assertGetRequest(tVal.obj.id, nil)
+					var dOb  map[string]interface{}
+					if tVal.obj.typ == "Tombstone" {
+						dOb = errNotGoneGetRequest(t)(tVal.obj.id, nil)
+					} else {
+						dOb = assertGetRequest(tVal.obj.id, nil)
+					}
 					assertObjectProperties(dOb, tVal.obj)
 				}
 			}
@@ -446,7 +456,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 	}
 }
 
-func errOnGetRequest(t *testing.T) requestGetAssertFn {
+func getRequest(t *testing.T, st int) func(iri string, acc *testAccount) map[string]interface{} {
 	return func(iri string, acc *testAccount) map[string]interface{} {
 		if iri == "" {
 			return nil
@@ -457,7 +467,7 @@ func errOnGetRequest(t *testing.T) requestGetAssertFn {
 				url: iri,
 			},
 			res: testRes{
-				code: http.StatusOK,
+				code: st,
 			},
 		}
 		if acc != nil {
@@ -467,12 +477,20 @@ func errOnGetRequest(t *testing.T) requestGetAssertFn {
 	}
 }
 
+func errNotOKGetRequest(t *testing.T) requestGetAssertFn {
+	return getRequest(t, http.StatusOK)
+}
+
+func errNotGoneGetRequest(t *testing.T) requestGetAssertFn {
+	return getRequest(t, http.StatusGone)
+}
+
 func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 	return func(test testPair) map[string]interface{} {
 		res := make(map[string]interface{})
 		t.Run(test.name(), func(t *testing.T) {
 			assertTrue := errIfNotTrue(t)
-			assertGetRequest := errOnGetRequest(t)
+			assertGetRequest := errNotOKGetRequest(t)
 			assertObjectProperties := errOnObjectProperties(t)
 			if len(test.req.headers) == 0 {
 				test.req.headers = make(http.Header, 0)
