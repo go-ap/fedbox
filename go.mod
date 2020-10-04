@@ -13,9 +13,9 @@ require (
 	github.com/go-ap/auth v0.0.0-20200930124341-e8a35f3525ad
 	github.com/go-ap/client v0.0.0-20200930124242-e8ffb2a5509c
 	github.com/go-ap/errors v0.0.0-20200702155720-f662512ba418
-	github.com/go-ap/handlers v0.0.0-20201001145406-6c4f77a88773
+	github.com/go-ap/handlers v0.0.0-20201004161102-109bdcbef3d5
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20201001151344-8795d1dda3e3
+	github.com/go-ap/processing v0.0.0-20201004161225-1ceb865463bf
 	github.com/go-ap/storage v0.0.0-20200830140640-73cfa1d1477b
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/protobuf v1.4.2 // indirect
@@ -32,8 +32,8 @@ require (
 	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/unrolled/render v1.0.2
 	go.etcd.io/bbolt v1.3.4
-	golang.org/x/crypto v0.0.0-20200930160638-afb6bcd081ae
-	golang.org/x/net v0.0.0-20200930145003-4acb6c075d10 // indirect
+	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
+	golang.org/x/net v0.0.0-20201002202402-0a1ea396d57c // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f // indirect
 	google.golang.org/appengine v1.6.5 // indirect
