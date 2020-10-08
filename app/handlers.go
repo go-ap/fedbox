@@ -127,6 +127,9 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 		var col pub.CollectionInterface
 
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
+		if it := fb.caches.get(reqIRI(r)); it != nil {
+			return it.(pub.CollectionInterface), nil
+		}
 		if err != nil {
 			return nil, errors.NewNotValid(err, "unable to load filters from request")
 		}
@@ -149,6 +152,7 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 			}
 			pub.OnObject(it, modifyItemIRI(r))
 		}
+		fb.caches.set(reqIRI(r), col)
 		return col, err
 	}
 }
@@ -238,8 +242,7 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 				a.AttributedTo = f.Authenticated
 			}
 
-			it, err = processFn(a)
-			if err != nil {
+			if it, err = processFn(a); err != nil {
 				return errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 			}
 			return nil
@@ -253,6 +256,19 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 			status = http.StatusGone
 		}
 
+		pub.OnActivity(it, func(a *pub.Activity) error {
+			for _, r := range a.Recipients() {
+				fb.caches.remove(r.GetLink())
+			}
+			if typ == h.Outbox {
+				fb.caches.remove(h.Outbox.IRI(a.Actor))
+			}
+			if typ == h.Inbox {
+				fb.caches.remove(h.Inbox.IRI(a.Actor))
+			}
+			return nil
+		})
+
 		return it, status, nil
 	}
 }
@@ -265,7 +281,9 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 
 		var items pub.ItemCollection
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
-
+		if it := fb.caches.get(reqIRI(r)); it != nil {
+			return it, nil
+		}
 		where := ""
 		what := ""
 		if len(collection) > 0 {
@@ -333,6 +351,8 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 			return nil, errors.NotFoundf("%snot found", what)
 		}
 		pub.OnObject(it, modifyItemIRI(r))
+
+		fb.caches.set(reqIRI(r), it)
 		return it, nil
 	}
 }
