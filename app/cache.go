@@ -11,9 +11,9 @@ import (
 
 type reqCache map[pub.IRI]pub.Item
 
-func reqIRI(r *http.Request) pub.IRI {
+func cacheKey(r *http.Request) pub.IRI {
 	scheme := "http"
-	if Config.Secure || r.TLS != nil {
+	if r.TLS != nil {
 		scheme = "https"
 	}
 	host := r.Host
@@ -31,7 +31,7 @@ func reqIRI(r *http.Request) pub.IRI {
 			}
 		}
 	}
-	return pub.IRI(fmt.Sprintf("%s://%s", scheme, path.Join(host, r.URL.RequestURI())))
+	return pub.IRI(fmt.Sprintf("%s://%s", scheme, path.Join(host, r.RequestURI)))
 }
 
 func (r reqCache) has(iri pub.IRI) bool {

@@ -127,7 +127,7 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 		var col pub.CollectionInterface
 
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
-		if it := fb.caches.get(reqIRI(r)); it != nil {
+		if it := fb.caches.get(cacheKey(r)); it != nil {
 			return it.(pub.CollectionInterface), nil
 		}
 		if err != nil {
@@ -152,7 +152,7 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 			}
 			pub.OnObject(it, modifyItemIRI(r))
 		}
-		fb.caches.set(reqIRI(r), col)
+		fb.caches.set(cacheKey(r), col)
 		return col, err
 	}
 }
@@ -281,7 +281,7 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 
 		var items pub.ItemCollection
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
-		if it := fb.caches.get(reqIRI(r)); it != nil {
+		if it := fb.caches.get(cacheKey(r)); it != nil {
 			return it, nil
 		}
 		where := ""
@@ -352,7 +352,7 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 		}
 		pub.OnObject(it, modifyItemIRI(r))
 
-		fb.caches.set(reqIRI(r), it)
+		fb.caches.set(cacheKey(r), it)
 		return it, nil
 	}
 }

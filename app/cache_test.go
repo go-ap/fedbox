@@ -143,7 +143,7 @@ func Test_reqCache_set(t *testing.T) {
 	}
 }
 
-func Test_reqIRI(t *testing.T) {
+func Test_cacheKey(t *testing.T) {
 	type args struct {
 		r *http.Request
 	}
@@ -154,14 +154,14 @@ func Test_reqIRI(t *testing.T) {
 	}{
 		{
 			name: "",
-			args: args{},
-			want: "",
+			args: args{r:&http.Request{Host: "example.com"}},
+			want: pub.IRI("http://example.com"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := reqIRI(tt.args.r); got != tt.want {
-				t.Errorf("reqIRI() = %v, want %v", got, tt.want)
+			if got := cacheKey(tt.args.r); got != tt.want {
+				t.Errorf("cacheKey() = %v, want %v", got, tt.want)
 			}
 		})
 	}
