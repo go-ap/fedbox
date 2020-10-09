@@ -266,6 +266,14 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 			if typ == h.Inbox {
 				fb.caches.remove(h.Inbox.IRI(a.Actor))
 			}
+
+			obIRI := a.Object.GetLink()
+			fb.caches.remove(pub.IRI(path.Dir(obIRI.String())))
+			fb.caches.remove(obIRI)
+
+			aIRI := a.GetLink()
+			fb.caches.remove(pub.IRI(path.Dir(aIRI.String())))
+			fb.caches.remove(aIRI)
 			return nil
 		})
 
