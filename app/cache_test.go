@@ -87,22 +87,22 @@ func Test_reqCache_remove(t *testing.T) {
 		args args
 		want bool
 	}{
-		//{
-		//	name: "simple",
-		//	r: reqCache{
-		//		pub.IRI("example1"): &pub.Object{ID: pub.IRI("example1")},
-		//	},
-		//	args: args{pub.IRI("example1")},
-		//	want: true,
-		//},
-		//{
-		//	name: "same_url",
-		//	r: reqCache{
-		//		pub.IRI("http://example.com"): &pub.Actor{ID: pub.IRI("http://example.com")},
-		//	},
-		//	args: args{pub.IRI("http://example.com")},
-		//	want: true,
-		//},
+		{
+			name: "simple",
+			r: reqCache{
+				pub.IRI("example1"): &pub.Object{ID: pub.IRI("example1")},
+			},
+			args: args{pub.IRI("example1")},
+			want: true,
+		},
+		{
+			name: "same_url",
+			r: reqCache{
+				pub.IRI("http://example.com"): &pub.Actor{ID: pub.IRI("http://example.com")},
+			},
+			args: args{pub.IRI("http://example.com")},
+			want: true,
+		},
 		{
 			name: "different_urls",
 			r: reqCache{
