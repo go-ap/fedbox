@@ -5,14 +5,8 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/storage/badger"
-	"github.com/go-ap/fedbox/storage/boltdb"
-	"github.com/go-ap/fedbox/storage/fs"
-	"github.com/go-ap/fedbox/storage/pgx"
-	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/urfave/cli.v2"
 	"os"
-	"path"
 )
 
 var BootstrapCmd = &cli.Command{
@@ -73,51 +67,12 @@ func bootstrapOAuth(conf config.Options) error {
 }
 
 func bootstrap(conf config.Options) error {
-	var err error
-	if conf.Storage == config.StoragePostgres {
-		var pgRoot string
-		// ask for root pw
-		fmt.Printf("%s password: ", pgRoot)
-		pgPw, _ := terminal.ReadPassword(0)
-		fmt.Println()
-		dir, _ := os.Getwd()
-		path := path.Join(dir, "init.sql")
-		err = pgx.Bootstrap(conf, pgRoot, pgPw, path)
-	}
-	if conf.Storage == config.StorageBoltDB {
-		err = boltdb.Bootstrap(conf)
-	}
-	if conf.Storage == config.StorageBadger {
-		 err = badger.Bootstrap(conf)
-	}
-	if conf.Storage == config.StorageFS {
-		err = fs.Bootstrap(conf)
-	}
-	if err != nil {
+	if err := bootstrapFn(conf); err != nil {
 		return errors.Annotatef(err, "Unable to create %s db for storage %s", conf.StoragePath, conf.Storage)
 	}
 	return bootstrapOAuth(conf)
 }
 
 func bootstrapReset(conf config.Options) error {
-	if conf.Storage == config.StorageBoltDB {
-		return boltdb.Clean(conf)
-	}
-	if conf.Storage == config.StoragePostgres {
-		var pgRoot string
-		// ask for root pw
-		fmt.Printf("%s password: ", pgRoot)
-		pgPw, _ := terminal.ReadPassword(0)
-		fmt.Println()
-		dir, _ := os.Getwd()
-		path := path.Join(dir, "init.sql")
-		err := pgx.Clean(conf, pgRoot, pgPw, path)
-		if err != nil {
-			return errors.Annotatef(err, "Unable to update %s db", conf.Storage)
-		}
-	}
-	if conf.Storage == config.StorageBadger {
-		return badger.Clean(conf)
-	}
-	return nil
+	return cleanFn(conf)
 }

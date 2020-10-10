@@ -1,4 +1,4 @@
-// +build storage_boltdb storage_all
+// +build storage_boltdb storage_all !storage_pgx,!storage_fs,!storage_badger
 
 package boltdb
 

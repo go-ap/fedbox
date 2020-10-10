@@ -1,6 +1,9 @@
 package storage
 
-import pub "github.com/go-ap/activitypub"
+import (
+	pub "github.com/go-ap/activitypub"
+	"github.com/go-ap/storage"
+)
 
 type CanBootstrap interface {
 	CreateService(pub.Service) error
@@ -24,3 +27,5 @@ type MimeTypeSaver interface {
 	SaveNaturalLanguageValues(pub.NaturalLanguageValues) error
 	SaveMimeTypeContent(pub.MimeType, pub.NaturalLanguageValues) error
 }
+
+type OptionFn func(s storage.Repository) error

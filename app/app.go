@@ -14,10 +14,6 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/fedbox/storage/badger"
-	"github.com/go-ap/fedbox/storage/boltdb"
-	"github.com/go-ap/fedbox/storage/fs"
-	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/handlers"
 	st "github.com/go-ap/storage"
 	"github.com/openshift/osin"
@@ -66,82 +62,6 @@ var AnonymousAcct = account{
 	actor:    &auth.AnonymousActor,
 }
 
-func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	db := badger.New(badger.Config{
-		Path:  c.Badger(),
-		LogFn: InfoLogFn(l),
-		ErrFn: ErrLogFn(l),
-	}, c.BaseURL)
-	oauth := auth.NewBoltDBStore(auth.BoltConfig{
-		Path:       c.BoltDBOAuth2(),
-		BucketName: c.Host,
-		LogFn:      InfoLogFn(l),
-		ErrFn:      ErrLogFn(l),
-	})
-	return db, oauth, nil
-}
-
-func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	db := boltdb.New(boltdb.Config{
-		Path:  c.BoltDB(),
-		LogFn: InfoLogFn(l),
-		ErrFn: ErrLogFn(l),
-	}, c.BaseURL)
-
-	oauth := auth.NewBoltDBStore(auth.BoltConfig{
-		Path:       c.BoltDBOAuth2(),
-		BucketName: c.Host,
-		LogFn:      InfoLogFn(l),
-		ErrFn:      ErrLogFn(l),
-	})
-	return db, oauth, nil
-}
-
-func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	oauth := auth.NewFSStore(auth.FSConfig{
-		Path:  c.BaseStoragePath(),
-		LogFn: InfoLogFn(l),
-		ErrFn: ErrLogFn(l),
-	})
-	db, err := fs.New(c)
-	if err != nil {
-		return nil, oauth, err
-	}
-	return db, oauth, nil
-}
-
-func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	// @todo(marius): we're no longer loading SQL db config env variables
-	conf := config.BackendConfig{}
-	db, err := pgx.New(conf, c.BaseURL, l)
-
-	oauth := auth.NewPgDBStore(auth.PgConfig{
-		Enabled: true,
-		Host:    conf.Host,
-		Port:    conf.Port,
-		User:    conf.User,
-		Pw:      conf.Pw,
-		Name:    conf.Name,
-		LogFn:   InfoLogFn(l),
-		ErrFn:   ErrLogFn(l),
-	})
-	return db, oauth, err
-}
-
-func getStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	switch c.Storage {
-	case config.StorageBoltDB:
-		return getBoltStorage(c, l)
-	case config.StorageBadger:
-		return getBadgerStorage(c, l)
-	case config.StoragePostgres:
-		return getPgxStorage(c, l)
-	case config.StorageFS:
-		return getFsStorage(c, l)
-	}
-	return nil, nil, errors.NotImplementedf("Invalid storage type %s", c.Storage)
-}
-
 // New instantiates a new FedBOX instance
 func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 	app := FedBOX{
@@ -170,7 +90,7 @@ func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 	}
 	errors.IncludeBacktrace = app.conf.Env.IsDev() || app.conf.Env.IsTest()
 
-	db, oauth, err := getStorage(app.conf, l)
+	db, oauth, err := Storage(app.conf, l)
 	if err != nil {
 		app.errFn("Unable to initialize storage backend: %s", err)
 	}

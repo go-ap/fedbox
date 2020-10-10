@@ -4,15 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/fedbox/storage/badger"
-	"github.com/go-ap/fedbox/storage/boltdb"
-	"github.com/go-ap/fedbox/storage/fs"
-	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
@@ -74,50 +69,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 	if typ != "" {
 		conf.Storage = config.StorageType(typ)
 	}
-	host := conf.Host
-	var aDb osin.Storage
-	var db storage.Repository
-	switch conf.Storage {
-	case config.StorageBoltDB:
-		path := config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ)
-		aDb = auth.NewBoltDBStore(auth.BoltConfig{
-			Path:       path,
-			BucketName: host,
-			LogFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-			ErrFn:      func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
-		})
-		db = boltdb.New(boltdb.Config{
-			Path:  config.GetDBPath(dir, host, environ),
-			LogFn: app.InfoLogFn(l),
-			ErrFn: app.ErrLogFn(l),
-		}, conf.BaseURL)
-		return New(aDb, db, conf), nil
-	case config.StorageFS:
-		aDb = auth.NewFSStore(auth.FSConfig{
-			Path:  conf.BaseStoragePath(),
-			LogFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) },
-			ErrFn: func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) },
-		})
-		db, err = fs.New(conf)
-		return New(aDb, db, conf), err
-	case config.StorageBadger:
-		aDb = auth.NewBoltDBStore(auth.BoltConfig{
-			Path:       config.GetDBPath(dir, fmt.Sprintf("%s-oauth", host), environ),
-			BucketName: host,
-			LogFn:      app.InfoLogFn(l),
-			ErrFn:      app.ErrLogFn(l),
-		})
-		storagePath, err := badger.Path(conf)
-		if err != nil {
-			return nil, err
-		}
-		db = badger.New(badger.Config{
-			Path:  storagePath,
-			LogFn: app.InfoLogFn(l),
-			ErrFn: app.ErrLogFn(l),
-		}, conf.BaseURL)
-		return New(aDb, db, conf), nil
-	case config.StoragePostgres:
+	if conf.Storage == config.StoragePostgres {
 		host := c.String("host")
 		if host == "" {
 			host = "localhost"
@@ -134,31 +86,20 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 		if err != nil {
 			return nil, err
 		}
-		fedboxDBName := "fedbox"
-		oauthDBName := "oauth"
-		aDb = auth.NewPgDBStore(auth.PgConfig{
-			Enabled: true,
+		_ = config.BackendConfig{
+			Enabled: false,
 			Host:    host,
 			Port:    port,
 			User:    user,
 			Pw:      string(pw),
-			Name:    fedboxDBName,
-			LogFn:   app.InfoLogFn(l),
-			ErrFn:   app.ErrLogFn(l),
-		})
-		db, err = pgx.New(config.BackendConfig{
-			Enabled: true,
-			Host:    host,
-			Port:    port,
-			User:    user,
-			Pw:      string(pw),
-			Name:    oauthDBName,
-		}, conf.BaseURL, l)
-		if err != nil {
-			return nil, err
+			Name:    user,
 		}
 	}
-	return nil, errors.Newf("invalid storage type %s", typ)
+	db, aDb, err := app.Storage(conf, l)
+	if err != nil {
+		return nil, err
+	}
+	return New(aDb, db, conf), nil
 }
 
 func loadPwFromStdin(confirm bool, s string, params ...interface{}) ([]byte, error) {

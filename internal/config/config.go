@@ -180,7 +180,7 @@ func LoadFromEnv(e env.Type) (Options, error) {
 	conf.CertPath = loadKeyFromEnv(KeyCertPath, "")
 
 	conf.Listen = loadKeyFromEnv(KeyListen, "")
-	envStorage := loadKeyFromEnv(KeyStorage, "")
+	envStorage := loadKeyFromEnv(KeyStorage, string(StorageFS))
 	conf.Storage = StorageType(strings.ToLower(envStorage))
 	conf.StoragePath = loadKeyFromEnv(KeyStoragePath, "")
 	if conf.StoragePath == "" {
