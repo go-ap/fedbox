@@ -2,22 +2,24 @@ FROM golang:1.15 as builder
 
 ARG ENV=dev
 ARG HOSTNAME=fedbox
+ARG STORAGE=all
 
 ENV GO111MODULE=on
 ENV ENV=${ENV:-dev}
+ENV STORAGE=${STORAGE:-all}
 
 ADD ./ /go/src/app
 
 WORKDIR /go/src/app
-RUN make ENV=${ENV} all
+RUN make ENV=${ENV} STORAGE=${STORAGE} all
 RUN docker/gen-certs.sh fedbox
-
 
 FROM gcr.io/distroless/base
 
 ARG PORT=4000
 ARG ENV=dev
 ARG HOSTNAME=fedbox
+ARG STORAGE=all
 
 ENV ENV=${ENV:-dev}
 ENV STORAGE_PATH=/storage
@@ -26,7 +28,7 @@ ENV LISTEN=:${PORT}
 ENV KEY_PATH=/etc/ssl/certs/fedbox.key
 ENV CERT_PATH=/etc/ssl/certs/fedbox.crt
 ENV HTTPS=true
-ENV STORAGE=fs
+ENV STORAGE=${STORAGE:-all}
 
 EXPOSE $PORT
 
