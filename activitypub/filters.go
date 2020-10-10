@@ -153,6 +153,7 @@ type Filters struct {
 	Target        *Filters                    `qstring:"target,omitempty"`
 	CurPage       uint                        `qstring:"page,omitempty"`
 	MaxItems      uint                        `qstring:"maxItems,omitempty"`
+	Req           *http.Request               `qstring:"-"`
 }
 
 func ItemKey(keys ...string) filterFn {
@@ -331,6 +332,7 @@ func baseURL(u *url.URL) string {
 // FromRequest loads the filters we use for generating storage queries from the HTTP request
 func FromRequest(r *http.Request, baseUrl string) (*Filters, error) {
 	f := FiltersNew()
+	f.Req = r
 	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
 		return nil, err
 	}

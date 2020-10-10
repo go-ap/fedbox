@@ -2,7 +2,7 @@ package app
 
 import (
 	pub "github.com/go-ap/activitypub"
-	"net/http"
+	"github.com/go-ap/fedbox/activitypub"
 	"reflect"
 	"testing"
 )
@@ -145,7 +145,7 @@ func Test_reqCache_set(t *testing.T) {
 
 func Test_cacheKey(t *testing.T) {
 	type args struct {
-		r *http.Request
+		f *activitypub.Filters
 	}
 	tests := []struct {
 		name string
@@ -153,14 +153,19 @@ func Test_cacheKey(t *testing.T) {
 		want pub.IRI
 	}{
 		{
-			name: "",
-			args: args{r:&http.Request{Host: "example.com"}},
+			name: "example.com",
+			args: args{f: &activitypub.Filters{IRI: "http://example.com"}},
 			want: pub.IRI("http://example.com"),
+		},
+		{
+			name: "authenticated",
+			args: args{f: &activitypub.Filters{IRI: "http://example.com", Authenticated: &pub.Actor{ID:"http://example.com/jdoe"}}},
+			want: pub.IRI("http://jdoe@example.com"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := cacheKey(tt.args.r); got != tt.want {
+			if got := cacheKey(tt.args.f); got != tt.want {
 				t.Errorf("cacheKey() = %v, want %v", got, tt.want)
 			}
 		})

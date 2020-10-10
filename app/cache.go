@@ -1,37 +1,29 @@
 package app
 
 import (
-	"crypto/md5"
 	"fmt"
 	pub "github.com/go-ap/activitypub"
-	"net/http"
+	"github.com/go-ap/fedbox/activitypub"
+	"github.com/mariusor/qstring"
+	"net/url"
 	"path"
-	"strings"
 )
 
 type reqCache map[pub.IRI]pub.Item
 
-func cacheKey(r *http.Request) pub.IRI {
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
+func cacheKey(f *activitypub.Filters) pub.IRI {
+	var iri pub.IRI
+
+	if q, err := qstring.Marshal(f); err == nil && len(q) > 0 {
+		iri = pub.IRI(fmt.Sprintf("%s?%s", f.GetLink(), q.Encode()))
+	} else {
+		iri = f.GetLink()
 	}
-	host := r.Host
-	if auth := r.Header.Get("Authorization"); len(auth) != 0 {
-		if strings.Contains(auth, "Bearer") {
-			tok := strings.TrimPrefix(auth, "Bearer ")
-			host = fmt.Sprintf("%s@%s", tok, host)
-		}
-		if strings.Contains(auth, "Signature") {
-			// TODO(marius): this is untested
-			fields := strings.Split(auth, " ")
-			if len(fields) > 1 {
-				sigField := fields[1]
-				host = fmt.Sprintf("%02x@%s", md5.Sum([]byte(sigField)), host)
-			}
-		}
+	u, _ := iri.URL()
+	if auth := f.Authenticated; auth != nil && !auth.ID.Equals(pub.PublicNS, true) {
+		u.User = url.User(path.Base(f.Authenticated.ID.String()))
 	}
-	return pub.IRI(fmt.Sprintf("%s://%s", scheme, path.Join(host, r.RequestURI)))
+	return pub.IRI(u.String())
 }
 
 func (r reqCache) has(iri pub.IRI) bool {
