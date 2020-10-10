@@ -1,3 +1,5 @@
+// +build integration,c2s
+
 package tests
 
 import (
