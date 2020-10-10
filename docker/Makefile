@@ -64,7 +64,7 @@ run: build $(STORAGE_OBJECTS)
 		$(HOSTNAME)/app:$(TAG)
 
 push: build
-	$(TAG_CMD) $(HOSTNAME)/app:$(TAG) quay.io/fedbox/fedbox:latest
 	$(TAG_CMD) $(HOSTNAME)/app:$(TAG) quay.io/fedbox/fedbox:$(TAG)
-	$(PUSH_CMD) quay.io/fedbox/fedbox:latest
 	$(PUSH_CMD) quay.io/fedbox/fedbox:$(TAG)
+	test $(TAG) == "dev" $(TAG_CMD) $(HOSTNAME)/app:$(TAG) quay.io/fedbox/fedbox:latest
+	test $(TAG) == "dev" $(PUSH_CMD) quay.io/fedbox/fedbox:latest
