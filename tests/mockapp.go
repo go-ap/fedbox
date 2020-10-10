@@ -6,22 +6,15 @@ import (
 	"bytes"
 	"fmt"
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
-	"github.com/go-ap/fedbox/storage/badger"
-	"github.com/go-ap/fedbox/storage/boltdb"
-	"github.com/go-ap/fedbox/storage/fs"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
-	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
-	"net/url"
-	"os"
 	"path"
 	"testing"
 	"text/template"
@@ -69,25 +62,23 @@ func seedTestData(t *testing.T, testData []string, reset bool) {
 		panic("invalid test context")
 	}
 	t.Helper()
-	if reset {
-		resetDB()
-	}
 
 	opt, _ := config.LoadFromEnv("test")
-	u, _ := url.Parse(apiURL)
-
-	b, err := getStorage(opt, u)
+	if opt.Storage == "all" {
+		opt.Storage = config.StorageFS
+	}
+	if reset {
+		resetDB(opt)
+	}
+	fields:= logrus.Fields{"action":"seeding", "storage": opt.Storage, "path": opt.StoragePath}
+	l := logrus.New()
+	l.SetLevel(logrus.PanicLevel)
+	db, aDb, err := app.Storage(opt, l.WithFields(fields))
 	if err != nil {
-		t.Errorf("Unable to initialize storage for tests: %s", err)
-		return
+		panic(err)
 	}
-	if b == nil {
-		t.Errorf("Unable to initialize storage for tests: nil returned")
-		return
-	}
-	s := getOAuthStorage(opt, u)
 
-	o := cmd.New(s, b, config.Options{})
+	o := cmd.New(aDb, db, config.Options{})
 	pw := []byte("hahah")
 	defaultTestApp.Id, _ = o.AddClient(pw, []string{authCallbackURL}, nil)
 
@@ -113,121 +104,30 @@ func seedTestData(t *testing.T, testData []string, reset bool) {
 	}
 }
 
-func resetDB() string {
-	opt, _ := config.LoadFromEnv("test")
-	var dbPath string
-	if opt.Storage == config.StorageBoltDB {
-		boltdb.Clean(opt)
-		boltdb.Bootstrap(opt)
-	}
-	if opt.Storage == config.StorageBadger {
-		dbPath, _ = badger.Path(opt)
-		badger.Clean(opt)
-		badger.Bootstrap(opt)
-	}
-	if opt.Storage == config.StorageFS {
-		fs.Clean(opt)
-		fs.Bootstrap(opt)
-	}
-	return dbPath
-}
-
-func getBadgerStorage(opt config.Options, u *url.URL) storage.Repository {
-	path, _ := badger.Path(config.Options{
-		StoragePath: opt.StoragePath,
-		Env:         opt.Env,
-		Host:        u.Host,
-	})
-	return badger.New(badger.Config{
-		Path: path,
-	}, u.String())
-}
-
-func getFsStorage(opt config.Options, u *url.URL) (storage.Repository, error) {
-	return fs.New(opt)
-}
-
-func getBoltDBStorage(opt config.Options, u *url.URL) storage.Repository {
-	path := config.GetDBPath(opt.StoragePath, u.Host, opt.Env)
-	l := logrus.New()
-	return boltdb.New(boltdb.Config{
-		Path:  path,
-		LogFn: app.InfoLogFn(l),
-		ErrFn: app.ErrLogFn(l),
-	}, u.String())
-}
-
-func getOAuthBadgerStorage(opt config.Options, u *url.URL) osin.Storage {
-	l := logrus.New()
-	return auth.NewBadgerStore(auth.BadgerConfig{
-		Path:  opt.BaseStoragePath(),
-		Host:  opt.Host,
-		LogFn: app.InfoLogFn(l),
-		ErrFn: app.ErrLogFn(l),
-	})
-}
-
-func getOAuthFsStorage(opt config.Options, u *url.URL) osin.Storage {
-	l := logrus.New()
-	return auth.NewFSStore(auth.FSConfig{
-		Path:  opt.BaseStoragePath(),
-		LogFn: app.InfoLogFn(l),
-		ErrFn: app.ErrLogFn(l),
-	})
-}
-
-func getOAuthBoltdbStorage(opt config.Options, u *url.URL) osin.Storage {
-	pathOauth := config.GetDBPath(opt.StoragePath, fmt.Sprintf("%s-oauth", u.Host), opt.Env)
-	l := logrus.New()
-	if _, err := os.Stat(pathOauth); os.IsNotExist(err) {
-		err := auth.BootstrapBoltDB(pathOauth, []byte(host))
-		if err != nil {
-			l.Errorf("Unable to create missing boltdb file %s: %s", pathOauth, err)
-		}
-	}
-
-	return auth.NewBoltDBStore(auth.BoltConfig{
-		Path:       pathOauth,
-		BucketName: u.Host,
-		LogFn:      app.InfoLogFn(l),
-		ErrFn:      app.ErrLogFn(l),
-	})
-}
-
-func getOAuthStorage(opt config.Options, u *url.URL) osin.Storage {
-	if opt.Storage == config.StorageBoltDB {
-		return getOAuthBoltdbStorage(opt, u)
-	}
-	if opt.Storage == config.StorageBadger {
-		return getOAuthBadgerStorage(opt, u)
-	}
-	return getOAuthFsStorage(opt, u)
-}
-
-func getStorage(opt config.Options, u *url.URL) (storage.Repository, error) {
-	if opt.Storage == config.StorageBoltDB {
-		return getBoltDBStorage(opt, u), nil
-	}
-	if opt.Storage == config.StorageBadger {
-		return getBadgerStorage(opt, u), nil
-	}
-	return getFsStorage(opt, u)
-}
-
 func runAPP(e env.Type) int {
+	opt, _ := config.LoadFromEnv(env.TEST)
+	if opt.Storage == "all" {
+		opt.Storage = config.StorageFS
+	}
+	fields:= logrus.Fields{"action":"running", "storage": opt.Storage, "path": opt.StoragePath}
 	l := logrus.New()
 	l.SetLevel(logrus.PanicLevel)
-
-	opt, _ := config.LoadFromEnv(env.TEST)
-	u, _ := url.Parse(apiURL)
 
 	r := chi.NewRouter()
 	r.Use(log.NewStructuredLogger(l))
 
-	o := osinServer(getOAuthStorage(opt, u), l)
-
 	a, _ := app.New(l, "HEAD", string(e))
-	a.Storage, _ = getStorage(opt, u)
+	db, aDb, err := app.Storage(opt, l.WithFields(fields))
+	if err != nil {
+		panic(err)
+	}
+	if db != nil {
+		a.Storage = db
+	}
+	if aDb != nil {
+		a.OAuthStorage = aDb
+	}
+	o := osinServer(aDb, l)
 
 	r.Use(app.Repo(a.Storage))
 	r.Route("/", a.Routes(a.Config().BaseURL, o, l))

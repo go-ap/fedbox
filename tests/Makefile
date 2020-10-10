@@ -1,7 +1,7 @@
 export CGO_ENABLED=0
 GO := go
 TEST := $(GO) test -v
-STORAGE ?= boltdb
+STORAGE ?= all
 
 .PHONY: test integration clean
 
@@ -10,11 +10,11 @@ clean:
 
 c2s: clean
 	mkdir -p .cache
-	STORAGE=$(STORAGE) $(TEST) -tags "storage_all integration c2s" ./...
+	$(TEST) -tags "storage_$(STORAGE) integration c2s" ./...
 
 s2s: clean
 	mkdir -p .cache
-	STORAGE=$(STORAGE) $(TEST) -tags "storage_all integration s2s" ./...
+	$(TEST) -tags "storage_$(STORAGE) integration s2s" ./...
 
 test: c2s s2s
 
