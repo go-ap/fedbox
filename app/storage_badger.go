@@ -2,7 +2,14 @@
 
 package app
 
-import "github.com/go-ap/fedbox/internal/config"
+import (
+	"github.com/go-ap/auth"
+	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/storage/badger"
+	st "github.com/go-ap/storage"
+	"github.com/openshift/osin"
+	"github.com/sirupsen/logrus"
+)
 
 func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	db := badger.New(badger.Config{
