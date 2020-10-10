@@ -48,11 +48,18 @@ type FedBOX struct {
 }
 
 var (
+	emptyFieldsLogFn = func(logrus.Fields, string, ...interface{}) {}
 	emptyLogFn = func(string, ...interface{}) {}
 	InfoLogFn  = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
+		if l == nil {
+			return emptyFieldsLogFn
+		}
 		return func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) }
 	}
 	ErrLogFn = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
+		if l == nil {
+			return emptyFieldsLogFn
+		}
 		return func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) }
 	}
 )
