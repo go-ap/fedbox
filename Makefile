@@ -2,37 +2,37 @@ SHELL := bash
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 .DELETE_ON_ERROR:
-MAKEFLAGS += --warn-undefined-variables
-MAKEFLAGS += --no-builtin-rules
-TEST_FLAGS ?= -count=1 -v
 
 LOCAL_HOSTNAME ?= fedbox.git
 STORAGE ?= all
-VERSION ?= (unknown)
-export CGO_ENABLED=0
-export VERSION=$(VERSION)
-GO := go
 ENV ?= dev
 LDFLAGS ?= -X main.version=$(VERSION)
 BUILDFLAGS ?= -trimpath -a -ldflags '$(LDFLAGS)'
+TEST_FLAGS ?= -count=1 -v
+MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --no-builtin-rules
+
+GO := go
 APPSOURCES := $(wildcard app/*.go storage/*/*.go activitypub/*.go internal/*/*.go cmd/*.go)
 ASSETFILES := $(wildcard templates/*)
 PROJECT_NAME := $(shell basename $(PWD))
 APPSOURCES += internal/assets/assets.gen.go
 TAGS := $(ENV) storage_$(STORAGE)
 
+export CGO_ENABLED=0
+
 ifneq ($(ENV), dev)
 	LDFLAGS += -s -w -extldflags "-static"
 endif
 
-ifeq ($(VERSION), '(unknown)')
+ifeq ($(VERSION), )
 	ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
 		BRANCH=$(shell git rev-parse --abbrev-ref HEAD | tr '/' '-')
 		HASH=$(shell git rev-parse --short HEAD)
-		export VERSION = $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
+		VERSION ?= $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
 	endif
 	ifeq ($(shell git describe --tags > /dev/null 2>&1 ; echo $$?), 0)
-		export VERSION = $(shell git describe --tags | tr '/' '-')
+		VERSION ?= $(shell git describe --tags | tr '/' '-')
 	endif
 endif
 
