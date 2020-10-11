@@ -4,7 +4,7 @@ SHELL := bash
 .DELETE_ON_ERROR:
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
-TEST_FLAGS ?= -v
+TEST_FLAGS ?= -count=1 -v
 
 LOCAL_HOSTNAME ?= fedbox.git
 STORAGE ?= all
