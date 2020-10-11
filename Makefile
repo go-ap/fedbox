@@ -5,11 +5,12 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 TEST_FLAGS ?= -v
+
 LOCAL_HOSTNAME ?= fedbox.git
 STORAGE ?= all
-
+VERSION ?= (unknown)
 export CGO_ENABLED=0
-export VERSION=(unknown)
+export VERSION=$(VERSION)
 GO := go
 ENV ?= dev
 LDFLAGS ?= -X main.version=$(VERSION)
@@ -25,10 +26,12 @@ ifneq ($(ENV), dev)
 endif
 
 ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
-export VERSION = $(shell git describe --always --dirty="-git")
+BRANCH=$(shell git rev-parse --abbrev-ref HEAD | tr '/' '-')
+HASH=$(shell git rev-parse --short HEAD)
+export VERSION = $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
 endif
 ifeq ($(shell git describe --tags > /dev/null 2>&1 ; echo $$?), 0)
-export VERSION = $(shell git describe --tags)
+export VERSION = $(shell git describe --tags | tr '/' '-')
 endif
 
 BUILD := $(GO) build $(BUILDFLAGS)
