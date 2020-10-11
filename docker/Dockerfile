@@ -3,15 +3,17 @@ FROM golang:1.15 as builder
 ARG ENV=dev
 ARG HOSTNAME=fedbox
 ARG STORAGE=all
+ARG VERSION=
 
 ENV GO111MODULE=on
 ENV ENV=${ENV:-dev}
 ENV STORAGE=${STORAGE:-all}
+ENV VERSION=${VERSION}
 
 ADD ./ /go/src/app
 
 WORKDIR /go/src/app
-RUN make ENV=${ENV} STORAGE=${STORAGE} clean all
+RUN make ENV=${ENV} STORAGE=${STORAGE} VERSION=${VERSION} clean all
 RUN docker/gen-certs.sh fedbox
 
 FROM gcr.io/distroless/base
