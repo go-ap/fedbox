@@ -46,7 +46,7 @@ assets: internal/assets/assets.gen.go
 internal/assets/assets.gen.go: $(ASSETFILES)
 	go generate -tags "$(TAGS)" ./assets.go
 
-fedbox: bin/fedbox
+fedbox: bin/fedbox assets
 bin/fedbox: go.mod cli/fedbox/main.go $(APPSOURCES)
 	$(BUILD) -tags "$(TAGS)" -o $@ ./cli/fedbox/main.go
 
@@ -63,7 +63,7 @@ clean:
 
 
 test: TEST_TARGET := ./{activitypub,app,storage,internal,cmd}/...
-test:
+test: assets
 	$(TEST) $(TEST_FLAGS) -tags "$(TAGS)" $(TEST_TARGET)
 
 coverage: TEST_TARGET := .

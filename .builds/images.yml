@@ -11,8 +11,7 @@ environment:
 tasks:
   - tests: |
       cd fedbox
-      go mod download
-      #make test
+      make test
       make STORAGE=fs integration
       make STORAGE=boltdb integration
       make STORAGE=badger integration
