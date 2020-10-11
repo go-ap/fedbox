@@ -22,13 +22,13 @@ tasks:
 
       _push() {
         _storage=${1:-all}
-        _branch=$(git branch --show-current)
+        _branch=${GITHUB_REF#"refs/heads/"}
         sudo make -C docker STORAGE="${_storage}" VERSION="${_branch}" push
         if [ "${_branch}" == "master" ]; then
           _branch=$(printf "%s-%s" "${_branch}" "$(git rev-parse --short HEAD)")
           sudo make -C docker STORAGE="${_storage}" ENV=qa VERSION="${_branch}" push
         fi
-        _tag=$(git describe --long --tags)
+        _tag=$(git describe --long --tags || true)
         if [ -n "${_tag}" ]; then
           sudo make -C docker STORAGE="${_storage}" ENV=prod VERSION="${_tag}" push
         fi
