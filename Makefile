@@ -25,13 +25,15 @@ ifneq ($(ENV), dev)
 	LDFLAGS += -s -w -extldflags "-static"
 endif
 
-ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
-BRANCH=$(shell git rev-parse --abbrev-ref HEAD | tr '/' '-')
-HASH=$(shell git rev-parse --short HEAD)
-export VERSION = $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
-endif
-ifeq ($(shell git describe --tags > /dev/null 2>&1 ; echo $$?), 0)
-export VERSION = $(shell git describe --tags | tr '/' '-')
+ifeq ($(VERSION), '(unknown)')
+	ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
+		BRANCH=$(shell git rev-parse --abbrev-ref HEAD | tr '/' '-')
+		HASH=$(shell git rev-parse --short HEAD)
+		export VERSION = $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
+	endif
+	ifeq ($(shell git describe --tags > /dev/null 2>&1 ; echo $$?), 0)
+		export VERSION = $(shell git describe --tags | tr '/' '-')
+	endif
 endif
 
 BUILD := $(GO) build $(BUILDFLAGS)
@@ -60,7 +62,6 @@ run: fedbox
 clean:
 	-$(RM) bin/*
 	$(MAKE) -C tests $@
-
 
 test: TEST_TARGET := ./{activitypub,app,storage,internal,cmd}/...
 test: assets
