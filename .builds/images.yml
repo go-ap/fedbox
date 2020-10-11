@@ -9,13 +9,9 @@ sources:
 environment:
   GO111MODULE: 'on'
 tasks:
-  - setup: |
-      cd fedbox && go mod download
   - tests: |
       cd fedbox
       make test
-  - integration: |
-      cd fedbox
       make STORAGE=fs integration
       make STORAGE=boltdb integration
       make STORAGE=badger integration
