@@ -1,0 +1,44 @@
+image: archlinux
+secrets:
+- 0e431348-6a5c-4404-bd3e-5cdd5ea9e7d6
+packages:
+  - buildah
+  - go
+sources:
+  - https://github.com/go-ap/fedbox
+environment:
+  GO111MODULE: 'on'
+tasks:
+  - setup: |
+      cd fedbox && go mod download
+  - tests: |
+      cd fedbox
+      make test
+  - integration: |
+      cd fedbox
+      make STORAGE=fs integration
+      make STORAGE=boltdb integration
+      make STORAGE=badger integration
+  - images: |
+      set -a +x
+      source ~/.buildah.env && sudo buildah login -u=${BUILDAH_USER} -p=${BUILDAH_SECRET} quay.io
+      cd fedbox
+
+      push() {
+        _storage=${1:-all}
+        _branch=$(git branch --show-current)
+        sudo make -C docker STORAGE=${_storage} VERSION=${_branch} push
+        if "${_branch}" == "master"; then
+          _branch=$(printf "%s-%s" "${_branch}" "$(git rev-parse --short HEAD)")
+          sudo make -C docker STORAGE=${_storage} ENV=qa VERSION=${_branch}  push
+        fi
+        _tag=$(git describe --long --tags)
+        if "${_tag}x" != "x"; then
+          sudo make -C docker STORAGE=${_storage} ENV=prod VERSION=${_tag} push
+        fi
+      }
+
+      push
+      push fs
+      push boltdb
+      push badger

@@ -1,9 +1,7 @@
 image: archlinux
 secrets:
 - 72c9ab0b-ed5f-4291-bab7-30b361be94a6
-- 0e431348-6a5c-4404-bd3e-5cdd5ea9e7d6
 packages:
-  - buildah
   - go
 sources:
   - https://github.com/go-ap/fedbox
@@ -36,19 +34,3 @@ tasks:
   - integration-fs: |
       cd fedbox
       make STORAGE=fs integration
-  - images: |
-      set -a +x
-      source ~/.buildah.env && sudo buildah login -u=${BUILDAH_USER} -p=${BUILDAH_SECRET} quay.io
-      cd fedbox
-      sudo make -C docker push
-      sudo make -C docker STORAGE=fs push
-      sudo make -C docker STORAGE=boltdb push
-      sudo make -C docker STORAGE=badger push
-  - images_qa: |
-      set -a +x
-      source ~/.buildah.env && sudo buildah login -u=${BUILDAH_USER} -p=${BUILDAH_SECRET} quay.io
-      cd fedbox
-      sudo make -C docker ENV=qa push
-      sudo make -C docker ENV=qa STORAGE=fs push
-      sudo make -C docker ENV=qa STORAGE=boltdb push
-      sudo make -C docker ENV=qa STORAGE=badger push
