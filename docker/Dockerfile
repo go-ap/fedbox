@@ -11,7 +11,7 @@ ENV STORAGE=${STORAGE:-all}
 ADD ./ /go/src/app
 
 WORKDIR /go/src/app
-RUN make ENV=${ENV} STORAGE=${STORAGE} all
+RUN make ENV=${ENV} STORAGE=${STORAGE} clean all
 RUN docker/gen-certs.sh fedbox
 
 FROM gcr.io/distroless/base
