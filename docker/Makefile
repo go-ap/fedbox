@@ -4,7 +4,7 @@ PORT ?= 4000
 STORAGE ?= all
 STORAGE_PATH ?= $(shell realpath .cache)
 STORAGE_OBJECTS = $(STORAGE_PATH)/objects
-TAG=$(ENV)
+TAG ?= $(ENV)
 
 APPSOURCES := $(wildcard ../app/*.go ../activitypub/*.go ../internal/*/*.go ../cli/*/main.go ../cmd/*.go ../storage/*/*.go)
 
