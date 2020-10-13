@@ -13,13 +13,13 @@ func Test_reqCache_get(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		r    reqCache
+		r    cache
 		args args
 		want pub.Item
 	}{
 		{
 			name: "",
-			r: reqCache{},
+			r:    cache{},
 			args: args{},
 			want: nil,
 		},
@@ -33,80 +33,36 @@ func Test_reqCache_get(t *testing.T) {
 	}
 }
 
-func Test_reqCache_has(t *testing.T) {
-	type args struct {
-		iri pub.IRI
-	}
-	tests := []struct {
-		name string
-		r    reqCache
-		args args
-		want bool
-	}{
-		{
-			name: "simple",
-			r: reqCache{
-				pub.IRI("example1"): &pub.Object{ID: pub.IRI("example1")},
-			},
-			args: args{pub.IRI("example1")},
-			want: true,
-		},
-		{
-			name: "same_url",
-			r: reqCache{
-				pub.IRI("http://example.com"): &pub.Actor{ID: pub.IRI("http://example.com")},
-			},
-			args: args{pub.IRI("http://example.com")},
-			want: true,
-		},
-		{
-			name: "different_urls",
-			r: reqCache{
-				pub.IRI("http://example.com/inbox"): &pub.Actor{ID: pub.IRI("http://example.com")},
-			},
-			args: args{pub.IRI("http://example.com")},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.r.has(tt.args.iri); got != tt.want {
-				t.Errorf("has() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_reqCache_remove(t *testing.T) {
 	type args struct {
 		iri pub.IRI
 	}
 	tests := []struct {
 		name string
-		r    reqCache
+		r    cache
 		args args
 		want bool
 	}{
 		{
 			name: "simple",
-			r: reqCache{
-				pub.IRI("example1"): &pub.Object{ID: pub.IRI("example1")},
+			r: cache{
+				c: iriMap{pub.IRI("example1"): &pub.Object{ID: pub.IRI("example1")}},
 			},
 			args: args{pub.IRI("example1")},
 			want: true,
 		},
 		{
 			name: "same_url",
-			r: reqCache{
-				pub.IRI("http://example.com"): &pub.Actor{ID: pub.IRI("http://example.com")},
+			r: cache{
+				c: iriMap{ pub.IRI("http://example.com"): &pub.Actor{ID: pub.IRI("http://example.com")}},
 			},
 			args: args{pub.IRI("http://example.com")},
 			want: true,
 		},
 		{
 			name: "different_urls",
-			r: reqCache{
-				pub.IRI("http://example.com/inbox"): &pub.Actor{ID: pub.IRI("http://example.com")},
+			r: cache{
+				c: iriMap{pub.IRI("http://example.com/inbox"): &pub.Actor{ID: pub.IRI("http://example.com")}},
 			},
 			args: args{pub.IRI("http://example.com")},
 			want: true,
@@ -128,12 +84,12 @@ func Test_reqCache_set(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		r    reqCache
+		r    cache
 		args args
 	}{
 		{
 			name: "",
-			r: reqCache{},
+			r:    cache{},
 			args: args{},
 		},
 	}

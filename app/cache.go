@@ -7,9 +7,15 @@ import (
 	"github.com/mariusor/qstring"
 	"net/url"
 	"path"
+	"sync"
 )
 
-type reqCache map[pub.IRI]pub.Item
+type iriMap map[pub.IRI]pub.Item
+
+type cache struct {
+	w sync.RWMutex
+	c iriMap
+}
 
 func cacheKey(f *activitypub.Filters) pub.IRI {
 	var iri pub.IRI
@@ -26,30 +32,34 @@ func cacheKey(f *activitypub.Filters) pub.IRI {
 	return pub.IRI(u.String())
 }
 
-func (r reqCache) has(iri pub.IRI) bool {
-	_, ok := r[iri]
-	return ok
-}
-
-func (r reqCache) get(iri pub.IRI) pub.Item {
-	if it, ok := r[iri]; ok {
+func (r *cache) get(iri pub.IRI) pub.Item {
+	r.w.RLock()
+	defer r.w.RUnlock()
+	if it, ok := r.c[iri]; ok {
 		return it
 	}
 	return nil
 }
 
-func (r *reqCache) set(iri pub.IRI, it pub.Item) {
-	(*r)[iri] = it
+func (r *cache) set(iri pub.IRI, it pub.Item) {
+	r.w.Lock()
+	defer r.w.Unlock()
+	if r.c == nil {
+		r.c = make(map[pub.IRI]pub.Item)
+	}
+	r.c[iri] = it
 }
 
-func (r *reqCache) remove(iri pub.IRI) bool {
+func (r *cache) remove(iri pub.IRI) bool {
 	if iri == pub.PublicNS {
 		return false
 	}
-	for key := range *r {
+	r.w.Lock()
+	defer r.w.Unlock()
+	for key := range r.c {
 		// TODO(marius): I need to play around with this a bit
 		if key.Contains(iri, false) {
-			delete(*r, key)
+			delete(r.c, key)
 		}
 	}
 	return true

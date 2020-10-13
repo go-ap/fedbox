@@ -39,7 +39,7 @@ type LogFn func(string, ...interface{})
 type FedBOX struct {
 	conf         config.Options
 	ver          string
-	caches       reqCache
+	caches       cache
 	Storage      st.Repository
 	OAuthStorage osin.Storage
 	stopFn       func()
@@ -72,10 +72,10 @@ var AnonymousAcct = account{
 // New instantiates a new FedBOX instance
 func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 	app := FedBOX{
-		ver:   ver,
-		caches: make(reqCache),
-		infFn: emptyLogFn,
-		errFn: emptyLogFn,
+		ver:    ver,
+		caches: cache{},
+		infFn:  emptyLogFn,
+		errFn:  emptyLogFn,
 	}
 	if l != nil {
 		app.infFn = l.Infof
