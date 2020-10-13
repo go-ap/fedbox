@@ -49,8 +49,8 @@ type FedBOX struct {
 
 var (
 	emptyFieldsLogFn = func(logrus.Fields, string, ...interface{}) {}
-	emptyLogFn = func(string, ...interface{}) {}
-	InfoLogFn  = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
+	emptyLogFn       = func(string, ...interface{}) {}
+	InfoLogFn        = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
 		if l == nil {
 			return emptyFieldsLogFn
 		}
@@ -72,10 +72,9 @@ var AnonymousAcct = account{
 // New instantiates a new FedBOX instance
 func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 	app := FedBOX{
-		ver:    ver,
-		caches: cache{},
-		infFn:  emptyLogFn,
-		errFn:  emptyLogFn,
+		ver:   ver,
+		infFn: emptyLogFn,
+		errFn: emptyLogFn,
 	}
 	if l != nil {
 		app.infFn = l.Infof
@@ -101,6 +100,7 @@ func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 	if err != nil {
 		app.errFn("Unable to initialize storage backend: %s", err)
 	}
+	app.caches = cache{enabled: !app.conf.Env.IsTest(), c: make(iriMap)}
 	app.Storage = db
 	app.OAuthStorage = oauth
 	return &app, err

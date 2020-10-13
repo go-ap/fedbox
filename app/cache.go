@@ -13,6 +13,7 @@ import (
 type iriMap map[pub.IRI]pub.Item
 
 type cache struct {
+	enabled bool
 	w sync.RWMutex
 	c iriMap
 }
@@ -33,6 +34,9 @@ func cacheKey(f *activitypub.Filters) pub.IRI {
 }
 
 func (r *cache) get(iri pub.IRI) pub.Item {
+	if !r.enabled {
+		return nil
+	}
 	r.w.RLock()
 	defer r.w.RUnlock()
 	if it, ok := r.c[iri]; ok {
@@ -42,15 +46,21 @@ func (r *cache) get(iri pub.IRI) pub.Item {
 }
 
 func (r *cache) set(iri pub.IRI, it pub.Item) {
-	r.w.Lock()
-	defer r.w.Unlock()
+	if !r.enabled {
+		return
+	}
 	if r.c == nil {
 		r.c = make(map[pub.IRI]pub.Item)
 	}
+	r.w.Lock()
+	defer r.w.Unlock()
 	r.c[iri] = it
 }
 
 func (r *cache) remove(iri pub.IRI) bool {
+	if !r.enabled {
+		return true
+	}
 	if iri == pub.PublicNS {
 		return false
 	}
