@@ -57,7 +57,19 @@ func addMockObjects(r storage.Repository, obj pub.ItemCollection, errFn app.LogF
 	return nil
 }
 
-func seedTestData(t *testing.T, testData []string, reset bool) {
+func cleanDB(t *testing.T) {
+	opt, _ := config.LoadFromEnv("test")
+	if opt.Storage == "all" {
+		opt.Storage = config.StorageFS
+	}
+	t.Logf("resetting db")
+	err := resetDB(opt)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func seedTestData(t *testing.T, testData []string) {
 	if t == nil {
 		panic("invalid test context")
 	}
@@ -66,9 +78,6 @@ func seedTestData(t *testing.T, testData []string, reset bool) {
 	opt, _ := config.LoadFromEnv("test")
 	if opt.Storage == "all" {
 		opt.Storage = config.StorageFS
-	}
-	if reset {
-		resetDB(opt)
 	}
 	fields:= logrus.Fields{"action":"seeding", "storage": opt.Storage, "path": opt.StoragePath}
 	l := logrus.New()

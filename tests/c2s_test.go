@@ -9,9 +9,8 @@ import (
 	"testing"
 )
 
-var C2STests = []testSuite{
-	{
-		name:  "SelfService",
+var C2STests = map[string]testSuite{
+	"SelfService": {
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -37,8 +36,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name:  "ActorsCollection",
+	"ActorsCollection": {
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -78,8 +76,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name:  "ActorsCollectionTypePerson",
+	"ActorsCollectionTypePerson": {
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -119,8 +116,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name:  "ActorsCollectionTypeGroup",
+	"ActorsCollectionTypeGroup": {
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -143,8 +139,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name:  "ActorsCollectionTypeApplication",
+	"ActorsCollectionTypeApplication": {
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -166,8 +161,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name:  "ActivitiesCollection",
+	"ActivitiesCollection": {
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -183,8 +177,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name:  "ObjectsCollection",
+	"ObjectsCollection": {
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -200,8 +193,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name:  "CreateActor",
+	"CreateActor": {
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -234,8 +226,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name:  "AnonymousCreateActor",
+	"AnonymousCreateActor": {
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -255,8 +246,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name:  "UpdateActor",
+	"UpdateActor": {
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -296,8 +286,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name:  "DeleteActor",
+	"DeleteActor": {
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -328,8 +317,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name:  "CreateArticle",
+	"CreateArticle": {
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -437,8 +425,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name: "LikeNote",
+	"LikeNote": {
 		mocks: []string{
 			"mocks/service.json",
 			"mocks/actor-johndoe.json",
@@ -538,8 +525,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name: "FollowActor",
+	"FollowActor": {
 		mocks: []string{
 			"mocks/service.json",
 			"mocks/actor-johndoe.json",
@@ -605,8 +591,7 @@ var C2STests = []testSuite{
 			},
 		},
 	},
-	{
-		name: "BlockActor",
+	"BlockActor": {
 		mocks: []string{
 			"mocks/service.json",
 			"mocks/actor-johndoe.json",
@@ -637,9 +622,9 @@ var C2STests = []testSuite{
 			},
 			{
 				req: testReq{
-					met:   http.MethodGet,
+					met:     http.MethodGet,
 					account: &defaultTestAccount,
-					urlFn: func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
+					urlFn:   func() string { return fmt.Sprintf("%s/outbox", *(&defaultTestAccount.Id)) },
 				},
 				res: testRes{
 					code: http.StatusOK,
@@ -652,9 +637,9 @@ var C2STests = []testSuite{
 			},
 			{
 				req: testReq{
-					met:   http.MethodGet,
+					met:     http.MethodGet,
 					account: &defaultTestAccount,
-					urlFn: func() string { return fmt.Sprintf("%s/inbox", *(&extraAccount.Id)) },
+					urlFn:   func() string { return fmt.Sprintf("%s/inbox", *(&extraAccount.Id)) },
 				},
 				res: testRes{
 					code: http.StatusOK,

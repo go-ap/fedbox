@@ -36,12 +36,11 @@ type actMock struct {
 }
 
 type testSuite struct {
-	name  string
 	mocks []string
 	tests []testPair
 }
 
-type testPairs []testSuite
+type testPairs map[string]testSuite
 
 type testAccount struct {
 	Id         string `json:"id"`
@@ -68,7 +67,7 @@ func (t testPair) name() string {
 	if b == "" {
 		b = t.req.urlFn()
 	}
-	return fmt.Sprintf("%s:%s", t.req.met, b)
+	return fmt.Sprintf("[%s]%s", t.req.met, b)
 }
 
 type testRes struct {
@@ -336,7 +335,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			if tVal.act != nil {
 				assertMapKey(ob, "actor", tVal.act)
 				if tVal.act.typ != "" && len(tVal.act.id) > 0 {
-					var dAct  map[string]interface{}
+					var dAct map[string]interface{}
 					if tVal.act.typ == "Tombstone" {
 						dAct = errNotGoneGetRequest(t)(tVal.act.id, nil)
 					} else {
@@ -348,7 +347,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			if tVal.obj != nil {
 				assertMapKey(ob, "object", tVal.obj)
 				if tVal.obj.typ != "" && len(tVal.obj.id) > 0 {
-					var dOb  map[string]interface{}
+					var dOb map[string]interface{}
 					if tVal.obj.typ == "Tombstone" {
 						dOb = errNotGoneGetRequest(t)(tVal.obj.id, nil)
 					} else {
@@ -599,13 +598,16 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 }
 
 func runTestSuite(t *testing.T, pairs testPairs) {
-	for _, suite := range pairs {
-		seedTestData(t, suite.mocks, true)
-		for _, test := range suite.tests {
-			t.Run(fmt.Sprintf("%s:%s", suite.name, test.name()), func(t *testing.T) {
-				seedTestData(t, test.mocks, false)
-				errOnRequest(t)(test)
-			})
-		}
+	for name, suite := range pairs {
+		t.Run(name, func(t *testing.T) {
+			defer cleanDB(t)
+			seedTestData(t, suite.mocks)
+			for _, test := range suite.tests {
+				t.Run(test.name(), func(t *testing.T) {
+					seedTestData(t, test.mocks)
+					errOnRequest(t)(test)
+				})
+			}
+		})
 	}
 }
