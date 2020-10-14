@@ -1,20 +1,28 @@
 export CGO_ENABLED=0
 GO := go
-TEST := $(GO) test -v
+TEST_FLAGS ?= -count=1 -v
 STORAGE ?= all
+
+ENV ?= test
+BUILDFLAGS ?= -a
+TAGS = $(ENV) storage_$(STORAGE) integration
+TEST_TARGET = ./...
+
+TEST := $(GO) test $(BUILDFLAGS)
 
 .PHONY: test integration clean
 
+.cache:
+	mkdir -p .cache
+
 clean:
-	@-$(RM) -rf ./.cache/test*
+	@-$(RM) -rf ./.cache/$(ENV)
 
-c2s: clean
-	mkdir -p .cache
-	$(TEST) -tags "storage_$(STORAGE) integration c2s" ./...
+c2s: clean .cache
+	$(TEST) $(TEST_FLAGS) -tags "$(TAGS) c2s" $(TEST_TARGET)
 
-s2s: clean
-	mkdir -p .cache
-	$(TEST) -tags "storage_$(STORAGE) integration s2s" ./...
+s2s: clean .cache
+	$(TEST) $(TEST_FLAGS) -tags "$(TAGS) s2s" $(TEST_TARGET)
 
 test: c2s s2s
 
