@@ -1,12 +1,10 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"gopkg.in/urfave/cli.v2"
-	"os"
 )
 
 var BootstrapCmd = &cli.Command{
@@ -53,15 +51,8 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 }
 
 func bootstrapOAuth(conf config.Options) error {
-	if conf.Storage == config.StorageFS{
-		return nil
-	}
-	oauthPath := config.GetDBPath(conf.StoragePath, fmt.Sprintf("%s-oauth", conf.Host), conf.Env)
-	if _, err := os.Stat(oauthPath); os.IsNotExist(err) {
-		err = auth.BootstrapBoltDB(oauthPath, []byte(conf.Host))
-		if err != nil {
-			return errors.Annotatef(err, "Unable to create %s db", oauthPath)
-		}
+	if conf.Storage == config.StorageBoltDB{
+		return auth.BootstrapBoltDB(conf.BoltDBOAuth2(), []byte(conf.Host))
 	}
 	return nil
 }

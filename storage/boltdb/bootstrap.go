@@ -13,8 +13,7 @@ import (
 )
 
 func Bootstrap(conf config.Options) error {
-	path := config.GetDBPath(conf.StoragePath, conf.Host, conf.Env)
-	db, err := bolt.Open(path, 0600, nil)
+	db, err := bolt.Open(conf.BoltDB(), 0600, nil)
 	if err != nil {
 		return errors.Annotatef(err, "could not open db")
 	}
@@ -59,9 +58,7 @@ func createService(b *bolt.DB, service pub.Service) error {
 }
 
 func Clean(conf config.Options) error {
-	path := config.GetDBPath(conf.StoragePath, conf.Host, conf.Env)
-	var err error
-	db, err := bolt.Open(path, 0600, nil)
+	db, err := bolt.Open(conf.BoltDB(), 0600, nil)
 	if err != nil {
 		return errors.Annotatef(err, "could not open db")
 	}
@@ -74,7 +71,6 @@ func Clean(conf config.Options) error {
 
 // FIXME(marius): I feel like this hasn't been used anywhere and as such might not work
 func AddTestMockActor(path string, actor pub.Actor) error {
-	var err error
 	db, err := bolt.Open(path, 0600, nil)
 	if err != nil {
 		return errors.Annotatef(err, "could not open db")

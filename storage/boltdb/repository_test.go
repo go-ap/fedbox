@@ -52,7 +52,7 @@ func TestRepo_Open(t *testing.T) {
 		Env:         env.TEST,
 		BaseURL:     url,
 	}
-	path := config.GetDBPath(c.StoragePath, c.Host, c.Env)
+	path := c.BoltDB()
 	err := Bootstrap(c)
 	if err != nil {
 		t.Errorf("Unable to bootstrap boltdb %s: %s", path, err)
@@ -80,7 +80,7 @@ func TestRepo_Close(t *testing.T) {
 		Env:         env.TEST,
 		BaseURL:     url,
 	}
-	path := config.GetDBPath(c.StoragePath, c.Host, c.Env)
+	path := c.BoltDB()
 	err := Bootstrap(c)
 	if err != nil {
 		t.Errorf("Unable to bootstrap boltdb %s: %s", path, err)

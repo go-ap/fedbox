@@ -60,10 +60,6 @@ const (
 	StoragePostgres = StorageType("postgres")
 )
 
-func clean(name string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(path.Clean(name), ".", "-"), ":", "-")
-}
-
 const defaultPerm = os.ModeDir | os.ModePerm | 0700
 
 func (o Options) BaseStoragePath() string {
@@ -85,16 +81,12 @@ func (o Options) BaseStoragePath() string {
 	return basePath
 }
 
-func GetDBPath(dir, file string, env env.Type) string {
-	return fmt.Sprintf("%s/%s-%s.bdb", dir, clean(file), env)
-}
-
 func (o Options) BoltDB() string {
-	return GetDBPath(o.StoragePath, o.Host, o.Env)
+	return fmt.Sprintf("%s/fedbox.bdb", o.BaseStoragePath())
 }
 
 func (o Options) BoltDBOAuth2() string {
-	return GetDBPath(o.StoragePath, fmt.Sprintf("%s-oauth", o.Host), o.Env)
+	return fmt.Sprintf("%s/oauth.bdb", o.BaseStoragePath())
 }
 
 func (o Options) Badger() string {
