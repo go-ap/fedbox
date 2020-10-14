@@ -3,7 +3,9 @@
 package app
 
 import (
+	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/storage/badger"
 	st "github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"

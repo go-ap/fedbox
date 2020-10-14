@@ -2,7 +2,11 @@
 
 package app
 
-import "github.com/go-ap/fedbox/internal/config"
+import (
+	"github.com/go-ap/auth"
+	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/storage/pgx"
+)
 
 func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	// @todo(marius): we're no longer loading SQL db config env variables
