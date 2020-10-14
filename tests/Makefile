@@ -1,6 +1,6 @@
 export CGO_ENABLED=0
 GO := go
-TEST_FLAGS ?= -count=1 -v
+TEST_FLAGS ?= -count=1
 STORAGE ?= all
 
 ENV ?= test
@@ -17,6 +17,7 @@ TEST := $(GO) test $(BUILDFLAGS)
 
 clean:
 	@-$(RM) -rf ./.cache/$(ENV)
+	@-$(RM) -rf ./.cache/*.bdb
 
 c2s: clean .cache
 	$(TEST) $(TEST_FLAGS) -tags "$(TAGS) c2s" $(TEST_TARGET)

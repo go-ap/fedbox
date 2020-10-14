@@ -8,7 +8,7 @@ STORAGE ?= all
 ENV ?= dev
 LDFLAGS ?= -X main.version=$(VERSION)
 BUILDFLAGS ?= -trimpath -a -ldflags '$(LDFLAGS)'
-TEST_FLAGS ?= -count=1 -v
+TEST_FLAGS ?= -count=1
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
