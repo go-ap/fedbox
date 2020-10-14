@@ -129,7 +129,7 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 	err := r.d.View(func(tx *bolt.Tx) error {
 		rb := tx.Bucket(r.root)
 		if rb == nil {
-			return errors.Errorf("Invalid bucket %s", r.root)
+			return ErrorInvalidRoot(r.root)
 		}
 		var err error
 		for _, iri := range iris {
@@ -226,12 +226,16 @@ func (r *repo) iterateInBucket(b *bolt.Bucket, f s.Filterable) (pub.ItemCollecti
 	return col, uint(len(col)), nil
 }
 
+var ErrorInvalidRoot = func(b []byte) error {
+	return errors.Errorf("Invalid root bucket %s", b)
+}
+
 func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) {
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *bolt.Tx) error {
 		rb := tx.Bucket(r.root)
 		if rb == nil {
-			return errors.Errorf("Invalid bucket %s", r.root)
+			return ErrorInvalidRoot(r.root)
 		}
 
 		iri := f.GetLink()
@@ -539,9 +543,12 @@ func createCollectionsInBucket(b *bolt.Bucket, it pub.Item) error {
 func deleteCollections(r *repo, it pub.Item) error {
 	pathInBucket := itemBucketPath(it.GetLink())
 	return r.d.Update(func(tx *bolt.Tx) error {
-		root := tx.Bucket(r.root)
+		root, err := tx.CreateBucketIfNotExists(r.root)
+		if err != nil {
+			return errors.Errorf("Not able to write to root bucket %s", r.root)
+		}
 		if root == nil {
-			return errors.Errorf("Invalid bucket %s", r.root)
+			return ErrorInvalidRoot(r.root)
 		}
 		if !root.Writable() {
 			return errors.Errorf("Non writeable bucket %s", r.root)
@@ -584,9 +591,12 @@ func deleteCollectionsFromBucket(b *bolt.Bucket, it pub.Item) error {
 func save(r *repo, it pub.Item) (pub.Item, error) {
 	pathInBucket := itemBucketPath(it.GetLink())
 	err := r.d.Update(func(tx *bolt.Tx) error {
-		root := tx.Bucket(r.root)
+		root, err := tx.CreateBucketIfNotExists(r.root)
+		if err != nil {
+			return errors.Errorf("Not able to write to root bucket %s", r.root)
+		}
 		if root == nil {
-			return errors.Errorf("Invalid bucket %s", r.root)
+			return ErrorInvalidRoot(r.root)
 		}
 		if !root.Writable() {
 			return errors.Errorf("Non writeable bucket %s", r.root)
@@ -681,7 +691,7 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub
 		var rem []byte
 		root := tx.Bucket(r.root)
 		if root == nil {
-			return errors.Errorf("Invalid bucket %s", r.root)
+			return ErrorInvalidRoot(r.root)
 		}
 		if !root.Writable() {
 			return errors.Errorf("Non writeable bucket %s", r.root)
@@ -844,9 +854,12 @@ func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 	defer r.Close()
 
 	err = r.d.Update(func(tx *bolt.Tx) error {
-		root := tx.Bucket(r.root)
+		root, err := tx.CreateBucketIfNotExists(r.root)
+		if err != nil {
+			return errors.Errorf("Not able to write to root bucket %s", r.root)
+		}
 		if root == nil {
-			return errors.Errorf("Invalid bucket %s", r.root)
+			return ErrorInvalidRoot(r.root)
 		}
 		if !root.Writable() {
 			return errors.Errorf("Non writeable bucket %s", r.root)
@@ -894,7 +907,7 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 	err = r.d.View(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
 		if root == nil {
-			return errors.Errorf("Invalid bucket %s", r.root)
+			return ErrorInvalidRoot(r.root)
 		}
 		var b *bolt.Bucket
 		b, path, err = descendInBucket(root, path, false)
@@ -927,7 +940,7 @@ func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 	err = r.d.View(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
 		if root == nil {
-			return errors.Errorf("Invalid bucket %s", r.root)
+			return ErrorInvalidRoot(r.root)
 		}
 		var b *bolt.Bucket
 		b, path, err = descendInBucket(root, path, false)
@@ -951,9 +964,12 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 
 	path := itemBucketPath(iri)
 	err = r.d.Update(func(tx *bolt.Tx) error {
-		root := tx.Bucket(r.root)
+		root, err := tx.CreateBucketIfNotExists(r.root)
+		if err != nil {
+			return errors.Errorf("Not able to write to root bucket %s", r.root)
+		}
 		if root == nil {
-			return errors.Errorf("Invalid bucket %s", r.root)
+			return ErrorInvalidRoot(r.root)
 		}
 		if !root.Writable() {
 			return errors.Errorf("Non writeable bucket %s", r.root)
