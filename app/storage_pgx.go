@@ -4,7 +4,7 @@ package app
 
 import "github.com/go-ap/fedbox/internal/config"
 
-func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	// @todo(marius): we're no longer loading SQL db config env variables
 	conf := config.BackendConfig{}
 	db, err := pgx.New(conf, c.BaseURL, l)
@@ -20,8 +20,4 @@ func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.
 		ErrFn:   ErrLogFn(l),
 	})
 	return db, oauth, err
-}
-
-func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	return getPgxStorage(c, l)
 }
