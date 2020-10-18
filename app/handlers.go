@@ -258,8 +258,14 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 
 		pub.OnActivity(it, func(a *pub.Activity) error {
 			for _, r := range a.Recipients() {
+				if r.GetLink().Equals(pub.PublicNS, false) {
+					continue
+				}
 				if h.ValidCollectionIRI(r.GetLink()) {
+					// TODO(marius): for followers, following collections this should dereference the members
 					fb.caches.remove(r.GetLink())
+				} else {
+					fb.caches.remove(h.Inbox.IRI(r))
 				}
 			}
 			if typ == h.Outbox {
