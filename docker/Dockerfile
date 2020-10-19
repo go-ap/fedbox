@@ -16,7 +16,7 @@ WORKDIR /go/src/app
 RUN make ENV=${ENV} STORAGE=${STORAGE} VERSION=${VERSION} clean all
 RUN docker/gen-certs.sh fedbox
 
-FROM gcr.io/distroless/base
+FROM gcr.io/distroless/static
 
 ARG PORT=4000
 ARG ENV=dev
