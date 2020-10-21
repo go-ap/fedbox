@@ -121,8 +121,8 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 	if p.Type == pub.PersonType {
 		p.Endpoints = &pub.Endpoints{
 			SharedInbox:                self.Inbox.GetLink(),
-			OauthAuthorizationEndpoint: pub.IRI(fmt.Sprintf("%s/oauth/authorize", self.URL)),
-			OauthTokenEndpoint:         pub.IRI(fmt.Sprintf("%s/oauth/token", self.URL)),
+			OauthAuthorizationEndpoint: self.ID.AddPath("/oauth/authorize"),
+			OauthTokenEndpoint:         self.ID.AddPath("/oauth/token"),
 		}
 	}
 	it, err := c.Storage.SaveActor(p)
@@ -361,8 +361,7 @@ func (c *Control) List(initialPath string, types ...string) (pub.ItemCollection,
 		if initialPath[0] != '/' {
 			initialPath = "/" + initialPath
 		}
-		pathIRI := pub.IRI(fmt.Sprintf("%s%s", ctl.Conf.BaseURL, initialPath))
-		err = accFn(pathIRI, activityTyp)
+		err = accFn(pub.IRI(ctl.Conf.BaseURL).AddPath(initialPath), activityTyp)
 	}
 
 	return items, err
@@ -537,15 +536,15 @@ func dumpAll(f *ap.Filters) (pub.ItemCollection, error) {
 	return col, nil
 }
 
+var baseURL = pub.IRI(ctl.Conf.BaseURL)
+
 func exportPubObjects(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		irif := func(t handlers.CollectionType) pub.IRI { return pub.IRI(fmt.Sprintf("%s/%s", ctl.Conf.BaseURL, t)) }
-
 		objects := make(pub.ItemCollection, 0)
 		allCollections := handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
 		for _, c := range allCollections {
 			dump, err := dumpAll(&ap.Filters{
-				IRI: irif(c),
+				IRI: handlers.IRIf(baseURL, c),
 			})
 			if err != nil {
 				return err
