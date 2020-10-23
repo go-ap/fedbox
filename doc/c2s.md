@@ -12,7 +12,7 @@ It also represents the Object's ID in respect to the AP spec.
 
 ## API end-points
 
-Fedbox has as a unique entry point for any non-authorized request. For convenience we'll assume that is the root path for the domain (eg: `https://federated.id/`)
+FedBOX has as a unique entry point for any non-authorized request. For convenience we'll assume that is the root path for the domain (eg: `https://federated.id/`)
 
 We'll call this entry point the "Local Service's IRI", as it response consists of a Service Actor representing the current instance.
 
