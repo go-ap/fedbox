@@ -76,6 +76,27 @@ func (r *cache) remove(iri pub.IRI) bool {
 	return true
 }
 
+func ObjectPurgeCache(caches *cache, o *pub.Object) error {
+	obIRI := o.GetLink()
+	caches.remove(pub.IRI(path.Dir(obIRI.String())))
+	caches.remove(obIRI)
+
+	if o.InReplyTo == nil {
+		return nil
+	}
+	if o.InReplyTo.IsCollection() {
+		pub.OnCollectionIntf(o.InReplyTo, func(c pub.CollectionInterface) error {
+			for _, it := range c.Collection() {
+				caches.remove(it.GetLink())
+			}
+			return nil
+		})
+	} else {
+		caches.remove(o.InReplyTo.GetLink())
+	}
+	return nil
+}
+
 func ActivityPurgeCache(caches *cache, a *pub.Activity, typ h.CollectionType) error {
 	for _, r := range a.Recipients() {
 		if r.GetLink().Equals(pub.PublicNS, false) {
@@ -95,22 +116,8 @@ func ActivityPurgeCache(caches *cache, a *pub.Activity, typ h.CollectionType) er
 		caches.remove(h.Inbox.IRI(a.Actor))
 	}
 
-	obIRI := a.Object.GetLink()
-	caches.remove(pub.IRI(path.Dir(obIRI.String())))
-	caches.remove(obIRI)
 	pub.OnObject(a.Object, func(o *pub.Object) error {
-		inReply := o.InReplyTo
-		if inReply.IsCollection() {
-			pub.OnCollectionIntf(inReply, func(c pub.CollectionInterface) error {
-				for _, it := range c.Collection() {
-					caches.remove(it.GetLink())
-				}
-				return nil
-			})
-		} else {
-			caches.remove(inReply.GetLink())
-		}
-		return nil
+		return ObjectPurgeCache(caches, o)
 	})
 
 	aIRI := a.GetLink()
