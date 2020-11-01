@@ -242,6 +242,7 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 				a.AttributedTo = f.Authenticated
 			}
 
+			ActivityPurgeCache(&fb.caches, a, typ)
 			if it, err = processFn(a); err != nil {
 				return errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 			}
@@ -255,35 +256,6 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 		if it.GetType() == pub.DeleteType {
 			status = http.StatusGone
 		}
-
-		pub.OnActivity(it, func(a *pub.Activity) error {
-			for _, r := range a.Recipients() {
-				if r.GetLink().Equals(pub.PublicNS, false) {
-					continue
-				}
-				if h.ValidCollectionIRI(r.GetLink()) {
-					// TODO(marius): for followers, following collections this should dereference the members
-					fb.caches.remove(r.GetLink())
-				} else {
-					fb.caches.remove(h.Inbox.IRI(r))
-				}
-			}
-			if typ == h.Outbox {
-				fb.caches.remove(h.Outbox.IRI(a.Actor))
-			}
-			if typ == h.Inbox {
-				fb.caches.remove(h.Inbox.IRI(a.Actor))
-			}
-
-			obIRI := a.Object.GetLink()
-			fb.caches.remove(pub.IRI(path.Dir(obIRI.String())))
-			fb.caches.remove(obIRI)
-
-			aIRI := a.GetLink()
-			fb.caches.remove(pub.IRI(path.Dir(aIRI.String())))
-			fb.caches.remove(aIRI)
-			return nil
-		})
 
 		return it, status, nil
 	}

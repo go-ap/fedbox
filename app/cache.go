@@ -4,6 +4,7 @@ import (
 	"fmt"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox/activitypub"
+	h "github.com/go-ap/handlers"
 	"github.com/mariusor/qstring"
 	"net/url"
 	"path"
@@ -73,4 +74,47 @@ func (r *cache) remove(iri pub.IRI) bool {
 		}
 	}
 	return true
+}
+
+func ActivityPurgeCache(caches *cache, a *pub.Activity, typ h.CollectionType) error {
+	for _, r := range a.Recipients() {
+		if r.GetLink().Equals(pub.PublicNS, false) {
+			continue
+		}
+		if h.ValidCollectionIRI(r.GetLink()) {
+			// TODO(marius): for followers, following collections this should dereference the members
+			caches.remove(r.GetLink())
+		} else {
+			caches.remove(h.Inbox.IRI(r))
+		}
+	}
+	if typ == h.Outbox {
+		caches.remove(h.Outbox.IRI(a.Actor))
+	}
+	if typ == h.Inbox {
+		caches.remove(h.Inbox.IRI(a.Actor))
+	}
+
+	obIRI := a.Object.GetLink()
+	caches.remove(pub.IRI(path.Dir(obIRI.String())))
+	caches.remove(obIRI)
+	pub.OnObject(a.Object, func(o *pub.Object) error {
+		inReply := o.InReplyTo
+		if inReply.IsCollection() {
+			pub.OnCollectionIntf(inReply, func(c pub.CollectionInterface) error {
+				for _, it := range c.Collection() {
+					caches.remove(it.GetLink())
+				}
+				return nil
+			})
+		} else {
+			caches.remove(inReply.GetLink())
+		}
+		return nil
+	})
+
+	aIRI := a.GetLink()
+	caches.remove(pub.IRI(path.Dir(aIRI.String())))
+	caches.remove(aIRI)
+	return nil
 }
