@@ -14,6 +14,9 @@ import (
 	"strings"
 )
 
+var encodeFn = jsonld.Marshal
+var decodeFn = jsonld.Unmarshal
+
 func Path (c config.Options) (string, error){
 	p := fmt.Sprintf("%s/%s/%s", c.StoragePath, c.Env, c.Host)
 	crumbs := strings.Split(p, "/")
@@ -46,7 +49,7 @@ func Bootstrap(conf config.Options) error {
 }
 
 func createService(b *badger.DB, service pub.Service) error {
-	raw, err := jsonld.Marshal(service)
+	raw, err := encodeFn(service)
 	if err != nil {
 		return errors.Annotatef(err, "could not marshal service json")
 	}

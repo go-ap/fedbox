@@ -22,6 +22,9 @@ import (
 	"time"
 )
 
+var encodeFn = jsonld.Marshal
+var decodeFn = jsonld.Unmarshal
+
 type repo struct {
 	baseURL string
 	conn    *pgx.ConnPool
@@ -392,7 +395,7 @@ func saveToDb(l repo, table string, it pub.Item) (pub.Item, error) {
 		// broken ID generation
 		return it, errors.Newf("Unable to generate ID for %s[%s]", table, it.GetType())
 	}
-	raw, _ := jsonld.Marshal(it)
+	raw, _ := encodeFn(it)
 	nowTz := pgtype.Timestamptz{
 		Time:   time.Now().UTC(),
 		Status: pgtype.Present,
@@ -430,7 +433,7 @@ func (r repo) updateItem(table string, it pub.Item) (pub.Item, error) {
 			it = o
 		}
 	}
-	raw, _ := jsonld.Marshal(it)
+	raw, _ := encodeFn(it)
 
 	nowTz := pgtype.Timestamptz{
 		Time:   now,

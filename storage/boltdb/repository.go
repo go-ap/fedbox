@@ -23,6 +23,9 @@ import (
 	"time"
 )
 
+var encodeFn = jsonld.Marshal
+var decodeFn = jsonld.Unmarshal
+
 type repo struct {
 	d       *bolt.DB
 	m       sync.Mutex
@@ -616,7 +619,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 
 		// TODO(marius): it's possible to set the encoding/decoding functions on the package or storage object level
 		//  instead of using jsonld.(Un)Marshal like this.
-		entryBytes, err := jsonld.Marshal(it)
+		entryBytes, err := encodeFn(it)
 		if err != nil {
 			return errors.Annotatef(err, "could not marshal object")
 		}
@@ -710,7 +713,7 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub
 		var iris pub.IRIs
 		raw := b.Get(rem)
 		if len(raw) > 0 {
-			err := jsonld.Unmarshal(raw, &iris)
+			err := decodeFn(raw, &iris)
 			if err != nil {
 				return errors.Newf("Unable to unmarshal entries in collection %s", path)
 			}
@@ -719,7 +722,7 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub
 		if err != nil {
 			return errors.Annotatef(err, "Unable operate on collection %s", path)
 		}
-		raw, err = jsonld.Marshal(iris)
+		raw, err = encodeFn(iris)
 		if err != nil {
 			return errors.Newf("Unable to marshal entries in collection %s", path)
 		}
@@ -880,7 +883,7 @@ func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 		m := storage.Metadata{
 			Pw: pw,
 		}
-		entryBytes, err := jsonld.Marshal(m)
+		entryBytes, err := encodeFn(m)
 		if err != nil {
 			return errors.Annotatef(err, "Could not marshal metadata")
 		}
@@ -915,7 +918,7 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 			return errors.Newf("Unable to find %s in root bucket", path)
 		}
 		entryBytes := b.Get([]byte(metaDataKey))
-		err := jsonld.Unmarshal(entryBytes, &m)
+		err := decodeFn(entryBytes, &m)
 		if err != nil {
 			return errors.Annotatef(err, "Could not unmarshal metadata")
 		}
@@ -983,7 +986,7 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
 
-		entryBytes, err := jsonld.Marshal(m)
+		entryBytes, err := encodeFn(m)
 		if err != nil {
 			return errors.Annotatef(err, "Could not marshal metadata")
 		}

@@ -24,6 +24,9 @@ import (
 	"time"
 )
 
+var encodeFn = jsonld.Marshal
+var decodeFn = jsonld.Unmarshal
+
 var errNotImplemented = errors.NotImplementedf("not implemented")
 
 type loggerFn func(string, ...interface{})
@@ -444,7 +447,7 @@ func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 	if err != nil {
 		return nil, errors.Annotatef(err, "Could not find metadata in path %s", p)
 	}
-	err = jsonld.Unmarshal(raw, m)
+	err = decodeFn(raw, m)
 	if err != nil {
 		return nil, errors.Annotatef(err, "Could not unmarshal metadata")
 	}
@@ -466,7 +469,7 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 	}
 	defer f.Close()
 
-	entryBytes, err := jsonld.Marshal(m)
+	entryBytes, err := encodeFn(m)
 	if err != nil {
 		return errors.Annotatef(err, "Could not marshal metadata")
 	}
@@ -648,7 +651,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 	}
 	// TODO(marius): it's possible to set the encoding/decoding functions on the package or storage object level
 	//  instead of using jsonld.(Un)Marshal like this.
-	entryBytes, err := jsonld.Marshal(it)
+	entryBytes, err := encodeFn(it)
 	if err != nil {
 		return it, errors.Annotatef(err, "could not marshal object")
 	}
