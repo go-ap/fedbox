@@ -484,16 +484,7 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 }
 
 func createOrOpenFile(p string) (*os.File, error) {
-	f, err := os.Open(p)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// create json file
-			return os.Create(p)
-		} else {
-			return f, err
-		}
-	}
-	return f, err
+	return os.OpenFile(p, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 }
 
 func isStorageCollectionKey(p string) bool {
