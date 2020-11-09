@@ -354,3 +354,269 @@ func TestFilters_ItemMatches(t *testing.T) {
 func TestFilters_FilterCollection(t *testing.T) {
 	t.Skipf("TODO")
 }
+
+func Test_filterNaturalLanguageValues(t *testing.T) {
+	type args struct {
+		filters CompStrs
+		valArr  []pub.NaturalLanguageValues
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "basic-equality",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "",
+						Str:      "ana",
+					},
+				},
+				valArr: []pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: pub.Content("ana"),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "basic-equality-with-nil-first",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "",
+						Str:      "ana",
+					},
+				},
+				valArr: []pub.NaturalLanguageValues{
+					nil,
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: pub.Content("ana"),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "basic-like",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "~",
+						Str:      "ana",
+					},
+				},
+				valArr: []pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: pub.Content("ana"),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "basic-like-with-longer-value",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "~",
+						Str:      "ana",
+					},
+				},
+				valArr: []pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: pub.Content("anathema"),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "basic-different",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "!",
+						Str:      "ana",
+					},
+				},
+				valArr: []pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: pub.Content("bob"),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "basic-different-with-empty-values",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "!",
+						Str:      "ana",
+					},
+				},
+				valArr: []pub.NaturalLanguageValues{
+					nil,
+					{},
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: pub.Content("bob"),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "basic-false-equality",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "",
+						Str:      "ana",
+					},
+				},
+				valArr: []pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: pub.Content("bob"),
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "basic-false-equality-with-nil-first",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "",
+						Str:      "ana",
+					},
+				},
+				valArr: []pub.NaturalLanguageValues{
+					nil,
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: pub.Content("bob"),
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "basic-false-like",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "~",
+						Str:      "ana",
+					},
+				},
+				valArr: []pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: pub.Content("bob"),
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "basic-false-like-with-longer-value",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "~",
+						Str:      "ana",
+					},
+				},
+				valArr: []pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: pub.Content("bobsyouruncle"),
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "basic-false-different",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "!",
+						Str:      "ana",
+					},
+				},
+				valArr: []pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: pub.Content("ana"),
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "basic-false-different-with-empty-values",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "!",
+						Str:      "ana",
+					},
+				},
+				valArr: []pub.NaturalLanguageValues{
+					nil,
+					{},
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: pub.Content("anathema"),
+						},
+					},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := filterNaturalLanguageValues(tt.args.filters, tt.args.valArr...); got != tt.want {
+				t.Errorf("filterNaturalLanguageValues() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
