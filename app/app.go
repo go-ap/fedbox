@@ -208,7 +208,7 @@ func (f *FedBOX) Stop() {
 // Run is the wrapper for starting the web-server and handling signals
 func (f *FedBOX) Run(m http.Handler, wait time.Duration) int {
 	// Create a deadline to wait for.
-	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	ctx, cancel := context.WithTimeout(context.TODO(), wait)
 	defer cancel()
 
 	// set local path typer to validate collections
