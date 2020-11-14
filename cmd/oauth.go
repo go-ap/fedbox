@@ -6,6 +6,7 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	apub "github.com/go-ap/fedbox/activitypub"
+	fedbox "github.com/go-ap/fedbox/app"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/pborman/uuid"
@@ -15,20 +16,6 @@ import (
 	"strings"
 	"time"
 )
-
-type ClientSaver interface {
-	// UpdateClient updates the client (identified by it's id) and replaces the values with the values of client.
-	UpdateClient(c osin.Client) error
-	// CreateClient stores the client in the database and returns an error, if something went wrong.
-	CreateClient(c osin.Client) error
-	// RemoveClient removes a client (identified by id) from the database. Returns an error if something went wrong.
-	RemoveClient(id string) error
-}
-
-type ClientLister interface {
-	// ListClients lists existing clients
-	ListClients() ([]osin.Client, error)
-}
 
 var client = &cli.Command{
 	Name:  "client",
@@ -210,7 +197,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 		UserData:    userData,
 	}
 
-	if saver, ok := c.AuthStorage.(ClientSaver); ok {
+	if saver, ok := c.AuthStorage.(fedbox.ClientSaver); ok {
 		err = saver.CreateClient(&d)
 	} else {
 		err = errors.Newf("invalid OAuth2 client backend")
@@ -225,7 +212,7 @@ func (c *Control) DeleteClient(uuid string) error {
 		return err
 	}
 
-	if saver, ok := c.AuthStorage.(ClientSaver); ok {
+	if saver, ok := c.AuthStorage.(fedbox.ClientSaver); ok {
 		err = saver.RemoveClient(uuid)
 	} else {
 		err = errors.Newf("invalid OAuth2 client backend")
@@ -236,7 +223,7 @@ func (c *Control) DeleteClient(uuid string) error {
 func (c *Control) ListClients() ([]osin.Client, error) {
 	var err error
 
-	if ls, ok := c.AuthStorage.(ClientLister); ok {
+	if ls, ok := c.AuthStorage.(fedbox.ClientLister); ok {
 		return ls.ListClients()
 	} else {
 		err = errors.Newf("invalid OAuth2 client backend")

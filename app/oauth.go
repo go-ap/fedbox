@@ -7,6 +7,8 @@ import (
 	"github.com/go-ap/fedbox/internal/assets"
 	"html/template"
 	"net/http"
+	"net/url"
+	"path"
 	"time"
 
 	pub "github.com/go-ap/activitypub"
@@ -26,6 +28,26 @@ type account struct {
 	actor    *pub.Actor
 }
 
+type ClientStorage interface {
+	ClientSaver
+	ClientLister
+}
+
+type ClientSaver interface {
+	// UpdateClient updates the client (identified by it's id) and replaces the values with the values of client.
+	UpdateClient(c osin.Client) error
+	// CreateClient stores the client in the database and returns an error, if something went wrong.
+	CreateClient(c osin.Client) error
+	// RemoveClient removes a client (identified by id) from the database. Returns an error if something went wrong.
+	RemoveClient(id string) error
+}
+
+type ClientLister interface {
+	// ListClients lists existing clients
+	ListClients() ([]osin.Client, error)
+	GetClient(id string) (osin.Client, error)
+}
+
 func (a account) IsLogged() bool {
 	return a.actor != nil && a.actor.PreferredUsername.First().Value.String() == a.username
 }
@@ -35,9 +57,163 @@ func (a *account) FromActor(p *pub.Actor) {
 	a.actor = p
 }
 
-type oauthHandler struct {
+type indieAuth struct {
 	baseURL string
 	os      *osin.Server
+	st      ClientStorage
+	ap      storage.Repository
+}
+
+const (
+	meKey           = "me"
+	redirectUriKey  = "redirect_uri"
+	clientIdKey     = "client_id"
+	responseTypeKey = "response_type"
+
+	ID osin.AuthorizeRequestType = "id"
+)
+
+func (i indieAuth) IsValidRequest(r *http.Request) bool {
+	clientID, err := url.QueryUnescape(r.FormValue(clientIdKey))
+	if err != nil {
+		return false
+	}
+	_, err = url.Parse(clientID)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func IndieAuthClientActor(author pub.Item, url *url.URL) *pub.Actor {
+	now := time.Now().UTC()
+	preferredUsername := url.Host
+	p := pub.Person{
+		Type:         pub.ApplicationType,
+		AttributedTo: author.GetLink(),
+		Audience:     pub.ItemCollection{pub.PublicNS},
+		Generator:    author.GetLink(),
+		Published:    now,
+		Summary: pub.NaturalLanguageValues{
+			{pub.NilLangRef, pub.Content("IndieAuth generated actor")},
+		},
+		Updated: now,
+		PreferredUsername: pub.NaturalLanguageValues{
+			{pub.NilLangRef, pub.Content(preferredUsername)},
+		},
+		URL: pub.IRI(url.String()),
+	}
+
+	return &p
+}
+
+func filters(r *http.Request, baseURL string) *activitypub.Filters {
+	f, _ := activitypub.FromRequest(r, baseURL)
+	f.IRI = f.IRI[:0]
+	f.Collection = activitypub.ActorsType
+	return f
+}
+
+func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
+	r.ParseForm()
+	clientID, err := url.QueryUnescape(r.FormValue(clientIdKey))
+	if err != nil {
+		return nil, err
+	}
+	clientURL, err := url.Parse(clientID)
+	if err != nil {
+		return nil, nil
+	}
+
+	unescapedUri, err := url.QueryUnescape(r.FormValue(redirectUriKey))
+	if err != nil {
+		return nil, err
+	}
+	// load the me value of the actor that wants to authenticate
+	me, err := url.QueryUnescape(r.FormValue(meKey))
+	if err != nil {
+		return nil, err
+	}
+
+	// check for existing user actor
+	var actor pub.Item
+	f := filters(r, i.baseURL)
+	f.Type = []pub.ActivityVocabularyType{
+		pub.PersonType,
+	}
+	f.URL = activitypub.CompStrs{activitypub.StringEquals(me)}
+	actors, _, err := i.ap.LoadActors(f)
+	if err != nil {
+		return nil, err
+	}
+	if len(actors) == 0 {
+		return nil, errors.NotFoundf("unknown actor")
+	} else if len(actors) > 0 {
+		actor = actors.First()
+	}
+
+	// check for existing application actor
+	f = filters(r, i.baseURL)
+	f.Type = []pub.ActivityVocabularyType{
+		pub.ApplicationType,
+	}
+	f.URL = activitypub.CompStrs{activitypub.StringEquals(clientID)}
+	clientActors, _, err := i.ap.LoadActors(f)
+	if err != nil {
+		return nil, err
+	}
+	var clientActor pub.Item
+	if len(clientActors) == 0 {
+		gen, ok := i.ap.(storage.IDGenerator)
+		if !ok {
+			return nil, err
+		}
+		newClient := IndieAuthClientActor(actor, clientURL)
+		newId, err := gen.GenerateID(newClient, actor)
+		if err != nil {
+			return nil, err
+		}
+		newClient.ID = newId
+		clientActor, err = i.ap.SaveActor(newClient)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		clientActor = clientActors.First()
+	}
+	id := path.Base(clientActor.GetID().String())
+
+	// must have a valid client
+	if _, err = i.st.GetClient(id); err != nil {
+		if errors.IsNotFound(err) {
+			// create client
+			newClient := osin.DefaultClient{
+				Id:          id,
+				Secret:      "",
+				RedirectUri: unescapedUri,
+				//UserData:    userData,
+			}
+			if err = i.st.CreateClient(&newClient); err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+	r.Form.Set(clientIdKey, id)
+	if osin.AuthorizeRequestType(r.FormValue(responseTypeKey)) == ID {
+		r.Form.Set(responseTypeKey, "code")
+	}
+
+	if act, ok := actor.(*pub.Actor); ok {
+		return act, nil
+	}
+	return nil, nil
+}
+
+type oauthHandler struct {
+	baseURL string
+	ia      *indieAuth
 	loader  storage.ActorLoader
 	logger  logrus.FieldLogger
 }
@@ -78,12 +254,25 @@ func (h *oauthHandler) loadAccountFromPost(r *http.Request) (*account, error) {
 }
 
 func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
-	s := h.os
+	ia := h.ia
 
+	var err error
+
+	s := ia.os
 	resp := s.NewResponse()
 	defer resp.Close()
 
+	actor := &auth.AnonymousActor
+	if ia.IsValidRequest(r) {
+		if actor, err = ia.ValidateClient(r); err != nil {
+			resp.SetError(osin.E_INVALID_REQUEST, err.Error())
+			redirectOrOutput(resp, w, r)
+			return
+		}
+	}
+
 	var overrideRedir = false
+
 	if ar := s.HandleAuthorizeRequest(resp, r); ar != nil {
 		if r.Method == http.MethodGet {
 			if ar.Scope == scopeAnonymousUserCreate {
@@ -95,7 +284,7 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 			} else {
 				// this is basically the login page, with client being set
 				m := login{title: "Login"}
-				m.account = auth.AnonymousActor
+				m.account = *actor
 				m.client = ar.Client.GetId()
 				m.state = ar.State
 
@@ -137,7 +326,7 @@ func checkPw(it pub.Item, pw []byte, pwLoader st.PasswordChanger) (*account, err
 }
 
 func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
-	s := h.os
+	s := h.ia.os
 	resp := s.NewResponse()
 	defer resp.Close()
 
@@ -267,6 +456,13 @@ func (l login) State() string {
 
 func (l login) Client() string {
 	return l.client
+}
+
+func (l login) Handle() string {
+	if len(l.account.PreferredUsername) == 0 {
+		return ""
+	}
+	return l.account.PreferredUsername.First().String()
 }
 
 type model interface {
@@ -422,7 +618,7 @@ func (h *oauthHandler) HandleChangePw(w http.ResponseWriter, r *http.Request) {
 			errors.HandleError(errors.NotValidf("Unable to change password")).ServeHTTP(w, r)
 			return
 		}
-		h.os.Storage.RemoveAuthorize(tok)
+		h.ia.os.Storage.RemoveAuthorize(tok)
 	}
 }
 
@@ -436,7 +632,7 @@ func (h *oauthHandler) loadActorFromOauth2Session(w http.ResponseWriter, r *http
 		return nil
 	}
 
-	authSess, err := h.os.Storage.LoadAuthorize(tok)
+	authSess, err := h.ia.os.Storage.LoadAuthorize(tok)
 	if err != nil {
 		h.logger.Errorf("Error when loading authorize session: %s", err)
 		errors.HandleError(notF).ServeHTTP(w, r)

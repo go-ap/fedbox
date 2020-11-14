@@ -775,28 +775,27 @@ func filterURLs(filters CompStrs, it pub.Item) bool {
 	if it == nil {
 		return false
 	}
-	var url string
-	switch ob := it.(type) {
-	case pub.Page:
-		if ob.URL != nil {
-			url = ob.URL.GetLink().String()
+	var url pub.IRI
+	pub.OnObject(it, func(o *pub.Object) error {
+		if o.URL != nil {
+			url = o.URL.GetLink()
 		}
-	case *pub.Page:
-		if ob.URL != nil {
-			url = ob.URL.GetLink().String()
-		}
-	}
-	if url == "" {
-		pub.OnObject(it, func(o *pub.Object) error {
-			if o.URL != nil {
-				url = o.URL.GetLink().String()
-			}
-			return nil
-		})
-	}
+		return nil
+	})
 	for _, filter := range filters {
+		filterIRI := pub.IRI(filter.Str)
 		if filter.Operator == "~" {
-			if strings.Contains(url, filter.Str) {
+			if url.Contains(filterIRI, false) {
+				keep = true
+				break
+			}
+		} else if filter.Operator == "!" {
+			if !url.Equals(filterIRI, false) {
+				keep = true
+				break
+			}
+		} else {
+			if url.Equals(filterIRI, false) {
 				keep = true
 				break
 			}

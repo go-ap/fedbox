@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func (f FedBOX) CollectionRoutes(descend bool) func (chi.Router) {
+func (f FedBOX) CollectionRoutes(descend bool) func(chi.Router) {
 	return func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.With(middleware.GetHead)
@@ -36,9 +36,17 @@ func (f FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) fu
 		r.Method(http.MethodGet, "/", HandleItem(f))
 		r.Route("/{collection}", f.CollectionRoutes(true))
 
-		h := oauthHandler{
+		ia := indieAuth{
 			baseURL: baseURL,
 			os:      os,
+			ap:      f.Storage,
+		}
+		if oauthStorage, ok := f.OAuthStorage.(ClientStorage); ok {
+			ia.st = oauthStorage
+		}
+		h := oauthHandler{
+			baseURL: baseURL,
+			ia:      &ia,
 			loader:  f.Storage,
 			logger:  l,
 		}

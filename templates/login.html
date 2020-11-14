@@ -9,6 +9,7 @@
 </head>
 <body>
 <header><h1>Fed::BOX</h1></header>
+{{- $handle := .Handle -}}
 <main>
     <form method="post" method="POST">
 {{/*        <fieldset>*/}}
@@ -16,9 +17,9 @@
             <input type="hidden" name="state" value="{{.State}}" />
             <input type="hidden" name="client" value="{{.Client}}" />
             <label for="auth-handle">Handle:</label><br/>
-            <input name="handle" id="auth-handle" type="text" size="40" required/><br/>
+            <input name="handle" id="auth-handle" type="text" size="40" {{ if $handle }}readonly value="{{ $handle }}" {{end -}} required/><br/>
             <label for="auth-pw">Password: </label><br/>
-            <input name="pw" id="auth-pw" type="password" size="40" required/><br/>
+            <input name="pw" id="auth-pw" type="password" autofocus size="40" required/><br/>
             <button type="submit">Log in</button>
 {{/*        </fieldset>*/}}
     </form>
