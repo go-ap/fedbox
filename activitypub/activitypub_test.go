@@ -21,7 +21,7 @@ func TestItemByType(t *testing.T) {
 
 	for typ, test := range tests {
 		t.Run(string(typ), func(t *testing.T) {
-			v, err := pub.JSONGetItemByType(typ)
+			v, err := pub.GetItemByType(typ)
 			if err != nil {
 				t.Error(err)
 			}
@@ -39,7 +39,7 @@ func TestGenerateID(t *testing.T) {
 	generateIDTests = append(generateIDTests, pub.ActorTypes...)
 	partOf := "http://example.com"
 	for _, typ := range generateIDTests {
-		it, err := pub.JSONGetItemByType(typ)
+		it, err := pub.GetItemByType(typ)
 		if err != nil {
 			t.Errorf("Unable to create object from type: %s", err)
 		}
