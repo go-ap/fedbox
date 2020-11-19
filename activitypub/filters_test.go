@@ -601,10 +601,209 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 				valArr: []pub.NaturalLanguageValues{
 					nil,
 					{},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "one value: exact match success",
+			args: args{
+				CompStrs{StringEquals("ana")},
+				[]pub.NaturalLanguageValues{
 					{
 						pub.LangRefValue{
 							Ref:   pub.NilLangRef,
-							Value: pub.Content("anathema"),
+							Value: []byte("ana"),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "one value: exact match failure",
+			args: args{
+				CompStrs{StringEquals("ana")},
+				[]pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("na"),
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "one value: partial match success",
+			args: args{
+				CompStrs{StringLike("ana")},
+				[]pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("analema"),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "one value: exact match failure",
+			args: args{
+				CompStrs{StringLike("ana")},
+				[]pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("na"),
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "one value: negated match success",
+			args: args{
+				CompStrs{StringDifferent("ana")},
+				[]pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("lema"),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "one value: negated match failure",
+			args: args{
+				CompStrs{StringDifferent("ana")},
+				[]pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("ana"),
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		// multiple filters
+		{
+			name: "multi filters: exact match success",
+			args: args{
+				CompStrs{StringEquals("ana")},
+				[]pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("not-matching"),
+						},
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("ana"),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "multi filters: exact match failure",
+			args: args{
+				CompStrs{StringEquals("ana")},
+				[]pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("not-matching"),
+						},
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("na"),
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "multi filters: partial match success",
+			args: args{
+				CompStrs{StringLike("ana")},
+				[]pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("not-matching"),
+						},
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("analema"),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "multi filters: exact match failure",
+			args: args{
+				CompStrs{StringLike("ana")},
+				[]pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("not-matching"),
+						},
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("na"),
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "multi filters: negated match success",
+			args: args{
+				CompStrs{StringDifferent("ana")},
+				[]pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("not-matching"),
+						},
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("lema"),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "multi filters: negated match failure",
+			args: args{
+				CompStrs{StringDifferent("ana")},
+				[]pub.NaturalLanguageValues{
+					{
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("not-matching"),
+						},
+						pub.LangRefValue{
+							Ref:   pub.NilLangRef,
+							Value: []byte("ana"),
 						},
 					},
 				},

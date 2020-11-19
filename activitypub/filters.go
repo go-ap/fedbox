@@ -613,6 +613,30 @@ func matchStringFilters(filters CompStrs, s string) bool {
 	return false
 }
 
+func matchNaturalLanguageValues(filters CompStrs, s pub.NaturalLanguageValues) bool {
+	var match bool
+	for _, f := range filters {
+		match = match || matchLangRefs(f, s...)
+	}
+	return match
+}
+
+func matchLangRefs(filter CompStr, refs ...pub.LangRefValue) bool {
+	var match bool
+	if filter.Operator == "!" {
+		match = !match
+	}
+	for _, ref := range refs {
+		m := matchStringFilter(filter, ref.Value.String())
+		if filter.Operator == "!" {
+			match = match && m
+		} else {
+			match = match || m
+		}
+	}
+	return match
+}
+
 func matchStringFilter(filter CompStr, s string) bool {
 	if filter.Operator == "~" {
 		return strings.Contains(strings.ToLower(s), strings.ToLower(filter.Str))
@@ -623,16 +647,11 @@ func matchStringFilter(filter CompStr, s string) bool {
 }
 
 func filterNaturalLanguageValues(filters CompStrs, valArr ...pub.NaturalLanguageValues) bool {
-	keep := true
-	if len(filters) > 0 {
-		keep = false
-	}
+	keep := len(filters) == 0
 	for _, langValues := range valArr {
-		for _, langValue := range langValues {
-			if matchStringFilters(filters, langValue.Value.String()) {
-				keep = true
-				break
-			}
+		if matchNaturalLanguageValues(filters, langValues) {
+			keep = true
+			break
 		}
 	}
 	return keep
