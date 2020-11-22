@@ -15,8 +15,8 @@ type iriMap map[pub.IRI]pub.Item
 
 type cache struct {
 	enabled bool
-	w sync.RWMutex
-	c iriMap
+	w       sync.RWMutex
+	c       iriMap
 }
 
 func cacheKey(f *activitypub.Filters) pub.IRI {
@@ -58,17 +58,19 @@ func (r *cache) set(iri pub.IRI, it pub.Item) {
 	r.c[iri] = it
 }
 
-func (r *cache) remove(iri pub.IRI) bool {
+func (r *cache) remove(iris ...pub.IRI) bool {
 	if !r.enabled {
 		return true
 	}
-	if iri == pub.PublicNS || len(iri) == 0 {
-		return false
-	}
-	toInvalidate := pub.IRIs{ iri }
-	if !h.ValidCollectionIRI(iri) {
+	toInvalidate := pub.IRIs(iris)
+	for _, iri := range toInvalidate {
+		if h.ValidCollectionIRI(iri) {
+			continue
+		}
 		c := pub.IRI(path.Dir(iri.String()))
-		toInvalidate = append(toInvalidate, c)
+		if !toInvalidate.Contains(c) {
+			toInvalidate = append(iris, c)
+		}
 	}
 	r.w.Lock()
 	defer r.w.Unlock()
