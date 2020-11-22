@@ -50,11 +50,11 @@ func (r *cache) set(iri pub.IRI, it pub.Item) {
 	if !r.enabled {
 		return
 	}
+	r.w.Lock()
+	defer r.w.Unlock()
 	if r.c == nil {
 		r.c = make(map[pub.IRI]pub.Item)
 	}
-	r.w.Lock()
-	defer r.w.Unlock()
 	r.c[iri] = it
 }
 
@@ -62,24 +62,36 @@ func (r *cache) remove(iri pub.IRI) bool {
 	if !r.enabled {
 		return true
 	}
-	if iri == pub.PublicNS {
+	if iri == pub.PublicNS || len(iri) == 0 {
 		return false
+	}
+	toInvalidate := pub.IRIs{ iri }
+	if !h.ValidCollectionIRI(iri) {
+		c := pub.IRI(path.Dir(iri.String()))
+		toInvalidate = append(toInvalidate, c)
 	}
 	r.w.Lock()
 	defer r.w.Unlock()
-	for key := range r.c {
-		// TODO(marius): I need to play around with this a bit
-		if key.Contains(iri, false) {
-			delete(r.c, key)
+	for _, iri := range toInvalidate {
+		for key := range r.c {
+			// TODO(marius): I need to play around with this a bit
+			if key.Contains(iri, false) {
+				delete(r.c, key)
+			}
 		}
 	}
 	return true
 }
 
 func ObjectPurgeCache(caches *cache, o *pub.Object) error {
+	if o == nil {
+		return nil
+	}
 	obIRI := o.GetLink()
-	caches.remove(pub.IRI(path.Dir(obIRI.String())))
-	caches.remove(obIRI)
+	if len(obIRI) > 0 {
+		//caches.remove(pub.IRI(path.Dir(obIRI.String())))
+		caches.remove(obIRI)
+	}
 
 	if o.InReplyTo == nil {
 		return nil
@@ -121,7 +133,8 @@ func ActivityPurgeCache(caches *cache, a *pub.Activity, typ h.CollectionType) er
 	})
 
 	aIRI := a.GetLink()
-	caches.remove(pub.IRI(path.Dir(aIRI.String())))
-	caches.remove(aIRI)
+	if len(aIRI) > 0 {
+		caches.remove(aIRI)
+	}
 	return nil
 }

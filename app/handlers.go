@@ -152,7 +152,9 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 			}
 			pub.OnObject(it, modifyItemIRI(r))
 		}
-		fb.caches.set(cacheKey(f), col)
+		if col.Count() > 0 {
+			fb.caches.set(cacheKey(f), col)
+		}
 		return col, err
 	}
 }
@@ -242,11 +244,10 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 				a.AttributedTo = f.Authenticated
 			}
 
-			ActivityPurgeCache(&fb.caches, a, typ)
 			if it, err = processFn(a); err != nil {
 				return errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 			}
-			return nil
+			return ActivityPurgeCache(&fb.caches, a, typ)
 		})
 		if err != nil {
 			return it, http.StatusInternalServerError, err
