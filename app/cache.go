@@ -63,13 +63,13 @@ func (r *cache) remove(iris ...pub.IRI) bool {
 		return true
 	}
 	toInvalidate := pub.IRIs(iris)
-	for _, iri := range toInvalidate {
+	for _, iri := range iris {
 		if h.ValidCollectionIRI(iri) {
 			continue
 		}
 		c := pub.IRI(path.Dir(iri.String()))
 		if !toInvalidate.Contains(c) {
-			toInvalidate = append(iris, c)
+			toInvalidate = append(toInvalidate, c)
 		}
 	}
 	r.w.Lock()
@@ -85,14 +85,13 @@ func (r *cache) remove(iris ...pub.IRI) bool {
 	return true
 }
 
-func ObjectPurgeCache(caches *cache, o *pub.Object) error {
+func aggregateObjectIRIs(toRemove *pub.IRIs, o *pub.Object) error {
 	if o == nil {
 		return nil
 	}
 	obIRI := o.GetLink()
-	if len(obIRI) > 0 {
-		//caches.remove(pub.IRI(path.Dir(obIRI.String())))
-		caches.remove(obIRI)
+	if len(obIRI) > 0 && !toRemove.Contains(obIRI){
+		*toRemove = append(*toRemove, obIRI)
 	}
 
 	if o.InReplyTo == nil {
@@ -101,42 +100,58 @@ func ObjectPurgeCache(caches *cache, o *pub.Object) error {
 	if o.InReplyTo.IsCollection() {
 		pub.OnCollectionIntf(o.InReplyTo, func(c pub.CollectionInterface) error {
 			for _, it := range c.Collection() {
-				caches.remove(it.GetLink())
+				if !toRemove.Contains(it.GetLink()) {
+					*toRemove = append(*toRemove, it.GetLink())
+				}
 			}
 			return nil
 		})
 	} else {
-		caches.remove(o.InReplyTo.GetLink())
+		if !toRemove.Contains(o.InReplyTo.GetLink()) {
+			*toRemove = append(*toRemove, o.InReplyTo.GetLink())
+		}
+	}
+	return nil
+}
+
+func aggregateActivityIRIs(toRemove *pub.IRIs, a *pub.Activity, typ h.CollectionType) error {
+	for _, r := range a.Recipients() {
+		if r.GetLink().Equals(pub.PublicNS, false) {
+			continue
+		}
+		if iri := r.GetLink(); h.ValidCollectionIRI(iri) {
+			// TODO(marius): for followers, following collections this should dereference the members
+			if !toRemove.Contains(iri) {
+				*toRemove = append(*toRemove, iri)
+			}
+		} else {
+			if inbox := h.Inbox.IRI(r); !toRemove.Contains(inbox) {
+				*toRemove = append(*toRemove, inbox)
+			}
+		}
+	}
+	if destCol := typ.IRI(a.Actor); !toRemove.Contains(destCol) {
+		*toRemove = append(*toRemove, destCol)
+	}
+
+	pub.OnObject(a.Object, func(o *pub.Object) error {
+		return aggregateObjectIRIs(toRemove, o)
+	})
+
+	if aIRI := a.GetLink(); len(aIRI) > 0 && !toRemove.Contains(aIRI) {
+		*toRemove = append(*toRemove, aIRI)
 	}
 	return nil
 }
 
 func ActivityPurgeCache(caches *cache, a *pub.Activity, typ h.CollectionType) error {
-	for _, r := range a.Recipients() {
-		if r.GetLink().Equals(pub.PublicNS, false) {
-			continue
-		}
-		if h.ValidCollectionIRI(r.GetLink()) {
-			// TODO(marius): for followers, following collections this should dereference the members
-			caches.remove(r.GetLink())
-		} else {
-			caches.remove(h.Inbox.IRI(r))
-		}
+	toRemove := make(pub.IRIs, 0)
+	err := aggregateActivityIRIs(&toRemove, a, typ)
+	if err != nil {
+		return err
 	}
-	if typ == h.Outbox {
-		caches.remove(h.Outbox.IRI(a.Actor))
-	}
-	if typ == h.Inbox {
-		caches.remove(h.Inbox.IRI(a.Actor))
-	}
-
-	pub.OnObject(a.Object, func(o *pub.Object) error {
-		return ObjectPurgeCache(caches, o)
-	})
-
-	aIRI := a.GetLink()
-	if len(aIRI) > 0 {
-		caches.remove(aIRI)
+	if len(toRemove) > 0 {
+		caches.remove(toRemove...)
 	}
 	return nil
 }
