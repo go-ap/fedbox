@@ -100,7 +100,7 @@ func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 	if err != nil {
 		app.errFn("Unable to initialize storage backend: %s", err)
 	}
-	app.caches = cache{enabled: !app.conf.Env.IsTest(), c: make(iriMap)}
+	app.caches = cache{enabled: !(app.conf.Env.IsTest() || app.conf.Env.IsDev()), c: make(iriMap)}
 	app.Storage = db
 	app.OAuthStorage = oauth
 	return &app, err
