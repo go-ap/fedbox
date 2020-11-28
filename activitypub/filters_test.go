@@ -118,7 +118,7 @@ func IRIsFilter(iris ...pub.IRI) CompStrs {
 }
 func TestFilters_Actors(t *testing.T) {
 	f := Filters{
-		Actor: &Filters { Key: []Hash{Hash("test")}},
+		Actor: &Filters{Key: []Hash{Hash("test")}},
 	}
 
 	if f.Actors() == nil {
@@ -520,7 +520,7 @@ func TestFilters_Audience(t *testing.T) {
 			name: "existing_not_matching",
 			args: args{
 				filters: CompStrs{CompStr{Str: "/actors/test"}},
-				valArr: pub.ItemCollection{pub.IRI("/actors/test123"), pub.IRI("https://example.com")},
+				valArr:  pub.ItemCollection{pub.IRI("/actors/test123"), pub.IRI("https://example.com")},
 			},
 			want: false,
 		},
@@ -581,11 +581,49 @@ func TestFilters_InReplyTo(t *testing.T) {
 }
 
 func TestFilters_MediaTypes(t *testing.T) {
-	t.Skipf("TODO")
+	tests := []struct {
+		name string
+		args Filters
+		want []pub.MimeType
+	}{
+		{
+			name: "empty",
+			args: Filters{
+				MedTypes: []pub.MimeType{},
+			},
+			want: []pub.MimeType{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.args.MediaTypes(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("filters.MediaTypes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestFilters_Names(t *testing.T) {
-	t.Skipf("TODO")
+	tests := []struct {
+		name string
+		args Filters
+		want CompStrs
+	}{
+		{
+			name: "empty",
+			args: Filters{
+				Name: CompStrs{},
+			},
+			want: CompStrs{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.args.Names(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("filters.Names() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func mockActivity() pub.Activity {
@@ -629,7 +667,7 @@ func mockActivity() pub.Activity {
 }
 func TestFilters_Objects(t *testing.T) {
 	f := Filters{
-		Object: &Filters { Key: []Hash{Hash("test")}},
+		Object: &Filters{Key: []Hash{Hash("test")}},
 	}
 	if f.Objects() == nil {
 		t.Errorf("Object() should not return nil")
@@ -652,7 +690,7 @@ func TestFilters_Objects(t *testing.T) {
 
 func TestFilters_Targets(t *testing.T) {
 	f := Filters{
-		Target: &Filters { Key: []Hash{Hash("test")}},
+		Target: &Filters{Key: []Hash{Hash("test")}},
 	}
 	act := mockActivity()
 	act.Target = pub.IRI("/objects/test")
