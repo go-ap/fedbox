@@ -883,10 +883,17 @@ func (f *Filters) ItemMatches(it pub.Item) bool {
 	if len(iris) > 0 && !filterItem(iris, it) {
 		return false
 	}
-	types := f.Types()
-	// FIXME(marius): this does not cover case insensitivity
-	if len(types) > 0 && !types.Contains(it.GetType()) {
-		return false
+	typFilter := f.Types()
+	typ := it.GetType()
+	if len(typFilter) > 0 {
+		keep := false
+		if typ == pub.TombstoneType  {
+			pub.OnTombstone(it, func(t *pub.Tombstone) error {
+				keep = typFilter.Contains(t.FormerType)
+				return nil
+			})
+		}
+		return keep || typFilter.Contains(typ)
 	}
 	iri := f.GetLink()
 	if len(iri) > 0 && iriPointsToCollection(iri) {
@@ -895,9 +902,9 @@ func (f *Filters) ItemMatches(it pub.Item) bool {
 		}
 	}
 	var valid bool
-	if pub.ActivityTypes.Contains(it.GetType()) || pub.IntransitiveActivityTypes.Contains(it.GetType()) {
+	if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
 		valid, _ = filterActivity(it, f)
-	} else if pub.ActorTypes.Contains(it.GetType()) {
+	} else if pub.ActorTypes.Contains(typ) {
 		valid, _ = filterActor(it, f)
 	} else {
 		valid, _ = filterObject(it, f)
