@@ -33,7 +33,7 @@ func StringDifferent(s string) CompStr {
 
 func (cs CompStrs) Contains(f CompStr) bool {
 	for _, c := range cs {
-		if c.Str == f.Str {
+		if c.Str == f.Str && c.Operator == f.Operator {
 			return true
 		}
 	}
@@ -286,6 +286,9 @@ func (f Filters) IRIs() CompStrs {
 
 // GetLink returns a list of IRIs to filter against
 func (f *Filters) GetLink() pub.IRI {
+	if f == nil {
+		return ""
+	}
 	if f.IRI != "" {
 		return f.IRI
 	}
@@ -334,7 +337,7 @@ func FromRequest(r *http.Request, baseUrl string) (*Filters, error) {
 	f := FiltersNew()
 	f.Req = r
 	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
-		return nil, err
+		return f, err
 	}
 
 	var u *url.URL
@@ -380,14 +383,14 @@ func (f Filters) Audience() CompStrs {
 		iri.Str = IRIf(f, iri.Str)
 		col = append(col, iri)
 	}
-	if f.Authenticated != nil {
-		user := StringEquals(f.Authenticated.GetLink().String())
-		if f.Authenticated != nil && !col.Contains(user) {
+	if f.Authenticated != nil && !f.Authenticated.GetLink().Equals(pub.PublicNS, false) {
+		if user := StringEquals(f.Authenticated.GetLink().String()); !col.Contains(user) {
 			col = append(col, user)
 		}
 	}
 	public := StringEquals(pub.PublicNS.String())
-	if !col.Contains(public) {
+	notPublic := StringDifferent(pub.PublicNS.String())
+	if !col.Contains(public) && !col.Contains(notPublic) {
 		col = append(col, public)
 	}
 	return col
@@ -514,39 +517,73 @@ func filterObjectNoName(ob *pub.Object, ff *Filters) bool {
 	if ff == nil {
 		return true
 	}
-	keep := true
 	if !filterNaturalLanguageValues(ff.Content(), ob.Content, ob.Summary) {
-		keep = false
+		return false
 	}
 	if !filterWithAbsent(ff.Generator(), ob.Generator) {
-		keep = false
+		return false
 	}
 	if !filterURLs(ff.URLs(), ob) {
-		keep = false
+		return false
 	}
 	if !filterWithAbsent(ff.Context(), ob.Context, ob.InReplyTo) {
-		keep = false
+		return false
 	}
 	if !filterWithAbsent(ff.InReplyTo(), ob.InReplyTo) {
-		keep = false
+		return false
 	}
 	if !filterAudience(ff.Audience(), ob.Recipients(), pub.ItemCollection{ob.AttributedTo}) {
-		keep = false
+		return false
 	}
 	if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
-		keep = false
+		return false
 	}
-	return keep
+	return true
 }
-
+// ugly hack to check if the current filter f.IRI property is a collection or an object
+func iriPointsToCollection(iri pub.IRI) bool {
+	if u, err := iri.URL(); err == nil {
+		base := path.Base(u.Path)
+		return !ValidCollection(h.CollectionType(base)) && base != "/"
+	}
+	return false
+}
 func filterObject(it pub.Item, ff *Filters) (bool, pub.Item) {
 	if ff == nil {
 		return true, it
 	}
 	keep := true
+	typ := it.GetType()
+	if typ == pub.TombstoneType  {
+		pub.OnTombstone(it, func(t *pub.Tombstone) error {
+			if len(ff.Types()) > 0 {
+				keep = ff.Type.Contains(t.FormerType)
+			}
+			return nil
+		})
+	}
+	if !keep {
+		return false, it
+	}
 	pub.OnObject(it, func(ob *pub.Object) error {
-		if !filterNaturalLanguageValues(ff.Names(), ob.Name) {
-			keep = false
+		if iris := ff.IRIs(); len(iris) > 0 {
+			if keep = filterItem(iris, it); !keep {
+				return nil
+			}
+		}
+		if types := ff.Types(); len(types) > 0 {
+			if keep = types.Contains(typ); !keep {
+				return nil
+			}
+		}
+		/*
+		if iri := ff.GetLink(); len(iri) > 0 && h.ValidCollectionIRI(iri) {
+			if keep = it.GetLink().Contains(iri, false); !keep {
+				return nil
+			}
+		}
+		*/
+		if keep = filterNaturalLanguageValues(ff.Names(), ob.Name); !keep {
 			return nil
 		}
 		keep = filterObjectNoName(ob, ff)
@@ -555,6 +592,8 @@ func filterObject(it pub.Item, ff *Filters) (bool, pub.Item) {
 	return keep, it
 }
 
+// NOTE(marius): this is being called even if it is an IntransitiveActivity
+//  and probably will crash when accessing act.Object
 func filterActivity(it pub.Item, ff *Filters) (bool, pub.Item) {
 	if ff == nil {
 		return true, it
@@ -592,10 +631,7 @@ func filterActor(it pub.Item, ff *Filters) (bool, pub.Item) {
 			keep = false
 			return nil
 		}
-		pub.OnObject(it, func(ob *pub.Object) error {
-			keep = filterObjectNoName(ob, ff)
-			return nil
-		})
+		keep, it = filterObject(it, ff)
 		return nil
 	})
 	return keep, it
@@ -687,7 +723,20 @@ func filterAudience(filters CompStrs, colArr ...pub.ItemCollection) bool {
 			}
 		}
 	}
-	return filterItems(filters, pub.ItemCollectionDeduplication(&allItems)...)
+	keep := false
+	for _, f := range filters {
+		for _, it := range allItems {
+			s := it.GetLink().String()
+			if f.Operator == "!" && !matchStringFilter(f, s) {
+				keep = false
+				break
+			}
+			if matchStringFilter(f, s) {
+				keep = true
+			}
+		}
+	}
+	return keep
 }
 
 func filterItemCollections(filters CompStrs, colArr ...pub.Item) bool {
@@ -861,15 +910,6 @@ func (f Filters) FilterCollection(col pub.ItemCollection) (pub.ItemCollection, i
 	return nil, 0
 }
 
-// ugly hack to check if the current filter f.IRI property is a collection or an object
-func iriPointsToCollection(iri pub.IRI) bool {
-	if u, err := iri.URL(); err == nil {
-		base := path.Base(u.Path)
-		return !ValidCollection(h.CollectionType(base)) && base != "/"
-	}
-	return false
-}
-
 // ItemMatches
 func (f *Filters) ItemMatches(it pub.Item) bool {
 	if f == nil {
@@ -878,30 +918,8 @@ func (f *Filters) ItemMatches(it pub.Item) bool {
 	if it == nil {
 		return false
 	}
-	iris := f.IRIs()
-	// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
-	if len(iris) > 0 && !filterItem(iris, it) {
-		return false
-	}
-	typFilter := f.Types()
-	typ := it.GetType()
-	if len(typFilter) > 0 {
-		keep := false
-		if typ == pub.TombstoneType  {
-			pub.OnTombstone(it, func(t *pub.Tombstone) error {
-				keep = typFilter.Contains(t.FormerType)
-				return nil
-			})
-		}
-		return keep || typFilter.Contains(typ)
-	}
-	iri := f.GetLink()
-	if len(iri) > 0 && iriPointsToCollection(iri) {
-		if !it.GetLink().Contains(iri, false) {
-			return false
-		}
-	}
 	var valid bool
+	typ := it.GetType()
 	if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
 		valid, _ = filterActivity(it, f)
 	} else if pub.ActorTypes.Contains(typ) {

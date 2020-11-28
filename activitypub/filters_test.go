@@ -187,26 +187,351 @@ func TestFilters_AttributedTo(t *testing.T) {
 }
 
 func TestFilters_Audience(t *testing.T) {
-	f := Filters{
-		Aud: CompStrs{CompStr{Str: "/actors/test"}},
+	type args struct {
+		filters CompStrs
+		valArr  pub.ItemCollection
 	}
-	if f.Audience() == nil {
-		t.Errorf("Audience() should not return nil")
-		return
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "basic-equality",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "",
+						Str:      "ana",
+					},
+				},
+				valArr: pub.ItemCollection{
+					pub.IRI("ana"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "basic-equality-with-nil-first",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "",
+						Str:      "ana",
+					},
+				},
+				valArr: pub.ItemCollection{
+					nil,
+					pub.IRI("ana"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "basic-like",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "~",
+						Str:      "ana",
+					},
+				},
+				valArr: pub.ItemCollection{
+					pub.IRI("ana"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "basic-like-with-longer-value",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "~",
+						Str:      "ana",
+					},
+				},
+				valArr: pub.ItemCollection{
+					pub.IRI("anathema"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "basic-different",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "!",
+						Str:      "ana",
+					},
+				},
+				valArr: pub.ItemCollection{
+					pub.IRI("bob"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "basic-different-with-empty-values",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "!",
+						Str:      "ana",
+					},
+				},
+				valArr: pub.ItemCollection{
+					nil,
+					pub.IRI(""),
+					pub.IRI("bob"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "basic-false-equality",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "",
+						Str:      "ana",
+					},
+				},
+				valArr: pub.ItemCollection{
+					pub.IRI("bob"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "basic-false-equality-with-nil-first",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "",
+						Str:      "ana",
+					},
+				},
+				valArr: pub.ItemCollection{
+					nil,
+					pub.IRI("bob"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "basic-false-like",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "~",
+						Str:      "ana",
+					},
+				},
+				valArr: pub.ItemCollection{
+					pub.IRI("bob"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "basic-false-like-with-longer-value",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "~",
+						Str:      "ana",
+					},
+				},
+				valArr: pub.ItemCollection{
+					pub.IRI("bobsyouruncle"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "basic-false-different",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "!",
+						Str:      "ana",
+					},
+				},
+				valArr: pub.ItemCollection{
+					pub.IRI("ana"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "basic-false-different-with-empty-values",
+			args: args{
+				filters: CompStrs{
+					CompStr{
+						Operator: "!",
+						Str:      "ana",
+					},
+				},
+				valArr: pub.ItemCollection{
+					nil,
+					pub.IRI(""),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "one value: exact match success",
+			args: args{
+				CompStrs{StringEquals("ana")},
+				pub.ItemCollection{
+					pub.IRI("ana"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "one value: exact match failure",
+			args: args{
+				CompStrs{StringEquals("ana")},
+				pub.ItemCollection{
+					pub.IRI("na"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "one value: partial match success",
+			args: args{
+				CompStrs{StringLike("ana")},
+				pub.ItemCollection{
+					pub.IRI("analema"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "one value: exact match failure",
+			args: args{
+				CompStrs{StringLike("ana")},
+				pub.ItemCollection{
+					pub.IRI("na"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "one value: negated match success",
+			args: args{
+				CompStrs{StringDifferent("ana")},
+				pub.ItemCollection{
+					pub.IRI("lema"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "one value: negated match failure",
+			args: args{
+				CompStrs{StringDifferent("ana")},
+				pub.ItemCollection{
+					pub.IRI("ana"),
+				},
+			},
+			want: false,
+		},
+		// multiple filters
+		{
+			name: "multi filters: exact match success",
+			args: args{
+				CompStrs{StringEquals("ana")},
+				pub.ItemCollection{
+					pub.IRI("not-matching"),
+					pub.IRI("ana"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "multi filters: exact match failure",
+			args: args{
+				CompStrs{StringEquals("ana")},
+				pub.ItemCollection{
+					pub.IRI("not-matching"),
+					pub.IRI("na"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "multi filters: partial match success",
+			args: args{
+				CompStrs{StringLike("ana")},
+				pub.ItemCollection{
+					pub.IRI("not-matching"),
+					pub.IRI("analema"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "multi filters: exact match failure",
+			args: args{
+				CompStrs{StringLike("ana")},
+				pub.ItemCollection{
+					pub.IRI("not-matching"),
+					pub.IRI("na"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "multi filters: negated match success",
+			args: args{
+				CompStrs{StringDifferent("ana")},
+				pub.ItemCollection{
+					pub.IRI("not-matching"),
+					pub.IRI("lema"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "multi filters: negated match failure",
+			args: args{
+				CompStrs{StringDifferent("ana")},
+				pub.ItemCollection{
+					pub.IRI("not-matching"),
+					pub.IRI("ana"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "existing_matching",
+			args: args{
+				filters: CompStrs{CompStr{Str: "/actors/test"}},
+				valArr:  pub.ItemCollection{pub.IRI("/actors/test")},
+			},
+			want: true,
+		},
+		{
+			name: "existing_not_matching",
+			args: args{
+				filters: CompStrs{CompStr{Str: "/actors/test"}},
+				valArr: pub.ItemCollection{pub.IRI("/actors/test123"), pub.IRI("https://example.com")},
+			},
+			want: false,
+		},
 	}
-	it := mockItem()
-	it.Audience = pub.ItemCollection{pub.IRI("/actors/test")}
-	t.Run("exists", func(t *testing.T) {
-		if !testItInIRIs(f.Audience(), it.Audience...) {
-			t.Errorf("filter %v doesn't contain any of %v", f.Audience(), it.Audience)
-		}
-	})
-	it.Audience = pub.ItemCollection{pub.IRI("/actors/test123"), pub.IRI("https://example.com")}
-	t.Run("missing", func(t *testing.T) {
-		if testItInIRIs(f.Audience(), it.Audience...) {
-			t.Errorf("filter %v shouldn't contain any of %v", f.Audience(), it.Audience)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := filterAudience(tt.args.filters, tt.args.valArr); got != tt.want {
+				t.Errorf("filterAudience() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestFilters_Context(t *testing.T) {
