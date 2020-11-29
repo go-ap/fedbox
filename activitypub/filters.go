@@ -513,27 +513,22 @@ func (f Filters) Targets() pub.IRIs {
 	return ret
 }
 
-func filterObjectNoName(ob *pub.Object, ff *Filters) bool {
+func filterObjectNoNameNoType(ob *pub.Object, ff *Filters) bool {
 	if ff == nil {
 		return true
 	}
+	/*
+	if iri := ff.GetLink(); len(iri) > 0 && h.ValidCollectionIRI(iri) {
+		if !ob.GetLink().Contains(iri, false) {
+			return false
+		}
+	}
+	*/
 	if iris := ff.IRIs(); len(iris) > 0  {
 		if !filterItem(iris, ob) {
 			return false
 		}
 	}
-	if types := ff.Types(); len(types) > 0 {
-		if !types.Contains(ob.GetType()) {
-			return false
-		}
-	}
-	/*
-		if iri := ff.GetLink(); len(iri) > 0 && h.ValidCollectionIRI(iri) {
-			if keep = it.GetLink().Contains(iri, false); !keep {
-				return nil
-			}
-		}
-	*/
 	if !filterNaturalLanguageValues(ff.Content(), ob.Content, ob.Summary) {
 		return false
 	}
@@ -570,9 +565,8 @@ func filterTombstone(it pub.Item, ff *Filters) (bool, pub.Item) {
 		return keep, it
 	}
 	pub.OnObject(it, func(ob *pub.Object) error {
-		keep = filterObjectNoName(ob, ff)
+		keep = filterObjectNoNameNoType(ob, ff)
 		return nil
-
 	})
 	return keep, it
 }
@@ -586,9 +580,15 @@ func filterObject(it pub.Item, ff *Filters) (bool, pub.Item) {
 		if keep = filterNaturalLanguageValues(ff.Names(), ob.Name); !keep {
 			return nil
 		}
-		keep = filterObjectNoName(ob, ff)
+		keep = filterObjectNoNameNoType(ob, ff)
 		return nil
 	})
+	if !keep {
+		return keep, it
+	}
+	if types := ff.Types(); len(types) > 0 {
+		keep = types.Contains(it.GetType())
+	}
 	return keep, it
 }
 
@@ -600,24 +600,24 @@ func filterActivity(it pub.Item, ff *Filters) (bool, pub.Item) {
 	}
 	keep := true
 	pub.OnActivity(it, func(act *pub.Activity) error {
-		if ok, _ := filterObject(act, ff); !ok {
-			keep = false
+		if keep, _ = filterObject(act, ff); !keep {
 			return nil
 		}
-		if !ff.Actor.ItemMatches(act.Actor) {
-			keep = false
+		if keep = ff.Actor.ItemMatches(act.Actor); !keep {
 			return nil
 		}
-		if !ff.Object.ItemMatches(act.Object) {
-			keep = false
+		if keep = ff.Object.ItemMatches(act.Object); !keep {
 			return nil
 		}
-		if !ff.Target.ItemMatches(act.Target) {
-			keep = false
-			return nil
-		}
+		keep = ff.Target.ItemMatches(act.Target)
 		return nil
 	})
+	if !keep {
+		return keep, it
+	}
+	if types := ff.Types(); len(types) > 0 {
+		keep = types.Contains(it.GetType())
+	}
 	return keep, it
 }
 
@@ -634,9 +634,15 @@ func filterActor(it pub.Item, ff *Filters) (bool, pub.Item) {
 		return keep, it
 	}
 	pub.OnObject(it, func(ob *pub.Object) error {
-		keep = filterObjectNoName(ob, ff)
+		keep = filterObjectNoNameNoType(ob, ff)
 		return nil
 	})
+	if !keep {
+		return keep, it
+	}
+	if types := ff.Types(); len(types) > 0 {
+		 keep = types.Contains(it.GetType())
+	}
 	return keep, it
 }
 
