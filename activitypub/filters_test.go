@@ -7,10 +7,6 @@ import (
 	"time"
 )
 
-func TestFilters_Count(t *testing.T) {
-	t.Skipf("TODO")
-}
-
 func TestFilters_GetLink(t *testing.T) {
 	val := pub.IRI("http://example.com")
 	f := Filters{

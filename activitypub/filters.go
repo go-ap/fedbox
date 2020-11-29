@@ -557,31 +557,23 @@ func filterObjectNoName(ob *pub.Object, ff *Filters) bool {
 	}
 	return true
 }
-// ugly hack to check if the current filter f.IRI property is a collection or an object
-func iriPointsToCollection(iri pub.IRI) bool {
-	if u, err := iri.URL(); err == nil {
-		base := path.Base(u.Path)
-		return !ValidCollection(h.CollectionType(base)) && base != "/"
-	}
-	return false
+
+func filterTombstone(it pub.Item, ff *Filters) (bool, pub.Item) {
+	keep := true
+	pub.OnTombstone(it, func(t *pub.Tombstone) error {
+		if len(ff.Types()) > 0 {
+			keep = ff.Type.Contains(t.FormerType)
+		}
+		return nil
+	})
+	return keep, it
 }
+
 func filterObject(it pub.Item, ff *Filters) (bool, pub.Item) {
 	if ff == nil {
 		return true, it
 	}
 	keep := true
-	typ := it.GetType()
-	if typ == pub.TombstoneType  {
-		pub.OnTombstone(it, func(t *pub.Tombstone) error {
-			if len(ff.Types()) > 0 {
-				keep = ff.Type.Contains(t.FormerType)
-			}
-			return nil
-		})
-	}
-	if !keep {
-		return false, it
-	}
 	pub.OnObject(it, func(ob *pub.Object) error {
 		if keep = filterNaturalLanguageValues(ff.Names(), ob.Name); !keep {
 			return nil
@@ -627,14 +619,14 @@ func filterActor(it pub.Item, ff *Filters) (bool, pub.Item) {
 	}
 	keep := true
 	pub.OnActor(it, func(ob *pub.Actor) error {
-		if !filterNaturalLanguageValues(ff.Names(), ob.Name, ob.PreferredUsername) {
-			keep = false
-			return nil
-		}
-		pub.OnObject(it, func(ob *pub.Object) error {
-			keep = filterObjectNoName(ob, ff)
-			return nil
-		})
+		keep = filterNaturalLanguageValues(ff.Names(), ob.Name, ob.PreferredUsername)
+		return nil
+	})
+	if !keep {
+		return keep, it
+	}
+	pub.OnObject(it, func(ob *pub.Object) error {
+		keep = filterObjectNoName(ob, ff)
 		return nil
 	})
 	return keep, it
@@ -927,6 +919,8 @@ func (f *Filters) ItemMatches(it pub.Item) bool {
 		valid, _ = filterActivity(it, f)
 	} else if pub.ActorTypes.Contains(typ) {
 		valid, _ = filterActor(it, f)
+	} else if typ == pub.TombstoneType {
+		valid, _ = filterTombstone(it, f)
 	} else {
 		valid, _ = filterObject(it, f)
 	}
