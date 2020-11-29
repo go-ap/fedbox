@@ -436,7 +436,7 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 	f := ap.FiltersNew()
 	f.IRI = it.GetLink()
 	if it.IsObject() {
-		f.Type = []pub.ActivityVocabularyType{it.GetType()}
+		f.Type = ap.CompStrs{ap.StringEquals(string(it.GetType()))}
 	}
 	old, _ := r.loadOneFromBucket(f)
 

@@ -124,36 +124,36 @@ func ValidObjectCollection(typ h.CollectionType) bool {
 // Filters
 // TODO(marius) we can make some small changes so it's not necessary to export this struct
 type Filters struct {
-	baseURL       pub.IRI                     `qstring:"-"`
-	Name          CompStrs                    `qstring:"name,omitempty"`
-	Cont          CompStrs                    `qstring:"content,omitempty"`
-	Authenticated *pub.Actor                  `qstring:"-"`
-	To            *pub.Actor                  `qstring:"-"`
-	Author        *pub.Actor                  `qstring:"-"`
-	Parent        *pub.Actor                  `qstring:"-"`
-	IRI           pub.IRI                     `qstring:"-"`
-	Collection    h.CollectionType            `qstring:"-"`
-	URL           CompStrs                    `qstring:"url,omitempty"`
-	MedTypes      []pub.MimeType              `qstring:"mediaType,omitempty"`
-	Aud           CompStrs                    `qstring:"recipients,omitempty"`
-	Gen           CompStrs                    `qstring:"generator,omitempty"`
-	Key           []Hash                      `qstring:"-"`
-	ItemKey       CompStrs                    `qstring:"iri,omitempty"`
-	Type          pub.ActivityVocabularyTypes `qstring:"type,omitempty"`
-	AttrTo        CompStrs                    `qstring:"attributedTo,omitempty"`
-	InReplTo      CompStrs                    `qstring:"inReplyTo,omitempty"`
-	OP            CompStrs                    `qstring:"context,omitempty"`
-	FollowedBy    []Hash                      `qstring:"followedBy,omitempty"` // todo(marius): not really used
-	OlderThan     time.Time                   `qstring:"olderThan,omitempty"`
-	NewerThan     time.Time                   `qstring:"newerThan,omitempty"`
-	Prev          Hash                        `qstring:"before,omitempty"`
-	Next          Hash                        `qstring:"after,omitempty"`
-	Object        *Filters                    `qstring:"object,omitempty"`
-	Actor         *Filters                    `qstring:"actor,omitempty"`
-	Target        *Filters                    `qstring:"target,omitempty"`
-	CurPage       uint                        `qstring:"page,omitempty"`
-	MaxItems      uint                        `qstring:"maxItems,omitempty"`
-	Req           *http.Request               `qstring:"-"`
+	baseURL       pub.IRI          `qstring:"-"`
+	Name          CompStrs         `qstring:"name,omitempty"`
+	Cont          CompStrs         `qstring:"content,omitempty"`
+	Authenticated *pub.Actor       `qstring:"-"`
+	To            *pub.Actor       `qstring:"-"`
+	Author        *pub.Actor       `qstring:"-"`
+	Parent        *pub.Actor       `qstring:"-"`
+	IRI           pub.IRI          `qstring:"-"`
+	Collection    h.CollectionType `qstring:"-"`
+	URL           CompStrs         `qstring:"url,omitempty"`
+	MedTypes      []pub.MimeType   `qstring:"mediaType,omitempty"`
+	Aud           CompStrs         `qstring:"recipients,omitempty"`
+	Gen           CompStrs         `qstring:"generator,omitempty"`
+	Key           []Hash           `qstring:"-"`
+	ItemKey       CompStrs         `qstring:"iri,omitempty"`
+	Type          CompStrs         `qstring:"type,omitempty"`
+	AttrTo        CompStrs         `qstring:"attributedTo,omitempty"`
+	InReplTo      CompStrs         `qstring:"inReplyTo,omitempty"`
+	OP            CompStrs         `qstring:"context,omitempty"`
+	FollowedBy    []Hash           `qstring:"followedBy,omitempty"` // todo(marius): not really used
+	OlderThan     time.Time        `qstring:"olderThan,omitempty"`
+	NewerThan     time.Time        `qstring:"newerThan,omitempty"`
+	Prev          Hash             `qstring:"before,omitempty"`
+	Next          Hash             `qstring:"after,omitempty"`
+	Object        *Filters         `qstring:"object,omitempty"`
+	Actor         *Filters         `qstring:"actor,omitempty"`
+	Target        *Filters         `qstring:"target,omitempty"`
+	CurPage       uint             `qstring:"page,omitempty"`
+	MaxItems      uint             `qstring:"maxItems,omitempty"`
+	Req           *http.Request    `qstring:"-"`
 }
 
 func ItemKey(keys ...string) filterFn {
@@ -189,7 +189,12 @@ func Name(names ...string) filterFn {
 
 func Type(types ...pub.ActivityVocabularyType) filterFn {
 	return func(f *Filters) error {
-		f.Type = types
+		if f.Type == nil {
+			f.Type = make(CompStrs, 0)
+		}
+		for _, t := range types {
+			f.Type = append(f.Type, StringEquals(string(t)))
+		}
 		return nil
 	}
 }
@@ -213,7 +218,7 @@ func FiltersNew(filters ...filterFn) *Filters {
 }
 
 // Types returns a list of ActivityVocabularyTypes to filter against
-func (f Filters) Types() pub.ActivityVocabularyTypes {
+func (f Filters) Types() CompStrs {
 	return f.Type
 }
 
@@ -518,13 +523,13 @@ func filterObjectNoNameNoType(ob *pub.Object, ff *Filters) bool {
 		return true
 	}
 	/*
-	if iri := ff.GetLink(); len(iri) > 0 && h.ValidCollectionIRI(iri) {
-		if !ob.GetLink().Contains(iri, false) {
-			return false
+		if iri := ff.GetLink(); len(iri) > 0 && h.ValidCollectionIRI(iri) {
+			if !ob.GetLink().Contains(iri, false) {
+				return false
+			}
 		}
-	}
 	*/
-	if iris := ff.IRIs(); len(iris) > 0  {
+	if iris := ff.IRIs(); len(iris) > 0 {
 		if !filterItem(iris, ob) {
 			return false
 		}
@@ -553,11 +558,29 @@ func filterObjectNoNameNoType(ob *pub.Object, ff *Filters) bool {
 	return true
 }
 
+func filterTypes(filters CompStrs, types ...pub.ActivityVocabularyType) bool {
+	var match bool
+	for _, filter := range filters {
+		if filter.Operator == "!" {
+			match = !match
+		}
+		for _, typ := range types {
+			m := matchStringFilter(filter, string(typ))
+			if filter.Operator == "!" {
+				match = match && m
+			} else {
+				match = match || m
+			}
+		}
+	}
+	return match
+}
+
 func filterTombstone(it pub.Item, ff *Filters) (bool, pub.Item) {
 	keep := true
 	pub.OnTombstone(it, func(t *pub.Tombstone) error {
 		if len(ff.Types()) > 0 {
-			keep = ff.Type.Contains(t.FormerType)
+			keep = filterTypes(ff.Types(), t.FormerType, t.Type)
 		}
 		return nil
 	})
@@ -587,7 +610,7 @@ func filterObject(it pub.Item, ff *Filters) (bool, pub.Item) {
 		return keep, it
 	}
 	if types := ff.Types(); len(types) > 0 {
-		keep = types.Contains(it.GetType())
+		keep = filterTypes(types, it.GetType())
 	}
 	return keep, it
 }
@@ -616,7 +639,7 @@ func filterActivity(it pub.Item, ff *Filters) (bool, pub.Item) {
 		return keep, it
 	}
 	if types := ff.Types(); len(types) > 0 {
-		keep = types.Contains(it.GetType())
+		keep = filterTypes(types, it.GetType())
 	}
 	return keep, it
 }
@@ -641,7 +664,7 @@ func filterActor(it pub.Item, ff *Filters) (bool, pub.Item) {
 		return keep, it
 	}
 	if types := ff.Types(); len(types) > 0 {
-		 keep = types.Contains(it.GetType())
+		keep = filterTypes(types, it.GetType())
 	}
 	return keep, it
 }

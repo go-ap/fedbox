@@ -385,13 +385,13 @@ func addObjectAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		f, _ := LoadFilters(c)
 		typ := f.Type[0]
-		if pub.ActorTypes.Contains(typ) {
+		if pub.ActorTypes.Contains(pub.ActivityVocabularyType(typ.Str)) {
 			name, err := loadFromStdin("Enter the %s name", typ)
 			pw, err := loadPwFromStdin(true, "%s's", name)
 			if err != nil {
 				return err
 			}
-			p, err := ctl.AddActor(string(name), typ, nil, pw)
+			p, err := ctl.AddActor(string(name), pub.ActivityVocabularyType(typ.Str), nil, pw)
 			if err != nil {
 				Errf("Error adding %s: %s\n", name, err)
 			}

@@ -521,7 +521,7 @@ func (r repo) DeleteObject(it pub.Item) (pub.Item, error) {
 	f := ap.FiltersNew()
 	f.IRI = it.GetLink()
 	if it.IsObject() {
-		f.Type = []pub.ActivityVocabularyType{it.GetType()}
+		f.Type = ap.CompStrs{ap.StringEquals(string(it.GetType()))}
 	}
 	var cnt uint
 	var found pub.ItemCollection

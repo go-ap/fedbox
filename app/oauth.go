@@ -138,9 +138,7 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 	// check for existing user actor
 	var actor pub.Item
 	f := filters(r, i.baseURL)
-	f.Type = []pub.ActivityVocabularyType{
-		pub.PersonType,
-	}
+	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
 	f.URL = activitypub.CompStrs{activitypub.StringEquals(me)}
 	actors, _, err := i.ap.LoadActors(f)
 	if err != nil {
@@ -154,9 +152,7 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 
 	// check for existing application actor
 	f = filters(r, i.baseURL)
-	f.Type = []pub.ActivityVocabularyType{
-		pub.ApplicationType,
-	}
+	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.ApplicationType))}
 	f.URL = activitypub.CompStrs{activitypub.StringEquals(clientID)}
 	clientActors, _, err := i.ap.LoadActors(f)
 	if err != nil {
@@ -234,9 +230,7 @@ func (h *oauthHandler) loadAccountFromPost(r *http.Request) (*account, error) {
 	f := activitypub.FiltersNew()
 	f.Name = activitypub.CompStrs{activitypub.CompStr{Str: handle}}
 	f.IRI = activitypub.ActorsType.IRI(a)
-	f.Type = []pub.ActivityVocabularyType{
-		pub.PersonType,
-	}
+	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
 	actors, count, err := h.loader.LoadActors(f)
 	if err != nil || count == 0 {
 		return nil, errUnauthorized
