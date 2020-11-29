@@ -517,6 +517,23 @@ func filterObjectNoName(ob *pub.Object, ff *Filters) bool {
 	if ff == nil {
 		return true
 	}
+	if iris := ff.IRIs(); len(iris) > 0  {
+		if !filterItem(iris, ob) {
+			return false
+		}
+	}
+	if types := ff.Types(); len(types) > 0 {
+		if !types.Contains(ob.GetType()) {
+			return false
+		}
+	}
+	/*
+		if iri := ff.GetLink(); len(iri) > 0 && h.ValidCollectionIRI(iri) {
+			if keep = it.GetLink().Contains(iri, false); !keep {
+				return nil
+			}
+		}
+	*/
 	if !filterNaturalLanguageValues(ff.Content(), ob.Content, ob.Summary) {
 		return false
 	}
@@ -566,23 +583,6 @@ func filterObject(it pub.Item, ff *Filters) (bool, pub.Item) {
 		return false, it
 	}
 	pub.OnObject(it, func(ob *pub.Object) error {
-		if iris := ff.IRIs(); len(iris) > 0 {
-			if keep = filterItem(iris, it); !keep {
-				return nil
-			}
-		}
-		if types := ff.Types(); len(types) > 0 {
-			if keep = types.Contains(typ); !keep {
-				return nil
-			}
-		}
-		/*
-		if iri := ff.GetLink(); len(iri) > 0 && h.ValidCollectionIRI(iri) {
-			if keep = it.GetLink().Contains(iri, false); !keep {
-				return nil
-			}
-		}
-		*/
 		if keep = filterNaturalLanguageValues(ff.Names(), ob.Name); !keep {
 			return nil
 		}
@@ -631,7 +631,10 @@ func filterActor(it pub.Item, ff *Filters) (bool, pub.Item) {
 			keep = false
 			return nil
 		}
-		keep, it = filterObject(it, ff)
+		pub.OnObject(it, func(ob *pub.Object) error {
+			keep = filterObjectNoName(ob, ff)
+			return nil
+		})
 		return nil
 	})
 	return keep, it
