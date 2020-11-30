@@ -31,6 +31,7 @@ func (f FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) fu
 	return func(r chi.Router) {
 		r.Use(middleware.RealIP)
 		r.Use(middleware.GetHead)
+		r.Use(CleanRequestPath)
 		r.Use(ActorFromAuthHeader(os, f.Storage, l))
 
 		r.Method(http.MethodGet, "/", HandleItem(f))

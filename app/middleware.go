@@ -6,9 +6,11 @@ import (
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
+	"github.com/go-chi/chi"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"path"
 )
 
 // Repo adds an implementation of the storage.Loader to a Request's context so it can be used
@@ -61,4 +63,21 @@ func ActorFromAuthHeader(os *osin.Server, st storage.ActorLoader, l logrus.Field
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+func CleanRequestPath(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rctx := chi.RouteContext(r.Context())
+
+		routePath := rctx.RoutePath
+		if routePath == "" {
+			if r.URL.RawPath != "" {
+				routePath = r.URL.RawPath
+			} else {
+				routePath = r.URL.Path
+			}
+		}
+		rctx.RoutePath = path.Clean(routePath)
+
+		next.ServeHTTP(w, r)
+	})
 }
