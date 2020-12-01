@@ -525,20 +525,18 @@ func createCollectionsInBucket(b *bolt.Bucket, it pub.Item) error {
 			return nil
 		})
 	}
-	if pub.ObjectTypes.Contains(it.GetType()) {
-		return pub.OnObject(it, func(o *pub.Object) error {
-			if o.Replies != nil {
-				o.Replies, _ = createCollectionInBucket(b, handlers.Replies.IRI(o))
-			}
-			if o.Likes != nil {
-				o.Likes, _ = createCollectionInBucket(b, handlers.Likes.IRI(o))
-			}
-			if o.Shares != nil {
-				o.Shares, _ = createCollectionInBucket(b, handlers.Shares.IRI(o))
-			}
-			return nil
-		})
-	}
+	return pub.OnObject(it, func(o *pub.Object) error {
+		if o.Replies != nil {
+			o.Replies, _ = createCollectionInBucket(b, handlers.Replies.IRI(o))
+		}
+		if o.Likes != nil {
+			o.Likes, _ = createCollectionInBucket(b, handlers.Likes.IRI(o))
+		}
+		if o.Shares != nil {
+			o.Shares, _ = createCollectionInBucket(b, handlers.Shares.IRI(o))
+		}
+		return nil
+	})
 	return nil
 }
 

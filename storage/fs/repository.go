@@ -533,20 +533,18 @@ func createCollections(r repo, it pub.Item) error {
 			return nil
 		})
 	}
-	if pub.ObjectTypes.Contains(it.GetType()) {
-		return pub.OnObject(it, func(o *pub.Object) error {
-			if o.Replies != nil {
-				o.Replies, _ = createCollectionInPath(r, o.Replies)
-			}
-			if o.Likes != nil {
-				o.Likes, _ = createCollectionInPath(r, o.Likes)
-			}
-			if o.Shares != nil {
-				o.Shares, _ = createCollectionInPath(r, o.Shares)
-			}
-			return nil
-		})
-	}
+	return pub.OnObject(it, func(o *pub.Object) error {
+		if o.Replies != nil {
+			o.Replies, _ = createCollectionInPath(r, o.Replies)
+		}
+		if o.Likes != nil {
+			o.Likes, _ = createCollectionInPath(r, o.Likes)
+		}
+		if o.Shares != nil {
+			o.Shares, _ = createCollectionInPath(r, o.Shares)
+		}
+		return nil
+	})
 	return nil
 }
 

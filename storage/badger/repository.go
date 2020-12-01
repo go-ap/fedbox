@@ -551,20 +551,18 @@ func createCollections(tx *badger.Txn, it pub.Item) error {
 			return nil
 		})
 	}
-	if pub.ObjectTypes.Contains(it.GetType()) {
-		return pub.OnObject(it, func(o *pub.Object) error {
-			if o.Replies != nil {
-				o.Replies, _ = createCollectionInPath(tx, o.Replies)
-			}
-			if o.Likes != nil {
-				o.Likes, _ = createCollectionInPath(tx, o.Likes)
-			}
-			if o.Shares != nil {
-				o.Shares, _ = createCollectionInPath(tx, o.Shares)
-			}
-			return nil
-		})
-	}
+	return pub.OnObject(it, func(o *pub.Object) error {
+		if o.Replies != nil {
+			o.Replies, _ = createCollectionInPath(tx, o.Replies)
+		}
+		if o.Likes != nil {
+			o.Likes, _ = createCollectionInPath(tx, o.Likes)
+		}
+		if o.Shares != nil {
+			o.Shares, _ = createCollectionInPath(tx, o.Shares)
+		}
+		return nil
+	})
 	return nil
 }
 
