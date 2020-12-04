@@ -559,7 +559,7 @@ func filterObjectNoNameNoType(ob *pub.Object, ff *Filters) bool {
 }
 
 func filterTypes(filters CompStrs, types ...pub.ActivityVocabularyType) bool {
-	var match bool
+	match := len(filters) == 0
 	for _, filter := range filters {
 		if filter.Operator == "!" {
 			match = !match
@@ -579,9 +579,7 @@ func filterTypes(filters CompStrs, types ...pub.ActivityVocabularyType) bool {
 func filterTombstone(it pub.Item, ff *Filters) (bool, pub.Item) {
 	keep := true
 	pub.OnTombstone(it, func(t *pub.Tombstone) error {
-		if len(ff.Types()) > 0 {
-			keep = filterTypes(ff.Types(), t.FormerType, t.Type)
-		}
+		keep = filterTypes(ff.Types(), t.FormerType, t.Type)
 		return nil
 	})
 	if !keep {
@@ -609,10 +607,7 @@ func filterObject(it pub.Item, ff *Filters) (bool, pub.Item) {
 	if !keep {
 		return keep, it
 	}
-	if types := ff.Types(); len(types) > 0 {
-		keep = filterTypes(types, it.GetType())
-	}
-	return keep, it
+	return filterTypes(ff.Types(), it.GetType()), it
 }
 
 // NOTE(marius): this is being called even if it is an IntransitiveActivity
@@ -638,10 +633,7 @@ func filterActivity(it pub.Item, ff *Filters) (bool, pub.Item) {
 	if !keep {
 		return keep, it
 	}
-	if types := ff.Types(); len(types) > 0 {
-		keep = filterTypes(types, it.GetType())
-	}
-	return keep, it
+	return filterTypes(ff.Types(), it.GetType()), it
 }
 
 func filterActor(it pub.Item, ff *Filters) (bool, pub.Item) {
@@ -663,10 +655,7 @@ func filterActor(it pub.Item, ff *Filters) (bool, pub.Item) {
 	if !keep {
 		return keep, it
 	}
-	if types := ff.Types(); len(types) > 0 {
-		keep = filterTypes(types, it.GetType())
-	}
-	return keep, it
+	return filterTypes(ff.Types(), it.GetType()), it
 }
 
 func matchStringFilters(filters CompStrs, s string) bool {
