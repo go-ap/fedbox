@@ -12,7 +12,7 @@ import (
 )
 
 func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	oauth := auth.NewFSStore(auth.FSConfig{
+	oauth := auth.NewSqliteStore(auth.SqliteConfig{
 		Path:  c.BaseStoragePath(),
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),
