@@ -58,6 +58,7 @@ const (
 	StorageFS       = StorageType("fs")
 	StorageBadger   = StorageType("badger")
 	StoragePostgres = StorageType("postgres")
+	StorageSqlite   = StorageType("sqlite")
 )
 
 const defaultPerm = os.ModeDir | os.ModePerm | 0700

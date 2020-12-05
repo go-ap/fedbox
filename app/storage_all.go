@@ -1,4 +1,4 @@
-// +build storage_all !storage_pgx,!storage_boltdb,!storage_fs,!storage_badger
+// +build storage_all !storage_pgx,!storage_boltdb,!storage_fs,!storage_badger,!storage_sqlite
 
 package app
 
@@ -10,6 +10,7 @@ import (
 	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/fedbox/storage/fs"
 	"github.com/go-ap/fedbox/storage/pgx"
+	"github.com/go-ap/fedbox/storage/sqlite"
 	st "github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
@@ -59,6 +60,20 @@ func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.S
 	return db, oauth, nil
 }
 
+func getSqliteStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+	oauth := auth.NewFSStore(auth.FSConfig{
+		Path:  c.BaseStoragePath(),
+		LogFn: InfoLogFn(l),
+		ErrFn: ErrLogFn(l),
+	})
+	db, err := sqlite.New(c)
+	if err != nil {
+		return nil, oauth, err
+	}
+	return db, oauth, nil
+}
+
+
 func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	// @todo(marius): we're no longer loading SQL db config env variables
 	conf := config.BackendConfig{}
@@ -85,6 +100,8 @@ func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storag
 		return getBadgerStorage(c, l)
 	case config.StoragePostgres:
 		return getPgxStorage(c, l)
+	case config.StorageSqlite:
+		return getSqliteStorage(c, l)
 	case config.StorageFS:
 		return getFsStorage(c, l)
 	}
