@@ -33,22 +33,6 @@ type loggerFn func(string, ...interface{})
 
 var defaultLogFn = func(string, ...interface{}) {}
 
-func getAbsStoragePath(p string) (string, error) {
-	if !filepath.IsAbs(p) {
-		var err error
-		p, err = filepath.Abs(p)
-		if err != nil {
-			return "", err
-		}
-	}
-	if fi, err := os.Stat(p); err != nil {
-		return "", err
-	} else if !fi.IsDir() {
-		return "", errors.NotValidf("path %s is invalid for storage", p)
-	}
-	return p, nil
-}
-
 // New returns a new repo repository
 func New(c config.Options) (*repo, error) {
 	p, err := getAbsStoragePath(c.StoragePath)
@@ -347,6 +331,7 @@ func (r *repo) UpdateObject(it pub.Item) (pub.Item, error) {
 	return r.SaveObject(it)
 }
 
+// DeleteActor
 func (r *repo) DeleteActor(it pub.Item) (pub.Item, error) {
 	return r.DeleteObject(it)
 }
@@ -629,6 +614,22 @@ func mkDirIfNotExists(p string) error {
 		return errors.Errorf("path exists, and is not a folder %s", p)
 	}
 	return nil
+}
+
+func getAbsStoragePath(p string) (string, error) {
+	if !filepath.IsAbs(p) {
+		var err error
+		p, err = filepath.Abs(p)
+		if err != nil {
+			return "", err
+		}
+	}
+	if fi, err := os.Stat(p); err != nil {
+		return "", err
+	} else if !fi.IsDir() {
+		return "", errors.NotValidf("path %s is invalid for storage", p)
+	}
+	return p, nil
 }
 
 func save(r *repo, it pub.Item) (pub.Item, error) {
