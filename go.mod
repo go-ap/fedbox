@@ -40,4 +40,5 @@ require (
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717
+	modernc.org/sqlite v1.7.5
 )

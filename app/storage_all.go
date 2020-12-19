@@ -61,18 +61,19 @@ func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.S
 }
 
 func getSqliteStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	oauth := auth.NewSqliteStore(auth.SqliteConfig{
-		Path:  c.BaseStoragePath(),
-		LogFn: InfoLogFn(l),
-		ErrFn: ErrLogFn(l),
-	})
+	/*
+		oauth := auth.NewSqliteStore(auth.SqliteConfig{
+			Path:  c.BaseStoragePath(),
+			LogFn: InfoLogFn(l),
+			ErrFn: ErrLogFn(l),
+		})
+	*/
 	db, err := sqlite.New(c)
 	if err != nil {
-		return nil, oauth, err
+		return nil, nil, err
 	}
-	return db, oauth, nil
+	return db, nil, nil
 }
-
 
 func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	// @todo(marius): we're no longer loading SQL db config env variables
