@@ -10,12 +10,12 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
 	github.com/go-ap/activitypub v0.0.0-20201128123914-c64f3ce90436
-	github.com/go-ap/auth v0.0.0-20201205180122-d4c147e393cc
+	github.com/go-ap/auth v0.0.0-20201128124953-4cf9bf30e0c6
 	github.com/go-ap/client v0.0.0-20201128124038-ecde09fcd6ee
 	github.com/go-ap/errors v0.0.0-20200702155720-f662512ba418
 	github.com/go-ap/handlers v0.0.0-20201128125041-9511d3bc0b53
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20201128125135-4a06416bde70
+	github.com/go-ap/processing v0.0.0-20201221124151-35ee6b83597a
 	github.com/go-ap/storage v0.0.0-20201128124834-7ed86f062532
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/protobuf v1.4.3 // indirect
@@ -32,10 +32,10 @@ require (
 	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/unrolled/render v1.0.2
 	go.etcd.io/bbolt v1.3.4
-	golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c
-	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb // indirect
+	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
+	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20201204225414-ed752295db88 // indirect
+	golang.org/x/sys v0.0.0-20201221093633-bc327ba9c2f0 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
