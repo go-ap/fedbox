@@ -3,7 +3,10 @@
 package app
 
 import (
-	"github.com/go-ap/auth"
+	authbadger "github.com/go-ap/auth/badger"
+	authboltdb "github.com/go-ap/auth/boltdb"
+	authfs "github.com/go-ap/auth/fs"
+	authpgx "github.com/go-ap/auth/pgx"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/badger"
@@ -22,11 +25,11 @@ func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Repository, os
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),
 	}, c.BaseURL)
-	oauth := auth.NewBoltDBStore(auth.BoltConfig{
-		Path:       c.BoltDBOAuth2(),
-		BucketName: c.Host,
-		LogFn:      InfoLogFn(l),
-		ErrFn:      ErrLogFn(l),
+	oauth := authbadger.New(authbadger.Config{
+		Path:  c.BadgerOAuth2(),
+		Host:  c.Host,
+		LogFn: InfoLogFn(l),
+		ErrFn: ErrLogFn(l),
 	})
 	return db, oauth, nil
 }
@@ -38,7 +41,7 @@ func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin
 		ErrFn: ErrLogFn(l),
 	}, c.BaseURL)
 
-	oauth := auth.NewBoltDBStore(auth.BoltConfig{
+	oauth := authboltdb.New(authboltdb.Config{
 		Path:       c.BoltDBOAuth2(),
 		BucketName: c.Host,
 		LogFn:      InfoLogFn(l),
@@ -48,7 +51,7 @@ func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin
 }
 
 func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	oauth := auth.NewFSStore(auth.FSConfig{
+	oauth := authfs.New(authfs.Config{
 		Path:  c.BaseStoragePath(),
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),
@@ -80,7 +83,7 @@ func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.
 	conf := config.BackendConfig{}
 	db, err := pgx.New(conf, c.BaseURL, l)
 
-	oauth := auth.NewPgDBStore(auth.PgConfig{
+	oauth := authpgx.New(authpgx.Config{
 		Enabled: true,
 		Host:    conf.Host,
 		Port:    conf.Port,

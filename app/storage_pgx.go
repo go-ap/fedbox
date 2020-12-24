@@ -3,7 +3,7 @@
 package app
 
 import (
-	"github.com/go-ap/auth"
+	auth "github.com/go-ap/auth/pgx"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/pgx"
 )
@@ -13,7 +13,7 @@ func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storag
 	conf := config.BackendConfig{}
 	db, err := pgx.New(conf, c.BaseURL, l)
 
-	oauth := auth.NewPgDBStore(auth.PgConfig{
+	oauth := auth.New(auth.Config{
 		Enabled: true,
 		Host:    conf.Host,
 		Port:    conf.Port,

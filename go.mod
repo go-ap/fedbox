@@ -5,12 +5,13 @@ go 1.14
 require (
 	aletheia.icu/broccoli/fs v0.0.0-20200420162907-e7ff440cf358
 	github.com/DataDog/zstd v1.4.5 // indirect
+	github.com/buger/jsonparser v1.1.0 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
 	github.com/go-ap/activitypub v0.0.0-20201128123914-c64f3ce90436
-	github.com/go-ap/auth v0.0.0-20201128124953-4cf9bf30e0c6
+	github.com/go-ap/auth v0.0.0-20201225143553-23ac8dfff002
 	github.com/go-ap/client v0.0.0-20201128124038-ecde09fcd6ee
 	github.com/go-ap/errors v0.0.0-20200702155720-f662512ba418
 	github.com/go-ap/handlers v0.0.0-20201128125041-9511d3bc0b53
@@ -35,7 +36,7 @@ require (
 	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
 	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20201221093633-bc327ba9c2f0 // indirect
+	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect

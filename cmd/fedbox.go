@@ -50,7 +50,7 @@ func run(r chi.Router, version string) cli.ActionFunc {
 		// the level enums have same values
 		logger.Level = logrus.Level(a.Config().LogLevel)
 
-		osin, err := auth.NewOAuth2Server(a.OAuthStorage, l)
+		osin, err := auth.NewServer(a.OAuthStorage, l)
 		if err != nil {
 			l.Warn(err.Error())
 			return err

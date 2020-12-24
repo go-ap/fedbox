@@ -3,7 +3,7 @@
 package app
 
 import (
-	"github.com/go-ap/auth"
+	auth "github.com/go-ap/auth/boltdb"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/badger"
 	st "github.com/go-ap/storage"
@@ -17,7 +17,7 @@ func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storag
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),
 	}, c.BaseURL)
-	oauth := auth.NewBoltDBStore(auth.BoltConfig{
+	oauth := auth.New(auth.Config{
 		Path:       c.BoltDBOAuth2(),
 		BucketName: c.Host,
 		LogFn:      InfoLogFn(l),

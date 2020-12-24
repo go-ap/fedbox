@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/go-ap/auth"
+	"github.com/go-ap/auth/boltdb"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"gopkg.in/urfave/cli.v2"
@@ -52,7 +52,7 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 
 func bootstrapOAuth(conf config.Options) error {
 	if conf.Storage == config.StorageBoltDB{
-		return auth.BootstrapBoltDB(conf.BoltDBOAuth2(), []byte(conf.Host))
+		return boltdb.Bootstrap(conf.BoltDBOAuth2(), []byte(conf.Host))
 	}
 	return nil
 }

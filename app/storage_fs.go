@@ -3,7 +3,7 @@
 package app
 
 import (
-	"github.com/go-ap/auth"
+	auth "github.com/go-ap/auth/fs"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/fs"
 	st "github.com/go-ap/storage"
@@ -12,7 +12,7 @@ import (
 )
 
 func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
-	oauth := auth.NewFSStore(auth.FSConfig{
+	oauth := auth.New(auth.Config{
 		Path:  c.BaseStoragePath(),
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),
