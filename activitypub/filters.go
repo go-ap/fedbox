@@ -151,6 +151,7 @@ type Filters struct {
 	Object        *Filters         `qstring:"object,omitempty"`
 	Actor         *Filters         `qstring:"actor,omitempty"`
 	Target        *Filters         `qstring:"target,omitempty"`
+	Tag           *Filters         `qstring:"tag,omitempty"`
 	CurPage       uint             `qstring:"page,omitempty"`
 	MaxItems      uint             `qstring:"maxItems,omitempty"`
 	Req           *http.Request    `qstring:"-"`
@@ -518,17 +519,15 @@ func (f Filters) Targets() pub.IRIs {
 	return ret
 }
 
+// Tags returns a list of filters to filter an object's tag collections against
+func (f Filters) Tags() *Filters {
+	return f.Tag
+}
+
 func filterObjectNoNameNoType(ob *pub.Object, ff *Filters) bool {
 	if ff == nil {
 		return true
 	}
-	/*
-		if iri := ff.GetLink(); len(iri) > 0 && h.ValidCollectionIRI(iri) {
-			if !ob.GetLink().Contains(iri, false) {
-				return false
-			}
-		}
-	*/
 	if iris := ff.IRIs(); len(iris) > 0 {
 		if !filterItem(iris, ob) {
 			return false
@@ -553,6 +552,9 @@ func filterObjectNoNameNoType(ob *pub.Object, ff *Filters) bool {
 		return false
 	}
 	if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
+		return false
+	}
+	if !ff.Tags().ItemsMatch(ob.Tag) {
 		return false
 	}
 	return true
@@ -595,9 +597,43 @@ func filterTombstone(it pub.Item, ff *Filters) (bool, pub.Item) {
 	return keep, it
 }
 
+func filterLink(it pub.Item, ff *Filters) (bool, pub.Item) {
+	if ff == nil {
+		return true, it
+	}
+	if !it.IsLink() {
+		return false, it
+	}
+	keep := true
+	pub.OnLink(it, func(l *pub.Link) error {
+		if keep = filterNaturalLanguageValues(ff.Names(), l.Name); !keep {
+			return nil
+		}
+		if iris := ff.IRIs(); len(iris) > 0 {
+			if !filterItem(iris, l) {
+				keep = false
+			}
+		}
+		if !filterURLs(ff.URLs(), l) {
+			keep = false
+		}
+		if !filterMediaTypes(ff.MediaTypes(), l.MediaType) {
+			keep = false
+		}
+		return nil
+	})
+	if !keep {
+		return keep, it
+	}
+	return filterTypes(ff.Types(), it.GetType()), it
+}
+
 func filterObject(it pub.Item, ff *Filters) (bool, pub.Item) {
 	if ff == nil {
 		return true, it
+	}
+	if !it.IsObject() {
+		return false, it
 	}
 	keep := true
 	pub.OnObject(it, func(ob *pub.Object) error {
@@ -624,13 +660,13 @@ func filterActivity(it pub.Item, ff *Filters) (bool, pub.Item) {
 		if keep, _ = filterObject(act, ff); !keep {
 			return nil
 		}
-		if keep = ff.Actor.ItemMatches(act.Actor); !keep {
+		if keep = ff.Actor.ItemsMatch(act.Actor); !keep {
 			return nil
 		}
-		if keep = ff.Object.ItemMatches(act.Object); !keep {
+		if keep = ff.Object.ItemsMatch(act.Object); !keep {
 			return nil
 		}
-		keep = ff.Target.ItemMatches(act.Target)
+		keep = ff.Target.ItemsMatch(act.Target)
 		return nil
 	})
 	if !keep {
@@ -747,7 +783,7 @@ func filterAudience(filters CompStrs, colArr ...pub.ItemCollection) bool {
 			}
 		}
 	}
-	keep := false
+	keep := (len(filters) == 1 && filters[0].String() == pub.PublicNS.String()) && len(allItems) == 0
 	for _, f := range filters {
 		for _, it := range allItems {
 			s := it.GetLink().String()
@@ -917,7 +953,7 @@ type CollectionFilterer interface {
 }
 
 type ItemMatcher interface {
-	ItemMatches(it pub.Item) bool
+	ItemsMatch(it ...pub.Item) bool
 }
 
 func (f Filters) FilterCollection(col pub.ItemCollection) (pub.ItemCollection, int) {
@@ -926,7 +962,7 @@ func (f Filters) FilterCollection(col pub.ItemCollection) (pub.ItemCollection, i
 	}
 	new := make(pub.ItemCollection, len(col))
 	for _, it := range col {
-		if f.ItemMatches(it) {
+		if f.ItemsMatch(it) {
 			new = append(new, it)
 		}
 	}
@@ -934,24 +970,35 @@ func (f Filters) FilterCollection(col pub.ItemCollection) (pub.ItemCollection, i
 	return nil, 0
 }
 
-// ItemMatches
-func (f *Filters) ItemMatches(it pub.Item) bool {
+// ItemsMatch
+func (f *Filters) ItemsMatch(col ...pub.Item) bool {
 	if f == nil {
 		return true
 	}
-	if it == nil {
+	if col == nil {
 		return false
 	}
 	var valid bool
-	typ := it.GetType()
-	if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
-		valid, _ = filterActivity(it, f)
-	} else if pub.ActorTypes.Contains(typ) {
-		valid, _ = filterActor(it, f)
-	} else if typ == pub.TombstoneType {
-		valid, _ = filterTombstone(it, f)
-	} else {
-		valid, _ = filterObject(it, f)
+	for _, it := range col {
+		if it.IsCollection() {
+			pub.OnCollectionIntf(it, func(col pub.CollectionInterface) error {
+				valid = f.ItemsMatch(col.Collection()...)
+				return nil
+			})
+		} else if it.IsObject() {
+			typ := it.GetType()
+			if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
+				valid, _ = filterActivity(it, f)
+			} else if pub.ActorTypes.Contains(typ) {
+				valid, _ = filterActor(it, f)
+			} else if typ == pub.TombstoneType {
+				valid, _ = filterTombstone(it, f)
+			} else {
+				valid, _ = filterObject(it, f)
+			}
+		} else if it.IsLink() {
+			valid, _ = filterLink(it, f)
+		}
 	}
 	return valid
 }
@@ -994,7 +1041,7 @@ func FilterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
 		return it, nil
 	}
 	if ff, ok := f.(ItemMatcher); ok {
-		if ff.ItemMatches(it) {
+		if ff.ItemsMatch(it) {
 			return it, nil
 		} else {
 			return nil, nil

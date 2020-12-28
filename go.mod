@@ -10,8 +10,8 @@ require (
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
-	github.com/go-ap/activitypub v0.0.0-20201128123914-c64f3ce90436
-	github.com/go-ap/auth v0.0.0-20201225143553-23ac8dfff002
+	github.com/go-ap/activitypub v0.0.0-20201228165347-b1c270db5375
+	github.com/go-ap/auth v0.0.0-20201227165805-ffaf9b4e6e04
 	github.com/go-ap/client v0.0.0-20201128124038-ecde09fcd6ee
 	github.com/go-ap/errors v0.0.0-20200702155720-f662512ba418
 	github.com/go-ap/handlers v0.0.0-20201128125041-9511d3bc0b53
