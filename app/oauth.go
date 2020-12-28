@@ -250,12 +250,11 @@ func (h *oauthHandler) loadAccountFromPost(r *http.Request) (*account, error) {
 func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	ia := h.ia
 
-	var err error
-
 	s := ia.os
 	resp := s.NewResponse()
 	defer resp.Close()
 
+	var err error
 	actor := &auth.AnonymousActor
 	if ia.IsValidRequest(r) {
 		if actor, err = ia.ValidateClient(r); err != nil {
