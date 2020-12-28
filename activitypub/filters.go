@@ -980,6 +980,9 @@ func (f *Filters) ItemsMatch(col ...pub.Item) bool {
 	}
 	var valid bool
 	for _, it := range col {
+		if it == nil {
+			continue
+		}
 		if it.IsCollection() {
 			pub.OnCollectionIntf(it, func(col pub.CollectionInterface) error {
 				valid = f.ItemsMatch(col.Collection()...)
