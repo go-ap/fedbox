@@ -585,6 +585,9 @@ func filterTombstone(it pub.Item, ff *Filters) (bool, pub.Item) {
 	if !keep {
 		return keep, it
 	}
+	if len(ff.Name) > 0 {
+		return false, it
+	}
 	pub.OnObject(it, func(ob *pub.Object) error {
 		keep = filterObjectNoNameNoType(ob, ff)
 		return nil
