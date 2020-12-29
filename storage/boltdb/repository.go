@@ -101,7 +101,7 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 		// we need to dereference them, so no further filtering/processing is needed here
 		return it, nil
 	}
-	if !it.IsObject() {
+	if !it.IsObject() && !it.IsLink() {
 		it, _ = r.loadOneFromBucket(it.GetLink())
 	}
 	if pub.ActivityTypes.Contains(it.GetType()) {
@@ -818,7 +818,7 @@ func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
 		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActivitiesType)
 	} else if pub.ActorTypes.Contains(typ) || typ == pub.ActorType {
 		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActorsType)
-	} else if pub.ObjectTypes.Contains(typ) {
+	} else {
 		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ObjectsType)
 	}
 	return ap.GenerateID(it, partOf, by)

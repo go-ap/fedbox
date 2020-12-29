@@ -498,7 +498,7 @@ func (r repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
 		partOf = fmt.Sprintf("%s/activities", r.baseURL)
 	} else if pub.ActorTypes.Contains(typ) {
 		partOf = fmt.Sprintf("%s/actors", r.baseURL)
-	} else if pub.ObjectTypes.Contains(typ) {
+	} else {
 		partOf = fmt.Sprintf("%s/objects", r.baseURL)
 	}
 	return ap.GenerateID(it, partOf, by)

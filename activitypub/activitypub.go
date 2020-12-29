@@ -78,9 +78,14 @@ func GenerateID(it pub.Item, partOf string, by pub.Item) (pub.ID, error) {
 			return nil
 		})
 	}
-	if pub.ObjectTypes.Contains(it.GetType()) {
+	if it.IsObject() {
 		return id, pub.OnObject(it, func(o *pub.Object) error {
 			o.ID = id
+			return nil
+		})
+	} else if it.IsLink() {
+		return id, pub.OnLink(it, func(l *pub.Link) error {
+			l.ID = id
 			return nil
 		})
 	}

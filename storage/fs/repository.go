@@ -388,7 +388,7 @@ func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
 		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActivitiesType)
 	} else if pub.ActorTypes.Contains(typ) || typ == pub.ActorType {
 		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActorsType)
-	} else if pub.ObjectTypes.Contains(typ) {
+	} else {
 		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ObjectsType)
 	}
 	return ap.GenerateID(it, partOf, by)
@@ -518,18 +518,20 @@ func createCollections(r repo, it pub.Item) error {
 			return nil
 		})
 	}
-	return pub.OnObject(it, func(o *pub.Object) error {
-		if o.Replies != nil {
-			o.Replies, _ = createCollectionInPath(r, o.Replies)
-		}
-		if o.Likes != nil {
-			o.Likes, _ = createCollectionInPath(r, o.Likes)
-		}
-		if o.Shares != nil {
-			o.Shares, _ = createCollectionInPath(r, o.Shares)
-		}
-		return nil
-	})
+	if it.IsObject() {
+		return pub.OnObject(it, func(o *pub.Object) error {
+			if o.Replies != nil {
+				o.Replies, _ = createCollectionInPath(r, o.Replies)
+			}
+			if o.Likes != nil {
+				o.Likes, _ = createCollectionInPath(r, o.Likes)
+			}
+			if o.Shares != nil {
+				o.Shares, _ = createCollectionInPath(r, o.Shares)
+			}
+			return nil
+		})
+	}
 	return nil
 }
 
@@ -729,7 +731,7 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 		// we need to dereference them, so no further filtering/processing is needed here
 		return it, nil
 	}
-	if !it.IsObject() {
+	if !it.IsObject() && !it.IsLink() {
 		it, _ = r.loadOneFromPath(it.GetLink())
 	}
 	if pub.ActivityTypes.Contains(it.GetType()) {
