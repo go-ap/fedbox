@@ -5,19 +5,18 @@ go 1.14
 require (
 	aletheia.icu/broccoli/fs v0.0.0-20200420162907-e7ff440cf358
 	github.com/DataDog/zstd v1.4.5 // indirect
-	github.com/buger/jsonparser v1.1.0 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
-	github.com/go-ap/activitypub v0.0.0-20201228165347-b1c270db5375
-	github.com/go-ap/auth v0.0.0-20201229192455-6e633340e4aa
-	github.com/go-ap/client v0.0.0-20201229192326-866ef9df0e12
+	github.com/go-ap/activitypub v0.0.0-20201230131902-22a1b093fa24
+	github.com/go-ap/auth v0.0.0-20201230132310-6668afecc044
+	github.com/go-ap/client v0.0.0-20201230132048-10ac27244ee3
 	github.com/go-ap/errors v0.0.0-20200702155720-f662512ba418
-	github.com/go-ap/handlers v0.0.0-20201229192553-e269235746d3
+	github.com/go-ap/handlers v0.0.0-20201230132336-8007b20a294e
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20201229192644-a3808bb48471
-	github.com/go-ap/storage v0.0.0-20201229192349-5f8c3c7df21d
+	github.com/go-ap/processing v0.0.0-20201230132406-ccbe712e1064
+	github.com/go-ap/storage v0.0.0-20201230132216-f7daeccf4af0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
