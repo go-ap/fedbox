@@ -125,7 +125,11 @@ func runAPP(e env.Type) int {
 	r := chi.NewRouter()
 	r.Use(log.NewStructuredLogger(l))
 
-	a, _ := app.New(l, "HEAD", string(e))
+	conf, err := config.LoadFromEnv(e)
+	if err != nil {
+		panic(err)
+	}
+	a, _ := app.New(l, "HEAD", conf)
 	db, aDb, err := app.Storage(opt, l.WithFields(fields))
 	if err != nil {
 		panic(err)
