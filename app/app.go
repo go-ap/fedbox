@@ -13,7 +13,6 @@ import (
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/handlers"
 	st "github.com/go-ap/storage"
 	"github.com/openshift/osin"
@@ -70,9 +69,10 @@ var AnonymousAcct = account{
 }
 
 // New instantiates a new FedBOX instance
-func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
+func New(l logrus.FieldLogger, ver string, conf config.Options) (*FedBOX, error) {
 	app := FedBOX{
 		ver:   ver,
+		conf:  conf,
 		infFn: emptyLogFn,
 		errFn: emptyLogFn,
 	}
@@ -80,27 +80,15 @@ func New(l logrus.FieldLogger, ver string, environ string) (*FedBOX, error) {
 		app.infFn = l.Infof
 		app.errFn = l.Errorf
 	}
-	var err error
-	app.conf, err = config.LoadFromEnv(env.Type(environ))
-	if err == nil {
-		Config = app.conf
-		ap.Secure = app.conf.Secure
-	}
+	Config = conf
+	ap.Secure = conf.Secure
+	errors.IncludeBacktrace = conf.Env.IsDev() || conf.Env.IsTest()
 
-	if err != nil {
-		app.errFn("Unable to load settings from environment variables: %s", err)
-		return nil, err
-	} else {
-		Config = app.conf
-		ap.Secure = app.conf.Secure
-	}
-	errors.IncludeBacktrace = app.conf.Env.IsDev() || app.conf.Env.IsTest()
-
-	db, oauth, err := Storage(app.conf, l)
+	db, oauth, err := Storage(conf, l)
 	if err != nil {
 		app.errFn("Unable to initialize storage backend: %s", err)
 	}
-	app.caches = cache{enabled: !(app.conf.Env.IsTest() || app.conf.Env.IsDev()), c: make(iriMap)}
+	app.caches = cache{enabled: !(conf.Env.IsTest() || conf.Env.IsDev()), c: make(iriMap)}
 	app.Storage = db
 	app.OAuthStorage = oauth
 	return &app, err

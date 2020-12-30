@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -20,8 +21,22 @@ const (
 	TraceLevel
 )
 
-func New() logrus.FieldLogger {
-	return logrus.New()
+var devFormatter = logrus.TextFormatter{
+	ForceColors:            true,
+	TimestampFormat:        time.StampMilli,
+	FullTimestamp:          true,
+	DisableSorting:         true,
+	DisableLevelTruncation: false,
+	PadLevelText:           true,
+	QuoteEmptyFields:       false,
+}
+
+func New(lvl Level) logrus.FieldLogger {
+	l := logrus.New()
+	l.SetFormatter(&devFormatter)
+	l.Level = logrus.Level(lvl)
+	l.Out = os.Stdout
+	return l
 }
 
 func NewStructuredLogger(logger logrus.FieldLogger) func(next http.Handler) http.Handler {
