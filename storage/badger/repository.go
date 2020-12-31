@@ -829,7 +829,7 @@ func (r *repo) loadItem(b *badger.Txn, path []byte, f s.Filterable) (pub.Item, e
 		// we need to dereference them, so no further filtering/processing is needed here
 		return it, nil
 	}
-	if !it.IsObject() && !it.IsLink() {
+	if pub.IsIRI(it) {
 		it, _ = r.loadOneFromPath(it.GetLink())
 	}
 	if pub.ActivityTypes.Contains(it.GetType()) {

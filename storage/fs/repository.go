@@ -731,7 +731,7 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 		// we need to dereference them, so no further filtering/processing is needed here
 		return it, nil
 	}
-	if !it.IsObject() && !it.IsLink() {
+	if pub.IsIRI(it) {
 		it, _ = r.loadOneFromPath(it.GetLink())
 	}
 	if pub.ActivityTypes.Contains(it.GetType()) {

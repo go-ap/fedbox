@@ -101,7 +101,7 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 		// we need to dereference them, so no further filtering/processing is needed here
 		return it, nil
 	}
-	if !it.IsObject() && !it.IsLink() {
+	if pub.IsIRI(it) {
 		it, _ = r.loadOneFromBucket(it.GetLink())
 	}
 	if pub.ActivityTypes.Contains(it.GetType()) {
