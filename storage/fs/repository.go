@@ -576,6 +576,7 @@ func deleteCollectionFromPath(r repo, it pub.Item) error {
 	} else if fi.IsDir() {
 		return os.Remove(itPath)
 	}
+	r.cache.Remove(it.GetLink())
 	return nil
 }
 
@@ -669,7 +670,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 		return it, errors.Annotatef(err, "failed writing object")
 	}
 
-	r.cache.Remove(pub.IRI(objPath))
+	r.cache.Set(it.GetLink(), it)
 	return it, nil
 }
 
@@ -718,11 +719,24 @@ func (r repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {
 	return col.First(), nil
 }
 
+func isSingleItem(f s.Filterable) bool {
+	if _, isIRI := f.(pub.IRI); isIRI {
+		return true
+	}
+	if _, isItem := f.(pub.Item); isItem {
+		return true
+	}
+	return false
+}
+
 func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 	var it pub.Item
-	if cachedIt := r.cache.Get(pub.IRI(p)); cachedIt != nil {
-		it = cachedIt
-	} else {
+	if isSingleItem(f) {
+		if cachedIt := r.cache.Get(f.GetLink()); cachedIt != nil {
+			it = cachedIt
+		}
+	}
+	if it == nil {
 		raw, err := loadRawFromPath(p)
 		if err != nil {
 			return nil, err
@@ -734,9 +748,9 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 		if err != nil {
 			return nil, err
 		}
-	}
-	if it == nil {
-		return nil, errors.NotFoundf("not found")
+		if it == nil {
+			return nil, errors.NotFoundf("not found")
+		}
 	}
 	if it.IsCollection() {
 		// we need to dereference them, so no further filtering/processing is needed here
