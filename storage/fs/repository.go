@@ -7,6 +7,7 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
@@ -53,6 +54,7 @@ func New(c config.Options) (*repo, error) {
 		baseURL: c.BaseURL,
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
+		cache:   cache.New(true),
 	}
 	return &b, nil
 }
@@ -61,6 +63,7 @@ type repo struct {
 	baseURL string
 	path    string
 	cwd     string
+	cache   cache.CanStore
 	logFn   loggerFn
 	errFn   loggerFn
 }
@@ -666,6 +669,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 		return it, errors.Annotatef(err, "failed writing object")
 	}
 
+	r.cache.Remove(pub.IRI(objPath))
 	return it, nil
 }
 
@@ -715,14 +719,21 @@ func (r repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {
 }
 
 func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
-	raw, err := loadRawFromPath(p)
-	if raw == nil {
-		return nil, nil
-	}
 	var it pub.Item
-	it, err = loadFromRaw(raw)
-	if err != nil {
-		return nil, err
+	if cachedIt := r.cache.Get(pub.IRI(p)); cachedIt != nil {
+		it = cachedIt
+	} else {
+		raw, err := loadRawFromPath(p)
+		if err != nil {
+			return nil, err
+		}
+		if raw == nil {
+			return nil, nil
+		}
+		it, err = loadFromRaw(raw)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if it == nil {
 		return nil, errors.NotFoundf("not found")
@@ -752,6 +763,7 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 		})
 	}
 
+	r.cache.Set(pub.IRI(p), it)
 	if f != nil {
 		return ap.FilterIt(it, f)
 	}
@@ -785,8 +797,7 @@ func (r repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 			return nil
 		})
 	} else {
-		var it pub.Item
-		it, err = r.loadItem(getObjectKey(itPath), f)
+		it, err := r.loadItem(getObjectKey(itPath), f)
 		if err != nil {
 			return nil, 0, errors.NewNotFound(err, "not found")
 		}
