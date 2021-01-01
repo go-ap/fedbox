@@ -58,7 +58,7 @@ func addMockObjects(r storage.Repository, obj pub.ItemCollection, errFn app.LogF
 }
 
 func cleanDB(t *testing.T) {
-	opt, _ := config.LoadFromEnv("test")
+	opt, _ := config.LoadFromEnv("test", time.Second)
 	if opt.Storage == "all" {
 		opt.Storage = config.StorageFS
 	}
@@ -75,7 +75,7 @@ func seedTestData(t *testing.T, testData []string) {
 	}
 	t.Helper()
 
-	opt, _ := config.LoadFromEnv("test")
+	opt, _ := config.LoadFromEnv("test", time.Second)
 	if opt.Storage == "all" {
 		opt.Storage = config.StorageFS
 	}
@@ -113,8 +113,8 @@ func seedTestData(t *testing.T, testData []string) {
 	}
 }
 
-func runAPP(e env.Type) int {
-	opt, _ := config.LoadFromEnv(env.TEST)
+func runAPP(e env.Type) {
+	opt, _ := config.LoadFromEnv(e, time.Second)
 	if opt.Storage == "all" {
 		opt.Storage = config.StorageFS
 	}
@@ -125,25 +125,15 @@ func runAPP(e env.Type) int {
 	r := chi.NewRouter()
 	r.Use(log.NewStructuredLogger(l))
 
-	conf, err := config.LoadFromEnv(e)
+	conf, err := config.LoadFromEnv(e, time.Second)
 	if err != nil {
 		panic(err)
 	}
-	a, _ := app.New(l, "HEAD", conf)
-	db, aDb, err := app.Storage(opt, l.WithFields(fields))
+	db, o, err := app.Storage(opt, l.WithFields(fields))
 	if err != nil {
 		panic(err)
 	}
-	if db != nil {
-		a.Storage = db
-	}
-	if aDb != nil {
-		a.OAuthStorage = aDb
-	}
-	o := osinServer(aDb, l)
+	a, _ := app.New(l, "HEAD", conf, db, o)
 
-	r.Use(app.Repo(a.Storage))
-	r.Route("/", a.Routes(a.Config().BaseURL, o, l))
-
-	return a.Run(r, time.Second)
+	a.Run()
 }

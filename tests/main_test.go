@@ -17,7 +17,6 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	go runAPP(env.Type(environ))
-
 	time.Sleep(100 * time.Millisecond)
 
 	st := m.Run()
