@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/urfave/cli.v2"
 	"os"
+	"time"
 )
 
 type Control struct {
@@ -58,7 +59,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 	if environ == "" {
 		environ = env.DEV
 	}
-	conf, err := config.LoadFromEnv(environ)
+	conf, err := config.LoadFromEnv(environ, time.Second)
 	if err != nil {
 		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}

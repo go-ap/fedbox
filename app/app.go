@@ -3,21 +3,22 @@ package app
 import (
 	"context"
 	"crypto/tls"
-	"github.com/go-ap/fedbox/internal/cache"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
-
+	"git.sr.ht/~mariusor/wrapper"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/handlers"
 	st "github.com/go-ap/storage"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	"os"
+	"syscall"
 )
 
 func actorLoader(ctx context.Context) (st.ActorLoader, bool) {
@@ -38,6 +39,7 @@ type LogFn func(string, ...interface{})
 
 type FedBOX struct {
 	conf         config.Options
+	R            chi.Router
 	ver          string
 	caches       cache.CanStore
 	Storage      st.Repository
@@ -70,12 +72,16 @@ var AnonymousAcct = account{
 }
 
 // New instantiates a new FedBOX instance
-func New(l logrus.FieldLogger, ver string, conf config.Options) (*FedBOX, error) {
+func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Repository, o osin.Storage) (*FedBOX, error) {
 	app := FedBOX{
-		ver:   ver,
-		conf:  conf,
-		infFn: emptyLogFn,
-		errFn: emptyLogFn,
+		ver:          ver,
+		conf:         conf,
+		R:            chi.NewRouter(),
+		Storage:      db,
+		OAuthStorage: o,
+		infFn:        emptyLogFn,
+		errFn:        emptyLogFn,
+		caches:       cache.New(!(conf.Env.IsTest() || conf.Env.IsDev())),
 	}
 	if l != nil {
 		app.infFn = l.Infof
@@ -85,13 +91,17 @@ func New(l logrus.FieldLogger, ver string, conf config.Options) (*FedBOX, error)
 	ap.Secure = conf.Secure
 	errors.IncludeBacktrace = conf.Env.IsDev() || conf.Env.IsTest()
 
-	db, oauth, err := Storage(conf, l)
+	osin, err := auth.NewServer(app.OAuthStorage, l)
 	if err != nil {
-		app.errFn("Unable to initialize storage backend: %s", err)
+		l.Warn(err.Error())
+		return nil, err
 	}
-	app.caches = cache.New(!(conf.Env.IsTest() || conf.Env.IsDev()))
-	app.Storage = db
-	app.OAuthStorage = oauth
+
+	app.R.Use(Repo(db))
+	app.R.Use(middleware.RequestID)
+	app.R.Use(log.NewStructuredLogger(l))
+	app.R.Route("/", app.Routes(Config.BaseURL, osin, l))
+
 	return &app, err
 }
 
@@ -160,32 +170,6 @@ func setupHttpServer(conf config.Options, m http.Handler, ctx context.Context) (
 	return run, stop
 }
 
-func waitForSignal(sigChan chan os.Signal, exitChan chan int) func(LogFn) {
-	return func(l LogFn) {
-		for {
-			s := <-sigChan
-			switch s {
-			case syscall.SIGHUP:
-				l("SIGHUP received, reloading configuration")
-				//loadEnv(a)
-			// kill -SIGINT XXXX or Ctrl+c
-			case syscall.SIGINT:
-				l("SIGINT received, stopping")
-				exitChan <- 0
-			// kill -SIGTERM XXXX
-			case syscall.SIGTERM:
-				l("SIGITERM received, force stopping")
-				exitChan <- 0
-			// kill -SIGQUIT XXXX
-			case syscall.SIGQUIT:
-				l("SIGQUIT received, force stopping with core-dump")
-				exitChan <- 0
-			default:
-				l("Unknown signal %d", s)
-			}
-		}
-	}
-}
 
 // Stop
 func (f *FedBOX) Stop() {
@@ -195,32 +179,42 @@ func (f *FedBOX) Stop() {
 }
 
 // Run is the wrapper for starting the web-server and handling signals
-func (f *FedBOX) Run(m http.Handler, wait time.Duration) int {
+func (f *FedBOX) Run() error {
 	// Create a deadline to wait for.
-	ctx, cancel := context.WithTimeout(context.TODO(), wait)
+	ctx, cancel := context.WithTimeout(context.TODO(), f.conf.TimeOut)
 	defer cancel()
 
 	// set local path typer to validate collections
 	handlers.Typer = pathTyper{}
 	// Get start/stop functions for the http server
-	srvRun, srvStop := setupHttpServer(f.conf, m, ctx)
+	srvRun, srvStop := setupHttpServer(f.conf, f.R, ctx)
 	f.stopFn = func() {
 		srvStop(f.infFn, f.errFn)
 		f.OAuthStorage.Close()
 		f.Storage.Close()
 	}
-	go srvRun(f.infFn, f.errFn)
 
-	// Add signal handlers
-	sigChan := make(chan os.Signal, 1)
-	exitChan := make(chan int)
-	signal.Notify(sigChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	go waitForSignal(sigChan, exitChan)(f.infFn)
-	code := <-exitChan
-
-	// Doesn't block if no connections, but will otherwise wait until the timeout deadline.
-	go srvStop(f.infFn, f.errFn)
-	f.infFn("Shutting down")
-
-	return code
+	wrapper.RegisterSignalHandlers(wrapper.SignalHandlers{
+		syscall.SIGHUP: func(_ chan int) {
+			f.infFn("SIGHUP received, reloading configuration")
+		},
+		syscall.SIGINT: func(exit chan int) {
+			f.infFn("SIGINT received, stopping")
+			exit <- 0
+		},
+		syscall.SIGTERM: func(exit chan int) {
+			f.infFn("SIGITERM received, force stopping")
+			exit <- 0
+		},
+		syscall.SIGQUIT: func(exit chan int) {
+			f.infFn("SIGQUIT received, force stopping with core-dump")
+			exit <- 0
+		},
+	}).Exec(func() {
+		srvRun(f.infFn, f.errFn)
+		// Doesn't block if no connections, but will otherwise wait until the timeout deadline.
+		go srvStop(f.infFn, f.errFn)
+		f.infFn("Shutting down")
+	})
+	return nil
 }

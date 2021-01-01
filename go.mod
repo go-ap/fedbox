@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	aletheia.icu/broccoli/fs v0.0.0-20200420162907-e7ff440cf358
+	git.sr.ht/~mariusor/wrapper v0.0.0-20210101185305-dd7008ab1358
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/dgraph-io/ristretto v0.0.3 // indirect

@@ -2,21 +2,18 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/go-ap/auth"
-	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
 	"gopkg.in/urfave/cli.v2"
+	"net/http/pprof"
 	"time"
 )
 
 const defaultTimeout = time.Second * 15
 
-func NewApp(r chi.Router,version string) *cli.App {
+func NewApp(version string) *cli.App {
 	return &cli.App{
 		Name:    "fedbox",
 		Usage:   "fedbox instance server",
@@ -33,39 +30,36 @@ func NewApp(r chi.Router,version string) *cli.App {
 				Value: "",
 			},
 		},
-		Action: run(r, version),
+		Action: run(version),
 	}
 }
 
-func run(r chi.Router, version string) cli.ActionFunc {
+func run(version string) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		w := c.Duration("wait")
 		e := c.String("env")
-		conf, err := config.LoadFromEnv(env.Type(e))
+		conf, err := config.LoadFromEnv(env.Type(e), w)
 		if err != nil {
 			return err
 		}
 		l := log.New(conf.LogLevel)
-		a, err := app.New(l, version, conf)
+		db, o, err := app.Storage(conf, l)
+		if err != nil {
+			l.Errorf("Unable to initialize storage backend: %s", err)
+		}
+		a, err := app.New(l, version, conf, db, o)
 		if err != nil {
 			l.Errorf("Unable to initialize: %s", err)
 			return err
 		}
 
-		osin, err := auth.NewServer(a.OAuthStorage, l)
-		if err != nil {
-			l.Warn(err.Error())
-			return err
-		}
+		// Register pprof handlers
+		a.R.HandleFunc("/debug/pprof/", pprof.Index)
+		a.R.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		a.R.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		a.R.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		a.R.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
-		r.Use(app.Repo(a.Storage))
-		r.Use(middleware.RequestID)
-		r.Use(log.NewStructuredLogger(l))
-		r.Route("/", a.Routes(a.Config().BaseURL, osin, l))
-		status := a.Run(r, w)
-		if status != 0 {
-			return errors.Newf("error")
-		}
-		return nil
+		return a.Run()
 	}
 }

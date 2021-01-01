@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var Prefix = "fedbox"
@@ -27,6 +28,7 @@ type BackendConfig struct {
 type Options struct {
 	Env         env.Type
 	LogLevel    log.Level
+	TimeOut     time.Duration
 	Secure      bool
 	CertPath    string
 	KeyPath     string
@@ -41,6 +43,7 @@ type StorageType string
 
 const (
 	KeyENV          = "ENV"
+	KeyTimeOut      = "TIME_OUT"
 	KeyLogLevel     = "LOG_LEVEL"
 	KeyHostname     = "HOSTNAME"
 	KeyHTTPS        = "HTTPS"
@@ -115,7 +118,7 @@ func loadKeyFromEnv(name, def string) string {
 	return def
 }
 
-func LoadFromEnv(e env.Type) (Options, error) {
+func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	conf := Options{}
 	if !env.ValidType(e) {
 		e = env.Type(loadKeyFromEnv(KeyENV, ""))
@@ -162,6 +165,10 @@ func LoadFromEnv(e env.Type) (Options, error) {
 	conf.Env = e
 	if conf.Host == "" {
 		conf.Host = loadKeyFromEnv(KeyHostname, conf.Host)
+	}
+	conf.TimeOut = timeOut
+	if to, _ := time.ParseDuration(loadKeyFromEnv(KeyTimeOut, "")); to > 0 {
+		conf.TimeOut = to
 	}
 	conf.Secure, _ = strconv.ParseBool(loadKeyFromEnv(KeyHTTPS, "false"))
 	if conf.Secure {
