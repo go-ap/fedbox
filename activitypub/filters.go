@@ -1086,3 +1086,19 @@ func FiltersOnActivityActor(f s.Filterable) bool {
 	}
 	return false
 }
+
+// CacheKey generates a unique pub.IRI hash based on its authenticated user and other parameters
+func CacheKey(f *Filters) pub.IRI {
+	var iri pub.IRI
+
+	if q, err := qstring.Marshal(f); err == nil && len(q) > 0 {
+		iri = pub.IRI(fmt.Sprintf("%s?%s", f.GetLink(), q.Encode()))
+	} else {
+		iri = f.GetLink()
+	}
+	u, _ := iri.URL()
+	if auth := f.Authenticated; auth != nil && !auth.ID.Equals(pub.PublicNS, true) {
+		u.User = url.User(path.Base(f.Authenticated.ID.String()))
+	}
+	return pub.IRI(u.String())
+}

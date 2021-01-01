@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/go-ap/fedbox/internal/cache"
 	"io/ioutil"
 	"net/http"
 	"path"
@@ -127,7 +128,7 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 		var col pub.CollectionInterface
 
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
-		if it := fb.caches.get(cacheKey(f)); it != nil {
+		if it := fb.caches.Get(ap.CacheKey(f)); it != nil {
 			return it.(pub.CollectionInterface), nil
 		}
 		if err != nil {
@@ -153,7 +154,7 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 			pub.OnObject(it, modifyItemIRI(r))
 		}
 		if col.Count() > 0 {
-			fb.caches.set(cacheKey(f), col)
+			fb.caches.Set(ap.CacheKey(f), col)
 		}
 		return col, err
 	}
@@ -247,7 +248,7 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 			if it, err = processFn(a); err != nil {
 				return errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 			}
-			return ActivityPurgeCache(&fb.caches, a, typ)
+			return cache.ActivityPurge(fb.caches, a, typ)
 		})
 		if err != nil {
 			return it, http.StatusInternalServerError, err
@@ -270,7 +271,7 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 
 		var items pub.ItemCollection
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
-		if it := fb.caches.get(cacheKey(f)); it != nil {
+		if it := fb.caches.Get(ap.CacheKey(f)); it != nil {
 			return it, nil
 		}
 		where := ""
@@ -341,7 +342,7 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 		}
 		pub.OnObject(it, modifyItemIRI(r))
 
-		fb.caches.set(cacheKey(f), it)
+		fb.caches.Set(ap.CacheKey(f), it)
 		return it, nil
 	}
 }

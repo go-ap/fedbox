@@ -1,8 +1,7 @@
-package app
+package cache
 
 import (
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/fedbox/activitypub"
 	"reflect"
 	"testing"
 )
@@ -13,21 +12,21 @@ func Test_reqCache_get(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		r    cache
+		r    store
 		args args
 		want pub.Item
 	}{
 		{
 			name: "",
-			r:    cache{},
+			r:    store{},
 			args: args{},
 			want: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.r.get(tt.args.iri); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("get() = %v, want %v", got, tt.want)
+			if got := tt.r.Get(tt.args.iri); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Get() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -39,13 +38,13 @@ func Test_reqCache_remove(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		r    cache
+		r    store
 		args args
 		want bool
 	}{
 		{
 			name: "simple",
-			r: cache{
+			r: store{
 				c: iriMap{pub.IRI("example1"): &pub.Object{ID: pub.IRI("example1")}},
 			},
 			args: args{pub.IRI("example1")},
@@ -53,7 +52,7 @@ func Test_reqCache_remove(t *testing.T) {
 		},
 		{
 			name: "same_url",
-			r: cache{
+			r: store{
 				c: iriMap{ pub.IRI("http://example.com"): &pub.Actor{ID: pub.IRI("http://example.com")}},
 			},
 			args: args{pub.IRI("http://example.com")},
@@ -61,7 +60,7 @@ func Test_reqCache_remove(t *testing.T) {
 		},
 		{
 			name: "different_urls",
-			r: cache{
+			r: store{
 				c: iriMap{pub.IRI("http://example.com/inbox"): &pub.Actor{ID: pub.IRI("http://example.com")}},
 			},
 			args: args{pub.IRI("http://example.com")},
@@ -70,8 +69,8 @@ func Test_reqCache_remove(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.r.remove(tt.args.iri); got != tt.want {
-				t.Errorf("remove() = %v, want %v", got, tt.want)
+			if got := tt.r.Remove(tt.args.iri); got != tt.want {
+				t.Errorf("Remove() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -84,46 +83,17 @@ func Test_reqCache_set(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		r    cache
+		r    store
 		args args
 	}{
 		{
 			name: "",
-			r:    cache{},
+			r:    store{},
 			args: args{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-		})
-	}
-}
-
-func Test_cacheKey(t *testing.T) {
-	type args struct {
-		f *activitypub.Filters
-	}
-	tests := []struct {
-		name string
-		args args
-		want pub.IRI
-	}{
-		{
-			name: "example.com",
-			args: args{f: &activitypub.Filters{IRI: "http://example.com"}},
-			want: pub.IRI("http://example.com"),
-		},
-		{
-			name: "authenticated",
-			args: args{f: &activitypub.Filters{IRI: "http://example.com", Authenticated: &pub.Actor{ID:"http://example.com/jdoe"}}},
-			want: pub.IRI("http://jdoe@example.com"),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := cacheKey(tt.args.f); got != tt.want {
-				t.Errorf("cacheKey() = %v, want %v", got, tt.want)
-			}
 		})
 	}
 }

@@ -106,3 +106,32 @@ func TestSelf(t *testing.T) {
 		t.Errorf("Invalid Inbox %s, expected %v", s.Inbox, inb)
 	}
 }
+
+func Test_CacheKey(t *testing.T) {
+	type args struct {
+		f *Filters
+	}
+	tests := []struct {
+		name string
+		args args
+		want pub.IRI
+	}{
+		{
+			name: "example.com",
+			args: args{f: &Filters{IRI: "http://example.com"}},
+			want: pub.IRI("http://example.com"),
+		},
+		{
+			name: "authenticated",
+			args: args{f: &Filters{IRI: "http://example.com", Authenticated: &pub.Actor{ID:"http://example.com/jdoe"}}},
+			want: pub.IRI("http://jdoe@example.com"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CacheKey(tt.args.f); got != tt.want {
+				t.Errorf("FiltersKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

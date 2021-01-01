@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"crypto/tls"
+	"github.com/go-ap/fedbox/internal/cache"
 	"net/http"
 	"os"
 	"os/signal"
@@ -38,7 +39,7 @@ type LogFn func(string, ...interface{})
 type FedBOX struct {
 	conf         config.Options
 	ver          string
-	caches       cache
+	caches       cache.CanStore
 	Storage      st.Repository
 	OAuthStorage osin.Storage
 	stopFn       func()
@@ -88,7 +89,7 @@ func New(l logrus.FieldLogger, ver string, conf config.Options) (*FedBOX, error)
 	if err != nil {
 		app.errFn("Unable to initialize storage backend: %s", err)
 	}
-	app.caches = cache{enabled: !(conf.Env.IsTest() || conf.Env.IsDev()), c: make(iriMap)}
+	app.caches = cache.New(!(conf.Env.IsTest() || conf.Env.IsDev()))
 	app.Storage = db
 	app.OAuthStorage = oauth
 	return &app, err

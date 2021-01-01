@@ -1,40 +1,33 @@
-package app
+package cache
 
 import (
-	"fmt"
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/fedbox/activitypub"
 	h "github.com/go-ap/handlers"
-	"github.com/mariusor/qstring"
-	"net/url"
 	"path"
 	"sync"
 )
 
-type iriMap map[pub.IRI]pub.Item
+type (
+	iriMap map[pub.IRI]pub.Item
+	keyFn func(interface{}) pub.IRI
+	store struct {
+		enabled bool
+		w       sync.RWMutex
+		c       iriMap
+		hashFn  keyFn
+	}
+	CanStore interface {
+		Set(iri pub.IRI, it pub.Item)
+		Get(iri pub.IRI) pub.Item
+		Remove(iris ...pub.IRI) bool
+	}
+)
 
-type cache struct {
-	enabled bool
-	w       sync.RWMutex
-	c       iriMap
+func New(enabled bool, ) *store {
+	return &store{enabled: enabled, c: make(iriMap)}
 }
 
-func cacheKey(f *activitypub.Filters) pub.IRI {
-	var iri pub.IRI
-
-	if q, err := qstring.Marshal(f); err == nil && len(q) > 0 {
-		iri = pub.IRI(fmt.Sprintf("%s?%s", f.GetLink(), q.Encode()))
-	} else {
-		iri = f.GetLink()
-	}
-	u, _ := iri.URL()
-	if auth := f.Authenticated; auth != nil && !auth.ID.Equals(pub.PublicNS, true) {
-		u.User = url.User(path.Base(f.Authenticated.ID.String()))
-	}
-	return pub.IRI(u.String())
-}
-
-func (r *cache) get(iri pub.IRI) pub.Item {
+func (r *store) Get(iri pub.IRI) pub.Item {
 	if !r.enabled {
 		return nil
 	}
@@ -46,7 +39,7 @@ func (r *cache) get(iri pub.IRI) pub.Item {
 	return nil
 }
 
-func (r *cache) set(iri pub.IRI, it pub.Item) {
+func (r *store) Set(iri pub.IRI, it pub.Item) {
 	if !r.enabled {
 		return
 	}
@@ -58,7 +51,7 @@ func (r *cache) set(iri pub.IRI, it pub.Item) {
 	r.c[iri] = it
 }
 
-func (r *cache) remove(iris ...pub.IRI) bool {
+func (r *store) Remove(iris ...pub.IRI) bool {
 	if !r.enabled {
 		return true
 	}
@@ -144,14 +137,14 @@ func aggregateActivityIRIs(toRemove *pub.IRIs, a *pub.Activity, typ h.Collection
 	return nil
 }
 
-func ActivityPurgeCache(caches *cache, a *pub.Activity, typ h.CollectionType) error {
+func ActivityPurge(cache CanStore, a *pub.Activity, typ h.CollectionType) error {
 	toRemove := make(pub.IRIs, 0)
 	err := aggregateActivityIRIs(&toRemove, a, typ)
 	if err != nil {
 		return err
 	}
 	if len(toRemove) > 0 {
-		caches.remove(toRemove...)
+		cache.Remove(toRemove...)
 	}
 	return nil
 }
