@@ -20,7 +20,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"path"
 	"sort"
-	"sync"
 	"time"
 )
 
@@ -32,7 +31,6 @@ const (
 
 type repo struct {
 	d       *badger.DB
-	m       sync.Mutex
 	baseURL string
 	path    string
 	logFn   loggerFn
@@ -55,7 +53,6 @@ var emptyLogFn = func(logrus.Fields, string, ...interface{}) {}
 func New(c Config, baseURL string) *repo {
 	b := repo{
 		path:    c.Path,
-		m:       sync.Mutex{},
 		baseURL: baseURL,
 		logFn:   emptyLogFn,
 		errFn:   emptyLogFn,
@@ -72,7 +69,6 @@ func New(c Config, baseURL string) *repo {
 // Open opens the badger database if possible.
 func (r *repo) Open() error {
 	var err error
-	r.m.Lock()
 	c := badger.DefaultOptions(r.path).WithLogger(logger{
 		logFn: r.logFn,
 		errFn: r.errFn,
@@ -89,9 +85,7 @@ func (r *repo) Close() error {
 	if r.d == nil {
 		return nil
 	}
-	err := r.d.Close()
-	r.m.Unlock()
-	return err
+	return r.d.Close()
 }
 
 // Load
