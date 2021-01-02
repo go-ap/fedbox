@@ -777,7 +777,10 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 		})
 	}
 
-	r.cache.Set(pub.IRI(p), it)
+
+	if pub.IsObject(it) {
+		r.cache.Set(it.GetLink(), it)
+	}
 	if f != nil {
 		return ap.FilterIt(it, f)
 	}
