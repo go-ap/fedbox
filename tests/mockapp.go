@@ -11,6 +11,7 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
+	ls "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
 	"github.com/sirupsen/logrus"
@@ -67,6 +68,11 @@ func cleanDB(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	if fedboxApp != nil {
+		if st, ok := fedboxApp.Storage.(ls.Resetter); ok {
+			st.Reset()
+		}
+	}
 }
 
 func seedTestData(t *testing.T, testData []string) {
@@ -113,7 +119,7 @@ func seedTestData(t *testing.T, testData []string) {
 	}
 }
 
-func runAPP(e env.Type) {
+func SetupAPP(e env.Type) *app.FedBOX {
 	opt, _ := config.LoadFromEnv(e, time.Second)
 	if opt.Storage == "all" {
 		opt.Storage = config.StorageFS
@@ -134,6 +140,5 @@ func runAPP(e env.Type) {
 		panic(err)
 	}
 	a, _ := app.New(l, "HEAD", conf, db, o)
-
-	a.Run()
+	return a
 }

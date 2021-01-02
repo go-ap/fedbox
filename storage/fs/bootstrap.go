@@ -4,6 +4,7 @@ package fs
 
 import (
 	"github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
 	"os"
 	"path"
@@ -19,5 +20,9 @@ func Bootstrap(conf config.Options) error {
 		return err
 	}
 	return r.CreateService(activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL)))
+}
+
+func (r *repo) Reset() {
+	r.cache = cache.New(true)
 }
 

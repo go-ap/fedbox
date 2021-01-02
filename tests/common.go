@@ -11,6 +11,7 @@ import (
 	"fmt"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
+	fedbox "github.com/go-ap/fedbox/app"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/spacemonkeygo/httpsig"
 	"io/ioutil"
@@ -28,6 +29,8 @@ import (
 // UserAgent value that the client uses when performing requests
 var UserAgent = "test-go-http-client"
 var HeaderAccept = `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`
+
+var fedboxApp *fedbox.FedBOX
 
 type actMock struct {
 	Type     string

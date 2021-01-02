@@ -7,7 +7,6 @@ import (
 	"github.com/go-ap/fedbox/internal/env"
 	"os"
 	"testing"
-	"time"
 )
 
 func TestMain(m *testing.M) {
@@ -16,8 +15,9 @@ func TestMain(m *testing.M) {
 	flag.StringVar(&environ, "env", string(env.TEST), "environment")
 	flag.Parse()
 
-	go runAPP(env.Type(environ))
-	time.Sleep(100 * time.Millisecond)
+	fedboxApp = SetupAPP(env.TEST)
+	go fedboxApp.Run()
+	defer fedboxApp.Stop()
 
 	st := m.Run()
 	if st != 0 {

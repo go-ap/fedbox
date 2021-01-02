@@ -28,4 +28,8 @@ type MimeTypeSaver interface {
 	SaveMimeTypeContent(pub.MimeType, pub.NaturalLanguageValues) error
 }
 
+type Resetter interface {
+	Reset()
+}
+
 type OptionFn func(s storage.Repository) error
