@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -38,7 +39,7 @@ func TestLoadFromEnv(t *testing.T) {
 		os.Setenv(KeyStorage, pgSQL)
 
 		var baseURL = fmt.Sprintf("https://%s", hostname)
-		c, err := LoadFromEnv(env.TEST)
+		c, err := LoadFromEnv(env.TEST, time.Second)
 		if err != nil {
 			t.Errorf("Error loading env: %s", err)
 		}
@@ -78,7 +79,7 @@ func TestLoadFromEnv(t *testing.T) {
 	}
 	{
 		os.Setenv(KeyStorage, boltDB)
-		c, err := LoadFromEnv(env.TEST)
+		c, err := LoadFromEnv(env.TEST, time.Second)
 		if err != nil {
 			t.Errorf("Error loading env: %s", err)
 		}

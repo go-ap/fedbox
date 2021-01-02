@@ -10,7 +10,7 @@ var defaultConfig =config.Options{
 }
 
 func TestNew(t *testing.T) {
-	app, err := New(nil, "HEAD", defaultConfig)
+	app, err := New(nil, "HEAD", defaultConfig, nil, nil)
 	if err != nil {
 		t.Errorf("Environment 'test' should not trigger an error: %s", err)
 	}
