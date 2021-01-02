@@ -17,7 +17,6 @@ func TestMain(m *testing.M) {
 
 	fedboxApp = SetupAPP(env.TEST)
 	go fedboxApp.Run()
-	defer fedboxApp.Stop()
 
 	st := m.Run()
 	if st != 0 {
