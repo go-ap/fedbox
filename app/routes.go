@@ -12,13 +12,13 @@ import (
 func (f FedBOX) CollectionRoutes(descend bool) func(chi.Router) {
 	return func(r chi.Router) {
 		r.Group(func(r chi.Router) {
-			r.With(middleware.GetHead)
-
 			r.Method(http.MethodGet, "/", HandleCollection(f))
+			r.Method(http.MethodHead, "/", HandleCollection(f))
 			r.Method(http.MethodPost, "/", HandleRequest(f))
 
 			r.Route("/{id}", func(r chi.Router) {
 				r.Method(http.MethodGet, "/", HandleItem(f))
+				r.Method(http.MethodHead, "/", HandleItem(f))
 				if descend {
 					r.Route("/{collection}", f.CollectionRoutes(false))
 				}
@@ -30,11 +30,11 @@ func (f FedBOX) CollectionRoutes(descend bool) func(chi.Router) {
 func (f FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) func(chi.Router) {
 	return func(r chi.Router) {
 		r.Use(middleware.RealIP)
-		r.Use(middleware.GetHead)
 		r.Use(CleanRequestPath)
 		r.Use(ActorFromAuthHeader(os, f.Storage, l))
 
 		r.Method(http.MethodGet, "/", HandleItem(f))
+		r.Method(http.MethodHead, "/", HandleItem(f))
 		r.Route("/{collection}", f.CollectionRoutes(true))
 
 		ia := indieAuth{
