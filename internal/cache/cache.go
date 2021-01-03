@@ -9,12 +9,10 @@ import (
 
 type (
 	iriMap map[pub.IRI]pub.Item
-	keyFn func(interface{}) pub.IRI
 	store struct {
 		enabled bool
 		w       sync.RWMutex
 		c       iriMap
-		hashFn  keyFn
 	}
 	CanStore interface {
 		Set(iri pub.IRI, it pub.Item)
