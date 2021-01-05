@@ -208,7 +208,6 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 		}
 
 		processor, validator, err := processing.New(
-			processing.SetIRI(pub.IRI(Config.BaseURL)),
 			processing.SetClient(client.New(
 				client.SetInfoLogger(clientInfoLogger),
 				client.SetErrorLogger(clientErrLogger),

@@ -174,7 +174,7 @@ func delObjectsAct(ctl *Control) cli.ActionFunc {
 
 func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string) error {
 	self := ap.Self(pub.IRI(c.Conf.BaseURL))
-	p, _, err := processing.New(processing.SetStorage(c.Storage), processing.SetIRI(self.ID))
+	p, _, err := processing.New(processing.SetStorage(c.Storage))
 	if err != nil {
 		return err
 	}
@@ -425,10 +425,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 		toReplace := c.String("base")
 		files := c.Args().Slice()
 
-		processor, _, err := processing.New(
-			processing.SetIRI(pub.IRI(baseIRI)),
-			processing.SetStorage(ctl.Storage),
-		)
+		processor, _, err := processing.New(processing.SetStorage(ctl.Storage))
 		if err != nil {
 			Errf("Error initializing ActivityPub processor: %s", err)
 			return err
