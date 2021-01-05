@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"git.sr.ht/~mariusor/wrapper"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -70,6 +71,8 @@ var AnonymousAcct = account{
 	username: "anonymous",
 	actor:    &auth.AnonymousActor,
 }
+
+var InternalIRI = pub.IRI("http://fedbox/")
 
 // New instantiates a new FedBOX instance
 func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Repository, o osin.Storage) (*FedBOX, error) {

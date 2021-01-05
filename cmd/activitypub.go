@@ -6,6 +6,7 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/app"
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
@@ -174,7 +175,7 @@ func delObjectsAct(ctl *Control) cli.ActionFunc {
 
 func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string) error {
 	self := ap.Self(pub.IRI(c.Conf.BaseURL))
-	p, _, err := processing.New(processing.SetStorage(c.Storage), processing.SetIRI(self.ID, pub.IRI("fedbox")))
+	p, _, err := processing.New(processing.SetStorage(c.Storage), processing.SetIRI(self.ID, app.InternalIRI))
 	if err != nil {
 		return err
 	}
@@ -426,7 +427,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 		files := c.Args().Slice()
 
 		processor, _, err := processing.New(
-			processing.SetIRI(pub.IRI(baseIRI), pub.IRI("fedbox")),
+			processing.SetIRI(pub.IRI(baseIRI), app.InternalIRI),
 			processing.SetStorage(ctl.Storage),
 		)
 		if err != nil {
