@@ -10,6 +10,7 @@ import (
 
 func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	// @todo(marius): we're no longer loading SQL db config env variables
+	l.Debugf("Initializing pgx storage at %s", c.StoragePath)
 	conf := config.BackendConfig{}
 	db, err := pgx.New(conf, c.BaseURL, l)
 

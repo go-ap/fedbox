@@ -12,6 +12,7 @@ import (
 )
 
 func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+	l.Debugf("Initializing fs storage at %s", c.BaseStoragePath())
 	oauth := auth.New(auth.Config{
 		Path:  c.BaseStoragePath(),
 		LogFn: InfoLogFn(l),

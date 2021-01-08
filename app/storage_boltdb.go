@@ -12,6 +12,7 @@ import (
 )
 
 func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+	l.Debugf("Initializing boltdb storage at %s", c.BoltDB())
 	db := boltdb.New(boltdb.Config{
 		Path:  c.BoltDB(),
 		LogFn: InfoLogFn(l),

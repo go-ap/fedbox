@@ -20,6 +20,7 @@ import (
 )
 
 func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+	l.Debugf("Initializing badger storage at %s", c.Badger())
 	db := badger.New(badger.Config{
 		Path:  c.Badger(),
 		LogFn: InfoLogFn(l),
@@ -35,6 +36,7 @@ func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Repository, os
 }
 
 func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+	l.Debugf("Initializing boltdb storage at %s", c.BoltDB())
 	db := boltdb.New(boltdb.Config{
 		Path:  c.BoltDB(),
 		LogFn: InfoLogFn(l),
@@ -51,6 +53,7 @@ func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin
 }
 
 func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+	l.Debugf("Initializing fs storage at %s", c.BaseStoragePath())
 	oauth := authfs.New(authfs.Config{
 		Path:  c.BaseStoragePath(),
 		LogFn: InfoLogFn(l),
@@ -71,6 +74,7 @@ func getSqliteStorage(c config.Options, l logrus.FieldLogger) (st.Repository, os
 			ErrFn: ErrLogFn(l),
 		})
 	*/
+	l.Debugf("Initializing sqlite storage at %s", c.StoragePath)
 	db, err := sqlite.New(c)
 	if err != nil {
 		return nil, nil, err
@@ -80,6 +84,7 @@ func getSqliteStorage(c config.Options, l logrus.FieldLogger) (st.Repository, os
 
 func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	// @todo(marius): we're no longer loading SQL db config env variables
+	l.Debugf("Initializing pgx storage at %s", c.StoragePath)
 	conf := config.BackendConfig{}
 	db, err := pgx.New(conf, c.BaseURL, l)
 
