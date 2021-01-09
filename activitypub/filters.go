@@ -620,6 +620,9 @@ func filterLink(it pub.Item, ff *Filters) (bool, pub.Item) {
 		if !filterMediaTypes(ff.MediaTypes(), l.MediaType) {
 			keep = false
 		}
+		if ff.Tag != nil || ff.Object != nil {
+			keep = false
+		}
 		return nil
 	})
 	if !keep {
