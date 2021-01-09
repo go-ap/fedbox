@@ -983,25 +983,27 @@ func (f *Filters) ItemsMatch(col ...pub.Item) bool {
 		if it == nil {
 			continue
 		}
+		var loopValid bool
 		if it.IsCollection() {
 			pub.OnCollectionIntf(it, func(col pub.CollectionInterface) error {
-				valid = f.ItemsMatch(col.Collection()...)
+				loopValid = f.ItemsMatch(col.Collection()...)
 				return nil
 			})
 		} else if it.IsObject() {
 			typ := it.GetType()
 			if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
-				valid, _ = filterActivity(it, f)
+				loopValid, _ = filterActivity(it, f)
 			} else if pub.ActorTypes.Contains(typ) {
-				valid, _ = filterActor(it, f)
+				loopValid, _ = filterActor(it, f)
 			} else if typ == pub.TombstoneType {
-				valid, _ = filterTombstone(it, f)
+				loopValid, _ = filterTombstone(it, f)
 			} else {
-				valid, _ = filterObject(it, f)
+				loopValid, _ = filterObject(it, f)
 			}
 		} else if it.IsLink() {
-			valid, _ = filterLink(it, f)
+			loopValid, _ = filterLink(it, f)
 		}
+		valid = valid || loopValid
 	}
 	return valid
 }
