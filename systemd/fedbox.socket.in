@@ -1,0 +1,9 @@
+[Unit]
+Description=FedBOX
+
+[Socket]
+ListenStream=LISTEN_HOST:LISTEN_PORT
+
+[Install]
+WantedBy=sockets.target
+

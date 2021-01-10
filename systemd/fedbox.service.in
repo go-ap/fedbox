@@ -1,0 +1,13 @@
+[Unit]
+Description=FedBOX
+
+[Service]
+Type=simple
+User=fedbox
+WorkingDirectory=WORKING_DIR
+ExecReload=/bin/kill -SIGHUP $MAINPID
+Restart=on-failure
+ExecStart=/bin/fedbox
+
+[Install]
+WantedBy=default.target

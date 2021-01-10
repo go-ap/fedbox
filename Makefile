@@ -12,6 +12,9 @@ TEST_FLAGS ?= -count=1
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
+M4 = /usr/bin/m4
+M4_FLAGS =
+
 GO := go
 APPSOURCES := $(wildcard app/*.go storage/*/*.go activitypub/*.go internal/*/*.go cmd/*.go)
 ASSETFILES := $(wildcard templates/*)
@@ -39,7 +42,7 @@ endif
 BUILD := $(GO) build $(BUILDFLAGS)
 TEST := $(GO) test $(BUILDFLAGS)
 
-.PHONY: all run clean test coverage integration
+.PHONY: all run clean test coverage integration install
 
 all: fedbox ctl
 
@@ -51,6 +54,12 @@ internal/assets/assets.gen.go: $(ASSETFILES)
 fedbox: bin/fedbox assets
 bin/fedbox: go.mod cli/fedbox/main.go $(APPSOURCES)
 	$(BUILD) -tags "$(TAGS)" -o $@ ./cli/fedbox/main.go
+
+systemd/fedbox.service: systemd/fedbox.service.in
+	$(M4) -DWORKING_DIR=$(STORAGE_PATH) $< >$@
+
+systemd/fedbox.socket: systemd/fedbox.socket.in
+	$(M4) -DLISTEN_HOST=$(LISTEN_HOST) -DLISTEN_PORT=$(LISTEN_PORT) $< >$@
 
 ctl: bin/ctl
 bin/ctl: go.mod cli/control/main.go $(APPSOURCES)
@@ -81,3 +90,12 @@ $(LOCAL_HOSTNAME).pem: $(LOCAL_HOSTNAME).key $(LOCAL_HOSTNAME).crt
 	cat $(LOCAL_HOSTNAME).key $(LOCAL_HOSTNAME).crt > $(LOCAL_HOSTNAME).pem
 
 cert: $(LOCAL_HOSTNAME).key
+
+install: ./bin/fedbox systemd/fedbox.service systemd/fedbox.socket $(LOCAL_HOSTNAME).crt $(LOCAL_HOSTNAME).key
+	useradd -m -s /bin/false -u 2000 fedbox
+	install bin/fedbox $(DESTDIR)$(INSTALL_PREFIX)/bin
+	install -m 644 -o fedbox systemd/fedbox.service $(DESTDIR)/etc/systemd/system
+	install -m 644 -o fedbox systemd/fedbox.socket $(DESTDIR)/etc/systemd/system
+	install -m 600 -o fedbox .env.prod $(STORAGE_PATH)
+	install -m 600 -o $(LOCAL_HOSTNAME).crt $(STORAGE_PATH)
+	install -m 600 -o $(LOCAL_HOSTNAME).key $(STORAGE_PATH)
