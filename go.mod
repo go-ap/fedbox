@@ -10,14 +10,14 @@ require (
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
-	github.com/go-ap/activitypub v0.0.0-20210109173738-56bfed629b95
-	github.com/go-ap/auth v0.0.0-20210109180523-4d12dee01f72
-	github.com/go-ap/client v0.0.0-20210109180226-efbf4fc6994e
+	github.com/go-ap/activitypub v0.0.0-20210110195435-cc0968f78b0e
+	github.com/go-ap/auth v0.0.0-20210110195756-c5f4b50157d6
+	github.com/go-ap/client v0.0.0-20210110195549-f6cbf696e88a
 	github.com/go-ap/errors v0.0.0-20200702155720-f662512ba418
-	github.com/go-ap/handlers v0.0.0-20210109180555-373cc1ca2e0c
+	github.com/go-ap/handlers v0.0.0-20210110195940-2b5b575cf256
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210109180731-a5996cbe60f0
-	github.com/go-ap/storage v0.0.0-20210109180350-3c4a46cd40cd
+	github.com/go-ap/processing v0.0.0-20210110200146-9218961b5847
+	github.com/go-ap/storage v0.0.0-20210110195626-9dc1d16d8f2f
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
@@ -36,7 +36,7 @@ require (
 	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
 	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210108172913-0df2131ae363 // indirect
+	golang.org/x/sys v0.0.0-20210110051926-789bb1bd4061 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
