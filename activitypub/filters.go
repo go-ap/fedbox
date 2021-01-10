@@ -620,9 +620,6 @@ func filterLink(it pub.Item, ff *Filters) (bool, pub.Item) {
 		if !filterMediaTypes(ff.MediaTypes(), l.MediaType) {
 			keep = false
 		}
-		if ff.Tag != nil || ff.Object != nil {
-			keep = false
-		}
 		return nil
 	})
 	if !keep {
@@ -982,12 +979,17 @@ func (f *Filters) ItemsMatch(col ...pub.Item) bool {
 		return false
 	}
 	var valid bool
+	mustBeActivity := f.Object != nil || f.Actor != nil || f.Target != nil
+	mustBeObject := f.Tag != nil || f.AttrTo != nil || f.InReplTo != nil || f.Author != nil
 	for _, it := range col {
 		if it == nil {
 			continue
 		}
 		var loopValid bool
 		if it.IsCollection() {
+			if mustBeActivity || mustBeObject {
+				return false
+			}
 			pub.OnCollectionIntf(it, func(col pub.CollectionInterface) error {
 				loopValid = f.ItemsMatch(col.Collection()...)
 				return nil
@@ -997,13 +999,25 @@ func (f *Filters) ItemsMatch(col ...pub.Item) bool {
 			if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
 				loopValid, _ = filterActivity(it, f)
 			} else if pub.ActorTypes.Contains(typ) {
+				if mustBeActivity {
+					return false
+				}
 				loopValid, _ = filterActor(it, f)
 			} else if typ == pub.TombstoneType {
+				if mustBeActivity {
+					return false
+				}
 				loopValid, _ = filterTombstone(it, f)
 			} else {
+				if mustBeActivity {
+					return false
+				}
 				loopValid, _ = filterObject(it, f)
 			}
 		} else if it.IsLink() {
+			if mustBeActivity || mustBeObject {
+				return false
+			}
 			loopValid, _ = filterLink(it, f)
 		}
 		valid = valid || loopValid
