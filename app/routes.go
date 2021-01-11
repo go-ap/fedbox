@@ -66,7 +66,9 @@ func (f FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) fu
 			})
 		})
 
-		r.NotFound(errors.HandleError(errors.NotFoundf("invalid url")).ServeHTTP)
+		notFound := errors.HandleError(errors.NotFoundf("invalid url"))
+		r.Handle("/favicon.ico", notFound)
+		r.NotFound(notFound.ServeHTTP)
 		r.MethodNotAllowed(errors.HandleError(errors.MethodNotAllowedf("method not allowed")).ServeHTTP)
 	}
 }
