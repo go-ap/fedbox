@@ -72,7 +72,7 @@ var AnonymousAcct = account{
 	actor:    &auth.AnonymousActor,
 }
 
-var InternalIRI = pub.IRI("http://fedbox/")
+var InternalIRI = pub.IRI("https://fedbox/")
 
 // New instantiates a new FedBOX instance
 func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Repository, o osin.Storage) (*FedBOX, error) {

@@ -47,80 +47,6 @@ func reqURL(r *http.Request) string {
 	return fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.Path)
 }
 
-func replaceHostInIRI(i pub.IRI, r *http.Request) (pub.IRI, error) {
-	u, err := i.URL();
-	if err != nil {
-		return i, err
-	}
-	u.Host = r.Host
-	return pub.IRI(u.String()), nil
-}
-
-func modifyItemIRI(r *http.Request) func(*pub.Object) error {
-	return func(o *pub.Object) error {
-		o.ID, _ = replaceHostInIRI(o.ID, r)
-		return nil
-	}
-}
-
-func modifyOrderedCollectionPageIRI(r *http.Request) func(pub.CollectionInterface) error {
-	return func(c pub.CollectionInterface) error {
-		switch c.GetType() {
-		case pub.OrderedCollectionPageType:
-			pub.OnOrderedCollectionPage(c, func(c *pub.OrderedCollectionPage) error {
-				c.ID, _ = replaceHostInIRI(c.ID, r)
-				if c.First != nil {
-					c.First, _ = replaceHostInIRI(c.First.GetLink(), r)
-				}
-				if c.Next != nil {
-					c.Next, _ = replaceHostInIRI(c.Next.GetLink(), r)
-				}
-				if c.Prev != nil {
-					c.Prev, _ = replaceHostInIRI(c.Prev.GetLink(), r)
-				}
-				if c.PartOf != nil {
-					c.PartOf, _ = replaceHostInIRI(c.PartOf.GetLink(), r)
-				}
-				return nil
-			})
-		case pub.OrderedCollectionType:
-			pub.OnOrderedCollection(c, func(c *pub.OrderedCollection) error {
-				c.ID, _ = replaceHostInIRI(c.ID, r)
-				if c.First != nil {
-					c.First, _ = replaceHostInIRI(c.First.GetLink(), r)
-				}
-				return nil
-			})
-		case pub.CollectionPageType:
-			pub.OnCollectionPage(c, func(c *pub.CollectionPage) error {
-				c.ID, _ = replaceHostInIRI(c.ID, r)
-				if c.First != nil {
-					c.First, _ = replaceHostInIRI(c.First.GetLink(), r)
-				}
-				if c.Next != nil {
-					c.Next, _ = replaceHostInIRI(c.Next.GetLink(), r)
-				}
-				if c.Prev != nil {
-					c.Prev, _ = replaceHostInIRI(c.Prev.GetLink(), r)
-				}
-				if c.PartOf != nil {
-					c.PartOf, _ = replaceHostInIRI(c.PartOf.GetLink(), r)
-				}
-				return nil
-			})
-		case pub.CollectionType:
-			pub.OnCollection(c, func(c *pub.Collection) error {
-				c.ID, _ = replaceHostInIRI(c.ID, r)
-				if c.First != nil {
-					c.First, _ = replaceHostInIRI(c.First.GetLink(), r)
-				}
-				return nil
-			})
-		}
-		return nil
-	}
-}
-
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
@@ -144,14 +70,12 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 			return nil, err
 		}
 		col, err = ap.PaginateCollection(col, f)
-		pub.OnCollectionIntf(col, modifyOrderedCollectionPageIRI(r))
 		for _, it := range col.Collection() {
 			// Remove bcc and bto - probably should be moved to a different place
 			// TODO(marius): move this to the go-ap/activtiypub helpers: CleanRecipients(Item)
 			if s, ok := it.(pub.HasRecipients); ok {
 				s.Clean()
 			}
-			pub.OnObject(it, modifyItemIRI(r))
 		}
 		if col.Count() > 0 {
 			fb.caches.Set(ap.CacheKey(f), col)
@@ -340,7 +264,6 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 		if err != nil {
 			return nil, errors.NotFoundf("%snot found", what)
 		}
-		pub.OnObject(it, modifyItemIRI(r))
 
 		fb.caches.Set(ap.CacheKey(f), it)
 		return it, nil
