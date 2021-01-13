@@ -525,8 +525,11 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 
 // createCollections
 func createCollections(tx *badger.Txn, it pub.Item) error {
+	if it == nil || !it.IsObject() {
+		return nil
+	}
 	if pub.ActorTypes.Contains(it.GetType()) {
-		return pub.OnActor(it, func(p *pub.Actor) error {
+		pub.OnActor(it, func(p *pub.Actor) error {
 			if p.Inbox != nil {
 				p.Inbox, _ = createCollectionInPath(tx, p.Inbox)
 			}
@@ -557,7 +560,6 @@ func createCollections(tx *badger.Txn, it pub.Item) error {
 		}
 		return nil
 	})
-	return nil
 }
 
 // deleteCollections

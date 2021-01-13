@@ -63,6 +63,7 @@ type repo struct {
 	baseURL string
 	path    string
 	cwd     string
+	opened  bool
 	cache   cache.CanStore
 	logFn   loggerFn
 	errFn   loggerFn
@@ -70,11 +71,17 @@ type repo struct {
 
 // Open
 func (r *repo) Open() error {
+	if r.opened {
+		return nil
+	}
 	return os.Chdir(r.path)
 }
 
 // Close
 func (r *repo) Close() error {
+	if r.opened {
+		return nil
+	}
 	return os.Chdir(r.cwd)
 }
 
@@ -501,8 +508,11 @@ func (r repo) itemPath(iri pub.IRI) string {
 
 // createCollections
 func createCollections(r repo, it pub.Item) error {
+	if it == nil || !it.IsObject() {
+		return nil
+	}
 	if pub.ActorTypes.Contains(it.GetType()) {
-		return pub.OnActor(it, func(p *pub.Actor) error {
+		pub.OnActor(it, func(p *pub.Actor) error {
 			if p.Inbox != nil {
 				p.Inbox, _ = createCollectionInPath(r, p.Inbox)
 			}
@@ -521,21 +531,18 @@ func createCollections(r repo, it pub.Item) error {
 			return nil
 		})
 	}
-	if it.IsObject() {
-		return pub.OnObject(it, func(o *pub.Object) error {
-			if o.Replies != nil {
-				o.Replies, _ = createCollectionInPath(r, o.Replies)
-			}
-			if o.Likes != nil {
-				o.Likes, _ = createCollectionInPath(r, o.Likes)
-			}
-			if o.Shares != nil {
-				o.Shares, _ = createCollectionInPath(r, o.Shares)
-			}
-			return nil
-		})
-	}
-	return nil
+	return pub.OnObject(it, func(o *pub.Object) error {
+		if o.Replies != nil {
+			o.Replies, _ = createCollectionInPath(r, o.Replies)
+		}
+		if o.Likes != nil {
+			o.Likes, _ = createCollectionInPath(r, o.Likes)
+		}
+		if o.Shares != nil {
+			o.Shares, _ = createCollectionInPath(r, o.Shares)
+		}
+		return nil
+	})
 }
 
 const (

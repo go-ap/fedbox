@@ -501,9 +501,12 @@ func deleteCollectionFromBucket(b *bolt.Bucket, it pub.Item) error {
 }
 
 func createCollectionsInBucket(b *bolt.Bucket, it pub.Item) error {
+	if it == nil || !it.IsObject() {
+		return nil
+	}
 	// create collections
 	if pub.ActorTypes.Contains(it.GetType()) {
-		return pub.OnActor(it, func(p *pub.Actor) error {
+		pub.OnActor(it, func(p *pub.Actor) error {
 			if p.Inbox != nil {
 				p.Inbox, _ = createCollectionInBucket(b, handlers.Inbox.IRI(p))
 			}
@@ -534,7 +537,6 @@ func createCollectionsInBucket(b *bolt.Bucket, it pub.Item) error {
 		}
 		return nil
 	})
-	return nil
 }
 
 // deleteCollections
