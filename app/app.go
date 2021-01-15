@@ -2,8 +2,9 @@ package app
 
 import (
 	"context"
-	"crypto/tls"
-	"git.sr.ht/~mariusor/wrapper"
+	"syscall"
+
+	w "git.sr.ht/~mariusor/wrapper"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
@@ -17,9 +18,6 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"os"
-	"syscall"
 )
 
 func actorLoader(ctx context.Context) (st.ActorLoader, bool) {
@@ -112,68 +110,6 @@ func (f FedBOX) Config() config.Options {
 	return f.conf
 }
 
-func setupHttpServer(conf config.Options, m http.Handler, ctx context.Context) (func(LogFn, LogFn), func(LogFn, LogFn)) {
-	// TODO(marius): move server run to a separate function, so we can add other tasks that can run independently.
-	//   Like a queue system for lazy loading of IRIs.
-	var serveFn func(LogFn, LogFn) error
-	srv := &http.Server{
-		Addr:    conf.Listen,
-		Handler: m,
-	}
-	fileExists := func(dir string) bool {
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			return false
-		}
-		return true
-	}
-
-	if conf.Secure && fileExists(conf.CertPath) && fileExists(conf.KeyPath) {
-		srv.TLSConfig = &tls.Config{
-			MinVersion:               tls.VersionTLS12,
-			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-			PreferServerCipherSuites: true,
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-			},
-		}
-		serveFn = func(infoFn LogFn, errFn LogFn) error {
-			infoFn("Listening on HTTPS %s", conf.Listen)
-			return srv.ListenAndServeTLS(conf.CertPath, conf.KeyPath)
-		}
-	} else {
-		serveFn = func(infoFn LogFn, errFn LogFn) error {
-			infoFn("Listening on HTTP %s", conf.Listen)
-			return srv.ListenAndServe()
-		}
-	}
-
-	run := func(infoFn LogFn, errFn LogFn) {
-		if err := serveFn(infoFn, errFn); err != nil {
-			errFn("%s", err)
-			os.Exit(1)
-		}
-	}
-
-	stop := func(infoFn LogFn, errFn LogFn) {
-		err := srv.Shutdown(ctx)
-		if err != nil {
-			errFn("%s", err)
-		}
-		select {
-		case <-ctx.Done():
-			errFn("%s", ctx.Err())
-		}
-	}
-	// Run our server in a goroutine so that it doesn't block.
-	return run, stop
-}
-
-
 // Stop
 func (f *FedBOX) Stop() {
 	if f.stopFn != nil {
@@ -189,15 +125,25 @@ func (f *FedBOX) Run() error {
 
 	// set local path typer to validate collections
 	handlers.Typer = pathTyper{}
+
+	listenOn := "HTTP"
+	if len(f.conf.CertPath) + len(f.conf.KeyPath) > 0 {
+		listenOn = "HTTPS"
+	}
 	// Get start/stop functions for the http server
-	srvRun, srvStop := setupHttpServer(f.conf, f.R, ctx)
+	srvRun, srvStop := w.HttpServer(ctx, w.Handler(f.R), w.ListenOn(f.conf.Listen), w.SSL(f.conf.CertPath, f.conf.KeyPath))
+	f.infFn("Listening on %s %s", listenOn, f.conf.Listen)
 	f.stopFn = func() {
-		srvStop(f.infFn, f.errFn)
+		if err := srvStop(); err != nil {
+			f.errFn("Err: %s", err)
+		}
+		if err := f.Storage.Close(); err != nil {
+			f.errFn("Err: %s", err)
+		}
 		f.OAuthStorage.Close()
-		f.Storage.Close()
 	}
 
-	wrapper.RegisterSignalHandlers(wrapper.SignalHandlers{
+	exit := w.RegisterSignalHandlers(w.SignalHandlers{
 		syscall.SIGHUP: func(_ chan int) {
 			f.infFn("SIGHUP received, reloading configuration")
 		},
@@ -213,11 +159,22 @@ func (f *FedBOX) Run() error {
 			f.infFn("SIGQUIT received, force stopping with core-dump")
 			exit <- 0
 		},
-	}).Exec(func() {
-		srvRun(f.infFn, f.errFn)
+	}).Exec(func() error {
+		if err := srvRun(); err != nil{
+			f.errFn("Error: %s", err)
+			return err
+		}
+		var err error
 		// Doesn't block if no connections, but will otherwise wait until the timeout deadline.
-		go srvStop(f.infFn, f.errFn)
-		f.infFn("Shutting down")
+		go func(e error) {
+			if err = srvStop(); err != nil {
+				f.errFn("Error: %s", err)
+			}
+		}(err)
+		return err
 	})
+	if exit == 0 {
+		f.infFn("Shutting down")
+	}
 	return nil
 }
