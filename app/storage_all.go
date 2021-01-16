@@ -75,30 +75,36 @@ func getSqliteStorage(c config.Options, l logrus.FieldLogger) (st.Repository, os
 		})
 	*/
 	l.Debugf("Initializing sqlite storage at %s", c.StoragePath)
-	db, err := sqlite.New(c)
+	db, err := sqlite.New(sqlite.Config{
+		StoragePath: c.BaseStoragePath(),
+		Env:         string(c.Env),
+		BaseURL:     c.BaseURL,
+	})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Annotatef(err, "unable to connect to sqlite storage")
 	}
-	return db, nil, nil
+	return db, nil, errors.NotImplementedf("sqlite storage not implemented yet")
 }
 
 func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	// @todo(marius): we're no longer loading SQL db config env variables
 	l.Debugf("Initializing pgx storage at %s", c.StoragePath)
-	conf := config.BackendConfig{}
+	conf := pgx.Config{}
 	db, err := pgx.New(conf, c.BaseURL, l)
-
+	if err != nil {
+		return nil, nil, errors.Annotatef(err, "unable to connect to pgx storage")
+	}
 	oauth := authpgx.New(authpgx.Config{
 		Enabled: true,
 		Host:    conf.Host,
-		Port:    conf.Port,
+		Port:    int64(conf.Port),
 		User:    conf.User,
-		Pw:      conf.Pw,
-		Name:    conf.Name,
+		Pw:      conf.Password,
+		Name:    conf.Database,
 		LogFn:   InfoLogFn(l),
 		ErrFn:   ErrLogFn(l),
 	})
-	return db, oauth, err
+	return db, oauth, errors.NotImplementedf("pgx storage is not implemented yet")
 }
 
 func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {

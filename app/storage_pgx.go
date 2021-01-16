@@ -4,6 +4,7 @@ package app
 
 import (
 	auth "github.com/go-ap/auth/pgx"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/pgx"
 )
@@ -11,18 +12,20 @@ import (
 func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	// @todo(marius): we're no longer loading SQL db config env variables
 	l.Debugf("Initializing pgx storage at %s", c.StoragePath)
-	conf := config.BackendConfig{}
+	conf := pgx.Config{}
 	db, err := pgx.New(conf, c.BaseURL, l)
-
-	oauth := auth.New(auth.Config{
+	if err != nil {
+		return nil, nil, errors.Annotatef(err, "unable to connect to pgx storage")
+	}
+	oauth := auth.New(authpgx.Config{
 		Enabled: true,
 		Host:    conf.Host,
-		Port:    conf.Port,
+		Port:    int64(conf.Port),
 		User:    conf.User,
-		Pw:      conf.Pw,
-		Name:    conf.Name,
+		Pw:      conf.Password,
+		Name:    conf.Database,
 		LogFn:   InfoLogFn(l),
 		ErrFn:   ErrLogFn(l),
 	})
-	return db, oauth, err
+	return db, oauth, errors.NotImplementedf("pgx storage is not implemented yet")
 }

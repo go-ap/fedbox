@@ -7,7 +7,6 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
@@ -28,7 +27,7 @@ var decodeFn = jsonld.Unmarshal
 type repo struct {
 	baseURL string
 	conn    *pgx.ConnPool
-	conf    config.BackendConfig
+	conf    Config
 	l       logrus.FieldLogger
 	logFn   loggerFn
 	errFn   loggerFn
@@ -49,7 +48,16 @@ func logFn(l logrus.FieldLogger, lvl logrus.Level) loggerFn {
 	}
 }
 
-func New(conf config.BackendConfig, url string, lp logrus.FieldLogger) (*repo, error) {
+type Config struct {
+	Host     string
+	Port     uint16
+	Database string
+	User     string
+	Password string
+	BaseURL  string
+}
+
+func New(conf Config, url string, lp logrus.FieldLogger) (*repo, error) {
 	l := repo{
 		baseURL: url,
 		conf:    conf,
@@ -564,10 +572,10 @@ func (r *repo) Open() error {
 	r.conn, err = pgx.NewConnPool(pgx.ConnPoolConfig{
 		ConnConfig: pgx.ConnConfig{
 			Host:     r.conf.Host,
-			Port:     uint16(r.conf.Port),
-			Database: r.conf.Name,
+			Port:     r.conf.Port,
+			Database: r.conf.Database,
 			User:     r.conf.User,
-			Password: r.conf.Pw,
+			Password: r.conf.Password,
 			Logger:   log.NewPgxLogger(r.l),
 		},
 		MaxConnections: 3,

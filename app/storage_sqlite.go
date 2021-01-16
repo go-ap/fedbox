@@ -3,7 +3,7 @@
 package app
 
 import (
-	auth "github.com/go-ap/auth/sqlite"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/sqlite"
 	st "github.com/go-ap/storage"
@@ -13,14 +13,13 @@ import (
 
 func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
 	l.Debugf("Initializing sqlite storage at %s", c.StoragePath)
-	oauth := auth.New(auth.Config{
-		Path:  c.BaseStoragePath(),
-		LogFn: InfoLogFn(l),
-		ErrFn: ErrLogFn(l),
+	db, err := sqlite.New(sqlite.Config{
+		StoragePath: c.BaseStoragePath(),
+		Env:         string(c.Env),
+		BaseURL:     c.BaseURL,
 	})
-	db, err := sqlite.New(c)
 	if err != nil {
-		return nil, oauth, err
+		return nil, nil, errors.Annotatef(err, "unable to connect to sqlite storage")
 	}
-	return db, oauth, err
+	return db, nil, errors.NotImplementedf("sqlite storage not implemented yet")
 }
