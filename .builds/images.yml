@@ -4,6 +4,7 @@ secrets:
 packages:
   - go
   - docker
+  - buildah
 sources:
   - https://github.com/go-ap/fedbox
 environment:
