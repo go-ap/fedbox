@@ -59,7 +59,11 @@ func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.S
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),
 	})
-	db, err := fs.New(c)
+	db, err := fs.New(fs.Config{
+		StoragePath: c.StoragePath,
+		Env:         string(c.Env),
+		BaseURL:     c.BaseURL,
+	})
 	if err != nil {
 		return nil, oauth, err
 	}

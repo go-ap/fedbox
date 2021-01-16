@@ -8,7 +8,6 @@ import (
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
-	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
@@ -34,13 +33,19 @@ type loggerFn func(string, ...interface{})
 
 var defaultLogFn = func(string, ...interface{}) {}
 
+type Config struct {
+	StoragePath string
+	Env         string
+	BaseURL     string
+}
+
 // New returns a new repo repository
-func New(c config.Options) (*repo, error) {
+func New(c Config) (*repo, error) {
 	p, err := getAbsStoragePath(c.StoragePath)
 	if err != nil {
 		return nil, err
 	}
-	p = path.Clean(path.Join(p, string(c.Env)))
+	p = path.Clean(path.Join(p, c.Env))
 	if err := mkDirIfNotExists(p); err != nil {
 		return nil, err
 	}

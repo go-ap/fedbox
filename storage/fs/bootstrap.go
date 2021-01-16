@@ -15,7 +15,11 @@ func Clean(conf config.Options) error {
 }
 
 func Bootstrap(conf config.Options) error {
-	r, err := New(conf)
+	r, err := New(Config{
+		StoragePath: conf.StoragePath,
+		Env:         string(conf.Env),
+		BaseURL:     conf.BaseURL,
+	})
 	if err != nil {
 		return err
 	}
