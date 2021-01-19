@@ -80,8 +80,7 @@ func aggregateObjectIRIs(toRemove *pub.IRIs, o *pub.Object) error {
 	if o == nil {
 		return nil
 	}
-	obIRI := o.GetLink()
-	if len(obIRI) > 0 && !toRemove.Contains(obIRI){
+	if obIRI := o.GetLink(); len(obIRI) > 0 && !toRemove.Contains(obIRI){
 		*toRemove = append(*toRemove, obIRI)
 	}
 
@@ -100,6 +99,22 @@ func aggregateObjectIRIs(toRemove *pub.IRIs, o *pub.Object) error {
 	} else {
 		if !toRemove.Contains(o.InReplyTo.GetLink()) {
 			*toRemove = append(*toRemove, o.InReplyTo.GetLink())
+		}
+	}
+	if o.AttributedTo != nil {
+		if o.AttributedTo.IsCollection() {
+			pub.OnCollectionIntf(o.AttributedTo, func(c pub.CollectionInterface) error {
+				for _, it := range c.Collection() {
+					if outbox := h.Outbox.IRI(it); !toRemove.Contains(outbox) {
+						*toRemove = append(*toRemove, outbox)
+					}
+				}
+				return nil
+			})
+		} else {
+			if outbox := h.Outbox.IRI(o.AttributedTo); !toRemove.Contains(outbox) {
+				*toRemove = append(*toRemove, outbox)
+			}
 		}
 	}
 	return nil
