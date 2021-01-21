@@ -5,7 +5,6 @@ package boltdb
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -13,12 +12,10 @@ import (
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
-	"github.com/mariusor/qstring"
 	"github.com/sirupsen/logrus"
 	bolt "go.etcd.io/bbolt"
 	"golang.org/x/crypto/bcrypt"
 	"path"
-	"sort"
 	"time"
 )
 
@@ -148,15 +145,6 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 		return nil
 	})
 	return col, err
-}
-
-func (r *repo) LoadOne(f s.Filterable) (pub.Item, error) {
-	err := r.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-	return r.loadOneFromBucket(f)
 }
 
 func (r *repo) loadOneFromBucket(f s.Filterable) (pub.Item, error) {
@@ -297,13 +285,6 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 	return col, uint(len(col)), err
 }
 
-func orderItems(col pub.ItemCollection) pub.ItemCollection {
-	sort.SliceStable(col, func(i, j int) bool {
-		return pub.ItemOrderTimestamp(col[i], col[j])
-	})
-	return col
-}
-
 func (r repo) buildIRIs(c handlers.CollectionType, hashes ...ap.Hash) pub.IRIs {
 	iris := make(pub.IRIs, 0)
 	for _, hash := range hashes {
@@ -314,29 +295,18 @@ func (r repo) buildIRIs(c handlers.CollectionType, hashes ...ap.Hash) pub.IRIs {
 }
 
 // Load
-func (r *repo) Load(f s.Filterable) (pub.ItemCollection, uint, error) {
+func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 	var err error
 	if r.Open(); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	defer r.Close()
+	f, err := ap.FiltersFromIRI(i)
+	if err != nil {
+		return nil, err
+	}
 
-	return r.loadFromBucket(f)
-}
-
-// LoadActivities
-func (r *repo) LoadActivities(f s.Filterable) (pub.ItemCollection, uint, error) {
-	return r.Load(f)
-}
-
-// LoadObjects
-func (r *repo) LoadObjects(f s.Filterable) (pub.ItemCollection, uint, error) {
-	return r.Load(f)
-}
-
-// LoadActors
-func (r *repo) LoadActors(f s.Filterable) (pub.ItemCollection, uint, error) {
-	return r.Load(f)
+	return r.loadOneFromBucket(f)
 }
 
 func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket, []byte, error) {
@@ -379,41 +349,6 @@ func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket,
 	return b, path, nil
 }
 
-// LoadCollection
-func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
-	var err error
-	err = r.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-
-	iri := f.GetLink()
-	url, err := iri.URL()
-	if err != nil {
-		r.errFn(nil, "invalid IRI filter element %s when loading collections", iri)
-	}
-
-	q, _ := qstring.Marshal(f)
-	url.RawQuery = q.Encode()
-
-	col := &pub.OrderedCollection{}
-	col.ID = pub.ID(url.String())
-	col.Type = pub.OrderedCollectionType
-
-	elements, count, err := r.loadFromBucket(f)
-	if err != nil {
-		return nil, err
-	}
-	if count == 0 {
-		return col, nil
-	}
-	col.OrderedItems = orderItems(elements)
-	col.TotalItems = count
-
-	return col, err
-}
-
 const objectKey = "__raw"
 const metaDataKey = "__meta_data"
 
@@ -450,8 +385,8 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 	return save(r, t)
 }
 
-// CreateCollection
-func (r *repo) CreateCollection(col pub.CollectionInterface) (pub.CollectionInterface, error) {
+// Create
+func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, error) {
 	var err error
 	err = r.Open()
 	if err != nil {
@@ -631,18 +566,8 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 	return it, err
 }
 
-// SaveActivity
-func (r *repo) SaveActivity(it pub.Item) (pub.Item, error) {
-	return r.SaveObject(it)
-}
-
-// SaveActor
-func (r *repo) SaveActor(it pub.Item) (pub.Item, error) {
-	return r.SaveObject(it)
-}
-
-// SaveObject
-func (r *repo) SaveObject(it pub.Item) (pub.Item, error) {
+// Save
+func (r *repo) Save(it pub.Item) (pub.Item, error) {
 	var err error
 	err = r.Open()
 	if err != nil {
@@ -731,8 +656,8 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub
 	})
 }
 
-// RemoveFromCollection
-func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
+// RemoveFrom
+func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
 		for k, iri := range iris {
 			if iri.GetLink().Equals(it.GetLink(), false) {
@@ -753,16 +678,16 @@ func addCollectionOnObject(r *repo, col pub.IRI) error {
 	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedboxCollections...)
 	if ob, t := allStorageCollections.Split(col); handlers.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
-		i, _ := r.LoadOne(ob)
+		i, _ := r.loadOneFromBucket(ob)
 		if _, ok := t.AddTo(i); ok {
-			_, err = r.SaveObject(i)
+			_, err = r.Save(i)
 		}
 	}
 	return err
 }
 
-// AddToCollection
-func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
+// AddTo
+func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 	addCollectionOnObject(r, col)
 	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
 		if iris.Contains(it.GetLink()) {
@@ -772,22 +697,8 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	})
 }
 
-// UpdateActor
-func (r *repo) UpdateActor(it pub.Item) (pub.Item, error) {
-	return r.UpdateObject(it)
-}
-
-// UpdateObject
-func (r *repo) UpdateObject(it pub.Item) (pub.Item, error) {
-	return r.SaveObject(it)
-}
-
-func (r *repo) DeleteActor(it pub.Item) (pub.Item, error) {
-	return r.DeleteObject(it)
-}
-
-// DeleteObject
-func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
+// Delete
+func (r *repo) Delete(it pub.Item) (pub.Item, error) {
 	var err error
 	err = r.Open()
 	if err != nil {
@@ -806,21 +717,6 @@ func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
 		r.logFn(nil, "Added new %s: %s", bucket[:len(bucket)-1], it.GetLink())
 	}
 	return it, err
-}
-
-// GenerateID
-func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
-	typ := it.GetType()
-
-	var partOf string
-	if pub.ActivityTypes.Contains(typ) {
-		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActivitiesType)
-	} else if pub.ActorTypes.Contains(typ) || typ == pub.ActorType {
-		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActorsType)
-	} else {
-		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ObjectsType)
-	}
-	return ap.GenerateID(it, partOf, by)
 }
 
 // Open opens the boltdb database if possible.

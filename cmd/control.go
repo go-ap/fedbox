@@ -20,10 +20,10 @@ import (
 type Control struct {
 	Conf        config.Options
 	AuthStorage osin.Storage
-	Storage     storage.Repository
+	Storage     storage.Store
 }
 
-func New(authDB osin.Storage, actorDb storage.Repository, conf config.Options) *Control {
+func New(authDB osin.Storage, actorDb storage.Store, conf config.Options) *Control {
 	return &Control{
 		Conf:        conf,
 		AuthStorage: authDB,

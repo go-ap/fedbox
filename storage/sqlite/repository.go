@@ -8,7 +8,6 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/jsonld"
-	s "github.com/go-ap/storage"
 	"os"
 	"path"
 	"path/filepath"
@@ -84,88 +83,34 @@ func (r repo) CreateService(service pub.Service) error {
 	return err
 }
 
-// LoadActivities
-func (r *repo) LoadActivities(f s.Filterable) (pub.ItemCollection, uint, error) {
-	return nil, 0, errNotImplemented
-}
-
-// LoadObjects
-func (r *repo) LoadObjects(f s.Filterable) (pub.ItemCollection, uint, error) {
-	return nil, 0, errNotImplemented
-}
-
-// LoadActors
-func (r *repo) LoadActors(f s.Filterable) (pub.ItemCollection, uint, error) {
-	return nil, 0, errNotImplemented
-}
-
-// LoadCollection
-func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
+// Load
+func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 	return nil, errNotImplemented
 }
 
-// CreateCollection
-func (r *repo) CreateCollection(col pub.CollectionInterface) (pub.CollectionInterface, error) {
+// SaveO
+func (r *repo) Save(it pub.Item) (pub.Item, error) {
 	return nil, errNotImplemented
 }
 
-// SaveActivity
-func (r *repo) SaveActivity(it pub.Item) (pub.Item, error) {
+// CreateC
+func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, error) {
 	return nil, errNotImplemented
 }
 
-// SaveActor
-func (r *repo) SaveActor(it pub.Item) (pub.Item, error) {
-	return nil, errNotImplemented
-}
-
-// SaveObject
-func (r *repo) SaveObject(it pub.Item) (pub.Item, error) {
-	return nil, errNotImplemented
-}
-
-// RemoveFromCollection
-func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
+// RemoveFrom
+func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 	return errNotImplemented
 }
 
-// AddToCollection
-func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
+// AddTo
+func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 	return errNotImplemented
 }
 
-// UpdateActor
-func (r *repo) UpdateActor(it pub.Item) (pub.Item, error) {
+// Delete
+func (r *repo) Delete(it pub.Item) (pub.Item, error) {
 	return nil, errNotImplemented
-}
-
-// UpdateObject
-func (r *repo) UpdateObject(it pub.Item) (pub.Item, error) {
-	return nil, errNotImplemented
-}
-
-// DeleteActor
-func (r *repo) DeleteActor(it pub.Item) (pub.Item, error) {
-	return nil, errNotImplemented
-}
-
-// DeleteObject
-func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
-	return nil, errNotImplemented
-}
-
-// GenerateID
-func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
-	typ := it.GetType()
-	var partOf string
-	if pub.ActivityTypes.Contains(typ) {
-		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActivitiesType)
-	} else if pub.ActorTypes.Contains(typ) || typ == pub.ActorType {
-		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActorsType)
-	} else if pub.ObjectTypes.Contains(typ) {
-		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ObjectsType)
-	}
-	return ap.GenerateID(it, partOf, by)
 }
 
 // PasswordSet

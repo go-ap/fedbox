@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox/internal/assets"
+	"github.com/go-ap/handlers"
+	"github.com/go-ap/processing"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -58,10 +60,11 @@ func (a *account) FromActor(p *pub.Actor) {
 }
 
 type indieAuth struct {
-	baseURL string
+	baseIRI pub.IRI
+	genID   processing.IDGenerator
 	os      *osin.Server
 	st      ClientStorage
-	ap      storage.Repository
+	ap      storage.Store
 }
 
 const (
@@ -107,8 +110,8 @@ func IndieAuthClientActor(author pub.Item, url *url.URL) *pub.Actor {
 	return &p
 }
 
-func filters(r *http.Request, baseURL string) *activitypub.Filters {
-	f, _ := activitypub.FromRequest(r, baseURL)
+func filters(r *http.Request, baseURL pub.IRI) *activitypub.Filters {
+	f, _ := activitypub.FromRequest(r, baseURL.String())
 	f.IRI = f.IRI[:0]
 	f.Collection = activitypub.ActorsType
 	return f
@@ -137,45 +140,37 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 
 	// check for existing user actor
 	var actor pub.Item
-	f := filters(r, i.baseURL)
+	f := filters(r, i.baseIRI)
 	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
 	f.URL = activitypub.CompStrs{activitypub.StringEquals(me)}
-	actors, _, err := i.ap.LoadActors(f)
+	actor, err = i.ap.Load(f.GetLink())
 	if err != nil {
 		return nil, err
 	}
-	if len(actors) == 0 {
+	if actor == nil {
 		return nil, errors.NotFoundf("unknown actor")
-	} else if len(actors) > 0 {
-		actor = actors.First()
 	}
 
 	// check for existing application actor
-	f = filters(r, i.baseURL)
+	f = filters(r, i.baseIRI)
 	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.ApplicationType))}
 	f.URL = activitypub.CompStrs{activitypub.StringEquals(clientID)}
-	clientActors, _, err := i.ap.LoadActors(f)
+	clientActor, err := i.ap.Load(f.GetLink())
 	if err != nil {
 		return nil, err
 	}
-	var clientActor pub.Item
-	if len(clientActors) == 0 {
-		gen, ok := i.ap.(storage.IDGenerator)
-		if !ok {
-			return nil, err
-		}
+	if clientActor == nil {
 		newClient := IndieAuthClientActor(actor, clientURL)
-		newId, err := gen.GenerateID(newClient, actor)
 		if err != nil {
 			return nil, err
 		}
-		newClient.ID = newId
-		clientActor, err = i.ap.SaveActor(newClient)
+		if newId, err := i.genID(newClient, handlers.Outbox.IRI(actor), nil); err == nil {
+			newClient.ID = newId
+		}
+		clientActor, err = i.ap.Save(newClient)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		clientActor = clientActors.First()
 	}
 	id := path.Base(clientActor.GetID().String())
 
@@ -210,7 +205,7 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 type oauthHandler struct {
 	baseURL string
 	ia      *indieAuth
-	loader  storage.ActorLoader
+	loader  storage.ReadStore
 	logger  logrus.FieldLogger
 }
 
@@ -231,17 +226,14 @@ func (h *oauthHandler) loadAccountFromPost(r *http.Request) (*account, error) {
 	f.Name = activitypub.CompStrs{activitypub.CompStr{Str: handle}}
 	f.IRI = activitypub.ActorsType.IRI(a)
 	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
-	actors, count, err := h.loader.LoadActors(f)
-	if err != nil || count == 0 {
+	actor, err := h.loader.Load(f.GetLink())
+	if err != nil  {
 		return nil, errUnauthorized
 	}
 
 	if pwLoader, ok := h.loader.(st.PasswordChanger); ok {
-		for _, actor := range actors {
-			act, err := checkPw(actor, []byte(pw), pwLoader)
-			if err == nil {
-				return act, nil
-			}
+		if act, err := checkPw(actor, []byte(pw), pwLoader); err == nil {
+			return act, nil
 		}
 	}
 	return nil, errUnauthorized
@@ -335,33 +327,39 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 				actorFilters.IRI = pub.IRI(iri)
 			}
 		}
-		actors, _, err := h.loader.LoadActors(actorFilters)
+		actor, err := h.loader.Load(actorFilters.GetLink())
 		if err != nil {
 			h.logger.Error(errUnauthorized)
 			errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 			return
 		}
+		if actor.IsCollection() {
+			err = pub.OnCollectionIntf(actor, func(col pub.CollectionInterface) error {
+				actor = col.Collection().First()
+				return nil
+			})
+			if err != nil {
+				h.logger.Error(errUnauthorized)
+				errors.HandleError(errUnauthorized).ServeHTTP(w, r)
+				return
+			}
+		}
 		if ar.Type == osin.PASSWORD {
 			if pwLoader, ok := h.loader.(st.PasswordChanger); ok {
-				found := false
-				for _, actor := range actors {
-					acc, err = checkPw(actor, []byte(ar.Password), pwLoader)
-					if err == nil {
-						ar.Authorized = acc.IsLogged()
-						ar.UserData = acc.actor.GetLink()
-						found = true
-						break
+				acc, err = checkPw(actor, []byte(ar.Password), pwLoader)
+				if err != nil || acc == nil {
+					if err != nil {
+						h.logger.Error(err)
 					}
-				}
-				if !found {
-					h.logger.Error(errUnauthorized)
 					errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 					return
 				}
+				ar.Authorized = acc.IsLogged()
+				ar.UserData = acc.actor.GetLink()
 			}
 		}
-		if ar.Type == osin.AUTHORIZATION_CODE && len(actors) == 1 {
-			pub.OnActor(actors.First(), func(p *pub.Actor) error {
+		if ar.Type == osin.AUTHORIZATION_CODE {
+			pub.OnActor(actor, func(p *pub.Actor) error {
 				acc = new(account)
 				acc.FromActor(p)
 				ar.Authorized = acc.IsLogged()
@@ -653,22 +651,16 @@ func (h *oauthHandler) loadActorFromOauth2Session(w http.ResponseWriter, r *http
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
-	actors, cnt, err := h.loader.LoadActors(pub.IRI(actorIRI))
-	if err != nil {
+	ob, err := h.loader.Load(pub.IRI(actorIRI))
+	if err != nil || ob == nil {
 		h.logger.Errorf("Error when loading actor from storage: %s", err)
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
-	if cnt > 1 {
-		h.logger.Errorf("Ooops, too many actors in authorization session: %d, %v", cnt, actors)
-		errors.HandleError(notF).ServeHTTP(w, r)
-		return nil
-	}
 	var actor *pub.Actor
-	pub.OnActor(actors[0], func(p *pub.Actor) error {
+	pub.OnActor(ob, func(p *pub.Actor) error {
 		actor = p
 		return nil
 	})
-
 	return actor
 }

@@ -523,8 +523,8 @@ func TestFilters_Audience(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := filterAudience(tt.args.filters, tt.args.valArr); got != tt.want {
-				t.Errorf("filterAudience() = %v, want %v", got, tt.want)
+			if got := FilterAudience(tt.args.filters, tt.args.valArr); got != tt.want {
+				t.Errorf("FilterAudience() = %v, want %v", got, tt.want)
 			}
 		})
 	}

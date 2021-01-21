@@ -32,4 +32,4 @@ type Resetter interface {
 	Reset()
 }
 
-type OptionFn func(s storage.Repository) error
+type OptionFn func(s storage.Store) error

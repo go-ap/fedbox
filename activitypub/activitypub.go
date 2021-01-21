@@ -7,7 +7,6 @@ import (
 	"github.com/pborman/uuid"
 	"net/url"
 	"path"
-	"strings"
 )
 
 const developer = pub.IRI("https://github.com/mariusor")
@@ -51,9 +50,9 @@ func DefaultServiceIRI(baseURL string) pub.IRI {
 }
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.
-func GenerateID(it pub.Item, partOf string, by pub.Item) (pub.ID, error) {
+func GenerateID(it pub.Item, partOf pub.IRI, by pub.Item) (pub.ID, error) {
 	uuid := uuid.New()
-	id := pub.ID(fmt.Sprintf("%s/%s", strings.ToLower(partOf), uuid))
+	id := partOf.GetLink().AddPath(uuid)
 	if pub.ActivityTypes.Contains(it.GetType()) {
 		err := pub.OnActivity(it, func(a *pub.Activity) error {
 			rec := append(a.To, append(a.CC, append(a.Bto, a.BCC...)...)...)
@@ -72,22 +71,15 @@ func GenerateID(it pub.Item, partOf string, by pub.Item) (pub.ID, error) {
 		})
 		return id, err
 	}
-	if pub.ActorTypes.Contains(it.GetType()) {
-		return id, pub.OnActor(it, func(p *pub.Actor) error {
-			p.ID = id
-			return nil
-		})
-	}
-	if it.IsObject() {
-		return id, pub.OnObject(it, func(o *pub.Object) error {
-			o.ID = id
-			return nil
-		})
-	} else if it.IsLink() {
-		return id, pub.OnLink(it, func(l *pub.Link) error {
-			l.ID = id
-			return nil
-		})
-	}
+	 if it.IsLink() {
+		 return id, pub.OnLink(it, func(l *pub.Link) error {
+			 l.ID = id
+			 return nil
+		 })
+	 }
+	return id, pub.OnObject(it, func(o *pub.Object) error {
+		o.ID = id
+		return nil
+	})
 	return id, nil
 }

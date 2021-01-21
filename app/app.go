@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"io"
 	"syscall"
 
 	w "git.sr.ht/~mariusor/wrapper"
@@ -20,18 +21,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func actorLoader(ctx context.Context) (st.ActorLoader, bool) {
-	ctxVal := ctx.Value(handlers.RepositoryKey)
-	s, ok := ctxVal.(st.ActorLoader)
-	return s, ok
-}
-
-func objectLoader(ctx context.Context) (st.ObjectLoader, bool) {
-	ctxVal := ctx.Value(handlers.RepositoryKey)
-	s, ok := ctxVal.(st.ObjectLoader)
-	return s, ok
-}
-
 var Config config.Options
 
 type LogFn func(string, ...interface{})
@@ -41,7 +30,7 @@ type FedBOX struct {
 	R            chi.Router
 	ver          string
 	caches       cache.CanStore
-	Storage      st.Repository
+	Storage      st.Store
 	OAuthStorage osin.Storage
 	stopFn       func()
 	infFn        LogFn
@@ -73,7 +62,7 @@ var AnonymousAcct = account{
 var InternalIRI = pub.IRI("https://fedbox/")
 
 // New instantiates a new FedBOX instance
-func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Repository, o osin.Storage) (*FedBOX, error) {
+func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o osin.Storage) (*FedBOX, error) {
 	app := FedBOX{
 		ver:          ver,
 		conf:         conf,
@@ -137,8 +126,10 @@ func (f *FedBOX) Run() error {
 		if err := srvStop(); err != nil {
 			f.errFn("Err: %s", err)
 		}
-		if err := f.Storage.Close(); err != nil {
-			f.errFn("Err: %s", err)
+		if closable, ok :=  f.Storage.(io.Closer); ok {
+			if err := closable.Close(); err != nil {
+				f.errFn("Err: %s", err)
+			}
 		}
 		f.OAuthStorage.Close()
 	}

@@ -38,19 +38,13 @@ func loadMockJson(file string, model interface{}) func() string {
 	}
 }
 
-func addMockObjects(r storage.Repository, obj pub.ItemCollection, errFn app.LogFn) error {
+func addMockObjects(r storage.Store, obj pub.ItemCollection, errFn app.LogFn) error {
 	var err error
 	for _, it := range obj {
 		if it.GetLink() == "" {
 			continue
 		}
-		if pub.ActivityTypes.Contains(it.GetType()) {
-			it, err = r.SaveActivity(it)
-		} else if pub.ActorTypes.Contains(it.GetType()) {
-			it, err = r.SaveActor(it)
-		} else {
-			it, err = r.SaveObject(it)
-		}
+		it, err = r.Save(it)
 		if err != nil {
 			errFn("%s", err)
 		}
@@ -81,6 +75,10 @@ func seedTestData(t *testing.T, testData []string) {
 	}
 	t.Helper()
 
+	if len(testData) == 0 {
+		return
+	}
+
 	opt, _ := config.LoadFromEnv("test", time.Second)
 	if opt.Storage == "all" {
 		opt.Storage = config.StorageFS
@@ -93,13 +91,10 @@ func seedTestData(t *testing.T, testData []string) {
 		panic(err)
 	}
 
-	o := cmd.New(aDb, db, config.Options{})
+	o := cmd.New(aDb, db, opt)
 	pw := []byte("hahah")
 	defaultTestApp.Id, _ = o.AddClient(pw, []string{authCallbackURL}, nil)
 
-	if len(testData) == 0 {
-		return
-	}
 	mocks := make(pub.ItemCollection, 0)
 	for _, path := range testData {
 		json := loadMockJson(path, nil)()

@@ -1,6 +1,7 @@
 package app
 
 import (
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -37,8 +38,10 @@ func (f FedBOX) Routes(baseURL string, os *osin.Server, l logrus.FieldLogger) fu
 		r.Method(http.MethodHead, "/", HandleItem(f))
 		r.Route("/{collection}", f.CollectionRoutes(true))
 
+		baseIRI := pub.IRI(baseURL)
 		ia := indieAuth{
-			baseURL: baseURL,
+			baseIRI: baseIRI,
+			genID:   GenerateID(baseIRI),
 			os:      os,
 			ap:      f.Storage,
 		}

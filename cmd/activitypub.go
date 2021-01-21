@@ -10,7 +10,6 @@ import (
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
-	"github.com/go-ap/storage"
 	"gopkg.in/urfave/cli.v2"
 	"net/url"
 	"os"
@@ -108,14 +107,8 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 
 	// TODO(marius): add annotations for the errors
 	if id == nil {
-		if gen, ok := c.Storage.(storage.IDGenerator); ok {
-			newId, err := gen.GenerateID(p, self)
-			if err != nil {
-				return nil, err
-			}
-			id = &newId
-			p.ID = *id
-		}
+		p.ID, _ = ap.GenerateID(p, handlers.Outbox.IRI(self), nil)
+		id = &p.ID
 	}
 	p.URL = p.GetLink()
 
@@ -126,7 +119,7 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 			OauthTokenEndpoint:         self.ID.AddPath("/oauth/token"),
 		}
 	}
-	it, err := c.Storage.SaveActor(p)
+	it, err := c.Storage.Save(p)
 	if err != nil {
 		return nil, err
 	}
@@ -211,23 +204,27 @@ func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string
 		base, _ := path.Split(u.Path)
 		typ := strings.Trim(base, "/")
 
-		var it pub.ItemCollection
-		var cnt uint
+		var it pub.Item
 		if strings.ToLower(typ) != strings.ToLower(string(ap.ActorsType)) && strings.ToLower(typ) != strings.ToLower(string(ap.ObjectsType)) {
 			continue
 		}
-		it, cnt, err = c.Storage.LoadObjects(iri)
-		if err != nil || cnt == 0 || it.GetType() == pub.TombstoneType {
+		it, err = c.Storage.Load(iri)
+		if err != nil || it.GetType() == pub.TombstoneType {
 			continue
 		}
-		for _, ob := range it {
-			pub.OnObject(ob, func(o *pub.Object) error {
-				if o.AttributedTo != nil {
-					d.CC = append(d.CC, o.AttributedTo.GetLink())
+		if it.IsCollection() {
+			pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+				for _, ob := range c.Collection() {
+					pub.OnObject(ob, func(o *pub.Object) error {
+						if o.AttributedTo != nil {
+							d.CC = append(d.CC, o.AttributedTo.GetLink())
+						}
+						return nil
+					})
+					delItems = append(delItems, ob.GetLink())
 				}
 				return nil
 			})
-			delItems = append(delItems, ob.GetLink())
 		}
 	}
 	if len(delItems) == 0 {
@@ -331,17 +328,19 @@ func (c *Control) List(initialPath string, types ...string) (pub.ItemCollection,
 			ap.BaseIRI(handlers.Split(baseIRI)),
 			ap.Type(types...),
 		)
-		col, err := c.Storage.LoadCollection(f)
+		col, err := c.Storage.Load(f.GetLink())
 		if err != nil {
 			return err
 		}
 
-		err = pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
-			for _, tt := range c.Collection() {
-				items = append(items, tt)
-			}
-			return nil
-		})
+		if col.IsCollection() {
+			err = pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
+				items = append(items, c.Collection()...)
+				return nil
+			})
+	 	} else {
+	 		items = append(items, col)
+		}
 		return nil
 	}
 	var err error
@@ -490,7 +489,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 							return err
 						})
 					} else {
-						_, err = ctl.Storage.SaveObject(it)
+						it, err = ctl.Storage.Save(it)
 					}
 					if err != nil {
 						Errf("Unable to save %s %s: %s", it.GetType(), it.GetID(), err)
@@ -527,12 +526,17 @@ var exportCmd = &cli.Command{
 
 func dumpAll(f *ap.Filters) (pub.ItemCollection, error) {
 	col := make(pub.ItemCollection, 0)
-	objects, _, err := ctl.Storage.LoadObjects(f)
+	objects, err := ctl.Storage.Load(f.GetLink())
 	if err != nil {
 		return col, err
 	}
-	if len(objects) > 0 {
-		col = append(col, objects...)
+	if objects.IsCollection() {
+		pub.OnCollectionIntf(objects, func(c pub.CollectionInterface) error {
+			col = append(col, c.Collection()...)
+			return nil
+		})
+	} else {
+		col = append(col, objects)
 	}
 	return col, nil
 }

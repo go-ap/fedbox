@@ -3,7 +3,6 @@
 package fs
 
 import (
-	"fmt"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -12,14 +11,11 @@ import (
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
-	"github.com/mariusor/qstring"
-	"github.com/pborman/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 )
@@ -90,16 +86,6 @@ func (r *repo) Close() error {
 	return os.Chdir(r.cwd)
 }
 
-// LoadOne
-func (r *repo) LoadOne(f s.Filterable) (pub.Item, error) {
-	err := r.Open()
-	defer r.Close()
-	if err != nil {
-		return nil, err
-	}
-	return r.loadOneFromPath(f)
-}
-
 func (r *repo) CreateService(service pub.Service) error {
 	err := r.Open()
 	defer r.Close()
@@ -118,67 +104,22 @@ func (r *repo) CreateService(service pub.Service) error {
 }
 
 // Load
-func (r *repo) Load(f s.Filterable) (pub.ItemCollection, uint, error) {
+func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
-		return nil, 0, err
+		return nil, err
+	}
+	f, err := ap.FiltersFromIRI(i)
+	if err != nil {
+		return nil, err
 	}
 
 	return r.loadFromPath(f)
 }
 
-// LoadActivities
-func (r *repo) LoadActivities(f s.Filterable) (pub.ItemCollection, uint, error) {
-	return r.Load(f)
-}
-
-// LoadObjects
-func (r *repo) LoadObjects(f s.Filterable) (pub.ItemCollection, uint, error) {
-	return r.Load(f)
-}
-
-// LoadActors
-func (r *repo) LoadActors(f s.Filterable) (pub.ItemCollection, uint, error) {
-	return r.Load(f)
-}
-
-// LoadCollection
-func (r *repo) LoadCollection(f s.Filterable) (pub.CollectionInterface, error) {
-	err := r.Open()
-	defer r.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	iri := f.GetLink()
-	url, err := iri.URL()
-	if err != nil {
-		r.errFn("invalid IRI filter element %s when loading collections", iri)
-	}
-
-	q, _ := qstring.Marshal(f)
-	url.RawQuery = q.Encode()
-
-	col := &pub.OrderedCollection{}
-	col.ID = pub.ID(url.String())
-	col.Type = pub.OrderedCollectionType
-
-	elements, count, err := r.loadFromPath(f)
-	if err != nil {
-		return nil, err
-	}
-	if count == 0 {
-		return col, nil
-	}
-	col.OrderedItems = orderItems(elements)
-	col.TotalItems = count
-
-	return col, err
-}
-
-// CreateCollection
-func (r *repo) CreateCollection(col pub.CollectionInterface) (pub.CollectionInterface, error) {
+// Create
+func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, error) {
 	if col == nil {
 		return col, errors.Newf("Unable to operate on nil element")
 	}
@@ -190,18 +131,8 @@ func (r *repo) CreateCollection(col pub.CollectionInterface) (pub.CollectionInte
 	})
 }
 
-// SaveActivity
-func (r *repo) SaveActivity(it pub.Item) (pub.Item, error) {
-	return r.SaveObject(it)
-}
-
-// SaveActor
-func (r *repo) SaveActor(it pub.Item) (pub.Item, error) {
-	return r.SaveObject(it)
-}
-
-// SaveObject
-func (r *repo) SaveObject(it pub.Item) (pub.Item, error) {
+// Save
+func (r *repo) Save(it pub.Item) (pub.Item, error) {
 	err := r.Open()
 	if err != nil {
 		return nil, err
@@ -218,8 +149,8 @@ func (r *repo) SaveObject(it pub.Item) (pub.Item, error) {
 	return it, err
 }
 
-// RemoveFromCollection
-func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
+// RemoveFrom
+func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
@@ -262,21 +193,8 @@ func (r *repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
 	})
 }
 
-func addCollectionOnObject(r *repo, col pub.IRI) error {
-	if ob, t := handlers.Split(col); handlers.ValidCollection(t) {
-		// Create the collection on the object, if it doesn't exist
-		if i, _ := r.LoadOne(ob); i != nil {
-			if _, ok := t.AddTo(i); ok {
-				_, err := r.SaveObject(i)
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-// AddToCollection
-func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
+// AddTo
+func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
@@ -336,23 +254,8 @@ func (r *repo) AddToCollection(col pub.IRI, it pub.Item) error {
 	})
 }
 
-// UpdateActor
-func (r *repo) UpdateActor(it pub.Item) (pub.Item, error) {
-	return r.UpdateObject(it)
-}
-
-// UpdateObject
-func (r *repo) UpdateObject(it pub.Item) (pub.Item, error) {
-	return r.SaveObject(it)
-}
-
-// DeleteActor
-func (r *repo) DeleteActor(it pub.Item) (pub.Item, error) {
-	return r.DeleteObject(it)
-}
-
-// DeleteObject
-func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
+// Delete
+func (r *repo) Delete(it pub.Item) (pub.Item, error) {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
@@ -363,7 +266,7 @@ func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
 		err := pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
 			var err error
 			for _, it := range c.Collection() {
-				if it, err = r.DeleteObject(it); err != nil {
+				if it, err = r.Delete(it); err != nil {
 					return err
 				}
 			}
@@ -393,20 +296,6 @@ func (r *repo) DeleteObject(it pub.Item) (pub.Item, error) {
 
 	deleteCollections(*r, it)
 	return save(r, t)
-}
-
-// GenerateID
-func (r *repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
-	typ := it.GetType()
-	var partOf string
-	if pub.ActivityTypes.Contains(typ) {
-		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActivitiesType)
-	} else if pub.ActorTypes.Contains(typ) || typ == pub.ActorType {
-		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ActorsType)
-	} else {
-		partOf = fmt.Sprintf("%s/%s", r.baseURL, ap.ObjectsType)
-	}
-	return ap.GenerateID(it, partOf, by)
 }
 
 // PasswordSet
@@ -492,16 +381,6 @@ func isStorageCollectionKey(p string) bool {
 	return ap.FedboxCollections.Contains(lst) || handlers.OnActor.Contains(lst) || handlers.OnObject.Contains(lst)
 }
 
-func isIDKey(p string) bool {
-	dir, file := path.Split(p)
-	if isStorageCollectionKey(dir) {
-		if id := uuid.Parse(file).NodeID(); len(id) > 0 {
-			return true
-		}
-	}
-	return false
-}
-
 func (r repo) itemPath(iri pub.IRI) string {
 	url, err := iri.URL()
 	if err != nil {
@@ -554,14 +433,6 @@ const (
 	objectKey   = "__raw.json"
 	metaDataKey = "__meta_data.json"
 )
-
-func isObjectKey(k string) bool {
-	return strings.HasSuffix(k, objectKey)
-}
-
-func isMetadataKey(k string) bool {
-	return strings.HasSuffix(k, metaDataKey)
-}
 
 func getMetadataKey(p string) string {
 	return path.Join(p, metaDataKey)
@@ -721,14 +592,22 @@ func loadFromRaw(raw []byte) (pub.Item, error) {
 }
 
 func (r repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {
-	col, cnt, err := r.loadFromPath(f)
+	col, err := r.loadFromPath(f)
 	if err != nil {
 		return nil, err
 	}
-	if cnt == 0 {
+	if col == nil {
 		return nil, errors.NotFoundf("nothing found")
 	}
-	return col.First(), nil
+	if col.IsCollection() {
+		var result pub.Item
+		pub.OnCollectionIntf(col, func(col pub.CollectionInterface) error {
+			result = col.Collection().First()
+			return nil
+		})
+		return result, nil
+	}
+	return col, nil
 }
 
 func isSingleItem(f s.Filterable) bool {
@@ -799,7 +678,7 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 	return it, nil
 }
 
-func (r repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
+func (r repo) loadFromPath(f s.Filterable) (pub.Item, error) {
 	var err error
 	col := make(pub.ItemCollection, 0)
 
@@ -828,18 +707,12 @@ func (r repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 	} else {
 		it, err := r.loadItem(getObjectKey(itPath), f)
 		if err != nil {
-			return nil, 0, errors.NewNotFound(err, "not found")
+			return nil, errors.NewNotFound(err, "not found")
 		}
 		if it != nil {
 			col = append(col, it)
 		}
 	}
-	return col, uint(len(col)), err
+	return col, err
 }
 
-func orderItems(col pub.ItemCollection) pub.ItemCollection {
-	sort.SliceStable(col, func(i, j int) bool {
-		return pub.ItemOrderTimestamp(col[i], col[j])
-	})
-	return col
-}

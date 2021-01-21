@@ -179,7 +179,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 	app.Following = nil
 	app.URL = pub.IRI(redirect[0])
 
-	_, err = c.Storage.UpdateActor(app)
+	_, err = c.Storage.Save(app)
 	if err != nil {
 		return "", err
 	}
@@ -245,14 +245,22 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 	} else {
 		f = apub.FiltersNew(apub.Name(actorIdentifier), apub.Type(pub.ActorTypes...))
 	}
-	list, cnt, err := c.Storage.LoadActors(f)
+	list, err := c.Storage.Load(f.GetLink())
 	if err != nil {
 		return "", err
 	}
-	if cnt == 0 {
+	if list == nil {
 		return "", errors.Newf("Handle not found")
 	}
-	actor, err := pub.ToActor(list.First())
+	var actor pub.Item
+	if list.IsCollection() {
+		err = pub.OnCollectionIntf(list, func(c pub.CollectionInterface) error {
+			actor, err = pub.ToActor(c.Collection().First())
+			return err
+		})
+	} else {
+		actor, err = pub.ToActor(list)
+	}
 	if err != nil {
 		return "", err
 	}

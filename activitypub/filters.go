@@ -63,8 +63,12 @@ const (
 
 	// BlockedType is an internally used collection, to store a list of actors the actor has blocked
 	BlockedType = h.CollectionType("blocked")
+
 	// IgnoredType is an internally used collection, to store a list of actors the actor has ignored
 	IgnoredType = h.CollectionType("ignored")
+
+	// ModType is an internally used collection, to store a list of actors the instance
+	ModType = h.CollectionType("mods")
 )
 
 // @todo(marius): here we need a better separation between the collections which are exposed in the HTTP API
@@ -295,10 +299,14 @@ func (f *Filters) GetLink() pub.IRI {
 	if f == nil {
 		return ""
 	}
-	if f.IRI != "" {
-		return f.IRI
+	if f.IRI == "" {
+		f.IRI = f.baseURL.AddPath(string(f.Collection))
 	}
-	return f.baseURL.AddPath(string(f.Collection))
+	iri := f.IRI
+	if v, err := qstring.Marshal(f); err == nil && len(v) > 0 {
+		iri = pub.IRI(fmt.Sprintf("%s?%s", iri, v.Encode()))
+	}
+	return iri
 }
 
 // TODO(marius): move this somewhere else. Or replace it with something that makes more sense.
@@ -336,44 +344,6 @@ func fullURL(u *url.URL) string {
 
 func baseURL(u *url.URL) string {
 	return fmt.Sprintf("%s://%s", u.Scheme, u.Host)
-}
-
-// FromRequest loads the filters we use for generating storage queries from the HTTP request
-func FromRequest(r *http.Request, baseUrl string) (*Filters, error) {
-	f := FiltersNew()
-	f.Req = r
-	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
-		return f, err
-	}
-
-	var u *url.URL
-	if baseUrl != "" {
-		f.baseURL = pub.IRI(baseUrl)
-		u, _ = f.baseURL.URL()
-		u.Path = r.URL.Path
-	} else {
-		f.baseURL = pub.IRI(baseURL(r.URL))
-		u = r.URL
-	}
-	if len(f.IRI) == 0 {
-		f.IRI = pub.IRI(fullURL(u))
-	}
-	f.Collection = h.Typer.Type(r)
-
-	if f.MaxItems > MaxItems {
-		f.MaxItems = MaxItems
-	}
-
-	if f.Object != nil {
-		f.Object.Collection = ObjectsType
-		f.Object.baseURL = f.baseURL
-	}
-	if f.Actor != nil {
-		f.Actor.Collection = ActorsType
-		f.Actor.baseURL = f.baseURL
-	}
-
-	return f, nil
 }
 
 // Audience returns a filter for audience members.
@@ -546,9 +516,6 @@ func filterObjectNoNameNoType(ob *pub.Object, ff *Filters) bool {
 		return false
 	}
 	if !filterWithAbsent(ff.InReplyTo(), ob.InReplyTo) {
-		return false
-	}
-	if !filterAudience(ff.Audience(), ob.Recipients(), pub.ItemCollection{ob.AttributedTo}) {
 		return false
 	}
 	if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
@@ -771,7 +738,7 @@ func filterItems(filters CompStrs, items ...pub.Item) bool {
 	return false
 }
 
-func filterAudience(filters CompStrs, colArr ...pub.ItemCollection) bool {
+func FilterAudience(filters CompStrs, colArr ...pub.ItemCollection) bool {
 	if len(filters) == 0 {
 		return true
 	}
@@ -1120,4 +1087,83 @@ func CacheKey(f *Filters) pub.IRI {
 		u.User = url.User(path.Base(f.Authenticated.ID.String()))
 	}
 	return pub.IRI(u.String())
+}
+
+func FiltersFromIRI (i pub.IRI) (*Filters, error) {
+	f := FiltersNew()
+	u, _ := i.URL()
+	if f.baseURL == "" {
+		f.baseURL = pub.IRI(baseURL(u))
+	}
+	if u.User != nil {
+		if us, err := url.Parse(u.User.Username()); err == nil {
+			id := pub.IRI(us.String())
+			if id != pub.PublicNS {
+				f.Authenticated = &pub.Actor{ID: id}
+			}
+		}
+	}
+	if err := qstring.Unmarshal(u.Query(), f); err != nil {
+		return f, err
+	}
+	if len(f.IRI) == 0 {
+		f.IRI = pub.IRI(fullURL(u))
+	}
+	if f.Collection == "" {
+		req := new(http.Request)
+		req.URL = u
+		f.Collection = h.Typer.Type(req)
+	}
+
+	if f.MaxItems > MaxItems {
+		f.MaxItems = MaxItems
+	}
+
+	if f.Object != nil {
+		f.Object.Collection = ObjectsType
+		f.Object.baseURL = f.baseURL
+	}
+	if f.Actor != nil {
+		f.Actor.Collection = ActorsType
+		f.Actor.baseURL = f.baseURL
+	}
+	return f, nil
+}
+
+// FromRequest loads the filters we use for generating storage queries from the HTTP request
+func FromRequest(r *http.Request, baseUrl string) (*Filters, error) {
+	f := FiltersNew()
+	f.Req = r
+
+	var u *url.URL
+	if baseUrl != "" {
+		f.baseURL = pub.IRI(baseUrl)
+		u, _ = f.baseURL.URL()
+		u.Path = r.URL.Path
+	} else {
+		f.baseURL = pub.IRI(baseURL(r.URL))
+		u = r.URL
+	}
+	if len(f.IRI) == 0 {
+		f.IRI = pub.IRI(fullURL(u))
+	}
+	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
+		return f, err
+	}
+	f.Collection = h.Typer.Type(r)
+
+	if f.MaxItems > MaxItems {
+		f.MaxItems = MaxItems
+	}
+
+	if f.Object != nil {
+		f.Object.Collection = ObjectsType
+		f.Object.baseURL = f.baseURL
+	}
+	if f.Actor != nil {
+		f.Actor.Collection = ActorsType
+		f.Actor.baseURL = f.baseURL
+	}
+
+	return f, nil
 }

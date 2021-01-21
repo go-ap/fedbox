@@ -179,6 +179,13 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 			}
 			firstURL = getURL(baseURL, fp)
 		}
+		if col.GetType() == pub.CollectionOfItems {
+			err := pub.OnItemCollection(col, func(items *pub.ItemCollection) error {
+				*items, _, _, _ = paginateItems(items.Collection(), f)
+				return nil
+			})
+			return col, err
+		}
 		if ordered.Contains(col.GetType()) {
 			pub.OnOrderedCollection(col, func(oc *pub.OrderedCollection) error {
 				if len(firstURL) > 0 {

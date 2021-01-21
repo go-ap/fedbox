@@ -37,7 +37,7 @@ func TestGenerateID(t *testing.T) {
 	generateIDTests = append(generateIDTests, pub.ObjectTypes...)
 	generateIDTests = append(generateIDTests, pub.ActivityTypes...)
 	generateIDTests = append(generateIDTests, pub.ActorTypes...)
-	partOf := "http://example.com"
+	partOf := pub.IRI("http://example.com")
 	for _, typ := range generateIDTests {
 		it, err := pub.GetItemByType(typ)
 		if err != nil {
@@ -47,7 +47,7 @@ func TestGenerateID(t *testing.T) {
 		if err != nil {
 			t.Errorf("GenerateID failed: %s", err)
 		}
-		if !strings.Contains(string(id), partOf) {
+		if !strings.Contains(string(id), partOf.String()) {
 			t.Errorf("Invalid ID: %s, does not contain base URL %s", id, partOf)
 		}
 		if id != it.GetID() {

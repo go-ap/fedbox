@@ -19,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
 	l.Debugf("Initializing badger storage at %s", c.Badger())
 	db := badger.New(badger.Config{
 		Path:  c.Badger(),
@@ -35,7 +35,7 @@ func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Repository, os
 	return db, oauth, nil
 }
 
-func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
 	l.Debugf("Initializing boltdb storage at %s", c.BoltDB())
 	db := boltdb.New(boltdb.Config{
 		Path:  c.BoltDB(),
@@ -52,7 +52,7 @@ func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin
 	return db, oauth, nil
 }
 
-func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
 	l.Debugf("Initializing fs storage at %s", c.BaseStoragePath())
 	oauth := authfs.New(authfs.Config{
 		Path:  c.BaseStoragePath(),
@@ -70,7 +70,7 @@ func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.S
 	return db, oauth, nil
 }
 
-func getSqliteStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+func getSqliteStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
 	/*
 		oauth := auth.NewSqliteStore(auth.SqliteConfig{
 			Path:  c.BaseStoragePath(),
@@ -90,7 +90,7 @@ func getSqliteStorage(c config.Options, l logrus.FieldLogger) (st.Repository, os
 	return db, nil, errors.NotImplementedf("sqlite storage not implemented yet")
 }
 
-func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
 	// @todo(marius): we're no longer loading SQL db config env variables
 	l.Debugf("Initializing pgx storage at %s", c.StoragePath)
 	conf := pgx.Config{}
@@ -111,7 +111,7 @@ func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.
 	return db, oauth, errors.NotImplementedf("pgx storage is not implemented yet")
 }
 
-func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+func Storage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
 	switch c.Storage {
 	case config.StorageBoltDB:
 		return getBoltStorage(c, l)

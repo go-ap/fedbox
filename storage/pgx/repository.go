@@ -71,16 +71,13 @@ func New(conf Config, url string, lp logrus.FieldLogger) (*repo, error) {
 	return &l, nil
 }
 
-func (r repo) LoadActivities(f s.Filterable) (pub.ItemCollection, uint, error) {
-	return loadFromDb(r.conn, "activities", f)
-}
+func (r repo) Load(i pub.IRI) (pub.Item, error) {
+	f, err := ap.FiltersFromIRI(i)
+	if err != nil {
+		return nil, err
+	}
 
-func (r repo) LoadActors(f s.Filterable) (pub.ItemCollection, uint, error) {
-	return loadFromDb(r.conn, "actors", f)
-}
-
-func (r repo) LoadObjects(f s.Filterable) (pub.ItemCollection, uint, error) {
-	return loadFromDb(r.conn, "objects", f)
+	return loadOneFromDb(r.conn, getCollectionTable(f.Collection), f)
 }
 
 func getCollectionTable(typ handlers.CollectionType) string {
@@ -111,99 +108,23 @@ func getCollectionTable(typ handlers.CollectionType) string {
 	return "objects"
 }
 
-func (r repo) LoadCollection(ff s.Filterable) (pub.CollectionInterface, error) {
-	clauses, values := getWhereClauses(ff)
-
-	var ret pub.CollectionInterface
-	sel := fmt.Sprintf("SELECT id, iri, created_at::timestamptz, type, count, elements FROM collections WHERE %s ORDER BY created_at DESC LIMIT 1", strings.Join(clauses, " AND "))
-	rows, err := r.conn.Query(sel, values...)
-	defer rows.Close()
+func loadOneFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (pub.Item, error) {
+	col, _, err := loadFromDb(conn, table, f)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return ret, nil
-		}
-		return ret, errors.Annotatef(err, "unable to run select")
+		return nil, err
 	}
-	if err := rows.Err(); err != nil {
-		return ret, errors.Annotatef(err, "unable to run select")
+	if col == nil {
+		return nil, errors.NotFoundf("nothing found")
 	}
-
-	f, ok := ff.(*ap.Filters)
-	if !ok {
-		return ret, errors.Newf("unable to load filters")
+	if col.IsCollection() {
+		var result pub.Item
+		pub.OnCollectionIntf(col, func(col pub.CollectionInterface) error {
+			result = col.Collection().First()
+			return nil
+		})
+		return result, nil
 	}
-	var count int
-	// Iterate through the result set
-	for rows.Next() {
-		var id int64
-		var iri string
-		var created pgtype.Timestamptz
-		var typ string
-		var elements []string
-		err = rows.Scan(&id, &iri, &created, &typ, &count, &elements)
-		if err != nil {
-			return ret, errors.Annotatef(err, "scan values error")
-		}
-
-		if pub.ActivityVocabularyType(typ) == pub.CollectionType {
-			col := &pub.Collection{}
-			col.ID = pub.ID(iri)
-			col.Type = pub.CollectionType
-			col.TotalItems = uint(count)
-			ret = col
-		}
-		if pub.ActivityVocabularyType(typ) == pub.OrderedCollectionType {
-			col := &pub.OrderedCollection{}
-			col.ID = pub.ID(iri)
-			col.Type = pub.OrderedCollectionType
-			col.TotalItems = uint(count)
-			ret = col
-		}
-		if count == 0 {
-			return ret, nil
-		}
-		r.l.WithFields(logrus.Fields{
-			"id":         id,
-			"iri":        iri,
-			"created_at": created,
-			"type":       typ,
-			"count":      count,
-			"elements":   elements,
-		}).Infof("loaded fields")
-
-		var items pub.ItemCollection
-		f.ItemKey = f.ItemKey[:0]
-		f.IRI = ""
-		for _, elem := range elements {
-			f.ItemKey = append(f.ItemKey, ap.CompStr{Str: elem})
-		}
-		var total uint
-		items, total, err = loadFromDb(r.conn, getCollectionTable(f.Collection), f)
-		if pub.ActivityVocabularyType(typ) == pub.CollectionType {
-			if col, err := pub.ToCollection(ret); err == nil {
-				col.TotalItems = total
-			}
-		}
-		if pub.ActivityVocabularyType(typ) == pub.OrderedCollectionType {
-			if col, err := pub.ToOrderedCollection(ret); err == nil {
-				col.TotalItems = total
-			}
-		}
-
-		if err == nil && total > 0 {
-			for _, it := range items {
-				ret.Append(it)
-			}
-		}
-	}
-	if ret == nil {
-		return ret, errors.Newf("could not load '%s' collection", f.Collection)
-	}
-	return ret, err
-}
-
-func (r repo) Load(ff s.Filterable) (pub.ItemCollection, uint, error) {
-	return nil, 0, errors.NotImplementedf("not implemented loader.Load()")
+	return col, nil
 }
 
 func loadFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (pub.ItemCollection, uint, error) {
@@ -249,27 +170,8 @@ func loadFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (pub.ItemColle
 	return ret, total, err
 }
 
-func (r repo) SaveActivity(it pub.Item) (pub.Item, error) {
-	var err error
-
-	it, err = r.SaveObject(it)
-	if err != nil {
-		r.errFn(logrus.Fields{"IRI": it.GetLink()}, "unable to save activity")
-		return it, err
-	}
-
-	return it, err
-}
-
-func getCollectionIRI(actor pub.Item, c handlers.CollectionType) pub.IRI {
-	return c.IRI(actor)
-}
-
-func (r repo) SaveActor(it pub.Item) (pub.Item, error) {
-	return r.SaveObject(it)
-}
-
-func (r repo) SaveObject(it pub.Item) (pub.Item, error) {
+// Save
+func (r repo) Save(it pub.Item) (pub.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
@@ -306,7 +208,7 @@ func (r repo) SaveObject(it pub.Item) (pub.Item, error) {
 	}
 
 	colIRI := handlers.CollectionType(table).IRI(pub.IRI(r.baseURL))
-	err = r.AddToCollection(colIRI, it)
+	err = r.AddTo(colIRI, it)
 	if err != nil {
 		// This errs
 		r.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI}, "unable to add to collection")
@@ -318,7 +220,7 @@ func (r repo) SaveObject(it pub.Item) (pub.Item, error) {
 			colIRI := fw.GetLink()
 			if r.IsLocalIRI(colIRI) {
 				// we shadow the err variable intentionally so it does not propagate upper to the call stack
-				r.AddToCollection(colIRI, it)
+				r.AddTo(colIRI, it)
 			}
 		}
 	}
@@ -326,7 +228,8 @@ func (r repo) SaveObject(it pub.Item) (pub.Item, error) {
 	return it, err
 }
 
-func (r repo) CreateCollection(it pub.CollectionInterface) (pub.CollectionInterface, error) {
+// Create
+func (r repo) Create(it pub.CollectionInterface) (pub.CollectionInterface, error) {
 	if it == nil {
 		return it, errors.Newf("unable to create nil collection")
 	}
@@ -352,11 +255,13 @@ func (r repo) CreateCollection(it pub.CollectionInterface) (pub.CollectionInterf
 	return it, nil
 }
 
-func (r repo) RemoveFromCollection(col pub.IRI, it pub.Item) error {
+// RemoveFrom
+func (r repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 	return errors.NotImplementedf("removing from collection is not yet implemented")
 }
 
-func (r repo) AddToCollection(col pub.IRI, it pub.Item) error {
+// AddTo
+func (r repo) AddTo(col pub.IRI, it pub.Item) error {
 	if it == nil {
 		return errors.Newf("unable to add nil element to collection")
 	}
@@ -458,61 +363,8 @@ func (r repo) updateItem(table string, it pub.Item) (pub.Item, error) {
 	return it, nil
 }
 
-func (r repo) UpdateActor(it pub.Item) (pub.Item, error) {
-	return r.UpdateObject(it)
-}
-
-func (r repo) UpdateObject(it pub.Item) (pub.Item, error) {
-	if it == nil {
-		return it, errors.Newf("not saving nil item")
-	}
-	var err error
-	var table string
-	label := "item"
-	if pub.ActivityTypes.Contains(it.GetType()) {
-		return nil, errors.Newf("unable to update activity")
-	} else if pub.ActorTypes.Contains(it.GetType()) {
-		label = "actor"
-		table = "actors"
-	} else {
-		label = "object"
-		table = "objects"
-	}
-	if len(it.GetLink()) == 0 {
-		err := errors.NotFoundf("Unable to update %s with no GetLink", label)
-		return it, err
-	}
-
-	it, err = r.updateItem(table, it)
-	if err != nil {
-		r.errFn(logrus.Fields{
-			"action": "update",
-			"table":  table,
-		}, "%s", err.Error())
-	}
-
-	return it, err
-}
-
-func (r repo) DeleteActor(it pub.Item) (pub.Item, error) {
-	return r.DeleteObject(it)
-}
-
-// GenerateID generates an unique identifier for the it ActivityPub Object.
-func (r repo) GenerateID(it pub.Item, by pub.Item) (pub.ID, error) {
-	typ := it.GetType()
-	var partOf string
-	if pub.ActivityTypes.Contains(typ) {
-		partOf = fmt.Sprintf("%s/activities", r.baseURL)
-	} else if pub.ActorTypes.Contains(typ) {
-		partOf = fmt.Sprintf("%s/actors", r.baseURL)
-	} else {
-		partOf = fmt.Sprintf("%s/objects", r.baseURL)
-	}
-	return ap.GenerateID(it, partOf, by)
-}
-
-func (r repo) DeleteObject(it pub.Item) (pub.Item, error) {
+// Delete
+func (r repo) Delete(it pub.Item) (pub.Item, error) {
 	if it == nil {
 		return it, errors.Newf("not saving nil item")
 	}
@@ -566,7 +418,7 @@ func (r repo) DeleteObject(it pub.Item) (pub.Item, error) {
 	return r.updateItem(table, t)
 }
 
-// Close closes the underlying db connections
+// Open opens the underlying db connections
 func (r *repo) Open() error {
 	var err error
 	r.conn, err = pgx.NewConnPool(pgx.ConnPoolConfig{
@@ -595,6 +447,10 @@ func (r *repo) Close() error {
 // PasswordSet
 func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 	return errors.NotImplementedf("PasswordSet is not implemented by the postgres storage layer")
+}
+
+func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
+	return errors.NotImplementedf("PasswordCheck is not implemented by the postgres storage layer")
 }
 
 // LoadMetadata

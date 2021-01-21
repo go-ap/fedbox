@@ -39,18 +39,23 @@ func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 			ap.IRI(baseIRI),
 			ap.Type(pub.PersonType),
 		)
-		col, err := ctl.Storage.LoadCollection(f)
+		col, err := ctl.Storage.Load(f.GetLink())
 		if err != nil {
 			return err
 		}
 
 		items := make(pub.ItemCollection, 0)
-		err = pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
-			for _, tt := range c.Collection() {
-				items = append(items, tt)
+		if col.IsCollection() {
+			err = pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
+				items = append(items, c.Collection()...)
+				return nil
+			})
+			if err != nil {
+				return err
 			}
-			return nil
-		})
+		} else {
+			items = append(items, col)
+		}
 
 		allMeta := make(map[pub.IRI]storage.Metadata, len(items))
 		for _, it := range items {

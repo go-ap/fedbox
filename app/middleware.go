@@ -15,7 +15,7 @@ import (
 
 // Repo adds an implementation of the storage.Loader to a Request's context so it can be used
 // further in the middleware chain
-func Repo(loader storage.Loader) func(next http.Handler) http.Handler {
+func Repo(loader storage.ReadStore) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -40,7 +40,7 @@ func Validator(v processing.ActivityValidator) func(next http.Handler) http.Hand
 }
 
 // ActorFromAuthHeader tries to load a local actor from the OAuth2 or HTTP Signatures Authorization headers
-func ActorFromAuthHeader(os *osin.Server, st storage.ActorLoader, l logrus.FieldLogger) func(next http.Handler) http.Handler {
+func ActorFromAuthHeader(os *osin.Server, st storage.ReadStore, l logrus.FieldLogger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		// TODO(marius): move this to the auth package and also add the possibility of getting the logger as a parameter
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
