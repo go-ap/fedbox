@@ -3,7 +3,6 @@ module github.com/go-ap/fedbox
 go 1.14
 
 require (
-	aletheia.icu/broccoli v0.0.0-20200420162907-e7ff440cf358
 	aletheia.icu/broccoli/fs v0.0.0-20200420162907-e7ff440cf358
 	git.sr.ht/~mariusor/wrapper v0.0.0-20210115104709-99415538f4b7
 	github.com/DataDog/zstd v1.4.5 // indirect
@@ -12,17 +11,17 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/gchaincl/dotsql v1.0.0
 	github.com/go-ap/activitypub v0.0.0-20210113095250-247f1fbf224c
-	github.com/go-ap/auth v0.0.0-20210121180939-2a94039aa479
-	github.com/go-ap/client v0.0.0-20210121180700-b8afe79bcdd5
+	github.com/go-ap/auth v0.0.0-20210124162435-42d4e69de1c2
+	github.com/go-ap/client v0.0.0-20210124162211-908eb9910a77
 	github.com/go-ap/errors v0.0.0-20200702155720-f662512ba418
-	github.com/go-ap/handlers v0.0.0-20210121180521-db9606f596b7
+	github.com/go-ap/handlers v0.0.0-20210124161835-a6eb4c996cbb
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210121181334-aea5c547ff22
+	github.com/go-ap/processing v0.0.0-20210124163051-c287656d6ca3
 	github.com/go-ap/storage v0.0.0-20210121180319-f3a496d59c8b
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
-	github.com/google/uuid v1.1.5 // indirect
+	github.com/google/uuid v1.2.0 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.3.0
 	github.com/kr/pretty v0.2.0 // indirect
@@ -37,7 +36,7 @@ require (
 	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
 	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4 // indirect
+	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
