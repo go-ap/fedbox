@@ -1,5 +1,5 @@
 ENV ?= dev
-HOSTNAME ?= fedbox
+FEDBOX_HOSTNAME ?= fedbox
 PORT ?= 4000
 STORAGE ?= all
 STORAGE_PATH ?= $(shell realpath .cache)
@@ -27,16 +27,16 @@ endif
 
 .PHONY: clean build run cert
 
-$(HOSTNAME).pem:
-	./gen-certs.sh $(HOSTNAME)
+$(FEDBOX_HOSTNAME).pem:
+	./gen-certs.sh $(FEDBOX_HOSTNAME)
 
-cert: $(HOSTNAME).pem
+cert: $(FEDBOX_HOSTNAME).pem
 
 clean:
-	@-$(RM) $(HOSTNAME).{key,crt,pem}
+	@-$(RM) $(FEDBOX_HOSTNAME).{key,crt,pem}
 
 build:
-	$(BUILD_CMD) --build-arg ENV=$(ENV) --build-arg STORAGE=$(STORAGE) --build-arg PORT=$(PORT) -f Dockerfile -t $(HOSTNAME)/app:$(TAG) ..
+	$(BUILD_CMD) --build-arg ENV=$(ENV) --build-arg STORAGE=$(STORAGE) --build-arg PORT=$(PORT) -f Dockerfile -t $(FEDBOX_HOSTNAME)/app:$(TAG) ..
 
 storage: $(STORAGE_PATH)
 
@@ -50,8 +50,8 @@ $(STORAGE_OBJECTS): bootstrap
 bootstrap: storage
 	$(RUN_CMD) -v $(STORAGE_PATH):/storage \
 		-e ENV=$(ENV) \
-		-e HOSTNAME=$(HOSTNAME) \
-		$(HOSTNAME)/app:$(TAG) \
+		-e FEDBOX_HOSTNAME=$(FEDBOX_HOSTNAME) \
+		$(FEDBOX_HOSTNAME)/app:$(TAG) \
 		/bin/ctl bootstrap
 
 run: build $(STORAGE_OBJECTS)
@@ -60,17 +60,17 @@ run: build $(STORAGE_OBJECTS)
 		-p $(PORT):$(PORT) \
 		-e ENV=$(ENV) \
 		-e LISTEN=:$(PORT) \
-		-e HOSTNAME=$(HOSTNAME) \
-		$(HOSTNAME)/app:$(TAG)
+		-e FEDBOX_HOSTNAME=$(FEDBOX_HOSTNAME) \
+		$(FEDBOX_HOSTNAME)/app:$(TAG)
 
 push: build
-	$(TAG_CMD) $(HOSTNAME)/app:$(TAG) quay.io/fedbox/fedbox:$(TAG)
+	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/fedbox/fedbox:$(TAG)
 	$(PUSH_CMD) quay.io/fedbox/fedbox:$(TAG)
 ifeq ($(TAG), dev)
-	$(TAG_CMD) $(HOSTNAME)/app:$(TAG) quay.io/fedbox/fedbox:latest || true
+	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/fedbox/fedbox:latest || true
 	$(PUSH_CMD) quay.io/fedbox/fedbox:latest || true
 endif
 ifneq ($(VERSION), )
-	$(TAG_CMD) $(HOSTNAME)/app:$(TAG) quay.io/fedbox/fedbox:$(VERSION)-$(TAG) || true
+	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/fedbox/fedbox:$(VERSION)-$(TAG) || true
 	$(PUSH_CMD) quay.io/fedbox/fedbox:$(VERSION)-$(TAG) || true
 endif
