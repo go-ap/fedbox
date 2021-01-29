@@ -1,10 +1,9 @@
-// +build storage_fs storage_all !storage_boltdb,!storage_badger,!storage_pgx,!storage_sqlite
+// +build storage_sqlite storage_all !sqlite_fs,!storage_boltdb,!storage_badger,!storage_pgx
 
-package fs
+package sqlite
 
 import (
 	"github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
 	"os"
 	"path"
@@ -26,7 +25,5 @@ func Bootstrap(conf config.Options) error {
 	return r.CreateService(activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL)))
 }
 
-func (r *repo) Reset() {
-	r.cache = cache.New(true)
-}
+func (r *repo) Reset() { }
 

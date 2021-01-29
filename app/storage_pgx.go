@@ -7,9 +7,12 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/pgx"
+	st "github.com/go-ap/storage"
+	"github.com/openshift/osin"
+	"github.com/sirupsen/logrus"
 )
 
-func Storage(c config.Options, l logrus.FieldLogger) (st.Repository, osin.Storage, error) {
+func Storage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
 	// @todo(marius): we're no longer loading SQL db config env variables
 	l.Debugf("Initializing pgx storage at %s", c.StoragePath)
 	conf := pgx.Config{}

@@ -1,5 +1,5 @@
 // +build integration
-// +build storage_all !storage_pgx,!storage_boltdb,!storage_fs,!storage_badger
+// +build storage_all !storage_pgx,!storage_boltdb,!storage_fs,!storage_badger,!storage_sqlite
 
 package tests
 
@@ -8,6 +8,7 @@ import (
 	"github.com/go-ap/fedbox/storage/badger"
 	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/fedbox/storage/fs"
+	"github.com/go-ap/fedbox/storage/sqlite"
 )
 
 var resetDB = func(opt config.Options) error {
@@ -25,6 +26,9 @@ var resetDB = func(opt config.Options) error {
 	//case config.StoragePostgres:
 	//	pgx.Clean(opt)
 	//	err = pgx.Bootstrap(opt)
+	case config.StorageSqlite:
+		sqlite.Clean(opt)
+		err = sqlite.Bootstrap(opt)
 	}
 	return err
 }

@@ -1,4 +1,4 @@
-// +build storage_fs storage_all !storage_boltdb,!storage_badger,!storage_pgx
+// +build storage_fs storage_all !storage_boltdb,!storage_badger,!storage_pgx,!storage_sqlite
 
 package fs
 
