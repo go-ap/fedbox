@@ -96,12 +96,12 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 	return nil, errNotImplemented
 }
 
-// SaveO
+// Save
 func (r *repo) Save(it pub.Item) (pub.Item, error) {
 	return nil, errNotImplemented
 }
 
-// CreateC
+// Create
 func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, error) {
 	return nil, errNotImplemented
 }
