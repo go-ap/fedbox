@@ -1,4 +1,10 @@
--- name: create-accounts
+// +build storage_sqlite storage_all !sqlite_fs,!storage_boltdb,!storage_badger,!storage_pgx
+
+package sqlite
+
+const (
+
+createAccounts = `
 create table accounts (
   key text unique,
   handle text,
@@ -6,9 +12,9 @@ create table accounts (
   updated_at timestamp default current_timestamp,
   metadata jsonb default '{}',
   flags bit(8) default 0::bit(8)
-);
+);`
 
--- name: create-items
+createItems = `
 create table items (
   id serial constraint items_pk primary key,
   key char(32) unique,
@@ -22,9 +28,9 @@ create table items (
   updated_at timestamp default current_timestamp,
   metadata jsonb default '{}',
   flags bit(8) default 0::bit(8)
-);
+);`
 
--- name: create-votes
+createVotes = `
 create table votes (
   id serial constraint votes_pk primary key,
   submitted_by int references accounts(id),
@@ -34,9 +40,9 @@ create table votes (
   weight int,
   flags bit(8) default 0::bit(8),
   constraint unique_vote_submitted_item unique (submitted_by, item_id)
-);
+);`
 
--- name: create-instances
+createInstances = `
 create table instances
 (
   id serial constraint instances_pk primary key,
@@ -46,17 +52,15 @@ create table instances
   inbox varchar unique,
   metadata jsonb default '{}',
   flags bit(8) default 0::bit(8)
-);
+);`
 
--- name: create-activitypub-actors
+createActivitypubActors = `
 create table actors (
   "id" serial not null constraint actors_pkey primary key,
-  "key" char(32) constraint actors_key_key unique,
-  "account_id" int default NULL, -- the account for this actor
+  "iri" char constraint actors_key_key unique,
   "type" varchar, -- maybe enum
-  "pub_id" varchar, -- the activitypub Object ID (APIURL/self/following/{key})
   "url" varchar, -- frontend reachable url
-  "name" varchar,
+  "name" char,
   "preferred_username" varchar,
   "published" timestamp default CURRENT_TIMESTAMP,
   "updated" timestamp default CURRENT_TIMESTAMP,
@@ -70,9 +74,9 @@ create table actors (
   "followed" varchar,
   -- "following_id" int,
   "following" varchar
-);
+);`
 
--- name: create-activitypub-activities
+createActivitypubActivities = `
 create table activities (
   "id" serial not null constraint activities_pkey primary key,
   "key" char(32) constraint activities_key_key unique,
@@ -85,9 +89,9 @@ create table activities (
   "object" varchar, -- the IRI of the local or remote object
   "published" timestamp default CURRENT_TIMESTAMP,
   "audience" jsonb -- the [to, cc, bto, bcc fields]
-);
+);`
 
--- name: create-activitypub-objects
+createActivitypubObjects = `
 create table objects (
   "id" serial not null constraint objects_pkey primary key,
   "key" char(32) constraint objects_key_key unique,
@@ -97,4 +101,10 @@ create table objects (
   "name" varchar,
   "published" timestamp default CURRENT_TIMESTAMP,
   "updated" timestamp default CURRENT_TIMESTAMP
-);
+);`
+
+createActivitypubCollections = `
+create table collections (
+)
+`
+)

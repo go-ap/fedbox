@@ -10,6 +10,7 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/jsonld"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -43,6 +44,11 @@ func New(c Config) (*repo, error) {
 	if err := mkDirIfNotExists(p); err != nil {
 		return nil, err
 	}
+	host := url.PathEscape(c.BaseURL)
+	if u, err := url.Parse(c.BaseURL); err == nil {
+		host = u.Host
+	}
+	p = fmt.Sprintf("%s/%s.sqlite", p, host)
 	b := repo{
 		path:    p,
 		baseURL: c.BaseURL,
