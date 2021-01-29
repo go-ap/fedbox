@@ -44,9 +44,9 @@ func addMockObjects(r storage.Store, obj pub.ItemCollection, errFn app.LogFn) er
 		if it.GetLink() == "" {
 			continue
 		}
-		it, err = r.Save(it)
-		if err != nil {
-			errFn("%s", err)
+		if it, err = r.Save(it); err != nil {
+			errFn(err.Error())
+			return err
 		}
 	}
 	return nil
@@ -106,7 +106,7 @@ func seedTestData(t *testing.T, testData []string) {
 			mocks = append(mocks, it)
 		}
 	}
-	addMockObjects(o.Storage, mocks, t.Logf)
+	addMockObjects(o.Storage, mocks, t.Errorf)
 
 	tok, err := o.GenAuthToken(defaultTestApp.Id, defaultTestAccount.Id, nil)
 	if err == nil {
