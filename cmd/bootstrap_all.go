@@ -10,6 +10,7 @@ import (
 	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/fedbox/storage/fs"
 	"github.com/go-ap/fedbox/storage/pgx"
+	"github.com/go-ap/fedbox/storage/sqlite"
 	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"path"
@@ -34,6 +35,9 @@ var bootstrapFn = func(conf config.Options) error {
 	}
 	if conf.Storage == config.StorageFS {
 		return fs.Bootstrap(conf)
+	}
+	if conf.Storage == config.StorageSqlite {
+		return sqlite.Bootstrap(conf)
 	}
 	return errors.NotImplementedf("Invalid storage type %s", conf.Storage)
 }
@@ -60,6 +64,9 @@ var cleanFn = func(conf config.Options) error {
 	}
 	if conf.Storage == config.StorageFS {
 		return fs.Clean(conf)
+	}
+	if conf.Storage == config.StorageSqlite {
+		return sqlite.Clean(conf)
 	}
 	return errors.NotImplementedf("Invalid storage type %s", conf.Storage)
 }
