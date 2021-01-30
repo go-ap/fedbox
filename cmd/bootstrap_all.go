@@ -12,8 +12,6 @@ import (
 	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/fedbox/storage/sqlite"
 	"golang.org/x/crypto/ssh/terminal"
-	"os"
-	"path"
 )
 
 var bootstrapFn = func(conf config.Options) error {
@@ -23,9 +21,7 @@ var bootstrapFn = func(conf config.Options) error {
 		fmt.Printf("%s password: ", pgRoot)
 		pgPw, _ := terminal.ReadPassword(0)
 		fmt.Println()
-		dir, _ := os.Getwd()
-		path := path.Join(dir, "init.sql")
-		return pgx.Bootstrap(conf, pgRoot, pgPw, path)
+		return pgx.Bootstrap(conf, pgRoot, pgPw)
 	}
 	if conf.Storage == config.StorageBoltDB {
 		return boltdb.Bootstrap(conf)
@@ -52,9 +48,7 @@ var cleanFn = func(conf config.Options) error {
 		fmt.Printf("%s password: ", pgRoot)
 		pgPw, _ := terminal.ReadPassword(0)
 		fmt.Println()
-		dir, _ := os.Getwd()
-		path := path.Join(dir, "init.sql")
-		err := pgx.Clean(conf, pgRoot, pgPw, path)
+		err := pgx.Clean(conf, pgRoot, pgPw)
 		if err != nil {
 			return errors.Annotatef(err, "Unable to update %s db", conf.Storage)
 		}

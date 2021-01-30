@@ -17,7 +17,7 @@ func openConn(c pgx.ConnConfig) (*pgx.Conn, error) {
 	return pgx.Connect(c)
 }
 
-func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) error {
+func Bootstrap(opt config.Options, rootUser string, rootPw []byte) error {
 	logger := logrus.New()
 	var conn *pgx.Conn
 	var err error
@@ -101,7 +101,7 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 	return nil
 }
 
-func Clean(opt config.Options, rootUser string, rootPw []byte, path string) error {
+func Clean(opt config.Options, rootUser string, rootPw []byte) error {
 	logger := logrus.New()
 	var conn *pgx.Conn
 	var err error

@@ -9,6 +9,6 @@ import (
 )
 
 var resetDB = func(opt config.Options) error {
-	pgx.Clean(opt)
-	return pgx.Bootstrap(opt)
+	pgx.Clean(opt, "", []byte{})
+	return pgx.Bootstrap(opt, "", []byte{})
 }

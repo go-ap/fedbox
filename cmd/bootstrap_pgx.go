@@ -3,8 +3,10 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/pgx"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var bootstrapFn = func(conf config.Options) error {
@@ -13,9 +15,7 @@ var bootstrapFn = func(conf config.Options) error {
 	fmt.Printf("%s password: ", pgRoot)
 	pgPw, _ := terminal.ReadPassword(0)
 	fmt.Println()
-	dir, _ := os.Getwd()
-	path := path.Join(dir, "init.sql")
-	return pgx.Bootstrap(conf, pgRoot, pgPw, path)
+	return pgx.Bootstrap(conf, pgRoot, pgPw)
 }
 
 var cleanFn = func(conf config.Options) (err error) {
@@ -24,7 +24,5 @@ var cleanFn = func(conf config.Options) (err error) {
 	fmt.Printf("%s password: ", pgRoot)
 	pgPw, _ := terminal.ReadPassword(0)
 	fmt.Println()
-	dir, _ := os.Getwd()
-	path := path.Join(dir, "init.sql")
-	return pgx.Clean(conf, pgRoot, pgPw, path)
+	return pgx.Clean(conf, pgRoot, pgPw)
 }
