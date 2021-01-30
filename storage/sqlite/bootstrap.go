@@ -16,15 +16,8 @@ func Clean(conf config.Options) error {
 }
 
 func Bootstrap(conf config.Options) error {
-	p, err := getAbsStoragePath(conf.StoragePath)
-	if err != nil {
-		return err
-	}
-	if err := mkDirIfNotExists(p); err != nil {
-		return err
-	}
-
-	r, err := New(Config{
+	Clean(conf)
+	p, err := getFullPath(Config{
 		StoragePath: conf.StoragePath,
 		Env:         string(conf.Env),
 		BaseURL:     conf.BaseURL,
@@ -33,10 +26,19 @@ func Bootstrap(conf config.Options) error {
 		return err
 	}
 
-	conn := r.conn
+	r := repo{
+		baseURL: conf.BaseURL,
+		path:    p,
+		logFn:   defaultLogFn,
+		errFn:   defaultLogFn,
+	}
 	exec := func(qRaw string, par ...interface{}) error {
+		if err := r.Open(); err != nil {
+			return err
+		}
+		defer r.Close()
 		qSql := fmt.Sprintf(qRaw, par...)
-		_, err = conn.Exec(qSql)
+		_, err = r.conn.Exec(qSql)
 		if err != nil {
 			return errors.Annotatef(err, "unable to execute: %q", qSql)
 		}
@@ -46,19 +48,19 @@ func Bootstrap(conf config.Options) error {
 	if err != nil {
 		return err
 	}
-	err = exec(createActivitypubObjects)
+	err = exec(createObjects)
 	if err != nil {
 		return err
 	}
-	err = exec(createActivitypubActivities)
+	err = exec(createActivities)
 	if err != nil {
 		return err
 	}
-	err = exec(createActivitypubActors)
+	err = exec(createActors)
 	if err != nil {
 		return err
 	}
-	err = exec(createActivitypubCollections)
+	err = exec(createCollections)
 	if err != nil {
 		return err
 	}

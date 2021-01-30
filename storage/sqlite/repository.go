@@ -9,11 +9,14 @@ import (
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
+	s "github.com/go-ap/storage"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -36,26 +39,13 @@ type Config struct {
 
 // New returns a new repo repository
 func New(c Config) (*repo, error) {
-	p, err := getAbsStoragePath(c.StoragePath)
-	if err != nil {
-		return nil, err
-	}
-	p = path.Clean(path.Join(p, c.Env))
-	if err := mkDirIfNotExists(p); err != nil {
-		return nil, err
-	}
-	host := url.PathEscape(c.BaseURL)
-	if u, err := url.Parse(c.BaseURL); err == nil {
-		host = u.Host
-	}
-	p = fmt.Sprintf("%s/%s.sqlite", p, host)
-	b := repo{
+	p, err := getFullPath(c)
+	return &repo{
 		path:    p,
 		baseURL: c.BaseURL,
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
-	}
-	return &b, nil
+	}, err
 }
 
 type repo struct {
@@ -91,14 +81,54 @@ func (r repo) CreateService(service pub.Service) error {
 	return err
 }
 
+func getCollectionTable(typ handlers.CollectionType) string {
+	switch typ {
+	case handlers.Followers:
+		fallthrough
+	case handlers.Following:
+		fallthrough
+	case "actors", "":
+		return "actors"
+	case handlers.Inbox:
+		fallthrough
+	case handlers.Outbox:
+		fallthrough
+	case handlers.Shares:
+		fallthrough
+	case handlers.Liked:
+		fallthrough
+	case handlers.Likes:
+		fallthrough
+	case "activities":
+		return "activities"
+	case handlers.Replies:
+		fallthrough
+	default:
+		return "objects"
+	}
+	return "objects"
+}
+
 // Load
 func (r *repo) Load(i pub.IRI) (pub.Item, error) {
-	return nil, errNotImplemented
+	f, err := ap.FiltersFromIRI(i)
+	if err != nil {
+		return nil, err
+	}
+	if err = r.Open(); err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	return loadFromDb(r.conn, getCollectionTable(f.Collection), f)
 }
 
 // Save
 func (r *repo) Save(it pub.Item) (pub.Item, error) {
-	return nil, errNotImplemented
+	if err := r.Open(); err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	return save(*r, it)
 }
 
 // Create
@@ -141,6 +171,22 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 	return errNotImplemented
 }
 
+func getFullPath(c Config) (string, error) {
+	p, err := getAbsStoragePath(c.StoragePath)
+	if err != nil {
+		return "memory", err
+	}
+	p = path.Clean(path.Join(p, c.Env))
+	if err := mkDirIfNotExists(p); err != nil {
+		return "memory", err
+	}
+	host := url.PathEscape(c.BaseURL)
+	if u, err := url.Parse(c.BaseURL); err == nil {
+		host = u.Host
+	}
+	return fmt.Sprintf("%s/%s.sqlite", p, host), nil
+}
+
 func getAbsStoragePath(p string) (string, error) {
 	if !filepath.IsAbs(p) {
 		var err error
@@ -174,6 +220,47 @@ func mkDirIfNotExists(p string) error {
 	return nil
 }
 
+func loadFromDb(conn *sql.DB, table string, f s.Filterable) (pub.Item, error) {
+	clauses, values := getWhereClauses(f)
+	var total uint = 0
+
+	sel := fmt.Sprintf("SELECT id, iri, published, type, raw FROM %s WHERE %s ORDER BY published %s", table, strings.Join(clauses, " AND "), getLimit(f))
+	rows, err := conn.Query(sel, values...)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return pub.ItemCollection{}, nil
+		}
+		return nil, errors.Annotatef(err, "unable to run select")
+	}
+
+	ret := make(pub.ItemCollection, 0)
+	// Iterate through the result set
+	for rows.Next() {
+		var id int64
+		var iri string
+		var created string
+		var typ string
+		var raw []byte
+		err = rows.Scan(&id, &iri, &created, &typ, &raw)
+		if err != nil {
+			return ret, errors.Annotatef(err, "scan values error")
+		}
+
+		it, err := pub.UnmarshalJSON(raw)
+		if err != nil {
+			return ret, errors.Annotatef(err, "unable to unmarshal raw item")
+		}
+		ret = append(ret, it)
+	}
+
+	selCnt := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s", table, strings.Join(clauses, " AND "))
+	if err = conn.QueryRow(selCnt, values...).Scan(&total); err != nil {
+		err = errors.Annotatef(err, "unable to count all rows")
+	}
+
+	return ret, err
+}
+
 func save(l repo, it pub.Item) (pub.Item, error) {
 	table := string(ap.ObjectsType)
 	if pub.ActivityTypes.Contains(it.GetType()) {
@@ -181,18 +268,16 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 	} else if pub.ActorTypes.Contains(it.GetType()) {
 		table = string(ap.ActorsType)
 	}
-	query := fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3, $4, $5);", table)
+	query := fmt.Sprintf("INSERT INTO %s (iri, published, type, raw) VALUES (?, ?, ?, ?);", table)
 
 	iri := it.GetLink()
-	uuid := path.Base(iri.String())
-	if uuid == "." {
-		// broken ID generation
-		return it, errors.Newf("Unable to get ID for %s[%s]", table, it.GetType())
-	}
-	raw, _ := encodeFn(it)
-	_, err := l.conn.Exec(query, uuid, iri, time.Now(), it.GetType(), raw)
+	raw, err := encodeFn(it)
 	if err != nil {
-		l.errFn("query error: %s", err)
+		l.errFn("query error: %s\n%s\n%#v", err, query)
+		return it, errors.Annotatef(err, "query error")
+	}
+	if _, err = l.conn.Exec(query, iri, time.Now().UTC(), it.GetType(), raw); err != nil {
+		l.errFn("query error: %s\n%s\n%#v", err, query)
 		return it, errors.Annotatef(err, "query error")
 	}
 
