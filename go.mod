@@ -9,7 +9,6 @@ require (
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
-	github.com/gchaincl/dotsql v1.0.0
 	github.com/go-ap/activitypub v0.0.0-20210113095250-247f1fbf224c
 	github.com/go-ap/auth v0.0.0-20210124162435-42d4e69de1c2
 	github.com/go-ap/client v0.0.0-20210124162211-908eb9910a77

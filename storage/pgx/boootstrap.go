@@ -4,16 +4,11 @@ package pgx
 
 import (
 	"fmt"
-	"github.com/gchaincl/dotsql"
-	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/log"
-	"github.com/go-ap/jsonld"
 	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
-	"path"
 )
 
 var RootDb = "postgres"
@@ -53,30 +48,22 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 	if err != nil {
 		return err
 	}
-	dot, err := dotsql.LoadFromFile(file)
-	if err != nil {
-		return errors.Annotatef(err, "could not open bootstrap file %s", file)
-	}
 
-	exec := func(lbl string, par ...interface{}) error {
-		qRaw, err := dot.Raw(lbl)
-		if err != nil {
-			return errors.Annotatef(err, "unable to load query: %s", lbl)
-		}
+	exec := func(qRaw string, par ...interface{}) error {
 		qSql := fmt.Sprintf(qRaw, par...)
 		_, err = conn.Exec(qSql)
 		if err != nil {
-			return errors.Annotatef(err, "unable to execute: %s", lbl)
+			return errors.Annotatef(err, "unable to execute: %s", qRaw)
 		}
 		return nil
 	}
 
 	// Root queries
-	err = exec("create-role-with-pass", conf.User, conf.Pw)
+	err = exec(createRoleWithPass, conf.User, conf.Pw)
 	if err != nil {
 		return err
 	}
-	err = exec("create-db-for-role", conf.Name, conf.User)
+	err = exec(createDbForRole, conf.Name, conf.User)
 	if err != nil {
 		return err
 	}
@@ -95,69 +82,22 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte, file string) 
 		return err
 	}
 	defer conn.Close()
-	err = exec("create-activitypub-types-enum")
+	err = exec(createActivityPubObjects)
 	if err != nil {
 		return err
 	}
-	err = exec("create-activitypub-objects")
+	err = exec(createActivityPubActivities)
 	if err != nil {
 		return err
 	}
-	err = exec("create-activitypub-activities")
+	err = exec(createActivityPubActors)
 	if err != nil {
 		return err
 	}
-	err = exec("create-activitypub-actors")
+	err = exec(createActivityPubCollections)
 	if err != nil {
 		return err
 	}
-	err = exec("create-activitypub-collections")
-	if err != nil {
-		return err
-	}
-	baseURL := activitypub.DefaultServiceIRI(opt.BaseURL)
-	service := activitypub.Self(baseURL)
-
-	u, _ := service.GetLink().URL()
-	raw, err := jsonld.Marshal(service)
-	if err != nil {
-		return errors.Annotatef(err, "could not marshal service json")
-	}
-	err = exec("insert-actor", path.Base(u.Path), service.GetType(), service.GetLink(), raw)
-	if err != nil {
-		return err
-	}
-	activities := fmt.Sprintf("%s%s", baseURL, activitypub.ActivitiesType)
-	err = exec("insert-collection", activities, pub.OrderedCollectionType)
-	if err != nil {
-		return err
-	}
-	objects := fmt.Sprintf("%s%s", baseURL, activitypub.ObjectsType)
-	err = exec("insert-collection", objects, pub.OrderedCollectionType)
-	if err != nil {
-		return err
-	}
-	actors := fmt.Sprintf("%s%s", baseURL, activitypub.ActorsType)
-	err = exec("insert-collection", actors, pub.OrderedCollectionType)
-	if err != nil {
-		return err
-	}
-	//err = exec("add-to-collection", service.GetLink(), actors)
-	//if err != nil {
-	//	return err
-	//}
-	err = exec("insert-collection", service.Inbox.GetLink(), pub.OrderedCollectionType)
-	if err != nil {
-		return err
-	}
-	//err = exec("insert-collection", service.Following.GetLink(), pub.OrderedCollectionType)
-	//if err != nil {
-	//	return err
-	//}
-	//err = exec("insert-collection", service.Outbox.GetLink(), pub.OrderedCollectionType)
-	//if err != nil {
-	//	return err
-	//}
 	return nil
 }
 
@@ -191,83 +131,23 @@ func Clean(opt config.Options, rootUser string, rootPw []byte, path string) erro
 		return err
 	}
 	defer conn.Close()
-	dot, err := dotsql.LoadFromFile(path)
-	if err != nil {
-		return errors.Annotatef(err, "could not open bootstrap file %s", path)
-	}
 
-	exec := func(lbl string, par ...interface{}) error {
-		qRaw, err := dot.Raw(lbl)
-		if err != nil {
-			return errors.Annotatef(err, "unable to load query: %s", lbl)
-		}
+	exec := func(qRaw string, par ...interface{}) error {
 		qSql := fmt.Sprintf(qRaw, par...)
 		_, err = conn.Exec(qSql)
 		if err != nil {
-			return errors.Annotatef(err, "unable to execute: %s", lbl)
+			return errors.Annotatef(err, "unable to execute: %s", qRaw)
 		}
 		return nil
 	}
-	err = exec("drop-database", conf.Name)
+	err = exec(dropDatabase, conf.Name)
 	if err != nil {
 		return err
 	}
-	err = exec("drop-role", conf.User)
+	err = exec(dropRole, conf.User)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func AddTestMockActor(opt config.Options, file string, actor pub.Person) error {
-	logger := logrus.New()
-	var conn *pgx.Conn
-	var err error
-
-	// @todo(marius): we're no longer loading SQL db config env variables
-	conf := config.BackendConfig{}
-	if conf.User == "" {
-		return errors.Newf("empty user")
-	}
-	if conf.Name == "" {
-		return errors.Newf("empty name")
-	}
-	if conf.Host == "" {
-		return errors.Newf("empty host")
-	}
-	if opt.BaseURL == "" {
-		return errors.Newf("empty base URL")
-	}
-
-	conn, err = openConn(pgx.ConnConfig{
-		Host:     conf.Host,
-		Port:     uint16(conf.Port),
-		Database: conf.Name,
-		User:     conf.User,
-		Password: conf.Pw,
-		Logger:   log.NewPgxLogger(logger),
-	})
-	if err != nil {
-		return err
-	}
-	dot, err := dotsql.LoadFromFile(file)
-	if err != nil {
-		return errors.Annotatef(err, "could not open bootstrap file %s", file)
-	}
-
-	exec := func(lbl string, par ...interface{}) error {
-		qRaw, err := dot.Raw(lbl)
-		if err != nil {
-			return errors.Annotatef(err, "unable to load query: %s", lbl)
-		}
-		qSql := fmt.Sprintf(qRaw, par...)
-		_, err = conn.Exec(qSql)
-		if err != nil {
-			return errors.Annotatef(err, "unable to execute: %s", lbl)
-		}
-		return nil
-	}
-
-	raw, _ := jsonld.Marshal(actor)
-	return exec("insert-actor", path.Base(opt.BaseURL), actor.GetType(), actor.GetLink(), raw)
-}
