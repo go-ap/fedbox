@@ -23,6 +23,11 @@ func Bootstrap(conf config.Options) error {
 	if err != nil {
 		return err
 	}
+	err = r.Open()
+	if err != nil {
+		return err
+	}
+	defer r.Close()
 	return r.CreateService(activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL)))
 }
 
