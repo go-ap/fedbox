@@ -36,17 +36,17 @@ var reset = &cli.Command{
 
 func resetAct(c *Control) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
-		err := bootstrapReset(c.Conf)
+		err := Reset(c.Conf)
 		if err != nil {
 			return err
 		}
-		return bootstrap(c.Conf)
+		return Bootstrap(c.Conf)
 	}
 }
 
 func bootstrapAct(c *Control) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
-		return bootstrap(c.Conf)
+		return Bootstrap(c.Conf)
 	}
 }
 
@@ -57,13 +57,13 @@ func bootstrapOAuth(conf config.Options) error {
 	return nil
 }
 
-func bootstrap(conf config.Options) error {
+func Bootstrap(conf config.Options) error {
 	if err := bootstrapFn(conf); err != nil {
 		return errors.Annotatef(err, "Unable to create %s db for storage %s", conf.StoragePath, conf.Storage)
 	}
 	return bootstrapOAuth(conf)
 }
 
-func bootstrapReset(conf config.Options) error {
+func Reset(conf config.Options) error {
 	return cleanFn(conf)
 }

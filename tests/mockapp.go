@@ -90,6 +90,9 @@ func seedTestData(t *testing.T, testData []string) {
 	if err != nil {
 		panic(err)
 	}
+	if err = cmd.Bootstrap(opt); err != nil {
+		panic(err)
+	}
 
 	o := cmd.New(aDb, db, opt)
 	pw := []byte("hahah")
