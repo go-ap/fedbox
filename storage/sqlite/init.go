@@ -48,8 +48,9 @@ create table objects (
 
 createCollections = `
 create table collections (
-	"id" integer constraint collections_pkey primary key, 
-	"collection" varchar,
-	"iri" varchar
+  "id" integer constraint collections_pkey primary key, 
+  "published" timestamp default CURRENT_TIMESTAMP,
+  "iri" varchar,
+  "object" varchar
 );`
 )

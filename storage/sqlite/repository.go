@@ -11,7 +11,6 @@ import (
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
-	s "github.com/go-ap/storage"
 	"net/url"
 	"os"
 	"path"
@@ -81,7 +80,12 @@ func (r repo) CreateService(service pub.Service) error {
 	return err
 }
 
-func getCollectionTable(typ handlers.CollectionType) string {
+func getCollectionTable(f *ap.Filters) string {
+	_, key := path.Split(f.IRI.String())
+	if handlers.ValidCollection(handlers.CollectionType(key)) && len(f.ItemKey) == 0 {
+		return "collections"
+	}
+	typ := f.Collection
 	switch typ {
 	case handlers.Followers:
 		fallthrough
@@ -119,7 +123,7 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 		return nil, err
 	}
 	defer r.Close()
-	return loadFromDb(r.conn, getCollectionTable(f.Collection), f)
+	return loadFromDb(r.conn, f)
 }
 
 // Save
@@ -143,7 +147,18 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 
 // AddTo
 func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
-	return errNotImplemented
+	if err := r.Open(); err != nil {
+		return err
+	}
+	defer r.Close()
+	query := "INSERT INTO collections (collection, iri) VALUES (?, ?);"
+
+	if _, err := r.conn.Exec(query, col, it.GetLink()); err != nil {
+		r.errFn("query error: %s\n%s\n%#v", err, query)
+		return errors.Annotatef(err, "query error")
+	}
+
+	return nil
 }
 
 // Delete
@@ -220,9 +235,19 @@ func mkDirIfNotExists(p string) error {
 	return nil
 }
 
-func loadFromDb(conn *sql.DB, table string, f s.Filterable) (pub.Item, error) {
+func loadFromOneTable(conn *sql.DB, f *ap.Filters) (pub.ItemCollection, error) {
+	table := getCollectionTable(f)
 	clauses, values := getWhereClauses(f)
 	var total uint = 0
+
+	selCnt := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s", table, strings.Join(clauses, " AND "))
+	if err := conn.QueryRow(selCnt, values...).Scan(&total); err != nil {
+		return nil, errors.Annotatef(err, "unable to count all rows")
+	}
+	ret := make(pub.ItemCollection, 0)
+	if total == 0 {
+		return ret, nil
+	}
 
 	sel := fmt.Sprintf("SELECT id, iri, published, type, raw FROM %s WHERE %s ORDER BY published %s", table, strings.Join(clauses, " AND "), getLimit(f))
 	rows, err := conn.Query(sel, values...)
@@ -233,7 +258,6 @@ func loadFromDb(conn *sql.DB, table string, f s.Filterable) (pub.Item, error) {
 		return nil, errors.Annotatef(err, "unable to run select")
 	}
 
-	ret := make(pub.ItemCollection, 0)
 	// Iterate through the result set
 	for rows.Next() {
 		var id int64
@@ -253,12 +277,88 @@ func loadFromDb(conn *sql.DB, table string, f s.Filterable) (pub.Item, error) {
 		ret = append(ret, it)
 	}
 
-	selCnt := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s", table, strings.Join(clauses, " AND "))
-	if err = conn.QueryRow(selCnt, values...).Scan(&total); err != nil {
-		err = errors.Annotatef(err, "unable to count all rows")
-	}
-
 	return ret, err
+}
+
+func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
+	table := getCollectionTable(f)
+	clauses, values := getWhereClauses(f)
+	var total uint = 0
+
+	selCnt := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s", table, strings.Join(clauses, " AND "))
+	if err := conn.QueryRow(selCnt, values...).Scan(&total); err != nil && err != sql.ErrNoRows {
+		return nil, errors.Annotatef(err, "unable to count all rows")
+	}
+	if total == 0 {
+		return pub.ItemCollection{}, nil
+	}
+	if table == "collections" {
+		sel := fmt.Sprintf("SELECT id, iri, object FROM %s WHERE %s %s", table, strings.Join(clauses, " AND "), getLimit(f))
+		rows, err := conn.Query(sel, values...)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return pub.ItemCollection{}, nil
+			}
+			return nil, errors.Annotatef(err, "unable to run select")
+		}
+		fOb := &(*f)
+		fActors := &(*f)
+		fActivities := &(*f)
+
+		fOb.IRI = ""
+		fOb.Collection = "objects"
+		fOb.ItemKey = make(ap.CompStrs, 0)
+		fActors.IRI = ""
+		fActors.Collection = "actors"
+		fActors.ItemKey = make(ap.CompStrs, 0)
+		fActivities.IRI = ""
+		fActivities.Collection = "activities"
+		fActivities.ItemKey = make(ap.CompStrs, 0)
+		// Iterate through the result set
+		for rows.Next() {
+			var id int64
+			var object string
+			var iri string
+			
+			err = rows.Scan(&id, &iri, &object)
+			if err != nil {
+				return pub.ItemCollection{}, errors.Annotatef(err, "scan values error")
+			}
+			if strings.Contains(object, "objects") {
+				fOb.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+			}
+			if strings.Contains(object, "actors") {
+				fActors.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+			}
+			if strings.Contains(object, "activities") {
+				fActivities.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+			}
+		}
+		ret := make(pub.ItemCollection, 0)
+		if len(fActivities.ItemKey) > 0 {
+			retAct, err := loadFromOneTable(conn, fActivities)
+			if err != nil {
+				return ret, err
+			}
+			ret = append(ret, retAct...)
+		}
+		if len(fActors.ItemKey) > 0 {
+			retAct, err := loadFromOneTable(conn, fActors)
+			if err != nil {
+				return ret, err
+			}
+			ret = append(ret, retAct...)
+		}
+		if len(fOb.ItemKey) > 0 {
+			retOb, err := loadFromOneTable(conn, fOb)
+			if err != nil {
+				return ret, err
+			}
+			ret = append(ret, retOb...)
+		}
+		return ret, nil
+	}
+	return loadFromOneTable(conn, f)
 }
 
 func save(l repo, it pub.Item) (pub.Item, error) {
