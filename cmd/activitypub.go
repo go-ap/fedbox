@@ -72,8 +72,23 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 			if !pub.ActorTypes.Contains(typ) {
 				typ = pub.PersonType
 			}
-			p, err := ctl.AddActor(name, typ, nil, pw)
-			if err != nil {
+			self := ap.Self(pub.IRI(ctl.Conf.BaseURL))
+			now := time.Now().UTC()
+			p := &pub.Person{
+				Type: typ,
+				// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
+				AttributedTo: self.GetLink(),
+				Generator:    self.GetLink(),
+				Published:    now,
+				Summary: pub.NaturalLanguageValues{
+					{pub.NilLangRef, pub.Content("Generated actor")},
+				},
+				Updated: now,
+				PreferredUsername: pub.NaturalLanguageValues{
+					{pub.NilLangRef, pub.Content(name)},
+				},
+			}
+			if p, err = ctl.AddActor(p, pw); err != nil {
 				Errf("Error adding %s: %s\n", name, err)
 			}
 			fmt.Printf("Added %q [%s]: %s\n", typ, name, p.GetLink())
@@ -83,34 +98,12 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyType, id *pub.ID, pw []byte) (*pub.Person, error) {
+func (c *Control) AddActor(p *pub.Person, pw []byte) (*pub.Person, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
 	self := ap.Self(pub.IRI(c.Conf.BaseURL))
 	now := time.Now().UTC()
-	p := pub.Person{
-		Type: typ,
-		// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
-		AttributedTo: self.GetLink(),
-		Audience:     pub.ItemCollection{pub.PublicNS},
-		Generator:    self.GetLink(),
-		Published:    now,
-		Summary: pub.NaturalLanguageValues{
-			{pub.NilLangRef, pub.Content("Generated actor")},
-		},
-		Updated: now,
-		PreferredUsername: pub.NaturalLanguageValues{
-			{pub.NilLangRef, pub.Content(preferredUsername)},
-		},
-	}
-
-	// TODO(marius): add annotations for the errors
-	if id == nil {
-		p.ID, _ = ap.GenerateID(p, handlers.Outbox.IRI(self), nil)
-		id = &p.ID
-	}
-	p.URL = p.GetLink()
 
 	if p.Type == pub.PersonType {
 		p.Endpoints = &pub.Endpoints{
@@ -119,26 +112,33 @@ func (c *Control) AddActor(preferredUsername string, typ pub.ActivityVocabularyT
 			OauthTokenEndpoint:         self.ID.AddPath("/oauth/token"),
 		}
 	}
-	it, err := c.Storage.Save(p)
+
+	act := &pub.Activity{
+		Type:         pub.CreateType,
+		AttributedTo: self.GetLink(),
+		Actor:        self.GetLink(),
+		To:           pub.ItemCollection{pub.PublicNS},
+		CC:           pub.ItemCollection{self.ID},
+		Updated:      now,
+		Object:       p,
+	}
+
+	var err error
+	_, err = c.Saver.ProcessClientActivity(act)
 	if err != nil {
 		return nil, err
 	}
 
-	saved, err := pub.ToActor(it)
-	if err != nil {
-		return nil, err
+	if pw == nil {
+		return p, nil
 	}
-
-	if pw != nil {
-		if pwManager, ok := c.Storage.(s.PasswordChanger); ok {
-			err := pwManager.PasswordSet(saved.GetLink(), pw)
-			if err != nil {
-				return saved, err
-			}
+	if pwManager, ok := c.Storage.(s.PasswordChanger); ok {
+		if err := pwManager.PasswordSet(p.GetLink(), pw); err != nil {
+			return p, err
 		}
 	}
 
-	return saved, nil
+	return p, nil
 }
 
 var ValidGenericTypes = pub.ActivityVocabularyTypes{pub.ObjectType, pub.ActorType}
@@ -168,10 +168,6 @@ func delObjectsAct(ctl *Control) cli.ActionFunc {
 
 func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string) error {
 	self := ap.Self(pub.IRI(c.Conf.BaseURL))
-	p, _, err := processing.New(processing.SetStorage(c.Storage), processing.SetIRI(self.ID, app.InternalIRI))
-	if err != nil {
-		return err
-	}
 
 	d := new(pub.Delete)
 	d.Type = pub.DeleteType
@@ -232,7 +228,7 @@ func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string
 	}
 	d.Object = delItems
 
-	act, err := p.ProcessClientActivity(d)
+	act, err := c.Saver.ProcessClientActivity(d)
 
 	printItem(act, "text")
 	return err
@@ -391,8 +387,24 @@ func addObjectAct(ctl *Control) cli.ActionFunc {
 			if err != nil {
 				return err
 			}
-			p, err := ctl.AddActor(string(name), pub.ActivityVocabularyType(typ.Str), nil, pw)
-			if err != nil {
+
+			self := ap.Self(pub.IRI(ctl.Conf.BaseURL))
+			now := time.Now().UTC()
+			p := &pub.Person{
+				Type: pub.ActivityVocabularyType(typ.Str),
+				// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
+				AttributedTo: self.GetLink(),
+				Generator:    self.GetLink(),
+				Published:    now,
+				Summary: pub.NaturalLanguageValues{
+					{pub.NilLangRef, pub.Content("Generated actor")},
+				},
+				Updated: now,
+				PreferredUsername: pub.NaturalLanguageValues{
+					{pub.NilLangRef, pub.Content(name)},
+				},
+			}
+			if p, err = ctl.AddActor(p, pw); err != nil {
 				Errf("Error adding %s: %s\n", name, err)
 			}
 			fmt.Printf("Added %s [%s]: %s\n", typ, name, p.GetLink())

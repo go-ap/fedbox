@@ -9,7 +9,6 @@ import (
 	fedbox "github.com/go-ap/fedbox/app"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
-	"github.com/pborman/uuid"
 	"gopkg.in/urfave/cli.v2"
 	"net/url"
 	"path"
@@ -161,30 +160,29 @@ const URISeparator = "\n"
 func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string, error) {
 	var id string
 
-	app, err := c.AddActor("oauth-client-app", pub.ApplicationType, nil, pw)
+	self := apub.Self(pub.IRI(ctl.Conf.BaseURL))
+	now := time.Now().UTC()
+	p := &pub.Person{
+		Type: pub.ApplicationType,
+		AttributedTo: self.GetLink(),
+		Generator:    self.GetLink(),
+		Published:    now,
+		Updated: now,
+		PreferredUsername: pub.NaturalLanguageValues{
+			{pub.NilLangRef, pub.Content("oauth-client-app")},
+		},
+		URL: pub.IRI(redirect[0]),
+	}
+	app, err := c.AddActor(p, pw)
 	if err != nil {
 		return "", err
 	}
 
 	id = path.Base(string(app.GetID()))
 	// TODO(marius): allow for updates of the application actor with incoming parameters for Icon, Summary, samd.
-	app.PreferredUsername = pub.NaturalLanguageValues{
-		{
-			Ref:   pub.NilLangRef,
-			Value: pub.Content(fmt.Sprintf("%s-%s", app.PreferredUsername.First().Value, id)),
-		},
-	}
-	app.Endpoints = nil
-	app.Followers = nil
-	app.Following = nil
-	app.URL = pub.IRI(redirect[0])
 
-	_, err = c.Storage.Save(app)
-	if err != nil {
-		return "", err
-	}
 	if id == "" {
-		id = uuid.New()
+		return "", errors.Newf("invalid actor saved, id is null")
 	}
 
 	// TODO(marius): add a local Client struct that implements Client and ClientSecretMatcher interfaces with bcrypt support

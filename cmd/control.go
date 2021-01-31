@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
+	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
@@ -21,13 +23,21 @@ type Control struct {
 	Conf        config.Options
 	AuthStorage osin.Storage
 	Storage     storage.Store
+	Saver       processing.Processor
 }
 
 func New(authDB osin.Storage, actorDb storage.Store, conf config.Options) *Control {
+	baseIRI := pub.IRI(conf.BaseURL)
+	p, _, _ := processing.New(
+		processing.SetIRI(baseIRI),
+		processing.SetStorage(actorDb),
+		processing.SetIDGenerator(app.GenerateID(baseIRI)),
+	)
 	return &Control{
 		Conf:        conf,
 		AuthStorage: authDB,
 		Storage:     actorDb,
+		Saver:       p,
 	}
 }
 
