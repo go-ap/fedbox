@@ -9,14 +9,14 @@ require (
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
-	github.com/go-ap/activitypub v0.0.0-20210113095250-247f1fbf224c
-	github.com/go-ap/auth v0.0.0-20210124162435-42d4e69de1c2
-	github.com/go-ap/client v0.0.0-20210124162211-908eb9910a77
+	github.com/go-ap/activitypub v0.0.0-20210131123040-15ac5c20c710
+	github.com/go-ap/auth v0.0.0-20210131123831-626b96adbc74
+	github.com/go-ap/client v0.0.0-20210131123656-50449f8c699d
 	github.com/go-ap/errors v0.0.0-20200702155720-f662512ba418
-	github.com/go-ap/handlers v0.0.0-20210124161835-a6eb4c996cbb
+	github.com/go-ap/handlers v0.0.0-20210131123559-a75028ab9938
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210126102016-d3485e608f99
-	github.com/go-ap/storage v0.0.0-20210121180319-f3a496d59c8b
+	github.com/go-ap/processing v0.0.0-20210131124143-3770e17a5b9a
+	github.com/go-ap/storage v0.0.0-20210131123510-c3eb12bb8a5f
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
