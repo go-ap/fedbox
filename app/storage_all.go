@@ -71,23 +71,21 @@ func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storag
 }
 
 func getSqliteStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
-	/*
-		oauth := auth.NewSqliteStore(auth.SqliteConfig{
-			Path:  c.BaseStoragePath(),
-			LogFn: InfoLogFn(l),
-			ErrFn: ErrLogFn(l),
-		})
-	*/
 	l.Debugf("Initializing sqlite storage at %s", c.StoragePath)
+	oauth := authfs.New(authfs.Config{
+		Path:  c.BaseStoragePath(),
+		LogFn: InfoLogFn(l),
+		ErrFn: ErrLogFn(l),
+	})
 	db, err := sqlite.New(sqlite.Config{
-		StoragePath: c.BaseStoragePath(),
+		StoragePath: c.StoragePath,
 		Env:         string(c.Env),
 		BaseURL:     c.BaseURL,
 	})
 	if err != nil {
 		return nil, nil, errors.Annotatef(err, "unable to connect to sqlite storage")
 	}
-	return db, nil, errors.NotImplementedf("sqlite storage not implemented yet")
+	return db, oauth, nil
 }
 
 func getPgxStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
