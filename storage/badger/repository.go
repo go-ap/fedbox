@@ -38,7 +38,8 @@ type loggerFn func(logrus.Fields, string, ...interface{})
 // Config
 type Config struct {
 	Path     string
-	PathName string
+	Env      string
+	BaseURL  string
 	LogFn    loggerFn
 	ErrFn    loggerFn
 }
@@ -46,10 +47,14 @@ type Config struct {
 var emptyLogFn = func(logrus.Fields, string, ...interface{}) {}
 
 // New returns a new repo repository
-func New(c Config, baseURL string) *repo {
+func New(c Config) (*repo, error) {
+	p, err := Path(c)
+	if err != nil {
+		return nil, err
+	}
 	b := repo{
-		path:    c.Path,
-		baseURL: baseURL,
+		path:    p,
+		baseURL: c.BaseURL,
 		logFn:   emptyLogFn,
 		errFn:   emptyLogFn,
 	}
@@ -59,7 +64,7 @@ func New(c Config, baseURL string) *repo {
 	if c.LogFn != nil {
 		b.logFn = c.LogFn
 	}
-	return &b
+	return &b, nil
 }
 
 // Open opens the badger database if possible.
@@ -107,10 +112,9 @@ func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, err
 	}
 	defer r.Close()
 
-	cPath := itemPath(col.GetLink())
-	c := []byte(path.Base(string(cPath)))
 	err = r.d.Update(func(tx *badger.Txn) error {
-		return tx.Set(c, nil)
+		_, err := createCollectionInPath(tx, col.GetLink())
+		return err
 	})
 	return col, err
 }
@@ -717,4 +721,20 @@ func itemPath(iri pub.IRI) []byte {
 		return nil
 	}
 	return []byte(path.Join(url.Host, url.Path))
+}
+func (r *repo) CreateService(service pub.Service) error {
+	err := r.Open()
+	defer r.Close()
+	if err != nil {
+		return err
+	}
+	if it, err := save(r, service); err == nil {
+		op := "Updated"
+		id := it.GetID()
+		if !id.IsValid() {
+			op = "Added new"
+		}
+		r.logFn(nil, "%s %s: %s", op, it.GetType(), it.GetLink())
+	}
+	return err
 }

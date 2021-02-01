@@ -10,66 +10,71 @@ import (
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/jsonld"
+	"net/url"
 	"os"
-	"strings"
 )
 
 var encodeFn = jsonld.Marshal
 var decodeFn = jsonld.Unmarshal
 
-func Path (c config.Options) (string, error){
-	p := fmt.Sprintf("%s/%s/%s", c.StoragePath, c.Env, c.Host)
-	crumbs := strings.Split(p, "/")
-	for i := range crumbs {
-		current := strings.Join(crumbs[:i], "/")
-		if current == "" {
-			continue
-		}
-		if _, err := os.Stat(current); os.IsNotExist(err) {
-			if err := os.Mkdir(current, 0700); err != nil {
-				return "", err
-			}
-		}
+func mkDirIfNotExists(p string) error {
+	fi, err := os.Stat(p)
+	if err != nil && os.IsNotExist(err) {
+		err = os.MkdirAll(p, os.ModeDir|os.ModePerm|0700)
 	}
-	return p, nil
+	if err != nil {
+		return err
+	}
+	fi, err = os.Stat(p)
+	if err != nil {
+		return err
+	} else if !fi.IsDir() {
+		return errors.Errorf("path exists, and is not a folder %s", p)
+	}
+	return nil
+}
+
+func Path (c Config) (string, error){
+	u, err := url.Parse(c.BaseURL)
+	if err != nil {
+		return "", err
+	}
+	p := fmt.Sprintf("%s/%s/%s", c.Path, c.Env, u.Host)
+	return p, mkDirIfNotExists(p)
 }
 
 func Bootstrap(conf config.Options) error {
-	path, err := Path(conf)
-	if err != nil {
-		return err
-	}
-	db, err := badger.Open(badger.DefaultOptions(path))
-	if err != nil {
-		return errors.Annotatef(err, "could not open db: %s", err)
-	}
-	defer db.Close()
-
-	return createService(db, activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL)))
-}
-
-func createService(b *badger.DB, service pub.Service) error {
-	raw, err := encodeFn(service)
-	if err != nil {
-		return errors.Annotatef(err, "could not marshal service json")
-	}
-	return b.Update(func(tx *badger.Txn) error {
-		var err error
-		path := itemPath(service.GetLink())
-		fn := func(k []byte, v []byte) {
-			if err = tx.Set(k, v); err != nil {
-				err = errors.Annotatef(err, "could not create %s path", k)
-			}
-		}
-		fn(getObjectKey(path), raw)
-		fn(getObjectKey(itemPath(service.Inbox.GetLink())), emptyCollection)
-
-		return err
+	r, err := New(Config{
+		Path:    conf.StoragePath,
+		Env:     string(conf.Env),
+		BaseURL: conf.BaseURL,
 	})
+	self := activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL))
+	err = r.CreateService(self)
+	if err != nil {
+		return err
+	}
+	actors := &pub.OrderedCollection{ ID: activitypub.ActorsType.IRI(&self) }
+	activities := &pub.OrderedCollection{ ID: activitypub.ActivitiesType.IRI(&self) }
+	objects := &pub.OrderedCollection{ ID: activitypub.ObjectsType.IRI(&self) }
+	if _, err = r.Create(actors); err != nil {
+		return err
+	}
+	if _, err = r.Create(activities); err != nil {
+		return err
+	}
+	if _, err = r.Create(objects); err != nil {
+		return err
+	}
+	return nil
 }
 
 func Clean(conf config.Options) error {
-	path, err := Path(conf)
+	path, err := Path(Config{
+		Path:    conf.StoragePath,
+		Env:     string(conf.Env),
+		BaseURL: conf.BaseURL,
+	})
 	if err != nil {
 		return fmt.Errorf("unable to update %s db: %w", conf.Storage, err)
 	}

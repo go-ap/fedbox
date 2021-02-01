@@ -22,7 +22,7 @@ import (
 func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
 	l.Debugf("Initializing badger storage at %s", c.Badger())
 	db := badger.New(badger.Config{
-		Path:  c.Badger(),
+		Path:  c.StoragePath,
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),
 	}, c.BaseURL)
