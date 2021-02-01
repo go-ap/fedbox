@@ -14,6 +14,7 @@ import (
 	ls "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
+	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"path"
@@ -95,10 +96,21 @@ func seedTestData(t *testing.T, testData []string) {
 	}
 
 	o := cmd.New(aDb, db, opt)
-	pw := []byte("hahah")
-	defaultTestApp.Id, _ = o.AddClient(pw, []string{authCallbackURL}, nil)
-
 	mocks := make(pub.ItemCollection, 0)
+	json := loadMockJson("mocks/application.json", nil)()
+	act, err := pub.UnmarshalJSON([]byte(json))
+	if err == nil {
+		mocks = append(mocks, act)
+		if clSaver, ok := aDb.(app.ClientSaver); ok {
+			clSaver.CreateClient(&osin.DefaultClient{
+				Id:          defaultTestApp.Id,
+				Secret:      "hahah",
+				RedirectUri: "http://127.0.0.1:9998/callback",
+				UserData:    nil,
+			})
+		}
+	}
+
 	for _, path := range testData {
 		json := loadMockJson(path, nil)()
 		if json == "" {

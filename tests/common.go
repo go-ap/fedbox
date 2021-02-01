@@ -603,14 +603,14 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 func runTestSuite(t *testing.T, pairs testPairs) {
 	for name, suite := range pairs {
 		t.Run(name, func(t *testing.T) {
-			//defer cleanDB(t)
 			seedTestData(t, suite.mocks)
 			for _, test := range suite.tests {
 				t.Run(test.name(), func(t *testing.T) {
 					seedTestData(t, test.mocks)
-					//errOnRequest(t)(test)
+					errOnRequest(t)(test)
 				})
 			}
+			cleanDB(t)
 		})
 	}
 }

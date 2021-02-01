@@ -53,7 +53,7 @@ var C2STests = map[string]testSuite{
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/actors", apiURL),
 						typ:       string(pub.OrderedCollectionType),
-						itemCount: 3,
+						itemCount: 2,
 						items: map[string]*objectVal{
 							"e869bdca-dd5e-4de7-9c5d-37845eccc6a1": {
 								id:      "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
@@ -155,7 +155,7 @@ var C2STests = map[string]testSuite{
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.ApplicationType),
 						typ:       string(pub.OrderedCollectionType),
-						itemCount: 2,
+						itemCount: 1,
 					},
 				},
 			},
@@ -173,7 +173,12 @@ var C2STests = map[string]testSuite{
 					met: http.MethodGet,
 					url: fmt.Sprintf("%s/activities", apiURL),
 				},
-				res: testRes{code: http.StatusNotFound},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						itemCount: 0,
+					},
+				},
 			},
 		},
 	},
@@ -189,7 +194,12 @@ var C2STests = map[string]testSuite{
 					met: http.MethodGet,
 					url: fmt.Sprintf("%s/objects", apiURL),
 				},
-				res: testRes{code: http.StatusNotFound},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						itemCount: 0,
+					},
+				},
 			},
 		},
 	},
