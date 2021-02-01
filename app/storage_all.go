@@ -21,11 +21,16 @@ import (
 
 func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
 	l.Debugf("Initializing badger storage at %s", c.Badger())
-	db := badger.New(badger.Config{
-		Path:  c.StoragePath,
-		LogFn: InfoLogFn(l),
-		ErrFn: ErrLogFn(l),
-	}, c.BaseURL)
+	db, err := badger.New(badger.Config{
+		Path:    c.StoragePath,
+		Env:     string(c.Env),
+		BaseURL: c.BaseURL,
+		LogFn:   InfoLogFn(l),
+		ErrFn:   ErrLogFn(l),
+	})
+	if err != nil {
+		return db, nil, err
+	}
 	oauth := authbadger.New(authbadger.Config{
 		Path:  c.BadgerOAuth2(),
 		Host:  c.Host,
