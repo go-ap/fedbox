@@ -11,7 +11,12 @@ tasks:
   - setup: |
       cd fedbox && go mod download
   - build: |
-      cd fedbox && make all
+      cd fedbox
+      make STORAGE=fs clean all
+      make STORAGE=badger clean all
+      make STORAGE=boltdb clean all
+      make STORAGE=sqlite clean all
+      make STORAGE=all clean all
   - tests: |
       cd fedbox
       make test
