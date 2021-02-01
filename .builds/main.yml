@@ -25,12 +25,12 @@ tasks:
           --data-binary @fedbox.coverprofile \
            -H 'Accept: application/json' \
           "https://codecov.io/upload/v2?commit=${GIT_SHA}&token=${FEDBOX_TOKEN}&branch=${GIT_BRANCH}&service=custom" || true
-  - integration-badger: |
-      cd fedbox
-      make STORAGE=badger integration
-  - integration-boltdb: |
-      cd fedbox
-      make STORAGE=boltdb integration
+#  - integration-badger: |
+#      cd fedbox
+#      make STORAGE=badger integration
+#  - integration-boltdb: |
+#      cd fedbox
+#      make STORAGE=boltdb integration
   - integration-fs: |
       cd fedbox
       make STORAGE=fs integration
