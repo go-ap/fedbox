@@ -55,7 +55,7 @@ func New(c Config) (*repo, error) {
 		baseURL: c.BaseURL,
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
-		cache:   cache.New(true),
+		cache:   cache.New(false),
 	}
 	return &b, nil
 }
@@ -126,9 +126,7 @@ func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, err
 	if len(col.GetLink()) == 0 {
 		return col, errors.Newf("Invalid collection, it does not have a valid IRI")
 	}
-	return col, pub.OnCollection(col, func(c *pub.Collection) error {
-		return mkDirIfNotExists(r.itemPath(c.GetLink()))
-	})
+	return col, mkDirIfNotExists(r.itemPath(col.GetLink()))
 }
 
 // Save
