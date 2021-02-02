@@ -9,10 +9,6 @@ sources:
 environment:
   GO111MODULE: 'on'
 tasks:
-  - tests: |
-      cd fedbox
-      make STORAGE=badger integration
-      #make STORAGE=boltdb integration
   - images: |
       set -a +x
       source ~/.buildah.env
@@ -28,7 +24,6 @@ tasks:
         _storage=${1:-all}
         make STORAGE=all test
         make STORAGE=${_storage} test
-        make STORAGE=${_storage} integration
         _branch=${GITHUB_REF#"refs/heads/"}
         sudo make -C docker STORAGE="${_storage}" VERSION="${_branch}" push
         if [ "${_branch}" == "master" ]; then
