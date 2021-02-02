@@ -98,7 +98,7 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 		}
 		var col pub.CollectionInterface
 		if ob.GetType() == pub.CollectionOfItems {
-			c := new (pub.OrderedCollection)
+			c := new(pub.OrderedCollection)
 			c.Type = pub.OrderedCollectionType
 			err = pub.OnCollectionIntf(ob, func(items pub.CollectionInterface) error {
 				c.ID = f.GetLink()
@@ -147,8 +147,8 @@ func ValidateRequest(r *http.Request) (bool, error) {
 }
 
 // GenerateID
-func GenerateID(base pub.IRI) func (it pub.Item, col pub.Item, by pub.Item) (pub.ID, error) {
-	return func (it pub.Item, col pub.Item, by pub.Item) (pub.ID, error) {
+func GenerateID(base pub.IRI) func(it pub.Item, col pub.Item, by pub.Item) (pub.ID, error) {
+	return func(it pub.Item, col pub.Item, by pub.Item) (pub.ID, error) {
 		typ := it.GetType()
 
 		var partOf pub.IRI
@@ -280,10 +280,11 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 		f.MaxItems = 1
 
 		if ap.ValidCollection(f.Collection) || f.Collection == "" {
-				ob, err := repo.Load(f.GetLink())
-				if err != nil {
-					return nil, err
-				}
+			ob, err := repo.Load(f.GetLink())
+			if err != nil {
+				return nil, err
+			}
+			if pub.IsItemCollection(ob) {
 				err = pub.OnCollectionIntf(ob, func(col pub.CollectionInterface) error {
 					items = col.Collection()
 					return nil
@@ -291,6 +292,10 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 				if err != nil {
 					return nil, err
 				}
+			} else {
+				items = pub.ItemCollection{ob}
+			}
+
 			if f.Collection == "" && len(items) == 0 {
 				if saver, ok := repo.(st.CanBootstrap); ok {
 					service := ap.Self(ap.DefaultServiceIRI(f.IRI.String()))

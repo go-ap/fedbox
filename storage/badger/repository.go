@@ -101,7 +101,8 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 		return nil, err
 	}
 
-	return r.loadOneFromPath(f)
+	it, _, err := r.loadFromPath(f)
+	return it, err
 }
 
 func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, error) {
