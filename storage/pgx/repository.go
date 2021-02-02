@@ -113,7 +113,7 @@ func loadOneFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (pub.Item, 
 	if err != nil {
 		return nil, err
 	}
-	if col == nil {
+	if pub.IsNil(col) {
 		return nil, errors.NotFoundf("nothing found")
 	}
 	if col.IsCollection() {
@@ -172,7 +172,7 @@ func loadFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (pub.ItemColle
 
 // Save
 func (r repo) Save(it pub.Item) (pub.Item, error) {
-	if it == nil {
+	if pub.IsNil(it) {
 		return it, errors.Newf("not saving nil item")
 	}
 	var err error
@@ -230,7 +230,7 @@ func (r repo) Save(it pub.Item) (pub.Item, error) {
 
 // Create
 func (r repo) Create(it pub.CollectionInterface) (pub.CollectionInterface, error) {
-	if it == nil {
+	if pub.IsNil(it) {
 		return it, errors.Newf("unable to create nil collection")
 	}
 	if len(it.GetLink()) == 0 {
@@ -262,7 +262,7 @@ func (r repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 
 // AddTo
 func (r repo) AddTo(col pub.IRI, it pub.Item) error {
-	if it == nil {
+	if pub.IsNil(it) {
 		return errors.Newf("unable to add nil element to collection")
 	}
 	if len(col) == 0 {
@@ -365,7 +365,7 @@ func (r repo) updateItem(table string, it pub.Item) (pub.Item, error) {
 
 // Delete
 func (r repo) Delete(it pub.Item) (pub.Item, error) {
-	if it == nil {
+	if pub.IsNil(it) {
 		return it, errors.Newf("not saving nil item")
 	}
 	var table string

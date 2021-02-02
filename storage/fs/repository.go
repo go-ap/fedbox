@@ -120,7 +120,7 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 
 // Create
 func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, error) {
-	if col == nil {
+	if pub.IsNil(col) {
 		return col, errors.Newf("Unable to operate on nil element")
 	}
 	if len(col.GetLink()) == 0 {
@@ -390,7 +390,7 @@ func (r repo) itemPath(iri pub.IRI) string {
 
 // createCollections
 func createCollections(r repo, it pub.Item) error {
-	if it == nil || !it.IsObject() {
+	if pub.IsNil(it) || !it.IsObject() {
 		return nil
 	}
 	if pub.ActorTypes.Contains(it.GetType()) {
@@ -446,7 +446,7 @@ func createCollectionInPath(r repo, it pub.Item) (pub.Item, error) {
 }
 
 func deleteCollectionFromPath(r repo, it pub.Item) error {
-	if it == nil {
+	if pub.IsNil(it) {
 		return nil
 	}
 	itPath := r.itemPath(it.GetLink())
@@ -556,7 +556,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 }
 
 func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(p string) error) error {
-	if it == nil {
+	if pub.IsNil(it) {
 		return errors.Newf("Unable to operate on nil element")
 	}
 	if len(col) == 0 {
@@ -625,7 +625,7 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 			it = cachedIt
 		}
 	}
-	if it == nil {
+	if pub.IsNil(it) {
 		raw, err := loadRawFromPath(p)
 		if err != nil {
 			return nil, err
@@ -637,7 +637,7 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 		if err != nil {
 			return nil, err
 		}
-		if it == nil {
+		if pub.IsNil(it) {
 			return nil, errors.NotFoundf("not found")
 		}
 	}
@@ -696,8 +696,7 @@ func (r repo) loadFromPath(f s.Filterable) (pub.Item, error) {
 				// contain the path, so we nil the filter
 				f = nil
 			}
-			it, _ := r.loadItem(getObjectKey(p), f)
-			if it != nil {
+			if it, _ := r.loadItem(getObjectKey(p), f); !pub.IsNil(it) {
 				col = append(col, it)
 			}
 			return nil
@@ -707,7 +706,7 @@ func (r repo) loadFromPath(f s.Filterable) (pub.Item, error) {
 		if err != nil {
 			return nil, errors.NewNotFound(err, "not found")
 		}
-		if it != nil {
+		if !pub.IsNil(it) {
 			col = append(col, it)
 		}
 	}

@@ -84,7 +84,7 @@ func aggregateObjectIRIs(toRemove *pub.IRIs, o *pub.Object) error {
 		*toRemove = append(*toRemove, obIRI)
 	}
 
-	if o.InReplyTo == nil {
+	if pub.IsNil(o.InReplyTo) {
 		return nil
 	}
 	if o.InReplyTo.IsCollection() {

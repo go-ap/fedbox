@@ -88,7 +88,7 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 	if err != nil {
 		return nil, err
 	}
-	if it == nil {
+	if pub.IsNil(it) {
 		return nil, errors.NotFoundf("not found")
 	}
 	if it.IsCollection() {
@@ -137,7 +137,7 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 				continue
 			}
 			it, err := r.loadItem(b, []byte(objectKey), f)
-			if err != nil || it == nil {
+			if err != nil || pub.IsNil(it) {
 				continue
 			}
 			col = append(col, it)
@@ -196,7 +196,7 @@ func (r *repo) iterateInBucket(b *bolt.Bucket, f s.Filterable) (pub.ItemCollecti
 			}
 		}
 		it, err := r.loadItem(ob, []byte(objectKey), f)
-		if err != nil || it == nil {
+		if err != nil || pub.IsNil(it) {
 			continue
 		}
 		if it.IsCollection() {
@@ -257,7 +257,7 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 			if err != nil {
 				return err
 			}
-			if it == nil {
+			if pub.IsNil(it) {
 				if isStorageCollectionKey(lst) {
 					return nil
 				}
@@ -416,7 +416,7 @@ func itemBucketPath(iri pub.IRI) []byte {
 }
 
 func createCollectionInBucket(b *bolt.Bucket, it pub.Item) (pub.Item, error) {
-	if it == nil {
+	if pub.IsNil(it) {
 		return nil, nil
 	}
 	p := []byte(path.Base(it.GetLink().String()))
@@ -428,7 +428,7 @@ func createCollectionInBucket(b *bolt.Bucket, it pub.Item) (pub.Item, error) {
 }
 
 func deleteCollectionFromBucket(b *bolt.Bucket, it pub.Item) error {
-	if it == nil {
+	if pub.IsNil(it) {
 		return nil
 	}
 	p := []byte(it.GetLink())
@@ -436,7 +436,7 @@ func deleteCollectionFromBucket(b *bolt.Bucket, it pub.Item) error {
 }
 
 func createCollectionsInBucket(b *bolt.Bucket, it pub.Item) error {
-	if it == nil || !it.IsObject() {
+	if pub.IsNil(it) || !it.IsObject() {
 		return nil
 	}
 	// create collections
@@ -593,7 +593,7 @@ func (r repo) IsLocalIRI(i pub.IRI) bool {
 }
 
 func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub.IRIs, error)) error {
-	if it == nil {
+	if pub.IsNil(it) {
 		return errors.Newf("Unable to operate on nil element")
 	}
 	if len(col) == 0 {

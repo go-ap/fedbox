@@ -147,7 +147,7 @@ func (r repo) IsLocalIRI(i pub.IRI) bool {
 }
 
 func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub.IRIs, error)) error {
-	if it == nil {
+	if pub.IsNil(it) {
 		return errors.Newf("Unable to operate on nil element")
 	}
 	if len(col) == 0 {
@@ -407,7 +407,7 @@ func delete(r *repo, it pub.Item) (pub.Item, error) {
 
 // createCollections
 func createCollections(tx *badger.Txn, it pub.Item) error {
-	if it == nil || !it.IsObject() {
+	if pub.IsNil(it) || !it.IsObject() {
 		return nil
 	}
 	if pub.ActorTypes.Contains(it.GetType()) {
@@ -498,7 +498,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 var emptyCollection = []byte{'[', ']'}
 
 func createCollectionInPath(b *badger.Txn, it pub.Item) (pub.Item, error) {
-	if it == nil {
+	if pub.IsNil(it) {
 		return nil, nil
 	}
 	p := getObjectKey(itemPath(it.GetLink()))
@@ -510,7 +510,7 @@ func createCollectionInPath(b *badger.Txn, it pub.Item) (pub.Item, error) {
 }
 
 func deleteCollectionFromPath(b *badger.Txn, it pub.Item) error {
-	if it == nil {
+	if pub.IsNil(it) {
 		return nil
 	}
 	p := getObjectKey(itemPath(it.GetLink()))
@@ -524,7 +524,7 @@ func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(va
 	}
 	return func(val []byte) error {
 		it, err := loadItem(val)
-		if err != nil || it == nil {
+		if err != nil || pub.IsNil(it) {
 			return errors.NewNotFound(err, "not found")
 		}
 		if !it.IsObject() && it.IsLink() {
@@ -647,7 +647,7 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 	err := r.d.View(func(tx *badger.Txn) error {
 		for _, iri := range iris {
 			it, err := r.loadItem(tx, itemPath(iri.GetLink()), f)
-			if err != nil || it == nil {
+			if err != nil || pub.IsNil(it) {
 				continue
 			}
 			col = append(col, it)
@@ -675,7 +675,7 @@ func (r *repo) loadItem(b *badger.Txn, path []byte, f s.Filterable) (pub.Item, e
 	if err != nil {
 		return nil, err
 	}
-	if it == nil {
+	if pub.IsNil(it) {
 		return nil, errors.NotFoundf("not found")
 	}
 	if it.IsCollection() {

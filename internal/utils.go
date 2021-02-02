@@ -77,7 +77,7 @@ func replaceHostInCollectionOfItems (c pub.ItemCollection, repl pub.IRI) {
 }
 
 func replaceHostInItem(it pub.Item, repl pub.IRI) {
-	if it == nil {
+	if pub.IsNil(it) {
 		return
 	}
 	if it.IsCollection() {

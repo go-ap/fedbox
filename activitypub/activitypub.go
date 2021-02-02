@@ -57,10 +57,10 @@ func GenerateID(it pub.Item, partOf pub.IRI, by pub.Item) (pub.ID, error) {
 		err := pub.OnActivity(it, func(a *pub.Activity) error {
 			rec := append(a.To, append(a.CC, append(a.Bto, a.BCC...)...)...)
 			if !rec.Contains(pub.PublicNS) {
-				if by == nil {
+				if pub.IsNil(by) {
 					by = a.Actor
 				}
-				if by != nil {
+				if !pub.IsNil(by) {
 					// if it's not a public activity, save it to it's actor outbox instead of global activities collection
 					outbox := handlers.Outbox.IRI(by)
 					id = pub.ID(fmt.Sprintf("%s/%s", outbox, uuid))

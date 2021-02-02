@@ -728,7 +728,7 @@ func filterItems(filters CompStrs, items ...pub.Item) bool {
 		return true
 	}
 	for _, it := range items {
-		if it == nil {
+		if pub.IsNil(it) {
 			continue
 		}
 		if filterItem(filters, it) {
@@ -807,14 +807,14 @@ func filterAbsent(filters CompStrs, items ...pub.Item) bool {
 			return true
 		}
 		for _, it := range items {
-			if it == nil {
+			if pub.IsNil(it) {
 				continue
 			}
 			if it.IsCollection() {
 				result := false
 				pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
 					for _, it := range c.Collection() {
-						if it == nil {
+						if pub.IsNil(it) {
 							continue
 						}
 						if it != nil && it.GetLink() == pub.PublicNS { // FIXME(marius): this is kinda ugly
@@ -850,7 +850,7 @@ func filterWithAbsent(filters CompStrs, items ...pub.Item) bool {
 
 func filterItem(filters CompStrs, it pub.Item) bool {
 	if len(filters) > 0 {
-		if it == nil {
+		if pub.IsNil(it) {
 			return false
 		}
 		if c, ok := it.(pub.ItemCollection); ok {
@@ -867,7 +867,7 @@ func filterURLs(filters CompStrs, it pub.Item) bool {
 		return true
 	}
 	keep := false
-	if it == nil {
+	if pub.IsNil(it) {
 		return false
 	}
 	var url pub.IRI
@@ -949,7 +949,7 @@ func (f *Filters) ItemsMatch(col ...pub.Item) bool {
 	mustBeActivity := f.Object != nil || f.Actor != nil || f.Target != nil
 	mustBeObject := f.Tag != nil || f.AttrTo != nil || f.InReplTo != nil || f.Author != nil
 	for _, it := range col {
-		if it == nil {
+		if pub.IsNil(it) {
 			continue
 		}
 		var loopValid bool
@@ -1026,7 +1026,7 @@ func LoadItemFilters(r *http.Request, f *Filters) error {
 
 // FilterIt
 func FilterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
-	if it == nil {
+	if pub.IsNil(it) {
 		return it, nil
 	}
 	if ff, ok := f.(ItemMatcher); ok {

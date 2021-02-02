@@ -247,7 +247,7 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 	if err != nil {
 		return "", err
 	}
-	if list == nil {
+	if pub.IsNil(list) {
 		return "", errors.Newf("Handle not found")
 	}
 	var actor pub.Item

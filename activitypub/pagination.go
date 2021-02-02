@@ -36,7 +36,7 @@ func getURL(i pub.IRI, f Paginator) pub.IRI {
 
 func paginateItems(col pub.ItemCollection, f Paginator) (pub.ItemCollection, string, string, error) {
 	var prev, next string
-	if col == nil {
+	if pub.IsNil(col) {
 		return nil, prev, next, nil
 	}
 	if f == nil {
