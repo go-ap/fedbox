@@ -10,38 +10,11 @@ import (
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/jsonld"
-	"net/url"
 	"os"
 )
 
 var encodeFn = jsonld.Marshal
 var decodeFn = jsonld.Unmarshal
-
-func mkDirIfNotExists(p string) error {
-	fi, err := os.Stat(p)
-	if err != nil && os.IsNotExist(err) {
-		err = os.MkdirAll(p, os.ModeDir|os.ModePerm|0700)
-	}
-	if err != nil {
-		return err
-	}
-	fi, err = os.Stat(p)
-	if err != nil {
-		return err
-	} else if !fi.IsDir() {
-		return errors.Errorf("path exists, and is not a folder %s", p)
-	}
-	return nil
-}
-
-func Path (c Config) (string, error){
-	u, err := url.Parse(c.BaseURL)
-	if err != nil {
-		return "", err
-	}
-	p := fmt.Sprintf("%s/%s/%s", c.Path, c.Env, u.Host)
-	return p, mkDirIfNotExists(p)
-}
 
 func Bootstrap(conf config.Options) error {
 	r, err := New(Config{

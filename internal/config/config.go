@@ -93,10 +93,6 @@ func (o Options) BoltDBOAuth2() string {
 	return fmt.Sprintf("%s/oauth.bdb", o.BaseStoragePath())
 }
 
-func (o Options) Badger() string {
-	return o.BaseStoragePath()
-}
-
 func (o Options) BadgerOAuth2() string {
 	return fmt.Sprintf("%s/%s/%s", o.StoragePath, o.Env, "oauth")
 }

@@ -5,6 +5,7 @@ package badger
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/dgraph-io/badger/v2"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
@@ -15,6 +16,8 @@ import (
 	s "github.com/go-ap/storage"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
+	"net/url"
+	"os"
 	"path"
 	"time"
 )
@@ -738,4 +741,30 @@ func (r *repo) CreateService(service pub.Service) error {
 		r.logFn(nil, "%s %s: %s", op, it.GetType(), it.GetLink())
 	}
 	return err
+}
+
+func Path (c Config) (string, error) {
+	host := "fedbox"
+	if u, err := url.Parse(c.BaseURL); err == nil {
+		host = u.Host
+	}
+	p := fmt.Sprintf("%s/%s/%s", c.Path, c.Env, host)
+	return p, mkDirIfNotExists(p)
+}
+
+func mkDirIfNotExists(p string) error {
+	fi, err := os.Stat(p)
+	if err != nil && os.IsNotExist(err) {
+		err = os.MkdirAll(p, os.ModeDir|os.ModePerm|0700)
+	}
+	if err != nil {
+		return err
+	}
+	fi, err = os.Stat(p)
+	if err != nil {
+		return err
+	} else if !fi.IsDir() {
+		return errors.Errorf("path exists, and is not a folder %s", p)
+	}
+	return nil
 }
