@@ -87,9 +87,5 @@ func TestLoadFromEnv(t *testing.T) {
 		if strings.TrimRight(c.StoragePath, "/") != tmp {
 			t.Errorf("Invalid loaded boltdb dir value: %s, expected %s", c.StoragePath, tmp)
 		}
-		var path = fmt.Sprintf("%s/%s-%s.bdb", tmp, strings.Replace(hostname, ".", "-", 1), env.TEST)
-		if c.BoltDB() != path {
-			t.Errorf("Invalid loaded boltdb file value: %s, expected %s", c.BoltDB(), path)
-		}
 	}
 }

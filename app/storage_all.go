@@ -41,12 +41,17 @@ func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.St
 }
 
 func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
-	l.Debugf("Initializing boltdb storage at %s", c.BoltDB())
-	db := boltdb.New(boltdb.Config{
-		Path:  c.BoltDB(),
-		LogFn: InfoLogFn(l),
-		ErrFn: ErrLogFn(l),
-	}, c.BaseURL)
+	l.Debugf("Initializing boltdb storage at %s", c.StoragePath)
+	db, err := boltdb.New(boltdb.Config{
+		Path:    c.StoragePath,
+		Env:     string(c.Env),
+		BaseURL: c.BaseURL,
+		LogFn:   InfoLogFn(l),
+		ErrFn:   ErrLogFn(l),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
 
 	oauth := authboltdb.New(authboltdb.Config{
 		Path:       c.BoltDBOAuth2(),

@@ -13,13 +13,34 @@ import (
 )
 
 func Bootstrap(conf config.Options) error {
-	db, err := bolt.Open(conf.BoltDB(), 0600, nil)
+	r, err := New(Config{
+		Path:  conf.StoragePath,
+		Env:   string(conf.Env),
+		BaseURL: conf.BaseURL,
+	})
 	if err != nil {
-		return errors.Annotatef(err, "could not open db")
+		return err
 	}
-	defer db.Close()
+	defer r.Close()
 
-	return createService(db, activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL)))
+	self := activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL))
+	err = r.CreateService(self)
+	if err != nil {
+		return err
+	}
+	actors := &pub.OrderedCollection{ ID: activitypub.ActorsType.IRI(&self) }
+	activities := &pub.OrderedCollection{ ID: activitypub.ActivitiesType.IRI(&self) }
+	objects := &pub.OrderedCollection{ ID: activitypub.ObjectsType.IRI(&self) }
+	if _, err = r.Create(actors); err != nil {
+		return err
+	}
+	if _, err = r.Create(activities); err != nil {
+		return err
+	}
+	if _, err = r.Create(objects); err != nil {
+		return err
+	}
+	return nil
 }
 
 func createService(b *bolt.DB, service pub.Service) error {
@@ -58,7 +79,15 @@ func createService(b *bolt.DB, service pub.Service) error {
 }
 
 func Clean(conf config.Options) error {
-	db, err := bolt.Open(conf.BoltDB(), 0600, nil)
+	path, err := Path(Config{
+		Path:    conf.StoragePath,
+		Env:     string(conf.Env),
+		BaseURL: conf.BaseURL,
+	})
+	if err != nil {
+		return err
+	}
+	db, err := bolt.Open(path, 0600, nil)
 	if err != nil {
 		return errors.Annotatef(err, "could not open db")
 	}
@@ -111,3 +140,4 @@ func AddTestMockActor(path string, actor pub.Actor) error {
 
 	return err
 }
+

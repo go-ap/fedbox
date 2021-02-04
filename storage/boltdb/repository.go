@@ -15,7 +15,10 @@ import (
 	"github.com/sirupsen/logrus"
 	bolt "go.etcd.io/bbolt"
 	"golang.org/x/crypto/bcrypt"
+	"net/url"
+	"os"
 	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -42,19 +45,25 @@ const (
 
 // Config
 type Config struct {
-	Path  string
-	LogFn loggerFn
-	ErrFn loggerFn
+	Path    string
+	Env     string
+	BaseURL string
+	LogFn   loggerFn
+	ErrFn   loggerFn
 }
 
 var emptyLogFn = func(logrus.Fields, string, ...interface{}) {}
 
 // New returns a new repo repository
-func New(c Config, baseURL string) *repo {
+func New(c Config) (*repo, error) {
+	p, err := Path(c)
+	if err != nil {
+		return nil, err
+	}
 	b := repo{
 		root:    []byte(rootBucket),
-		path:    c.Path,
-		baseURL: baseURL,
+		path:    p,
+		baseURL: c.BaseURL,
 		logFn:   emptyLogFn,
 		errFn:   emptyLogFn,
 	}
@@ -64,7 +73,7 @@ func New(c Config, baseURL string) *repo {
 	if c.LogFn != nil {
 		b.logFn = c.LogFn
 	}
-	return &b
+	return &b, nil
 }
 
 func loadItem(raw []byte) (pub.Item, error) {
@@ -183,10 +192,10 @@ func (r *repo) iterateInBucket(b *bolt.Bucket, f s.Filterable) (pub.ItemCollecti
 	// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
 	for key, _ := c.First(); key != nil; key, _ = c.Next() {
 		ob := b
-		lst := handlers.CollectionType(path.Base(string(key)))
-		if ap.ValidActivityCollection(lst) || ap.ValidObjectCollection(lst) {
-			return col, uint(len(col)), errors.Newf("we shouldn't have a collection inside the current bucket %s", key)
-		}
+		//lst := handlers.CollectionType(path.Base(string(key)))
+		//if ap.ValidActivityCollection(lst) || ap.ValidObjectCollection(lst) {
+		//	return col, uint(len(col)), errors.Newf("we shouldn't have a collection inside the current bucket %s", key)
+		//}
 		if !isObjectKey(key) {
 			// FIXME(marius): I guess this should not happen (pub descendIntoBucket should 'descend' into 'path'
 			//    if it's a valid bucket)
@@ -306,7 +315,8 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 		return nil, err
 	}
 
-	return r.loadOneFromBucket(f)
+	it, _, err := r.loadFromBucket(f)
+	return it, err
 }
 
 func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket, []byte, error) {
@@ -888,4 +898,37 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 	})
 
 	return err
+}
+
+func Path (c Config) (string, error){
+	if !filepath.IsAbs(c.Path) {
+		c.Path, _ = filepath.Abs(c.Path)
+	}
+	host := "fedbox"
+	if u, err := url.Parse(c.BaseURL); err == nil {
+		host = u.Host
+	}
+	basePath := path.Clean(path.Join(c.Path, c.Env, host))
+	if err := mkDirIfNotExists(basePath); err != nil {
+		return "", err
+	}
+	p := path.Join(basePath, "storage.bdb")
+	return p, nil
+}
+
+func mkDirIfNotExists(p string) error {
+	fi, err := os.Stat(p)
+	if err != nil && os.IsNotExist(err) {
+		err = os.MkdirAll(p, os.ModeDir|os.ModePerm|0700)
+	}
+	if err != nil {
+		return err
+	}
+	fi, err = os.Stat(p)
+	if err != nil {
+		return err
+	} else if !fi.IsDir() {
+		return errors.Errorf("path exists, and is not a folder %s", p)
+	}
+	return nil
 }

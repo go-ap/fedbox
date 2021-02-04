@@ -21,7 +21,11 @@ func TestBootstrap(t *testing.T) {
 		Env:         env.TEST,
 		BaseURL:     url,
 	}
-	path := conf.BoltDB()
+	path, _:= Path(Config{
+		Path:    dir,
+		Env:     string(env.TEST),
+		BaseURL: url,
+	})
 	err := Bootstrap(conf)
 	if err != nil {
 		t.Errorf("Error received when cleaning valid boltdb %s with valid root bucket %s: %s", path, bucket, err)
@@ -74,7 +78,11 @@ func TestClean(t *testing.T) {
 		Env:         env.TEST,
 		BaseURL:     url,
 	}
-	path := conf.BoltDB()
+	path, _:= Path(Config{
+		Path:    dir,
+		Env:     string(env.TEST),
+		BaseURL: url,
+	})
 	{
 		err := Clean(conf)
 		if err == nil {

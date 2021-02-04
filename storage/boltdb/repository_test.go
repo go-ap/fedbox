@@ -18,11 +18,12 @@ func TestNew(t *testing.T) {
 	url := "random-string-not-an-URL"
 
 	conf := Config{
-		Path:  path,
-		LogFn: func(f logrus.Fields, s string, p ...interface{}) { t.Logf(s, p...) },
-		ErrFn: func(f logrus.Fields, s string, p ...interface{}) { t.Errorf(s, p...) },
+		Path:    path,
+		BaseURL: url,
+		LogFn:   func(f logrus.Fields, s string, p ...interface{}) { t.Logf(s, p...) },
+		ErrFn:   func(f logrus.Fields, s string, p ...interface{}) { t.Errorf(s, p...) },
 	}
-	repo := New(conf, url)
+	repo, _ := New(conf)
 	if repo == nil {
 		t.Errorf("Nil result from opening boltdb %s", path)
 	}
@@ -52,7 +53,11 @@ func TestRepo_Open(t *testing.T) {
 		Env:         env.TEST,
 		BaseURL:     url,
 	}
-	path := c.BoltDB()
+	path, _ := Path(Config{
+		Path:    dir,
+		Env:     string(env.TEST),
+		BaseURL: url,
+	})
 	err := Bootstrap(c)
 	if err != nil {
 		t.Errorf("Unable to bootstrap boltdb %s: %s", path, err)
@@ -60,8 +65,9 @@ func TestRepo_Open(t *testing.T) {
 	defer os.Remove(path)
 	conf := Config{
 		Path: path,
+		BaseURL: url,
 	}
-	repo := New(conf, url)
+	repo, _ := New(conf)
 	err = repo.Open()
 	if err != nil {
 		t.Errorf("Unable to open boltdb %s: %s", path, err)
@@ -80,7 +86,11 @@ func TestRepo_Close(t *testing.T) {
 		Env:         env.TEST,
 		BaseURL:     url,
 	}
-	path := c.BoltDB()
+	path, _ := Path(Config{
+		Path:    dir,
+		Env:     string(env.TEST),
+		BaseURL: url,
+	})
 	err := Bootstrap(c)
 	if err != nil {
 		t.Errorf("Unable to bootstrap boltdb %s: %s", path, err)
@@ -89,8 +99,9 @@ func TestRepo_Close(t *testing.T) {
 
 	conf := Config{
 		Path: path,
+		BaseURL: url,
 	}
-	repo := New(conf, url)
+	repo, _ := New(conf)
 	err = repo.Open()
 	if err != nil {
 		t.Errorf("Unable to open boltdb %s: %s", path, err)

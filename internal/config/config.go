@@ -85,10 +85,6 @@ func (o Options) BaseStoragePath() string {
 	return basePath
 }
 
-func (o Options) BoltDB() string {
-	return fmt.Sprintf("%s/fedbox.bdb", o.BaseStoragePath())
-}
-
 func (o Options) BoltDBOAuth2() string {
 	return fmt.Sprintf("%s/oauth.bdb", o.BaseStoragePath())
 }

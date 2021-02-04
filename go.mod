@@ -5,9 +5,7 @@ go 1.14
 require (
 	aletheia.icu/broccoli/fs v0.0.0-20200420162907-e7ff440cf358
 	git.sr.ht/~mariusor/wrapper v0.0.0-20210115104709-99415538f4b7
-	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2
-	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/go-ap/activitypub v0.0.0-20210202131816-0c3f57f637ea
 	github.com/go-ap/auth v0.0.0-20210202135228-34a501be07e6
