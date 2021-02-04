@@ -3,7 +3,6 @@
 package boltdb
 
 import (
-	"fmt"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/sirupsen/logrus"
@@ -12,23 +11,18 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	dir, _ := os.Getwd()
-	name := "test.db"
-	path := fmt.Sprintf("%s/%s", dir, name)
+	dir := os.TempDir()
 	url := "random-string-not-an-URL"
 
 	conf := Config{
-		Path:    path,
+		Path:    dir,
 		BaseURL: url,
 		LogFn:   func(f logrus.Fields, s string, p ...interface{}) { t.Logf(s, p...) },
 		ErrFn:   func(f logrus.Fields, s string, p ...interface{}) { t.Errorf(s, p...) },
 	}
 	repo, _ := New(conf)
 	if repo == nil {
-		t.Errorf("Nil result from opening boltdb %s", path)
-	}
-	if repo.path != path {
-		t.Errorf("Wrong configured path %s, expected %s", repo.path, path)
+		t.Errorf("Nil result from opening boltdb %s", repo.path)
 	}
 	if repo.baseURL != url {
 		t.Errorf("Wrong configured base URL %s, expected %s", repo.baseURL, url)
@@ -53,21 +47,21 @@ func TestRepo_Open(t *testing.T) {
 		Env:         env.TEST,
 		BaseURL:     url,
 	}
-	path, _ := Path(Config{
-		Path:    dir,
-		Env:     string(env.TEST),
+	conf := Config{
+		Path: dir,
+		Env:  string(env.TEST),
 		BaseURL: url,
-	})
+	}
+	path, _ := Path(conf)
 	err := Bootstrap(c)
 	if err != nil {
 		t.Errorf("Unable to bootstrap boltdb %s: %s", path, err)
 	}
 	defer os.Remove(path)
-	conf := Config{
-		Path: path,
-		BaseURL: url,
+	repo, err := New(conf)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
 	}
-	repo, _ := New(conf)
 	err = repo.Open()
 	if err != nil {
 		t.Errorf("Unable to open boltdb %s: %s", path, err)
@@ -86,22 +80,22 @@ func TestRepo_Close(t *testing.T) {
 		Env:         env.TEST,
 		BaseURL:     url,
 	}
-	path, _ := Path(Config{
-		Path:    dir,
-		Env:     string(env.TEST),
+	conf := Config{
+		Path: dir,
+		Env:  string(env.TEST),
 		BaseURL: url,
-	})
+	}
+	path, _ := Path(conf)
 	err := Bootstrap(c)
 	if err != nil {
 		t.Errorf("Unable to bootstrap boltdb %s: %s", path, err)
 	}
 	defer os.Remove(path)
 
-	conf := Config{
-		Path: path,
-		BaseURL: url,
+	repo, err := New(conf)
+	if err != nil {
+		t.Errorf("Error initializing db: %s", err)
 	}
-	repo, _ := New(conf)
 	err = repo.Open()
 	if err != nil {
 		t.Errorf("Unable to open boltdb %s: %s", path, err)

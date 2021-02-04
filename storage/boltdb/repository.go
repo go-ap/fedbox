@@ -731,6 +731,9 @@ func (r *repo) Delete(it pub.Item) (pub.Item, error) {
 
 // Open opens the boltdb database if possible.
 func (r *repo) Open() error {
+	if r == nil {
+		return errors.Newf("Unable to open uninitialized db")
+	}
 	var err error
 	r.d, err = bolt.Open(r.path, 0600, nil)
 	if err != nil {
@@ -741,6 +744,9 @@ func (r *repo) Open() error {
 
 // Close closes the boltdb database if possible.
 func (r *repo) Close() error {
+	if r == nil {
+		return errors.Newf("Unable to close uninitialized db")
+	}
 	if r.d == nil {
 		return nil
 	}
