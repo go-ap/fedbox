@@ -22,7 +22,7 @@ tasks:
       make test
       make STORAGE=fs integration
       make STORAGE=badger integration
-      #make STORAGE=boltdb integration
+      make STORAGE=boltdb integration
   - coverage: |
       set -a +x
       cd fedbox && make coverage
@@ -36,9 +36,9 @@ tasks:
   - integration-badger: |
       cd fedbox
       make STORAGE=badger integration
-#  - integration-boltdb: |
-#      cd fedbox
-#      make STORAGE=boltdb integration
+  - integration-boltdb: |
+      cd fedbox
+      make STORAGE=boltdb integration
   - integration-fs: |
       cd fedbox
       make STORAGE=fs integration
