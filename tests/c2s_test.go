@@ -24,7 +24,7 @@ var C2STests = map[string]testSuite{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:      "http://127.0.0.1:9998",
+						id:      "http://127.0.0.1:9998/",
 						typ:     string(pub.ServiceType),
 						summary: "Generic ActivityPub service",
 						inbox: &objectVal{
