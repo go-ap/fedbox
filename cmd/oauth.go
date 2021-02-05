@@ -248,12 +248,16 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 		return "", err
 	}
 	if pub.IsNil(list) {
-		return "", errors.Newf("Handle not found")
+		return "", errors.NotFoundf("Handle not found")
 	}
 	var actor pub.Item
 	if list.IsCollection() {
 		err = pub.OnCollectionIntf(list, func(c pub.CollectionInterface) error {
-			actor, err = pub.ToActor(c.Collection().First())
+			f := c.Collection().First()
+			if f == nil {
+				return errors.NotFoundf("no actor found")
+			}
+			actor, err = pub.ToActor(f)
 			return err
 		})
 	} else {
