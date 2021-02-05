@@ -30,10 +30,6 @@ func Bootstrap(conf config.Options) error {
 	}
 	defer r.Close()
 	self := activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL))
-	err = r.CreateService(self)
-	if err != nil {
-		return err
-	}
 	actors := &pub.OrderedCollection{ ID: activitypub.ActorsType.IRI(&self) }
 	activities := &pub.OrderedCollection{ ID: activitypub.ActivitiesType.IRI(&self) }
 	objects := &pub.OrderedCollection{ ID: activitypub.ObjectsType.IRI(&self) }

@@ -5,7 +5,6 @@ package sqlite
 import (
 	"fmt"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"os"
 	"path"
@@ -64,7 +63,7 @@ func Bootstrap(conf config.Options) error {
 	if err != nil {
 		return err
 	}
-	return r.CreateService(activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL)))
+	return nil
 }
 
 func (r *repo) Reset() { }

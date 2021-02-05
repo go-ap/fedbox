@@ -407,7 +407,10 @@ func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, err
 	cPath := itemBucketPath(col.GetLink())
 	c := []byte(path.Base(string(cPath)))
 	err = r.d.Update(func(tx *bolt.Tx) error {
-		root := tx.Bucket(r.root)
+		root, err := tx.CreateBucketIfNotExists(r.root)
+		if err != nil {
+			return err
+		}
 		b, _, err := descendInBucket(root, cPath, true)
 		if err != nil {
 			return errors.Annotatef(err, "Unable to find path %s/%s", r.root, cPath)
