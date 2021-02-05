@@ -117,7 +117,7 @@ func seedTestData(t *testing.T, testData []string) {
 			continue
 		}
 		it, err := pub.UnmarshalJSON([]byte(json))
-		if err == nil {
+		if err == nil && !mocks.Contains(it) {
 			mocks = append(mocks, it)
 		}
 	}
