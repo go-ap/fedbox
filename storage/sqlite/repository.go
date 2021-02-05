@@ -151,7 +151,7 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 		return err
 	}
 	defer r.Close()
-	query := "INSERT INTO collections (collection, iri) VALUES (?, ?);"
+	query := "INSERT INTO collections (iri, object) VALUES (?, ?);"
 
 	if _, err := r.conn.Exec(query, col, it.GetLink()); err != nil {
 		r.errFn("query error: %s\n%s\n%#v", err, query)
