@@ -20,9 +20,6 @@ tasks:
   - tests: |
       cd fedbox
       make test
-      make STORAGE=fs integration
-      make STORAGE=badger integration
-      make STORAGE=boltdb integration
   - coverage: |
       set -a +x
       cd fedbox && make coverage
