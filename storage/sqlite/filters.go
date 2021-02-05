@@ -7,6 +7,7 @@ import (
 	pub "github.com/go-ap/activitypub"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/storage"
+	"path"
 	"strings"
 )
 
@@ -57,11 +58,16 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 	} else {
 		u, _ := f.GetLink().URL()
 		u.RawQuery = ""
-		id := u.String()
-		if len(id) > 0 {
-			clauses = append(clauses, `"iri" = ?`)
-			values = append(values, interface{}(id))
-			counter++
+		if id := u.String(); len(id) > 0 {
+			if base := path.Base(id); base == string(ap.ActorsType) || base == string(ap.ActivitiesType) || base == string(ap.ObjectsType) {
+				clauses = append(clauses, `"iri" like ?`)
+				values = append(values, interface{}(id + "%"))
+				counter++
+			} else {
+				clauses = append(clauses, `"iri" = ?`)
+				values = append(values, interface{}(id))
+				counter++
+			}
 		}
 	}
 
