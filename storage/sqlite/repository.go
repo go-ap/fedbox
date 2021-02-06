@@ -87,12 +87,14 @@ func getCollectionTable(f *ap.Filters) string {
 	}
 	typ := f.Collection
 	switch typ {
+	case "actors", "":
+		return "actors"
+	case "activities":
+		return "activities"
 	case handlers.Followers:
 		fallthrough
 	case handlers.Following:
 		fallthrough
-	case "actors", "":
-		return "actors"
 	case handlers.Inbox:
 		fallthrough
 	case handlers.Outbox:
@@ -103,8 +105,6 @@ func getCollectionTable(f *ap.Filters) string {
 		fallthrough
 	case handlers.Likes:
 		fallthrough
-	case "activities":
-		return "activities"
 	case handlers.Replies:
 		fallthrough
 	default:
@@ -289,10 +289,10 @@ func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
 	if err := conn.QueryRow(selCnt, values...).Scan(&total); err != nil && err != sql.ErrNoRows {
 		return nil, errors.Annotatef(err, "unable to count all rows")
 	}
-	if total == 0 {
-		return pub.ItemCollection{}, nil
-	}
 	if table == "collections" {
+		if total == 0 {
+			return nil, errors.NotFoundf("unable to load collection %s", f.Collection)
+		}
 		sel := fmt.Sprintf("SELECT id, iri, object FROM %s WHERE %s %s", table, strings.Join(clauses, " AND "), getLimit(f))
 		rows, err := conn.Query(sel, values...)
 		if err != nil {
@@ -301,9 +301,9 @@ func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
 			}
 			return nil, errors.Annotatef(err, "unable to run select")
 		}
-		fOb := &(*f)
-		fActors := &(*f)
-		fActivities := &(*f)
+		fOb := *f
+		fActors := *f
+		fActivities := *f
 
 		fOb.IRI = ""
 		fOb.Collection = "objects"
@@ -336,27 +336,31 @@ func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
 		}
 		ret := make(pub.ItemCollection, 0)
 		if len(fActivities.ItemKey) > 0 {
-			retAct, err := loadFromOneTable(conn, fActivities)
+			retAct, err := loadFromOneTable(conn, &fActivities)
 			if err != nil {
 				return ret, err
 			}
 			ret = append(ret, retAct...)
 		}
 		if len(fActors.ItemKey) > 0 {
-			retAct, err := loadFromOneTable(conn, fActors)
+			retAct, err := loadFromOneTable(conn, &fActors)
 			if err != nil {
 				return ret, err
 			}
 			ret = append(ret, retAct...)
 		}
 		if len(fOb.ItemKey) > 0 {
-			retOb, err := loadFromOneTable(conn, fOb)
+			retOb, err := loadFromOneTable(conn, &fOb)
 			if err != nil {
 				return ret, err
 			}
 			ret = append(ret, retOb...)
 		}
 		return ret, nil
+	}
+
+	if total == 0 {
+		return pub.ItemCollection{}, nil
 	}
 	return loadFromOneTable(conn, f)
 }

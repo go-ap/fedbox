@@ -55,18 +55,21 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 			counter++
 		}
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
-	} else if u, _ := f.GetLink().URL(); u != nil {
+	}
+	id := f.GetLink()
+	if u, _ := id.URL(); u != nil {
 		u.RawQuery = ""
-		if id := u.String(); len(id) > 0 {
-			if base := path.Base(id); base == string(ap.ActorsType) || base == string(ap.ActivitiesType) || base == string(ap.ObjectsType) {
-				clauses = append(clauses, `"iri" like ?`)
-				values = append(values, interface{}(id + "%"))
-				counter++
-			} else {
-				clauses = append(clauses, `"iri" = ?`)
-				values = append(values, interface{}(id))
-				counter++
-			}
+		id = pub.IRI(u.String())
+	}
+	if len(id) > 0 {
+		if base := path.Base(id.String()); base == string(ap.ActorsType) || base == string(ap.ActivitiesType) || base == string(ap.ObjectsType) {
+			clauses = append(clauses, `"iri" like ?`)
+			values = append(values, interface{}(id + "%"))
+			counter++
+		} else {
+			clauses = append(clauses, `"iri" = ?`)
+			values = append(values, interface{}(id))
+			counter++
 		}
 	}
 
