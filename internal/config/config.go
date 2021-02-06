@@ -90,6 +90,9 @@ func (o Options) BoltDBOAuth2() string {
 }
 
 func (o Options) BadgerOAuth2() string {
+	if o.StoragePath == "" {
+		return ""
+	}
 	return fmt.Sprintf("%s/%s/%s", o.StoragePath, o.Env, "oauth")
 }
 

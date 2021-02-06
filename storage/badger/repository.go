@@ -53,12 +53,10 @@ var emptyLogFn = func(logrus.Fields, string, ...interface{}) {}
 
 // New returns a new repo repository
 func New(c Config) (*repo, error) {
-	if c.Path != "mem://" {
-		var err error
-		c.Path, err = Path(c)
-		if err != nil {
-			return nil, err
-		}
+	var err error
+	c.Path, err = Path(c)
+	if err != nil {
+		return nil, err
 	}
 	b := repo{
 		path:    c.Path,
@@ -764,6 +762,9 @@ func (r *repo) CreateService(service pub.Service) error {
 }
 
 func Path(c Config) (string, error) {
+	if c.Path == "" {
+		return "", nil
+	}
 	host := "fedbox"
 	if u, err := url.Parse(c.BaseURL); err == nil {
 		host = u.Host
