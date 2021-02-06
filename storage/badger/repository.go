@@ -10,6 +10,7 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
@@ -32,6 +33,7 @@ type repo struct {
 	d       *badger.DB
 	baseURL string
 	path    string
+	cache   cache.CanStore
 	logFn   loggerFn
 	errFn   loggerFn
 }
@@ -51,13 +53,17 @@ var emptyLogFn = func(logrus.Fields, string, ...interface{}) {}
 
 // New returns a new repo repository
 func New(c Config) (*repo, error) {
-	p, err := Path(c)
-	if err != nil {
-		return nil, err
+	if c.Path != "mem://" {
+		var err error
+		c.Path, err = Path(c)
+		if err != nil {
+			return nil, err
+		}
 	}
 	b := repo{
-		path:    p,
+		path:    c.Path,
 		baseURL: c.BaseURL,
+		cache:   cache.New(true),
 		logFn:   emptyLogFn,
 		errFn:   emptyLogFn,
 	}
@@ -72,11 +78,14 @@ func New(c Config) (*repo, error) {
 
 // Open opens the badger database if possible.
 func (r *repo) Open() error {
-	var err error
-	c := badger.DefaultOptions(r.path).WithLogger(logger{
-		logFn: r.logFn,
-		errFn: r.errFn,
-	})
+	var (
+		err error
+		c badger.Options
+	)
+	c = badger.DefaultOptions(r.path).WithLogger(logger{ logFn: r.logFn, errFn: r.errFn })
+	if r.path == "" {
+		c.InMemory = true
+	}
 	r.d, err = badger.Open(c)
 	if err != nil {
 		err = errors.Annotatef(err, "unable to open storage")
@@ -453,20 +462,20 @@ func deleteCollections(r *repo, it pub.Item) error {
 		if pub.ActorTypes.Contains(it.GetType()) {
 			return pub.OnActor(it, func(p *pub.Actor) error {
 				var err error
-				err = deleteCollectionFromPath(tx, handlers.Inbox.IRI(p))
-				err = deleteCollectionFromPath(tx, handlers.Outbox.IRI(p))
-				err = deleteCollectionFromPath(tx, handlers.Followers.IRI(p))
-				err = deleteCollectionFromPath(tx, handlers.Following.IRI(p))
-				err = deleteCollectionFromPath(tx, handlers.Liked.IRI(p))
+				err = deleteCollectionFromPath(r, tx, handlers.Inbox.IRI(p))
+				err = deleteCollectionFromPath(r, tx, handlers.Outbox.IRI(p))
+				err = deleteCollectionFromPath(r, tx, handlers.Followers.IRI(p))
+				err = deleteCollectionFromPath(r, tx, handlers.Following.IRI(p))
+				err = deleteCollectionFromPath(r, tx, handlers.Liked.IRI(p))
 				return err
 			})
 		}
 		if pub.ObjectTypes.Contains(it.GetType()) {
 			return pub.OnObject(it, func(o *pub.Object) error {
 				var err error
-				err = deleteCollectionFromPath(tx, handlers.Replies.IRI(o))
-				err = deleteCollectionFromPath(tx, handlers.Likes.IRI(o))
-				err = deleteCollectionFromPath(tx, handlers.Shares.IRI(o))
+				err = deleteCollectionFromPath(r, tx, handlers.Replies.IRI(o))
+				err = deleteCollectionFromPath(r, tx, handlers.Likes.IRI(o))
+				err = deleteCollectionFromPath(r, tx, handlers.Shares.IRI(o))
 				return err
 			})
 		}
@@ -495,6 +504,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 		return nil
 	})
 
+	r.cache.Set(it.GetLink(), it)
 	return it, err
 }
 
@@ -512,11 +522,12 @@ func createCollectionInPath(b *badger.Txn, it pub.Item) (pub.Item, error) {
 	return it.GetLink(), nil
 }
 
-func deleteCollectionFromPath(b *badger.Txn, it pub.Item) error {
+func deleteCollectionFromPath(r *repo, b *badger.Txn, it pub.Item) error {
 	if pub.IsNil(it) {
 		return nil
 	}
 	p := getObjectKey(itemPath(it.GetLink()))
+	r.cache.Remove(it.GetLink())
 	return b.Delete(p)
 }
 
@@ -551,6 +562,10 @@ func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(va
 					}
 					return nil
 				})
+			}
+
+			if pub.IsObject(it) {
+				r.cache.Set(it.GetLink(), it)
 			}
 			it, err = ap.FilterIt(it, f)
 			if err != nil {
@@ -587,8 +602,6 @@ func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 	err := r.d.View(func(tx *badger.Txn) error {
 		iri := f.GetLink()
 		fullPath := itemPath(iri)
-		it := tx.NewIterator(badger.DefaultIteratorOptions)
-		defer it.Close()
 
 		depth := 0
 		if isStorageCollectionKey(fullPath) {
@@ -597,6 +610,10 @@ func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 		if handlers.ValidCollectionIRI(pub.IRI(fullPath)) {
 			depth = 2
 		}
+		opt := badger.DefaultIteratorOptions
+		opt.Prefix = fullPath
+		it := tx.NewIterator(opt)
+		defer it.Close()
 		pathExists := false
 		for it.Seek(fullPath); it.ValidForPrefix(fullPath); it.Next() {
 			i := it.Item()
@@ -606,8 +623,11 @@ func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 				continue
 			}
 			if isObjectKey(k) {
-				err := i.Value(r.loadFromIterator(&col, f))
-				if err != nil {
+				if cachedIt := r.cache.Get(f.GetLink()); cachedIt != nil {
+					col = append(col, cachedIt)
+					continue
+				}
+				if err := i.Value(r.loadFromIterator(&col, f)); err != nil {
 					continue
 				}
 			}
