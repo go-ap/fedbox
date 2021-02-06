@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v3"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -40,11 +40,11 @@ type loggerFn func(logrus.Fields, string, ...interface{})
 
 // Config
 type Config struct {
-	Path     string
-	Env      string
-	BaseURL  string
-	LogFn    loggerFn
-	ErrFn    loggerFn
+	Path    string
+	Env     string
+	BaseURL string
+	LogFn   loggerFn
+	ErrFn   loggerFn
 }
 
 var emptyLogFn = func(logrus.Fields, string, ...interface{}) {}
@@ -743,7 +743,7 @@ func (r *repo) CreateService(service pub.Service) error {
 	return err
 }
 
-func Path (c Config) (string, error) {
+func Path(c Config) (string, error) {
 	host := "fedbox"
 	if u, err := url.Parse(c.BaseURL); err == nil {
 		host = u.Host

@@ -4,7 +4,7 @@ package badger
 
 import (
 	"fmt"
-	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v3"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
@@ -23,9 +23,9 @@ func Bootstrap(conf config.Options) error {
 		BaseURL: conf.BaseURL,
 	})
 	self := activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL))
-	actors := &pub.OrderedCollection{ ID: activitypub.ActorsType.IRI(&self) }
-	activities := &pub.OrderedCollection{ ID: activitypub.ActivitiesType.IRI(&self) }
-	objects := &pub.OrderedCollection{ ID: activitypub.ObjectsType.IRI(&self) }
+	actors := &pub.OrderedCollection{ID: activitypub.ActorsType.IRI(&self)}
+	activities := &pub.OrderedCollection{ID: activitypub.ActivitiesType.IRI(&self)}
+	objects := &pub.OrderedCollection{ID: activitypub.ObjectsType.IRI(&self)}
 	if _, err = r.Create(actors); err != nil {
 		return err
 	}
