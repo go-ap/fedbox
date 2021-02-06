@@ -80,22 +80,17 @@ func seedTestData(t *testing.T, testData []string) {
 		return
 	}
 
-	opt, _ := config.LoadFromEnv("test", time.Second)
-	if opt.Storage == "all" {
-		opt.Storage = config.StorageFS
-	}
-	fields:= logrus.Fields{"action":"seeding", "storage": opt.Storage, "path": opt.StoragePath}
+	fields:= logrus.Fields{"action":"seeding", "storage": Options.Storage, "path": Options.StoragePath}
 	l := logrus.New()
-	l.SetLevel(logrus.PanicLevel)
-	db, aDb, err := app.Storage(opt, l.WithFields(fields))
+	db, aDb, err := app.Storage(Options, l.WithFields(fields))
 	if err != nil {
 		panic(err)
 	}
-	if err = cmd.Bootstrap(opt); err != nil {
+	if err = cmd.Bootstrap(Options); err != nil {
 		panic(err)
 	}
 
-	o := cmd.New(aDb, db, opt)
+	o := cmd.New(aDb, db, Options)
 	mocks := make(pub.ItemCollection, 0)
 	json := loadMockJson("mocks/application.json", nil)()
 	act, err := pub.UnmarshalJSON([]byte(json))
@@ -129,26 +124,24 @@ func seedTestData(t *testing.T, testData []string) {
 	}
 }
 
+var Options config.Options
+
 func SetupAPP(e env.Type) *app.FedBOX {
-	opt, _ := config.LoadFromEnv(e, time.Second)
-	if opt.Storage == "all" {
-		opt.Storage = config.StorageFS
+	Options, _ = config.LoadFromEnv(e, time.Second)
+	if Options.Storage == "all" {
+		Options.Storage = config.StorageFS
 	}
-	fields:= logrus.Fields{"action":"running", "storage": opt.Storage, "path": opt.StoragePath}
+	fields:= logrus.Fields{"action":"running", "storage": Options.Storage, "path": Options.StoragePath}
 	l := logrus.New()
 	l.SetLevel(logrus.PanicLevel)
 
 	r := chi.NewRouter()
 	r.Use(log.NewStructuredLogger(l))
 
-	conf, err := config.LoadFromEnv(e, time.Second)
+	db, o, err := app.Storage(Options, l.WithFields(fields))
 	if err != nil {
 		panic(err)
 	}
-	db, o, err := app.Storage(opt, l.WithFields(fields))
-	if err != nil {
-		panic(err)
-	}
-	a, _ := app.New(l, "HEAD", conf, db, o)
+	a, _ := app.New(l, "HEAD", Options, db, o)
 	return a
 }
