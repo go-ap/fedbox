@@ -368,7 +368,7 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 	} else if pub.ActorTypes.Contains(it.GetType()) {
 		table = string(ap.ActorsType)
 	}
-	query := fmt.Sprintf("INSERT INTO %s (iri, published, type, raw) VALUES (?, ?, ?, ?);", table)
+	query := fmt.Sprintf("INSERT OR REPLACE INTO %s (iri, published, type, raw) VALUES (?, ?, ?, ?) ;", table)
 
 	iri := it.GetLink()
 	raw, err := encodeFn(it)
