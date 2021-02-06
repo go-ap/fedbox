@@ -55,8 +55,7 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 			counter++
 		}
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
-	} else {
-		u, _ := f.GetLink().URL()
+	} else if u, _ := f.GetLink().URL(); u != nil {
 		u.RawQuery = ""
 		if id := u.String(); len(id) > 0 {
 			if base := path.Base(id); base == string(ap.ActorsType) || base == string(ap.ActivitiesType) || base == string(ap.ObjectsType) {
