@@ -55,7 +55,7 @@ func New(c Config) (*repo, error) {
 		baseURL: c.BaseURL,
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
-		cache:   cache.New(false),
+		cache:   cache.New(true),
 	}
 	return &b, nil
 }
@@ -665,7 +665,6 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 			return nil
 		})
 	}
-
 
 	if pub.IsObject(it) {
 		r.cache.Set(it.GetLink(), it)
