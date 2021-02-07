@@ -89,6 +89,7 @@ func seedTestData(t *testing.T, testData []string) {
 	if err = cmd.Bootstrap(Options); err != nil {
 		panic(err)
 	}
+	clientCode := path.Base(defaultTestApp.Id)
 
 	o := cmd.New(aDb, db, Options)
 	mocks := make(pub.ItemCollection, 0)
@@ -98,7 +99,7 @@ func seedTestData(t *testing.T, testData []string) {
 		mocks = append(mocks, act)
 		if clSaver, ok := aDb.(app.ClientSaver); ok {
 			clSaver.CreateClient(&osin.DefaultClient{
-				Id:          defaultTestApp.Id,
+				Id:          clientCode,
 				Secret:      "hahah",
 				RedirectUri: "http://127.0.0.1:9998/callback",
 				UserData:    nil,
@@ -118,7 +119,7 @@ func seedTestData(t *testing.T, testData []string) {
 	}
 	addMockObjects(o.Storage, mocks, t.Errorf)
 
-	tok, err := o.GenAuthToken(defaultTestApp.Id, defaultTestAccount.Id, nil)
+	tok, err := o.GenAuthToken(clientCode, defaultTestAccount.Id, nil)
 	if err == nil {
 		defaultTestAccount.AuthToken = tok
 	}
