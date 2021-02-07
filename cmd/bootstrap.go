@@ -51,7 +51,7 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 
 func Bootstrap(conf config.Options) error {
 	if err := bootstrapFn(conf); err != nil {
-		return errors.Annotatef(err, "Unable to create %s db for storage %s", conf.StoragePath, conf.Storage)
+		return errors.Annotatef(err, "Unable to create %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}
 	return nil
 }

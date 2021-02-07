@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+	authsqlite "github.com/go-ap/auth/sqlite"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/badger"
@@ -33,6 +34,9 @@ var bootstrapFn = func(conf config.Options) error {
 		return fs.Bootstrap(conf)
 	}
 	if conf.Storage == config.StorageSqlite {
+		if err := authsqlite.Bootstrap(authsqlite.Config{Path: conf.BaseStoragePath()}, nil); err != nil {
+			return err
+		}
 		return sqlite.Bootstrap(conf)
 	}
 	return errors.NotImplementedf("Invalid storage type %s", conf.Storage)

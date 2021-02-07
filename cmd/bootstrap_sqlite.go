@@ -2,8 +2,19 @@
 
 package cmd
 
-import "github.com/go-ap/fedbox/storage/sqlite"
+import (
+	auth "github.com/go-ap/auth/sqlite"
+	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/storage/sqlite"
+)
 
-var bootstrapFn = sqlite.Bootstrap
+var bootstrapFn = func (conf config.Options) error {
+	if err := auth.Bootstrap(auth.Config{Path: conf.BaseStoragePath()}, nil); err != nil {
+		return err
+	}
+	return sqlite.Bootstrap(conf)
+}
 
-var cleanFn = sqlite.Clean
+var cleanFn = func (conf config.Options) error {
+	return sqlite.Clean(conf)
+}

@@ -31,7 +31,6 @@ var defaultLogFn = func(string, ...interface{}) {}
 
 type Config struct {
 	StoragePath string
-	Env         string
 	BaseURL     string
 }
 
@@ -41,7 +40,6 @@ func New(c Config) (*repo, error) {
 	if err != nil {
 		return nil, err
 	}
-	p = path.Clean(path.Join(p, c.Env))
 	if err := mkDirIfNotExists(p); err != nil {
 		return nil, err
 	}

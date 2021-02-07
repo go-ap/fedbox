@@ -11,7 +11,6 @@ import (
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -32,7 +31,6 @@ var defaultLogFn = func(string, ...interface{}) {}
 
 type Config struct {
 	StoragePath string
-	Env 		string
 	BaseURL		string
 }
 
@@ -137,7 +135,13 @@ func (r *repo) Save(it pub.Item) (pub.Item, error) {
 
 // Create
 func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, error) {
-	return nil, errNotImplemented
+	if col.IsObject() {
+		_, err := r.Save(col)
+		if err != nil {
+			return col, err
+		}
+	}
+	return col, nil
 }
 
 // RemoveFrom
@@ -191,15 +195,10 @@ func getFullPath(c Config) (string, error) {
 	if err != nil {
 		return "memory", err
 	}
-	p = path.Clean(path.Join(p, c.Env))
 	if err := mkDirIfNotExists(p); err != nil {
 		return "memory", err
 	}
-	host := url.PathEscape(c.BaseURL)
-	if u, err := url.Parse(c.BaseURL); err == nil {
-		host = u.Host
-	}
-	return fmt.Sprintf("%s/%s.sqlite", p, host), nil
+	return path.Join(p, "storage.sqlite"), nil
 }
 
 func getAbsStoragePath(p string) (string, error) {

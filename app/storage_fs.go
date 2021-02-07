@@ -12,15 +12,15 @@ import (
 )
 
 func Storage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
-	l.Debugf("Initializing fs storage at %s", c.BaseStoragePath())
+	path := c.BaseStoragePath()
+	l.Debugf("Initializing fs storage at %s", path)
 	oauth := auth.New(auth.Config{
-		Path:  c.BaseStoragePath(),
+		Path: path,
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),
 	})
 	db, err := fs.New(fs.Config{
-		StoragePath: c.StoragePath,
-		Env:         string(c.Env),
+		StoragePath: path,
 		BaseURL:     c.BaseURL,
 	})
 	if err != nil {

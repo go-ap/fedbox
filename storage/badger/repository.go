@@ -5,7 +5,6 @@ package badger
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/dgraph-io/badger/v3"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
@@ -17,7 +16,6 @@ import (
 	s "github.com/go-ap/storage"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
-	"net/url"
 	"os"
 	"path"
 	"time"
@@ -43,7 +41,6 @@ type loggerFn func(logrus.Fields, string, ...interface{})
 // Config
 type Config struct {
 	Path    string
-	Env     string
 	BaseURL string
 	LogFn   loggerFn
 	ErrFn   loggerFn
@@ -765,12 +762,7 @@ func Path(c Config) (string, error) {
 	if c.Path == "" {
 		return "", nil
 	}
-	host := "fedbox"
-	if u, err := url.Parse(c.BaseURL); err == nil {
-		host = u.Host
-	}
-	p := fmt.Sprintf("%s/%s/%s", c.Path, c.Env, host)
-	return p, mkDirIfNotExists(p)
+	return c.Path, mkDirIfNotExists(c.Path)
 }
 
 func mkDirIfNotExists(p string) error {

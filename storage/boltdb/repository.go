@@ -15,7 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 	bolt "go.etcd.io/bbolt"
 	"golang.org/x/crypto/bcrypt"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -46,7 +45,6 @@ const (
 // Config
 type Config struct {
 	Path    string
-	Env     string
 	BaseURL string
 	LogFn   loggerFn
 	ErrFn   loggerFn
@@ -913,15 +911,10 @@ func Path (c Config) (string, error){
 	if !filepath.IsAbs(c.Path) {
 		c.Path, _ = filepath.Abs(c.Path)
 	}
-	host := "fedbox"
-	if u, err := url.Parse(c.BaseURL); err == nil {
-		host = u.Host
-	}
-	basePath := path.Clean(path.Join(c.Path, c.Env, host))
-	if err := mkDirIfNotExists(basePath); err != nil {
+	if err := mkDirIfNotExists(c.Path); err != nil {
 		return "", err
 	}
-	p := path.Join(basePath, "storage.bdb")
+	p := path.Join(c.Path, "storage.bdb")
 	return p, nil
 }
 

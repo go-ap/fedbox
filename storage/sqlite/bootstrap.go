@@ -7,18 +7,24 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"os"
-	"path"
 )
 
 func Clean(conf config.Options) error {
-	return os.RemoveAll(path.Join(conf.StoragePath, string(conf.Env)))
+	p, err := getFullPath(Config{
+		StoragePath: conf.BaseStoragePath(),
+		BaseURL:     conf.BaseURL,
+	})
+	if err != nil {
+		return err
+	}
+	return os.RemoveAll(p)
 }
 
 func Bootstrap(conf config.Options) error {
 	Clean(conf)
+
 	p, err := getFullPath(Config{
-		StoragePath: conf.StoragePath,
-		Env:         string(conf.Env),
+		StoragePath: conf.BaseStoragePath(),
 		BaseURL:     conf.BaseURL,
 	})
 	if err != nil {
@@ -37,16 +43,13 @@ func Bootstrap(conf config.Options) error {
 		}
 		defer r.Close()
 		qSql := fmt.Sprintf(qRaw, par...)
-		_, err = r.conn.Exec(qSql)
+		_, err := r.conn.Exec(qSql)
 		if err != nil {
 			return errors.Annotatef(err, "unable to execute: %q", qSql)
 		}
 		return nil
 	}
 
-	if err != nil {
-		return err
-	}
 	err = exec(createObjects)
 	if err != nil {
 		return err

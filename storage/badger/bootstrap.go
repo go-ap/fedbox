@@ -19,8 +19,7 @@ var decodeFn = jsonld.Unmarshal
 
 func Bootstrap(conf config.Options) error {
 	r, err := New(Config{
-		Path:    conf.StoragePath,
-		Env:     string(conf.Env),
+		Path:    conf.BaseStoragePath(),
 		BaseURL: conf.BaseURL,
 	})
 	self := activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL))
@@ -41,8 +40,7 @@ func Bootstrap(conf config.Options) error {
 
 func Clean(conf config.Options) error {
 	path, err := Path(Config{
-		Path:    conf.StoragePath,
-		Env:     string(conf.Env),
+		Path:    conf.BaseStoragePath(),
 		BaseURL: conf.BaseURL,
 	})
 	if err != nil {

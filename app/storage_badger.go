@@ -12,10 +12,10 @@ import (
 )
 
 func Storage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
-	l.Debugf("Initializing badger storage at %s", c.StoragePath)
+	path := c.BaseStoragePath()
+	l.Debugf("Initializing badger storage at %s", path)
 	db, err := badger.New(badger.Config{
-		Path:    c.StoragePath,
-		Env:     string(c.Env),
+		Path:    path,
 		BaseURL: c.BaseURL,
 		LogFn:   InfoLogFn(l),
 		ErrFn:   ErrLogFn(l),

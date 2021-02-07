@@ -8,17 +8,15 @@ import (
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
 	"os"
-	"path"
 )
 
 func Clean(conf config.Options) error {
-	return os.RemoveAll(path.Join(conf.StoragePath, string(conf.Env)))
+	return os.RemoveAll(conf.BaseStoragePath())
 }
 
 func Bootstrap(conf config.Options) error {
 	r, err := New(Config{
-		StoragePath: conf.StoragePath,
-		Env:         string(conf.Env),
+		StoragePath: conf.BaseStoragePath(),
 		BaseURL:     conf.BaseURL,
 	})
 	if err != nil {

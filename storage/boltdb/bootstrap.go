@@ -14,8 +14,7 @@ import (
 
 func Bootstrap(conf config.Options) error {
 	r, err := New(Config{
-		Path:  conf.StoragePath,
-		Env:   string(conf.Env),
+		Path:  conf.BaseStoragePath(),
 		BaseURL: conf.BaseURL,
 	})
 	if err != nil {
@@ -76,8 +75,7 @@ func createService(b *bolt.DB, service pub.Service) error {
 
 func Clean(conf config.Options) error {
 	path, err := Path(Config{
-		Path:    conf.StoragePath,
-		Env:     string(conf.Env),
+		Path:    conf.BaseStoragePath(),
 		BaseURL: conf.BaseURL,
 	})
 	if err != nil {

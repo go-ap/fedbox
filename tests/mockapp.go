@@ -131,7 +131,7 @@ func SetupAPP(e env.Type) *app.FedBOX {
 	if Options.Storage == "all" {
 		Options.Storage = config.StorageFS
 	}
-	fields:= logrus.Fields{"action":"running", "storage": Options.Storage, "path": Options.StoragePath}
+	fields:= logrus.Fields{"action":"running", "storage": Options.Storage, "path": Options.BaseStoragePath()}
 	l := logrus.New()
 	l.SetLevel(logrus.PanicLevel)
 
