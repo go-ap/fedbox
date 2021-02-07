@@ -4,7 +4,6 @@ package boltdb
 
 import (
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/env"
 	"github.com/sirupsen/logrus"
 	"os"
 	"testing"
@@ -44,12 +43,10 @@ func TestRepo_Open(t *testing.T) {
 	c := config.Options{
 		StoragePath: dir,
 		Host:        "example.com",
-		Env:         env.TEST,
 		BaseURL:     url,
 	}
 	conf := Config{
-		Path: dir,
-		Env:  string(env.TEST),
+		Path:    dir,
 		BaseURL: url,
 	}
 	path, _ := Path(conf)
@@ -77,12 +74,10 @@ func TestRepo_Close(t *testing.T) {
 	c := config.Options{
 		StoragePath: dir,
 		Host:        "example.com",
-		Env:         env.TEST,
 		BaseURL:     url,
 	}
 	conf := Config{
-		Path: dir,
-		Env:  string(env.TEST),
+		Path:    dir,
 		BaseURL: url,
 	}
 	path, _ := Path(conf)

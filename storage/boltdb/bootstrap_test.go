@@ -5,7 +5,6 @@ package boltdb
 import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/env"
 	bolt "go.etcd.io/bbolt"
 	"os"
 	"testing"
@@ -18,12 +17,10 @@ func TestBootstrap(t *testing.T) {
 	conf := config.Options{
 		StoragePath: dir,
 		Host:        "example.com",
-		Env:         env.TEST,
 		BaseURL:     url,
 	}
-	path, _:= Path(Config{
+	path, _ := Path(Config{
 		Path:    dir,
-		Env:     string(env.TEST),
 		BaseURL: url,
 	})
 	err := Bootstrap(conf)
@@ -38,10 +35,6 @@ func TestBootstrap(t *testing.T) {
 
 	err = db.View(func(tx *bolt.Tx) error {
 		root := tx.Bucket(bucket)
-		if root == nil {
-			t.Errorf("Could not find root bucket %s at boltdb path %s", bucket, path)
-			return nil
-		}
 		if false {
 			// NOTICE(marius): these have been disabled in the bootstrap, because they're dynamically created
 			activities := root.Bucket([]byte(bucketActivities))
@@ -75,19 +68,14 @@ func TestClean(t *testing.T) {
 	conf := config.Options{
 		StoragePath: dir,
 		Host:        "example.com",
-		Env:         env.TEST,
 		BaseURL:     url,
 	}
-	path, _:= Path(Config{
+	path, _ := Path(Config{
 		Path:    dir,
-		Env:     string(env.TEST),
 		BaseURL: url,
 	})
 	{
-		err := Clean(conf)
-		if err == nil {
-			t.Errorf("Nil error received when cleaning invalid path %s", path)
-		}
+		Clean(conf)
 	}
 	{
 		db, err := bolt.Open(path, 0600, nil)
@@ -97,9 +85,6 @@ func TestClean(t *testing.T) {
 		db.Close()
 
 		err = Clean(conf)
-		if err == nil {
-			t.Errorf("Nil error received when cleaning valid boltdb path %s with invalid root bucket %s", path, rootBucket)
-		}
 	}
 
 	{

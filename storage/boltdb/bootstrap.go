@@ -14,7 +14,7 @@ import (
 
 func Bootstrap(conf config.Options) error {
 	r, err := New(Config{
-		Path:  conf.BaseStoragePath(),
+		Path:    conf.BaseStoragePath(),
 		BaseURL: conf.BaseURL,
 	})
 	if err != nil {
@@ -23,9 +23,9 @@ func Bootstrap(conf config.Options) error {
 	defer r.Close()
 
 	self := activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL))
-	actors := &pub.OrderedCollection{ ID: activitypub.ActorsType.IRI(&self) }
-	activities := &pub.OrderedCollection{ ID: activitypub.ActivitiesType.IRI(&self) }
-	objects := &pub.OrderedCollection{ ID: activitypub.ObjectsType.IRI(&self) }
+	actors := &pub.OrderedCollection{ID: activitypub.ActorsType.IRI(&self)}
+	activities := &pub.OrderedCollection{ID: activitypub.ActivitiesType.IRI(&self)}
+	objects := &pub.OrderedCollection{ID: activitypub.ObjectsType.IRI(&self)}
 	if _, err = r.Create(actors); err != nil {
 		return err
 	}
@@ -88,7 +88,8 @@ func Clean(conf config.Options) error {
 	defer db.Close()
 
 	return db.Update(func(tx *bolt.Tx) error {
-		return tx.DeleteBucket([]byte(rootBucket))
+		tx.DeleteBucket([]byte(rootBucket))
+		return nil
 	})
 }
 
@@ -134,4 +135,3 @@ func AddTestMockActor(path string, actor pub.Actor) error {
 
 	return err
 }
-
