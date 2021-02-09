@@ -77,22 +77,19 @@ func (r repo) CreateService(service pub.Service) error {
 	}
 	return err
 }
-
-func getCollectionTable(f *ap.Filters) string {
-	_, key := path.Split(f.IRI.String())
-	if handlers.ValidCollection(handlers.CollectionType(key)) && len(f.ItemKey) == 0 {
-		return "collections"
+func getCollectionTypeFromIRI(i string) handlers.CollectionType {
+	col := handlers.Unknown
+	pathElements := strings.Split(i, "/") // Skip first /
+	for i := len(pathElements) - 1; i >= 0; i-- {
+		col = handlers.CollectionType(pathElements[i])
 	}
-	typ := f.Collection
-	switch typ {
-	case "actors", "":
-		return "actors"
-	case "activities":
-		return "activities"
+	switch col {
 	case handlers.Followers:
 		fallthrough
 	case handlers.Following:
 		fallthrough
+	case "actors":
+		return "actors"
 	case handlers.Inbox:
 		fallthrough
 	case handlers.Outbox:
@@ -103,6 +100,37 @@ func getCollectionTable(f *ap.Filters) string {
 		fallthrough
 	case handlers.Likes:
 		fallthrough
+	case "activities":
+		return "activities"
+	case handlers.Replies:
+		fallthrough
+	default:
+		return "objects"
+	}
+	return col
+}
+
+func getCollectionTable(f *ap.Filters) string {
+	typ := f.Collection
+	switch typ {
+	case handlers.Followers:
+		fallthrough
+	case handlers.Following:
+		fallthrough
+	case "actors":
+		return "actors"
+	case handlers.Inbox:
+		fallthrough
+	case handlers.Outbox:
+		fallthrough
+	case handlers.Shares:
+		fallthrough
+	case handlers.Liked:
+		fallthrough
+	case handlers.Likes:
+		fallthrough
+	case "activities":
+		return "activities"
 	case handlers.Replies:
 		fallthrough
 	default:
@@ -288,80 +316,83 @@ func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
 	if err := conn.QueryRow(selCnt, values...).Scan(&total); err != nil && err != sql.ErrNoRows {
 		return nil, errors.Annotatef(err, "unable to count all rows")
 	}
-	if table == "collections" {
-		if total == 0 {
-			return nil, errors.NotFoundf("unable to load collection %s", f.Collection)
+	if total > 0 {
+		return loadFromOneTable(conn, f)
+	}
+	sel := fmt.Sprintf("SELECT id, iri, object FROM %s WHERE %s %s", "collections", strings.Join(clauses, " AND "), getLimit(f))
+	rows, err := conn.Query(sel, values...)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.NotFoundf("Unable to load %s", f.Collection)
 		}
-		sel := fmt.Sprintf("SELECT id, iri, object FROM %s WHERE %s %s", table, strings.Join(clauses, " AND "), getLimit(f))
-		rows, err := conn.Query(sel, values...)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				return pub.ItemCollection{}, nil
-			}
-			return nil, errors.Annotatef(err, "unable to run select")
-		}
-		fOb := *f
-		fActors := *f
-		fActivities := *f
+		return nil, errors.Annotatef(err, "unable to run select")
+	}
+	fOb := *f
+	fActors := *f
+	fActivities := *f
 
-		fOb.IRI = ""
-		fOb.Collection = "objects"
-		fOb.ItemKey = make(ap.CompStrs, 0)
-		fActors.IRI = ""
-		fActors.Collection = "actors"
-		fActors.ItemKey = make(ap.CompStrs, 0)
-		fActivities.IRI = ""
-		fActivities.Collection = "activities"
-		fActivities.ItemKey = make(ap.CompStrs, 0)
-		// Iterate through the result set
-		for rows.Next() {
-			var id int64
-			var object string
-			var iri string
-			
-			err = rows.Scan(&id, &iri, &object)
-			if err != nil {
-				return pub.ItemCollection{}, errors.Annotatef(err, "scan values error")
-			}
-			if strings.Contains(object, "objects") {
+	fOb.IRI = ""
+	fOb.Collection = "objects"
+	fOb.ItemKey = make(ap.CompStrs, 0)
+	fActors.IRI = ""
+	fActors.Collection = "actors"
+	fActors.ItemKey = make(ap.CompStrs, 0)
+	fActivities.IRI = ""
+	fActivities.Collection = "activities"
+	fActivities.ItemKey = make(ap.CompStrs, 0)
+	// Iterate through the result set
+	for rows.Next() {
+		var id int64
+		var object string
+		var iri string
+
+		err = rows.Scan(&id, &iri, &object)
+		if err != nil {
+			return pub.ItemCollection{}, errors.Annotatef(err, "scan values error")
+		}
+		col := getCollectionTypeFromIRI(iri)
+		if col == "objects" {
+			fOb.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+		} else if col == "actors" {
+			fActors.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+		} else if col == "activities" {
+			fActivities.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+		} else {
+			switch table {
+			case "activities":
+				fActivities.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+			case "actors":
+				fActors.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+			case "objects":
+				fallthrough
+			default:
 				fOb.ItemKey = append(f.ItemKey, ap.StringEquals(object))
 			}
-			if strings.Contains(object, "actors") {
-				fActors.ItemKey = append(f.ItemKey, ap.StringEquals(object))
-			}
-			if strings.Contains(object, "activities") {
-				fActivities.ItemKey = append(f.ItemKey, ap.StringEquals(object))
-			}
 		}
-		ret := make(pub.ItemCollection, 0)
-		if len(fActivities.ItemKey) > 0 {
-			retAct, err := loadFromOneTable(conn, &fActivities)
-			if err != nil {
-				return ret, err
-			}
-			ret = append(ret, retAct...)
-		}
-		if len(fActors.ItemKey) > 0 {
-			retAct, err := loadFromOneTable(conn, &fActors)
-			if err != nil {
-				return ret, err
-			}
-			ret = append(ret, retAct...)
-		}
-		if len(fOb.ItemKey) > 0 {
-			retOb, err := loadFromOneTable(conn, &fOb)
-			if err != nil {
-				return ret, err
-			}
-			ret = append(ret, retOb...)
-		}
-		return ret, nil
 	}
-
-	if total == 0 {
-		return pub.ItemCollection{}, nil
+	ret := make(pub.ItemCollection, 0)
+	if len(fActivities.ItemKey) > 0 {
+		retAct, err := loadFromOneTable(conn, &fActivities)
+		if err != nil {
+			return ret, err
+		}
+		ret = append(ret, retAct...)
 	}
-	return loadFromOneTable(conn, f)
+	if len(fActors.ItemKey) > 0 {
+		retAct, err := loadFromOneTable(conn, &fActors)
+		if err != nil {
+			return ret, err
+		}
+		ret = append(ret, retAct...)
+	}
+	if len(fOb.ItemKey) > 0 {
+		retOb, err := loadFromOneTable(conn, &fOb)
+		if err != nil {
+			return ret, err
+		}
+		ret = append(ret, retOb...)
+	}
+	return ret, nil
 }
 
 func save(l repo, it pub.Item) (pub.Item, error) {
@@ -382,6 +413,15 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 	if _, err = l.conn.Exec(query, iri, time.Now().UTC(), it.GetType(), raw); err != nil {
 		l.errFn("query error: %s\n%s\n%#v", err, query)
 		return it, errors.Annotatef(err, "query error")
+	}
+	col, key := path.Split(iri.String())
+	if len(key) > 0 && handlers.ValidCollection(handlers.CollectionType(path.Base(col))){
+		// Add private items to the collections table
+		if colIRI, k := handlers.Split(pub.IRI(col)); k == "" {
+			if err := l.AddTo(colIRI, it); err != nil {
+				return it, err
+			}
+		}
 	}
 
 	return it, nil

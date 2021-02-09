@@ -39,6 +39,7 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 	}
 
 	iris := f.IRIs()
+	skipId := false
 	if len(iris) > 0 {
 		keyWhere := make([]string, 0)
 		for _, iriF := range iris {
@@ -49,6 +50,7 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 			case "~":
 				keyWhere = append(keyWhere, `iri LIKE ?`)
 			case "", "=":
+				skipId = true
 				keyWhere = append(keyWhere, `"iri" = ?`)
 			}
 			values = append(values, interface{}(key))
@@ -61,7 +63,7 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 		u.RawQuery = ""
 		id = pub.IRI(u.String())
 	}
-	if len(id) > 0 {
+	if len(id) > 0 && !skipId {
 		if base := path.Base(id.String()); base == string(ap.ActorsType) || base == string(ap.ActivitiesType) || base == string(ap.ObjectsType) {
 			clauses = append(clauses, `"iri" like ?`)
 			values = append(values, interface{}(id + "%"))
