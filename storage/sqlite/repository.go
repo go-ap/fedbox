@@ -78,11 +78,7 @@ func (r repo) CreateService(service pub.Service) error {
 	return err
 }
 func getCollectionTypeFromIRI(i string) handlers.CollectionType {
-	col := handlers.Unknown
-	pathElements := strings.Split(i, "/") // Skip first /
-	for i := len(pathElements) - 1; i >= 0; i-- {
-		col = handlers.CollectionType(pathElements[i])
-	}
+	col := handlers.CollectionType(path.Base(i))
 	switch col {
 	case handlers.Followers:
 		fallthrough
@@ -96,12 +92,12 @@ func getCollectionTypeFromIRI(i string) handlers.CollectionType {
 		fallthrough
 	case handlers.Shares:
 		fallthrough
-	case handlers.Liked:
-		fallthrough
 	case handlers.Likes:
 		fallthrough
 	case "activities":
 		return "activities"
+	case handlers.Liked:
+		fallthrough
 	case handlers.Replies:
 		fallthrough
 	default:

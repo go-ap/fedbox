@@ -11,6 +11,9 @@ import (
 	"strings"
 )
 
+func isCollection(col string) bool {
+	return col == string(ap.ActorsType) || col == string(ap.ActivitiesType) || col == string(ap.ObjectsType)
+}
 
 func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 	var clauses = make([]string, 0)
@@ -64,7 +67,7 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 		id = pub.IRI(u.String())
 	}
 	if len(id) > 0 && !skipId {
-		if base := path.Base(id.String()); base == string(ap.ActorsType) || base == string(ap.ActivitiesType) || base == string(ap.ObjectsType) {
+		if base := path.Base(id.String()); isCollection(base) {
 			clauses = append(clauses, `"iri" like ?`)
 			values = append(values, interface{}(id + "%"))
 			counter++
