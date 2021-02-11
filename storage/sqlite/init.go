@@ -15,7 +15,8 @@ create table actors (
   "published" timestamp default CURRENT_TIMESTAMP,
   "updated" timestamp default CURRENT_TIMESTAMP,
   "audience" blob, -- the [to, cc, bto, bcc fields]
-  "raw" blob
+  "raw" blob,
+  "meta" blob
 );`
 
 createActivities = `
@@ -30,7 +31,8 @@ create table activities (
   "object" varchar, -- the IRI of the local or remote object
   "published" timestamp default CURRENT_TIMESTAMP,
   "audience" blob, -- the [to, cc, bto, bcc fields]
-  "raw" blob
+  "raw" blob,
+  "meta" blob
 );`
 
 createObjects = `
@@ -43,7 +45,8 @@ create table objects (
   "published" timestamp default CURRENT_TIMESTAMP,
   "updated" timestamp default CURRENT_TIMESTAMP,
   "audience" blob, -- the [to, cc, bto, bcc fields]
-  "raw" blob
+  "raw" blob,
+  "meta" blob
 );`
 
 createCollections = `

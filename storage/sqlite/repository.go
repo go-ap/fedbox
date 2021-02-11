@@ -11,6 +11,7 @@ import (
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
+	"golang.org/x/crypto/bcrypt"
 	"os"
 	"path"
 	"path/filepath"
@@ -235,22 +236,61 @@ func (r *repo) Delete(it pub.Item) (pub.Item, error) {
 
 // PasswordSet
 func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
-	return errNotImplemented
+	pw, err := bcrypt.GenerateFromPassword(pw, -1)
+	if err != nil {
+		return errors.Annotatef(err, "could not generate pw hash")
+	}
+	m := storage.Metadata{
+		Pw: pw,
+	}
+	return r.SaveMetadata(m, it.GetLink())
 }
 
 // PasswordCheck
 func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
-	return errNotImplemented
+	m, err := r.LoadMetadata(it.GetLink())
+	if err != nil {
+		return errors.Annotatef(err, "Could not find load metadata for %s", it)
+	}
+	if err := bcrypt.CompareHashAndPassword(m.Pw, pw); err != nil {
+		return errors.NewUnauthorized(err, "Invalid pw")
+	}
+	return err
 }
 
 // LoadMetadata
 func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
-	return nil, errNotImplemented
+	err := r.Open()
+	defer r.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	m := new(storage.Metadata)
+	raw, err := loadMetadataFromTable(r.conn, iri)
+	if err != nil {
+		return nil, err
+	}
+	err = decodeFn(raw, m)
+	if err != nil {
+		return nil, errors.Annotatef(err, "Could not unmarshal metadata")
+	}
+	return m, nil
 }
 
 // SaveMetadata
 func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
-	return errNotImplemented
+	err := r.Open()
+	defer r.Close()
+	if err != nil {
+		return err
+	}
+
+	entryBytes, err := encodeFn(m)
+	if err != nil {
+		return errors.Annotatef(err, "Could not marshal metadata")
+	}
+	return saveMetadataToTable(r.conn, iri, entryBytes)
 }
 
 func getFullPath(c Config) (string, error) {
@@ -295,6 +335,23 @@ func mkDirIfNotExists(p string) error {
 		return errors.Errorf("path exists, and is not a folder %s", p)
 	}
 	return nil
+}
+
+func saveMetadataToTable(conn *sql.DB, iri pub.IRI, m []byte) error {
+	table := getCollectionTypeFromIRI(iri.String())
+
+	query := fmt.Sprintf("UPDATE %s SET meta = ? WHERE iri = ?;", table)
+	_, err := conn.Exec(query, m, iri)
+	return err
+}
+
+func loadMetadataFromTable(conn *sql.DB, iri pub.IRI) ([]byte, error) {
+	table := getCollectionTypeFromIRI(iri.String())
+
+	var meta []byte
+	sel := fmt.Sprintf("SELECT meta FROM %s WHERE id = ? ORDER BY published", table)
+	err := conn.QueryRow(sel, iri).Scan(meta)
+	return meta, err
 }
 
 func loadFromOneTable(conn *sql.DB, f *ap.Filters) (pub.ItemCollection, error) {
