@@ -80,6 +80,10 @@ func (r repo) CreateService(service pub.Service) error {
 }
 func getCollectionTypeFromIRI(i string) handlers.CollectionType {
 	col := handlers.CollectionType(path.Base(i))
+	if !ap.FedboxCollections.Contains(col) {
+		b, _ := path.Split(i)
+		col = handlers.CollectionType(path.Base(b))
+	}
 	switch col {
 	case handlers.Followers:
 		fallthrough
@@ -261,10 +265,10 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 // LoadMetadata
 func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 	err := r.Open()
-	defer r.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer r.Close()
 
 	m := new(storage.Metadata)
 	raw, err := loadMetadataFromTable(r.conn, iri)
@@ -281,10 +285,10 @@ func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 // SaveMetadata
 func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 	err := r.Open()
-	defer r.Close()
 	if err != nil {
 		return err
 	}
+	defer r.Close()
 
 	entryBytes, err := encodeFn(m)
 	if err != nil {
@@ -349,8 +353,8 @@ func loadMetadataFromTable(conn *sql.DB, iri pub.IRI) ([]byte, error) {
 	table := getCollectionTypeFromIRI(iri.String())
 
 	var meta []byte
-	sel := fmt.Sprintf("SELECT meta FROM %s WHERE id = ? ORDER BY published", table)
-	err := conn.QueryRow(sel, iri).Scan(meta)
+	sel := fmt.Sprintf("SELECT meta FROM %s WHERE iri = ?;", table)
+	err := conn.QueryRow(sel, iri).Scan(&meta)
 	return meta, err
 }
 
