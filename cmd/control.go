@@ -46,7 +46,11 @@ var logger = logrus.New()
 
 func Before(c *cli.Context) error {
 	logger.Level = logrus.WarnLevel
-	ct, err := setup(c, logger.WithFields(logrus.Fields{"cli": c.Command.Name}))
+	fields := logrus.Fields{}
+	if c.Command != nil {
+		fields["cli"] = c.Command.Name
+	}
+	ct, err := setup(c, logger.WithFields(fields))
 	if err != nil {
 		// Ensure we don't print the default help message, which is not useful here
 		c.App.CustomAppHelpTemplate = "Failed"
