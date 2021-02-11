@@ -21,8 +21,7 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 
 	var counter = 1
 
-	types := f.Types()
-	if len(types) > 0 {
+	if types := f.Types(); len(types) > 0 {
 		keyWhere := make([]string, 0)
 		for _, t := range types {
 			typ := pub.ActivityVocabularyType(t.Str)
@@ -69,7 +68,7 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 	if len(id) > 0 && !skipId {
 		if base := path.Base(id.String()); isCollection(base) {
 			clauses = append(clauses, `"iri" like ?`)
-			values = append(values, interface{}(id + "%"))
+			values = append(values, interface{}(id+"%"))
 			counter++
 		} else {
 			clauses = append(clauses, `"iri" = ?`)
@@ -78,6 +77,24 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 		}
 	}
 
+	if names := f.Names(); len(names) > 0 {
+		keyWhere := make([]string, 0)
+		for _, n := range names {
+			switch n.Operator {
+			case "!":
+				keyWhere = append(keyWhere, `json_extract("raw", '$.name') != ? or json_extract("raw", '$.preferredUsername') != ? `)
+				values = append(values, interface{}(n.Str), interface{}(n.Str))
+			case "~":
+				keyWhere = append(keyWhere, `json_extract("raw", '$.name') LIKE ? or json_extract("raw", '$.preferredUsername') LIKE ? `)
+				values = append(values, interface{}(n.Str+"%"), interface{}(n.Str+"%"))
+			case "", "=":
+				keyWhere = append(keyWhere, `json_extract("raw", '$.name') = ? or json_extract("raw", '$.preferredUsername') = ?`)
+				values = append(values, interface{}(n.Str), interface{}(n.Str))
+			}
+			counter++
+		}
+		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
+	}
 	if len(clauses) == 0 {
 		clauses = append(clauses, " true")
 	}
