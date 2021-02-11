@@ -347,12 +347,25 @@ func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
 	clauses, values := getWhereClauses(f)
 	var total uint = 0
 
+	// todo(marius): this needs to be split into three cases:
+	//  1. IRI corresponds to a collection that is not one of the storage tables (ie, not activities, actors, objects):
+	//    Then we look for correspondences in the collections table.
+	// 2. The IRI corresponds to the activities, actors, objects tables:
+	//    Then we load from the corresponding table using `iri LIKE IRI%` criteria
+	// 3. IRI corresponds to an object: we load directly from the corresponding table.
 	selCnt := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s", table, strings.Join(clauses, " AND "))
 	if err := conn.QueryRow(selCnt, values...).Scan(&total); err != nil && err != sql.ErrNoRows {
 		return nil, errors.Annotatef(err, "unable to count all rows")
 	}
 	if total > 0 {
 		return loadFromOneTable(conn, f)
+	}
+	colCntQ := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s %s", "collections", strings.Join(clauses, " AND "), getLimit(f))
+	if err := conn.QueryRow(colCntQ, values...).Scan(&total); err != nil && err != sql.ErrNoRows {
+		return nil, errors.Annotatef(err, "unable to count all rows")
+	}
+	if total == 0 && handlers.ActivityPubCollections.Contains(f.Collection) && f.Collection != handlers.Inbox {
+		return nil, errors.NotFoundf("Unable to find collection %s", f.Collection)
 	}
 	sel := fmt.Sprintf("SELECT id, iri, object FROM %s WHERE %s %s", "collections", strings.Join(clauses, " AND "), getLimit(f))
 	rows, err := conn.Query(sel, values...)
