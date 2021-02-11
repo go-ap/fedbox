@@ -191,7 +191,46 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 
 // Delete
 func (r *repo) Delete(it pub.Item) (pub.Item, error) {
-	return nil, errNotImplemented
+	err := r.Open()
+	defer r.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	if it.IsCollection() {
+		err := pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+			var err error
+			for _, it := range c.Collection() {
+				if it, err = r.Delete(it); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		return it, err
+	}
+	f := ap.FiltersNew()
+	f.IRI = it.GetLink()
+
+	t := pub.Tombstone{
+		ID:   it.GetLink(),
+		Type: pub.TombstoneType,
+		To: pub.ItemCollection{
+			pub.PublicNS,
+		},
+		Deleted: time.Now().UTC(),
+	}
+
+	if it.IsObject() {
+		t.FormerType = it.GetType()
+	} else {
+		if old, err := loadFromOneTable(r.conn, f); err == nil {
+			t.FormerType = old.GetType()
+		}
+	}
+
+	//deleteCollections(*r, it)
+	return save(*r, t)
 }
 
 // PasswordSet
@@ -392,15 +431,23 @@ func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
 }
 
 func save(l repo, it pub.Item) (pub.Item, error) {
+	iri := it.GetLink()
+
 	table := string(ap.ObjectsType)
 	if pub.ActivityTypes.Contains(it.GetType()) {
 		table = string(ap.ActivitiesType)
 	} else if pub.ActorTypes.Contains(it.GetType()) {
 		table = string(ap.ActorsType)
+	} else if it.GetType() == pub.TombstoneType {
+		if strings.Contains(iri.String(), string(ap.ActorsType)) {
+			table = string(ap.ActorsType)
+		}
+		if strings.Contains(iri.String(), string(ap.ActivitiesType)) {
+			table = string(ap.ActivitiesType)
+		}
 	}
 	query := fmt.Sprintf("INSERT OR REPLACE INTO %s (iri, published, type, raw) VALUES (?, ?, ?, ?) ;", table)
 
-	iri := it.GetLink()
 	raw, err := encodeFn(it)
 	if err != nil {
 		l.errFn("query error: %s\n%s\n%#v", err, query)
