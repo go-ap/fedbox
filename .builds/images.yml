@@ -39,4 +39,5 @@ tasks:
       _push fs
       _push badger
       _push boltdb
+      _push sqlite
 
