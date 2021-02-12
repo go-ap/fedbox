@@ -80,7 +80,7 @@ func (r repo) CreateService(service pub.Service) error {
 }
 func getCollectionTypeFromIRI(i string) handlers.CollectionType {
 	col := handlers.CollectionType(path.Base(i))
-	if !ap.FedboxCollections.Contains(col) {
+	if !(ap.FedboxCollections.Contains(col) || handlers.ActivityPubCollections.Contains(col)) {
 		b, _ := path.Split(i)
 		col = handlers.CollectionType(path.Base(b))
 	}
@@ -436,7 +436,7 @@ func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
 	if !hasIRI {
 		return nil, errors.NotFoundf("Not found")
 	}
-	colCntQ := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s %s", "collections", iriClause, getLimit(f))
+	colCntQ := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s", "collections", iriClause)
 	if err := conn.QueryRow(colCntQ, iriValue).Scan(&total); err != nil && err != sql.ErrNoRows {
 		return nil, errors.Annotatef(err, "unable to count all rows")
 	}
