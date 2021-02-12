@@ -421,15 +421,30 @@ func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
 	if total > 0 {
 		return loadFromOneTable(conn, f)
 	}
-	colCntQ := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s %s", "collections", strings.Join(clauses, " AND "), getLimit(f))
-	if err := conn.QueryRow(colCntQ, values...).Scan(&total); err != nil && err != sql.ErrNoRows {
+	var (
+		iriClause string
+		iriValue interface{}
+		hasIRI = false
+	)
+	for i, c := range clauses {
+		if strings.Contains(c, "iri") {
+			iriClause = c
+			iriValue = values[i]
+			hasIRI = true
+		}
+	}
+	if !hasIRI {
+		return nil, errors.NotFoundf("Not found")
+	}
+	colCntQ := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s %s", "collections", iriClause, getLimit(f))
+	if err := conn.QueryRow(colCntQ, iriValue).Scan(&total); err != nil && err != sql.ErrNoRows {
 		return nil, errors.Annotatef(err, "unable to count all rows")
 	}
 	if total == 0 && handlers.ActivityPubCollections.Contains(f.Collection) && f.Collection != handlers.Inbox {
 		return nil, errors.NotFoundf("Unable to find collection %s", f.Collection)
 	}
-	sel := fmt.Sprintf("SELECT id, iri, object FROM %s WHERE %s %s", "collections", strings.Join(clauses, " AND "), getLimit(f))
-	rows, err := conn.Query(sel, values...)
+	sel := fmt.Sprintf("SELECT id, iri, object FROM %s WHERE %s %s", "collections", iriClause, getLimit(f))
+	rows, err := conn.Query(sel, iriValue)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.NotFoundf("Unable to load %s", f.Collection)
