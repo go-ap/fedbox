@@ -78,41 +78,17 @@ func (r repo) CreateService(service pub.Service) error {
 	}
 	return err
 }
+
 func getCollectionTypeFromIRI(i string) handlers.CollectionType {
 	col := handlers.CollectionType(path.Base(i))
 	if !(ap.FedboxCollections.Contains(col) || handlers.ActivityPubCollections.Contains(col)) {
 		b, _ := path.Split(i)
 		col = handlers.CollectionType(path.Base(b))
 	}
-	switch col {
-	case handlers.Followers:
-		fallthrough
-	case handlers.Following:
-		fallthrough
-	case "actors":
-		return "actors"
-	case handlers.Inbox:
-		fallthrough
-	case handlers.Outbox:
-		fallthrough
-	case handlers.Shares:
-		fallthrough
-	case handlers.Likes:
-		fallthrough
-	case "activities":
-		return "activities"
-	case handlers.Liked:
-		fallthrough
-	case handlers.Replies:
-		fallthrough
-	default:
-		return "objects"
-	}
-	return col
+	return getCollectionTable(col)
 }
 
-func getCollectionTable(f *ap.Filters) string {
-	typ := f.Collection
+func getCollectionTable(typ handlers.CollectionType) handlers.CollectionType {
 	switch typ {
 	case handlers.Followers:
 		fallthrough
@@ -126,18 +102,21 @@ func getCollectionTable(f *ap.Filters) string {
 		fallthrough
 	case handlers.Shares:
 		fallthrough
-	case handlers.Liked:
-		fallthrough
 	case handlers.Likes:
 		fallthrough
 	case "activities":
 		return "activities"
+	case handlers.Liked:
+		fallthrough
 	case handlers.Replies:
 		fallthrough
 	default:
 		return "objects"
 	}
-	return "objects"
+}
+
+func getCollectionTableFromFilter(f *ap.Filters) handlers.CollectionType {
+	return getCollectionTable(f.Collection)
 }
 
 // Load
@@ -359,7 +338,7 @@ func loadMetadataFromTable(conn *sql.DB, iri pub.IRI) ([]byte, error) {
 }
 
 func loadFromOneTable(conn *sql.DB, f *ap.Filters) (pub.ItemCollection, error) {
-	table := getCollectionTable(f)
+	table := getCollectionTableFromFilter(f)
 	clauses, values := getWhereClauses(f)
 	var total uint = 0
 
@@ -404,7 +383,7 @@ func loadFromOneTable(conn *sql.DB, f *ap.Filters) (pub.ItemCollection, error) {
 }
 
 func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
-	table := getCollectionTable(f)
+	table := getCollectionTableFromFilter(f)
 	clauses, values := getWhereClauses(f)
 	var total uint = 0
 
@@ -535,6 +514,10 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 			table = string(ap.ActivitiesType)
 		}
 	}
+
+	if err := flattenCollections(it); err != nil {
+		return it, errors.Annotatef(err, "could not create object's collections")
+	}
 	query := fmt.Sprintf("INSERT OR REPLACE INTO %s (iri, published, type, raw) VALUES (?, ?, ?, ?) ;", table)
 
 	raw, err := encodeFn(it)
@@ -557,4 +540,27 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 	}
 
 	return it, nil
+}
+
+// flattenCollections
+func flattenCollections(it pub.Item) error {
+	if pub.IsNil(it) || !it.IsObject() {
+		return nil
+	}
+	if pub.ActorTypes.Contains(it.GetType()) {
+		pub.OnActor(it, func(p *pub.Actor) error {
+			p.Inbox = pub.FlattenToIRI(p.Inbox)
+			p.Outbox = pub.FlattenToIRI(p.Outbox)
+			p.Followers = pub.FlattenToIRI(p.Followers)
+			p.Following = pub.FlattenToIRI(p.Following)
+			p.Liked = pub.FlattenToIRI(p.Liked)
+			return nil
+		})
+	}
+	return pub.OnObject(it, func(o *pub.Object) error {
+		o.Replies = pub.FlattenToIRI(o.Replies)
+		o.Likes =   pub.FlattenToIRI(o.Likes)
+		o.Shares =  pub.FlattenToIRI(o.Shares)
+		return nil
+	})
 }

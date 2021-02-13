@@ -4,7 +4,7 @@ package sqlite
 
 const (
 
-createActors = `
+createActorsQuery = `
 create table actors (
   "id" integer constraint actors_pkey primary key,
   "iri" varchar constraint actors_key_key unique,
@@ -19,7 +19,7 @@ create table actors (
   "meta" blob
 );`
 
-createActivities = `
+createActivitiesQuery = `
 create table activities (
   "id" integer constraint activities_pkey primary key,
   "iri" varchar constraint activities_key_key unique,
@@ -35,7 +35,7 @@ create table activities (
   "meta" blob
 );`
 
-createObjects = `
+createObjectsQuery = `
 create table objects (
   "id" integer constraint objects_pkey primary key,
   "iri" varchar constraint objects_key_key unique,
@@ -49,14 +49,15 @@ create table objects (
   "meta" blob
 );`
 
-createCollections = `
+createCollectionsQuery = `
 create table collections (
   "id" integer constraint collections_pkey primary key, 
   "published" timestamp default CURRENT_TIMESTAMP,
   "iri" varchar,
   "object" varchar
 );`
-tune = `
+
+tuneQuery = `
 -- Use WAL mode (writers don't block readers):
 PRAGMA journal_mode = 'WAL';
 -- Use memory as temporary storage:

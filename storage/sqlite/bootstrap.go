@@ -50,19 +50,19 @@ func Bootstrap(conf config.Options) error {
 		return nil
 	}
 
-	if err = exec(createObjects); err != nil {
+	if err = exec(createObjectsQuery); err != nil {
 		return err
 	}
-	if err = exec(createActivities); err != nil {
+	if err = exec(createActivitiesQuery); err != nil {
 		return err
 	}
-	if err = exec(createActors); err != nil {
+	if err = exec(createActorsQuery); err != nil {
 		return err
 	}
-	if err = exec(createCollections); err != nil {
+	if err = exec(createCollectionsQuery); err != nil {
 		return err
 	}
-	if err = exec(tune); err != nil {
+	if err = exec(tuneQuery); err != nil {
 		return err
 	}
 
