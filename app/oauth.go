@@ -81,8 +81,8 @@ func (i indieAuth) IsValidRequest(r *http.Request) bool {
 	if err != nil {
 		return false
 	}
-	_, err = url.Parse(clientID)
-	if err != nil {
+	clURL, err := url.Parse(clientID)
+	if err != nil || clURL.Host == "" || clURL.Scheme == "" {
 		return false
 	}
 	return true
@@ -123,6 +123,9 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 	if err != nil {
 		return nil, err
 	}
+	if clientID == "" {
+		return nil, nil
+	}
 	clientURL, err := url.Parse(clientID)
 	if err != nil {
 		return nil, nil
@@ -140,19 +143,21 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 
 	// check for existing user actor
 	var actor pub.Item
-	f := filters(r, i.baseIRI)
-	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
-	f.URL = activitypub.CompStrs{activitypub.StringEquals(me)}
-	actor, err = i.ap.Load(f.GetLink())
-	if err != nil {
-		return nil, err
-	}
-	if actor == nil {
-		return nil, errors.NotFoundf("unknown actor")
+	if me != "" {
+		f := filters(r, i.baseIRI)
+		f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
+		f.URL = activitypub.CompStrs{activitypub.StringEquals(me)}
+		actor, err = i.ap.Load(f.GetLink())
+		if err != nil {
+			return nil, err
+		}
+		if actor == nil {
+			return nil, errors.NotFoundf("unknown actor")
+		}
 	}
 
 	// check for existing application actor
-	f = filters(r, i.baseIRI)
+	f := filters(r, i.baseIRI)
 	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.ApplicationType))}
 	f.URL = activitypub.CompStrs{activitypub.StringEquals(clientID)}
 	clientActor, err := i.ap.Load(f.GetLink())
@@ -173,7 +178,6 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 		}
 	}
 	id := path.Base(clientActor.GetID().String())
-
 	// must have a valid client
 	if _, err = i.st.GetClient(id); err != nil {
 		if errors.IsNotFound(err) {
@@ -195,7 +199,6 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 	if osin.AuthorizeRequestType(r.FormValue(responseTypeKey)) == ID {
 		r.Form.Set(responseTypeKey, "code")
 	}
-
 	if act, ok := actor.(*pub.Actor); ok {
 		return act, nil
 	}
@@ -227,7 +230,7 @@ func (h *oauthHandler) loadAccountFromPost(r *http.Request) (*account, error) {
 	f.IRI = activitypub.ActorsType.IRI(a)
 	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
 	actor, err := h.loader.Load(f.GetLink())
-	if err != nil  {
+	if err != nil {
 		return nil, errUnauthorized
 	}
 
@@ -645,8 +648,8 @@ func (h *oauthHandler) loadActorFromOauth2Session(w http.ResponseWriter, r *http
 		return nil
 	}
 
-	actorIRI, ok := authSess.UserData.(string)
-	if !ok {
+	actorIRI, err := assertToBytes(authSess.UserData)
+	if err != nil {
 		h.logger.Errorf("Invalid authorize session for tok %s, user-data is not an IRI: %v", tok, authSess.UserData)
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
@@ -663,4 +666,20 @@ func (h *oauthHandler) loadActorFromOauth2Session(w http.ResponseWriter, r *http
 		return nil
 	})
 	return actor
+}
+func assertToBytes(in interface{}) ([]byte, error) {
+	var ok bool
+	var data string
+	if in == nil {
+		return nil, nil
+	} else if data, ok = in.(string); ok {
+		return []byte(data), nil
+	} else if byt, ok := in.([]byte); ok {
+		return byt, nil
+	} else if byt, ok := in.(json.RawMessage); ok {
+		return byt, nil
+	} else if str, ok := in.(fmt.Stringer); ok {
+		return []byte(str.String()), nil
+	}
+	return nil, errors.Errorf(`Could not assert "%v" to string`, in)
 }
