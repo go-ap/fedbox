@@ -32,7 +32,7 @@ var defaultLogFn = func(string, ...interface{}) {}
 
 type Config struct {
 	StoragePath string
-	BaseURL		string
+	BaseURL     string
 }
 
 // New returns a new repo repository
@@ -402,8 +402,8 @@ func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
 	}
 	var (
 		iriClause string
-		iriValue interface{}
-		hasIRI = false
+		iriValue  interface{}
+		hasIRI    = false
 	)
 	for i, c := range clauses {
 		if strings.Contains(c, "iri") {
@@ -501,36 +501,84 @@ func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
 func save(l repo, it pub.Item) (pub.Item, error) {
 	iri := it.GetLink()
 
-	table := string(ap.ObjectsType)
-	if pub.ActivityTypes.Contains(it.GetType()) {
-		table = string(ap.ActivitiesType)
-	} else if pub.ActorTypes.Contains(it.GetType()) {
-		table = string(ap.ActorsType)
-	} else if it.GetType() == pub.TombstoneType {
-		if strings.Contains(iri.String(), string(ap.ActorsType)) {
-			table = string(ap.ActorsType)
-		}
-		if strings.Contains(iri.String(), string(ap.ActivitiesType)) {
-			table = string(ap.ActivitiesType)
-		}
-	}
-
 	if err := flattenCollections(it); err != nil {
 		return it, errors.Annotatef(err, "could not create object's collections")
 	}
-	query := fmt.Sprintf("INSERT OR REPLACE INTO %s (iri, published, type, raw) VALUES (?, ?, ?, ?) ;", table)
-
 	raw, err := encodeFn(it)
 	if err != nil {
-		l.errFn("query error: %s\n%s\n%#v", err, query)
+		l.errFn("query error: %s", err)
 		return it, errors.Annotatef(err, "query error")
 	}
-	if _, err = l.conn.Exec(query, iri, time.Now().UTC(), it.GetType(), raw); err != nil {
-		l.errFn("query error: %s\n%s\n%#v", err, query)
+
+	columns := []string{
+		"iri",
+		"published",
+		"type",
+		"raw",
+	}
+	tokens := []string{"?", "?", "?", "?"}
+	params := []interface{}{
+		interface{}(iri),
+		interface{}(time.Now().UTC()),
+		interface{}(it.GetType()),
+		interface{}(raw),
+	}
+
+	table := string(ap.ObjectsType)
+	pub.OnObject(it, func(o *pub.Object) error {
+		if o.URL != nil {
+			columns = append(columns, "url")
+			tokens = append(tokens, "?")
+			params = append(params, interface{}(o.URL.GetLink()))
+		}
+		if o.Name.Count() > 0 {
+			columns = append(columns, "name")
+			tokens = append(tokens, "?")
+			params = append(params, interface{}(o.Name.String()))
+		}
+		rec := o.Recipients()
+		if rec.Count() > 0 {
+			if raw, err := encodeFn(rec); err == nil {
+				columns = append(columns, "audience")
+				tokens = append(tokens, "?")
+				params = append(params, interface{}(raw))
+			}
+		}
+		return nil
+	})
+	if pub.ActivityTypes.Contains(it.GetType()) {
+		table = string(ap.ActivitiesType)
+		pub.OnActivity(it, func(a *pub.Activity) error {
+			return nil
+		})
+	} else if pub.ActorTypes.Contains(it.GetType()) {
+		table = string(ap.ActorsType)
+		pub.OnActor(it, func(a *pub.Actor) error {
+			return nil
+		})
+	} else if it.GetType() == pub.TombstoneType {
+		if strings.Contains(iri.String(), string(ap.ActorsType)) {
+			table = string(ap.ActorsType)
+			pub.OnActor(it, func(a *pub.Actor) error {
+				return nil
+			})
+		}
+		if strings.Contains(iri.String(), string(ap.ActivitiesType)) {
+			table = string(ap.ActivitiesType)
+			pub.OnActivity(it, func(a *pub.Activity) error {
+				return nil
+			})
+		}
+	}
+
+	query := fmt.Sprintf("INSERT OR REPLACE INTO %s (%s) VALUES (%s);", table, strings.Join(columns, ", "), strings.Join(tokens, ", "))
+
+	if _, err = l.conn.Exec(query, params...); err != nil {
+		l.errFn("query error: %s\n%s", err, query)
 		return it, errors.Annotatef(err, "query error")
 	}
 	col, key := path.Split(iri.String())
-	if len(key) > 0 && handlers.ValidCollection(handlers.CollectionType(path.Base(col))){
+	if len(key) > 0 && handlers.ValidCollection(handlers.CollectionType(path.Base(col))) {
 		// Add private items to the collections table
 		if colIRI, k := handlers.Split(pub.IRI(col)); k == "" {
 			if err := l.AddTo(colIRI, it); err != nil {
@@ -559,8 +607,8 @@ func flattenCollections(it pub.Item) error {
 	}
 	return pub.OnObject(it, func(o *pub.Object) error {
 		o.Replies = pub.FlattenToIRI(o.Replies)
-		o.Likes =   pub.FlattenToIRI(o.Likes)
-		o.Shares =  pub.FlattenToIRI(o.Shares)
+		o.Likes = pub.FlattenToIRI(o.Likes)
+		o.Shares = pub.FlattenToIRI(o.Shares)
 		return nil
 	})
 }

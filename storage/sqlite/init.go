@@ -42,6 +42,8 @@ create table objects (
   "type" varchar not null,
   "url" varchar,
   "name" varchar,
+  "summary" varchar,
+  "content" varchar,
   "published" timestamp default CURRENT_TIMESTAMP,
   "updated" timestamp default CURRENT_TIMESTAMP,
   "audience" blob, -- the [to, cc, bto, bcc fields]
