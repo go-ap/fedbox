@@ -61,7 +61,7 @@ create table collections (
 
 tuneQuery = `
 -- Use WAL mode (writers don't block readers):
-PRAGMA journal_mode = 'WAL';
+-- PRAGMA journal_mode = 'WAL';
 -- Use memory as temporary storage:
 PRAGMA temp_store = 2;
 -- Faster synchronization that still keeps the data safe:
