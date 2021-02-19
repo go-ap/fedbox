@@ -8,9 +8,11 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
+	s "github.com/go-ap/storage"
 	"golang.org/x/crypto/bcrypt"
 	"os"
 	"path"
@@ -43,6 +45,7 @@ func New(c Config) (*repo, error) {
 		baseURL: c.BaseURL,
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
+		cache:   cache.New(true),
 	}, err
 }
 
@@ -50,6 +53,7 @@ type repo struct {
 	conn    *sql.DB
 	baseURL string
 	path    string
+	cache   cache.CanStore
 	logFn   loggerFn
 	errFn   loggerFn
 }
@@ -129,7 +133,7 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 		return nil, err
 	}
 	defer r.Close()
-	return loadFromDb(r.conn, f)
+	return loadFromDb(r, f)
 }
 
 // Save
@@ -208,7 +212,7 @@ func (r *repo) Delete(it pub.Item) (pub.Item, error) {
 	if it.IsObject() {
 		t.FormerType = it.GetType()
 	} else {
-		if old, err := loadFromOneTable(r.conn, f); err == nil {
+		if old, err := loadFromOneTable(r, f); err == nil {
 			t.FormerType = old.GetType()
 		}
 	}
@@ -337,7 +341,22 @@ func loadMetadataFromTable(conn *sql.DB, iri pub.IRI) ([]byte, error) {
 	return meta, err
 }
 
-func loadFromOneTable(conn *sql.DB, f *ap.Filters) (pub.ItemCollection, error) {
+func isSingleItem(f s.Filterable) bool {
+	if _, isIRI := f.(pub.IRI); isIRI {
+		return true
+	}
+	if _, isItem := f.(pub.Item); isItem {
+		return true
+	}
+	return false
+}
+func loadFromOneTable(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
+	conn := r.conn
+	if isSingleItem(f) {
+		if cachedIt := r.cache.Get(f.GetLink()); cachedIt != nil {
+			return pub.ItemCollection{cachedIt}, nil
+		}
+	}
 	table := getCollectionTableFromFilter(f)
 	clauses, values := getWhereClauses(f)
 	var total uint = 0
@@ -376,13 +395,17 @@ func loadFromOneTable(conn *sql.DB, f *ap.Filters) (pub.ItemCollection, error) {
 		if err != nil {
 			return ret, errors.Annotatef(err, "unable to unmarshal raw item")
 		}
+		if pub.IsObject(it) {
+			r.cache.Set(it.GetLink(), it)
+		}
 		ret = append(ret, it)
 	}
 
 	return ret, err
 }
 
-func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
+func loadFromDb(r *repo, f *ap.Filters) (pub.Item, error) {
+	conn := r.conn
 	table := getCollectionTableFromFilter(f)
 	clauses, values := getWhereClauses(f)
 	var total uint = 0
@@ -398,7 +421,7 @@ func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
 		return nil, errors.Annotatef(err, "unable to count all rows")
 	}
 	if total > 0 {
-		return loadFromOneTable(conn, f)
+		return loadFromOneTable(r, f)
 	}
 	var (
 		iriClause string
@@ -475,21 +498,21 @@ func loadFromDb(conn *sql.DB, f *ap.Filters) (pub.Item, error) {
 	}
 	ret := make(pub.ItemCollection, 0)
 	if len(fActivities.ItemKey) > 0 {
-		retAct, err := loadFromOneTable(conn, &fActivities)
+		retAct, err := loadFromOneTable(r, &fActivities)
 		if err != nil {
 			return ret, err
 		}
 		ret = append(ret, retAct...)
 	}
 	if len(fActors.ItemKey) > 0 {
-		retAct, err := loadFromOneTable(conn, &fActors)
+		retAct, err := loadFromOneTable(r, &fActors)
 		if err != nil {
 			return ret, err
 		}
 		ret = append(ret, retAct...)
 	}
 	if len(fOb.ItemKey) > 0 {
-		retOb, err := loadFromOneTable(conn, &fOb)
+		retOb, err := loadFromOneTable(r, &fOb)
 		if err != nil {
 			return ret, err
 		}
@@ -549,6 +572,13 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 	if pub.ActivityTypes.Contains(it.GetType()) {
 		table = string(ap.ActivitiesType)
 		pub.OnActivity(it, func(a *pub.Activity) error {
+			columns = append(columns, "actor")
+			tokens = append(tokens, "?")
+			params = append(params, interface{}(a.Actor.GetLink()))
+
+			columns = append(columns, "object")
+			tokens = append(tokens, "?")
+			params = append(params, interface{}(a.Object.GetLink()))
 			return nil
 		})
 	} else if pub.ActorTypes.Contains(it.GetType()) {
@@ -560,6 +590,11 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 		if strings.Contains(iri.String(), string(ap.ActorsType)) {
 			table = string(ap.ActorsType)
 			pub.OnActor(it, func(a *pub.Actor) error {
+				if a.PreferredUsername.Count() > 0 {
+					columns = append(columns, "preferred_username")
+					tokens = append(tokens, "?")
+					params = append(params, interface{}(a.PreferredUsername.String()))
+				}
 				return nil
 			})
 		}
@@ -587,6 +622,7 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 		}
 	}
 
+	l.cache.Set(it.GetLink(), it)
 	return it, nil
 }
 
