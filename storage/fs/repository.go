@@ -3,6 +3,14 @@
 package fs
 
 import (
+	"io/ioutil"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+	"syscall"
+	"time"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -12,12 +20,6 @@ import (
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
 	"golang.org/x/crypto/bcrypt"
-	"io/ioutil"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 var encodeFn = jsonld.Marshal
@@ -176,7 +178,7 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 		inCollection := false
 		if fileInfo, err := ioutil.ReadDir(p); err == nil {
 			for _, fi := range fileInfo {
-				if fi.Name() == name && (fi.Mode()&os.ModeSymlink == os.ModeSymlink) {
+				if fi.Name() == name && (isSymLink(fi) || isHardLink(fi)) {
 					inCollection = true
 				}
 			}
@@ -187,6 +189,20 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 		}
 		return nil
 	})
+}
+
+func isSymLink(fi os.FileInfo) bool {
+	return (fi.Mode()&os.ModeSymlink == os.ModeSymlink)
+}
+
+func isHardLink(fi os.FileInfo) bool {
+	nlink := uint64(0)
+	if sys := fi.Sys(); sys != nil {
+		if stat, ok := sys.(*syscall.Stat_t); ok {
+			nlink = uint64(stat.Nlink)
+		}
+	}
+	return nlink > 1 && !fi.IsDir()
 }
 
 // AddTo
@@ -229,7 +245,7 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 		inCollection := false
 		if fileInfo, err := ioutil.ReadDir(p); err == nil {
 			for _, fi := range fileInfo {
-				if fi.Name() == fullLink && (fi.Mode()&os.ModeSymlink == os.ModeSymlink) {
+				if fi.Name() == fullLink && (isSymLink(fi) || isHardLink(fi)) {
 					inCollection = true
 				}
 			}
@@ -246,6 +262,8 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 		if err != nil {
 			return err
 		}
+		// NOTE(marius): we can't use hard links as we're link to folders :(
+		// This would have been tremendously easier (as in, not having to compute paths) with hard-links.
 		return os.Symlink(absItPath, absLinkPath)
 	})
 }
