@@ -9,34 +9,9 @@ import (
 	"testing"
 )
 
-var C2STests = map[string]testSuite{
-	"SelfService": {
-		mocks: nil,
-		tests: []testPair{
-			{
-				mocks: []string{
-					"mocks/service.json",
-				},
-				req: testReq{
-					met: http.MethodGet,
-					url: fmt.Sprintf("%s", apiURL),
-				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:      "http://127.0.0.1:9998/",
-						typ:     string(pub.ServiceType),
-						summary: "Generic ActivityPub service",
-						inbox: &objectVal{
-							id: "http://127.0.0.1:9998/inbox",
-						},
-						name: "self",
-					},
-				},
-			},
-		},
-	},
+var ActorsCollectionTests = testPairs {
 	"ActorsCollection": {
+		name: "ActorsCollection",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -77,6 +52,7 @@ var C2STests = map[string]testSuite{
 		},
 	},
 	"ActorsCollectionTypePerson": {
+		name: "ActorsCollectionTypePerson",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -117,6 +93,7 @@ var C2STests = map[string]testSuite{
 		},
 	},
 	"ActorsCollectionTypeGroup": {
+		name: "ActorsCollectionTypeGroup",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -140,6 +117,7 @@ var C2STests = map[string]testSuite{
 		},
 	},
 	"ActorsCollectionTypeApplication": {
+		name: "ActorsCollectionTypeApplication",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -161,7 +139,11 @@ var C2STests = map[string]testSuite{
 			},
 		},
 	},
+}
+
+var ActivitiesCollectionTests = testPairs {
 	"ActivitiesCollection": {
+		name: "ActivitiesCollection",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -182,7 +164,10 @@ var C2STests = map[string]testSuite{
 			},
 		},
 	},
+}
+var ObjectsCollectionTests = testPairs {
 	"ObjectsCollection": {
+		name: "ObjectsCollection",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -203,7 +188,41 @@ var C2STests = map[string]testSuite{
 			},
 		},
 	},
+}
+
+var SingleItemLoadTests = testPairs {
+	"SelfService": {
+		name: "SelfService",
+		mocks: nil,
+		tests: []testPair{
+			{
+				mocks: []string{
+					"mocks/service.json",
+				},
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:      "http://127.0.0.1:9998/",
+						typ:     string(pub.ServiceType),
+						summary: "Generic ActivityPub service",
+						inbox: &objectVal{
+							id: "http://127.0.0.1:9998/inbox",
+						},
+						name: "self",
+					},
+				},
+			},
+		},
+	},
+}
+
+var C2STests = testPairs {
 	"CreateActor": {
+		name: "CreateActor",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -237,6 +256,7 @@ var C2STests = map[string]testSuite{
 		},
 	},
 	"AnonymousCreateActor": {
+		name: "CreateActorAnonymously",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -257,6 +277,7 @@ var C2STests = map[string]testSuite{
 		},
 	},
 	"UpdateActor": {
+		name: "UpdateActor",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -297,6 +318,7 @@ var C2STests = map[string]testSuite{
 		},
 	},
 	"DeleteActor": {
+		name: "DeleteActor",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -328,6 +350,7 @@ var C2STests = map[string]testSuite{
 		},
 	},
 	"CreateArticle": {
+		name: "CreateArticle",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -436,6 +459,7 @@ var C2STests = map[string]testSuite{
 		},
 	},
 	"LikeNote": {
+		name: "LikeNote",
 		mocks: []string{
 			"mocks/service.json",
 			"mocks/actor-johndoe.json",
@@ -536,6 +560,7 @@ var C2STests = map[string]testSuite{
 		},
 	},
 	"FollowActor": {
+		name: "FollowActor",
 		mocks: []string{
 			"mocks/service.json",
 			"mocks/actor-johndoe.json",
@@ -602,6 +627,7 @@ var C2STests = map[string]testSuite{
 		},
 	},
 	"BlockActor": {
+		name: "BlockActor",
 		mocks: []string{
 			"mocks/service.json",
 			"mocks/actor-johndoe.json",
@@ -662,6 +688,22 @@ var C2STests = map[string]testSuite{
 			},
 		},
 	},
+}
+
+func Test_SingleItemLoad(t *testing.T) {
+	runTestSuite(t, SingleItemLoadTests)
+}
+
+func Test_ObjectsCollections(t *testing.T) {
+	runTestSuite(t, ObjectsCollectionTests)
+}
+
+func Test_ActivitiesCollection(t *testing.T) {
+	runTestSuite(t, ActivitiesCollectionTests)
+}
+
+func Test_ActorsCollection(t *testing.T) {
+	runTestSuite(t, ActorsCollectionTests)
 }
 
 func Test_C2SRequests(t *testing.T) {

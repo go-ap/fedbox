@@ -39,6 +39,7 @@ type actMock struct {
 }
 
 type testSuite struct {
+	name  string
 	mocks []string
 	tests []testPair
 }
@@ -601,7 +602,8 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 }
 
 func runTestSuite(t *testing.T, pairs testPairs) {
-	for name, suite := range pairs {
+	for _, suite := range pairs {
+		name := suite.name
 		t.Run(name, func(t *testing.T) {
 			seedTestData(t, suite.mocks)
 			for _, test := range suite.tests {
