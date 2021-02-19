@@ -44,7 +44,7 @@ type testSuite struct {
 	tests []testPair
 }
 
-type testPairs map[string]testSuite
+type testPairs []testSuite
 
 type testAccount struct {
 	Id         string `json:"id"`

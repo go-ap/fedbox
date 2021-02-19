@@ -10,7 +10,7 @@ import (
 )
 
 var ActorsCollectionTests = testPairs {
-	"ActorsCollection": {
+	{
 		name: "ActorsCollection",
 		mocks: nil,
 		tests: []testPair{
@@ -51,7 +51,7 @@ var ActorsCollectionTests = testPairs {
 			},
 		},
 	},
-	"ActorsCollectionTypePerson": {
+	{
 		name: "ActorsCollectionTypePerson",
 		mocks: nil,
 		tests: []testPair{
@@ -92,7 +92,7 @@ var ActorsCollectionTests = testPairs {
 			},
 		},
 	},
-	"ActorsCollectionTypeGroup": {
+	{
 		name: "ActorsCollectionTypeGroup",
 		mocks: nil,
 		tests: []testPair{
@@ -116,7 +116,7 @@ var ActorsCollectionTests = testPairs {
 			},
 		},
 	},
-	"ActorsCollectionTypeApplication": {
+	{
 		name: "ActorsCollectionTypeApplication",
 		mocks: nil,
 		tests: []testPair{
@@ -142,7 +142,7 @@ var ActorsCollectionTests = testPairs {
 }
 
 var ActivitiesCollectionTests = testPairs {
-	"ActivitiesCollection": {
+	{
 		name: "ActivitiesCollection",
 		mocks: nil,
 		tests: []testPair{
@@ -166,7 +166,7 @@ var ActivitiesCollectionTests = testPairs {
 	},
 }
 var ObjectsCollectionTests = testPairs {
-	"ObjectsCollection": {
+	{
 		name: "ObjectsCollection",
 		mocks: nil,
 		tests: []testPair{
@@ -191,7 +191,7 @@ var ObjectsCollectionTests = testPairs {
 }
 
 var SingleItemLoadTests = testPairs {
-	"SelfService": {
+	{
 		name: "SelfService",
 		mocks: nil,
 		tests: []testPair{
@@ -221,7 +221,7 @@ var SingleItemLoadTests = testPairs {
 }
 
 var C2STests = testPairs {
-	"CreateActor": {
+	{
 		name: "CreateActor",
 		mocks: nil,
 		tests: []testPair{
@@ -255,7 +255,7 @@ var C2STests = testPairs {
 			},
 		},
 	},
-	"AnonymousCreateActor": {
+	{
 		name: "CreateActorAnonymously",
 		mocks: nil,
 		tests: []testPair{
@@ -276,7 +276,7 @@ var C2STests = testPairs {
 			},
 		},
 	},
-	"UpdateActor": {
+	{
 		name: "UpdateActor",
 		mocks: nil,
 		tests: []testPair{
@@ -317,7 +317,7 @@ var C2STests = testPairs {
 			},
 		},
 	},
-	"DeleteActor": {
+	{
 		name: "DeleteActor",
 		mocks: nil,
 		tests: []testPair{
@@ -349,7 +349,7 @@ var C2STests = testPairs {
 			},
 		},
 	},
-	"CreateArticle": {
+	{
 		name: "CreateArticle",
 		mocks: nil,
 		tests: []testPair{
@@ -458,7 +458,7 @@ var C2STests = testPairs {
 			},
 		},
 	},
-	"LikeNote": {
+	{
 		name: "LikeNote",
 		mocks: []string{
 			"mocks/service.json",
@@ -559,7 +559,7 @@ var C2STests = testPairs {
 			},
 		},
 	},
-	"FollowActor": {
+	{
 		name: "FollowActor",
 		mocks: []string{
 			"mocks/service.json",
@@ -626,7 +626,7 @@ var C2STests = testPairs {
 			},
 		},
 	},
-	"BlockActor": {
+	{
 		name: "BlockActor",
 		mocks: []string{
 			"mocks/service.json",
