@@ -25,6 +25,7 @@ create table activities (
   "iri" varchar constraint activities_key_key unique,
   "type" varchar not null,
   "url" varchar,
+  "content" varchar,
   "actor_id" int default NULL, -- the actor id, if this is a local activity
   "actor" varchar, -- the IRI of local or remote actor
   "object_id" int default NULL, -- the object id if it's a local object

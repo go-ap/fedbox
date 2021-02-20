@@ -567,6 +567,20 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 				params = append(params, interface{}(raw))
 			}
 		}
+		if pub.ObjectTypes.Contains(o.Type) {
+			if o.Summary.Count() > 0 {
+				columns = append(columns, "summary")
+				tokens = append(tokens, "?")
+				params = append(params, interface{}(o.Summary.String()))
+			}
+		}
+		if !pub.ActorTypes.Contains(o.Type) {
+			if o.Content.Count() > 0 {
+				columns = append(columns, "content")
+				tokens = append(tokens, "?")
+				params = append(params, interface{}(o.Content.String()))
+			}
+		}
 		return nil
 	})
 	if pub.ActivityTypes.Contains(it.GetType()) {
