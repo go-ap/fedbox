@@ -3,8 +3,10 @@ module github.com/go-ap/fedbox
 go 1.14
 
 require (
-	aletheia.icu/broccoli/fs v0.0.0-20200420162907-e7ff440cf358
+	aletheia.icu/broccoli v0.0.0-20200506212414-5bc1e2f86a59 // indirect
+	aletheia.icu/broccoli/fs v0.0.0-20200506212414-5bc1e2f86a59
 	git.sr.ht/~mariusor/wrapper v0.0.0-20210115104709-99415538f4b7
+	github.com/andybalholm/brotli v1.0.1 // indirect
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/go-ap/activitypub v0.0.0-20210202131816-0c3f57f637ea
@@ -26,15 +28,15 @@ require (
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d
 	github.com/openshift/osin v1.0.1
 	github.com/pborman/uuid v1.2.1
+	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f // indirect
 	github.com/sirupsen/logrus v1.8.0
 	github.com/spacemonkeygo/httpsig v0.0.0-20181218213338-2605ae379e47
-	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/unrolled/render v1.0.2
 	go.etcd.io/bbolt v1.3.4
 	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
 	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210218085108-9555bcde0c6a // indirect
+	golang.org/x/sys v0.0.0-20210220050731-9a76102bfb43 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
