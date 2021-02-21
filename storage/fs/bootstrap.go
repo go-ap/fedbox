@@ -8,6 +8,7 @@ import (
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
 	"os"
+	"path"
 )
 
 func Clean(conf config.Options) error {
@@ -16,7 +17,7 @@ func Clean(conf config.Options) error {
 
 func Bootstrap(conf config.Options) error {
 	r, err := New(Config{
-		StoragePath: conf.BaseStoragePath(),
+		StoragePath: path.Dir(conf.BaseStoragePath()),
 		BaseURL:     conf.BaseURL,
 	})
 	if err != nil {
@@ -46,4 +47,3 @@ func Bootstrap(conf config.Options) error {
 func (r *repo) Reset() {
 	r.cache = cache.New(true)
 }
-

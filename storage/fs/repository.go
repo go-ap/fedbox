@@ -727,4 +727,3 @@ func (r repo) loadFromPath(f s.Filterable) (pub.Item, error) {
 	}
 	return col, err
 }
-

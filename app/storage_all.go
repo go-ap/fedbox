@@ -3,6 +3,8 @@
 package app
 
 import (
+	"path"
+
 	authbadger "github.com/go-ap/auth/badger"
 	authboltdb "github.com/go-ap/auth/boltdb"
 	authfs "github.com/go-ap/auth/fs"
@@ -64,15 +66,15 @@ func getBoltStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Stor
 }
 
 func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
-	path := c.BaseStoragePath()
+	p := c.BaseStoragePath()
 	l.Debugf("Initializing fs storage at %s", c.BaseStoragePath())
 	oauth := authfs.New(authfs.Config{
-		Path:  path,
+		Path:  p,
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),
 	})
 	db, err := fs.New(fs.Config{
-		StoragePath: path,
+		StoragePath: path.Dir(p),
 		BaseURL:     c.BaseURL,
 	})
 	if err != nil {
