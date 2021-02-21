@@ -528,8 +528,8 @@ var exportCmd = &cli.Command{
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:        "output",
-			Usage:       fmt.Sprintf("The format in which to output the items"),
-			DefaultText: fmt.Sprintf("Valid values: %v", []string{"json", "text"}),
+			Usage:       fmt.Sprintf("The format in which to output the items (%v)", []string{"json", "text"}),
+			DefaultText: "Default: json",
 			Value:       "json",
 		},
 	},
@@ -553,10 +553,9 @@ func dumpAll(f *ap.Filters) (pub.ItemCollection, error) {
 	return col, nil
 }
 
-var baseURL = pub.IRI(ctl.Conf.BaseURL)
-
 func exportPubObjects(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		baseURL := pub.IRI(ctl.Conf.BaseURL)
 		objects := make(pub.ItemCollection, 0)
 		allCollections := handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
 		for _, c := range allCollections {
