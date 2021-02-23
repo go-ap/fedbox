@@ -13,6 +13,7 @@ ENV VERSION=${VERSION}
 ADD ./ /go/src/app
 
 WORKDIR /go/src/app
+RUN go mod download
 RUN make ENV=${ENV} STORAGE=${STORAGE} VERSION=${VERSION} clean all
 RUN docker/gen-certs.sh fedbox
 

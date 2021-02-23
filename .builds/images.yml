@@ -23,8 +23,6 @@ tasks:
       go mod vendor
       _push() {
         _storage=${1:-all}
-        make STORAGE=all test
-        make STORAGE=${_storage} test
         _branch=${GITHUB_REF#"refs/heads/"}
         sudo make -C docker STORAGE="${_storage}" VERSION="${_branch}" push
         if [ "${_branch}" == "master" ]; then
