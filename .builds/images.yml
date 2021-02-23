@@ -20,7 +20,7 @@ tasks:
       fi
       cd fedbox || exit
 
-      git mod vendor
+      go mod vendor
       _push() {
         _storage=${1:-all}
         make STORAGE=all test
