@@ -9,7 +9,8 @@ environment:
   GO111MODULE: 'on'
 tasks:
   - setup: |
-      cd fedbox && go mod vendor
+      cd fedbox
+      go mod download
   - build: |
       cd fedbox
       make STORAGE=fs clean all
@@ -22,7 +23,8 @@ tasks:
       make test
   - coverage: |
       set -a +x
-      cd fedbox && make coverage
+      cd fedbox
+      make coverage
       GIT_SHA=$(git rev-parse --verify HEAD)
       GIT_BRANCH=$(git name-rev --name-only HEAD)
       source ~/.code-cov.sh
