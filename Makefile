@@ -42,14 +42,17 @@ endif
 BUILD := $(GO) build $(BUILDFLAGS)
 TEST := $(GO) test $(BUILDFLAGS)
 
-.PHONY: all run clean test coverage integration install
+.PHONY: all run clean test coverage integration install download
 
 all: fedbox ctl
 
+download:
+	$(GO) mod download
+
 assets: internal/assets/assets.gen.go
 
-internal/assets/assets.gen.go: $(ASSETFILES)
-	go generate -tags "$(TAGS)" ./assets.go
+internal/assets/assets.gen.go: download $(ASSETFILES)
+	$(GO) generate -tags "$(TAGS)" ./assets.go
 
 fedbox: bin/fedbox assets
 bin/fedbox: go.mod cli/fedbox/main.go $(APPSOURCES)
