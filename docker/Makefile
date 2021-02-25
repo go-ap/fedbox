@@ -36,7 +36,6 @@ clean:
 	@-$(RM) $(FEDBOX_HOSTNAME).{key,crt,pem}
 
 build:
-	go mod vendor
 	$(BUILD_CMD) --build-arg ENV=$(ENV) --build-arg STORAGE=$(STORAGE) --build-arg PORT=$(PORT) -f Dockerfile -t $(FEDBOX_HOSTNAME)/app:$(TAG) ..
 
 storage: $(STORAGE_PATH)
