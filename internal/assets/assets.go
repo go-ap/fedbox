@@ -10,10 +10,6 @@ const (
 	templateDir = "templates/"
 )
 
-// generated with broccoli - see ./assets_gen.go
-var walkFsFn = assets.Walk
-var openFsFn = assets.Open
-
 type AssetFiles map[string][]string
 
 // Files returns asset names necessary for unrolled.Render
