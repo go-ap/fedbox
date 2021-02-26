@@ -90,15 +90,15 @@ func aggregateObjectIRIs(toRemove *pub.IRIs, o *pub.Object) error {
 	if o.InReplyTo.IsCollection() {
 		pub.OnCollectionIntf(o.InReplyTo, func(c pub.CollectionInterface) error {
 			for _, it := range c.Collection() {
-				if !toRemove.Contains(it.GetLink()) {
-					*toRemove = append(*toRemove, it.GetLink())
+				if repl := h.Replies.IRI(it.GetLink()); !toRemove.Contains(repl) {
+					*toRemove = append(*toRemove, repl)
 				}
 			}
 			return nil
 		})
 	} else {
-		if !toRemove.Contains(o.InReplyTo.GetLink()) {
-			*toRemove = append(*toRemove, o.InReplyTo.GetLink())
+		if repl := h.Replies.IRI(o.InReplyTo.GetLink()); !toRemove.Contains(repl) {
+			*toRemove = append(*toRemove, repl)
 		}
 	}
 	if o.AttributedTo != nil {
