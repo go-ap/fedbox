@@ -139,6 +139,104 @@ var ActorsCollectionTests = testPairs {
 			},
 		},
 	},
+	{
+		name:  "A lot of actors",
+		mocks: []string{
+			"mocks/actors/service.json",
+			"mocks/actors/actor-admin.json",
+			"mocks/actors/actor-element_a.json",
+			"mocks/actors/actor-element_b.json",
+			"mocks/actors/actor-element_c.json",
+			"mocks/actors/actor-element_d.json",
+			"mocks/actors/actor-element_e.json",
+			"mocks/actors/actor-element_f.json",
+			"mocks/actors/actor-element_g.json",
+			"mocks/actors/actor-element_h.json",
+			"mocks/actors/actor-element_i.json",
+			"mocks/actors/application-11.json",
+			"mocks/actors/application-12.json",
+			"mocks/actors/application-13.json",
+			"mocks/actors/application-14.json",
+			"mocks/actors/application-15.json",
+			"mocks/actors/group-16.json",
+			"mocks/actors/group-17.json",
+			"mocks/actors/group-18.json",
+			"mocks/actors/group-19.json",
+			"mocks/actors/group-20.json",
+		},
+		tests: []testPair{
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/actors", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/actors", apiURL),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 21,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/actors?type=%s", apiURL, pub.ApplicationType),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.ApplicationType),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 6,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/actors?type=%s", apiURL, pub.GroupType),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.GroupType),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 5,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/actors?type=%s", apiURL, pub.PersonType),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.PersonType),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 10,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/actors?type=%s&type=%s", apiURL, pub.PersonType, pub.GroupType),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/actors?type=%s&type=%s", apiURL, pub.PersonType, pub.GroupType),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 15,
+					},
+				},
+			},
+		},
+	},
 }
 
 var ActivitiesCollectionTests = testPairs {

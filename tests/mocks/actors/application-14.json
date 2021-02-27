@@ -1,0 +1,9 @@
+{
+  "id": "http://127.0.0.1:9998/actors/14",
+  "type": "Application",
+  "attributedTo": "http://127.0.0.1:9998",
+  "audience": ["https://www.w3.org/ns/activitystreams#Public"],
+  "to": ["http://127.0.0.1:9998", "https://www.w3.org/ns/activitystreams#Public"],
+  "url": "http://127.0.0.1:9998/callback",
+  "inbox": "http://127.0.0.1:9998/actors/14/inbox"
+}

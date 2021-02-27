@@ -1,0 +1,16 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "http://127.0.0.1:9998/actors/4",
+  "type": "Person",
+  "attributedTo": "http://127.0.0.1:9998",
+  "audience": ["https://www.w3.org/ns/activitystreams#Public"],
+  "generator": "http://127.0.0.1:9998",
+  "inbox": "http://127.0.0.1:9998/actors/4/inbox",
+  "outbox": "http://127.0.0.1:9998/actors/4/outbox",
+  "preferredUsername": "element_c",
+  "endpoints": {
+    "oauthAuthorizationEndpoint": "http://127.0.0.1:9998/oauth/authorize",
+    "oauthTokenEndpoint": "http://127.0.0.1:9998/oauth/token",
+    "sharedInbox": "http://127.0.0.1:9998/inbox"
+  }
+}
