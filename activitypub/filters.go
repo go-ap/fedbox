@@ -2,17 +2,18 @@ package activitypub
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
+	"path"
+	"strings"
+	"time"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	h "github.com/go-ap/handlers"
 	s "github.com/go-ap/storage"
 	"github.com/mariusor/qstring"
-	"net/http"
-	"net/url"
-	"path"
-	"strings"
-	"time"
 )
 
 // Hash
