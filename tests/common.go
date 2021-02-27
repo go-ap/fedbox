@@ -367,10 +367,6 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 				assertTrue(ok, "received audience is not a []string, received %T", aud)
 				errOnArray(t)(aud, tVal.audience)
 			}
-			colTypes := pub.ActivityVocabularyTypes{pub.CollectionType, pub.OrderedCollectionType, pub.CollectionPageType, pub.OrderedCollectionPageType}
-			if !colTypes.Contains(pub.ActivityVocabularyType(tVal.typ)) {
-				return
-			}
 			if tVal.first != nil {
 				assertMapKey(ob, "first", tVal.first)
 				if tVal.first.typ != "" && len(tVal.first.id) > 0 {
@@ -406,8 +402,8 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 					assertObjectProperties(derefCol, tVal.partOf)
 				}
 			}
-			assertMapKey(ob, "totalItems", tVal.itemCount)
 			if tVal.itemCount > 0 {
+				assertMapKey(ob, "totalItems", tVal.itemCount)
 				itemsKey := func(typ string) string {
 					if typ == string(pub.CollectionType) {
 						return "items"

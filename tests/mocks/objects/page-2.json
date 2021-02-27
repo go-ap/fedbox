@@ -1,0 +1,12 @@
+{
+  "id": "http://127.0.0.1:9998/objects/2",
+  "type": "Page",
+  "name": "Humble Brag day: mpris-scrobbler",
+  "attributedTo": "http://127.0.0.1:9998/actors/2",
+  "replies": "http://127.0.0.1:9998/objects/2/replies",
+  "url": "https://github.com/mariusor/mpris-scrobbler",
+  "to": [ "https://www.w3.org/ns/activitystreams#Public" ],
+  "cc": [ "http://127.0.0.1:9998/actors/2/followers" ],
+  "likes": "http://127.0.0.1:9998/objects/2/likes",
+  "shares": "http://127.0.0.1:9998/objects/2/shares"
+}

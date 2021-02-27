@@ -1,0 +1,15 @@
+{
+  "id": "http://127.0.0.1:9998/objects/4",
+  "type": "Place",
+  "name": "You are here",
+  "attributedTo": "http://127.0.0.1:9998/actors/2",
+  "to": [ "https://www.w3.org/ns/activitystreams#Public" ],
+  "cc": [ "http://127.0.0.1:9998/actors/2/followers" ],
+  "shares": "http://127.0.0.1:9998/objects/2/shares",
+  "accuracy": 0.4,
+  "altitude": 0,
+  "latitude": -49.3454,
+  "longitude": 68.9782,
+  "radius": 100,
+  "units": "meters"
+}

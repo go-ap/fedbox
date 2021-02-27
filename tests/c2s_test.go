@@ -263,10 +263,10 @@ var ActivitiesCollectionTests = testPairs {
 		},
 	},
 }
+
 var ObjectsCollectionTests = testPairs {
 	{
 		name: "ObjectsCollection",
-		mocks: nil,
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -280,12 +280,109 @@ var ObjectsCollectionTests = testPairs {
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
+						typ: string(pub.OrderedCollectionType),
 						itemCount: 0,
 					},
 				},
 			},
 		},
 	},
+	{
+		name: "A lot of objects",
+		mocks: []string{
+			"mocks/objects/note-1.json",
+			"mocks/objects/page-2.json",
+			"mocks/objects/tombstone-3.json",
+			"mocks/objects/place-4.json",
+		},
+		tests: []testPair{
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects", apiURL),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 4,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?type=%s", apiURL, pub.TombstoneType),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, pub.TombstoneType),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?type=%s", apiURL, pub.PlaceType),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, pub.PlaceType),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?type=%s", apiURL, pub.NoteType),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, pub.NoteType),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?type=%s", apiURL, pub.PageType),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, pub.PageType),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?type=%s&type=%s", apiURL, pub.PageType, pub.PlaceType),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?type=%s&type=%s", apiURL, pub.PageType, pub.PlaceType),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 2,
+					},
+				},
+			},
+		},
+	},
+
 }
 
 var SingleItemLoadTests = testPairs {
