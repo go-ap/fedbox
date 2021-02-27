@@ -1,8 +1,8 @@
 {
   "@context": "https://www.w3.org/ns/activitystreams",
   "id": "http://127.0.0.1:9998/objects/3",
-  "formerType": "Note",
+  "formerType": "Object",
   "type": "Tombstone",
   "attributedTo": "http://127.0.0.1:9998/actors/3",
-  "to": ["https://www.w3.org/ns/activitystreams#Public"],
+  "to": ["https://www.w3.org/ns/activitystreams#Public"]
 }
