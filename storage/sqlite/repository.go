@@ -403,20 +403,25 @@ func loadFromOneTable(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
 		ret = append(ret, it)
 	}
 
+	ret = runActivityFilters(r, ret, f)
+	return ret, err
+}
+
+func runActivityFilters(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.ItemCollection {
 	// If our filter contains values for filtering the activity's object or actor, we do that here:
 	//  for the case where the corresponding values are not set, this doesn't do anything
 	toRemove := make([]int, 0)
 	toRemove = append(toRemove, childFilter(r, &ret, f.Object, func(act pub.Item, ob pub.Item) bool {
-			var keep bool
-			pub.OnActivity(act, func(a *pub.Activity) error {
-				if a.Object.GetLink().Equals(ob.GetLink(), false) {
-					a.Object = ob
-					keep = true
-				}
-				return nil
-			})
-			return keep
-		})...)
+		var keep bool
+		pub.OnActivity(act, func(a *pub.Activity) error {
+			if a.Object.GetLink().Equals(ob.GetLink(), false) {
+				a.Object = ob
+				keep = true
+			}
+			return nil
+		})
+		return keep
+	})...)
 	toRemove = append(toRemove, childFilter(r, &ret, f.Actor, func(act pub.Item, ob pub.Item) bool {
 		var keep bool
 		pub.OnActivity(act, func(a *pub.Activity) error {
@@ -428,12 +433,31 @@ func loadFromOneTable(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
 		})
 		return keep
 	})...)
+	toRemove = append(toRemove, childFilter(r, &ret, f.Target, func(act pub.Item, ob pub.Item) bool {
+		var keep bool
+		pub.OnActivity(act, func(a *pub.Activity) error {
+			if a.Target.GetLink().Equals(ob.GetLink(), false) {
+				a.Target = ob
+				keep = true
+			}
+			return nil
+		})
+		return keep
+	})...)
 
-	for _, id := range toRemove {
-		ret = append(ret[:id], ret[id+1:]...)
+	result := make(pub.ItemCollection, 0)
+	for i := range ret {
+		keep := true
+		for _, id := range toRemove {
+			if i == id {
+				keep = false
+			}
+		}
+		if keep {
+			result = append(result, ret[i])
+		}
 	}
-
-	return ret, err
+	return result
 }
 
 func childFilter(r *repo, ret *pub.ItemCollection, f *ap.Filters, keepFn func(act, ob pub.Item) bool) []int {
@@ -447,11 +471,15 @@ func childFilter(r *repo, ret *pub.ItemCollection, f *ap.Filters, keepFn func(ac
 			toRemove = append(toRemove, i)
 			continue
 		}
+		keep := false
 		for _, ob := range children {
-			if !keepFn(rr, ob) {
-				toRemove = append(toRemove, i)
+			keep = keepFn(rr, ob)
+			if keep {
 				break
 			}
+		}
+		if !keep {
+			toRemove = append(toRemove, i)
 		}
 	}
 	return toRemove
