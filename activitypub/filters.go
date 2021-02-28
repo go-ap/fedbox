@@ -519,6 +519,9 @@ func filterObjectNoNameNoType(ob *pub.Object, ff *Filters) bool {
 	if !filterWithAbsent(ff.InReplyTo(), ob.InReplyTo) {
 		return false
 	}
+	if !filterWithAbsent(ff.AttributedTo(), ob.AttributedTo) {
+		return false
+	}
 	if !filterMediaTypes(ff.MediaTypes(), ob.MediaType) {
 		return false
 	}
