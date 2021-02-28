@@ -350,8 +350,10 @@ func isSingleItem(f s.Filterable) bool {
 	}
 	return false
 }
+
 func loadFromOneTable(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
 	conn := r.conn
+	// NOTE(marius): this doesn't seem to be working, our filter is never an IRI or Item
 	if isSingleItem(f) {
 		if cachedIt := r.cache.Get(f.GetLink()); cachedIt != nil {
 			return pub.ItemCollection{cachedIt}, nil
@@ -413,9 +415,9 @@ func loadFromDb(r *repo, f *ap.Filters) (pub.Item, error) {
 	// todo(marius): this needs to be split into three cases:
 	//  1. IRI corresponds to a collection that is not one of the storage tables (ie, not activities, actors, objects):
 	//    Then we look for correspondences in the collections table.
-	// 2. The IRI corresponds to the activities, actors, objects tables:
+	//  2. The IRI corresponds to the activities, actors, objects tables:
 	//    Then we load from the corresponding table using `iri LIKE IRI%` criteria
-	// 3. IRI corresponds to an object: we load directly from the corresponding table.
+	//  3. IRI corresponds to an object: we load directly from the corresponding table.
 	selCnt := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s", table, strings.Join(clauses, " AND "))
 	if err := conn.QueryRow(selCnt, values...).Scan(&total); err != nil && err != sql.ErrNoRows {
 		return nil, errors.Annotatef(err, "unable to count all rows")
@@ -478,21 +480,21 @@ func loadFromDb(r *repo, f *ap.Filters) (pub.Item, error) {
 		}
 		col := getCollectionTypeFromIRI(iri)
 		if col == "objects" {
-			fOb.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+			fOb.ItemKey = append(fOb.ItemKey, ap.StringEquals(object))
 		} else if col == "actors" {
-			fActors.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+			fActors.ItemKey = append(fActors.ItemKey, ap.StringEquals(object))
 		} else if col == "activities" {
-			fActivities.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+			fActivities.ItemKey = append(fActivities.ItemKey, ap.StringEquals(object))
 		} else {
 			switch table {
 			case "activities":
-				fActivities.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+				fActivities.ItemKey = append(fActivities.ItemKey, ap.StringEquals(object))
 			case "actors":
-				fActors.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+				fActors.ItemKey = append(fActors.ItemKey, ap.StringEquals(object))
 			case "objects":
 				fallthrough
 			default:
-				fOb.ItemKey = append(f.ItemKey, ap.StringEquals(object))
+				fOb.ItemKey = append(fOb.ItemKey, ap.StringEquals(object))
 			}
 		}
 	}
