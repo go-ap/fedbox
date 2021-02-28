@@ -46,7 +46,7 @@ func (h Hash) String() string {
 	return string(h)
 }
 
-// String returns the hash as a string
+// Matches
 func (h Hash) Matches(i pub.IRI) bool {
 	return path.Base(i.String()) == string(h)
 }
@@ -72,7 +72,7 @@ const (
 	ModType = h.CollectionType("mods")
 )
 
-// @todo(marius): here we need a better separation between the collections which are exposed in the HTTP API
+// TODO(marius): here we need a better separation between the collections which are exposed in the HTTP API
 //   (activities,actors,objects) and the ones that are internal (blocked,ignored)
 var (
 	FedboxCollections = h.CollectionTypes{
@@ -1123,14 +1123,6 @@ func FiltersFromIRI (i pub.IRI) (*Filters, error) {
 		f.MaxItems = MaxItems
 	}
 
-	if f.Object != nil {
-		f.Object.Collection = ObjectsType
-		f.Object.baseURL = f.baseURL
-	}
-	if f.Actor != nil {
-		f.Actor.Collection = ActorsType
-		f.Actor.baseURL = f.baseURL
-	}
 	return f, nil
 }
 
@@ -1158,15 +1150,6 @@ func FromRequest(r *http.Request, baseUrl string) (*Filters, error) {
 
 	if f.MaxItems > MaxItems {
 		f.MaxItems = MaxItems
-	}
-
-	if f.Object != nil {
-		f.Object.Collection = ObjectsType
-		f.Object.baseURL = f.baseURL
-	}
-	if f.Actor != nil {
-		f.Actor.Collection = ActorsType
-		f.Actor.baseURL = f.baseURL
 	}
 
 	return f, nil
