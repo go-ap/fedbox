@@ -102,7 +102,8 @@ func getIRIWheres(strs ap.CompStrs, id pub.IRI) (string, []interface{}) {
 		u.RawQuery = ""
 		id = pub.IRI(u.String())
 	}
-	if len(id) > 0 {
+	// FIXME(marius): this is a hack that avoids trying to use clause on IRI, when iri == "/"
+	if len(id) > 1 {
 		if len(iriClause) > 0 {
 			iriClause += " OR "
 		}
