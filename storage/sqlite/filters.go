@@ -15,86 +15,118 @@ func isCollection(col string) bool {
 	return col == string(ap.ActorsType) || col == string(ap.ActivitiesType) || col == string(ap.ObjectsType)
 }
 
-func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
-	var clauses = make([]string, 0)
+func getStringFieldInJSONWheres(strs ap.CompStrs, props ...string) (string, []interface{}) {
+	if len(strs) == 0 {
+		return "", nil
+	}
 	var values = make([]interface{}, 0)
-
-	var counter = 1
-
-	if types := f.Types(); len(types) > 0 {
-		keyWhere := make([]string, 0)
-		for _, t := range types {
-			typ := pub.ActivityVocabularyType(t.Str)
-			switch t.Operator {
-			case "!":
-				keyWhere = append(keyWhere, `"type" != ?`)
-			case "~":
-				keyWhere = append(keyWhere, `"type" LIKE ?`)
-			case "", "=":
-				keyWhere = append(keyWhere, `"type" = ?`)
+	keyWhere := make([]string, 0)
+	for _, n := range strs {
+		switch n.Operator {
+		case "!":
+			for _, prop := range props {
+				keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') %s ?`, prop, "!="))
+				values = append(values, interface{}(n.Str))
 			}
-
-			values = append(values, interface{}(typ))
-			counter++
+		case "~":
+			for _, prop := range props {
+				keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') %s ?`, prop, "LIKE"))
+				values = append(values, interface{}(n.Str+"%"))
+			}
+		case "", "=":
+			fallthrough
+		default:
+			for _, prop := range props {
+				keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') %s ?`, prop, "="))
+				values = append(values, interface{}(n.Str))
+			}
 		}
-		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
+	}
+	return fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")), values
+}
+
+func getStringFieldWheres(strs ap.CompStrs, fields ...string) (string, []interface{}) {
+	if len(strs) == 0 {
+		return "", nil
+	}
+	var values = make([]interface{}, 0)
+	keyWhere := make([]string, 0)
+	for _, t := range strs {
+		switch t.Operator {
+		case "!":
+			for _, field := range fields {
+				keyWhere = append(keyWhere, fmt.Sprintf(`"%s" != ?`, field))
+				values = append(values, interface{}(t.Str))
+			}
+		case "~":
+			for _, field := range fields {
+				keyWhere = append(keyWhere, fmt.Sprintf(`"%s" LIKE ?`, field))
+				values = append(values, interface{}(t.Str))
+			}
+		case "", "=":
+			for _, field := range fields {
+				keyWhere = append(keyWhere, fmt.Sprintf(`"%s" = ?`, field))
+				values = append(values, interface{}(t.Str))
+			}
+		}
 	}
 
-	iris := f.IRIs()
-	skipId := false
-	if len(iris) > 0 {
-		keyWhere := make([]string, 0)
-		for _, iriF := range iris {
-			key := iriF.Str
-			switch iriF.Operator {
-			case "!":
-				keyWhere = append(keyWhere, `iri != ?`)
-			case "~":
-				keyWhere = append(keyWhere, `iri LIKE ?`)
-			case "", "=":
-				skipId = true
-				keyWhere = append(keyWhere, `"iri" = ?`)
-			}
-			values = append(values, interface{}(key))
-			counter++
-		}
-		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
+	return fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")), values
+}
+
+func getTypeWheres(strs ap.CompStrs) (string, []interface{}) {
+	return getStringFieldWheres(strs, "type")
+}
+
+func getIRIWheres(strs ap.CompStrs, id pub.IRI) (string, []interface{}) {
+	iriClause, iriValues := getStringFieldWheres(strs, "iri")
+
+	skipId := strings.Contains(iriClause, `"iri" = ?`)
+	if skipId {
+		return iriClause, iriValues
 	}
-	id := f.GetLink()
 	if u, _ := id.URL(); u != nil {
 		u.RawQuery = ""
 		id = pub.IRI(u.String())
 	}
-	if len(id) > 0 && !skipId {
-		if base := path.Base(id.String()); isCollection(base) {
-			clauses = append(clauses, `"iri" like ?`)
-			values = append(values, interface{}(id+"%"))
-			counter++
-		} else {
-			clauses = append(clauses, `"iri" = ?`)
-			values = append(values, interface{}(id))
-			counter++
+	if len(id) > 0 {
+		if len(iriClause) > 0 {
+			iriClause += " OR "
 		}
+		if base := path.Base(id.String()); isCollection(base) {
+			iriClause += `"iri" like ?`
+			iriValues = append(iriValues, interface{}(id+"%"))
+		} else {
+			iriClause += `"iri" = ?`
+			iriValues = append(iriValues, interface{}(id))
+		}
+	}
+	return iriClause, iriValues
+}
+
+func getNamesWheres(strs ap.CompStrs) (string, []interface{}) {
+	return getStringFieldInJSONWheres(strs, "name", "preferredUsername")
+}
+
+func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
+	var clauses = make([]string, 0)
+	var values = make([]interface{}, 0)
+
+	if typClause, typValues := getTypeWheres(f.Types()); len(typClause) > 0 {
+		values = append(values, typValues...)
+		clauses = append(clauses, typClause)
 	}
 
-	if names := f.Names(); len(names) > 0 {
-		keyWhere := make([]string, 0)
-		for _, n := range names {
-			switch n.Operator {
-			case "!":
-				keyWhere = append(keyWhere, `json_extract("raw", '$.name') != ? or json_extract("raw", '$.preferredUsername') != ? `)
-				values = append(values, interface{}(n.Str), interface{}(n.Str))
-			case "~":
-				keyWhere = append(keyWhere, `json_extract("raw", '$.name') LIKE ? or json_extract("raw", '$.preferredUsername') LIKE ? `)
-				values = append(values, interface{}(n.Str+"%"), interface{}(n.Str+"%"))
-			case "", "=":
-				keyWhere = append(keyWhere, `json_extract("raw", '$.name') = ? or json_extract("raw", '$.preferredUsername') = ?`)
-				values = append(values, interface{}(n.Str), interface{}(n.Str))
-			}
-			counter++
-		}
-		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
+	if iriClause, iriValues := getIRIWheres(f.IRIs(), f.GetLink()); len(iriClause) > 0 {
+		values = append(values, iriValues...)
+		clauses = append(clauses, iriClause)
 	}
+
+	if nameClause, nameValues := getNamesWheres(f.Names()); len(nameClause) > 0 {
+		values = append(values, nameValues...)
+		clauses = append(clauses, nameClause)
+	}
+
 	if len(clauses) == 0 {
 		clauses = append(clauses, " true")
 	}
