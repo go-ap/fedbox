@@ -403,7 +403,58 @@ func loadFromOneTable(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
 		ret = append(ret, it)
 	}
 
+	// If our filter contains values for filtering the activity's object or actor, we do that here:
+	//  for the case where the corresponding values are not set, this doesn't do anything
+	toRemove := make([]int, 0)
+	toRemove = append(toRemove, childFilter(r, &ret, f.Object, func(act pub.Item, ob pub.Item) bool {
+			var keep bool
+			pub.OnActivity(act, func(a *pub.Activity) error {
+				if a.Object.GetLink().Equals(ob.GetLink(), false) {
+					a.Object = ob
+					keep = true
+				}
+				return nil
+			})
+			return keep
+		})...)
+	toRemove = append(toRemove, childFilter(r, &ret, f.Actor, func(act pub.Item, ob pub.Item) bool {
+		var keep bool
+		pub.OnActivity(act, func(a *pub.Activity) error {
+			if a.Actor.GetLink().Equals(ob.GetLink(), false) {
+				a.Actor = ob
+				keep = true
+			}
+			return nil
+		})
+		return keep
+	})...)
+
+	for _, id := range toRemove {
+		ret = append(ret[:id], ret[id+1:]...)
+	}
+
 	return ret, err
+}
+
+func childFilter(r *repo, ret *pub.ItemCollection, f *ap.Filters, keepFn func(act, ob pub.Item) bool) []int {
+	if f == nil {
+		return nil
+	}
+	toRemove := make([]int, 0)
+	children, _ := loadFromOneTable(r, f)
+	for i, rr := range *ret {
+		if !pub.ActivityTypes.Contains(rr.GetType()) {
+			toRemove = append(toRemove, i)
+			continue
+		}
+		for _, ob := range children {
+			if !keepFn(rr, ob) {
+				toRemove = append(toRemove, i)
+				break
+			}
+		}
+	}
+	return toRemove
 }
 
 func loadFromDb(r *repo, f *ap.Filters) (pub.Item, error) {
