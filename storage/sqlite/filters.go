@@ -78,6 +78,19 @@ func getTypeWheres(strs ap.CompStrs) (string, []interface{}) {
 	return getStringFieldWheres(strs, "type")
 }
 
+func getURLWheres(strs ap.CompStrs) (string, []interface{}) {
+	clause, values := getStringFieldWheres(strs, "url")
+	jClause, jValues := getStringFieldInJSONWheres(strs, "url")
+	if len(jClause) > 0 {
+		if len(clause) > 0 {
+			clause += " OR "
+		}
+		clause += jClause
+	}
+	values = append(values, jValues...)
+	return clause, values
+}
+
 func getIRIWheres(strs ap.CompStrs, id pub.IRI) (string, []interface{}) {
 	iriClause, iriValues := getStringFieldWheres(strs, "iri")
 
@@ -108,6 +121,14 @@ func getNamesWheres(strs ap.CompStrs) (string, []interface{}) {
 	return getStringFieldInJSONWheres(strs, "name", "preferredUsername")
 }
 
+func getInReplyToWheres(strs ap.CompStrs) (string, []interface{}) {
+	return getStringFieldInJSONWheres(strs, "inReplyTo")
+}
+
+func getAttributedToWheres(strs ap.CompStrs) (string, []interface{}) {
+	return getStringFieldInJSONWheres(strs, "attributedTo")
+}
+
 func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 	var clauses = make([]string, 0)
 	var values = make([]interface{}, 0)
@@ -125,6 +146,21 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 	if nameClause, nameValues := getNamesWheres(f.Names()); len(nameClause) > 0 {
 		values = append(values, nameValues...)
 		clauses = append(clauses, nameClause)
+	}
+
+	if replClause, replValues := getInReplyToWheres(f.InReplyTo()); len(replClause) > 0 {
+		values = append(values, replValues...)
+		clauses = append(clauses, replClause)
+	}
+
+	if authorClause, authorValues := getAttributedToWheres(f.AttributedTo()); len(authorClause) > 0 {
+		values = append(values, authorValues...)
+		clauses = append(clauses, authorClause)
+	}
+
+	if urlClause, urlValues := getURLWheres(f.URLs()); len(urlClause) > 0 {
+		values = append(values, urlValues...)
+		clauses = append(clauses, urlClause)
 	}
 
 	if len(clauses) == 0 {

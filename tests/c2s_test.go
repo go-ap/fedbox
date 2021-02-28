@@ -465,6 +465,48 @@ var ObjectsCollectionTests = testPairs {
 					},
 				},
 			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?url=%s", apiURL, url.QueryEscape("https://github.com/mariusor/mpris-scrobbler")),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?url=%s", apiURL, url.QueryEscape("https://github.com/mariusor/mpris-scrobbler")),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?attributedTo=%s", apiURL, url.QueryEscape("http://127.0.0.1:9998/actors/2")),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?attributedTo=%s", apiURL, url.QueryEscape("http://127.0.0.1:9998/actors/2")),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 3,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?inReplyTo=%s", apiURL, url.QueryEscape("http://127.0.0.1:9998/objects/1")),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?inReplyTo=%s", apiURL, url.QueryEscape("http://127.0.0.1:9998/objects/1")),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 0,
+					},
+				},
+			},
 		},
 	},
 
