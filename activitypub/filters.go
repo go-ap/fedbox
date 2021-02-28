@@ -318,12 +318,12 @@ func (f Filters) Page() uint {
 	return f.CurPage
 }
 
-// Page
+// Before
 func (f Filters) Before() Hash {
 	return f.Prev
 }
 
-// Page
+// After
 func (f Filters) After() Hash {
 	return f.Next
 }
