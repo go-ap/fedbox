@@ -91,8 +91,8 @@ func seedTestData(t *testing.T, testData []string) {
 	}
 	clientCode := path.Base(defaultTestApp.Id)
 
-	o := cmd.New(aDb, db, Options)
 	mocks := make(pub.ItemCollection, 0)
+	o := cmd.New(aDb, db, Options)
 	json := loadMockJson("mocks/application.json", nil)()
 	act, err := pub.UnmarshalJSON([]byte(json))
 	if err == nil {
@@ -117,7 +117,7 @@ func seedTestData(t *testing.T, testData []string) {
 			mocks = append(mocks, it)
 		}
 	}
-	addMockObjects(o.Storage, mocks, t.Errorf)
+	addMockObjects(db, mocks, t.Errorf)
 
 	tok, err := o.GenAuthToken(clientCode, defaultTestAccount.Id, nil)
 	if err == nil {

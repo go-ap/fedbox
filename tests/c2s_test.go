@@ -6,6 +6,7 @@ import (
 	"fmt"
 	pub "github.com/go-ap/activitypub"
 	"net/http"
+	"net/url"
 	"testing"
 )
 
@@ -235,6 +236,48 @@ var ActorsCollectionTests = testPairs {
 					},
 				},
 			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/actors?name=%s", apiURL, "element_a"),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/actors?name=%s", apiURL, "element_a"),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/actors?name=~%s", apiURL, "element"),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/actors?name=~%s", apiURL, "element"),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 9,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/actors?name=%s&name=%s", apiURL, "element_a", "element_b"),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/actors?name=%s&name=%s", apiURL, "element_a", "element_b"),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 2,
+					},
+				},
+			},
 		},
 	},
 }
@@ -375,6 +418,48 @@ var ObjectsCollectionTests = testPairs {
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects?type=%s&type=%s", apiURL, pub.PageType, pub.PlaceType),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 2,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?name=%s", apiURL, url.QueryEscape("You are here")),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?name=%s", apiURL, url.QueryEscape("You are here")),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?name=~%s", apiURL, url.QueryEscape("You are")),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?name=~%s", apiURL, url.QueryEscape("You are")),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?name=~%s&name=~%s", apiURL, "You", "Humble"),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?name=~%s&name=~%s", apiURL, "You", "Humble"),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 2,
 					},
