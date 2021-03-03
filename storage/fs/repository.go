@@ -61,13 +61,15 @@ func New(c Config) (*repo, error) {
 }
 
 type repo struct {
-	baseURL string
-	path    string
-	cwd     string
-	opened  bool
-	cache   cache.CanStore
-	logFn   loggerFn
-	errFn   loggerFn
+	baseURL       string
+	path          string
+	// NOTE(marius): this is used to be able to toggle easily between storage with relative symlinks or absolute ones
+	absolutePaths bool
+	cwd           string
+	opened        bool
+	cache         cache.CanStore
+	logFn         loggerFn
+	errFn         loggerFn
 }
 
 // Open
@@ -192,7 +194,7 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 }
 
 func isSymLink(fi os.FileInfo) bool {
-	return (fi.Mode()&os.ModeSymlink == os.ModeSymlink)
+	return fi.Mode()&os.ModeSymlink == os.ModeSymlink
 }
 
 func isHardLink(fi os.FileInfo) bool {
@@ -254,17 +256,23 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 			return nil
 		}
 
-		absItPath, err := filepath.Abs(itPath)
-		if err != nil {
+		if itPath, err = filepath.Abs(itPath); 	err != nil {
 			return err
 		}
-		absLinkPath, err := filepath.Abs(fullLink)
-		if err != nil {
+		if fullLink, err = filepath.Abs(fullLink); err != nil {
 			return err
 		}
-		// NOTE(marius): we can't use hard links as we're link to folders :(
+		if !r.absolutePaths {
+			if itPath, err = filepath.Rel(fullLink, itPath); err != nil {
+				return err
+			}
+			// NOTE(marius): using filepath.Rel returns one extra parent for some reason, I need to look into why
+			itPath = strings.Replace(itPath, "../", "", 1)
+		}
+
+		// NOTE(marius): we can't use hard links as we're linking to folders :(
 		// This would have been tremendously easier (as in, not having to compute paths) with hard-links.
-		return os.Symlink(absItPath, absLinkPath)
+		return os.Symlink(itPath, fullLink)
 	})
 }
 
@@ -401,7 +409,11 @@ func (r repo) itemPath(iri pub.IRI) string {
 		return ""
 	}
 	p := url.Path
-	return path.Join(r.path, url.Host, p)
+	base := ""
+	if r.absolutePaths {
+		base = r.path
+	}
+	return path.Join(base, url.Host, p)
 }
 
 // createCollections
