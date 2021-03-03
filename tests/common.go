@@ -66,7 +66,10 @@ type testReq struct {
 	body     string
 }
 
-func (t testPair) name() string {
+func (t testPair) label() string {
+	if t.name != "" {
+		return t.name
+	}
 	b := t.req.url
 	if b == "" {
 		b = t.req.urlFn()
@@ -81,6 +84,7 @@ type testRes struct {
 }
 
 type testPair struct {
+	name  string
 	mocks []string
 	req   testReq
 	act   *objectVal
@@ -489,7 +493,7 @@ func errNotGoneGetRequest(t *testing.T) requestGetAssertFn {
 func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 	return func(test testPair) map[string]interface{} {
 		res := make(map[string]interface{})
-		t.Run(test.name(), func(t *testing.T) {
+		t.Run(test.label(), func(t *testing.T) {
 			assertTrue := errIfNotTrue(t)
 			assertGetRequest := errNotOKGetRequest(t)
 			assertObjectProperties := errOnObjectProperties(t)
@@ -603,7 +607,7 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 		t.Run(name, func(t *testing.T) {
 			seedTestData(t, suite.mocks)
 			for _, test := range suite.tests {
-				t.Run(test.name(), func(t *testing.T) {
+				t.Run(test.label(), func(t *testing.T) {
 					seedTestData(t, test.mocks)
 					errOnRequest(t)(test)
 				})
