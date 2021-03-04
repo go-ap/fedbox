@@ -61,8 +61,8 @@ func New(c Config) (*repo, error) {
 }
 
 type repo struct {
-	baseURL       string
-	path          string
+	baseURL string
+	path    string
 	// NOTE(marius): this is used to be able to toggle easily between storage with relative symlinks or absolute ones
 	absolutePaths bool
 	cwd           string
@@ -256,7 +256,7 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 			return nil
 		}
 
-		if itPath, err = filepath.Abs(itPath); 	err != nil {
+		if itPath, err = filepath.Abs(itPath); err != nil {
 			return err
 		}
 		if fullLink, err = filepath.Abs(fullLink); err != nil {
