@@ -711,7 +711,11 @@ func (r repo) loadFromPath(f s.Filterable) (pub.Item, error) {
 	if isStorageCollectionKey(itPath) || itPath == r.path {
 		err = filepath.Walk(itPath, func(p string, info os.FileInfo, err error) error {
 			if err != nil && os.IsNotExist(err) {
-				return errors.NotFoundf("%s not found", p)
+				if isStorageCollectionKey(p) {
+					return errors.NewNotFound(err, "%s not found", p)
+				}
+				r.errFn("Error when loading path %s: %s", p, err)
+				return nil
 			}
 			dirPath, _ := path.Split(p)
 			dir := strings.TrimRight(dirPath, "/")
