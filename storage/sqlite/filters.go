@@ -31,7 +31,7 @@ func getStringFieldInJSONWheres(strs ap.CompStrs, props ...string) (string, []in
 		case "~":
 			for _, prop := range props {
 				keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') %s ?`, prop, "LIKE"))
-				values = append(values, interface{}(n.Str+"%"))
+				values = append(values, interface{}("%"+n.Str+"%"))
 			}
 		case "", "=":
 			fallthrough
@@ -61,7 +61,7 @@ func getStringFieldWheres(strs ap.CompStrs, fields ...string) (string, []interfa
 		case "~":
 			for _, field := range fields {
 				keyWhere = append(keyWhere, fmt.Sprintf(`"%s" LIKE ?`, field))
-				values = append(values, interface{}(t.Str))
+				values = append(values, interface{}("%"+t.Str+"%"))
 			}
 		case "", "=":
 			for _, field := range fields {
@@ -108,8 +108,8 @@ func getIRIWheres(strs ap.CompStrs, id pub.IRI) (string, []interface{}) {
 			iriClause += " OR "
 		}
 		if base := path.Base(id.String()); isCollection(base) {
-			iriClause += `"iri" like ?`
-			iriValues = append(iriValues, interface{}(id+"%"))
+			iriClause += `"iri" LIKE ?`
+			iriValues = append(iriValues, interface{}("%"+id+"%"))
 		} else {
 			iriClause += `"iri" = ?`
 			iriValues = append(iriValues, interface{}(id))
