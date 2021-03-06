@@ -6,6 +6,7 @@ import (
 	"fmt"
 	pub "github.com/go-ap/activitypub"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
 	"path"
 	"strings"
@@ -91,6 +92,11 @@ func getURLWheres(strs ap.CompStrs) (string, []interface{}) {
 	return clause, values
 }
 
+var MandatoryCollections = handlers.CollectionTypes{
+	handlers.Inbox,
+	handlers.Outbox,
+}
+
 func getIRIWheres(strs ap.CompStrs, id pub.IRI) (string, []interface{}) {
 	iriClause, iriValues := getStringFieldWheres(strs, "iri")
 
@@ -98,6 +104,7 @@ func getIRIWheres(strs ap.CompStrs, id pub.IRI) (string, []interface{}) {
 	if skipId {
 		return iriClause, iriValues
 	}
+
 	if u, _ := id.URL(); u != nil {
 		u.RawQuery = ""
 		id = pub.IRI(u.String())
@@ -165,7 +172,11 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 	}
 
 	if len(clauses) == 0 {
-		clauses = append(clauses, " true")
+		if ap.FedboxCollections.Contains(f.Collection) {
+			clauses = append(clauses, " true")
+		} else {
+			clauses = append(clauses, " false")
+		}
 	}
 
 	return clauses, values

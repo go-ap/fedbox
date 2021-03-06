@@ -509,10 +509,12 @@ func loadFromDb(r *repo, f *ap.Filters) (pub.Item, error) {
 		iriValue  interface{}
 		hasIRI    = false
 	)
-	for i, c := range clauses {
+	valIdx := -1
+	for _, c := range clauses {
+		valIdx += strings.Count(c, "?")
 		if strings.Contains(c, "iri") {
 			iriClause = c
-			iriValue = values[i]
+			iriValue = values[valIdx]
 			hasIRI = true
 		}
 	}
@@ -523,7 +525,7 @@ func loadFromDb(r *repo, f *ap.Filters) (pub.Item, error) {
 	if err := conn.QueryRow(colCntQ, iriValue).Scan(&total); err != nil && err != sql.ErrNoRows {
 		return nil, errors.Annotatef(err, "unable to count all rows")
 	}
-	if total == 0 && handlers.ActivityPubCollections.Contains(f.Collection) && f.Collection != handlers.Inbox {
+	if total == 0 && handlers.ActivityPubCollections.Contains(f.Collection) && !MandatoryCollections.Contains(f.Collection) {
 		return nil, errors.NotFoundf("Unable to find collection %s", f.Collection)
 	}
 	sel := fmt.Sprintf("SELECT id, iri, object FROM %s WHERE %s %s", "collections", iriClause, getLimit(f))
