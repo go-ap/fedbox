@@ -158,7 +158,36 @@ func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, err
 
 // RemoveFrom
 func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
-	return errNotImplemented
+	if err := r.Open(); err != nil {
+		return err
+	}
+	defer r.Close()
+	query := "DELETE FROM collections where iri = ? AND object = ?;"
+
+	if _, err := r.conn.Exec(query, col, it.GetLink()); err != nil {
+		r.errFn("query error: %s\n%s\n%#v", err, query)
+		return errors.Annotatef(err, "query error")
+	}
+	/*
+	delIt := "DELETE FROM %s where iri = ?;"
+	_, errOb := r.conn.Exec(fmt.Sprintf(delIt, "objects"), it.GetLink())
+	if  errOb != nil {
+		r.errFn("query error: %s\n%s\n%#v", errOb, fmt.Sprintf(delIt, "objects"))
+	}
+	_, errActors := r.conn.Exec(fmt.Sprintf(delIt, "actors"), it.GetLink())
+	if  errActors != nil {
+		r.errFn("query error: %s\n%s\n%#v", errActors, fmt.Sprintf(delIt, "actors"))
+	}
+	_, errActivities := r.conn.Exec(fmt.Sprintf(delIt, "activities"), it.GetLink())
+	if  errActivities != nil {
+		r.errFn("query error: %s\n%s\n%#v", errActivities, fmt.Sprintf(delIt, "activities"))
+	}
+	if errOb != nil && errActors != nil && errActivities != nil {
+		return errors.Newf("unable to remove items from any of the tables: %s, %s, %s", errOb, errActors, errActivities)
+	}
+	 */
+
+	return nil
 }
 
 // AddTo
