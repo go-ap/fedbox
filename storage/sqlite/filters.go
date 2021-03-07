@@ -95,6 +95,10 @@ func getTypeWheres(strs ap.CompStrs) (string, []interface{}) {
 	return getStringFieldWheres(strs, "type")
 }
 
+func getContextWheres(strs ap.CompStrs) (string, []interface{}) {
+	return getStringFieldInJSONWheres(strs, "context")
+}
+
 func getURLWheres(strs ap.CompStrs) (string, []interface{}) {
 	clause, values := getStringFieldWheres(strs, "url")
 	jClause, jValues := getStringFieldInJSONWheres(strs, "url")
@@ -185,6 +189,11 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 	if urlClause, urlValues := getURLWheres(f.URLs()); len(urlClause) > 0 {
 		values = append(values, urlValues...)
 		clauses = append(clauses, urlClause)
+	}
+
+	if ctxtClause, ctxtValues := getContextWheres(f.Context()); len(ctxtClause) > 0 {
+		values = append(values, ctxtValues...)
+		clauses = append(clauses, ctxtClause)
 	}
 
 	if len(clauses) == 0 {
