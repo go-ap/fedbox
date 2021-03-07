@@ -120,7 +120,7 @@ var MandatoryCollections = handlers.CollectionTypes{
 func getIRIWheres(strs ap.CompStrs, id pub.IRI) (string, []interface{}) {
 	iriClause, iriValues := getStringFieldWheres(strs, "iri")
 
-	skipId := strings.Contains(iriClause, `"iri" = ?`)
+	skipId := strings.Contains(iriClause, `"iri"`)
 	if skipId {
 		return iriClause, iriValues
 	}
