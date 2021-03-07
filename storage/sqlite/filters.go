@@ -26,20 +26,28 @@ func getStringFieldInJSONWheres(strs ap.CompStrs, props ...string) (string, []in
 		switch n.Operator {
 		case "!":
 			for _, prop := range props {
-				keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') %s ?`, prop, "!="))
-				values = append(values, interface{}(n.Str))
+				if n.Str == string(pub.NilLangRef) {
+					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') IS NOT NULL`, prop))
+				} else {
+					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') != ?`, prop))
+					values = append(values, interface{}(n.Str))
+				}
 			}
 		case "~":
 			for _, prop := range props {
-				keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') %s ?`, prop, "LIKE"))
+				keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') LIKE ?`, prop))
 				values = append(values, interface{}("%"+n.Str+"%"))
 			}
 		case "", "=":
 			fallthrough
 		default:
 			for _, prop := range props {
-				keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') %s ?`, prop, "="))
-				values = append(values, interface{}(n.Str))
+				if n.Str == string(pub.NilLangRef) {
+					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') IS NULL`, prop))
+				} else {
+					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') = ?`, prop))
+					values = append(values, interface{}(n.Str))
+				}
 			}
 		}
 	}
@@ -56,8 +64,12 @@ func getStringFieldWheres(strs ap.CompStrs, fields ...string) (string, []interfa
 		switch t.Operator {
 		case "!":
 			for _, field := range fields {
-				keyWhere = append(keyWhere, fmt.Sprintf(`"%s" != ?`, field))
-				values = append(values, interface{}(t.Str))
+				if t.Str == string(pub.NilLangRef) {
+					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" IS NOT NULL`, field))
+				} else {
+					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" != ?`, field))
+					values = append(values, interface{}(t.Str))
+				}
 			}
 		case "~":
 			for _, field := range fields {
@@ -66,8 +78,12 @@ func getStringFieldWheres(strs ap.CompStrs, fields ...string) (string, []interfa
 			}
 		case "", "=":
 			for _, field := range fields {
-				keyWhere = append(keyWhere, fmt.Sprintf(`"%s" = ?`, field))
-				values = append(values, interface{}(t.Str))
+				if t.Str == string(pub.NilLangRef) {
+					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" IS NULL`, field))
+				} else {
+					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" = ?`, field))
+					values = append(values, interface{}(t.Str))
+				}
 			}
 		}
 	}
