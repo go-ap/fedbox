@@ -168,24 +168,6 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 		r.errFn("query error: %s\n%s\n%#v", err, query)
 		return errors.Annotatef(err, "query error")
 	}
-	/*
-	delIt := "DELETE FROM %s where iri = ?;"
-	_, errOb := r.conn.Exec(fmt.Sprintf(delIt, "objects"), it.GetLink())
-	if  errOb != nil {
-		r.errFn("query error: %s\n%s\n%#v", errOb, fmt.Sprintf(delIt, "objects"))
-	}
-	_, errActors := r.conn.Exec(fmt.Sprintf(delIt, "actors"), it.GetLink())
-	if  errActors != nil {
-		r.errFn("query error: %s\n%s\n%#v", errActors, fmt.Sprintf(delIt, "actors"))
-	}
-	_, errActivities := r.conn.Exec(fmt.Sprintf(delIt, "activities"), it.GetLink())
-	if  errActivities != nil {
-		r.errFn("query error: %s\n%s\n%#v", errActivities, fmt.Sprintf(delIt, "activities"))
-	}
-	if errOb != nil && errActors != nil && errActivities != nil {
-		return errors.Newf("unable to remove items from any of the tables: %s, %s, %s", errOb, errActors, errActivities)
-	}
-	 */
 
 	return nil
 }
@@ -241,7 +223,7 @@ func (r *repo) Delete(it pub.Item) (pub.Item, error) {
 	if it.IsObject() {
 		t.FormerType = it.GetType()
 	} else {
-		if old, err := loadFromOneTable(r, f); err == nil {
+		if old, err := loadFromThreeTables(r, f); err == nil {
 			t.FormerType = old.GetType()
 		}
 	}
@@ -380,7 +362,31 @@ func isSingleItem(f s.Filterable) bool {
 	return false
 }
 
-func loadFromOneTable(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
+func loadFromObjects(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
+	return loadFromOneTable(r, "objects", f)
+}
+func loadFromActors(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
+	return loadFromOneTable(r, "actors", f)
+}
+func loadFromActivities(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
+	return loadFromOneTable(r, "activities", f)
+}
+
+func loadFromThreeTables(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
+	result := make(pub.ItemCollection, 0)
+	if obj, err := loadFromObjects(r, f); err == nil {
+		result = append(result, obj...)
+	}
+	if actors, err := loadFromActors(r, f); err == nil {
+		result = append(result, actors...)
+	}
+	if activities, err := loadFromActors(r, f); err == nil {
+		result = append(result, activities...)
+	}
+	return result, nil
+}
+
+func loadFromOneTable(r *repo, table handlers.CollectionType, f *ap.Filters) (pub.ItemCollection, error) {
 	conn := r.conn
 	// NOTE(marius): this doesn't seem to be working, our filter is never an IRI or Item
 	if isSingleItem(f) {
@@ -388,7 +394,9 @@ func loadFromOneTable(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
 			return pub.ItemCollection{cachedIt}, nil
 		}
 	}
-	table := getCollectionTableFromFilter(f)
+	if table == "" {
+		table = getCollectionTableFromFilter(f)
+	}
 	clauses, values := getWhereClauses(f)
 	var total uint = 0
 
@@ -494,7 +502,7 @@ func childFilter(r *repo, ret *pub.ItemCollection, f *ap.Filters, keepFn func(ac
 		return nil
 	}
 	toRemove := make([]int, 0)
-	children, _ := loadFromOneTable(r, f)
+	children, _ := loadFromThreeTables(r, f)
 	for i, rr := range *ret {
 		if !pub.ActivityTypes.Contains(rr.GetType()) {
 			toRemove = append(toRemove, i)
@@ -531,7 +539,7 @@ func loadFromDb(r *repo, f *ap.Filters) (pub.Item, error) {
 		return nil, errors.Annotatef(err, "unable to count all rows")
 	}
 	if total > 0 {
-		return loadFromOneTable(r, f)
+		return loadFromOneTable(r, table, f)
 	}
 	var (
 		iriClause string
@@ -610,21 +618,21 @@ func loadFromDb(r *repo, f *ap.Filters) (pub.Item, error) {
 	}
 	ret := make(pub.ItemCollection, 0)
 	if len(fActivities.ItemKey) > 0 {
-		retAct, err := loadFromOneTable(r, &fActivities)
+		retAct, err := loadFromActivities(r, &fActivities)
 		if err != nil {
 			return ret, err
 		}
 		ret = append(ret, retAct...)
 	}
 	if len(fActors.ItemKey) > 0 {
-		retAct, err := loadFromOneTable(r, &fActors)
+		retAct, err := loadFromActors(r, &fActors)
 		if err != nil {
 			return ret, err
 		}
 		ret = append(ret, retAct...)
 	}
 	if len(fOb.ItemKey) > 0 {
-		retOb, err := loadFromOneTable(r, &fOb)
+		retOb, err := loadFromObjects(r, &fOb)
 		if err != nil {
 			return ret, err
 		}
