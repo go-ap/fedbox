@@ -311,6 +311,7 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 		if err != nil {
 			return nil, err
 		}
+		items = filterItems(items, f.Audience())
 		if len(items) == 0 {
 			return nil, errors.NotFoundf("%snot found%s", what, where)
 		}
@@ -321,7 +322,6 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 			}
 		}
 		if len(items) > 1 {
-			what = fmt.Sprintf("%s", path.Base(iri))
 			return nil, errors.Errorf("Too many %s found%s", what, where)
 		}
 		it, err := loadItem(items, f, reqURL(r))
