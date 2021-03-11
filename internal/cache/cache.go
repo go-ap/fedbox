@@ -76,48 +76,35 @@ func (r *store) Remove(iris ...pub.IRI) bool {
 	return true
 }
 
-func aggregateObjectIRIs(toRemove *pub.IRIs, o *pub.Object) error {
-	if o == nil {
+func aggregateItemIRIs(toRemove *pub.IRIs, it pub.Item) error {
+	if it == nil {
 		return nil
 	}
-	if obIRI := o.GetLink(); len(obIRI) > 0 && !toRemove.Contains(obIRI){
+	if obIRI := it.GetLink(); len(obIRI) > 0 && !toRemove.Contains(obIRI){
 		*toRemove = append(*toRemove, obIRI)
 	}
-
-	if pub.IsNil(o.InReplyTo) {
+	if !it.IsObject() {
 		return nil
 	}
-	if o.InReplyTo.IsCollection() {
-		pub.OnCollectionIntf(o.InReplyTo, func(c pub.CollectionInterface) error {
-			for _, it := range c.Collection() {
+	return pub.OnObject(it, func(o *pub.Object) error {
+		if !pub.IsNil(o.InReplyTo) {
+			pub.OnObject(o.InReplyTo, func(object *pub.Object) error {
 				if repl := h.Replies.IRI(it.GetLink()); !toRemove.Contains(repl) {
 					*toRemove = append(*toRemove, repl)
 				}
-			}
-			return nil
-		})
-	} else {
-		if repl := h.Replies.IRI(o.InReplyTo.GetLink()); !toRemove.Contains(repl) {
-			*toRemove = append(*toRemove, repl)
+				return nil
+			})
 		}
-	}
-	if o.AttributedTo != nil {
-		if o.AttributedTo.IsCollection() {
-			pub.OnCollectionIntf(o.AttributedTo, func(c pub.CollectionInterface) error {
-				for _, it := range c.Collection() {
-					if outbox := h.Outbox.IRI(it); !toRemove.Contains(outbox) {
-						*toRemove = append(*toRemove, outbox)
-					}
+		if !pub.IsNil(o.AttributedTo) {
+			pub.OnObject(o.AttributedTo, func(object *pub.Object) error {
+				if repl := h.Outbox.IRI(it.GetLink()); !toRemove.Contains(repl) {
+					*toRemove = append(*toRemove, repl)
 				}
 				return nil
 			})
-		} else {
-			if outbox := h.Outbox.IRI(o.AttributedTo); !toRemove.Contains(outbox) {
-				*toRemove = append(*toRemove, outbox)
-			}
 		}
-	}
-	return nil
+		return nil
+	})
 }
 
 func aggregateActivityIRIs(toRemove *pub.IRIs, a *pub.Activity, typ h.CollectionType) error {
@@ -140,14 +127,11 @@ func aggregateActivityIRIs(toRemove *pub.IRIs, a *pub.Activity, typ h.Collection
 		*toRemove = append(*toRemove, destCol)
 	}
 
-	pub.OnObject(a.Object, func(o *pub.Object) error {
-		return aggregateObjectIRIs(toRemove, o)
-	})
-
 	if aIRI := a.GetLink(); len(aIRI) > 0 && !toRemove.Contains(aIRI) {
 		*toRemove = append(*toRemove, aIRI)
 	}
-	return nil
+
+	return aggregateItemIRIs(toRemove, a.Object)
 }
 
 func ActivityPurge(cache CanStore, a *pub.Activity, typ h.CollectionType) error {
