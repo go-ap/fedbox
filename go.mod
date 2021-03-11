@@ -14,7 +14,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20210218123445-4466eca2f4ec
 	github.com/go-ap/handlers v0.0.0-20210218123614-ae152a2ad0a3
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210218124139-272f27c71cf7
+	github.com/go-ap/processing v0.0.0-20210311191503-f4d24b3c5c86
 	github.com/go-ap/storage v0.0.0-20210202132104-cc4a85cbe1e8
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/protobuf v1.4.3 // indirect
@@ -28,7 +28,7 @@ require (
 	github.com/openshift/osin v1.0.1
 	github.com/pborman/uuid v1.2.1
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
-	github.com/sirupsen/logrus v1.8.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/spacemonkeygo/httpsig v0.0.0-20181218213338-2605ae379e47
 	github.com/tdewolff/minify v2.3.6+incompatible
 	github.com/tdewolff/parse v2.3.4+incompatible // indirect
@@ -38,7 +38,7 @@ require (
 	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
 	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210220050731-9a76102bfb43 // indirect
+	golang.org/x/sys v0.0.0-20210309074719-68d13333faf2 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
