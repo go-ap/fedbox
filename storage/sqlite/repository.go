@@ -380,7 +380,7 @@ func loadFromThreeTables(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
 	if actors, err := loadFromActors(r, f); err == nil {
 		result = append(result, actors...)
 	}
-	if activities, err := loadFromActors(r, f); err == nil {
+	if activities, err := loadFromActivities(r, f); err == nil {
 		result = append(result, activities...)
 	}
 	return result, nil
