@@ -29,8 +29,8 @@ func getStringFieldInJSONWheres(strs ap.CompStrs, props ...string) (string, []in
 				if n.Str == string(pub.NilLangRef) {
 					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') IS NOT NULL`, prop))
 				} else {
-					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') != ?`, prop))
-					values = append(values, interface{}(n.Str))
+					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') NOT LIKE ?`, prop))
+					values = append(values, interface{}("%"+n.Str+"%"))
 				}
 			}
 		case "~":
@@ -67,8 +67,8 @@ func getStringFieldWheres(strs ap.CompStrs, fields ...string) (string, []interfa
 				if t.Str == string(pub.NilLangRef) {
 					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" IS NOT NULL`, field))
 				} else {
-					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" != ?`, field))
-					values = append(values, interface{}(t.Str))
+					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" NOT LIKE ?`, field))
+					values = append(values, interface{}("%"+t.Str+"%"))
 				}
 			}
 		case "~":
