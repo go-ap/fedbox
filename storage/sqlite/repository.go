@@ -5,6 +5,12 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+	"time"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -14,12 +20,6 @@ import (
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
 	"golang.org/x/crypto/bcrypt"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
-	"time"
-
 	_ "modernc.org/sqlite"
 )
 

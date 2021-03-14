@@ -4,9 +4,10 @@ package sqlite
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
-	"os"
 )
 
 func Clean(conf config.Options) error {
@@ -70,4 +71,3 @@ func Bootstrap(conf config.Options) error {
 }
 
 func (r *repo) Reset() { }
-

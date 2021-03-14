@@ -4,12 +4,13 @@ package sqlite
 
 import (
 	"fmt"
+	"path"
+	"strings"
+
 	pub "github.com/go-ap/activitypub"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
-	"path"
-	"strings"
 )
 
 func isCollection(col string) bool {
