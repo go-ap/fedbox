@@ -1,11 +1,12 @@
 package activitypub
 
 import (
-	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/handlers"
 	"reflect"
 	"strings"
 	"testing"
+
+	pub "github.com/go-ap/activitypub"
+	"github.com/go-ap/handlers"
 )
 
 func TestItemByType(t *testing.T) {

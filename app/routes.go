@@ -1,13 +1,14 @@
 package app
 
 import (
+	"net/http"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func (f FedBOX) CollectionRoutes(descend bool) func(chi.Router) {

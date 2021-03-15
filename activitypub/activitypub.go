@@ -2,11 +2,12 @@ package activitypub
 
 import (
 	"fmt"
+	"net/url"
+	"path"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/handlers"
 	"github.com/pborman/uuid"
-	"net/url"
-	"path"
 )
 
 const developer = pub.IRI("https://github.com/mariusor")

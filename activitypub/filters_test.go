@@ -1,10 +1,11 @@
 package activitypub
 
 import (
-	pub "github.com/go-ap/activitypub"
 	"reflect"
 	"testing"
 	"time"
+
+	pub "github.com/go-ap/activitypub"
 )
 
 func TestFilters_GetLink(t *testing.T) {

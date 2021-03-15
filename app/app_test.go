@@ -1,8 +1,9 @@
 package app
 
 import (
-	"github.com/go-ap/fedbox/internal/config"
 	"testing"
+
+	"github.com/go-ap/fedbox/internal/config"
 )
 
 var defaultConfig =config.Options{

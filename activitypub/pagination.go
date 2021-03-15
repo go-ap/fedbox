@@ -1,12 +1,13 @@
 package activitypub
 
 import (
-	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/errors"
-	"github.com/mariusor/qstring"
 	"math"
 	"path"
 	"time"
+
+	pub "github.com/go-ap/activitypub"
+	"github.com/go-ap/errors"
+	"github.com/mariusor/qstring"
 )
 
 // KeysetPaginator

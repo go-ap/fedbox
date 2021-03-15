@@ -2,6 +2,9 @@ package app
 
 import (
 	"context"
+	"net/http"
+	"path"
+
 	"github.com/go-ap/auth"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
@@ -9,8 +12,6 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"path"
 )
 
 // Repo adds an implementation of the storage.Loader to a Request's context so it can be used

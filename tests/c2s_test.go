@@ -4,10 +4,11 @@ package tests
 
 import (
 	"fmt"
-	pub "github.com/go-ap/activitypub"
 	"net/http"
 	"net/url"
 	"testing"
+
+	pub "github.com/go-ap/activitypub"
 )
 
 var ActorsCollectionTests = testPairs {

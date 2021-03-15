@@ -2,6 +2,12 @@ package app
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"path"
+	"sort"
+	"strings"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
@@ -11,11 +17,6 @@ import (
 	h "github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
 	"github.com/go-ap/storage"
-	"io/ioutil"
-	"net/http"
-	"path"
-	"sort"
-	"strings"
 )
 
 type pathTyper struct{}
