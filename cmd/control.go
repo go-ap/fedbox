@@ -65,20 +65,14 @@ func Before(c *cli.Context) error {
 }
 
 func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
-	dir := c.String("dir")
-	if dir == "" {
-		dir = "."
-	}
+	path := c.String("path")
 	environ := env.Type(c.String("env"))
-	if environ == "" {
-		environ = env.DEV
-	}
 	conf, err := config.LoadFromEnv(environ, time.Second)
 	if err != nil {
 		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}
-	if dir == "." && conf.StoragePath != os.TempDir() {
-		dir = conf.StoragePath
+	if path != "."  {
+		conf.StoragePath = path
 	}
 	typ := c.String("type")
 	if typ != "" {
@@ -91,7 +85,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 		}
 		port := c.Int64("port")
 		if port == 0 {
-			host = dir
+			host = path
 		}
 		user := c.String("user")
 		if user == "" {

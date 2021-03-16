@@ -9,27 +9,6 @@ import (
 	"os"
 )
 
-type pgFlags struct {
-	host string
-	port int64
-	user string
-	pw   []byte
-}
-
-type boltFlags struct {
-	path string
-	root string
-}
-
-type ctlFlags struct {
-	env      env.Type
-	dir      string
-	typ      config.StorageType
-	url      string
-	postgres pgFlags
-	bolt     boltFlags
-}
-
 var version = "HEAD"
 
 func main() {
@@ -41,7 +20,7 @@ func main() {
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
 			Name:  "url",
-			Usage: "The url used by the application (REQUIRED)",
+			Usage: "The url used by the application",
 		},
 		&cli.StringFlag{
 			Name:  "env",
@@ -55,7 +34,7 @@ func main() {
 		&cli.StringFlag{
 			Name:  "path",
 			Value: ".",
-			Usage: fmt.Sprintf("The path for the storage folder orsocket"),
+			Usage: fmt.Sprintf("The path for the storage folder or socket"),
 		},
 		&cli.StringFlag{
 			Name:  "user",
