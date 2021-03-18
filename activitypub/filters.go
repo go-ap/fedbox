@@ -307,6 +307,12 @@ func (f *Filters) GetLink() pub.IRI {
 	if v, err := qstring.Marshal(f); err == nil && len(v) > 0 {
 		iri = pub.IRI(fmt.Sprintf("%s?%s", iri, v.Encode()))
 	}
+	if f.Authenticated != nil && !f.Authenticated.GetLink().Equals(pub.PublicNS, false) {
+		if u, err := iri.URL(); err == nil {
+			u.User = url.User(f.Authenticated.ID.String())
+			iri = pub.IRI(u.String())
+		}
+	}
 	return iri
 }
 

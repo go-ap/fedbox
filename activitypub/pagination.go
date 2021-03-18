@@ -144,6 +144,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 	}
 
 	u, _ := col.GetLink().URL()
+	u.User = nil
 	u.RawQuery = ""
 	baseURL := pub.IRI(u.String())
 	curURL := getURL(baseURL, f)

@@ -102,7 +102,9 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 			c := new(pub.OrderedCollection)
 			c.Type = pub.OrderedCollectionType
 			err = pub.OnCollectionIntf(ob, func(items pub.CollectionInterface) error {
-				c.ID = f.GetLink()
+				ff := *f
+				ff.Authenticated = nil
+				c.ID = ff.GetLink()
 				c.OrderedItems = orderItems(items.Collection())
 				c.OrderedItems = filterItems(c.OrderedItems, f.Audience())
 				c.TotalItems = items.Count()

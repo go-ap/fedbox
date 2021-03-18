@@ -128,6 +128,7 @@ func getIRIWheres(strs ap.CompStrs, id pub.IRI) (string, []interface{}) {
 
 	if u, _ := id.URL(); u != nil {
 		u.RawQuery = ""
+		u.User = nil
 		id = pub.IRI(u.String())
 	}
 	// FIXME(marius): this is a hack that avoids trying to use clause on IRI, when iri == "/"
