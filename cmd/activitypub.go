@@ -246,13 +246,13 @@ var listObjectsCmd = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:        "output",
-			Usage:       fmt.Sprintf("The format in which to output the items"),
+			Usage:       fmt.Sprintf("The format in which to output the items."),
 			DefaultText: fmt.Sprintf("Valid values: %v", []string{"json", "text"}),
 			Value:       "json",
 		},
 		&cli.StringFlag{
 			Name:  "path",
-			Usage: "Pass the path at which to start.",
+			Usage: "Pass the URL path at which to start from.",
 			Value: "/",
 		},
 	},
