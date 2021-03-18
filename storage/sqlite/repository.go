@@ -662,7 +662,7 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 	tokens := []string{"?", "?", "?", "?"}
 	params := []interface{}{
 		interface{}(iri),
-		interface{}(time.Now().UTC()),
+		interface{}(time.Now().UTC().Format(time.RFC3339Nano)),
 		interface{}(it.GetType()),
 		interface{}(raw),
 	}
