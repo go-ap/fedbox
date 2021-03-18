@@ -45,7 +45,7 @@ func reqURL(r *http.Request) string {
 	if Config.Secure || r.TLS != nil {
 		scheme = "https"
 	}
-	return fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.Path)
+	return fmt.Sprintf("%s://%s%s", scheme, r.Host, r.RequestURI)
 }
 
 func filterItems(col pub.ItemCollection, f ap.CompStrs) pub.ItemCollection {
