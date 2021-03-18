@@ -9,7 +9,6 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/log"
@@ -78,7 +77,6 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o o
 		app.errFn = l.Errorf
 	}
 	Config = conf
-	ap.Secure = conf.Secure
 	errors.IncludeBacktrace = conf.Env.IsDev() || conf.Env.IsTest()
 
 	osin, err := auth.NewServer(app.OAuthStorage, l)

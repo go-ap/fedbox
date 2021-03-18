@@ -310,9 +310,6 @@ func (f *Filters) GetLink() pub.IRI {
 	return iri
 }
 
-// TODO(marius): move this somewhere else. Or replace it with something that makes more sense.
-var Secure = false
-
 // Page
 func (f Filters) Page() uint {
 	return f.CurPage
