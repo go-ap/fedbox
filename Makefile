@@ -83,7 +83,7 @@ coverage: TEST_TARGET := .
 coverage: TEST_FLAGS += -covermode=count -coverprofile $(PROJECT_NAME).coverprofile
 coverage: test
 
-integration:
+integration: download
 	$(MAKE) -C tests $@
 
 $(FEDBOX_HOSTNAME).key $(FEDBOX_HOSTNAME).crt:
