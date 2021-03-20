@@ -444,8 +444,23 @@ func loadFromOneTable(r *repo, table handlers.CollectionType, f *ap.Filters) (pu
 		ret = append(ret, it)
 	}
 
-	ret = runActivityFilters(r, ret, f)
+	if table == "activities" {
+		ret = runActivityFilters(r, ret, f)
+	}
+	ret = runObjectFilters(r, ret, f)
 	return ret, err
+}
+
+func runObjectFilters(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.ItemCollection {
+	result := make(pub.ItemCollection, 0)
+
+	for i, it := range ret {
+		if it, _ = ap.FilterIt(it, f); it != nil {
+			result = append(result, ret[i])
+		}
+	}
+
+	return result
 }
 
 func runActivityFilters(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.ItemCollection {
