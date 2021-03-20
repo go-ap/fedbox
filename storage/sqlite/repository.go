@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	pub "github.com/go-ap/activitypub"
@@ -51,6 +52,7 @@ func New(c Config) (*repo, error) {
 
 type repo struct {
 	conn    *sql.DB
+	mu      sync.Mutex
 	baseURL string
 	path    string
 	cache   cache.CanStore
@@ -58,15 +60,17 @@ type repo struct {
 	errFn   loggerFn
 }
 
-// Open
+// Open opens the sqlite database
 func (r *repo) Open() error {
 	var err error
+	r.mu.Lock()
 	r.conn, err = sql.Open("sqlite", r.path)
 	return err
 }
 
-// Close
+// Close closes the sqlite database
 func (r *repo) Close() error {
+	r.mu.Unlock()
 	return r.conn.Close()
 }
 
