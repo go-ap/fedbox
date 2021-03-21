@@ -53,6 +53,7 @@ func New(c Config) (*repo, error) {
 type repo struct {
 	conn    *sql.DB
 	mu      sync.Mutex
+	opened  bool
 	baseURL string
 	path    string
 	cache   cache.CanStore
@@ -63,14 +64,20 @@ type repo struct {
 // Open opens the sqlite database
 func (r *repo) Open() error {
 	var err error
-	r.mu.Lock()
-	r.conn, err = sql.Open("sqlite", r.path)
+	if !r.opened {
+		r.mu.Lock()
+		r.conn, err = sql.Open("sqlite", r.path)
+		r.opened = true
+	}
 	return err
 }
 
 // Close closes the sqlite database
 func (r *repo) Close() error {
-	r.mu.Unlock()
+	defer func() {
+		r.mu.Unlock()
+		r.opened = false
+	}()
 	return r.conn.Close()
 }
 
