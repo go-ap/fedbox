@@ -75,18 +75,22 @@ func (r *repo) Open() error {
 // Close closes the sqlite database
 func (r *repo) Close() error {
 	defer func() {
-		r.mu.Unlock()
-		r.opened = false
+		if r.opened {
+			r.mu.Unlock()
+			r.opened = false
+		}
 	}()
 	return r.conn.Close()
 }
 
-func (r repo) CreateService(service pub.Service) error {
-	err := r.Open()
-	defer r.Close()
+func (r repo) CreateService(service pub.Service) (err error) {
+	err = r.Open()
 	if err != nil {
 		return err
 	}
+	defer func() {
+		err = r.Close()
+	}()
 	it, err := save(r, service)
 	if err != nil {
 		r.errFn("%s %s: %s", err, it.GetType(), it.GetLink())
