@@ -40,6 +40,7 @@ tasks:
   - integration-fs: |
       cd fedbox
       make STORAGE=fs integration
+      make TEST_FLAGS='-race -count=1' STORAGE=fs CGO_ENABLED=1 integration
   - integration-sqlite: |
       cd fedbox
       make STORAGE=sqlite integration
