@@ -1,4 +1,3 @@
-export CGO_ENABLED=0
 GO := go
 TEST_FLAGS ?= -count=1
 STORAGE ?= all
