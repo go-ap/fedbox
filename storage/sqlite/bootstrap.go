@@ -38,14 +38,15 @@ func Bootstrap(conf config.Options) error {
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
 	}
-	exec := func(qRaw string, par ...interface{}) error {
-		if err := r.Open(); err != nil {
+	exec := func(qRaw string, par ...interface{}) (err error) {
+		if err = r.Open(); err != nil {
 			return err
 		}
-		defer r.Close()
+		defer func () {
+			err = r.Close()
+		}()
 		qSql := fmt.Sprintf(qRaw, par...)
-		_, err := r.conn.Exec(qSql)
-		if err != nil {
+		if _, err = r.conn.Exec(qSql); err != nil {
 			return errors.Annotatef(err, "unable to execute: %q", qSql)
 		}
 		return nil
