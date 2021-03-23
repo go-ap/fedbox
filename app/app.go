@@ -20,6 +20,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func init() {
+	// set local path typer to validate collections
+	handlers.Typer = pathTyper{}
+}
+
 var Config config.Options
 
 type LogFn func(string, ...interface{})
@@ -109,9 +114,6 @@ func (f *FedBOX) Run() error {
 	// Create a deadline to wait for.
 	ctx, cancel := context.WithTimeout(context.TODO(), f.conf.TimeOut)
 	defer cancel()
-
-	// set local path typer to validate collections
-	handlers.Typer = pathTyper{}
 
 	listenOn := "HTTP"
 	if len(f.conf.CertPath) + len(f.conf.KeyPath) > 0 {
