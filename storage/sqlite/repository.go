@@ -481,7 +481,7 @@ func runActivityFilters(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.Item
 	toRemove = append(toRemove, childFilter(r, &ret, f.Object, func(act pub.Item, ob pub.Item) bool {
 		var keep bool
 		pub.OnActivity(act, func(a *pub.Activity) error {
-			if f.Object.ItemsMatch(a.Object) {
+			if a.Object.GetLink().Equals(ob.GetLink(), false) {
 				a.Object = ob
 				keep = true
 			}
@@ -492,7 +492,7 @@ func runActivityFilters(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.Item
 	toRemove = append(toRemove, childFilter(r, &ret, f.Actor, func(act pub.Item, ob pub.Item) bool {
 		var keep bool
 		pub.OnActivity(act, func(a *pub.Activity) error {
-			if f.Actor.ItemsMatch(a.Actor) {
+			if a.Actor.GetLink().Equals(ob.GetLink(), false) {
 				a.Actor = ob
 				keep = true
 			}
@@ -503,7 +503,7 @@ func runActivityFilters(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.Item
 	toRemove = append(toRemove, childFilter(r, &ret, f.Target, func(act pub.Item, ob pub.Item) bool {
 		var keep bool
 		pub.OnActivity(act, func(a *pub.Activity) error {
-			if f.Target.ItemsMatch(a.Target) {
+			if a.Target.GetLink().Equals(ob.GetLink(), false) {
 				a.Target = ob
 				keep = true
 			}
