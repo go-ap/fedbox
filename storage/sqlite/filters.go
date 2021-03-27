@@ -27,7 +27,7 @@ func getStringFieldInJSONWheres(strs ap.CompStrs, props ...string) (string, []in
 		switch n.Operator {
 		case "!":
 			for _, prop := range props {
-				if n.Str == string(pub.NilLangRef) {
+				if len(n.Str) == 0 || n.Str == pub.NilLangRef.String() {
 					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') IS NOT NULL`, prop))
 				} else {
 					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') NOT LIKE ?`, prop))
@@ -43,7 +43,7 @@ func getStringFieldInJSONWheres(strs ap.CompStrs, props ...string) (string, []in
 			fallthrough
 		default:
 			for _, prop := range props {
-				if n.Str == string(pub.NilLangRef) {
+				if len(n.Str) == 0 || n.Str == pub.NilLangRef.String() {
 					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') IS NULL`, prop))
 				} else {
 					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') = ?`, prop))
@@ -65,7 +65,7 @@ func getStringFieldWheres(strs ap.CompStrs, fields ...string) (string, []interfa
 		switch t.Operator {
 		case "!":
 			for _, field := range fields {
-				if t.Str == string(pub.NilLangRef) {
+				if len(t.Str) == 0 || t.Str == pub.NilLangRef.String() {
 					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" IS NOT NULL`, field))
 				} else {
 					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" NOT LIKE ?`, field))
@@ -79,7 +79,7 @@ func getStringFieldWheres(strs ap.CompStrs, fields ...string) (string, []interfa
 			}
 		case "", "=":
 			for _, field := range fields {
-				if t.Str == string(pub.NilLangRef) {
+				if len(t.Str) == 0 || t.Str == pub.NilLangRef.String() {
 					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" IS NULL`, field))
 				} else {
 					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" = ?`, field))
