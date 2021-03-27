@@ -711,6 +711,9 @@ func matchStringFilter(filter CompStr, s string) bool {
 	if filter.Operator == "~" {
 		return strings.Contains(strings.ToLower(s), strings.ToLower(filter.Str))
 	} else if filter.Operator == "!" {
+		if filter.Str == "" || filter.Str == pub.NilIRI.String() {
+			return len(s) > 0
+		}
 		return !strings.Contains(strings.ToLower(s), strings.ToLower(filter.Str))
 	}
 	return strings.ToLower(s) == strings.ToLower(filter.Str)
