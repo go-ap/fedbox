@@ -474,43 +474,99 @@ func runObjectFilters(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.ItemCo
 	return result
 }
 
+func objectFilter(ret pub.ItemCollection) *ap.Filters {
+	if len(ret) == 0 {
+		return nil
+	}
+	f := new(ap.Filters)
+	f.ItemKey = make(ap.CompStrs, len(ret))
+	for i, it := range ret {
+		pub.OnActivity(it, func(a *pub.Activity) error {
+			f.ItemKey[i] = ap.StringEquals(a.Object.GetLink().String())
+			return nil
+		})
+	}
+	return f
+}
+
+func actorFilter(ret pub.ItemCollection) *ap.Filters {
+	if len(ret) == 0 {
+		return nil
+	}
+	f := new(ap.Filters)
+	f.ItemKey = make(ap.CompStrs, len(ret))
+	for i, it := range ret {
+		pub.OnActivity(it, func(a *pub.Activity) error {
+			f.ItemKey[i] = ap.StringEquals(a.Actor.GetLink().String())
+			return nil
+		})
+	}
+	return f
+}
+
+func targetFilter(ret pub.ItemCollection) *ap.Filters {
+	if len(ret) == 0 {
+		return nil
+	}
+	f := new(ap.Filters)
+	f.ItemKey = make(ap.CompStrs, len(ret))
+	for i, it := range ret {
+		pub.OnActivity(it, func(a *pub.Activity) error {
+			if a.Target != nil {
+				f.ItemKey[i] = ap.StringEquals(a.Target.GetLink().String())
+			}
+			return nil
+		})
+	}
+	return f
+}
+
+func keepObject(f *ap.Filters) func(act *pub.Activity, ob pub.Item) bool {
+	return func(act *pub.Activity, ob pub.Item) bool {
+		keep := false
+		if act.Object.GetLink().Equals(ob.GetLink(), false) {
+			act.Object = ob
+			keep = f.ItemsMatch(act.Object)
+		}
+		return keep
+	}
+}
+
+func keepActor(f *ap.Filters) func(act *pub.Activity, ob pub.Item) bool {
+	return func(act *pub.Activity, ob pub.Item) bool {
+		var keep bool
+		if act.Actor.GetLink().Equals(ob.GetLink(), false) {
+			act.Actor = ob
+			keep = f.Actor.ItemsMatch(act.Actor)
+		}
+		return keep
+	}
+}
+
+func keepTarget(f *ap.Filters) func(act *pub.Activity, ob pub.Item) bool {
+	return func(act *pub.Activity, ob pub.Item) bool {
+		var keep bool
+		if act.Target.GetLink().Equals(ob.GetLink(), false) {
+			act.Target = ob
+			keep = f.Target.ItemsMatch(act.Target)
+		}
+		return keep
+	}
+}
+
 func runActivityFilters(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.ItemCollection {
 	// If our filter contains values for filtering the activity's object or actor, we do that here:
 	//  for the case where the corresponding values are not set, this doesn't do anything
 	toRemove := make([]int, 0)
-	toRemove = append(toRemove, childFilter(r, &ret, f.Object, func(act pub.Item, ob pub.Item) bool {
-		var keep bool
-		pub.OnActivity(act, func(a *pub.Activity) error {
-			if a.Object.GetLink().Equals(ob.GetLink(), false) {
-				a.Object = ob
-				keep = true
-			}
-			return nil
-		})
-		return keep
-	})...)
-	toRemove = append(toRemove, childFilter(r, &ret, f.Actor, func(act pub.Item, ob pub.Item) bool {
-		var keep bool
-		pub.OnActivity(act, func(a *pub.Activity) error {
-			if a.Actor.GetLink().Equals(ob.GetLink(), false) {
-				a.Actor = ob
-				keep = true
-			}
-			return nil
-		})
-		return keep
-	})...)
-	toRemove = append(toRemove, childFilter(r, &ret, f.Target, func(act pub.Item, ob pub.Item) bool {
-		var keep bool
-		pub.OnActivity(act, func(a *pub.Activity) error {
-			if a.Target.GetLink().Equals(ob.GetLink(), false) {
-				a.Target = ob
-				keep = true
-			}
-			return nil
-		})
-		return keep
-	})...)
+	if f.Object != nil {
+		toRemove = append(toRemove, childFilter(r, &ret, objectFilter, keepObject(f.Object))...)
+	}
+	if f.Actor != nil {
+		toRemove = append(toRemove, childFilter(r, &ret, actorFilter, keepActor(f.Actor))...)
+	}
+	if f.Target != nil {
+		toRemove = append(toRemove, childFilter(r, &ret, targetFilter, keepTarget(f.Target))...)
+	}
 
 	result := make(pub.ItemCollection, 0)
 	for i := range ret {
@@ -527,7 +583,13 @@ func runActivityFilters(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.Item
 	return result
 }
 
-func childFilter(r *repo, ret *pub.ItemCollection, f *ap.Filters, keepFn func(act, ob pub.Item) bool) []int {
+type (
+	iriFilterFn func(ret pub.ItemCollection) *ap.Filters
+	keepFn      func(act *pub.Activity, ob pub.Item) bool
+)
+
+func childFilter(r *repo, ret *pub.ItemCollection, filterFn iriFilterFn, keepFn keepFn) []int {
+	f := filterFn(*ret)
 	if f == nil {
 		return nil
 	}
@@ -539,12 +601,15 @@ func childFilter(r *repo, ret *pub.ItemCollection, f *ap.Filters, keepFn func(ac
 			continue
 		}
 		keep := false
-		for _, ob := range children {
-			keep = keepFn(rr, ob)
-			if keep {
-				break
+		pub.OnActivity(rr, func(a *pub.Activity) error {
+			for _, ob := range children {
+				keep = keepFn(a, ob)
+				if keep {
+					break
+				}
 			}
-		}
+			return nil
+		})
 		if !keep {
 			toRemove = append(toRemove, i)
 		}
