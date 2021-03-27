@@ -1,0 +1,7 @@
+{
+  "id": "http://127.0.0.1:9998/activities/1",
+  "type": "Create",
+  "actor": "http://127.0.0.1:9998/actors/2",
+  "to": ["https://www.w3.org/ns/activitystreams#Public", "http://127.0.0.1:9998"],
+  "object": "http://127.0.0.1:9998/objects/1"
+}

@@ -286,16 +286,120 @@ var ActorsCollectionTests = testPairs {
 var ActivitiesCollectionTests = testPairs {
 	{
 		name: "ActivitiesCollection",
-		mocks: nil,
+		mocks: []string{
+			"mocks/service.json",
+			"mocks/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
+				name: "empty-activities-collection",
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/activities", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						itemCount: 0,
+					},
+				},
+			},
+		},
+	},
+	{
+		name: "Create activity filtering",
+		mocks: []string{
+			"mocks/service.json",
+			"mocks/actors/actor-element_a.json",
+			"mocks/objects/note-1.json",
+			"mocks/activities/create-1.json",
+		},
+		tests: []testPair{
+			{
+				name: "no filter",
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
 				},
 				req: testReq{
 					met: http.MethodGet,
 					url: fmt.Sprintf("%s/activities", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				name: "Filter by actor IRI",
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/activities?actor.iri=http://127.0.0.1:9998/actors/2", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				name: "Filter by fuzzy search on actor IRI",
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/activities?actor.iri=~/actors/2", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				name: "Filter by empty actor IRI",
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/activities?actor.iri=", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						itemCount: 0,
+					},
+				},
+			},
+			{
+				name: "Filter by object IRI",
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/activities?object.iri=http://127.0.0.1:9998/objects/1", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				name: "Filter by fuzzy search on object IRI",
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/activities?object.iri=~/objects/1", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				name: "Filter by empty object IRI",
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/activities?object.iri=", apiURL),
 				},
 				res: testRes{
 					code: http.StatusOK,
@@ -508,9 +612,36 @@ var ObjectsCollectionTests = testPairs {
 					},
 				},
 			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?iri=!-", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?iri=%%21-", apiURL),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 4,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?iri=!", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?iri=%%21", apiURL),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 4,
+					},
+				},
+			},
 		},
 	},
-
 }
 
 var SingleItemLoadTests = testPairs {
