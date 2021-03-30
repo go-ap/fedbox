@@ -9,12 +9,12 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/go-ap/activitypub v0.0.0-20210327130624-57a41d04da41
-	github.com/go-ap/auth v0.0.0-20210327131059-1eba85e5247b
-	github.com/go-ap/client v0.0.0-20210327130953-8cf21f285001
+	github.com/go-ap/auth v0.0.0-20210330142114-901645393752
+	github.com/go-ap/client v0.0.0-20210330141336-b1ef00af6c83
 	github.com/go-ap/errors v0.0.0-20210218123445-4466eca2f4ec
 	github.com/go-ap/handlers v0.0.0-20210327130902-4903172144d2
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210327131118-a66474b2cb3e
+	github.com/go-ap/processing v0.0.0-20210330142211-33129dc5c509
 	github.com/go-ap/storage v0.0.0-20210327130814-1122d1022afa
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/protobuf v1.4.3 // indirect
@@ -42,6 +42,5 @@ require (
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717
-	honnef.co/go/netdb v0.0.0-20150201073656-a416d700ae39 // indirect
 	modernc.org/sqlite v1.10.0
 )
