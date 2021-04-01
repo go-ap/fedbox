@@ -10,7 +10,7 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/go-ap/activitypub v0.0.0-20210327130624-57a41d04da41
 	github.com/go-ap/auth v0.0.0-20210330142114-901645393752
-	github.com/go-ap/client v0.0.0-20210330141336-b1ef00af6c83
+	github.com/go-ap/client v0.0.0-20210330082627-985731cb0e9b
 	github.com/go-ap/errors v0.0.0-20210218123445-4466eca2f4ec
 	github.com/go-ap/handlers v0.0.0-20210327130902-4903172144d2
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
@@ -37,7 +37,7 @@ require (
 	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
 	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210326220804-49726bf1d181 // indirect
+	golang.org/x/sys v0.0.0-20210331175145-43e1dd70ce54 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
