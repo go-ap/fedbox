@@ -77,7 +77,6 @@ func orderItems(col pub.ItemCollection) pub.ItemCollection {
 // that return ActivityPub objects or activities
 func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 	return func(typ h.CollectionType, r *http.Request, repo storage.ReadStore) (pub.CollectionInterface, error) {
-
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
 		if it := fb.caches.Get(ap.CacheKey(f)); !pub.IsNil(it) {
 			return it.(pub.CollectionInterface), nil
