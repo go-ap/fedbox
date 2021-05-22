@@ -15,6 +15,9 @@ MAKEFLAGS += --no-builtin-rules
 M4 = /usr/bin/m4
 M4_FLAGS =
 
+DESTDIR ?= /
+INSTALL_PREFIX ?= usr/local
+
 GO := go
 APPSOURCES := $(wildcard app/*.go storage/*/*.go activitypub/*.go internal/*/*.go cmd/*.go)
 ASSETFILES := $(wildcard templates/*)
