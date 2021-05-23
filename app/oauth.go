@@ -526,7 +526,7 @@ func (h *oauthHandler) ShowLogin(w http.ResponseWriter, r *http.Request) {
 
 var errUnauthorized = errors.Unauthorizedf("Invalid username or password")
 
-// ShowLogin handles POST /login requests
+// HandleLogin handles POST /login requests
 func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	acc, err := h.loadAccountFromPost(r)
 	if err != nil {
@@ -535,12 +535,18 @@ func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	client := r.PostFormValue("client")
 	state := r.PostFormValue("state")
-	a := acc.actor
+	endpoints := pub.Endpoints{
+		OauthAuthorizationEndpoint: pub.IRI(fmt.Sprintf("%s/authorize", h.baseURL)),
+		OauthTokenEndpoint:         pub.IRI(fmt.Sprintf("%s/token", h.baseURL)),
+	}
+	if acc.actor != nil && acc.actor.Endpoints != nil {
+		endpoints = *acc.actor.Endpoints
+	}
 	config := oauth2.Config{
 		ClientID: client,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  a.Endpoints.OauthAuthorizationEndpoint.GetLink().String(),
-			TokenURL: a.Endpoints.OauthTokenEndpoint.GetLink().String(),
+			AuthURL:  endpoints.OauthAuthorizationEndpoint.GetLink().String(),
+			TokenURL: endpoints.OauthTokenEndpoint.GetLink().String(),
 		},
 	}
 	http.Redirect(w, r, config.AuthCodeURL(state, oauth2.AccessTypeOnline), http.StatusPermanentRedirect)
