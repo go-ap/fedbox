@@ -5,7 +5,7 @@ go 1.14
 require (
 	aletheia.icu/broccoli/fs v0.0.0-20200506212414-5bc1e2f86a59
 	git.sr.ht/~mariusor/wrapper v0.0.0-20210115104709-99415538f4b7
-	github.com/andybalholm/brotli v1.0.1 // indirect
+	github.com/andybalholm/brotli v1.0.2 // indirect
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/go-ap/activitypub v0.0.0-20210403114333-558da3636016
@@ -35,12 +35,13 @@ require (
 	github.com/unrolled/render v1.0.2
 	go.etcd.io/bbolt v1.3.4
 	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
-	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210402192133-700132347e07 // indirect
+	golang.org/x/sys v0.0.0-20210521203332-0cec03c779c1 // indirect
 	golang.org/x/text v0.3.4 // indirect
+	golang.org/x/tools v0.1.1 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717
-	modernc.org/sqlite v1.10.0
+	modernc.org/mathutil v1.3.1 // indirect
+	modernc.org/sqlite v1.10.7
 )
