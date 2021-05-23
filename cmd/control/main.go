@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-ap/fedbox/cmd"
+	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"gopkg.in/urfave/cli.v2"

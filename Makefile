@@ -19,7 +19,7 @@ DESTDIR ?= /
 INSTALL_PREFIX ?= usr/local
 
 GO := go
-APPSOURCES := $(wildcard app/*.go storage/*/*.go activitypub/*.go internal/*/*.go cmd/*.go)
+APPSOURCES := $(wildcard app/*.go activitypub/*.go internal/*/*.go storage/*/*.go)
 ASSETFILES := $(wildcard templates/*)
 PROJECT_NAME := $(shell basename $(PWD))
 APPSOURCES += internal/assets/assets.gen.go
@@ -51,6 +51,7 @@ all: fedbox ctl
 
 download:
 	$(GO) mod download
+	$(GO) mod tidy
 
 assets: internal/assets/assets.gen.go
 
@@ -58,8 +59,8 @@ internal/assets/assets.gen.go: download $(ASSETFILES)
 	$(GO) generate -tags "$(TAGS)" ./assets.go
 
 fedbox: bin/fedbox assets
-bin/fedbox: go.mod cli/fedbox/main.go $(APPSOURCES)
-	$(BUILD) -tags "$(TAGS)" -o $@ ./cli/fedbox/main.go
+bin/fedbox: go.mod cmd/fedbox/main.go $(APPSOURCES)
+	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/fedbox/main.go
 
 systemd/fedbox.service: systemd/fedbox.service.in
 	$(M4) -DWORKING_DIR=$(STORAGE_PATH) $< >$@
@@ -68,8 +69,8 @@ systemd/fedbox.socket: systemd/fedbox.socket.in
 	$(M4) -DLISTEN_HOST=$(LISTEN_HOST) -DLISTEN_PORT=$(LISTEN_PORT) $< >$@
 
 ctl: bin/ctl
-bin/ctl: go.mod cli/control/main.go $(APPSOURCES)
-	$(BUILD) -tags "$(TAGS)" -o $@ ./cli/control/main.go
+bin/ctl: go.mod cmd/control/main.go $(APPSOURCES)
+	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/control/main.go
 
 run: fedbox
 	@./bin/fedbox
@@ -78,7 +79,7 @@ clean:
 	-$(RM) bin/*
 	$(MAKE) -C tests $@
 
-test: TEST_TARGET := ./{activitypub,app,storage,internal,cmd}/...
+test: TEST_TARGET := ./{activitypub,app,storage,internal}/...
 test: assets
 	$(TEST) $(TEST_FLAGS) -tags "$(TAGS)" $(TEST_TARGET)
 

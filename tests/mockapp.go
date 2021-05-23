@@ -7,7 +7,7 @@ import (
 	"fmt"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox/app"
-	"github.com/go-ap/fedbox/cmd"
+	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"

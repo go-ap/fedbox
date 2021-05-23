@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/go-ap/fedbox/cmd"
+	"github.com/go-ap/fedbox/internal/cmd"
 	"os"
 )
 
