@@ -63,8 +63,6 @@ func New(c Config) (*repo, error) {
 type repo struct {
 	baseURL string
 	path    string
-	// NOTE(marius): this is used to be able to toggle easily between storage with relative symlinks or absolute ones
-	absolutePaths bool
 	cwd           string
 	opened        bool
 	cache         cache.CanStore
@@ -262,13 +260,11 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 		if fullLink, err = filepath.Abs(fullLink); err != nil {
 			return err
 		}
-		if !r.absolutePaths {
-			if itPath, err = filepath.Rel(fullLink, itPath); err != nil {
-				return err
-			}
-			// NOTE(marius): using filepath.Rel returns one extra parent for some reason, I need to look into why
-			itPath = strings.Replace(itPath, "../", "", 1)
+		if itPath, err = filepath.Rel(fullLink, itPath); err != nil {
+			return err
 		}
+		// NOTE(marius): using filepath.Rel returns one extra parent for some reason, I need to look into why
+		itPath = strings.Replace(itPath, "../", "", 1)
 
 		// NOTE(marius): we can't use hard links as we're linking to folders :(
 		// This would have been tremendously easier (as in, not having to compute paths) with hard-links.
@@ -408,12 +404,7 @@ func (r repo) itemPath(iri pub.IRI) string {
 	if err != nil {
 		return ""
 	}
-	p := url.Path
-	base := ""
-	if r.absolutePaths {
-		base = r.path
-	}
-	return path.Join(base, url.Host, p)
+	return path.Join(r.path, url.Host, url.Path)
 }
 
 // createCollections
