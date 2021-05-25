@@ -70,7 +70,7 @@ func (o Options) BaseStoragePath() string {
 	if !filepath.IsAbs(o.StoragePath) {
 		o.StoragePath, _ = filepath.Abs(o.StoragePath)
 	}
-	basePath := path.Clean(path.Join(o.StoragePath, string(o.Env), o.Host))
+	basePath := path.Clean(path.Join(o.StoragePath, string(o.Storage), string(o.Env), o.Host))
 	fi, err := os.Stat(basePath)
 	if err != nil && os.IsNotExist(err) {
 		err = os.MkdirAll(basePath, defaultPerm)
@@ -80,7 +80,7 @@ func (o Options) BaseStoragePath() string {
 	}
 	fi, err = os.Stat(basePath)
 	if !fi.IsDir() {
-		panic(errors.NotValidf("path %s is invalid for storage", o.StoragePath))
+		panic(errors.NotValidf("path %s is invalid for storage", basePath))
 	}
 	return basePath
 }
@@ -93,7 +93,7 @@ func (o Options) BadgerOAuth2() string {
 	if o.StoragePath == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s/%s/%s", o.StoragePath, o.Env, "oauth")
+	return path.Clean(path.Join(o.StoragePath, string(o.Storage), string(o.Env), "oauth"))
 }
 
 func prefKey(k string) string {
