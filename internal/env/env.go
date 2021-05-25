@@ -2,7 +2,7 @@ package env
 
 import "strings"
 
-// EnvType type alias
+// Type is a local type alias for the environment types
 type Type string
 
 // DEV environment
@@ -14,10 +14,11 @@ const PROD Type = "prod"
 // QA environment
 const QA Type = "qa"
 
-// testing environment
+// TEST environment
 const TEST Type = "test"
 
-var Types = []Type{
+// Types represents the allowed types
+var Types = [...]Type{
 	PROD,
 	QA,
 	DEV,
