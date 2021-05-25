@@ -14,7 +14,7 @@ var version = "HEAD"
 func main() {
 	app := cli.App{}
 	app.Name = "fedbox-ctl"
-	app.Usage = "helper utility to manage a fedbox instance"
+	app.Usage = "helper utility to manage a FedBOX instance"
 	app.Version = version
 	app.Before = cmd.Before
 	app.Flags = []cli.Flag{
@@ -50,6 +50,7 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

@@ -91,7 +91,7 @@ func addAct(c *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		redirectURIs := c.StringSlice("redirectUri")
 		if len(redirectURIs) < 1 {
-			return errors.Newf("Need to provide at least a return URI for the client")
+			return errors.Newf("Need to provide at least a redirect URI for the client")
 		}
 		pw, err := loadPwFromStdin(true, "client's")
 		if err != nil {
