@@ -14,13 +14,10 @@ const developer = pub.IRI("https://github.com/mariusor")
 
 func Self(baseURL pub.IRI) pub.Service {
 	url, _ := baseURL.URL()
-	inbox := *url
-	inbox.Path = path.Join(inbox.Path, string(handlers.Inbox))
-
 	oauth := *url
 	oauth.Path = path.Join(oauth.Path, "oauth/")
-	return pub.Service{
-		ID:           pub.ID(url.String()),
+	s := pub.Service{
+		ID:           baseURL,
 		Type:         pub.ServiceType,
 		Name:         pub.NaturalLanguageValues{{Ref: pub.NilLangRef, Value: pub.Content("self")}},
 		AttributedTo: developer,
@@ -32,12 +29,15 @@ func Self(baseURL pub.IRI) pub.Service {
 		Summary:      pub.NaturalLanguageValues{{Ref: pub.NilLangRef, Value: pub.Content("Generic ActivityPub service")}},
 		Tag:          nil,
 		URL:          baseURL,
-		Inbox:        pub.IRI(inbox.String()),
 		Endpoints: &pub.Endpoints{
 			OauthAuthorizationEndpoint: pub.IRI(fmt.Sprintf("%s/authorize", oauth.String())),
 			OauthTokenEndpoint:         pub.IRI(fmt.Sprintf("%s/token", oauth.String())),
 		},
 	}
+
+	s.Inbox = handlers.Inbox.IRI(s)
+	s.Outbox = handlers.Outbox.IRI(s)
+	return s
 }
 
 func DefaultServiceIRI(baseURL string) pub.IRI {
