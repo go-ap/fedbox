@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"gopkg.in/urfave/cli.v2"
+	"os"
 )
 
 var BootstrapCmd = &cli.Command{
@@ -53,9 +55,14 @@ func Bootstrap(conf config.Options) error {
 	if err := bootstrapFn(conf); err != nil {
 		return errors.Annotatef(err, "Unable to create %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}
+	fmt.Fprintf(os.Stdout, "Successful created %s db for storage %s\n", conf.BaseStoragePath(), conf.Storage)
 	return nil
 }
 
 func Reset(conf config.Options) error {
-	return cleanFn(conf)
+	if err := cleanFn(conf); err != nil {
+		return errors.Annotatef(err, "Unable to reset %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
+	}
+	fmt.Fprintf(os.Stdout, "Successful reset %s db for storage %s\n", conf.BaseStoragePath(), conf.Storage)
+	return nil
 }
