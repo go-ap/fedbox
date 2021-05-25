@@ -28,16 +28,19 @@ func Bootstrap(conf config.Options) error {
 		return err
 	}
 	defer r.Close()
-	self := activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL))
-	actors := &pub.OrderedCollection{ ID: activitypub.ActorsType.IRI(&self) }
-	activities := &pub.OrderedCollection{ ID: activitypub.ActivitiesType.IRI(&self) }
-	objects := &pub.OrderedCollection{ ID: activitypub.ObjectsType.IRI(&self) }
+	self, err := r.Save(activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL)));
+	if err != nil {
+		return err
+	}
+	actors := &pub.OrderedCollection{ ID: activitypub.ActorsType.IRI(self) }
 	if _, err = r.Create(actors); err != nil {
 		return err
 	}
+	activities := &pub.OrderedCollection{ ID: activitypub.ActivitiesType.IRI(self) }
 	if _, err = r.Create(activities); err != nil {
 		return err
 	}
+	objects := &pub.OrderedCollection{ ID: activitypub.ObjectsType.IRI(self) }
 	if _, err = r.Create(objects); err != nil {
 		return err
 	}
