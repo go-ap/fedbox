@@ -20,9 +20,10 @@ INSTALL_PREFIX ?= usr/local
 
 GO := go
 APPSOURCES := $(wildcard app/*.go activitypub/*.go internal/*/*.go storage/*/*.go)
+APPSOURCES := $(filter-out internal/assets/assets.gen.go, $(APPSOURCES))
 ASSETFILES := $(wildcard templates/*)
 PROJECT_NAME := $(shell basename $(PWD))
-APPSOURCES += internal/assets/assets.gen.go
+
 TAGS := $(ENV) storage_$(STORAGE)
 
 export CGO_ENABLED=0
@@ -55,11 +56,11 @@ download:
 
 assets: internal/assets/assets.gen.go
 
-internal/assets/assets.gen.go: download $(ASSETFILES)
+internal/assets/assets.gen.go: download assets.go $(ASSETFILES)
 	$(GO) generate -tags "$(TAGS)" ./assets.go
 
-fedbox: bin/fedbox assets
-bin/fedbox: go.mod cmd/fedbox/main.go $(APPSOURCES)
+fedbox: bin/fedbox
+bin/fedbox: go.mod cmd/fedbox/main.go internal/assets/assets.gen.go $(APPSOURCES)
 	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/fedbox/main.go
 
 systemd/fedbox.service: systemd/fedbox.service.in
@@ -77,6 +78,7 @@ run: fedbox
 
 clean:
 	-$(RM) bin/*
+	-$(RM) internal/assets/assets.gen.go
 	$(MAKE) -C tests $@
 
 test: TEST_TARGET := ./{activitypub,app,storage,internal}/...
