@@ -28,7 +28,7 @@ func Bootstrap(conf config.Options) error {
 		return err
 	}
 	defer r.Close()
-	self, err := r.Save(activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL)));
+	self, err := r.Save(activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL)))
 	if err != nil {
 		return err
 	}

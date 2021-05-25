@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"gopkg.in/urfave/cli.v2"
-	"os"
 )
 
 var BootstrapCmd = &cli.Command{

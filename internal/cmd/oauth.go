@@ -3,6 +3,11 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"path"
+	"strings"
+	"time"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	apub "github.com/go-ap/fedbox/activitypub"
@@ -10,10 +15,6 @@ import (
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"gopkg.in/urfave/cli.v2"
-	"net/url"
-	"path"
-	"strings"
-	"time"
 )
 
 var client = &cli.Command{
