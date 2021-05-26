@@ -10,12 +10,12 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/go-ap/activitypub v0.0.0-20210403114333-558da3636016
-	github.com/go-ap/auth v0.0.0-20210403114547-c68fb3011ebd
-	github.com/go-ap/client v0.0.0-20210403114520-1b89283e01f0
-	github.com/go-ap/errors v0.0.0-20210218123445-4466eca2f4ec
-	github.com/go-ap/handlers v0.0.0-20210403114447-058e93c4936c
+	github.com/go-ap/auth v0.0.0-20210526165400-997bceabeac3
+	github.com/go-ap/client v0.0.0-20210526165331-9da606a53da1
+	github.com/go-ap/errors v0.0.0-20210526165154-c642a808d6a1
+	github.com/go-ap/handlers v0.0.0-20210526165250-134932023a8d
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210403114657-987cb809f8f6
+	github.com/go-ap/processing v0.0.0-20210526165420-759ea33b59ef
 	github.com/go-ap/storage v0.0.0-20210403114403-99ae85c8cc72
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/protobuf v1.4.3 // indirect
@@ -37,12 +37,9 @@ require (
 	go.etcd.io/bbolt v1.3.4
 	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210521203332-0cec03c779c1 // indirect
 	golang.org/x/text v0.3.4 // indirect
-	golang.org/x/tools v0.1.1 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717
-	modernc.org/mathutil v1.3.1 // indirect
 	modernc.org/sqlite v1.10.7
 )
