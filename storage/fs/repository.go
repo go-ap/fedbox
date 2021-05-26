@@ -591,6 +591,9 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(p string) error) er
 	itPath := r.itemPath(col)
 	err := fn(itPath)
 	if err != nil {
+		if os.IsExist(err) {
+			return errors.NewConflict(err, "%s already exists in collection %s", it.GetID(), itPath)
+		}
 		return errors.Annotatef(err, "Unable to save entries to collection %s", itPath)
 	}
 	return err
