@@ -52,7 +52,6 @@ all: fedbox ctl
 
 download:
 	$(GO) mod download
-	$(GO) mod tidy
 
 assets: internal/assets/assets.gen.go
 

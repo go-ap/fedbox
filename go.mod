@@ -3,6 +3,7 @@ module github.com/go-ap/fedbox
 go 1.14
 
 require (
+	aletheia.icu/broccoli v0.0.0-20200506212414-5bc1e2f86a59
 	aletheia.icu/broccoli/fs v0.0.0-20200506212414-5bc1e2f86a59
 	git.sr.ht/~mariusor/wrapper v0.0.0-20210115104709-99415538f4b7
 	github.com/andybalholm/brotli v1.0.2 // indirect
