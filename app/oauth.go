@@ -323,8 +323,8 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		actorFilters := activitypub.FiltersNew()
 		switch ar.Type {
 		case osin.PASSWORD:
-			actorFilters.IRI = activitypub.ActorsType.IRI(pub.IRI(h.baseURL))
-			actorFilters.Name = activitypub.CompStrs{activitypub.CompStr{Str: ar.Username}}
+			// NOTE(marius): here we send the full actor IRI as a username to avoid handler collisions
+			actorFilters.IRI = pub.IRI(ar.Username)
 		case osin.AUTHORIZATION_CODE:
 			if iri, ok := ar.UserData.(string); ok {
 				actorFilters.IRI = pub.IRI(iri)
