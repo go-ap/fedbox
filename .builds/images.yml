@@ -1,6 +1,6 @@
 image: archlinux
 secrets:
-- 0e431348-6a5c-4404-bd3e-5cdd5ea9e7d6
+- 3f30fd61-e33d-4198-aafb-0ff341e9db1c
 packages:
   - go
   - docker

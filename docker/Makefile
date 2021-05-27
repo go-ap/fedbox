@@ -64,13 +64,13 @@ run: build $(STORAGE_OBJECTS)
 		$(FEDBOX_HOSTNAME)/app:$(TAG)
 
 push: build
-	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/fedbox/fedbox:$(TAG)
-	$(PUSH_CMD) quay.io/fedbox/fedbox:$(TAG)
+	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/go-ap/fedbox:$(TAG)
+	$(PUSH_CMD) quay.io/go-ap/fedbox:$(TAG)
 ifeq ($(TAG), dev)
-	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/fedbox/fedbox:latest || true
-	$(PUSH_CMD) quay.io/fedbox/fedbox:latest || true
+	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/go-ap/fedbox:latest || true
+	$(PUSH_CMD) quay.io/go-ap/fedbox:latest || true
 endif
 ifneq ($(VERSION), )
-	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/fedbox/fedbox:$(VERSION)-$(TAG) || true
-	$(PUSH_CMD) quay.io/fedbox/fedbox:$(VERSION)-$(TAG) || true
+	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/go-ap/fedbox:$(VERSION)-$(TAG) || true
+	$(PUSH_CMD) quay.io/go-ap/fedbox:$(VERSION)-$(TAG) || true
 endif
