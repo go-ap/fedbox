@@ -241,8 +241,7 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 			return cache.ActivityPurge(fb.caches, a, typ)
 		})
 		if err != nil {
-			status, _ := errors.HttpErrors(err)
-			return it, status, err
+			return it, errors.HttpStatus(err), err
 		}
 
 		status := http.StatusCreated

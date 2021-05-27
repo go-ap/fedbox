@@ -10,12 +10,12 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/go-ap/activitypub v0.0.0-20210403114333-558da3636016
-	github.com/go-ap/auth v0.0.0-20210526165400-997bceabeac3
-	github.com/go-ap/client v0.0.0-20210526165331-9da606a53da1
-	github.com/go-ap/errors v0.0.0-20210526165154-c642a808d6a1
-	github.com/go-ap/handlers v0.0.0-20210526165250-134932023a8d
+	github.com/go-ap/auth v0.0.0-20210527075046-6a583bc60fef
+	github.com/go-ap/client v0.0.0-20210527075003-0c5e4963d914
+	github.com/go-ap/errors v0.0.0-20210527074045-78cc5b9dcc94
+	github.com/go-ap/handlers v0.0.0-20210527074728-1c14ce8a3768
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210526165420-759ea33b59ef
+	github.com/go-ap/processing v0.0.0-20210527075140-fe406bd36f20
 	github.com/go-ap/storage v0.0.0-20210403114403-99ae85c8cc72
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/protobuf v1.4.3 // indirect

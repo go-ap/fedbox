@@ -468,31 +468,13 @@ type authModel interface {
 	Account() pub.Actor
 }
 
-var errRenderer = render.New(render.Options{
-	Directory:  "templates/",
-	Extensions: []string{".html"},
-	Funcs: []template.FuncMap{{
-		"HTTPErrors": func(err error) []errors.Http { _, errs := errors.HttpErrors(err); return errs },
-	}},
-	Delims:                    render.Delims{Left: "{{", Right: "}}"},
-	Charset:                   "UTF-8",
-	DisableCharset:            false,
-	BinaryContentType:         "application/octet-stream",
-	HTMLContentType:           "text/html",
-	IsDevelopment:             true,
-	DisableHTTPErrorRendering: false,
-})
-
-func (h *oauthHandler) renderTemplate(r *http.Request, w http.ResponseWriter, name string, m authModel) error {
-	var err error
-
-	ren := render.New(render.Options{
-		AssetNames: assets.Files,
-		Asset:      assets.Template,
-		Extensions: []string{".html"},
-		Funcs: []template.FuncMap{{
-			"HTTPErrors": func(err error) []errors.Http { _, errs := errors.HttpErrors(err); return errs },
-		}},
+var (
+	defaultRenderOptions = render.Options{
+		AssetNames:                assets.Files,
+		Asset:                     assets.Template,
+		Directory:                 "templates/",
+		Extensions:                []string{".html"},
+		Funcs:                     []template.FuncMap{{"HTTPErrors": errors.HttpErrors}},
 		Delims:                    render.Delims{Left: "{{", Right: "}}"},
 		Charset:                   "UTF-8",
 		DisableCharset:            false,
@@ -500,14 +482,16 @@ func (h *oauthHandler) renderTemplate(r *http.Request, w http.ResponseWriter, na
 		HTMLContentType:           "text/html",
 		IsDevelopment:             true,
 		DisableHTTPErrorRendering: false,
-	})
+	}
+	errRenderer = render.New(defaultRenderOptions)
+	ren = render.New(defaultRenderOptions)
+)
 
-	if err = ren.HTML(w, http.StatusOK, name, m); err != nil {
+func (h *oauthHandler) renderTemplate(r *http.Request, w http.ResponseWriter, name string, m authModel) error {
+	err := ren.HTML(w, http.StatusOK, name, m)
+	if err != nil {
 		new := errors.Annotatef(err, "failed to render template")
-		h.logger.WithFields(logrus.Fields{
-			"template": name,
-			"model":    fmt.Sprintf("%T", m),
-		}).Error(new.Error())
+		h.logger.WithFields(logrus.Fields{"template": name, "model": fmt.Sprintf("%T", m)}).Error(new.Error())
 		errRenderer.HTML(w, http.StatusInternalServerError, "error", new)
 	}
 
