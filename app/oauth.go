@@ -323,8 +323,13 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		actorFilters := activitypub.FiltersNew()
 		switch ar.Type {
 		case osin.PASSWORD:
-			// NOTE(marius): here we send the full actor IRI as a username to avoid handler collisions
-			actorFilters.IRI = pub.IRI(ar.Username)
+			if u, _ := url.ParseRequestURI(ar.Username); u != nil {
+				// NOTE(marius): here we send the full actor IRI as a username to avoid handler collisions
+				actorFilters.IRI = pub.IRI(ar.Username)
+			} else {
+				actorFilters.IRI = activitypub.ActorsType.IRI(pub.IRI(h.baseURL))
+				actorFilters.Name = activitypub.CompStrs{activitypub.StringEquals(ar.Username)}
+			}
 		case osin.AUTHORIZATION_CODE:
 			if iri, ok := ar.UserData.(string); ok {
 				actorFilters.IRI = pub.IRI(iri)
@@ -336,20 +341,23 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 			errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 			return
 		}
-		if actor.IsCollection() {
-			err = pub.OnCollectionIntf(actor, func(col pub.CollectionInterface) error {
-				actor = col.Collection().First()
-				return nil
-			})
-			if err != nil {
-				h.logger.Error(errUnauthorized)
-				errors.HandleError(errUnauthorized).ServeHTTP(w, r)
-				return
-			}
-		}
 		if ar.Type == osin.PASSWORD {
 			if pwLoader, ok := h.loader.(st.PasswordChanger); ok {
-				acc, err = checkPw(actor, []byte(ar.Password), pwLoader)
+				if actor.IsCollection() {
+					err = pub.OnCollectionIntf(actor, func(col pub.CollectionInterface) error {
+						// NOTE(marius): This is a stupid way of doing pw authentication, as it will produce collisions
+						//  for users with the same handle/pw and it will login the first in the collection.
+						for _, actor := range col.Collection() {
+							acc, err = checkPw(actor, []byte(ar.Password), pwLoader)
+							if err == nil {
+								return nil
+							}
+						}
+						return errors.Newf("No actor matched the password")
+					})
+				} else {
+					acc, err = checkPw(actor, []byte(ar.Password), pwLoader)
+				}
 				if err != nil || acc == nil {
 					if err != nil {
 						h.logger.Error(err)
