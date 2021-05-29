@@ -2,11 +2,12 @@ package log
 
 import (
 	"fmt"
-	"github.com/go-chi/chi/middleware"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/go-chi/chi/middleware"
+	"github.com/sirupsen/logrus"
 )
 
 type Level int8

@@ -3,6 +3,13 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"net/url"
+	"os"
+	"path"
+	"sort"
+	"strings"
+	"time"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -11,12 +18,6 @@ import (
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
 	"gopkg.in/urfave/cli.v2"
-	"net/url"
-	"os"
-	"path"
-	"sort"
-	"strings"
-	"time"
 )
 
 var PubCmd = &cli.Command{
@@ -27,6 +28,7 @@ var PubCmd = &cli.Command{
 		actorsCmd,
 		addObjectCmd,
 		listObjectsCmd,
+		showObjectCmd,
 		delObjectsCmd,
 		exportCmd,
 		importCmd,
@@ -590,4 +592,43 @@ func exportPubObjects(ctl *Control) cli.ActionFunc {
 		})
 		return printItem(objects, c.String("output"))
 	}
+}
+
+func showObjectAct(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		objects := make(pub.ItemCollection, 0)
+		if c.Args().Len() == 0 {
+			return errors.Errorf("No IRIs passed")
+		}
+		for i := 0; i <= c.Args().Len(); i++ {
+			iri := c.Args().Get(i)
+			ob, err := ctl.Storage.Load(pub.IRI(iri))
+			if err != nil {
+				Errf(err.Error())
+				continue
+			}
+			objects = append(objects, ob)
+		}
+
+		for _, ob := range objects {
+			printItem(ob, c.String("output"))
+		}
+		return nil
+	}
+}
+
+var showObjectCmd = &cli.Command{
+	Name:    "show",
+	Aliases: []string{"cat"},
+	Usage:   "Show an object",
+	ArgsUsage: "IRI...",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:        "output",
+			Usage:       fmt.Sprintf("The format in which to output the items."),
+			DefaultText: fmt.Sprintf("Valid values: %v", []string{"json", "text"}),
+			Value:       "text",
+		},
+	},
+	Action: showObjectAct(&ctl),
 }
