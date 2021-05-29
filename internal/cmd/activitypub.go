@@ -248,7 +248,7 @@ var listObjectsCmd = &cli.Command{
 			Name:        "output",
 			Usage:       fmt.Sprintf("The format in which to output the items."),
 			DefaultText: fmt.Sprintf("Valid values: %v", []string{"json", "text"}),
-			Value:       "json",
+			Value:       "text",
 		},
 		&cli.StringFlag{
 			Name:  "path",
@@ -274,6 +274,17 @@ func listObjectsAct(ctl *Control) cli.ActionFunc {
 		if err != nil {
 			return err
 		}
+		sort.Slice(all, func(i, j int) bool {
+			ob1, err := pub.ToObject(all[i])
+			if err != nil {
+				return false
+			}
+			ob2, err := pub.ToObject(all[j])
+			if err != nil {
+				return true
+			}
+			return ob1.Published.Sub(ob2.Published) < 0
+		})
 		printItem(all, c.String("output"))
 		return nil
 	}
@@ -359,7 +370,6 @@ func (c *Control) List(initialPath string, types ...string) (pub.ItemCollection,
 		}
 		err = accFn(pub.IRI(ctl.Conf.BaseURL).AddPath(initialPath), activityTyp)
 	}
-
 	return items, err
 }
 
