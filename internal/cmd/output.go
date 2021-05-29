@@ -6,7 +6,6 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"io"
 	"strings"
-	"time"
 )
 
 func bytef(s string, p ...interface{}) []byte {
@@ -14,7 +13,7 @@ func bytef(s string, p ...interface{}) []byte {
 }
 
 func outObject(o *pub.Object, b io.Writer) error {
-	b.Write(bytef("[%s] %s // %s", o.Type, o.ID, o.Published.Format(time.Stamp)))
+	b.Write(bytef("[%s] %s // %s", o.Type, o.ID, o.Published.Format("02 Jan 2006 15:04:05")))
 	if len(o.Name) > 0 {
 		for _, s := range o.Name {
 			ss := strings.Trim(s.Value.String(), "\n\r\t ")
@@ -28,7 +27,11 @@ func outObject(o *pub.Object, b io.Writer) error {
 		for _, s := range o.Summary {
 			ss := strings.Trim(s.Value.String(), "\n\r\t ")
 			if s.Ref != pub.NilLangRef {
-				b.Write(bytef("\n\tSummary[%s]: %s", s.Ref, ss))
+				cont := s.Ref
+				if len(cont) > 72 {
+					cont = cont[:72]
+				}
+				b.Write(bytef("\n\tSummary[%s]: %s", cont, ss))
 			}
 			b.Write(bytef("\n\tSummary: %s", ss))
 		}
@@ -37,7 +40,11 @@ func outObject(o *pub.Object, b io.Writer) error {
 		for _, c := range o.Content {
 			cc := strings.Trim(c.Value.String(), "\n\r\t ")
 			if c.Ref != pub.NilLangRef {
-				b.Write(bytef("\n\tContent[%s]: %s", c.Ref, cc))
+				cont := c.Ref
+				if len(cont) > 72 {
+					cont = cont[:72]
+				}
+				b.Write(bytef("\n\tContent[%s]: %s", cont, cc))
 			}
 			b.Write(bytef("\n\tContent: %s", cc))
 		}
