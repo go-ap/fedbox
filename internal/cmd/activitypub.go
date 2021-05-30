@@ -107,14 +107,6 @@ func (c *Control) AddActor(p *pub.Person, pw []byte) (*pub.Person, error) {
 	self := ap.Self(pub.IRI(c.Conf.BaseURL))
 	now := time.Now().UTC()
 
-	if p.Type == pub.PersonType {
-		p.Endpoints = &pub.Endpoints{
-			SharedInbox:                self.Inbox.GetLink(),
-			OauthAuthorizationEndpoint: self.ID.AddPath("/oauth/authorize"),
-			OauthTokenEndpoint:         self.ID.AddPath("/oauth/token"),
-		}
-	}
-
 	act := &pub.Activity{
 		Type:         pub.CreateType,
 		AttributedTo: self.GetLink(),
