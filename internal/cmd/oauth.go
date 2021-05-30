@@ -163,12 +163,17 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 
 	self := apub.Self(pub.IRI(ctl.Conf.BaseURL))
 	now := time.Now().UTC()
-	redirectUrl := pub.IRI(redirect[0])
 	name := pub.Content("oauth-client-app")
-	if u, err := redirectUrl.URL(); err == nil {
-		u.Path = path.Clean(u.Path)
-		name = pub.Content(u.Host)
-		redirectUrl = pub.IRI(u.String())
+	var appURL pub.IRI
+	for i, redirectUrl := range redirect {
+		if u, err := url.ParseRequestURI(redirectUrl); err == nil {
+			u.Path = path.Clean(u.Path)
+			name = pub.Content(u.Host)
+			redirect[i] = u.String()
+			if appURL == "" {
+				appURL = pub.IRI(u.String())
+			}
+		}
 	}
 	p := &pub.Person{
 		Type: pub.ApplicationType,
@@ -179,7 +184,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 		PreferredUsername: pub.NaturalLanguageValues{
 			{pub.NilLangRef, name},
 		},
-		URL: redirectUrl,
+		URL: appURL,
 	}
 	app, err := c.AddActor(p, pw)
 	if err != nil {
