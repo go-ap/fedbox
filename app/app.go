@@ -90,7 +90,7 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o o
 		return nil, err
 	}
 
-	app.R.Use(Repo(db))
+	app.R.Use(RepoMw(db))
 	app.R.Use(middleware.RequestID)
 	app.R.Use(log.NewStructuredLogger(l))
 	app.R.Route("/", app.Routes(Config.BaseURL, osin, l))

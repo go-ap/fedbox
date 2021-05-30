@@ -14,9 +14,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Repo adds an implementation of the storage.Loader to a Request's context so it can be used
+// RepoMw adds an implementation of the storage.Loader to a Request's context so it can be used
 // further in the middleware chain
-func Repo(loader storage.ReadStore) func(next http.Handler) http.Handler {
+func RepoMw(loader storage.ReadStore) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
