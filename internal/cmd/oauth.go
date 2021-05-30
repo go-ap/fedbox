@@ -166,7 +166,9 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 	redirectUrl := pub.IRI(redirect[0])
 	name := pub.Content("oauth-client-app")
 	if u, err := redirectUrl.URL(); err == nil {
+		u.Path = path.Clean(u.Path)
 		name = pub.Content(u.Host)
+		redirectUrl = pub.IRI(u.String())
 	}
 	p := &pub.Person{
 		Type: pub.ApplicationType,
