@@ -17,6 +17,7 @@ import (
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
+	"github.com/go-chi/chi"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
@@ -209,6 +210,32 @@ func (i authService) ValidateClient(r *http.Request) (*pub.Actor, error) {
 }
 
 var scopeAnonymousUserCreate = "anonUserCreate"
+
+func (i *authService) loadAccountByID (id string) (*pub.Actor, error) {
+	f := activitypub.FiltersNew()
+
+	a := activitypub.Self(i.baseIRI)
+
+	f.IRI = activitypub.ActorsType.IRI(a).AddPath(id)
+	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
+	actors, err := i.storage.repo.Load(f.GetLink())
+	if err != nil {
+		return nil, errUnauthorized
+	}
+	if actors == nil {
+		return nil, errUnauthorized
+	}
+
+	if actors.IsCollection() {
+		var actor *pub.Actor
+		err = pub.OnCollectionIntf(actors, func(actors pub.CollectionInterface) error {
+			actor, err = pub.ToActor(actors.Collection().First())
+			return err
+		})
+		return actor, err
+	}
+	return pub.ToActor(actors)
+}
 
 func (i *authService) loadAccountFromPost(r *http.Request) (*account, error) {
 	pw := r.PostFormValue("pw")
@@ -505,11 +532,29 @@ func (i *authService) renderTemplate(r *http.Request, w http.ResponseWriter, nam
 	return err
 }
 
+func name(act *pub.Actor) string {
+	n := act.Name.First().String()
+	if act.PreferredUsername != nil {
+		n = act.PreferredUsername.First().String()
+	}
+	return n
+}
 // ShowLogin serves GET /login requests
 func (i *authService) ShowLogin(w http.ResponseWriter, r *http.Request) {
 	a := activitypub.Self(i.baseIRI)
 
-	m := login{title: "Login"}
+	tit := "Login to FedBOX"
+	if id := chi.URLParam(r, "id"); id != "" {
+		actor, err := i.loadAccountByID(id)
+		if err != nil {
+			errors.HandleError(err).ServeHTTP(w, r)
+			return
+		}
+		a = *actor
+		tit = fmt.Sprintf("Login to FedBOX as %s", name(actor))
+	}
+
+	m := login{title: tit}
 	m.account = a
 
 	i.renderTemplate(r, w, "login", m)
@@ -569,13 +614,27 @@ func (p pwChange) Account() pub.Actor {
 // ShowChangePw
 func (i *authService) ShowChangePw(w http.ResponseWriter, r *http.Request) {
 	actor := i.loadActorFromOauth2Session(w, r)
-	m := pwChange{
-		title: "Change password",
-	}
 	if actor == nil {
+		errors.HandleError(errors.NotValidf("Unable to load actor from session")).ServeHTTP(w, r)
 		return
 	}
-	m.account = *actor
+
+	if id := chi.URLParam(r, "id"); id != "" {
+		act, err := i.loadAccountByID(id)
+		if err != nil {
+			errors.HandleError(err).ServeHTTP(w, r)
+			return
+		}
+		if !act.GetID().Equals(actor.GetID(), true) {
+			errors.HandleError(errors.NotValidf("Unable to load actor from session")).ServeHTTP(w, r)
+			return
+		}
+	}
+
+	m := pwChange{
+		title: "Change password",
+		account: *actor,
+	}
 
 	i.renderTemplate(r, w, "password", m)
 }
@@ -664,6 +723,7 @@ func (i *authService) loadActorFromOauth2Session(w http.ResponseWriter, r *http.
 	})
 	return actor
 }
+
 func assertToBytes(in interface{}) ([]byte, error) {
 	var ok bool
 	var data string
