@@ -17,7 +17,6 @@ import (
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
-	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
@@ -59,12 +58,12 @@ func (a *account) FromActor(p *pub.Actor) {
 	a.actor = p
 }
 
-type indieAuth struct {
+type authService struct {
 	baseIRI pub.IRI
 	genID   processing.IDGenerator
-	os      *osin.Server
-	st      ClientStorage
-	ap      storage.Store
+	storage fedboxStorage
+	auth    *auth.Server
+	logger  logrus.FieldLogger
 }
 
 const (
@@ -76,12 +75,12 @@ const (
 	ID osin.AuthorizeRequestType = "id"
 )
 
-func (i indieAuth) IsValidRequest(r *http.Request) bool {
+func (i authService) IsValidRequest(r *http.Request) bool {
 	clientID, err := url.QueryUnescape(r.FormValue(clientIdKey))
 	if err != nil {
 		return false
 	}
-	clURL, err := url.Parse(clientID)
+	clURL, err := url.ParseRequestURI(clientID)
 	if err != nil || clURL.Host == "" || clURL.Scheme == "" {
 		return false
 	}
@@ -117,7 +116,7 @@ func filters(r *http.Request, baseURL pub.IRI) *activitypub.Filters {
 	return f
 }
 
-func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
+func (i authService) ValidateClient(r *http.Request) (*pub.Actor, error) {
 	r.ParseForm()
 	clientID, err := url.QueryUnescape(r.FormValue(clientIdKey))
 	if err != nil {
@@ -147,7 +146,7 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 		f := filters(r, i.baseIRI)
 		f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
 		f.URL = activitypub.CompStrs{activitypub.StringEquals(me)}
-		actor, err = i.ap.Load(f.GetLink())
+		actor, err = i.storage.repo.Load(f.GetLink())
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +159,7 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 	f := filters(r, i.baseIRI)
 	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.ApplicationType))}
 	f.URL = activitypub.CompStrs{activitypub.StringEquals(clientID)}
-	clientActor, err := i.ap.Load(f.GetLink())
+	clientActor, err := i.storage.repo.Load(f.GetLink())
 	if err != nil {
 		return nil, err
 	}
@@ -172,14 +171,14 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 		if newId, err := i.genID(newClient, handlers.Outbox.IRI(actor), nil); err == nil {
 			newClient.ID = newId
 		}
-		clientActor, err = i.ap.Save(newClient)
+		clientActor, err = i.storage.repo.Save(newClient)
 		if err != nil {
 			return nil, err
 		}
 	}
 	id := path.Base(clientActor.GetID().String())
 	// must have a valid client
-	if _, err = i.st.GetClient(id); err != nil {
+	if _, err = i.storage.oauth.GetClient(id); err != nil {
 		if errors.IsNotFound(err) {
 			// create client
 			newClient := osin.DefaultClient{
@@ -188,7 +187,11 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 				RedirectUri: unescapedUri,
 				//UserData:    userData,
 			}
-			if err = i.st.CreateClient(&newClient); err != nil {
+			st, ok := i.storage.oauth.(ClientStorage)
+			if !ok {
+				return nil, errors.Errorf("Unable to create new client for IndieAuth request")
+			}
+			if err = st.CreateClient(&newClient); err != nil {
 				return nil, err
 			}
 		} else {
@@ -205,54 +208,46 @@ func (i indieAuth) ValidateClient(r *http.Request) (*pub.Actor, error) {
 	return nil, nil
 }
 
-type oauthHandler struct {
-	baseURL string
-	ia      *indieAuth
-	loader  storage.ReadStore
-	logger  logrus.FieldLogger
-}
-
 var scopeAnonymousUserCreate = "anonUserCreate"
 
-func (h *oauthHandler) loadAccountFromPost(r *http.Request) (*account, error) {
+func (i *authService) loadAccountFromPost(r *http.Request) (*account, error) {
 	pw := r.PostFormValue("pw")
 	handle := r.PostFormValue("handle")
 
-	h.logger.WithFields(logrus.Fields{
+	i.logger.WithFields(logrus.Fields{
 		"handle": handle,
 		"pass":   pw,
 	}).Info("received")
 
-	a := activitypub.Self(pub.IRI(h.baseURL))
+	a := activitypub.Self(i.baseIRI)
 
 	f := activitypub.FiltersNew()
 	f.Name = activitypub.CompStrs{activitypub.CompStr{Str: handle}}
 	f.IRI = activitypub.ActorsType.IRI(a)
 	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
-	actor, err := h.loader.Load(f.GetLink())
+	actors, err := i.storage.repo.Load(f.GetLink())
 	if err != nil {
 		return nil, errUnauthorized
 	}
 
-	if pwLoader, ok := h.loader.(st.PasswordChanger); ok {
-		if act, err := checkPw(actor, []byte(pw), pwLoader); err == nil {
-			return act, nil
+	var act *account
+	if pwLoader, ok := i.storage.repo.(st.PasswordChanger); ok {
+		if act, err = checkPw(actors, []byte(pw), pwLoader); err != nil {
+			return nil, err
 		}
 	}
-	return nil, errUnauthorized
+	return act, nil
 }
 
-func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
-	ia := h.ia
-
-	s := ia.os
+func (i *authService) Authorize(w http.ResponseWriter, r *http.Request) {
+	s := i.auth.Server
 	resp := s.NewResponse()
 	defer resp.Close()
 
 	var err error
 	actor := &auth.AnonymousActor
-	if ia.IsValidRequest(r) {
-		if actor, err = ia.ValidateClient(r); err != nil {
+	if i.IsValidRequest(r) {
+		if actor, err = i.ValidateClient(r); err != nil {
 			resp.SetError(osin.E_INVALID_REQUEST, err.Error())
 			redirectOrOutput(resp, w, r)
 			return
@@ -276,11 +271,11 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 				m.client = ar.Client.GetId()
 				m.state = ar.State
 
-				h.renderTemplate(r, w, "login", m)
+				i.renderTemplate(r, w, "login", m)
 				return
 			}
 		} else {
-			acc, err := h.loadAccountFromPost(r)
+			acc, err := i.loadAccountFromPost(r)
 			if err != nil {
 				errors.HandleError(err).ServeHTTP(w, r)
 				return
@@ -300,21 +295,25 @@ func (h *oauthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 
 func checkPw(it pub.Item, pw []byte, pwLoader st.PasswordChanger) (*account, error) {
 	acc := new(account)
+	found := false
 	err := pub.OnActor(it, func(p *pub.Actor) error {
-		err := pwLoader.PasswordCheck(p, pw)
-		if err != nil {
-			// TODO(marius): log the received error
-			return errUnauthorized
+		if found {
+			return nil
 		}
-		acc.FromActor(p)
+		if err := pwLoader.PasswordCheck(p, pw); err == nil {
+			acc.FromActor(p)
+			found = true
+		}
 		return nil
 	})
-
+	if !found {
+		return nil, errUnauthorized
+	}
 	return acc, err
 }
 
-func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
-	s := h.ia.os
+func (i *authService) Token(w http.ResponseWriter, r *http.Request) {
+	s := i.auth.Server
 	resp := s.NewResponse()
 	defer resp.Close()
 
@@ -327,7 +326,7 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 				// NOTE(marius): here we send the full actor IRI as a username to avoid handler collisions
 				actorFilters.IRI = pub.IRI(ar.Username)
 			} else {
-				actorFilters.IRI = activitypub.ActorsType.IRI(pub.IRI(h.baseURL))
+				actorFilters.IRI = activitypub.ActorsType.IRI(i.baseIRI)
 				actorFilters.Name = activitypub.CompStrs{activitypub.StringEquals(ar.Username)}
 			}
 		case osin.AUTHORIZATION_CODE:
@@ -335,14 +334,14 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 				actorFilters.IRI = pub.IRI(iri)
 			}
 		}
-		actor, err := h.loader.Load(actorFilters.GetLink())
+		actor, err := i.storage.repo.Load(actorFilters.GetLink())
 		if err != nil {
-			h.logger.Error(errUnauthorized)
+			i.logger.Error(errUnauthorized)
 			errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 			return
 		}
 		if ar.Type == osin.PASSWORD {
-			if pwLoader, ok := h.loader.(st.PasswordChanger); ok {
+			if pwLoader, ok := i.storage.repo.(st.PasswordChanger); ok {
 				if actor.IsCollection() {
 					err = pub.OnCollectionIntf(actor, func(col pub.CollectionInterface) error {
 						// NOTE(marius): This is a stupid way of doing pw authentication, as it will produce collisions
@@ -360,7 +359,7 @@ func (h *oauthHandler) Token(w http.ResponseWriter, r *http.Request) {
 				}
 				if err != nil || acc == nil {
 					if err != nil {
-						h.logger.Error(err)
+						i.logger.Error(err)
 					}
 					errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 					return
@@ -495,11 +494,11 @@ var (
 	ren = render.New(defaultRenderOptions)
 )
 
-func (h *oauthHandler) renderTemplate(r *http.Request, w http.ResponseWriter, name string, m authModel) error {
+func (i *authService) renderTemplate(r *http.Request, w http.ResponseWriter, name string, m authModel) error {
 	err := ren.HTML(w, http.StatusOK, name, m)
 	if err != nil {
 		new := errors.Annotatef(err, "failed to render template")
-		h.logger.WithFields(logrus.Fields{"template": name, "model": fmt.Sprintf("%T", m)}).Error(new.Error())
+		i.logger.WithFields(logrus.Fields{"template": name, "model": fmt.Sprintf("%T", m)}).Error(new.Error())
 		errRenderer.HTML(w, http.StatusInternalServerError, "error", new)
 	}
 
@@ -507,20 +506,20 @@ func (h *oauthHandler) renderTemplate(r *http.Request, w http.ResponseWriter, na
 }
 
 // ShowLogin serves GET /login requests
-func (h *oauthHandler) ShowLogin(w http.ResponseWriter, r *http.Request) {
-	a := activitypub.Self(pub.IRI(h.baseURL))
+func (i *authService) ShowLogin(w http.ResponseWriter, r *http.Request) {
+	a := activitypub.Self(i.baseIRI)
 
 	m := login{title: "Login"}
 	m.account = a
 
-	h.renderTemplate(r, w, "login", m)
+	i.renderTemplate(r, w, "login", m)
 }
 
 var errUnauthorized = errors.Unauthorizedf("Invalid username or password")
 
 // HandleLogin handles POST /login requests
-func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	acc, err := h.loadAccountFromPost(r)
+func (i *authService) HandleLogin(w http.ResponseWriter, r *http.Request) {
+	acc, err := i.loadAccountFromPost(r)
 	if err != nil {
 		errors.HandleError(err).ServeHTTP(w, r)
 		return
@@ -528,8 +527,8 @@ func (h *oauthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	client := r.PostFormValue("client")
 	state := r.PostFormValue("state")
 	endpoints := pub.Endpoints{
-		OauthAuthorizationEndpoint: pub.IRI(fmt.Sprintf("%s/authorize", h.baseURL)),
-		OauthTokenEndpoint:         pub.IRI(fmt.Sprintf("%s/token", h.baseURL)),
+		OauthAuthorizationEndpoint: pub.IRI(fmt.Sprintf("%s/oauth/authorize", i.baseIRI)),
+		OauthTokenEndpoint:         pub.IRI(fmt.Sprintf("%s/oauth/token", i.baseIRI)),
 	}
 	if acc.actor != nil && acc.actor.Endpoints != nil {
 		endpoints = *acc.actor.Endpoints
@@ -568,8 +567,8 @@ func (p pwChange) Account() pub.Actor {
 }
 
 // ShowChangePw
-func (h *oauthHandler) ShowChangePw(w http.ResponseWriter, r *http.Request) {
-	actor := h.loadActorFromOauth2Session(w, r)
+func (i *authService) ShowChangePw(w http.ResponseWriter, r *http.Request) {
+	actor := i.loadActorFromOauth2Session(w, r)
 	m := pwChange{
 		title: "Change password",
 	}
@@ -578,14 +577,14 @@ func (h *oauthHandler) ShowChangePw(w http.ResponseWriter, r *http.Request) {
 	}
 	m.account = *actor
 
-	h.renderTemplate(r, w, "password", m)
+	i.renderTemplate(r, w, "password", m)
 }
 
 // HandleChangePw
-func (h *oauthHandler) HandleChangePw(w http.ResponseWriter, r *http.Request) {
-	actor := h.loadActorFromOauth2Session(w, r)
+func (i *authService) HandleChangePw(w http.ResponseWriter, r *http.Request) {
+	actor := i.loadActorFromOauth2Session(w, r)
 	if actor == nil {
-		h.logger.Errorf("Unable to load actor from session")
+		i.logger.Errorf("Unable to load actor from session")
 		errors.HandleError(errors.NotValidf("Unable to load actor from session")).ServeHTTP(w, r)
 		return
 	}
@@ -598,63 +597,63 @@ func (h *oauthHandler) HandleChangePw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	i.logger.WithFields(logrus.Fields{
 		"handle": actor.PreferredUsername.String(),
 		"pass":   pw,
 	}).Info("received")
 
-	if pwSetter, ok := h.loader.(st.PasswordChanger); ok {
+	if pwSetter, ok := i.storage.repo.(st.PasswordChanger); ok {
 		err := pwSetter.PasswordSet(actor, []byte(pw))
 		if err != nil {
-			h.logger.Errorf("Error when saving password: %s", err)
+			i.logger.Errorf("Error when saving password: %s", err)
 			errors.HandleError(errors.NotValidf("Unable to change password")).ServeHTTP(w, r)
 			return
 		}
-		h.ia.os.Storage.RemoveAuthorize(tok)
+		i.storage.oauth.RemoveAuthorize(tok)
 	}
 }
 
-func (h *oauthHandler) loadActorFromOauth2Session(w http.ResponseWriter, r *http.Request) *pub.Actor {
+func (i *authService) loadActorFromOauth2Session(w http.ResponseWriter, r *http.Request) *pub.Actor {
 	notF := errors.NotFoundf("Not found")
 	// TODO(marius): we land on this handler, coming from an email link containing a token identifying the Actor
 	tok := r.URL.Query().Get("s")
 	if len(tok) == 0 {
-		h.logger.Errorf("Unable to load token from URL")
+		i.logger.Errorf("Unable to load token from URL")
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
 
-	authSess, err := h.ia.os.Storage.LoadAuthorize(tok)
+	authSess, err := i.auth.Server.Storage.LoadAuthorize(tok)
 	if err != nil {
-		h.logger.Errorf("Error when loading authorize session: %s", err)
+		i.logger.Errorf("Error when loading authorize session: %s", err)
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
 	if authSess == nil {
-		h.logger.Errorf("Invalid authorize session for tok %s", tok)
+		i.logger.Errorf("Invalid authorize session for tok %s", tok)
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
 	if authSess.ExpireAt().Sub(time.Now().UTC()) < 0 {
-		h.logger.Errorf("Authorize token %s is expired %s", tok, authSess.ExpireAt().Format("2006-01-02 15:04:05"))
+		i.logger.Errorf("Authorize token %s is expired %s", tok, authSess.ExpireAt().Format("2006-01-02 15:04:05"))
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
 	if authSess.UserData == nil {
-		h.logger.Errorf("Invalid authorize session for tok %s, user-data is empty", tok)
+		i.logger.Errorf("Invalid authorize session for tok %s, user-data is empty", tok)
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
 
 	actorIRI, err := assertToBytes(authSess.UserData)
 	if err != nil {
-		h.logger.Errorf("Invalid authorize session for tok %s, user-data is not an IRI: %v", tok, authSess.UserData)
+		i.logger.Errorf("Invalid authorize session for tok %s, user-data is not an IRI: %v", tok, authSess.UserData)
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
-	ob, err := h.loader.Load(pub.IRI(actorIRI))
+	ob, err := i.storage.repo.Load(pub.IRI(actorIRI))
 	if err != nil || ob == nil {
-		h.logger.Errorf("Error when loading actor from storage: %s", err)
+		i.logger.Errorf("Error when loading actor from storage: %s", err)
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}

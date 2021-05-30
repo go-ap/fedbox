@@ -29,16 +29,30 @@ var Config config.Options
 
 type LogFn func(string, ...interface{})
 
+type fedboxStorage struct {
+	repo st.Store
+	oauth osin.Storage
+}
+
+func (s *fedboxStorage) Close() error {
+	s.oauth.Close()
+	closable, ok :=  s.repo.(io.Closer)
+	if !ok {
+		return nil
+	}
+	return closable.Close()
+}
+
 type FedBOX struct {
-	conf         config.Options
-	R            chi.Router
-	ver          string
-	caches       cache.CanStore
-	Storage      st.Store
-	OAuthStorage osin.Storage
-	stopFn       func()
-	infFn        LogFn
-	errFn        LogFn
+	R       chi.Router
+	conf    config.Options
+	storage fedboxStorage
+	ver     string
+	caches  cache.CanStore
+	OAuth   authService
+	stopFn  func()
+	infFn   LogFn
+	errFn   LogFn
 }
 
 var (
@@ -68,14 +82,13 @@ var InternalIRI = pub.IRI("https://fedbox/")
 // New instantiates a new FedBOX instance
 func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o osin.Storage) (*FedBOX, error) {
 	app := FedBOX{
-		ver:          ver,
-		conf:         conf,
-		R:            chi.NewRouter(),
-		Storage:      db,
-		OAuthStorage: o,
-		infFn:        emptyLogFn,
-		errFn:        emptyLogFn,
-		caches:       cache.New(!(conf.Env.IsTest() || conf.Env.IsDev())),
+		ver:     ver,
+		conf:    conf,
+		R:       chi.NewRouter(),
+		storage: fedboxStorage{repo: db, oauth: o},
+		infFn:   emptyLogFn,
+		errFn:   emptyLogFn,
+		caches:  cache.New(!(conf.Env.IsTest() || conf.Env.IsDev())),
 	}
 	if l != nil {
 		app.infFn = l.Infof
@@ -84,7 +97,7 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o o
 	Config = conf
 	errors.IncludeBacktrace = conf.Env.IsDev() || conf.Env.IsTest()
 
-	osin, err := auth.NewServer(app.OAuthStorage, l)
+	as, err := auth.New(conf.BaseURL, app.storage.oauth, app.storage.repo, l)
 	if err != nil {
 		l.Warn(err.Error())
 		return nil, err
@@ -93,8 +106,17 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o o
 	app.R.Use(RepoMw(db))
 	app.R.Use(middleware.RequestID)
 	app.R.Use(log.NewStructuredLogger(l))
-	app.R.Route("/", app.Routes(Config.BaseURL, osin, l))
 
+	baseIRI := pub.IRI(Config.BaseURL)
+	app.OAuth = authService{
+		baseIRI: baseIRI,
+		auth:    as,
+		genID:   GenerateID(baseIRI),
+		storage: app.storage,
+		logger:  l,
+	}
+
+	app.R.Route("/", app.Routes())
 	return &app, err
 }
 
@@ -104,6 +126,7 @@ func (f FedBOX) Config() config.Options {
 
 // Stop
 func (f *FedBOX) Stop() {
+	defer f.storage.Close()
 	if f.stopFn != nil {
 		f.stopFn()
 	}
@@ -126,12 +149,6 @@ func (f *FedBOX) Run() error {
 		if err := srvStop(); err != nil {
 			f.errFn("Err: %s", err)
 		}
-		if closable, ok :=  f.Storage.(io.Closer); ok {
-			if err := closable.Close(); err != nil {
-				f.errFn("Err: %s", err)
-			}
-		}
-		f.OAuthStorage.Close()
 	}
 
 	exit := w.RegisterSignalHandlers(w.SignalHandlers{
