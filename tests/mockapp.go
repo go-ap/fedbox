@@ -64,7 +64,7 @@ func cleanDB(t *testing.T) {
 		t.Error(err)
 	}
 	if fedboxApp != nil {
-		if st, ok := fedboxApp.Storage.(ls.Resetter); ok {
+		if st, ok := fedboxApp.Storage().(ls.Resetter); ok {
 			st.Reset()
 		}
 	}

@@ -124,6 +124,10 @@ func (f FedBOX) Config() config.Options {
 	return f.conf
 }
 
+func (f *FedBOX) Storage() st.Store {
+	return f.storage.repo
+}
+
 // Stop
 func (f *FedBOX) Stop() {
 	defer f.storage.Close()
