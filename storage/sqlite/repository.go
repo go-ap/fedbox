@@ -66,14 +66,17 @@ func (r *repo) Open() error {
 	var err error
 	if !r.opened {
 		r.mu.Lock()
-		r.conn, err = sql.Open("sqlite", r.path)
+		if r.conn, err = sql.Open("sqlite", r.path); err != nil {
+			return errors.Annotatef(err, "could not open sqlite connection")
+		}
 		r.opened = true
 	}
-	return err
+	return nil
 }
 
 // Close closes the sqlite database
 func (r *repo) Close() error {
+	if r.conn == nil { return nil }
 	defer func() {
 		if r.opened {
 			r.mu.Unlock()
