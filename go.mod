@@ -25,6 +25,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d
+	github.com/mattn/go-isatty v0.0.13 // indirect
 	github.com/openshift/osin v1.0.1
 	github.com/pborman/uuid v1.2.1
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
@@ -35,12 +36,12 @@ require (
 	github.com/tdewolff/test v1.0.6 // indirect
 	github.com/unrolled/render v1.0.2
 	go.etcd.io/bbolt v1.3.4
-	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620
+	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210601080250-7ecdf8ef093b // indirect
+	golang.org/x/sys v0.0.0-20210603125802-9665404d3644 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717
-	modernc.org/sqlite v1.10.7
+	modernc.org/sqlite v1.10.8
 )
