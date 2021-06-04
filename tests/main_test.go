@@ -4,10 +4,11 @@ package tests
 
 import (
 	"flag"
-	"github.com/go-ap/fedbox/internal/env"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/go-ap/fedbox/internal/env"
 )
 
 func TestMain(m *testing.M) {
@@ -19,7 +20,7 @@ func TestMain(m *testing.M) {
 	fedboxApp = SetupAPP(env.TEST)
 	go fedboxApp.Run()
 
-	time.Sleep(100*time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	st := m.Run()
 	if st != 0 {

@@ -9,11 +9,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/client"
-	fedbox "github.com/go-ap/fedbox/app"
-	_ "github.com/joho/godotenv/autoload"
-	"github.com/spacemonkeygo/httpsig"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -24,6 +19,12 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	pub "github.com/go-ap/activitypub"
+	"github.com/go-ap/client"
+	fedbox "github.com/go-ap/fedbox/app"
+	_ "github.com/joho/godotenv/autoload"
+	"github.com/spacemonkeygo/httpsig"
 )
 
 // UserAgent value that the client uses when performing requests

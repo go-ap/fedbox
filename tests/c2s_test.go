@@ -11,9 +11,9 @@ import (
 	pub "github.com/go-ap/activitypub"
 )
 
-var ActorsCollectionTests = testPairs {
+var ActorsCollectionTests = testPairs{
 	{
-		name: "ActorsCollection",
+		name:  "ActorsCollection",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -54,7 +54,7 @@ var ActorsCollectionTests = testPairs {
 		},
 	},
 	{
-		name: "ActorsCollectionTypePerson",
+		name:  "ActorsCollectionTypePerson",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -95,7 +95,7 @@ var ActorsCollectionTests = testPairs {
 		},
 	},
 	{
-		name: "ActorsCollectionTypeGroup",
+		name:  "ActorsCollectionTypeGroup",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -119,7 +119,7 @@ var ActorsCollectionTests = testPairs {
 		},
 	},
 	{
-		name: "ActorsCollectionTypeApplication",
+		name:  "ActorsCollectionTypeApplication",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -142,7 +142,7 @@ var ActorsCollectionTests = testPairs {
 		},
 	},
 	{
-		name:  "A lot of actors",
+		name: "A lot of actors",
 		mocks: []string{
 			"mocks/actors/service.json",
 			"mocks/actors/actor-admin.json",
@@ -283,7 +283,7 @@ var ActorsCollectionTests = testPairs {
 	},
 }
 
-var ActivitiesCollectionTests = testPairs {
+var ActivitiesCollectionTests = testPairs{
 	{
 		name: "ActivitiesCollection",
 		mocks: []string{
@@ -316,9 +316,8 @@ var ActivitiesCollectionTests = testPairs {
 		},
 		tests: []testPair{
 			{
-				name: "no filter",
-				mocks: []string{
-				},
+				name:  "no filter",
+				mocks: []string{},
 				req: testReq{
 					met: http.MethodGet,
 					url: fmt.Sprintf("%s/activities", apiURL),
@@ -412,7 +411,7 @@ var ActivitiesCollectionTests = testPairs {
 	},
 }
 
-var ObjectsCollectionTests = testPairs {
+var ObjectsCollectionTests = testPairs{
 	{
 		name: "ObjectsCollection",
 		tests: []testPair{
@@ -428,7 +427,7 @@ var ObjectsCollectionTests = testPairs {
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ: string(pub.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 0,
 					},
 				},
@@ -644,9 +643,9 @@ var ObjectsCollectionTests = testPairs {
 	},
 }
 
-var SingleItemLoadTests = testPairs {
+var SingleItemLoadTests = testPairs{
 	{
-		name: "SelfService",
+		name:  "SelfService",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -674,9 +673,9 @@ var SingleItemLoadTests = testPairs {
 	},
 }
 
-var C2STests = testPairs {
+var C2STests = testPairs{
 	{
-		name: "CreateActor",
+		name:  "CreateActor",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -710,7 +709,7 @@ var C2STests = testPairs {
 		},
 	},
 	{
-		name: "CreateActorAnonymously",
+		name:  "CreateActorAnonymously",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -731,7 +730,7 @@ var C2STests = testPairs {
 		},
 	},
 	{
-		name: "UpdateActor",
+		name:  "UpdateActor",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -772,7 +771,7 @@ var C2STests = testPairs {
 		},
 	},
 	{
-		name: "DeleteActor",
+		name:  "DeleteActor",
 		mocks: nil,
 		tests: []testPair{
 			{
@@ -804,7 +803,7 @@ var C2STests = testPairs {
 		},
 	},
 	{
-		name: "CreateArticle",
+		name:  "CreateArticle",
 		mocks: nil,
 		tests: []testPair{
 			{

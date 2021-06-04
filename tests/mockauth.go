@@ -4,9 +4,10 @@ package tests
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func osinServer(store osin.Storage, l logrus.FieldLogger) *osin.Server {

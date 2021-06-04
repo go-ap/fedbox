@@ -5,6 +5,12 @@ package tests
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"path"
+	"testing"
+	"text/template"
+	"time"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/cmd"
@@ -16,11 +22,6 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
-	"path"
-	"testing"
-	"text/template"
-	"time"
 )
 
 func loadMockJson(file string, model interface{}) func() string {
@@ -80,7 +81,7 @@ func seedTestData(t *testing.T, testData []string) {
 		return
 	}
 
-	fields:= logrus.Fields{"action":"seeding", "storage": Options.Storage, "path": Options.StoragePath}
+	fields := logrus.Fields{"action": "seeding", "storage": Options.Storage, "path": Options.StoragePath}
 	l := logrus.New()
 	db, aDb, err := app.Storage(Options, l.WithFields(fields))
 	if err != nil {
@@ -132,7 +133,7 @@ func SetupAPP(e env.Type) *app.FedBOX {
 	if Options.Storage == "all" {
 		Options.Storage = config.StorageFS
 	}
-	fields:= logrus.Fields{"action":"running", "storage": Options.Storage, "path": Options.BaseStoragePath()}
+	fields := logrus.Fields{"action": "running", "storage": Options.Storage, "path": Options.BaseStoragePath()}
 	l := logrus.New()
 	l.SetLevel(logrus.PanicLevel)
 
