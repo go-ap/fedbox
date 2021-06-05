@@ -10,7 +10,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/go-ap/activitypub v0.0.0-20210403114333-558da3636016
-	github.com/go-ap/auth v0.0.0-20210601181456-a957585dca5f
+	github.com/go-ap/auth v0.0.0-20210604155601-4c6025389cf9
 	github.com/go-ap/client v0.0.0-20210601181211-991ee833bc96
 	github.com/go-ap/errors v0.0.0-20210527074045-78cc5b9dcc94
 	github.com/go-ap/handlers v0.0.0-20210601180936-564fcb277a5b
