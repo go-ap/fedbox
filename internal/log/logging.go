@@ -23,7 +23,7 @@ const (
 )
 
 var devFormatter = logrus.TextFormatter{
-	ForceColors:            true,
+	ForceColors:            false,
 	TimestampFormat:        time.StampMilli,
 	FullTimestamp:          true,
 	DisableSorting:         true,
