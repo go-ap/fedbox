@@ -175,7 +175,10 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	conf.CertPath = loadKeyFromEnv(KeyCertPath, "")
 
 	conf.Listen = loadKeyFromEnv(KeyListen, "")
-	envStorage := loadKeyFromEnv(KeyStorage, string(StorageFS))
+	envStorage := loadKeyFromEnv(KeyStorage, string(DefaultStorage))
+	if len(DefaultStorage) > 0 {
+		envStorage = string(DefaultStorage)
+	}
 	conf.Storage = StorageType(strings.ToLower(envStorage))
 	conf.StoragePath = loadKeyFromEnv(KeyStoragePath, "")
 	if conf.StoragePath == "" {
