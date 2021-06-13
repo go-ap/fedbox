@@ -402,7 +402,7 @@ func loadFromOneTable(r *repo, table handlers.CollectionType, f *ap.Filters) (pu
 	clauses, values := getWhereClauses(f)
 	var total uint = 0
 
-	selCnt := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s", table, strings.Join(clauses, " AND "))
+	selCnt := fmt.Sprintf("SELECT COUNT(iri) FROM %s WHERE %s", table, strings.Join(clauses, " AND "))
 	if err := conn.QueryRow(selCnt, values...).Scan(&total); err != nil {
 		return nil, errors.Annotatef(err, "unable to count all rows")
 	}
@@ -411,7 +411,7 @@ func loadFromOneTable(r *repo, table handlers.CollectionType, f *ap.Filters) (pu
 		return ret, nil
 	}
 
-	sel := fmt.Sprintf("SELECT id, iri, published, type, raw FROM %s WHERE %s ORDER BY published %s", table, strings.Join(clauses, " AND "), getLimit(f))
+	sel := fmt.Sprintf("SELECT iri, raw FROM %s WHERE %s ORDER BY published %s", table, strings.Join(clauses, " AND "), getLimit(f))
 	rows, err := conn.Query(sel, values...)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -422,12 +422,9 @@ func loadFromOneTable(r *repo, table handlers.CollectionType, f *ap.Filters) (pu
 
 	// Iterate through the result set
 	for rows.Next() {
-		var id int64
 		var iri string
-		var created string
-		var typ string
 		var raw []byte
-		err = rows.Scan(&id, &iri, &created, &typ, &raw)
+		err = rows.Scan(&iri, &raw)
 		if err != nil {
 			return ret, errors.Annotatef(err, "scan values error")
 		}
@@ -544,7 +541,7 @@ func keepTarget(f *ap.Filters) func(act *pub.Activity, ob pub.Item) bool {
 func runActivityFilters(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.ItemCollection {
 	// If our filter contains values for filtering the activity's object or actor, we do that here:
 	//  for the case where the corresponding values are not set, this doesn't do anything
-	toRemove := make([]int, 0)
+	toRemove := make(pub.IRIs, 0)
 	if f.Object != nil {
 		toRemove = append(toRemove, childFilter(r, &ret, objectFilter, keepObject(f.Object))...)
 	}
@@ -556,15 +553,15 @@ func runActivityFilters(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.Item
 	}
 
 	result := make(pub.ItemCollection, 0)
-	for i := range ret {
+	for _, it := range ret {
 		keep := true
-		for _, id := range toRemove {
-			if i == id {
+		for _, iri := range toRemove {
+			if it.GetLink().Equals(iri, false) {
 				keep = false
 			}
 		}
 		if keep {
-			result = append(result, ret[i])
+			result = append(result, it)
 		}
 	}
 	return result
@@ -575,16 +572,16 @@ type (
 	keepFn      func(act *pub.Activity, ob pub.Item) bool
 )
 
-func childFilter(r *repo, ret *pub.ItemCollection, filterFn iriFilterFn, keepFn keepFn) []int {
+func childFilter(r *repo, ret *pub.ItemCollection, filterFn iriFilterFn, keepFn keepFn) pub.IRIs {
 	f := filterFn(*ret)
 	if f == nil {
 		return nil
 	}
-	toRemove := make([]int, 0)
+	toRemove := make(pub.IRIs, 0)
 	children, _ := loadFromThreeTables(r, f)
-	for i, rr := range *ret {
+	for _, rr := range *ret {
 		if !pub.ActivityTypes.Contains(rr.GetType()) {
-			toRemove = append(toRemove, i)
+			toRemove = append(toRemove, rr.GetID())
 			continue
 		}
 		keep := false
@@ -598,7 +595,7 @@ func childFilter(r *repo, ret *pub.ItemCollection, filterFn iriFilterFn, keepFn 
 			return nil
 		})
 		if !keep {
-			toRemove = append(toRemove, i)
+			toRemove = append(toRemove, rr.GetID())
 		}
 	}
 	return toRemove
@@ -616,7 +613,7 @@ func loadFromDb(r *repo, f *ap.Filters) (pub.Item, error) {
 	//  2. The IRI corresponds to the activities, actors, objects tables:
 	//    Then we load from the corresponding table using `iri LIKE IRI%` criteria
 	//  3. IRI corresponds to an object: we load directly from the corresponding table.
-	selCnt := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s", table, strings.Join(clauses, " AND "))
+	selCnt := fmt.Sprintf("SELECT COUNT(iri) FROM %s WHERE %s", table, strings.Join(clauses, " AND "))
 	if err := conn.QueryRow(selCnt, values...).Scan(&total); err != nil && err != sql.ErrNoRows {
 		return nil, errors.Annotatef(err, "unable to count all rows")
 	}
@@ -640,14 +637,14 @@ func loadFromDb(r *repo, f *ap.Filters) (pub.Item, error) {
 	if !hasIRI {
 		return nil, errors.NotFoundf("Not found")
 	}
-	colCntQ := fmt.Sprintf("SELECT COUNT(id) FROM %s WHERE %s", "collections", iriClause)
+	colCntQ := fmt.Sprintf("SELECT COUNT(iri) FROM %s WHERE %s", "collections", iriClause)
 	if err := conn.QueryRow(colCntQ, iriValue).Scan(&total); err != nil && err != sql.ErrNoRows {
 		return nil, errors.Annotatef(err, "unable to count all rows")
 	}
 	if total == 0 && handlers.ActivityPubCollections.Contains(f.Collection) && !MandatoryCollections.Contains(f.Collection) {
 		return nil, errors.NotFoundf("Unable to find collection %s", f.Collection)
 	}
-	sel := fmt.Sprintf("SELECT id, iri, object FROM %s WHERE %s %s", "collections", iriClause, getLimit(f))
+	sel := fmt.Sprintf("SELECT iri, object FROM %s WHERE %s %s", "collections", iriClause, getLimit(f))
 	rows, err := conn.Query(sel, iriValue)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -670,11 +667,10 @@ func loadFromDb(r *repo, f *ap.Filters) (pub.Item, error) {
 	fActivities.ItemKey = make(ap.CompStrs, 0)
 	// Iterate through the result set
 	for rows.Next() {
-		var id int64
 		var object string
 		var iri string
 
-		err = rows.Scan(&id, &iri, &object)
+		err = rows.Scan(&iri, &object)
 		if err != nil {
 			return pub.ItemCollection{}, errors.Annotatef(err, "scan values error")
 		}
@@ -735,90 +731,21 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 		return it, errors.Annotatef(err, "query error")
 	}
 
-	columns := []string{
-		"iri",
-		"published",
-		"type",
-		"raw",
-	}
-	tokens := []string{"?", "?", "?", "?"}
-	params := []interface{}{
-		interface{}(iri),
-		interface{}(time.Now().UTC().Format(time.RFC3339Nano)),
-		interface{}(it.GetType()),
-		interface{}(raw),
-	}
+	columns := []string{"raw"}
+	tokens := []string{"?"}
+	params := []interface{}{interface{}(raw)}
 
 	table := string(ap.ObjectsType)
-	pub.OnObject(it, func(o *pub.Object) error {
-		if o.URL != nil {
-			columns = append(columns, "url")
-			tokens = append(tokens, "?")
-			params = append(params, interface{}(o.URL.GetLink()))
-		}
-		if o.Name.Count() > 0 {
-			columns = append(columns, "name")
-			tokens = append(tokens, "?")
-			params = append(params, interface{}(o.Name.String()))
-		}
-		rec := o.Recipients()
-		if rec.Count() > 0 {
-			if raw, err := encodeFn(rec); err == nil {
-				columns = append(columns, "audience")
-				tokens = append(tokens, "?")
-				params = append(params, interface{}(raw))
-			}
-		}
-		if pub.ObjectTypes.Contains(o.Type) {
-			if o.Summary.Count() > 0 {
-				columns = append(columns, "summary")
-				tokens = append(tokens, "?")
-				params = append(params, interface{}(o.Summary.String()))
-			}
-		}
-		if !pub.ActorTypes.Contains(o.Type) {
-			if o.Content.Count() > 0 {
-				columns = append(columns, "content")
-				tokens = append(tokens, "?")
-				params = append(params, interface{}(o.Content.String()))
-			}
-		}
-		return nil
-	})
 	if pub.ActivityTypes.Contains(it.GetType()) {
 		table = string(ap.ActivitiesType)
-		pub.OnActivity(it, func(a *pub.Activity) error {
-			columns = append(columns, "actor")
-			tokens = append(tokens, "?")
-			params = append(params, interface{}(a.Actor.GetLink()))
-
-			columns = append(columns, "object")
-			tokens = append(tokens, "?")
-			params = append(params, interface{}(a.Object.GetLink()))
-			return nil
-		})
 	} else if pub.ActorTypes.Contains(it.GetType()) {
 		table = string(ap.ActorsType)
-		pub.OnActor(it, func(a *pub.Actor) error {
-			return nil
-		})
 	} else if it.GetType() == pub.TombstoneType {
 		if strings.Contains(iri.String(), string(ap.ActorsType)) {
 			table = string(ap.ActorsType)
-			pub.OnActor(it, func(a *pub.Actor) error {
-				if a.PreferredUsername.Count() > 0 {
-					columns = append(columns, "preferred_username")
-					tokens = append(tokens, "?")
-					params = append(params, interface{}(a.PreferredUsername.String()))
-				}
-				return nil
-			})
 		}
 		if strings.Contains(iri.String(), string(ap.ActivitiesType)) {
 			table = string(ap.ActivitiesType)
-			pub.OnActivity(it, func(a *pub.Activity) error {
-				return nil
-			})
 		}
 	}
 

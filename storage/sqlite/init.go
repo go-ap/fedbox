@@ -5,52 +5,59 @@ package sqlite
 const (
 
 createActorsQuery = `
-create table actors (
-  "id" integer constraint actors_pkey primary key,
-  "iri" varchar constraint actors_key_key unique,
-  "type" varchar not null,
-  "url" varchar,
-  "name" varchar,
-  "preferred_username" varchar,
-  "published" timestamp default CURRENT_TIMESTAMP,
-  "updated" timestamp default CURRENT_TIMESTAMP,
-  "audience" blob, -- the [to, cc, bto, bcc fields]
-  "raw" blob,
-  "meta" blob
-);`
+CREATE TABLE actors (
+  "raw" BLOB,
+  "meta" BLOB,
+  "iri" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.id')) VIRTUAL NOT NULL constraint actors_key unique,
+  "type" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.type')) VIRTUAL NOT NULL,
+  "audience" BLOB GENERATED ALWAYS AS (json_array(json_extract(raw, '$.to'), json_extract(raw, '$.cc'),json_extract(raw, '$.bto'), json_extract(raw, '$.bcc'))), -- the [to, cc, bto, bcc fields]
+  "published" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.published')) VIRTUAL,
+  "updated" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.updated')) VIRTUAL,
+  "url" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.url')) VIRTUAL,
+  "name" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.name')) VIRTUAL,
+  "preferred_username" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.preferredUsername')) VIRTUAL
+);
+-- CREATE INDEX actors_type ON actors(type);
+-- CREATE INDEX actors_published ON actors(published);
+`
 
 createActivitiesQuery = `
-create table activities (
-  "id" integer constraint activities_pkey primary key,
-  "iri" varchar constraint activities_key_key unique,
-  "type" varchar not null,
-  "url" varchar,
-  "content" varchar,
-  "actor_id" int default NULL, -- the actor id, if this is a local activity
-  "actor" varchar, -- the IRI of local or remote actor
-  "object_id" int default NULL, -- the object id if it's a local object
-  "object" varchar, -- the IRI of the local or remote object
-  "published" timestamp default CURRENT_TIMESTAMP,
-  "audience" blob, -- the [to, cc, bto, bcc fields]
-  "raw" blob,
-  "meta" blob
-);`
+CREATE TABLE activities (
+  "raw" BLOB,
+  "meta" BLOB,
+  "iri" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.id')) VIRTUAL NOT NULL constraint activities_key unique,
+  "type" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.type')) VIRTUAL NOT NULL,
+  "audience" BLOB GENERATED ALWAYS AS (json_array(json_extract(raw, '$.to'), json_extract(raw, '$.cc'), json_extract(raw, '$.bto'), json_extract(raw, '$.bcc'))), -- the [to, cc, bto, bcc fields]
+  "published" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.published')) VIRTUAL,
+  "url" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.url')) VIRTUAL,
+  "actor" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.actor')) VIRTUAL NOT NULL,
+  "object" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.object')) VIRTUAL NOT NULL
+);
+-- CREATE INDEX activities_type ON activities(type);
+-- CREATE INDEX activities_actor ON activities(actor);
+-- CREATE INDEX activities_object ON activities(object);
+-- CREATE INDEX activities_published ON activities(published);
+`
 
 createObjectsQuery = `
-create table objects (
-  "id" integer constraint objects_pkey primary key,
-  "iri" varchar constraint objects_key_key unique,
-  "type" varchar not null,
-  "url" varchar,
-  "name" varchar,
-  "summary" varchar,
-  "content" varchar,
-  "published" timestamp default CURRENT_TIMESTAMP,
-  "updated" timestamp default CURRENT_TIMESTAMP,
-  "audience" blob, -- the [to, cc, bto, bcc fields]
-  "raw" blob,
-  "meta" blob
-);`
+CREATE TABLE objects (
+  "raw" BLOB,
+  "meta" BLOB,
+  "iri" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.id')) VIRTUAL NOT NULL constraint objects_key unique,
+  "type" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.type')) VIRTUAL NOT NULL,
+  "audience" BLOB GENERATED ALWAYS AS (json_array(json_extract(raw, '$.to'), json_extract(raw, '$.cc'),json_extract(raw, '$.bto'), json_extract(raw, '$.bcc'))), -- the [to, cc, bto, bcc fields]
+  "published" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.published')) VIRTUAL,
+  "updated" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.updated')) VIRTUAL,
+  "url" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.url')) VIRTUAL,
+  "name" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.name')) VIRTUAL,
+  "summary" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.summary')) VIRTUAL,
+  "content" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.content')) VIRTUAL
+);
+-- CREATE INDEX objects_type ON objects(type);
+-- CREATE INDEX objects_name ON objects(name);
+-- CREATE INDEX objects_content ON objects(content);
+-- CREATE INDEX objects_published ON objects(published);
+`
 
 createCollectionsQuery = `
 create table collections (
@@ -62,7 +69,7 @@ create table collections (
 
 tuneQuery = `
 -- Use WAL mode (writers don't block readers):
--- PRAGMA journal_mode = 'WAL';
+PRAGMA journal_mode = 'TRUNCATE';
 -- Use memory as temporary storage:
 PRAGMA temp_store = 2;
 -- Faster synchronization that still keeps the data safe:
