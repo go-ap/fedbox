@@ -116,7 +116,7 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o o
 		logger:  l,
 	}
 
-	app.R.Route("/", app.Routes())
+	app.R.Group(app.Routes())
 	return &app, err
 }
 
