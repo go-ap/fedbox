@@ -5,6 +5,7 @@ package sqlite
 import (
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
@@ -21,7 +22,7 @@ func Clean(conf config.Options) error {
 	return os.RemoveAll(p)
 }
 
-func Bootstrap(conf config.Options) error {
+func Bootstrap(conf config.Options) (err error) {
 	Clean(conf)
 
 	p, err := getFullPath(Config{
@@ -38,13 +39,14 @@ func Bootstrap(conf config.Options) error {
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
 	}
-	exec := func(qRaw string, par ...interface{}) (err error) {
-		if err = r.Open(); err != nil {
-			return err
-		}
-		defer func () {
-			err = r.Close()
-		}()
+	if err = r.Open(); err != nil {
+		return err
+	}
+	defer func () {
+		err = r.Close()
+	}()
+
+	exec := func(qRaw string, par ...interface{}) error {
 		qSql := fmt.Sprintf(qRaw, par...)
 		if _, err = r.conn.Exec(qSql); err != nil {
 			return errors.Annotatef(err, "unable to execute: %q", qSql)
@@ -68,7 +70,7 @@ func Bootstrap(conf config.Options) error {
 		return err
 	}
 
-	return nil
+	return
 }
 
 func (r *repo) Reset() { }
