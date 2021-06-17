@@ -174,12 +174,10 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 	return nil
 }
 
-// AddTo
-func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
-	if err := r.Open(); err != nil {
-		return err
+func (r *repo) addTo(col pub.IRI, it pub.Item) error {
+	if r.conn == nil {
+		return errors.Newf("nil sql connection")
 	}
-	defer r.Close()
 	query := "INSERT INTO collections (iri, object) VALUES (?, ?);"
 
 	if _, err := r.conn.Exec(query, col, it.GetLink()); err != nil {
@@ -188,6 +186,16 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 	}
 
 	return nil
+}
+
+// AddTo
+func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
+	if err := r.Open(); err != nil {
+		return err
+	}
+	defer r.Close()
+
+	return r.addTo(col, it)
 }
 
 // Delete
@@ -759,7 +767,7 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 	if len(key) > 0 && handlers.ValidCollection(handlers.CollectionType(path.Base(col))) {
 		// Add private items to the collections table
 		if colIRI, k := handlers.Split(pub.IRI(col)); k == "" {
-			if err := l.AddTo(colIRI, it); err != nil {
+			if err := l.addTo(colIRI, it); err != nil {
 				return it, err
 			}
 		}
