@@ -35,6 +35,7 @@ func Bootstrap(conf config.Options) (err error) {
 
 	r := repo{
 		baseURL: conf.BaseURL,
+		s:       sync.NewCond(new(sync.Mutex)),
 		path:    p,
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
