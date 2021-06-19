@@ -9,7 +9,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	pub "github.com/go-ap/activitypub"
@@ -46,14 +45,12 @@ func New(c Config) (*repo, error) {
 		baseURL: c.BaseURL,
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
-		s:       sync.NewCond(new(sync.Mutex)),
 		cache:   cache.New(true),
 	}, err
 }
 
 type repo struct {
 	conn    *sql.DB
-	s       *sync.Cond
 	baseURL string
 	path    string
 	cache   cache.CanStore
@@ -63,13 +60,9 @@ type repo struct {
 
 // Open opens the sqlite database
 func (r *repo) Open() (err error) {
-	for r.conn != nil {
-		r.s.Wait()
-	}
 	if r.conn, err = sql.Open("sqlite", r.path); err != nil {
 		return err
 	}
-	r.s.L.Lock()
 	return err
 }
 
@@ -78,9 +71,6 @@ func (r *repo) Close() (err error) {
 	if r.conn == nil  {
 		return
 	}
-	defer func() {
-		r.s.L.Unlock()
-	}()
 	err = r.conn.Close()
 	r.conn = nil
 	return
