@@ -30,8 +30,8 @@ CREATE TABLE activities (
   "audience" BLOB GENERATED ALWAYS AS (json_array(json_extract(raw, '$.to'), json_extract(raw, '$.cc'), json_extract(raw, '$.bto'), json_extract(raw, '$.bcc'))), -- the [to, cc, bto, bcc fields]
   "published" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.published')) VIRTUAL,
   "url" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.url')) VIRTUAL,
-  "actor" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.actor')) VIRTUAL NOT NULL,
-  "object" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.object')) VIRTUAL NOT NULL
+  "actor" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.actor')) VIRTUAL NOT NULL CONSTRAINT activities_actors_iri_fk REFERENCES actors (iri),
+  "object" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.object')) VIRTUAL NOT NULL CONSTRAINT activities_objects_iri_fk REFERENCES objects (iri)
 );
 -- CREATE INDEX activities_type ON activities(type);
 -- CREATE INDEX activities_actor ON activities(actor);
@@ -61,7 +61,6 @@ CREATE TABLE objects (
 
 createCollectionsQuery = `
 create table collections (
-  "id" integer constraint collections_pkey primary key, 
   "published" timestamp default CURRENT_TIMESTAMP,
   "iri" varchar,
   "object" varchar
@@ -69,7 +68,7 @@ create table collections (
 
 tuneQuery = `
 -- Use WAL mode (writers don't block readers):
-PRAGMA journal_mode = 'DELETE';
+PRAGMA journal_mode = DELETE;
 -- Use memory as temporary storage:
 PRAGMA temp_store = 2;
 -- Faster synchronization that still keeps the data safe:
