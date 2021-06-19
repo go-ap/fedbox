@@ -44,7 +44,7 @@ CREATE TABLE objects (
   "raw" BLOB,
   "meta" BLOB,
   "iri" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.id')) VIRTUAL NOT NULL constraint objects_key unique,
-  "type" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.type')) VIRTUAL NOT NULL,
+  "type" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.type')) VIRTUAL,
   "audience" BLOB GENERATED ALWAYS AS (json_array(json_extract(raw, '$.to'), json_extract(raw, '$.cc'),json_extract(raw, '$.bto'), json_extract(raw, '$.bcc'))), -- the [to, cc, bto, bcc fields]
   "published" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.published')) VIRTUAL,
   "updated" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.updated')) VIRTUAL,
