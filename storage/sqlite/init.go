@@ -10,7 +10,10 @@ CREATE TABLE actors (
   "meta" BLOB,
   "iri" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.id')) VIRTUAL NOT NULL constraint actors_key unique,
   "type" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.type')) VIRTUAL NOT NULL,
-  "audience" BLOB GENERATED ALWAYS AS (json_array(json_extract(raw, '$.to'), json_extract(raw, '$.cc'),json_extract(raw, '$.bto'), json_extract(raw, '$.bcc'))), -- the [to, cc, bto, bcc fields]
+  "to" BLOB GENERATED ALWAYS AS (json_extract(raw, '$.to')) VIRTUAL,
+  "bto" BLOB GENERATED ALWAYS AS (json_extract(raw, '$.bto')) VIRTUAL ,
+  "cc" BLOB GENERATED ALWAYS AS (json_extract(raw, '$.cc')) VIRTUAL ,
+  "bcc" BLOB GENERATED ALWAYS AS (json_extract(raw, '$.bcc')) VIRTUAL ,
   "published" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.published')) VIRTUAL,
   "updated" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.updated')) VIRTUAL,
   "url" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.url')) VIRTUAL,
@@ -27,7 +30,10 @@ CREATE TABLE activities (
   "meta" BLOB,
   "iri" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.id')) VIRTUAL NOT NULL constraint activities_key unique,
   "type" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.type')) VIRTUAL NOT NULL,
-  "audience" BLOB GENERATED ALWAYS AS (json_array(json_extract(raw, '$.to'), json_extract(raw, '$.cc'), json_extract(raw, '$.bto'), json_extract(raw, '$.bcc'))), -- the [to, cc, bto, bcc fields]
+  "to" BLOB GENERATED ALWAYS AS (json_extract(raw, '$.to')) VIRTUAL,
+  "bto" BLOB GENERATED ALWAYS AS (json_extract(raw, '$.bto')) VIRTUAL ,
+  "cc" BLOB GENERATED ALWAYS AS (json_extract(raw, '$.cc')) VIRTUAL ,
+  "bcc" BLOB GENERATED ALWAYS AS (json_extract(raw, '$.bcc')) VIRTUAL ,
   "published" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.published')) VIRTUAL,
   "url" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.url')) VIRTUAL,
   "actor" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.actor')) VIRTUAL NOT NULL CONSTRAINT activities_actors_iri_fk REFERENCES actors (iri),
@@ -45,7 +51,10 @@ CREATE TABLE objects (
   "meta" BLOB,
   "iri" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.id')) VIRTUAL NOT NULL constraint objects_key unique,
   "type" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.type')) VIRTUAL,
-  "audience" BLOB GENERATED ALWAYS AS (json_array(json_extract(raw, '$.to'), json_extract(raw, '$.cc'),json_extract(raw, '$.bto'), json_extract(raw, '$.bcc'))), -- the [to, cc, bto, bcc fields]
+  "to" BLOB GENERATED ALWAYS AS (json_extract(raw, '$.to')) VIRTUAL,
+  "bto" BLOB GENERATED ALWAYS AS (json_extract(raw, '$.bto')) VIRTUAL ,
+  "cc" BLOB GENERATED ALWAYS AS (json_extract(raw, '$.cc')) VIRTUAL ,
+  "bcc" BLOB GENERATED ALWAYS AS (json_extract(raw, '$.bcc')) VIRTUAL ,
   "published" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.published')) VIRTUAL,
   "updated" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.updated')) VIRTUAL,
   "url" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.url')) VIRTUAL,
@@ -68,7 +77,7 @@ create table collections (
 
 tuneQuery = `
 -- Use WAL mode (writers don't block readers):
-PRAGMA journal_mode = WAL;
+PRAGMA journal_mode = DELETE;
 -- Use memory as temporary storage:
 PRAGMA temp_store = 2;
 -- Faster synchronization that still keeps the data safe:
