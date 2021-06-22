@@ -11,8 +11,8 @@ import (
 	pub "github.com/go-ap/activitypub"
 )
 
-func defaultC2SAccount() *testAccount {
-	return &defaultTestAccount
+func ActorsURL() string {
+	return ServiceActorsURL(&service)
 }
 
 var ActorsCollectionTests = testPairs{
@@ -27,12 +27,12 @@ var ActorsCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors", apiURL),
+					url: ActorsURL(),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors", apiURL),
+						id:        ActorsURL(),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 2,
 						items: map[string]*objectVal{
@@ -68,12 +68,12 @@ var ActorsCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?type=%s", apiURL, pub.PersonType),
+					url: fmt.Sprintf("%s?type=%s", ActorsURL(), pub.PersonType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.PersonType),
+						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), pub.PersonType),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 						items: map[string]*objectVal{
@@ -109,12 +109,12 @@ var ActorsCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?type=%s", apiURL, pub.GroupType),
+					url: fmt.Sprintf("%s?type=%s", ActorsURL(), pub.GroupType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.GroupType),
+						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), pub.GroupType),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 0,
 					},
@@ -132,12 +132,12 @@ var ActorsCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?type=%s", apiURL, pub.ApplicationType),
+					url: fmt.Sprintf("%s?type=%s", ActorsURL(), pub.ApplicationType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.ApplicationType),
+						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), pub.ApplicationType),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
@@ -174,12 +174,12 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors", apiURL),
+					url: ActorsURL(),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors", apiURL),
+						id:        ActorsURL(),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 21,
 					},
@@ -188,12 +188,12 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?type=%s", apiURL, pub.ApplicationType),
+					url: fmt.Sprintf("%s?type=%s", ActorsURL(), pub.ApplicationType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.ApplicationType),
+						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), pub.ApplicationType),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 6,
 					},
@@ -202,12 +202,12 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?type=%s", apiURL, pub.GroupType),
+					url: fmt.Sprintf("%s?type=%s", ActorsURL(), pub.GroupType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.GroupType),
+						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), pub.GroupType),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 5,
 					},
@@ -216,12 +216,12 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?type=%s", apiURL, pub.PersonType),
+					url: fmt.Sprintf("%s?type=%s", ActorsURL(), pub.PersonType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?type=%s", apiURL, pub.PersonType),
+						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), pub.PersonType),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 10,
 					},
@@ -230,12 +230,12 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?type=%s&type=%s", apiURL, pub.PersonType, pub.GroupType),
+					url: fmt.Sprintf("%s?type=%s&type=%s", ActorsURL(), pub.PersonType, pub.GroupType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?type=%s&type=%s", apiURL, pub.PersonType, pub.GroupType),
+						id:        fmt.Sprintf("%s?type=%s&type=%s", ActorsURL(), pub.PersonType, pub.GroupType),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 15,
 					},
@@ -244,12 +244,12 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?name=%s", apiURL, "element_a"),
+					url: fmt.Sprintf("%s?name=%s", ActorsURL(), "element_a"),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?name=%s", apiURL, "element_a"),
+						id:        fmt.Sprintf("%s?name=%s", ActorsURL(), "element_a"),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
@@ -258,12 +258,12 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?name=~%s", apiURL, "element"),
+					url: fmt.Sprintf("%s?name=~%s", ActorsURL(), "element"),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?name=~%s", apiURL, "element"),
+						id:        fmt.Sprintf("%s?name=~%s", ActorsURL(), "element"),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 9,
 					},
@@ -272,12 +272,12 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/actors?name=%s&name=%s", apiURL, "element_a", "element_b"),
+					url: fmt.Sprintf("%s?name=%s&name=%s", ActorsURL(), "element_a", "element_b"),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/actors?name=%s&name=%s", apiURL, "element_a", "element_b"),
+						id:        fmt.Sprintf("%s?name=%s&name=%s", ActorsURL(), "element_a", "element_b"),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 2,
 					},
@@ -691,7 +691,7 @@ var C2STests = testPairs{
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
-					urlFn:   func() string { return fmt.Sprintf("%s/outbox", defaultC2SAccount().Id) },
+					urlFn:   OutboxURL(defaultC2SAccount()),
 					bodyFn:  loadMockJson("mocks/create-actor.json", defaultC2SAccount()),
 				},
 				res: testRes{
@@ -724,7 +724,7 @@ var C2STests = testPairs{
 				},
 				req: testReq{
 					met:    http.MethodPost,
-					urlFn:  func() string { return fmt.Sprintf("%s/outbox", defaultC2SAccount().Id) },
+					urlFn:  OutboxURL(defaultC2SAccount()),
 					bodyFn: loadMockJson("mocks/create-actor.json", defaultC2SAccount()),
 				},
 				res: testRes{
@@ -746,7 +746,7 @@ var C2STests = testPairs{
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
-					urlFn:   func() string { return fmt.Sprintf("%s/outbox", defaultC2SAccount().Id) },
+					urlFn:   OutboxURL(defaultC2SAccount()),
 					bodyFn:  loadMockJson("mocks/update-actor.json", defaultC2SAccount()),
 				},
 				res: testRes{
@@ -766,7 +766,7 @@ var C2STests = testPairs{
 								id: fmt.Sprintf("%s/inbox", defaultC2SAccount().Id),
 							},
 							outbox: &objectVal{
-								id: fmt.Sprintf("%s/outbox", defaultC2SAccount().Id),
+								id: OutboxURL(defaultC2SAccount())(),
 							},
 						},
 					},
@@ -786,7 +786,7 @@ var C2STests = testPairs{
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
-					urlFn:   func() string { return fmt.Sprintf("%s/outbox", defaultC2SAccount().Id) },
+					urlFn:   OutboxURL(defaultC2SAccount()),
 					bodyFn:  loadMockJson("mocks/activity.json", actMock{"Delete", defaultC2SAccount().Id, defaultC2SAccount().Id}),
 				},
 				res: testRes{
@@ -818,7 +818,7 @@ var C2STests = testPairs{
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
-					urlFn:   func() string { return fmt.Sprintf("%s/outbox", defaultC2SAccount().Id) },
+					urlFn:   OutboxURL(defaultC2SAccount()),
 					bodyFn:  loadMockJson("mocks/create-article.json", defaultC2SAccount()),
 				},
 				res: testRes{
@@ -839,12 +839,12 @@ var C2STests = testPairs{
 			{
 				req: testReq{
 					met:   http.MethodGet,
-					urlFn: func() string { return fmt.Sprintf("%s/outbox", defaultC2SAccount().Id) },
+					urlFn: OutboxURL(defaultC2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/outbox", defaultC2SAccount().Id),
+						id:        OutboxURL(defaultC2SAccount())(),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
@@ -927,7 +927,7 @@ var C2STests = testPairs{
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
-					urlFn:   func() string { return fmt.Sprintf("%s/outbox", defaultC2SAccount().Id) },
+					urlFn:   OutboxURL(defaultC2SAccount()),
 					bodyFn:  loadMockJson("mocks/activity.json", &actMock{Type: "Like", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/objects/41e7ec45-ff92-473a-b79d-974bf30a0aba"}),
 				},
 				res: testRes{
@@ -947,12 +947,12 @@ var C2STests = testPairs{
 			{
 				req: testReq{
 					met:   http.MethodGet,
-					urlFn: func() string { return fmt.Sprintf("%s/outbox", defaultC2SAccount().Id) },
+					urlFn: OutboxURL(defaultC2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/outbox", defaultC2SAccount().Id),
+						id:        OutboxURL(defaultC2SAccount())(),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
@@ -1028,7 +1028,7 @@ var C2STests = testPairs{
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
-					urlFn:   func() string { return fmt.Sprintf("%s/outbox", defaultC2SAccount().Id) },
+					urlFn:   OutboxURL(defaultC2SAccount()),
 					bodyFn:  loadMockJson("mocks/activity.json", &actMock{Type: "Follow", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
 				},
 				res: testRes{
@@ -1049,12 +1049,12 @@ var C2STests = testPairs{
 			{
 				req: testReq{
 					met:   http.MethodGet,
-					urlFn: func() string { return fmt.Sprintf("%s/outbox", defaultC2SAccount().Id) },
+					urlFn: OutboxURL(defaultC2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/outbox", defaultC2SAccount().Id),
+						id:        OutboxURL(defaultC2SAccount())(),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
@@ -1070,12 +1070,12 @@ var C2STests = testPairs{
 			{
 				req: testReq{
 					met:   http.MethodGet,
-					urlFn: func() string { return fmt.Sprintf("%s/inbox", *(&extraAccount.Id)) },
+					urlFn: InboxURL(&extraAccount),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/inbox", *(&extraAccount.Id)),
+						id:        InboxURL(&extraAccount)(),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
@@ -1095,7 +1095,7 @@ var C2STests = testPairs{
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
-					urlFn:   func() string { return fmt.Sprintf("%s/outbox", defaultC2SAccount().Id) },
+					urlFn:   OutboxURL(defaultC2SAccount()),
 					bodyFn:  loadMockJson("mocks/activity-private.json", &actMock{Type: "Block", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
 				},
 				res: testRes{
@@ -1117,12 +1117,12 @@ var C2STests = testPairs{
 				req: testReq{
 					met:     http.MethodGet,
 					account: defaultC2SAccount(),
-					urlFn:   func() string { return fmt.Sprintf("%s/outbox", defaultC2SAccount().Id) },
+					urlFn:   OutboxURL(defaultC2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/outbox", defaultC2SAccount().Id),
+						id:        OutboxURL(defaultC2SAccount())(),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
@@ -1132,12 +1132,12 @@ var C2STests = testPairs{
 				req: testReq{
 					met:     http.MethodGet,
 					account: defaultC2SAccount(),
-					urlFn:   func() string { return fmt.Sprintf("%s/inbox", *(&extraAccount.Id)) },
+					urlFn:   InboxURL(&extraAccount),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/inbox", *(&extraAccount.Id)),
+						id:        InboxURL(&extraAccount)(),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 0,
 					},

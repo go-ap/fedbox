@@ -120,49 +120,82 @@ type objectVal struct {
 	audience          []string
 }
 
-var (
-	host            = "127.0.0.1:9998"
-	apiURL          = "http://127.0.0.1:9998"
-	authCallbackURL = fmt.Sprintf("%s/auth/local/callback", apiURL)
+func defaultC2SAccount() *testAccount {
+	return &defaultTestAccount
+}
+
+func defaultS2SAccount() *testAccount {
+	acc := &defaultTestAccount
+	acc.Id = fmt.Sprintf("http://%s/actors/%s", s2shost, acc.Hash)
+	return acc
+}
+
+func InboxURL(account *testAccount) func() string {
+	return func() string {
+		return fmt.Sprintf("%s/inbox", account.Id)
+	}
+}
+
+func OutboxURL(account *testAccount) func() string {
+	return func() string {
+		return fmt.Sprintf("%s/outbox", account.Id)
+	}
+}
+
+func ServiceActorsURL(service *testAccount) string {
+	return fmt.Sprintf("%s/actors", service.Id)
+}
+
+const (
+	testAppHash = "23767f95-8ea0-40ba-a6ef-b67284e1cdb1"
+
+	testActorHash   = "e869bdca-dd5e-4de7-9c5d-37845eccc6a1"
+	testActorHandle = "johndoe"
+
+	extraActorHash   = "58e877c7-067f-4842-960b-3896d76aa4ed"
+	extraActorHandle = "extra"
+
+	host    = "127.0.0.1:9998"
+	s2shost = "127.0.2.1:9998"
 )
 
-const testAppHash = "23767f95-8ea0-40ba-a6ef-b67284e1cdb1"
+var (
+	apiURL                      = "http://127.0.0.1:9998"
 
-const testActorHash = "e869bdca-dd5e-4de7-9c5d-37845eccc6a1"
-const testActorHandle = "johndoe"
+	authCallbackURL             = fmt.Sprintf("%s/auth/local/callback", apiURL)
+	inboxURL                    = InboxURL(&service)
+	outboxURL                   = OutboxURL(&service)
+	baseURL                     = service.Id
 
-const extraActorHash = "58e877c7-067f-4842-960b-3896d76aa4ed"
-const extraActorHandle = "extra"
+	key, _                      = rsa.GenerateKey(rand.New(rand.NewSource(6667)), 512)
+	keyPrv, _                   = x509.MarshalPKCS8PrivateKey(key)
+	keyPub, _                   = x509.MarshalPKIXPublicKey(&key.PublicKey)
 
-var inboxURL = fmt.Sprintf("%s/inbox", apiURL)
-var outboxURL = fmt.Sprintf("%s/outbox", apiURL)
-var baseURL = apiURL
-var rnd = rand.New(rand.NewSource(6667))
-var key, _ = rsa.GenerateKey(rnd, 512)
-var keyPrv, _ = x509.MarshalPKCS8PrivateKey(key)
-var keyPub, _ = x509.MarshalPKIXPublicKey(&key.PublicKey)
-var meta interface{} = nil
+	meta            interface{} = nil
 
-var defaultTestAccount = testAccount{
-	Id:         fmt.Sprintf("http://%s/actors/%s", host, testActorHash),
-	Handle:     testActorHandle,
-	Hash:       testActorHash,
-	PublicKey:  key.Public(),
-	PrivateKey: key,
-}
+	service = testAccount{ Id: apiURL }
 
-var extraAccount = testAccount{
-	Id:     fmt.Sprintf("http://%s/actors/%s", host, extraActorHash),
-	Handle: extraActorHandle,
-	Hash:   extraActorHash,
-}
+	defaultTestAccount = testAccount{
+		Id:         fmt.Sprintf("http://%s/actors/%s", host, testActorHash),
+		Handle:     testActorHandle,
+		Hash:       testActorHash,
+		PublicKey:  key.Public(),
+		PrivateKey: key,
+	}
 
-var defaultTestApp = testAccount{
-	Id:   fmt.Sprintf("http://%s/actors/%s", host, testAppHash),
-	Hash: testAppHash,
-}
+	extraAccount = testAccount{
+		Id:     fmt.Sprintf("http://%s/actors/%s", host, extraActorHash),
+		Handle: extraActorHandle,
+		Hash:   extraActorHash,
+	}
 
-var lastActivity = &objectVal{}
+	defaultTestApp = testAccount{
+		Id:   fmt.Sprintf("http://%s/actors/%s", host, testAppHash),
+		Hash: testAppHash,
+	}
+
+	lastActivity = &objectVal{}
+)
 
 type assertFn func(v bool, msg string, args ...interface{})
 type errFn func(format string, args ...interface{})
