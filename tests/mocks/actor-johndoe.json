@@ -20,5 +20,10 @@
     "oauthAuthorizationEndpoint": "http://127.0.0.1:9998/oauth/authorize",
     "oauthTokenEndpoint": "http://127.0.0.1:9998/oauth/token",
     "sharedInbox": "http://127.0.0.1:9998/inbox"
+  },
+  "publicKey": {
+    "id": "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1#main-key",
+    "owner": "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAN/37LHsMEGsz/5y9xHqfUAcr25S5BR1\nPiJn3EgnEbU8U2PZ2YNz3f+II5U7G4hRsH9d1dTneE6wLyLEVZhad7MCAwEAAQ==\n-----END PUBLIC KEY-----"
   }
 }

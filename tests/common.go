@@ -147,6 +147,8 @@ func ServiceActorsURL(service *testAccount) string {
 }
 
 const (
+	serviceHash = "d3ab037c-0f15-4c09-b635-3d6e201c11aa"
+
 	testAppHash = "23767f95-8ea0-40ba-a6ef-b67284e1cdb1"
 
 	testActorHash   = "e869bdca-dd5e-4de7-9c5d-37845eccc6a1"
@@ -168,7 +170,7 @@ var (
 	baseURL                     = service.Id
 
 	key, _                      = rsa.GenerateKey(rand.New(rand.NewSource(6667)), 512)
-	keyPrv, _                   = x509.MarshalPKCS8PrivateKey(key)
+	keyPrv                      = x509.MarshalPKCS1PrivateKey(key)
 	keyPub, _                   = x509.MarshalPKIXPublicKey(&key.PublicKey)
 
 	meta            interface{} = nil
@@ -192,6 +194,12 @@ var (
 	defaultTestApp = testAccount{
 		Id:   fmt.Sprintf("http://%s/actors/%s", host, testAppHash),
 		Hash: testAppHash,
+	}
+
+	selfAccount = testAccount{
+		Id:     fmt.Sprintf("http://%s/", host),
+		Hash:   serviceHash,
+		Handle: "self",
 	}
 
 	lastActivity = &objectVal{}
