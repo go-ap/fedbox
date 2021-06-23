@@ -9,17 +9,15 @@ require (
 	github.com/andybalholm/brotli v1.0.2 // indirect
 	github.com/dgraph-io/badger/v3 v3.2103.0
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
-	github.com/go-ap/activitypub v0.0.0-20210606151801-2f08d242347c
-	github.com/go-ap/auth v0.0.0-20210620144232-15b235d42fbd
-	github.com/go-ap/client v0.0.0-20210606153352-5cb26e9b5ca9
+	github.com/go-ap/activitypub v0.0.0-20210623143448-f56d3bfa453f
+	github.com/go-ap/auth v0.0.0-20210623152955-615d7372219f
+	github.com/go-ap/client v0.0.0-20210623152428-5af926aef986
 	github.com/go-ap/errors v0.0.0-20210527074045-78cc5b9dcc94
-	github.com/go-ap/handlers v0.0.0-20210606153013-18b3766eadea
+	github.com/go-ap/handlers v0.0.0-20210623152331-f3c057976360
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210606153846-e7daded5f722
-	github.com/go-ap/storage v0.0.0-20210606152036-a34f269bb2f9
+	github.com/go-ap/processing v0.0.0-20210623153325-d667ee036d23
+	github.com/go-ap/storage v0.0.0-20210623152225-7270c1fd3fa7
 	github.com/go-chi/chi v4.1.2+incompatible
-	github.com/golang/protobuf v1.4.3 // indirect
-	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.3.0
@@ -37,10 +35,7 @@ require (
 	go.etcd.io/bbolt v1.3.4
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22 // indirect
-	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
-	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717
 	modernc.org/sqlite v1.10.8
 )
