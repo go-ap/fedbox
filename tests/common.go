@@ -34,6 +34,7 @@ var HeaderAccept = `application/ld+json; profile="https://www.w3.org/ns/activity
 var fedboxApp *fedbox.FedBOX
 
 type actMock struct {
+	Id       string
 	Type     string
 	ActorId  string
 	ObjectId string
@@ -153,6 +154,7 @@ const (
 
 	testActorHash   = "e869bdca-dd5e-4de7-9c5d-37845eccc6a1"
 	testActorHandle = "johndoe"
+	testActorPem    = ""
 
 	extraActorHash   = "58e877c7-067f-4842-960b-3896d76aa4ed"
 	extraActorHandle = "extra"
@@ -204,6 +206,22 @@ var (
 
 	lastActivity = &objectVal{}
 )
+
+func init() {
+	/*
+	p := pem.Block{
+		Type:    "PUBLIC KEY",
+		Bytes:   keyPub,
+	}
+	r := pem.Block{
+		Type:    "RSA PRIVATE KEY",
+		Bytes:   keyPrv,
+	}
+	fmt.Printf("public: %s\n", pem.EncodeToMemory(&p))
+	fmt.Printf("private: %s\n", pem.EncodeToMemory(&r))
+	os.Exit(1)
+	*/
+}
 
 type assertFn func(v bool, msg string, args ...interface{})
 type errFn func(format string, args ...interface{})
@@ -532,6 +550,22 @@ func errNotGoneGetRequest(t *testing.T) requestGetAssertFn {
 	return getRequest(t, http.StatusGone)
 }
 
+func addOAuth2Auth(r *http.Request, a *testAccount) error {
+	r.Header.Add("Authorization", fmt.Sprintf("Bearer %s", a.AuthToken))
+	return nil
+}
+
+func signRequest(req *http.Request, acc *testAccount) error {
+	signHdrs := []string{"(request-target)", "host", "date"}
+	req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
+
+	if path.Base(req.URL.Path) == "inbox" {
+		keyId := fmt.Sprintf("%s#main-key", acc.Id)
+		return httpsig.NewSigner(keyId, acc.PrivateKey, httpsig.RSASHA256, signHdrs).Sign(req)
+	}
+	return addOAuth2Auth(req, acc)
+}
+
 func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 	return func(test testPair) map[string]interface{} {
 		res := make(map[string]interface{})
@@ -572,20 +606,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 
 			req.Header = test.req.headers
 			if test.req.account != nil {
-				signHdrs := []string{"(request-target)", "host", "date"}
-
-				req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
-				var err error
-				if path.Base(req.URL.Path) == "inbox" {
-					err = httpsig.NewSigner(
-						fmt.Sprintf("%s#main-key", test.req.account.Id),
-						test.req.account.PrivateKey,
-						httpsig.RSASHA256,
-						signHdrs,
-					).Sign(req)
-				} else {
-					err = addOAuth2Auth(req, test.req.account)
-				}
+				err := signRequest(req, test.req.account)
 				assertTrue(err == nil, "Error: unable to sign request: %s", err)
 			}
 			resp, err := http.DefaultClient.Do(req)

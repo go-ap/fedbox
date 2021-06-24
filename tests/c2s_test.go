@@ -787,7 +787,7 @@ var C2STests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/activity.json", actMock{"Delete", defaultC2SAccount().Id, defaultC2SAccount().Id}),
+					bodyFn:  loadMockJson("mocks/activity.json", actMock{Type:"Delete", ActorId: defaultC2SAccount().Id, ObjectId: defaultC2SAccount().Id}),
 				},
 				res: testRes{
 					code: http.StatusGone,
