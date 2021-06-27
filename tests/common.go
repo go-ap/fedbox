@@ -555,13 +555,17 @@ func addOAuth2Auth(r *http.Request, a *testAccount) error {
 	return nil
 }
 
-func signRequest(req *http.Request, acc *testAccount) error {
+func addHTTPSigAuth(req *http.Request, acc *testAccount) error {
 	signHdrs := []string{"(request-target)", "host", "date"}
+	keyId := fmt.Sprintf("%s#main-key", acc.Id)
+	return httpsig.NewSigner(keyId, acc.PrivateKey, httpsig.RSASHA256, signHdrs).Sign(req)
+}
+
+func signRequest(req *http.Request, acc *testAccount) error {
 	req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
 
 	if path.Base(req.URL.Path) == "inbox" {
-		keyId := fmt.Sprintf("%s#main-key", acc.Id)
-		return httpsig.NewSigner(keyId, acc.PrivateKey, httpsig.RSASHA256, signHdrs).Sign(req)
+		return addHTTPSigAuth(req, acc)
 	}
 	return addOAuth2Auth(req, acc)
 }
