@@ -34,6 +34,10 @@ func (f FedBOX) Routes() func(chi.Router) {
 
 		r.With(f.ActorFromAuthHeader).Method(http.MethodGet, "/", HandleItem(f))
 		r.With(f.ActorFromAuthHeader).Method(http.MethodHead, "/", HandleItem(f))
+		// TODO(marius): we can separate here the FedBOX specific collections from the ActivityPub spec ones
+		// using some regular expressions
+		// Eg: "/{collection:(inbox|outbox|followed)}"
+		// Eg: "/{collection:(activities|objects|actors|moderators|ignored|blocked|flagged)}"
 		r.Route("/{collection}", f.CollectionRoutes(true))
 
 		r.Group(f.OAuthRoutes())
