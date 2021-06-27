@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/go-ap/errors"
 	"net/http"
 	"path"
 
@@ -29,14 +30,12 @@ func (f FedBOX) ActorFromAuthHeader(next http.Handler) http.Handler {
 	// TODO(marius): move this to the auth package and also add the possibility of getting the logger as a parameter
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		act, err := f.OAuth.auth.LoadActorFromAuthHeader(r)
-		if err != nil {
-			// FIXME(marius): This needs to be moved to someplace where we specifically require authorization
-			//    it should not trigger for every request like it does if it remains here.
-			//if errors.IsUnauthorized(err) {
-			//	if challenge := errors.Challenge(err); len(challenge) > 0 {
-			//		w.Header().Add("WWW-Authenticate", challenge)
-			//	}
-			//}
+		// NOTE(marius): we can safely check just for POST here, as in ActivityPub that's the only supported
+		// method for submitting Activities
+		if r.Method == http.MethodPost && err != nil && errors.IsUnauthorized(err) {
+			if challenge := errors.Challenge(err); len(challenge) > 0 {
+				w.Header().Add("WWW-Authenticate", challenge)
+			}
 			f.errFn("%s", err)
 		}
 		if id := act.GetID(); id.IsValid() {
