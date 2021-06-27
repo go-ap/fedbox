@@ -51,11 +51,14 @@ TEST := $(GO) test $(BUILDFLAGS)
 all: fedbox ctl
 
 download:
-	$(GO) mod download
+	$(GO) mod tidy
+
+install_broccoli:
+	$(GO) install aletheia.icu/broccoli@5bc1e2f86a59
 
 assets: internal/assets/assets.gen.go
 
-internal/assets/assets.gen.go: download assets.go $(ASSETFILES)
+internal/assets/assets.gen.go: download install_broccoli assets.go $(ASSETFILES)
 	$(GO) generate -tags "$(TAGS)" ./assets.go
 
 fedbox: bin/fedbox

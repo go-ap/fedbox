@@ -5,7 +5,7 @@ STORAGE ?= all
 ENV ?= test
 BUILDFLAGS ?= -a
 TAGS = $(ENV) storage_$(STORAGE) integration
-TEST_TARGET = ./...
+TEST_TARGET = ./
 
 TEST := $(GO) test $(BUILDFLAGS)
 

@@ -3,7 +3,6 @@ module github.com/go-ap/fedbox
 go 1.14
 
 require (
-	aletheia.icu/broccoli v0.0.0-20200506212414-5bc1e2f86a59
 	aletheia.icu/broccoli/fs v0.0.0-20200506212414-5bc1e2f86a59
 	git.sr.ht/~mariusor/wrapper v0.0.0-20210115104709-99415538f4b7
 	github.com/andybalholm/brotli v1.0.2 // indirect
@@ -15,7 +14,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20210527074045-78cc5b9dcc94
 	github.com/go-ap/handlers v0.0.0-20210623152331-f3c057976360
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210623153325-d667ee036d23
+	github.com/go-ap/processing v0.0.0-20210627100502-fed552bf411b
 	github.com/go-ap/storage v0.0.0-20210623152225-7270c1fd3fa7
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/google/uuid v1.2.0 // indirect
@@ -35,7 +34,6 @@ require (
 	go.etcd.io/bbolt v1.3.4
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717
 	modernc.org/sqlite v1.10.8
 )
