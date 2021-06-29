@@ -220,9 +220,7 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 			processFn = processor.ProcessClientActivity
 		case h.Inbox:
 			validateFn = validator.ValidateServerActivity
-			processFn = func(a pub.Item) (pub.Item, error) {
-				return a, errors.NotImplementedf("S2S activities not implemented")
-			}
+			processFn =  processor.ProcessServerActivity
 		default:
 			return it, http.StatusNotAcceptable, errors.NewMethodNotAllowed(err, "Collection %s does not receive Activity requests", typ)
 		}
