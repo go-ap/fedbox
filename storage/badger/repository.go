@@ -5,6 +5,10 @@ package badger
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"path"
+	"time"
+
 	"github.com/dgraph-io/badger/v3"
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
@@ -16,9 +20,6 @@ import (
 	s "github.com/go-ap/storage"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
-	"os"
-	"path"
-	"time"
 )
 
 const (
@@ -108,8 +109,7 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 		return nil, err
 	}
 
-	it, _, err := r.loadFromPath(f)
-	return it, err
+	return r.loadFromPath(f)
 }
 
 func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, error) {
@@ -592,7 +592,7 @@ func iterKeyIsTooDeep(base, k []byte, depth int) bool {
 	return cnt > depth
 }
 
-func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
+func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, error) {
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *badger.Txn) error {
 		iri := f.GetLink()
@@ -633,7 +633,7 @@ func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, uint, error) {
 		return nil
 	})
 
-	return col, uint(len(col)), err
+	return col, err
 }
 
 func (r *repo) LoadOne(f s.Filterable) (pub.Item, error) {
@@ -646,11 +646,11 @@ func (r *repo) LoadOne(f s.Filterable) (pub.Item, error) {
 }
 
 func (r *repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {
-	col, cnt, err := r.loadFromPath(f)
+	col, err := r.loadFromPath(f)
 	if err != nil {
 		return nil, err
 	}
-	if cnt == 0 {
+	if len(col) == 0 {
 		return nil, errors.NotFoundf("nothing found")
 	}
 	return col.First(), nil
