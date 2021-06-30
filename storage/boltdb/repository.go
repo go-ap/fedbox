@@ -5,6 +5,11 @@ package boltdb
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"path"
+	"path/filepath"
+	"time"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -15,10 +20,6 @@ import (
 	"github.com/sirupsen/logrus"
 	bolt "go.etcd.io/bbolt"
 	"golang.org/x/crypto/bcrypt"
-	"os"
-	"path"
-	"path/filepath"
-	"time"
 )
 
 var encodeFn = jsonld.Marshal
@@ -155,11 +156,11 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 }
 
 func (r *repo) loadOneFromBucket(f s.Filterable) (pub.Item, error) {
-	col, cnt, err := r.loadFromBucket(f)
+	col, err := r.loadFromBucket(f)
 	if err != nil {
 		return nil, err
 	}
-	if cnt == 0 {
+	if len(col) == 0 {
 		return nil, errors.NotFoundf("nothing found")
 	}
 	return col.First(), nil
@@ -225,7 +226,7 @@ var ErrorInvalidRoot = func(b []byte) error {
 	return errors.Errorf("Invalid root bucket %s", b)
 }
 
-func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) {
+func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, error) {
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *bolt.Tx) error {
 		rb := tx.Bucket(r.root)
@@ -289,7 +290,7 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, uint, error) 
 		return nil
 	})
 
-	return col, uint(len(col)), err
+	return col, err
 }
 
 func (r repo) buildIRIs(c handlers.CollectionType, hashes ...ap.Hash) pub.IRIs {
@@ -313,8 +314,11 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 		return nil, err
 	}
 
-	it, _, err := r.loadFromBucket(f)
-	return it, err
+	ret, err := r.loadFromBucket(f)
+	if len(ret) == 1 && f.IsItemIRI() {
+		return ret.First(), err
+	}
+	return ret, err
 }
 
 func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket, []byte, error) {

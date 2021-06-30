@@ -141,7 +141,12 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 		return nil, err
 	}
 	defer r.Close()
-	return loadFromDb(r, f)
+
+	ret, err := loadFromDb(r, f)
+	if len(ret) == 1 && f.IsItemIRI() {
+		return ret.First(), err
+	}
+	return ret, err
 }
 
 // Save
@@ -615,7 +620,7 @@ func childFilter(r *repo, ret *pub.ItemCollection, filterFn iriFilterFn, keepFn 
 	return toRemove
 }
 
-func loadFromDb(r *repo, f *ap.Filters) (pub.Item, error) {
+func loadFromDb(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
 	conn := r.conn
 	table := getCollectionTableFromFilter(f)
 	clauses, values := getWhereClauses(f)

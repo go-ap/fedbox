@@ -109,7 +109,11 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 		return nil, err
 	}
 
-	return r.loadFromPath(f)
+	ret, err := r.loadFromPath(f)
+	if len(ret) == 1 && f.IsItemIRI() {
+		return ret.First(), err
+	}
+	return ret, err
 }
 
 func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, error) {

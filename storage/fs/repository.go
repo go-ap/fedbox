@@ -115,7 +115,11 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 		return nil, err
 	}
 
-	return r.loadFromPath(f)
+	ret, err := r.loadFromPath(f)
+	if len(ret) == 1 && f.IsItemIRI() {
+		return ret.First(), err
+	}
+	return ret, err
 }
 
 // Create
@@ -697,7 +701,7 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 	return it, nil
 }
 
-func (r repo) loadFromPath(f s.Filterable) (pub.Item, error) {
+func (r repo) loadFromPath(f s.Filterable) (pub.ItemCollection, error) {
 	var err error
 	col := make(pub.ItemCollection, 0)
 
