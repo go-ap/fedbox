@@ -2,11 +2,12 @@ package app
 
 import (
 	"context"
-	"github.com/go-ap/errors"
 	"net/http"
 	"path"
 
+	"github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
@@ -39,6 +40,9 @@ func (f FedBOX) ActorFromAuthHeader(next http.Handler) http.Handler {
 			f.errFn("%s", err)
 		}
 		if id := act.GetID(); id.IsValid() {
+			if !id.Equals(activitypub.PublicNS, true) {
+				f.infFn("Loaded actor: %s", id)
+			}
 			r = r.WithContext(context.WithValue(r.Context(), auth.ActorKey, act))
 		}
 		next.ServeHTTP(w, r)
