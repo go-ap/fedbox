@@ -295,6 +295,14 @@ func (f Filters) IRIs() CompStrs {
 	return ret
 }
 
+func (f *Filters) IsItemIRI() bool {
+	u, _ := f.GetLink().URL()
+	maybeID := h.CollectionType(path.Base(u.Path))
+	maybeCol := h.CollectionType(path.Base(path.Dir(u.Path)))
+	return !(FedboxCollections.Contains(maybeID) || h.OnActor.Contains(maybeID) || h.OnObject.Contains(maybeID)) &&
+		(FedboxCollections.Contains(maybeCol) || h.OnActor.Contains(maybeCol) || h.OnObject.Contains(maybeCol))
+}
+
 // GetLink returns a list of IRIs to filter against
 func (f *Filters) GetLink() pub.IRI {
 	if f == nil {
