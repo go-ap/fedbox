@@ -562,7 +562,8 @@ func addHTTPSigAuth(req *http.Request, acc *testAccount) error {
 }
 
 func signRequest(req *http.Request, acc *testAccount) error {
-	req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
+	date, _ := time.Parse(time.RFC3339, "2019-01-23T01:23:45Z")
+	req.Header.Set("Date", date.UTC().Format(http.TimeFormat))
 
 	if path.Base(req.URL.Path) == "inbox" {
 		return addHTTPSigAuth(req, acc)
