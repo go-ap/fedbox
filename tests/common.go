@@ -24,7 +24,7 @@ import (
 	"github.com/go-ap/client"
 	fedbox "github.com/go-ap/fedbox/app"
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/spacemonkeygo/httpsig"
+	"github.com/zaibon/httpsig"
 )
 
 // UserAgent value that the client uses when performing requests

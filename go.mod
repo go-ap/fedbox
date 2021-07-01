@@ -26,11 +26,11 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spacemonkeygo/httpsig v0.0.0-20181218213338-2605ae379e47
 	github.com/tdewolff/minify v2.3.6+incompatible
 	github.com/tdewolff/parse v2.3.4+incompatible // indirect
 	github.com/tdewolff/test v1.0.6 // indirect
 	github.com/unrolled/render v1.0.2
+	github.com/zaibon/httpsig v0.0.0-20210219100301-931cc471f406
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
