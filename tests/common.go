@@ -5,7 +5,7 @@ package tests
 import (
 	"bytes"
 	"crypto"
-	"crypto/rsa"
+	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
@@ -23,8 +23,8 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
 	fedbox "github.com/go-ap/fedbox/app"
+	"github.com/go-ap/httpsig"
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/zaibon/httpsig"
 )
 
 // UserAgent value that the client uses when performing requests
@@ -171,9 +171,10 @@ var (
 	outboxURL                   = OutboxURL(&service)
 	baseURL                     = service.Id
 
-	key, _                      = rsa.GenerateKey(rand.New(rand.NewSource(6667)), 512)
-	keyPrv                      = x509.MarshalPKCS1PrivateKey(key)
-	keyPub, _                   = x509.MarshalPKIXPublicKey(&key.PublicKey)
+	pubk, key, _                = ed25519.GenerateKey(rand.New(rand.NewSource(6667)))
+	keyPrv, _                   = x509.MarshalPKCS8PrivateKey(key)
+	keyPub, _                   = x509.MarshalPKIXPublicKey(pubk)
+	keyType                     = httpsig.Ed25519
 
 	meta            interface{} = nil
 
@@ -558,7 +559,7 @@ func addOAuth2Auth(r *http.Request, a *testAccount) error {
 func addHTTPSigAuth(req *http.Request, acc *testAccount) error {
 	signHdrs := []string{"(request-target)", "host", "date"}
 	keyId := fmt.Sprintf("%s#main-key", acc.Id)
-	return httpsig.NewSigner(keyId, acc.PrivateKey, httpsig.RSASHA256, signHdrs).Sign(req)
+	return httpsig.NewSigner(keyId, acc.PrivateKey, keyType, signHdrs).Sign(req)
 }
 
 func signRequest(req *http.Request, acc *testAccount) error {
@@ -623,8 +624,8 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			assertTrue(err == nil, "Error: invalid HTTP body! Read %d bytes %s", len(b), b)
 
 			assertTrue(resp.StatusCode == test.res.code,
-				"Error: invalid HTTP response %d, expected %d\nReq:[%s] %s\n    %v\nRes[%s]:\n    %v\n    %s",
-				resp.StatusCode, test.res.code, req.Method, req.URL, req.Header, resp.Status, resp.Header, b)
+				"Error: invalid HTTP response %d, expected %d\nReq[%s:%s]\n    %v\n%s\nRes[%s]:\n    %v\n    %s",
+				resp.StatusCode, test.res.code, req.Method, req.URL, req.Header, body, resp.Status, resp.Header, b)
 
 			if test.req.met == http.MethodPost {
 				location, ok := resp.Header["Location"]
