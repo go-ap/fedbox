@@ -4,10 +4,12 @@ package tests
 
 import (
 	"bytes"
+	"context"
 	"crypto"
-	"crypto/ed25519"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -25,6 +27,7 @@ import (
 	fedbox "github.com/go-ap/fedbox/app"
 	"github.com/go-ap/httpsig"
 	_ "github.com/joho/godotenv/autoload"
+	"golang.org/x/crypto/ed25519"
 )
 
 // UserAgent value that the client uses when performing requests
@@ -164,27 +167,24 @@ const (
 )
 
 var (
-	apiURL                      = "http://127.0.0.1:9998"
+	apiURL = "http://127.0.0.1:9998"
 
-	authCallbackURL             = fmt.Sprintf("%s/auth/local/callback", apiURL)
-	inboxURL                    = InboxURL(&service)
-	outboxURL                   = OutboxURL(&service)
-	baseURL                     = service.Id
+	authCallbackURL = fmt.Sprintf("%s/auth/local/callback", apiURL)
+	inboxURL        = InboxURL(&service)
+	outboxURL       = OutboxURL(&service)
+	baseURL         = service.Id
 
-	pubk, key, _                = ed25519.GenerateKey(rand.New(rand.NewSource(6667)))
-	keyPrv, _                   = x509.MarshalPKCS8PrivateKey(key)
-	keyPub, _                   = x509.MarshalPKIXPublicKey(pubk)
-	keyType                     = httpsig.Ed25519
+	key = loadPrivateKeyFromDisk("mocks/keys/johndoe.prv")
 
-	meta            interface{} = nil
+	meta interface{} = nil
 
-	service = testAccount{ Id: apiURL }
+	service = testAccount{Id: apiURL}
 
 	defaultTestAccount = testAccount{
 		Id:         fmt.Sprintf("http://%s/actors/%s", host, testActorHash),
 		Handle:     testActorHandle,
 		Hash:       testActorHash,
-		PublicKey:  key.Public(),
+		PublicKey:  publicKeyFrom(key),
 		PrivateKey: key,
 	}
 
@@ -208,21 +208,36 @@ var (
 	lastActivity = &objectVal{}
 )
 
-func init() {
-	/*
+func generateECKeyPair() (pem.Block, pem.Block) {
+	keyPub, keyPrv, _ := ed25519.GenerateKey(rand.New(rand.NewSource(6667)))
+
+	pubEnc, err := x509.MarshalPKIXPublicKey(keyPub)
+	if err != nil {
+		panic(err)
+	}
+	prvEnc, err := x509.MarshalPKCS8PrivateKey(keyPrv)
+	if err != nil {
+		panic(err)
+	}
 	p := pem.Block{
-		Type:    "PUBLIC KEY",
-		Bytes:   keyPub,
+		Type:  "PUBLIC KEY",
+		Bytes: pubEnc,
 	}
 	r := pem.Block{
-		Type:    "RSA PRIVATE KEY",
-		Bytes:   keyPrv,
+		Type:  "PRIVATE KEY",
+		Bytes: prvEnc,
 	}
+	return p, r
+}
+
+/*
+func init() {
+	p, r := generateECKeyPair()
 	fmt.Printf("public: %s\n", pem.EncodeToMemory(&p))
 	fmt.Printf("private: %s\n", pem.EncodeToMemory(&r))
 	os.Exit(1)
-	*/
 }
+*/
 
 type assertFn func(v bool, msg string, args ...interface{})
 type errFn func(format string, args ...interface{})
@@ -559,7 +574,7 @@ func addOAuth2Auth(r *http.Request, a *testAccount) error {
 func addHTTPSigAuth(req *http.Request, acc *testAccount) error {
 	signHdrs := []string{"(request-target)", "host", "date"}
 	keyId := fmt.Sprintf("%s#main-key", acc.Id)
-	return httpsig.NewSigner(keyId, acc.PrivateKey, keyType, signHdrs).Sign(req)
+	return httpsig.NewSigner(keyId, acc.PrivateKey, keyType(acc.PrivateKey), signHdrs).Sign(req)
 }
 
 func signRequest(req *http.Request, acc *testAccount) error {
@@ -573,6 +588,12 @@ func signRequest(req *http.Request, acc *testAccount) error {
 }
 
 func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
+	c := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+		Timeout: 400 * time.Second,
+	}
 	return func(test testPair) map[string]interface{} {
 		res := make(map[string]interface{})
 		t.Run(test.label(), func(t *testing.T) {
@@ -607,7 +628,8 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			if test.req.urlFn != nil {
 				test.req.url = test.req.urlFn()
 			}
-			req, err := http.NewRequest(test.req.met, test.req.url, bytes.NewReader(body))
+			ctx := context.Background()
+			req, err := http.NewRequestWithContext(ctx, test.req.met, test.req.url, bytes.NewReader(body))
 			assertTrue(err == nil, "Error: unable to create request: %s", err)
 
 			req.Header = test.req.headers
@@ -615,7 +637,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 				err := signRequest(req, test.req.account)
 				assertTrue(err == nil, "Error: unable to sign request: %s", err)
 			}
-			resp, err := http.DefaultClient.Do(req)
+			resp, err := c.Do(req)
 
 			assertTrue(resp != nil, "Error: request failed: response is nil")
 			assertTrue(err == nil, "Error: request failed: %s", err)

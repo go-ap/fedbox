@@ -4,6 +4,11 @@ package tests
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"path"
@@ -18,10 +23,12 @@ import (
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
 	ls "github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/httpsig"
 	"github.com/go-ap/storage"
 	"github.com/go-chi/chi"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ed25519"
 )
 
 func loadMockJson(file string, model interface{}) func() string {
@@ -71,6 +78,55 @@ func cleanDB(t *testing.T) {
 	}
 }
 
+func publicKeyFrom(key crypto.PrivateKey) crypto.PublicKey {
+	switch k := key.(type) {
+	case *rsa.PrivateKey:
+		return k.PublicKey
+	case *ecdsa.PrivateKey:
+		return k.PublicKey
+	case ed25519.PrivateKey:
+		return k.Public()
+	}
+	panic(fmt.Sprintf("Unknown private key type[%T] %v", key, key))
+	return nil
+}
+
+func keyType (key crypto.PrivateKey) httpsig.Algorithm {
+	switch key.(type) {
+	case *rsa.PrivateKey:
+		return httpsig.RSASHA256
+	case ed25519.PrivateKey:
+		return httpsig.Ed25519
+	}
+	panic(fmt.Sprintf("Unknown private key type[%T] %v", key, key))
+	return nil
+}
+
+func loadPrivateKeyFromDisk(file string) crypto.PrivateKey {
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		panic(err)
+	}
+	b, _ := pem.Decode(data)
+	if b == nil {
+		panic("failed decoding pem")
+	}
+	prvKey, err := x509.ParsePKCS8PrivateKey(b.Bytes)
+	if err != nil {
+		panic(err)
+	}
+	return prvKey
+}
+
+func loadMockFromDisk(file string, model interface{}) pub.Item {
+	json := loadMockJson(file, model)()
+	act, err := pub.UnmarshalJSON([]byte(json))
+	if err != nil {
+		panic(err)
+	}
+	return act
+}
+
 func seedTestData(t *testing.T, testData []string) {
 	if t == nil {
 		panic("invalid test context")
@@ -94,27 +150,20 @@ func seedTestData(t *testing.T, testData []string) {
 
 	mocks := make(pub.ItemCollection, 0)
 	o := cmd.New(aDb, db, Options)
-	json := loadMockJson("mocks/application.json", nil)()
-	act, err := pub.UnmarshalJSON([]byte(json))
-	if err == nil {
-		mocks = append(mocks, act)
-		if clSaver, ok := aDb.(app.ClientSaver); ok {
-			clSaver.CreateClient(&osin.DefaultClient{
-				Id:          clientCode,
-				Secret:      "hahah",
-				RedirectUri: "http://127.0.0.1:9998/callback",
-				UserData:    nil,
-			})
-		}
+	act := loadMockFromDisk("mocks/application.json", nil)
+	mocks = append(mocks, act)
+	if clSaver, ok := aDb.(app.ClientSaver); ok {
+		clSaver.CreateClient(&osin.DefaultClient{
+			Id:          clientCode,
+			Secret:      "hahah",
+			RedirectUri: "http://127.0.0.1:9998/callback",
+			UserData:    nil,
+		})
 	}
 
 	for _, path := range testData {
-		json := loadMockJson(path, nil)()
-		if json == "" {
-			continue
-		}
-		it, err := pub.UnmarshalJSON([]byte(json))
-		if err == nil && !mocks.Contains(it) {
+		it := loadMockFromDisk(path, nil)
+		if !mocks.Contains(it) {
 			mocks = append(mocks, it)
 		}
 	}

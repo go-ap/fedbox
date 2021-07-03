@@ -220,7 +220,7 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 			processFn = processor.ProcessClientActivity
 		case h.Inbox:
 			validateFn = validator.ValidateServerActivity
-			processFn =  processor.ProcessServerActivity
+			processFn = processor.ProcessServerActivity
 		default:
 			return it, http.StatusNotAcceptable, errors.NewMethodNotAllowed(err, "Collection %s does not receive Activity requests", typ)
 		}
