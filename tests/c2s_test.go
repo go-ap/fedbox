@@ -6,19 +6,46 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"testing"
 
 	pub "github.com/go-ap/activitypub"
+	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/env"
+	"github.com/go-ap/fedbox/internal/log"
 )
 
 func ActorsURL() string {
 	return ServiceActorsURL(&service)
 }
 
+var storageType = func() config.StorageType {
+	envStorage := os.Getenv("STORAGE")
+	if len(envStorage) > 0 {
+		return config.StorageType(envStorage)
+	}
+	return config.DefaultStorage
+}
+
+var C2SConfig = config.Options{
+	Env:         env.TEST,
+	Host:        "127.0.0.1:9998",
+	Listen:      "127.0.0.1:9998",
+	BaseURL:     "http://127.0.0.1:9998/",
+	LogLevel:    log.DebugLevel,
+	StoragePath: ".cache",
+	Storage:     storageType(),
+}
+
+var c2sConfigs = []config.Options{
+	C2SConfig,
+}
+
+
 var ActorsCollectionTests = testPairs{
 	{
 		name:  "ActorsCollection",
-		mocks: nil,
+		configs: c2sConfigs,
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -59,7 +86,7 @@ var ActorsCollectionTests = testPairs{
 	},
 	{
 		name:  "ActorsCollectionTypePerson",
-		mocks: nil,
+		configs: c2sConfigs,
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -100,7 +127,7 @@ var ActorsCollectionTests = testPairs{
 	},
 	{
 		name:  "ActorsCollectionTypeGroup",
-		mocks: nil,
+		configs: c2sConfigs,
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -124,7 +151,7 @@ var ActorsCollectionTests = testPairs{
 	},
 	{
 		name:  "ActorsCollectionTypeApplication",
-		mocks: nil,
+		configs: c2sConfigs,
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -147,6 +174,7 @@ var ActorsCollectionTests = testPairs{
 	},
 	{
 		name: "A lot of actors",
+		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/actors/service.json",
 			"mocks/actors/actor-admin.json",
@@ -290,6 +318,7 @@ var ActorsCollectionTests = testPairs{
 var ActivitiesCollectionTests = testPairs{
 	{
 		name: "ActivitiesCollection",
+		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/service.json",
 			"mocks/actor-johndoe.json",
@@ -312,6 +341,7 @@ var ActivitiesCollectionTests = testPairs{
 	},
 	{
 		name: "Create activity filtering",
+		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/service.json",
 			"mocks/actors/actor-element_a.json",
@@ -418,6 +448,7 @@ var ActivitiesCollectionTests = testPairs{
 var ObjectsCollectionTests = testPairs{
 	{
 		name: "ObjectsCollection",
+		configs: c2sConfigs,
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -440,6 +471,7 @@ var ObjectsCollectionTests = testPairs{
 	},
 	{
 		name: "A lot of objects",
+		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/objects/note-1.json",
 			"mocks/objects/page-2.json",
@@ -650,7 +682,7 @@ var ObjectsCollectionTests = testPairs{
 var SingleItemLoadTests = testPairs{
 	{
 		name:  "SelfService",
-		mocks: nil,
+		configs: c2sConfigs,
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -680,7 +712,7 @@ var SingleItemLoadTests = testPairs{
 var C2STests = testPairs{
 	{
 		name:  "CreateActor",
-		mocks: nil,
+		configs: c2sConfigs,
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -714,7 +746,7 @@ var C2STests = testPairs{
 	},
 	{
 		name:  "CreateActorAnonymously",
-		mocks: nil,
+		configs: c2sConfigs,
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -735,7 +767,7 @@ var C2STests = testPairs{
 	},
 	{
 		name:  "UpdateActor",
-		mocks: nil,
+		configs: c2sConfigs,
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -776,7 +808,7 @@ var C2STests = testPairs{
 	},
 	{
 		name:  "DeleteActor",
-		mocks: nil,
+		configs: c2sConfigs,
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -808,7 +840,7 @@ var C2STests = testPairs{
 	},
 	{
 		name:  "CreateArticle",
-		mocks: nil,
+		configs: c2sConfigs,
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -917,6 +949,7 @@ var C2STests = testPairs{
 	},
 	{
 		name: "LikeNote",
+		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/service.json",
 			"mocks/actor-johndoe.json",
@@ -1018,6 +1051,7 @@ var C2STests = testPairs{
 	},
 	{
 		name: "FollowActor",
+		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/service.json",
 			"mocks/actor-johndoe.json",
@@ -1085,6 +1119,7 @@ var C2STests = testPairs{
 	},
 	{
 		name: "BlockActor",
+		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/service.json",
 			"mocks/actor-johndoe.json",

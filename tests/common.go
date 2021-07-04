@@ -25,6 +25,7 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
 	fedbox "github.com/go-ap/fedbox/app"
+	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/httpsig"
 	_ "github.com/joho/godotenv/autoload"
 	"golang.org/x/crypto/ed25519"
@@ -44,9 +45,10 @@ type actMock struct {
 }
 
 type testSuite struct {
-	name  string
-	mocks []string
-	tests []testPair
+	name    string
+	configs []config.Options
+	mocks   []string
+	tests   []testPair
 }
 
 type testPairs []testSuite
@@ -694,12 +696,20 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 
 func runTestSuite(t *testing.T, pairs testPairs) {
 	for _, suite := range pairs {
+		for _, options := range suite.configs {
+			fedboxApp = SetupAPP(options)
+			go fedboxApp.Run()
+		}
 		name := suite.name
 		t.Run(name, func(t *testing.T) {
-			seedTestData(t, suite.mocks)
+			for _, options := range suite.configs {
+				seedTestData(t, suite.mocks, true, options)
+			}
 			for _, test := range suite.tests {
 				t.Run(test.label(), func(t *testing.T) {
-					seedTestData(t, test.mocks)
+					for _, options := range suite.configs {
+						seedTestData(t, test.mocks, false, options)
+					}
 					errOnRequest(t)(test)
 				})
 			}

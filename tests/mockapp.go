@@ -20,7 +20,6 @@ import (
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
 	ls "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/httpsig"
@@ -127,7 +126,7 @@ func loadMockFromDisk(file string, model interface{}) pub.Item {
 	return act
 }
 
-func seedTestData(t *testing.T, testData []string) {
+func seedTestData(t *testing.T, testData []string, reset bool, options config.Options) {
 	if t == nil {
 		panic("invalid test context")
 	}
@@ -137,19 +136,21 @@ func seedTestData(t *testing.T, testData []string) {
 		return
 	}
 
-	fields := logrus.Fields{"action": "seeding", "storage": Options.Storage, "path": Options.StoragePath}
+	fields := logrus.Fields{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
 	l := logrus.New()
-	db, aDb, err := app.Storage(Options, l.WithFields(fields))
+	db, aDb, err := app.Storage(options, l.WithFields(fields))
 	if err != nil {
 		panic(err)
 	}
-	if err = cmd.Bootstrap(Options); err != nil {
-		panic(err)
+	if reset {
+		if err = cmd.Bootstrap(options); err != nil {
+			panic(err)
+		}
 	}
 	clientCode := path.Base(defaultTestApp.Id)
 
 	mocks := make(pub.ItemCollection, 0)
-	o := cmd.New(aDb, db, Options)
+	o := cmd.New(aDb, db, options)
 	act := loadMockFromDisk("mocks/application.json", nil)
 	mocks = append(mocks, act)
 	if clSaver, ok := aDb.(app.ClientSaver); ok {
@@ -175,24 +176,21 @@ func seedTestData(t *testing.T, testData []string) {
 	}
 }
 
-var Options config.Options
-
-func SetupAPP(e env.Type) *app.FedBOX {
-	Options, _ = config.LoadFromEnv(e, time.Second)
-	if Options.Storage == "all" {
-		Options.Storage = config.StorageFS
+func SetupAPP(options config.Options) *app.FedBOX {
+	if options.Storage == "all" {
+		options.Storage = config.StorageFS
 	}
-	fields := logrus.Fields{"action": "running", "storage": Options.Storage, "path": Options.BaseStoragePath()}
+	fields := logrus.Fields{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
 	l := logrus.New()
 	l.SetLevel(logrus.PanicLevel)
 
 	r := chi.NewRouter()
 	r.Use(log.NewStructuredLogger(l))
 
-	db, o, err := app.Storage(Options, l.WithFields(fields))
+	db, o, err := app.Storage(options, l.WithFields(fields))
 	if err != nil {
 		panic(err)
 	}
-	a, _ := app.New(l, "HEAD", Options, db, o)
+	a, _ := app.New(l, "HEAD", options, db, o)
 	return a
 }
