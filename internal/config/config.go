@@ -90,11 +90,8 @@ func (o Options) BoltDBOAuth2() string {
 	return fmt.Sprintf("%s/oauth.bdb", o.BaseStoragePath())
 }
 
-func (o Options) BadgerOAuth2() string {
-	if o.StoragePath == "" {
-		return ""
-	}
-	return path.Clean(path.Join(o.StoragePath, string(o.Storage), string(o.Env), "oauth"))
+func (o Options) BadgerOAuth2(base string) string {
+	return path.Join(path.Dir(base), "oauth", path.Base(base))
 }
 
 func prefKey(k string) string {

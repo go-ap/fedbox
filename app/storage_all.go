@@ -26,7 +26,7 @@ func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.St
 	path := c.BaseStoragePath()
 	l.Debugf("Initializing badger storage at %s", path)
 	db, err := badger.New(badger.Config{
-		Path:    c.BaseStoragePath(),
+		Path:    path,
 		BaseURL: c.BaseURL,
 		LogFn:   InfoLogFn(l),
 		ErrFn:   ErrLogFn(l),
@@ -35,7 +35,7 @@ func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.St
 		return db, nil, err
 	}
 	oauth := authbadger.New(authbadger.Config{
-		Path:  c.BadgerOAuth2(),
+		Path:  c.BadgerOAuth2(path),
 		Host:  c.Host,
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),

@@ -24,7 +24,7 @@ func Storage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, er
 		return db, nil, err
 	}
 	oauth := auth.New(auth.Config{
-		Path:  c.BadgerOAuth2(),
+		Path:  c.BadgerOAuth2(path),
 		Host:  c.Host,
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),

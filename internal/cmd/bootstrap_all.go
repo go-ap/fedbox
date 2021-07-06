@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	authsqlite "github.com/go-ap/auth/sqlite"
 	"github.com/go-ap/errors"
@@ -59,6 +60,7 @@ var cleanFn = func(conf config.Options) error {
 		}
 	}
 	if conf.Storage == config.StorageBadger {
+		os.RemoveAll(conf.BadgerOAuth2(conf.BaseStoragePath()))
 		return badger.Clean(conf)
 	}
 	if conf.Storage == config.StorageFS {
