@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -20,6 +21,7 @@ import (
 	"runtime/debug"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -30,7 +32,7 @@ import (
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/httpsig"
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -719,6 +721,17 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 		})
 		return res
 	}
+}
+
+var Log logrus.FieldLogger
+
+func logger() logrus.FieldLogger {
+	new(sync.Once).Do(func() {
+		l := logrus.New()
+		l.SetOutput(io.Discard)
+		Log = l
+	})
+	return Log
 }
 
 func loadAfterPost(test testPair, req *http.Request) bool {

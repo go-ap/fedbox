@@ -19,11 +19,9 @@ import (
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/log"
 	ls "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/httpsig"
 	"github.com/go-ap/storage"
-	"github.com/go-chi/chi"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ed25519"
@@ -135,8 +133,8 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	}
 
 	fields := logrus.Fields{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
-	l := logrus.New()
-	db, aDb, err := app.Storage(options, l.WithFields(fields))
+
+	db, aDb, err := app.Storage(options, logger().WithFields(fields))
 	if err != nil {
 		panic(err)
 	}
@@ -174,12 +172,8 @@ func SetupAPP(options config.Options) *app.FedBOX {
 		options.Storage = config.StorageFS
 	}
 	fields := logrus.Fields{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
-	l := logrus.New()
-	l.SetLevel(logrus.PanicLevel)
 
-	r := chi.NewRouter()
-	r.Use(log.NewStructuredLogger(l))
-
+	l := logger()
 	db, o, err := app.Storage(options, l.WithFields(fields))
 	if err != nil {
 		panic(err)
