@@ -81,6 +81,7 @@ func (r *repo) Open() error {
 	if r.path == "" {
 		c.InMemory = true
 	}
+	c.MetricsEnabled = false
 	r.d, err = badger.Open(c)
 	if err != nil {
 		err = errors.Annotatef(err, "unable to open storage")
