@@ -703,17 +703,19 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 		name := suite.name
 		t.Run(name, func(t *testing.T) {
 			for _, options := range suite.configs {
-				seedTestData(t, suite.mocks, true, options)
+				seedTestData(t, suite.mocks, options)
 			}
 			for _, test := range suite.tests {
 				t.Run(test.label(), func(t *testing.T) {
 					for _, options := range suite.configs {
-						seedTestData(t, test.mocks, false, options)
+						seedTestData(t, test.mocks, options)
 					}
 					errOnRequest(t)(test)
 				})
 			}
-			cleanDB(t)
+			for _, options := range suite.configs {
+				cleanDB(t, options)
+			}
 		})
 	}
 }

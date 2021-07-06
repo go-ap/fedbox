@@ -60,8 +60,7 @@ func addMockObjects(r storage.Store, obj pub.ItemCollection, errFn app.LogFn) er
 	return nil
 }
 
-func cleanDB(t *testing.T) {
-	opt, _ := config.LoadFromEnv("test", time.Second)
+func cleanDB(t *testing.T, opt config.Options) {
 	if opt.Storage == "all" {
 		opt.Storage = config.StorageFS
 	}
@@ -126,7 +125,7 @@ func loadMockFromDisk(file string, model interface{}) pub.Item {
 	return act
 }
 
-func seedTestData(t *testing.T, testData []string, reset bool, options config.Options) {
+func seedTestData(t *testing.T, testData []string, options config.Options) {
 	if t == nil {
 		panic("invalid test context")
 	}
@@ -141,11 +140,6 @@ func seedTestData(t *testing.T, testData []string, reset bool, options config.Op
 	db, aDb, err := app.Storage(options, l.WithFields(fields))
 	if err != nil {
 		panic(err)
-	}
-	if reset {
-		if err = cmd.Bootstrap(options); err != nil {
-			panic(err)
-		}
 	}
 	clientCode := path.Base(defaultTestApp.Id)
 
@@ -189,6 +183,9 @@ func SetupAPP(options config.Options) *app.FedBOX {
 
 	db, o, err := app.Storage(options, l.WithFields(fields))
 	if err != nil {
+		panic(err)
+	}
+	if err = cmd.Bootstrap(options); err != nil {
 		panic(err)
 	}
 	a, _ := app.New(l, "HEAD", options, db, o)
