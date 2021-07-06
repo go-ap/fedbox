@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+
 	authsqlite "github.com/go-ap/auth/sqlite"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"

@@ -4,14 +4,13 @@ package badger
 
 import (
 	"fmt"
-	"github.com/dgraph-io/badger/v3"
+	"os"
+
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/jsonld"
-	"os"
 )
 
 var encodeFn = jsonld.Marshal
@@ -46,11 +45,6 @@ func Clean(conf config.Options) error {
 	if err != nil {
 		return fmt.Errorf("unable to update %s db: %w", conf.Storage, err)
 	}
-	db, err := badger.Open(badger.DefaultOptions(path))
-	if err != nil {
-		return errors.Annotatef(err, "could not open db %s", path)
-	}
-	db.Close()
 
 	return os.RemoveAll(path)
 }

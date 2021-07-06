@@ -2,16 +2,17 @@ package config
 
 import (
 	"fmt"
-	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/fedbox/internal/log"
-	"github.com/joho/godotenv"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox/internal/env"
+	"github.com/go-ap/fedbox/internal/log"
+	"github.com/joho/godotenv"
 )
 
 var Prefix = "fedbox"
