@@ -14,7 +14,6 @@ import (
 	"path"
 	"testing"
 	"text/template"
-	"time"
 
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox/app"
@@ -65,7 +64,7 @@ func cleanDB(t *testing.T, opt config.Options) {
 		opt.Storage = config.StorageFS
 	}
 	t.Logf("resetting %q db: %s", opt.Storage, opt.StoragePath)
-	err := resetDB(opt)
+	err := cmd.Reset(opt)
 	if err != nil {
 		t.Error(err)
 	}
