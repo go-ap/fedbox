@@ -26,7 +26,7 @@ func New(enabled bool, ) *store {
 }
 
 func (r *store) Get(iri pub.IRI) pub.Item {
-	if !r.enabled {
+	if r == nil || !r.enabled {
 		return nil
 	}
 	r.w.RLock()
@@ -38,7 +38,7 @@ func (r *store) Get(iri pub.IRI) pub.Item {
 }
 
 func (r *store) Set(iri pub.IRI, it pub.Item) {
-	if !r.enabled {
+	if r == nil || !r.enabled {
 		return
 	}
 	r.w.Lock()
@@ -50,7 +50,7 @@ func (r *store) Set(iri pub.IRI, it pub.Item) {
 }
 
 func (r *store) Remove(iris ...pub.IRI) bool {
-	if !r.enabled {
+	if r == nil || !r.enabled {
 		return true
 	}
 	toInvalidate := pub.IRIs(iris)
