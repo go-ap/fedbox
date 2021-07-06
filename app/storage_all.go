@@ -39,6 +39,7 @@ func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.St
 		return db, nil, err
 	}
 	authConf := (*authbadger.Config)(unsafe.Pointer(&conf))
+	authConf.Path = c.BadgerOAuth2(path)
 	oauth := authbadger.New(*authConf)
 	return db, oauth, nil
 }

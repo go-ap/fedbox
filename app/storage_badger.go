@@ -29,6 +29,7 @@ func Storage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, er
 		return db, nil, err
 	}
 	authConf := (*auth.Config)(unsafe.Pointer(&conf))
+	authConf.Path = c.BadgerOAuth2(path)
 	oauth := auth.New(*authConf)
 	return db, oauth, nil
 }
