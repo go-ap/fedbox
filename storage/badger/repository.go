@@ -59,7 +59,6 @@ func New(c Config) (*repo, error) {
 	b := repo{
 		path:    c.Path,
 		baseURL: c.BaseURL,
-		cache:   cache.New(true),
 		logFn:   emptyLogFn,
 		errFn:   emptyLogFn,
 	}
@@ -503,7 +502,6 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 		return nil
 	})
 
-	r.cache.Set(it.GetLink(), it)
 	return it, err
 }
 
@@ -526,7 +524,6 @@ func deleteCollectionFromPath(r *repo, b *badger.Txn, it pub.Item) error {
 		return nil
 	}
 	p := getObjectKey(itemPath(it.GetLink()))
-	r.cache.Remove(it.GetLink())
 	return b.Delete(p)
 }
 
@@ -563,9 +560,6 @@ func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(va
 				})
 			}
 
-			if pub.IsObject(it) {
-				r.cache.Set(it.GetLink(), it)
-			}
 			it, err = ap.FilterIt(it, f)
 			if err != nil {
 				return err
@@ -622,10 +616,6 @@ func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, error) {
 				continue
 			}
 			if isObjectKey(k) {
-				if cachedIt := r.cache.Get(f.GetLink()); cachedIt != nil {
-					col = append(col, cachedIt)
-					continue
-				}
 				if err := i.Value(r.loadFromIterator(&col, f)); err != nil {
 					continue
 				}

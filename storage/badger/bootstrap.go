@@ -8,7 +8,6 @@ import (
 
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/jsonld"
 )
@@ -47,8 +46,4 @@ func Clean(conf config.Options) error {
 	}
 
 	return os.RemoveAll(path)
-}
-
-func (r *repo) Reset() {
-	r.cache = cache.New(true)
 }
