@@ -6,35 +6,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"testing"
 
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/fedbox/internal/log"
 )
 
 func ActorsURL() string {
 	return ServiceActorsURL(&service)
-}
-
-var storageType = func() config.StorageType {
-	envStorage := os.Getenv("STORAGE")
-	if len(envStorage) > 0 {
-		return config.StorageType(envStorage)
-	}
-	return config.DefaultStorage
-}
-
-var C2SConfig = config.Options{
-	Env:         env.TEST,
-	Host:        "127.0.0.1:9998",
-	Listen:      "127.0.0.1:9998",
-	BaseURL:     "http://127.0.0.1:9998/",
-	LogLevel:    log.DebugLevel,
-	StoragePath: ".cache",
-	Storage:     storageType(),
 }
 
 var c2sConfigs = []config.Options{

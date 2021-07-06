@@ -15,6 +15,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"runtime/debug"
 	"sort"
@@ -26,6 +27,8 @@ import (
 	"github.com/go-ap/client"
 	fedbox "github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/env"
+	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/httpsig"
 	_ "github.com/joho/godotenv/autoload"
 	"golang.org/x/crypto/ed25519"
@@ -36,6 +39,26 @@ var UserAgent = "test-go-http-client"
 var HeaderAccept = `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`
 
 var fedboxApp *fedbox.FedBOX
+
+var C2SConfig = config.Options{
+	Env:         env.TEST,
+	Host:        "127.0.0.1:9998",
+	Listen:      "127.0.0.1:9998",
+	BaseURL:     "http://127.0.0.1:9998/",
+	LogLevel:    log.DebugLevel,
+	StoragePath: ".cache",
+	Storage:     storageType(),
+}
+
+var S2SConfig = config.Options{
+	Env:         env.TEST,
+	Host:        "127.0.2.1:9999",
+	Listen:      "127.0.2.1:9999",
+	BaseURL:     "http://127.0.2.1:9999/",
+	LogLevel:    log.DebugLevel,
+	StoragePath: ".cache",
+	Storage:     storageType(),
+}
 
 type actMock struct {
 	Id       string
@@ -124,6 +147,14 @@ type objectVal struct {
 	current           *objectVal
 	items             map[string]*objectVal
 	audience          []string
+}
+
+var storageType = func() config.StorageType {
+	envStorage := os.Getenv("STORAGE")
+	if len(envStorage) > 0 {
+		return config.StorageType(envStorage)
+	}
+	return config.DefaultStorage
 }
 
 func defaultC2SAccount() *testAccount {

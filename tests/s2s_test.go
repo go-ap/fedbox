@@ -10,19 +10,7 @@ import (
 
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/fedbox/internal/log"
 )
-
-var S2SConfig = config.Options{
-	Env:         env.TEST,
-	Host:        "127.0.2.1:9999",
-	Listen:      "127.0.2.1:9999",
-	BaseURL:     "http://127.0.2.1:9999/",
-	LogLevel:    log.DebugLevel,
-	StoragePath: ".cache",
-	Storage:     storageType(),
-}
 
 var s2sConfigs = []config.Options{
 	C2SConfig,
