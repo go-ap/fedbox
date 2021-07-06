@@ -3,6 +3,8 @@
 package app
 
 import (
+	"unsafe"
+
 	auth "github.com/go-ap/auth/badger"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/badger"
@@ -13,21 +15,20 @@ import (
 
 func Storage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
-	l.Debugf("Initializing badger storage at %s", path)
-	db, err := badger.New(badger.Config{
+	conf := badger.Config{
 		Path:    path,
 		BaseURL: c.BaseURL,
-		LogFn:   InfoLogFn(l),
-		ErrFn:   ErrLogFn(l),
-	})
+	}
+	if l != nil {
+		l.Debugf("Initializing badger storage at %s", path)
+		conf.LogFn = InfoLogFn(l)
+		conf.ErrFn = ErrLogFn(l)
+	}
+	db, err := badger.New(conf)
 	if err != nil {
 		return db, nil, err
 	}
-	oauth := auth.New(auth.Config{
-		Path:  c.BadgerOAuth2(path),
-		Host:  c.Host,
-		LogFn: InfoLogFn(l),
-		ErrFn: ErrLogFn(l),
-	})
+	authConf := (*auth.Config)(unsafe.Pointer(&conf))
+	oauth := auth.New(*authConf)
 	return db, oauth, nil
 }

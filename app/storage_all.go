@@ -4,6 +4,7 @@ package app
 
 import (
 	"path"
+	"unsafe"
 
 	authbadger "github.com/go-ap/auth/badger"
 	authboltdb "github.com/go-ap/auth/boltdb"
@@ -24,22 +25,21 @@ import (
 
 func getBadgerStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
-	l.Debugf("Initializing badger storage at %s", path)
-	db, err := badger.New(badger.Config{
+	conf := badger.Config{
 		Path:    path,
 		BaseURL: c.BaseURL,
-		LogFn:   InfoLogFn(l),
-		ErrFn:   ErrLogFn(l),
-	})
+	}
+	if l != nil {
+		l.Debugf("Initializing badger storage at %s", path)
+		conf.LogFn = InfoLogFn(l)
+		conf.ErrFn = ErrLogFn(l)
+	}
+	db, err := badger.New(conf)
 	if err != nil {
 		return db, nil, err
 	}
-	oauth := authbadger.New(authbadger.Config{
-		Path:  c.BadgerOAuth2(path),
-		Host:  c.Host,
-		LogFn: InfoLogFn(l),
-		ErrFn: ErrLogFn(l),
-	})
+	authConf := (*authbadger.Config)(unsafe.Pointer(&conf))
+	oauth := authbadger.New(*authConf)
 	return db, oauth, nil
 }
 
