@@ -9,20 +9,21 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-var bootstrapFn = func(conf config.Options) error {
-	var pgRoot string
-	// ask for root pw
-	fmt.Printf("%s password: ", pgRoot)
-	pgPw, _ := terminal.ReadPassword(0)
-	fmt.Println()
-	return pgx.Bootstrap(conf, pgRoot, pgPw)
-}
-
-var cleanFn = func(conf config.Options) (err error) {
-	var pgRoot string
-	// ask for root pw
-	fmt.Printf("%s password: ", pgRoot)
-	pgPw, _ := terminal.ReadPassword(0)
-	fmt.Println()
-	return pgx.Clean(conf, pgRoot, pgPw)
-}
+var (
+	bootstrapFn = func(conf config.Options) error {
+		var pgRoot string
+		// ask for root pw
+		fmt.Printf("%s password: ", pgRoot)
+		pgPw, _ := terminal.ReadPassword(0)
+		fmt.Println()
+		return pgx.Bootstrap(conf, pgRoot, pgPw)
+	}
+	cleanFn = func(conf config.Options) (err error) {
+		var pgRoot string
+		// ask for root pw
+		fmt.Printf("%s password: ", pgRoot)
+		pgPw, _ := terminal.ReadPassword(0)
+		fmt.Println()
+		return pgx.Clean(conf, pgRoot, pgPw)
+	}
+)

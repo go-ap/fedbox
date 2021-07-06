@@ -2,16 +2,9 @@
 
 package cmd
 
-import (
-	"os"
+import "github.com/go-ap/fedbox/storage/badger"
 
-	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/storage/badger"
+var (
+	bootstrapFn = badger.Bootstrap
+	cleanFn     = badger.Clean
 )
-
-var bootstrapFn = badger.Bootstrap
-
-var cleanFn = func(conf config.Options) error {
-	os.RemoveAll(conf.BadgerOAuth2(conf.BaseStoragePath()))
-	return badger.Clean(conf)
-}

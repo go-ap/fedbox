@@ -8,13 +8,14 @@ import (
 	"github.com/go-ap/fedbox/storage/sqlite"
 )
 
-var bootstrapFn = func (conf config.Options) error {
-	if err := auth.Bootstrap(auth.Config{Path: conf.BaseStoragePath()}, nil); err != nil {
-		return err
+var (
+	bootstrapFn = func(conf config.Options) error {
+		if err := auth.Bootstrap(auth.Config{Path: conf.BaseStoragePath()}, nil); err != nil {
+			return err
+		}
+		return sqlite.Bootstrap(conf)
 	}
-	return sqlite.Bootstrap(conf)
-}
-
-var cleanFn = func (conf config.Options) error {
-	return sqlite.Clean(conf)
-}
+	cleanFn = func(conf config.Options) error {
+		return sqlite.Clean(conf)
+	}
+)

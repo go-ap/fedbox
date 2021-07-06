@@ -4,6 +4,7 @@ package cmd
 
 import "github.com/go-ap/fedbox/storage/boltdb"
 
-var bootstrapFn = boltdb.Bootstrap
-
-var cleanFn = boltdb.Clean
+var (
+	bootstrapFn = boltdb.Bootstrap
+	cleanFn     = boltdb.Clean
+)
