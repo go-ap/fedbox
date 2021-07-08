@@ -25,13 +25,13 @@ func CreateS2SActor(actor *testAccount, object *testAccount) actMock {
 	return actMock{
 		Id:       id,
 		ActorId:  actor.Id,
-		ObjectId:  object.Id,
+		ObjectId: object.Id,
 	}
 }
 
 var S2STests = testPairs{
 	{
-		name:  "CreateActor",
+		name:    "CreateActor",
 		configs: s2sConfigs,
 		tests: []testPair{
 			{
@@ -43,7 +43,7 @@ var S2STests = testPairs{
 				},
 				req: testReq{
 					met:     http.MethodPost,
-					account: defaultC2SAccount(),
+					account: defaultS2SAccount(),
 					urlFn:   InboxURL(defaultC2SAccount()),
 					bodyFn:  loadMockJson("mocks/s2s/create-actor.json", CreateS2SActor(defaultS2SAccount(), defaultS2SAccount())),
 				},
@@ -52,13 +52,15 @@ var S2STests = testPairs{
 					val: &objectVal{
 						typ: string(pub.CreateType),
 						act: &objectVal{
+							id:                defaultS2SAccount().Id,
 							typ:               string(pub.PersonType),
-							preferredUsername: "johndoe",
+							preferredUsername: "lou",
 						},
 						obj: &objectVal{
+							id:                defaultS2SAccount().Id,
 							typ:               string(pub.PersonType),
-							preferredUsername: "johndoe",
-							name:              "Johnathan Doe",
+							preferredUsername: "lou",
+							name:              "Loucien Cypher",
 						},
 					},
 				},
