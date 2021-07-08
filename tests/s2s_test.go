@@ -19,12 +19,13 @@ var s2sConfigs = []config.Options{
 
 var activityCount = 0
 
-func NewActivity(actor *testAccount) actMock {
+func CreateS2SActor(actor *testAccount, object *testAccount) actMock {
 	activityCount++
 	id := baseURL + "/" + path.Join("activities", fmt.Sprintf("%d", activityCount))
 	return actMock{
 		Id:       id,
 		ActorId:  actor.Id,
+		ObjectId:  object.Id,
 	}
 }
 
@@ -38,12 +39,13 @@ var S2STests = testPairs{
 					"mocks/service.json",
 					"mocks/actor-johndoe.json",
 					"mocks/application.json",
+					"mocks/s2s/actors/actor-666.json",
 				},
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   InboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/s2s/create-actor.json", NewActivity(defaultC2SAccount())),
+					bodyFn:  loadMockJson("mocks/s2s/create-actor.json", CreateS2SActor(defaultS2SAccount(), defaultS2SAccount())),
 				},
 				res: testRes{
 					code: http.StatusCreated,

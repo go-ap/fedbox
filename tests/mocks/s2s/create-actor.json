@@ -2,6 +2,6 @@
   "id": "http://127.0.0.1:9998/activities/1",
   "type": "Create",
   "actor": "{{ .ActorId }}",
-  "object": "{{ .ActorId }}",
+  "object": "{{ .ObjectId }}",
   "to": [ "https://www.w3.org/ns/activitystreams#Public" ]
 }

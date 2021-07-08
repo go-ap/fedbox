@@ -160,13 +160,11 @@ var storageType = func() config.StorageType {
 }
 
 func defaultC2SAccount() *testAccount {
-	return &defaultTestAccount
+	return &defaultTestAccountC2S
 }
 
 func defaultS2SAccount() *testAccount {
-	acc := &defaultTestAccount
-	acc.Id = fmt.Sprintf("http://%s/actors/%s", s2shost, acc.Hash)
-	return acc
+	return &defaultTestAccountS2S
 }
 
 func InboxURL(account *testAccount) func() string {
@@ -198,7 +196,7 @@ const (
 	extraActorHandle = "extra"
 
 	host    = "127.0.0.1:9998"
-	s2shost = "127.0.2.1:9998"
+	s2shost = "127.0.2.1:9999"
 )
 
 var (
@@ -215,7 +213,7 @@ var (
 
 	service = testAccount{Id: apiURL}
 
-	defaultTestAccount = testAccount{
+	defaultTestAccountC2S = testAccount{
 		Id:         fmt.Sprintf("http://%s/actors/%s", host, testActorHash),
 		Handle:     testActorHandle,
 		Hash:       testActorHash,
@@ -223,7 +221,15 @@ var (
 		PrivateKey: key,
 	}
 
-	extraAccount = testAccount{
+	defaultTestAccountS2S = testAccount{
+		Id:         fmt.Sprintf("http://%s/actors/%d", s2shost, 666),
+		Handle:     "lou",
+		Hash:       "666",
+		PublicKey:  publicKeyFrom(key),
+		PrivateKey: key,
+	}
+
+extraAccount = testAccount{
 		Id:     fmt.Sprintf("http://%s/actors/%s", host, extraActorHash),
 		Handle: extraActorHandle,
 		Hash:   extraActorHash,

@@ -161,9 +161,9 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	}
 	addMockObjects(db, mocks, t.Errorf)
 
-	tok, err := o.GenAuthToken(clientCode, defaultTestAccount.Id, nil)
+	tok, err := o.GenAuthToken(clientCode, defaultTestAccountC2S.Id, nil)
 	if err == nil {
-		defaultTestAccount.AuthToken = tok
+		defaultTestAccountC2S.AuthToken = tok
 	}
 }
 
