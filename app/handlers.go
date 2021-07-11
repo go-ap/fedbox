@@ -40,9 +40,9 @@ func (d pathTyper) Type(r *http.Request) h.CollectionType {
 	return col
 }
 
-func reqURL(r *http.Request) string {
+func reqURL(r *http.Request, secure bool) string {
 	scheme := "http"
-	if Config.Secure || r.TLS != nil {
+	if secure || r.TLS != nil {
 		scheme = "https"
 	}
 	return fmt.Sprintf("%s://%s%s", scheme, r.Host, r.RequestURI)
@@ -195,7 +195,7 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
 
-		baseIRI := pub.IRI(Config.BaseURL)
+		baseIRI := pub.IRI(fb.Config().BaseURL)
 		processor, validator, err := processing.New(
 			processing.SetIRI(baseIRI, InternalIRI),
 			processing.SetClient(client.New(
@@ -272,7 +272,7 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 		}
 		ap.LoadItemFilters(r, f)
 
-		iri := reqURL(r)
+		iri := reqURL(r, fb.Config().Secure)
 		if len(f.IRI) == 0 {
 			f.IRI = pub.IRI(iri)
 		}
@@ -324,7 +324,7 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 		if len(items) > 1 {
 			return nil, errors.Errorf("Too many %s found%s", what, where)
 		}
-		it, err := loadItem(items, f, reqURL(r))
+		it, err := loadItem(items, f, reqURL(r, fb.Config().Secure))
 		if err != nil {
 			return nil, errors.NotFoundf("%snot found", what)
 		}

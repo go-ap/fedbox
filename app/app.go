@@ -25,8 +25,6 @@ func init() {
 	handlers.Typer = pathTyper{}
 }
 
-var Config config.Options
-
 type LogFn func(string, ...interface{})
 
 type fedboxStorage struct {
@@ -94,7 +92,7 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o o
 		app.infFn = l.Infof
 		app.errFn = l.Errorf
 	}
-	Config = conf
+
 	errors.IncludeBacktrace = conf.Env.IsDev() || conf.Env.IsTest()
 
 	as, err := auth.New(conf.BaseURL, app.storage.oauth, app.storage.repo, l)
@@ -107,7 +105,7 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o o
 	app.R.Use(middleware.RequestID)
 	app.R.Use(log.NewStructuredLogger(l))
 
-	baseIRI := pub.IRI(Config.BaseURL)
+	baseIRI := pub.IRI(conf.BaseURL)
 	app.OAuth = authService{
 		baseIRI: baseIRI,
 		auth:    as,
