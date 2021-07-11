@@ -1,0 +1,14 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "http://127.0.2.1:9999/objects/1",
+  "type": "Note",
+  "attributedTo": "http://127.0.2.1:9999/actors/666",
+  "content": "<p>Hello</p>\n<p><code>world</code>!</p>\n",
+  "mediaType": "text/html",
+  "url": "https://example.com/1",
+  "to": ["https://www.w3.org/ns/activitystreams#Public"],
+  "source": {
+    "content": "Hello\n\n`world`!",
+    "mediaType": "text/markdown"
+  }
+}
