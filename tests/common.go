@@ -41,6 +41,7 @@ import (
 var UserAgent = "test-go-http-client"
 var HeaderAccept = `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`
 
+var activityCount = 0
 var fedboxApp *fedbox.FedBOX
 
 var C2SConfig = config.Options{
@@ -644,7 +645,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			assertObjectProperties := errOnObjectProperties(t)
 			if len(test.req.headers) == 0 {
 				test.req.headers = make(http.Header, 0)
-				test.req.headers.Set("User-Agent", fmt.Sprintf("-%s", UserAgent))
+				test.req.headers.Set("User-Agent", UserAgent)
 
 				test.req.headers.Set("Cache-Control", "no-cache")
 			}
