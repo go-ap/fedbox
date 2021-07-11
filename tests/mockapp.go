@@ -14,6 +14,7 @@ import (
 	"path"
 	"testing"
 	"text/template"
+	"time"
 
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox/app"
@@ -182,5 +183,8 @@ func SetupAPP(options config.Options) *app.FedBOX {
 		panic(err)
 	}
 	a, _ := app.New(l, "HEAD", options, db, o)
+	if options.Storage == config.StorageFS {
+		time.Sleep(100*time.Millisecond)
+	}
 	return a
 }
