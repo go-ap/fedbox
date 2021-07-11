@@ -17,8 +17,6 @@ var s2sConfigs = []config.Options{
 	S2SConfig,
 }
 
-var activityCount = 0
-
 func CreateS2SObject(actor *testAccount, object interface{}) actMock {
 	id := "http://" + s2shost + "/" + path.Join("activities", fmt.Sprintf("%d", activityCount))
 	var objectId string
@@ -47,6 +45,8 @@ var S2STests = testPairs{
 					"mocks/service.json",
 					"mocks/actor-johndoe.json",
 					"mocks/application.json",
+					// S2S objects need to be present
+					"mocks/s2s/activities/create-actor-666.json",
 					"mocks/s2s/actors/actor-666.json",
 				},
 				req: testReq{
@@ -54,7 +54,7 @@ var S2STests = testPairs{
 					account: defaultS2SAccount(),
 					urlFn:   InboxURL(defaultC2SAccount()),
 					bodyFn:  loadMockJson(
-						"mocks/s2s/activities/create-1.json",
+						"mocks/s2s/create-object.json",
 						CreateS2SObject(defaultS2SAccount(), defaultS2SAccount()),
 					),
 				},
@@ -87,15 +87,17 @@ var S2STests = testPairs{
 					"mocks/service.json",
 					"mocks/actor-johndoe.json",
 					"mocks/application.json",
+					// s2s entities that need to exist
 					"mocks/s2s/actors/actor-666.json",
 					"mocks/s2s/objects/note-1.json",
+					"mocks/s2s/activities/create-note-1.json",
 				},
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultS2SAccount(),
 					urlFn:   InboxURL(defaultC2SAccount()),
 					bodyFn:  loadMockJson(
-						"mocks/s2s/activities/create-1.json",
+						"mocks/s2s/create-object.json",
 						CreateS2SObject(defaultS2SAccount(), loadMockFromDisk("mocks/s2s/objects/note-1.json", nil)),
 					),
 				},
