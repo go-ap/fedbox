@@ -3,6 +3,9 @@
 package fs
 
 import (
+	"crypto"
+	"crypto/x509"
+	"encoding/pem"
 	"io/ioutil"
 	"os"
 	"path"
@@ -392,6 +395,23 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 		return errors.Annotatef(err, "failed writing full object")
 	}
 	return nil
+}
+
+// LoadKey loads a private key for an actor found by its IRI
+func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
+	m, err := r.LoadMetadata(iri)
+	if err != nil {
+		return nil, err
+	}
+	b, _ := pem.Decode(m.PrivateKey)
+	if b == nil {
+		return nil, errors.Errorf("failed decoding pem")
+	}
+	prvKey, err := x509.ParsePKCS8PrivateKey(b.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	return prvKey, nil
 }
 
 func createOrOpenFile(p string) (*os.File, error) {
