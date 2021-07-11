@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -22,11 +23,20 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	ls "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/httpsig"
+	"github.com/go-ap/jsonld"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ed25519"
 )
+
+func jsonldMarshal (i pub.Item) string {
+	j, err := jsonld.Marshal(i)
+	if err != nil {
+		panic(err)
+	}
+	return string(j)
+}
 
 func loadMockJson(file string, model interface{}) func() string {
 	data, err := ioutil.ReadFile(file)
@@ -35,7 +45,8 @@ func loadMockJson(file string, model interface{}) func() string {
 	}
 	data = bytes.Trim(data, "\x00")
 
-	t := template.Must(template.New(fmt.Sprintf("mock_%s", path.Base(file))).Parse(string(data)))
+	t := template.Must(template.New(fmt.Sprintf("mock_%s", path.Base(file))).
+		Funcs(template.FuncMap{"json": jsonldMarshal}).Parse(string(data)))
 
 	return func() string {
 		bytes := bytes.Buffer{}
@@ -162,9 +173,24 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	}
 	addMockObjects(db, mocks, t.Errorf)
 
-	tok, err := o.GenAuthToken(clientCode, defaultTestAccountC2S.Id, nil)
-	if err == nil {
-		defaultTestAccountC2S.AuthToken = tok
+	if strings.Contains(defaultTestAccountC2S.Id, options.BaseURL) {
+		if metaSaver, ok := db.(ls.MetadataTyper); ok {
+			prvEnc, err := x509.MarshalPKCS8PrivateKey(key)
+			r := pem.Block{
+				Type:  "PRIVATE KEY",
+				Bytes: prvEnc,
+			}
+			if err != nil {
+				panic(err)
+			}
+			err = metaSaver.SaveMetadata(ls.Metadata{PrivateKey: pem.EncodeToMemory(&r)}, pub.IRI(defaultTestAccountC2S.Id))
+			if err != nil {
+				panic(err)
+			}
+		}
+		if tok, err := o.GenAuthToken(clientCode, defaultTestAccountC2S.Id, nil); err == nil {
+			defaultTestAccountC2S.AuthToken = tok
+		}
 	}
 }
 

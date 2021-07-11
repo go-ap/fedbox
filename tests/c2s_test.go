@@ -6,36 +6,19 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"path"
 	"testing"
 
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/fedbox/internal/config"
 )
 
 func ActorsURL() string {
 	return ServiceActorsURL(&service)
 }
 
-var c2sConfigs = []config.Options{
-	C2SConfig,
-}
-
-func CreateC2SObject(actor *testAccount, object interface{}) actMock {
-	id := baseURL + "/" + path.Join("activities", fmt.Sprintf("%d", activityCount))
-	var objectId string
-	switch ob := object.(type) {
-	case string:
-		objectId = ob
-	case *testAccount:
-		objectId = ob.Id
-	case pub.Item:
-		objectId = string(ob.GetID())
-	}
-	return actMock{
-		Id: id,
+func CreateC2SObject(actor *testAccount, object pub.Item) actC2SMock {
+	return actC2SMock{
 		ActorId:  actor.Id,
-		ObjectId: objectId,
+		Object:   object,
 	}
 }
 
@@ -816,7 +799,7 @@ var C2STests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/activity.json", actMock{Type:"Delete", ActorId: defaultC2SAccount().Id, ObjectId: defaultC2SAccount().Id}),
+					bodyFn:  loadMockJson("mocks/activity.json", actS2SMock{Type: "Delete", ActorId: defaultC2SAccount().Id, ObjectId: defaultC2SAccount().Id}),
 				},
 				res: testRes{
 					code: http.StatusGone,
@@ -958,7 +941,7 @@ var C2STests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/activity.json", &actMock{Type: "Like", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/objects/41e7ec45-ff92-473a-b79d-974bf30a0aba"}),
+					bodyFn:  loadMockJson("mocks/activity.json", &actS2SMock{Type: "Like", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/objects/41e7ec45-ff92-473a-b79d-974bf30a0aba"}),
 				},
 				res: testRes{
 					code: http.StatusCreated,
@@ -1060,7 +1043,7 @@ var C2STests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/activity.json", &actMock{Type: "Follow", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
+					bodyFn:  loadMockJson("mocks/activity.json", &actS2SMock{Type: "Follow", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
 				},
 				res: testRes{
 					code: http.StatusCreated,
@@ -1128,7 +1111,7 @@ var C2STests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/activity-private.json", &actMock{Type: "Block", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
+					bodyFn:  loadMockJson("mocks/activity-private.json", &actS2SMock{Type: "Block", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
 				},
 				res: testRes{
 					code: http.StatusCreated,
@@ -1179,6 +1162,64 @@ var C2STests = testPairs{
 	},
 }
 
+// S2SSendTests builds tests for verifying how a FedBOX instance processes C2S activities that contain
+// recipients belonging to other federated services
+var S2SSendTests = testPairs{
+	{
+		name:    "CreateNote",
+		configs: s2sConfigs,
+		tests: []testPair{
+			{
+				mocks: []string{
+					"mocks/service.json",
+					"mocks/actor-johndoe.json",
+					"mocks/application.json",
+					// s2s entities that need to exist
+					"mocks/s2s/actors/actor-666.json",
+				},
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn:  loadMockJson(
+						"mocks/c2s/create-object-with-federated-cc.json",
+						CreateC2SObject(defaultC2SAccount(), loadMockFromDisk("mocks/objects/note-1.json", nil)),
+					),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(pub.CreateType),
+						act: &objectVal{
+							id:                defaultC2SAccount().Id,
+							typ:               string(pub.PersonType),
+							preferredUsername: "johndoe",
+							name:              "Johnathan Doe",
+						},
+						obj: &objectVal{
+							id:                loadMockFromDisk("mocks/objects/note-1.json", nil).GetID().String(),
+							typ:               string(loadMockFromDisk("mocks/objects/note-1.json", nil).GetType()),
+						},
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:     http.MethodGet,
+					urlFn:   InboxURL(defaultS2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						typ: string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+		},
+	},
+}
+
 func Test_SingleItemLoad(t *testing.T) {
 	runTestSuite(t, SingleItemLoadTests)
 }
@@ -1197,4 +1238,8 @@ func Test_ActorsCollection(t *testing.T) {
 
 func Test_C2SRequests(t *testing.T) {
 	runTestSuite(t, C2STests)
+}
+
+func Test_S2SSendRequests(t *testing.T) {
+	runTestSuite(t, S2SSendTests)
 }

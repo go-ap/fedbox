@@ -15,7 +15,7 @@ require (
 	github.com/go-ap/handlers v0.0.0-20210623152331-f3c057976360
 	github.com/go-ap/httpsig v0.0.0-20210701073735-ee6f491a954c
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210711141220-2d82d9635490
+	github.com/go-ap/processing v0.0.0-20210711190537-4ed90dd9cd8d
 	github.com/go-ap/storage v0.0.0-20210623152225-7270c1fd3fa7
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/google/uuid v1.2.0 // indirect
@@ -32,7 +32,7 @@ require (
 	github.com/tdewolff/test v1.0.6 // indirect
 	github.com/unrolled/render v1.0.2
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
+	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717

@@ -64,12 +64,28 @@ var S2SConfig = config.Options{
 	Storage:     storageType(),
 }
 
-type actMock struct {
+var c2sConfigs = []config.Options{
+	C2SConfig,
+}
+
+var s2sConfigs = []config.Options{
+	C2SConfig,
+	S2SConfig,
+}
+
+type actS2SMock struct {
 	Id       string
 	Type     string
 	ActorId  string
 	ObjectId string
 }
+
+type actC2SMock struct {
+	Type     string
+	ActorId  string
+	Object   pub.Item
+}
+
 
 type testSuite struct {
 	name    string

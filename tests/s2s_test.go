@@ -9,15 +9,9 @@ import (
 	"testing"
 
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/fedbox/internal/config"
 )
 
-var s2sConfigs = []config.Options{
-	C2SConfig,
-	S2SConfig,
-}
-
-func CreateS2SObject(actor *testAccount, object interface{}) actMock {
+func CreateS2SObject(actor *testAccount, object interface{}) actS2SMock {
 	id := "http://" + s2shost + "/" + path.Join("activities", fmt.Sprintf("%d", activityCount))
 	var objectId string
 	switch ob := object.(type) {
@@ -28,7 +22,7 @@ func CreateS2SObject(actor *testAccount, object interface{}) actMock {
 	case pub.Item:
 		objectId = string(ob.GetID())
 	}
-	return actMock{
+	return actS2SMock{
 		Id: id,
 		ActorId:  actor.Id,
 		ObjectId: objectId,
@@ -81,7 +75,7 @@ var S2SReceiveTests = testPairs{
 		},
 	},
 	{
-		name:    "CreateArticle",
+		name:    "CreateNote",
 		configs: s2sConfigs,
 		tests: []testPair{
 			{
@@ -124,15 +118,7 @@ var S2SReceiveTests = testPairs{
 	},
 }
 
-// S2SSendTests builds tests for verifying how a FedBOX instance processes C2S activities that contain
-// recipients belonging to other federated services
-var S2SSendTests = testPairs{
-}
 
 func Test_S2SReceiveRequests(t *testing.T) {
 	runTestSuite(t, S2SReceiveTests)
-}
-
-func Test_S2SSendRequests(t *testing.T) {
-	runTestSuite(t, S2SSendTests)
 }
