@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 	"testing"
 
 	pub "github.com/go-ap/activitypub"
@@ -20,6 +21,23 @@ var c2sConfigs = []config.Options{
 	C2SConfig,
 }
 
+func CreateC2SObject(actor *testAccount, object interface{}) actMock {
+	id := baseURL + "/" + path.Join("activities", fmt.Sprintf("%d", activityCount))
+	var objectId string
+	switch ob := object.(type) {
+	case string:
+		objectId = ob
+	case *testAccount:
+		objectId = ob.Id
+	case pub.Item:
+		objectId = string(ob.GetID())
+	}
+	return actMock{
+		Id: id,
+		ActorId:  actor.Id,
+		ObjectId: objectId,
+	}
+}
 
 var ActorsCollectionTests = testPairs{
 	{
