@@ -35,7 +35,9 @@ func CreateS2SObject(actor *testAccount, object interface{}) actMock {
 	}
 }
 
-var S2STests = testPairs{
+// S2SReceiveTests builds tests for verifying a FedBOX instance receives and processes correctly
+// activities coming from federated requests.
+var S2SReceiveTests = testPairs{
 	{
 		name:    "CreateActor",
 		configs: s2sConfigs,
@@ -122,6 +124,15 @@ var S2STests = testPairs{
 	},
 }
 
-func Test_S2SRequests(t *testing.T) {
-	runTestSuite(t, S2STests)
+// S2SSendTests builds tests for verifying how a FedBOX instance processes C2S activities that contain
+// recipients belonging to other federated services
+var S2SSendTests = testPairs{
+}
+
+func Test_S2SReceiveRequests(t *testing.T) {
+	runTestSuite(t, S2SReceiveTests)
+}
+
+func Test_S2SSendRequests(t *testing.T) {
+	runTestSuite(t, S2SSendTests)
 }
