@@ -31,6 +31,7 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
+	"github.com/go-ap/handlers"
 	"github.com/go-ap/httpsig"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ed25519"
@@ -669,6 +670,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			if test.req.urlFn != nil {
 				test.req.url = test.req.urlFn()
 			}
+			isClientRequest := path.Base(test.req.url) == string(handlers.Outbox)
 			ctx := context.Background()
 			req, err := http.NewRequestWithContext(ctx, test.req.met, test.req.url, bytes.NewReader(body))
 			assertTrue(err == nil, "Error: unable to create request: %s", err)
@@ -698,7 +700,9 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 					newObj, err := url.Parse(location[0])
 					newObjURL := newObj.String()
 					assertTrue(err == nil, "Location header holds invalid URL %s", newObjURL)
-					assertTrue(strings.Contains(newObjURL, apiURL), "Location header holds invalid URL %s, expected to contain %s", newObjURL, apiURL)
+					if isClientRequest {
+						assertTrue(strings.Contains(newObjURL, apiURL), "Location header holds invalid URL %s, expected to contain %s", newObjURL, apiURL)
+					}
 					test.act = &objectVal{
 						id: newObjURL,
 					}
