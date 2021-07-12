@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -749,6 +750,8 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 }
 
 var (
+	Verbose bool
+	Silent bool
 	formatter = logrus.TextFormatter{
 		ForceColors:      true,
 		DisableQuote:     true,
@@ -762,8 +765,11 @@ var (
 func logger() logrus.FieldLogger {
 	new(sync.Once).Do(func() {
 		l := logrus.New()
-		l.SetOutput(io.Discard)
-		l.SetLevel(logrus.TraceLevel)
+		if !Silent {
+			l.SetOutput(io.Discard)
+		} else if Verbose {
+			l.SetLevel(logrus.TraceLevel)
+		}
 		l.SetFormatter(&formatter)
 		Log = l
 	})
@@ -776,11 +782,10 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 
 func runTestSuite(t *testing.T, pairs testPairs) {
 	for _, suite := range pairs {
-		for _, options := range suite.configs {
-			fedboxApp = SetupAPP(options)
-			go fedboxApp.Run()
-
-			defer fedboxApp.Stop()
+		apps := make([]*fedbox.FedBOX, len(suite.configs))
+		for i, options := range suite.configs {
+			apps[i] = SetupAPP(options)
+			go apps[i].Run()
 		}
 		name := suite.name
 		t.Run(name, func(t *testing.T) {
@@ -795,9 +800,10 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 					errOnRequest(t)(test)
 				})
 			}
-			for _, options := range suite.configs {
-				cleanDB(t, options)
-			}
 		})
+		for i, options := range suite.configs {
+			cleanDB(t, options)
+			apps[i].Stop()
+		}
 	}
 }
