@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -81,11 +80,10 @@ type actS2SMock struct {
 }
 
 type actC2SMock struct {
-	Type     string
-	ActorId  string
-	Object   pub.Item
+	Type    string
+	ActorId string
+	Object  pub.Item
 }
-
 
 type testSuite struct {
 	name    string
@@ -247,7 +245,7 @@ var (
 		PrivateKey: key,
 	}
 
-extraAccount = testAccount{
+	extraAccount = testAccount{
 		Id:     fmt.Sprintf("http://%s/actors/%s", host, extraActorHash),
 		Handle: extraActorHandle,
 		Hash:   extraActorHash,
@@ -750,12 +748,23 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 	}
 }
 
-var Log logrus.FieldLogger
+var (
+	formatter = logrus.TextFormatter{
+		ForceColors:      true,
+		DisableQuote:     true,
+		DisableTimestamp: true,
+		DisableSorting:   true,
+		PadLevelText:     true,
+	}
+	Log logrus.FieldLogger
+)
 
 func logger() logrus.FieldLogger {
 	new(sync.Once).Do(func() {
 		l := logrus.New()
 		l.SetOutput(io.Discard)
+		l.SetLevel(logrus.TraceLevel)
+		l.SetFormatter(&formatter)
 		Log = l
 	})
 	return Log
@@ -770,6 +779,8 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 		for _, options := range suite.configs {
 			fedboxApp = SetupAPP(options)
 			go fedboxApp.Run()
+
+			defer fedboxApp.Stop()
 		}
 		name := suite.name
 		t.Run(name, func(t *testing.T) {

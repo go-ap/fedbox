@@ -66,11 +66,11 @@ func New(c Config) (*repo, error) {
 type repo struct {
 	baseURL string
 	path    string
-	cwd           string
-	opened        bool
-	cache         cache.CanStore
-	logFn         loggerFn
-	errFn         loggerFn
+	cwd     string
+	opened  bool
+	cache   cache.CanStore
+	logFn   loggerFn
+	errFn   loggerFn
 }
 
 // Open
@@ -415,6 +415,10 @@ func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
 }
 
 func createOrOpenFile(p string) (*os.File, error) {
+	err := mkDirIfNotExists(path.Base(p))
+	if err != nil {
+		return nil, err
+	}
 	return os.OpenFile(p, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 }
 

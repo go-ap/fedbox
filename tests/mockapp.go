@@ -30,7 +30,7 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-func jsonldMarshal (i pub.Item) string {
+func jsonldMarshal(i pub.Item) string {
 	j, err := jsonld.Marshal(i)
 	if err != nil {
 		panic(err)
@@ -98,7 +98,7 @@ func publicKeyFrom(key crypto.PrivateKey) crypto.PublicKey {
 	return nil
 }
 
-func keyType (key crypto.PrivateKey) httpsig.Algorithm {
+func keyType(key crypto.PrivateKey) httpsig.Algorithm {
 	switch key.(type) {
 	case *rsa.PrivateKey:
 		return httpsig.RSASHA256
@@ -145,8 +145,8 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	}
 
 	fields := logrus.Fields{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
-
-	db, aDb, err := app.Storage(options, logger().WithFields(fields))
+	l := logger().WithFields(fields)
+	db, aDb, err := app.Storage(options, l)
 	if err != nil {
 		panic(err)
 	}
@@ -165,8 +165,12 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 		})
 	}
 
+	seedMetadataForTestUser := false
 	for _, path := range testData {
 		it := loadMockFromDisk(path, nil)
+		if it.GetLink().String() == defaultTestAccountC2S.Id {
+			seedMetadataForTestUser = true
+		}
 		if !mocks.Contains(it) {
 			mocks = append(mocks, it)
 		}
@@ -174,18 +178,16 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	addMockObjects(db, mocks, t.Errorf)
 
 	if strings.Contains(defaultTestAccountC2S.Id, options.BaseURL) {
-		if metaSaver, ok := db.(ls.MetadataTyper); ok {
+		if metaSaver, ok := db.(ls.MetadataTyper); seedMetadataForTestUser && ok {
+			l.Infof("Seeding metadata for test user: %s", defaultTestAccountC2S.Id)
 			prvEnc, err := x509.MarshalPKCS8PrivateKey(key)
-			r := pem.Block{
-				Type:  "PRIVATE KEY",
-				Bytes: prvEnc,
-			}
 			if err != nil {
 				panic(err)
 			}
+			r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
 			err = metaSaver.SaveMetadata(ls.Metadata{PrivateKey: pem.EncodeToMemory(&r)}, pub.IRI(defaultTestAccountC2S.Id))
 			if err != nil {
-				panic(err)
+				l.Panicf("%s\n", err.Error())
 			}
 		}
 		if tok, err := o.GenAuthToken(clientCode, defaultTestAccountC2S.Id, nil); err == nil {
@@ -210,7 +212,7 @@ func SetupAPP(options config.Options) *app.FedBOX {
 	}
 	a, _ := app.New(l, "HEAD", options, db, o)
 	if options.Storage == config.StorageFS {
-		time.Sleep(100*time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 	return a
 }
