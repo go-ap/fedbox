@@ -4,7 +4,9 @@ package badger
 
 import (
 	"bytes"
-	"encoding/json"
+	"crypto"
+	"crypto/x509"
+	"encoding/pem"
 	"os"
 	"path"
 	"time"
@@ -75,9 +77,9 @@ func New(c Config) (*repo, error) {
 func (r *repo) Open() error {
 	var (
 		err error
-		c badger.Options
+		c   badger.Options
 	)
-	c = badger.DefaultOptions(r.path).WithLogger(logger{ logFn: r.logFn, errFn: r.errFn })
+	c = badger.DefaultOptions(r.path).WithLogger(logger{logFn: r.logFn, errFn: r.errFn})
 	if r.path == "" {
 		c.InMemory = true
 	}
@@ -342,18 +344,17 @@ func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 	defer r.Close()
 	path := itemPath(iri)
 
-	var m *storage.Metadata
+	m := storage.Metadata{}
 	err = r.d.View(func(tx *badger.Txn) error {
 		i, err := tx.Get(getMetadataKey(path))
 		if err != nil {
 			return errors.Annotatef(err, "Could not find metadata in path %s", path)
 		}
-		m = new(storage.Metadata)
 		return i.Value(func(raw []byte) error {
-			return json.Unmarshal(raw, m)
+			return decodeFn(raw, &m)
 		})
 	})
-	return m, err
+	return &m, err
 }
 
 // SaveMetadata
@@ -366,7 +367,7 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 
 	path := itemPath(iri)
 	err = r.d.Update(func(tx *badger.Txn) error {
-		entryBytes, err := jsonld.Marshal(m)
+		entryBytes, err := encodeFn(m)
 		if err != nil {
 			return errors.Annotatef(err, "Could not marshal metadata")
 		}
@@ -378,6 +379,23 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 	})
 
 	return err
+}
+
+// LoadKey loads a private key for an actor found by its IRI
+func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
+	m, err := r.LoadMetadata(iri)
+	if err != nil {
+		return nil, err
+	}
+	b, _ := pem.Decode(m.PrivateKey)
+	if b == nil {
+		return nil, errors.Errorf("failed decoding pem")
+	}
+	prvKey, err := x509.ParsePKCS8PrivateKey(b.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	return prvKey, nil
 }
 
 const objectKey = "__raw"
