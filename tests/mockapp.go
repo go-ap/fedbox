@@ -168,6 +168,9 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	seedMetadataForTestUser := false
 	for _, path := range testData {
 		it := loadMockFromDisk(path, nil)
+		if !it.GetLink().Contains(pub.IRI(options.BaseURL), false) {
+			continue
+		}
 		if it.GetLink().String() == defaultTestAccountC2S.Id {
 			seedMetadataForTestUser = true
 		}
@@ -180,7 +183,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	if strings.Contains(defaultTestAccountC2S.Id, options.BaseURL) {
 		if metaSaver, ok := db.(ls.MetadataTyper); seedMetadataForTestUser && ok {
 			l.Infof("Seeding metadata for test user: %s", defaultTestAccountC2S.Id)
-			prvEnc, err := x509.MarshalPKCS8PrivateKey(key)
+			prvEnc, err := x509.MarshalPKCS8PrivateKey(defaultTestAccountC2S.PrivateKey)
 			if err != nil {
 				panic(err)
 			}
