@@ -199,7 +199,7 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 	}
 
 	if len(clauses) == 0 {
-		if ap.FedboxCollections.Contains(f.Collection) {
+		if ap.FedBOXCollections.Contains(f.Collection) {
 			clauses = append(clauses, " true")
 		} else {
 			clauses = append(clauses, " false")

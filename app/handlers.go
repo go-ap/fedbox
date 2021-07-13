@@ -33,7 +33,7 @@ func (d pathTyper) Type(r *http.Request) h.CollectionType {
 		if h.ActivityPubCollections.Contains(col) {
 			return col
 		}
-		if ap.FedboxCollections.Contains(col) {
+		if ap.FedBOXCollections.Contains(col) {
 			return col
 		}
 	}

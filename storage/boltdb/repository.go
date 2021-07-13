@@ -355,7 +355,7 @@ func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket,
 	}
 	remBuckets := buckets[lvl:]
 	path = bytes.Join(remBuckets, []byte{'/'})
-	if len(remBuckets) > 0 {
+	if len(remBuckets) > 0 && !ap.HiddenCollections.Contains(handlers.CollectionType(path)) {
 		return b, path, errors.NotFoundf("%s not found", remBuckets[0])
 	}
 	return b, path, nil
@@ -685,12 +685,12 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 }
 
 func isStorageCollectionKey(lst handlers.CollectionType) bool {
-	return ap.FedboxCollections.Contains(lst) || handlers.OnActor.Contains(lst) || handlers.OnObject.Contains(lst)
+	return ap.FedBOXCollections.Contains(lst) || handlers.OnActor.Contains(lst) || handlers.OnObject.Contains(lst)
 }
 
 func addCollectionOnObject(r *repo, col pub.IRI) error {
 	var err error
-	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedboxCollections...)
+	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedBOXCollections...)
 	if ob, t := allStorageCollections.Split(col); handlers.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
 		i, _ := r.loadOneFromBucket(ob)

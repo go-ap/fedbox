@@ -75,7 +75,12 @@ const (
 // TODO(marius): here we need a better separation between the collections which are exposed in the HTTP API
 //   (activities,actors,objects) and the ones that are internal (blocked,ignored)
 var (
-	FedboxCollections = h.CollectionTypes{
+	HiddenCollections = h.CollectionTypes{
+		BlockedType,
+		IgnoredType,
+	}
+
+	FedBOXCollections = h.CollectionTypes{
 		ActivitiesType,
 		ActorsType,
 		ObjectsType,
@@ -302,8 +307,8 @@ func (f *Filters) IsItemIRI() bool {
 	}
 	maybeID := h.CollectionType(path.Base(u.Path))
 	maybeCol := h.CollectionType(path.Base(path.Dir(u.Path)))
-	return !(FedboxCollections.Contains(maybeID) || h.OnActor.Contains(maybeID) || h.OnObject.Contains(maybeID)) &&
-		(FedboxCollections.Contains(maybeCol) || h.OnActor.Contains(maybeCol) || h.OnObject.Contains(maybeCol))
+	return !(FedBOXCollections.Contains(maybeID) || h.OnActor.Contains(maybeID) || h.OnObject.Contains(maybeID)) &&
+		(FedBOXCollections.Contains(maybeCol) || h.OnActor.Contains(maybeCol) || h.OnObject.Contains(maybeCol))
 }
 
 // GetLink returns a list of IRIs to filter against

@@ -220,7 +220,7 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 		return err
 	}
 
-	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedboxCollections...)
+	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedBOXCollections...)
 	ob, t := allStorageCollections.Split(col)
 	var link pub.IRI
 	if isStorageCollectionKey(string(t)) {
@@ -424,7 +424,7 @@ func createOrOpenFile(p string) (*os.File, error) {
 
 func isStorageCollectionKey(p string) bool {
 	lst := handlers.CollectionType(path.Base(p))
-	return ap.FedboxCollections.Contains(lst) || handlers.OnActor.Contains(lst) || handlers.OnObject.Contains(lst)
+	return ap.FedBOXCollections.Contains(lst) || handlers.OnActor.Contains(lst) || handlers.OnObject.Contains(lst)
 }
 
 func (r repo) itemPath(iri pub.IRI) string {

@@ -224,7 +224,7 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 }
 
 func addCollectionOnObject(r *repo, col pub.IRI) error {
-	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedboxCollections...)
+	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedBOXCollections...)
 	if ob, t := allStorageCollections.Split(col); handlers.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
 		if i, _ := r.LoadOne(ob); i != nil {
@@ -599,7 +599,7 @@ func isObjectKey(k []byte) bool {
 
 func isStorageCollectionKey(p []byte) bool {
 	lst := handlers.CollectionType(path.Base(string(p)))
-	return ap.FedboxCollections.Contains(lst)
+	return handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}.Contains(lst)
 }
 
 func iterKeyIsTooDeep(base, k []byte, depth int) bool {

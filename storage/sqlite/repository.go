@@ -93,7 +93,7 @@ func (r repo) CreateService(service pub.Service) (err error) {
 
 func getCollectionTypeFromIRI(i string) handlers.CollectionType {
 	col := handlers.CollectionType(path.Base(i))
-	if !(ap.FedboxCollections.Contains(col) || handlers.ActivityPubCollections.Contains(col)) {
+	if !(ap.FedBOXCollections.Contains(col) || handlers.ActivityPubCollections.Contains(col)) {
 		b, _ := path.Split(i)
 		col = handlers.CollectionType(path.Base(b))
 	}
