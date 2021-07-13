@@ -4,7 +4,9 @@ package boltdb
 
 import (
 	"bytes"
-	"encoding/json"
+	"crypto"
+	"crypto/x509"
+	"encoding/pem"
 	"os"
 	"path"
 	"path/filepath"
@@ -863,7 +865,7 @@ func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 		}
 		entryBytes := b.Get([]byte(metaDataKey))
 		m = new(storage.Metadata)
-		return json.Unmarshal(entryBytes, m)
+		return decodeFn(entryBytes, m)
 	})
 	return m, err
 }
@@ -909,6 +911,23 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 	})
 
 	return err
+}
+
+// LoadKey loads a private key for an actor found by its IRI
+func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
+	m, err := r.LoadMetadata(iri)
+	if err != nil {
+		return nil, err
+	}
+	b, _ := pem.Decode(m.PrivateKey)
+	if b == nil {
+		return nil, errors.Errorf("failed decoding pem")
+	}
+	prvKey, err := x509.ParsePKCS8PrivateKey(b.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	return prvKey, nil
 }
 
 func Path (c Config) (string, error){

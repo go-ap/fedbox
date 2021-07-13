@@ -111,7 +111,7 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 		return nil, err
 	}
 
-	ret, err := r.loadFromPath(f)
+	ret, err := r.loadFromPath(f, f.IsItemIRI())
 	if len(ret) == 1 && f.IsItemIRI() {
 		return ret.First(), err
 	}
@@ -609,7 +609,7 @@ func iterKeyIsTooDeep(base, k []byte, depth int) bool {
 	return cnt > depth
 }
 
-func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, error) {
+func (r *repo) loadFromPath(f s.Filterable, loadMaxOne bool) (pub.ItemCollection, error) {
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *badger.Txn) error {
 		iri := f.GetLink()
@@ -637,10 +637,12 @@ func (r *repo) loadFromPath(f s.Filterable) (pub.ItemCollection, error) {
 			if isObjectKey(k) {
 				if err := i.Value(r.loadFromIterator(&col, f)); err != nil {
 					continue
+				} else if loadMaxOne {
+					break
 				}
 			}
 		}
-		if !pathExists {
+		if !pathExists && len(col) == 0 {
 			return errors.NotFoundf("%s does not exist", fullPath)
 		}
 		return nil
@@ -659,7 +661,7 @@ func (r *repo) LoadOne(f s.Filterable) (pub.Item, error) {
 }
 
 func (r *repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {
-	col, err := r.loadFromPath(f)
+	col, err := r.loadFromPath(f, true)
 	if err != nil {
 		return nil, err
 	}

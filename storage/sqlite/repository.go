@@ -3,7 +3,10 @@
 package sqlite
 
 import (
+	"crypto"
+	"crypto/x509"
 	"database/sql"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"path"
@@ -310,6 +313,23 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 		return errors.Annotatef(err, "Could not marshal metadata")
 	}
 	return saveMetadataToTable(r.conn, iri, entryBytes)
+}
+
+// LoadKey loads a private key for an actor found by its IRI
+func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
+	m, err := r.LoadMetadata(iri)
+	if err != nil {
+		return nil, err
+	}
+	b, _ := pem.Decode(m.PrivateKey)
+	if b == nil {
+		return nil, errors.Errorf("failed decoding pem")
+	}
+	prvKey, err := x509.ParsePKCS8PrivateKey(b.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	return prvKey, nil
 }
 
 func getFullPath(c Config) (string, error) {
