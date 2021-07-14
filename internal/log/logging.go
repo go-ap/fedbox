@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -22,21 +23,41 @@ const (
 	TraceLevel
 )
 
+type Conf struct {
+	Output io.Writer
+	Type   string
+	Pretty bool
+	Level  Level
+}
+
+var jsonFormatter = logrus.JSONFormatter{
+	PrettyPrint: true,
+	TimestampFormat: time.StampMilli,
+}
+
 var devFormatter = logrus.TextFormatter{
-	ForceColors:            false,
+	ForceColors:            true,
 	TimestampFormat:        time.StampMilli,
 	FullTimestamp:          true,
 	DisableSorting:         true,
-	DisableLevelTruncation: false,
 	PadLevelText:           true,
-	QuoteEmptyFields:       false,
+	QuoteEmptyFields:       true,
 }
 
-func New(lvl Level) logrus.FieldLogger {
+func New(conf Conf) logrus.FieldLogger {
 	l := logrus.New()
-	l.SetFormatter(&devFormatter)
-	l.Level = logrus.Level(lvl)
-	l.Out = os.Stdout
+	l.Level = logrus.Level(conf.Level)
+	if conf.Type == "json" {
+		jsonFormatter.PrettyPrint = conf.Pretty
+		l.SetFormatter(&jsonFormatter)
+	} else {
+		devFormatter.ForceColors = conf.Pretty
+		l.SetFormatter(&devFormatter)
+	}
+	if conf.Output == nil {
+		conf.Output = os.Stdout
+	}
+	l.Out = conf.Output
 	return l
 }
 

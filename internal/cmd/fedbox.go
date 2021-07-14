@@ -42,7 +42,7 @@ func run(version string) cli.ActionFunc {
 		if err != nil {
 			return err
 		}
-		l := log.New(conf.LogLevel)
+		l := log.New(log.Conf{Type: conf.LogOutput, Pretty: !conf.Env.IsProd(), Level: conf.LogLevel})
 		db, o, err := app.Storage(conf, l)
 		if err != nil {
 			l.Errorf("Unable to initialize storage backend: %s", err)

@@ -29,6 +29,7 @@ type BackendConfig struct {
 type Options struct {
 	Env         env.Type
 	LogLevel    log.Level
+	LogOutput   string
 	TimeOut     time.Duration
 	Secure      bool
 	CertPath    string
@@ -46,6 +47,7 @@ const (
 	KeyENV          = "ENV"
 	KeyTimeOut      = "TIME_OUT"
 	KeyLogLevel     = "LOG_LEVEL"
+	KeyLogOutput    = "LOG_OUTPUT"
 	KeyHostname     = "HOSTNAME"
 	KeyHTTPS        = "HTTPS"
 	KeyCertPath     = "CERT_PATH"
@@ -151,6 +153,7 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	default:
 		conf.LogLevel = log.InfoLevel
 	}
+	conf.LogOutput = loadKeyFromEnv(KeyLogOutput, "")
 
 	if !env.ValidType(e) {
 		e = env.Type(loadKeyFromEnv(KeyENV, "dev"))
