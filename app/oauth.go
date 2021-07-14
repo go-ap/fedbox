@@ -217,24 +217,23 @@ func (i *authService) loadAccountByID (id string) (*pub.Actor, error) {
 	a := activitypub.Self(i.baseIRI)
 
 	f.IRI = activitypub.ActorsType.IRI(a).AddPath(id)
-	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
 	actors, err := i.storage.repo.Load(f.GetLink())
 	if err != nil {
-		return nil, errUnauthorized
+		return nil, err
 	}
 	if actors == nil {
-		return nil, errUnauthorized
+		return nil, errNotFound
 	}
 
-	if actors.IsCollection() {
-		var actor *pub.Actor
-		err = pub.OnCollectionIntf(actors, func(actors pub.CollectionInterface) error {
-			actor, err = pub.ToActor(actors.Collection().First())
-			return err
-		})
-		return actor, err
+	var actor *pub.Actor
+	err = pub.OnActor(actors, func(act *pub.Actor) error {
+		actor = act
+		return nil
+	})
+	if err != nil || actor == nil {
+		return nil, errNotFound
 	}
-	return pub.ToActor(actors)
+	return actor, nil
 }
 
 func (i *authService) loadAccountFromPost(r *http.Request) (*account, error) {
@@ -521,15 +520,12 @@ var (
 	ren = render.New(defaultRenderOptions)
 )
 
-func (i *authService) renderTemplate(r *http.Request, w http.ResponseWriter, name string, m authModel) error {
-	err := ren.HTML(w, http.StatusOK, name, m)
-	if err != nil {
+func (i *authService) renderTemplate(r *http.Request, w http.ResponseWriter, name string, m authModel) {
+	if err := ren.HTML(w, http.StatusOK, name, m); err != nil {
 		new := errors.Annotatef(err, "failed to render template")
 		i.logger.WithFields(logrus.Fields{"template": name, "model": fmt.Sprintf("%T", m)}).Error(new.Error())
 		errRenderer.HTML(w, http.StatusInternalServerError, "error", new)
 	}
-
-	return err
 }
 
 func name(act *pub.Actor) string {
@@ -541,26 +537,44 @@ func name(act *pub.Actor) string {
 }
 // ShowLogin serves GET /login requests
 func (i *authService) ShowLogin(w http.ResponseWriter, r *http.Request) {
-	a := activitypub.Self(i.baseIRI)
-
 	tit := "Login to FedBOX"
+	m := login{title: tit}
+
 	if id := chi.URLParam(r, "id"); id != "" {
 		actor, err := i.loadAccountByID(id)
 		if err != nil {
 			errors.HandleError(err).ServeHTTP(w, r)
 			return
 		}
-		a = *actor
+		// NOTE(marius): we allow only actors to login using oauth page
+		if actor.Type != pub.PersonType {
+			errors.HandleError(errNotFound).ServeHTTP(w, r)
+			return
+		}
+
+		m.account = *actor
 		tit = fmt.Sprintf("Login to FedBOX as %s", name(actor))
 	}
 
-	m := login{title: tit}
-	m.account = a
+	if clientId := r.FormValue("client"); len(clientId) > 0 {
+		app, err := i.loadAccountByID(clientId)
+		if err != nil {
+			errors.HandleError(activitypub.ErrNotFound("client application not found")).ServeHTTP(w, r)
+			return
+		}
+		if app.Type == pub.ApplicationType {
+			m.client = clientId
+		}
+	}
 
 	i.renderTemplate(r, w, "login", m)
 }
 
-var errUnauthorized = errors.Unauthorizedf("Invalid username or password")
+var (
+	errUnauthorized = errors.Unauthorizedf("Invalid username or password")
+	errNotFound     = activitypub.ErrNotFound("actor not found")
+)
+
 
 // HandleLogin handles POST /login requests
 func (i *authService) HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -575,8 +589,13 @@ func (i *authService) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		OauthAuthorizationEndpoint: pub.IRI(fmt.Sprintf("%s/oauth/authorize", i.baseIRI)),
 		OauthTokenEndpoint:         pub.IRI(fmt.Sprintf("%s/oauth/token", i.baseIRI)),
 	}
-	if acc.actor != nil && acc.actor.Endpoints != nil {
-		endpoints = *acc.actor.Endpoints
+	if !pub.IsNil(acc.actor) && acc.actor.Endpoints != nil {
+		if acc.actor.Endpoints.OauthTokenEndpoint != nil {
+			endpoints.OauthTokenEndpoint = acc.actor.Endpoints.OauthTokenEndpoint
+		}
+		if acc.actor.Endpoints.OauthAuthorizationEndpoint != nil {
+			endpoints.OauthAuthorizationEndpoint = acc.actor.Endpoints.OauthAuthorizationEndpoint
+		}
 	}
 	config := oauth2.Config{
 		ClientID: client,
