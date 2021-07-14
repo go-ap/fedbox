@@ -53,12 +53,14 @@ func run(version string) cli.ActionFunc {
 			return err
 		}
 
-		// Register pprof handlers
-		a.R.HandleFunc("/debug/pprof/", pprof.Index)
-		a.R.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-		a.R.HandleFunc("/debug/pprof/profile", pprof.Profile)
-		a.R.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-		a.R.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		if conf.Env.IsDev() {
+			// Register pprof handlers
+			a.R.HandleFunc("/debug/pprof/", pprof.Index)
+			a.R.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+			a.R.HandleFunc("/debug/pprof/profile", pprof.Profile)
+			a.R.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+			a.R.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		}
 
 		return a.Run()
 	}
