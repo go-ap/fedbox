@@ -185,7 +185,7 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 		ap.LoadCollectionFilters(r, f)
 
 		if ok, err := ValidateRequest(r); !ok {
-			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unrecognized ActivityPub request")
+			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unrecognized ActivityPub content type")
 		}
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil || len(body) == 0 {
