@@ -201,6 +201,7 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 			processing.SetClient(client.New(
 				client.SetInfoLogger(clientInfoLogger),
 				client.SetErrorLogger(clientErrLogger),
+				client.SkipTLSValidation(!fb.Config().Env.IsProd()),
 			)),
 			processing.SetStorage(repo),
 			processing.SetInfoLogger(infoLogger),
