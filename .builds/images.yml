@@ -4,8 +4,8 @@ secrets:
 packages:
   - go
   - docker
-  - podman
-  - buildah
+#  - podman
+#  - buildah
 sources:
   - https://github.com/go-ap/fedbox
 environment:
@@ -32,7 +32,7 @@ tasks:
         sudo make -C docker STORAGE="${_storage}" VERSION="${_branch}" push
         if [ "${_branch}" == "master" ]; then
           _branch=$(printf "%s-%s" "${_branch}" "$(git rev-parse --short HEAD)")
-          make -C docker STORAGE="${_storage}" ENV=qa VERSION="${_branch}" push
+          sudo make -C docker STORAGE="${_storage}" ENV=qa VERSION="${_branch}" push
         fi
         _tag=$(git describe --long --tags || true)
         if [ -n "${_tag}" ]; then
