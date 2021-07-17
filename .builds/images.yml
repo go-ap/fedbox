@@ -26,6 +26,7 @@ tasks:
       cd fedbox || exit
 
       go mod vendor
+      sudo make -C docker builder
       _push() {
         _storage=${1:-all}
         _branch=${GITHUB_REF#"refs/heads/"}

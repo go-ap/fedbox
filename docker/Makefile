@@ -23,7 +23,7 @@ ifneq ($(STORAGE), all)
 	TAG=$(ENV)-$(STORAGE)
 endif
 
-.PHONY: clean build run cert
+.PHONY: clean build builder run push cert storage bootstrap
 
 $(FEDBOX_HOSTNAME).pem:
 	./gen-certs.sh $(FEDBOX_HOSTNAME)
@@ -36,10 +36,7 @@ clean:
 builder:
 	$(BUILD_CMD) -f Dockerfile.build -t fedbox-builder ..
 
-builder.lock: builder
-	touch builder.lock
-
-build: builder.lock
+build:
 	$(BUILD_CMD) --build-arg ENV=$(ENV) --build-arg STORAGE=$(STORAGE) --build-arg PORT=$(PORT) -f Dockerfile -t $(FEDBOX_HOSTNAME)/app:$(TAG) ..
 
 storage: $(STORAGE_PATH)
