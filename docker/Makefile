@@ -35,7 +35,10 @@ cert: $(FEDBOX_HOSTNAME).pem
 clean:
 	@-$(RM) $(FEDBOX_HOSTNAME).{key,crt,pem}
 
-build:
+builder:
+	$(BUILD_CMD) -f Dockerfile.build -t fedbox-builder ..
+
+build: builder
 	$(BUILD_CMD) --build-arg ENV=$(ENV) --build-arg STORAGE=$(STORAGE) --build-arg PORT=$(PORT) -f Dockerfile -t $(FEDBOX_HOSTNAME)/app:$(TAG) ..
 
 storage: $(STORAGE_PATH)

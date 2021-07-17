@@ -1,4 +1,4 @@
-FROM golang:1.16 as builder
+FROM fedbox-builder AS builder
 
 ARG ENV=dev
 ARG HOSTNAME=fedbox
@@ -10,9 +10,6 @@ ENV ENV=${ENV:-dev}
 ENV STORAGE=${STORAGE:-all}
 ENV VERSION=${VERSION}
 
-ADD ./ /go/src/app
-
-WORKDIR /go/src/app
 RUN make ENV=${ENV} STORAGE=${STORAGE} VERSION=${VERSION} clean all
 RUN docker/gen-certs.sh fedbox
 
