@@ -4,6 +4,8 @@ secrets:
 packages:
   - go
   - docker
+  - podman
+  - buildah
 sources:
   - https://github.com/go-ap/fedbox
 environment:
@@ -12,8 +14,11 @@ tasks:
   - images: |
       set -a +x
       source ~/.buildah.env
-      if [ buildah -v dot 2> /dev/null ]; then
-        sudo buildah login -u=${BUILDAH_USER} -p=${BUILDAH_SECRET} quay.io
+      if [ type -P buildah &> /dev/null ]; then
+        echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/unq-search.conf
+        echo "$(id -un):10000:65536" | sudo tee /etc/subuid
+        echo "$(id -un):10000:65536" | sudo tee /etc/subgid
+        buildah login -u=${BUILDAH_USER} -p=${BUILDAH_SECRET} quay.io
       else
         sudo systemctl start docker.service
         sudo docker login -u=${BUILDAH_USER} -p=${BUILDAH_SECRET} quay.io
@@ -27,7 +32,7 @@ tasks:
         sudo make -C docker STORAGE="${_storage}" VERSION="${_branch}" push
         if [ "${_branch}" == "master" ]; then
           _branch=$(printf "%s-%s" "${_branch}" "$(git rev-parse --short HEAD)")
-          sudo make -C docker STORAGE="${_storage}" ENV=qa VERSION="${_branch}" push
+          make -C docker STORAGE="${_storage}" ENV=qa VERSION="${_branch}" push
         fi
         _tag=$(git describe --long --tags || true)
         if [ -n "${_tag}" ]; then
