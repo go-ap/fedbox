@@ -3,7 +3,6 @@ secrets:
 - 3f30fd61-e33d-4198-aafb-0ff341e9db1c
 packages:
   - go
-  - docker
   - podman
   - buildah
 sources:
@@ -14,15 +13,11 @@ tasks:
   - images: |
       set -a +x
       source ~/.buildah.env
-      if [ type -P buildah &> /dev/null ]; then
-        echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/unq-search.conf
-        echo "$(id -un):10000:65536" | sudo tee /etc/subuid
-        echo "$(id -un):10000:65536" | sudo tee /etc/subgid
-        buildah login -u=${BUILDAH_USER} -p=${BUILDAH_SECRET} quay.io
-      else
-        sudo systemctl start docker.service
-        sudo docker login -u=${BUILDAH_USER} -p=${BUILDAH_SECRET} quay.io
-      fi
+      echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/unq-search.conf
+      echo "$(id -un):10000:65536" | sudo tee /etc/subuid
+      echo "$(id -un):10000:65536" | sudo tee /etc/subgid
+      buildah login -u=${BUILDAH_USER} -p=${BUILDAH_SECRET} quay.io
+
       cd fedbox || exit
 
       go mod vendor
