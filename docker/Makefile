@@ -13,7 +13,7 @@ ifdef HAVE_BUILDAH
 	BUILD_CMD=buildah bud
 	RUN_CMD=podman run
 	TAG_CMD=buildah tag
-	PUSH_CMD=buildah push
+	PUSH_CMD=buildah push --format v2s2
 else
 	BUILD_CMD=docker build
 	RUN_CMD=docker run
