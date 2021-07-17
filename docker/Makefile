@@ -6,8 +6,6 @@ STORAGE_PATH ?= $(shell realpath .cache)
 STORAGE_OBJECTS = $(STORAGE_PATH)/objects
 TAG ?= $(ENV)
 
-APPSOURCES := $(wildcard ../app/*.go ../activitypub/*.go ../internal/*/*.go ../cli/*/main.go ../cmd/*.go ../storage/*/*.go)
-
 HAVE_BUILDAH := $(shell buildah -v dot 2> /dev/null)
 ifdef HAVE_BUILDAH
 	BUILD_CMD=buildah bud
@@ -38,7 +36,10 @@ clean:
 builder:
 	$(BUILD_CMD) -f Dockerfile.build -t fedbox-builder ..
 
-build: builder
+builder.lock: builder
+	touch builder.lock
+
+build: builder.lock
 	$(BUILD_CMD) --build-arg ENV=$(ENV) --build-arg STORAGE=$(STORAGE) --build-arg PORT=$(PORT) -f Dockerfile -t $(FEDBOX_HOSTNAME)/app:$(TAG) ..
 
 storage: $(STORAGE_PATH)
