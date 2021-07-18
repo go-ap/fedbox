@@ -28,11 +28,11 @@ tasks:
 
       cd fedbox || exit
 
-      sudo make -C docker builder
+      make -C docker builder
       _push() {
         _storage=${1:-all}
         _branch=${GITHUB_REF#"refs/heads/"}
-        sudo make -C docker STORAGE="${_storage}" VERSION="${_branch}" push
+        make -C docker STORAGE="${_storage}" VERSION="${_branch}" push
         if [ "${_branch}" == "master" ]; then
           _branch=$(printf "%s-%s" "${_branch}" "$(git rev-parse --short HEAD)")
           make -C docker STORAGE="${_storage}" ENV=qa VERSION="${_branch}" push
