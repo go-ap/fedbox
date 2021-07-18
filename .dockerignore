@@ -1,6 +1,5 @@
+**/.git
 .builds/
 .cache/
 tests/
-bin/
-**/.git
 bin/

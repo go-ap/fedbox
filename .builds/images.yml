@@ -14,6 +14,7 @@ tasks:
   - images: |
       set -a +x
       source ~/.buildah.env
+
       if [ type -P buildah &> /dev/null ]; then
         echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/unq-search.conf
         echo "$(id -un):10000:65536" | sudo tee /etc/subuid
@@ -21,11 +22,12 @@ tasks:
         buildah login -u=${BUILDAH_USER} -p=${BUILDAH_SECRET} quay.io
       else
         sudo systemctl start docker.service
-        sudo docker login -u=${BUILDAH_USER} -p=${BUILDAH_SECRET} quay.io
+        sudo gpasswd -a $(id -un) docker
+        docker login -u=${BUILDAH_USER} -p=${BUILDAH_SECRET} quay.io
       fi
+
       cd fedbox || exit
 
-      go mod vendor
       sudo make -C docker builder
       _push() {
         _storage=${1:-all}
@@ -33,11 +35,11 @@ tasks:
         sudo make -C docker STORAGE="${_storage}" VERSION="${_branch}" push
         if [ "${_branch}" == "master" ]; then
           _branch=$(printf "%s-%s" "${_branch}" "$(git rev-parse --short HEAD)")
-          sudo make -C docker STORAGE="${_storage}" ENV=qa VERSION="${_branch}" push
+          make -C docker STORAGE="${_storage}" ENV=qa VERSION="${_branch}" push
         fi
         _tag=$(git describe --long --tags || true)
         if [ -n "${_tag}" ]; then
-          sudo make -C docker STORAGE="${_storage}" ENV=prod VERSION="${_tag}" push
+          make -C docker STORAGE="${_storage}" ENV=prod VERSION="${_tag}" push
         fi
       }
       _push
