@@ -6,7 +6,9 @@ import (
 	"crypto"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path"
 	"path/filepath"
@@ -23,6 +25,7 @@ import (
 	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/ed25519"
 )
 
 var encodeFn = jsonld.Marshal
@@ -359,7 +362,7 @@ func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 	p := r.itemPath(iri)
 	raw, err := loadRawFromPath(getMetadataKey(p))
 	if err != nil {
-		return nil, errors.Annotatef(err, "Could not find metadata in path %s", p)
+		return nil, errors.NewNotFound(err, "Could not find metadata in path %s", p)
 	}
 	err = decodeFn(raw, m)
 	if err != nil {
@@ -412,6 +415,67 @@ func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
 		return nil, err
 	}
 	return prvKey, nil
+}
+
+
+// GenKey creates and saves a private key for an actor found by its IRI
+func (r *repo) GenKey(iri pub.IRI) error {
+	ob, err := r.loadOneFromPath(iri)
+	if err != nil {
+		return err
+	}
+	if ob.GetType() != pub.PersonType {
+		return errors.Newf("trying to generate keys for invalid ActivityPub object type: %s", ob.GetType())
+	}
+	m, err := r.LoadMetadata(iri)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	if m == nil {
+		m = new(storage.Metadata)
+	}
+	if m.PrivateKey != nil {
+		return nil
+	}
+	// TODO(marius): this needs a way to choose between ED25519 and RSA keys
+	pubB, prvB := generateECKeyPair()
+	m.PrivateKey = pem.EncodeToMemory(&prvB)
+
+	if err = r.SaveMetadata(*m, iri); err != nil {
+		return  err
+	}
+	pub.OnActor(ob, func(act *pub.Actor) error {
+		act.PublicKey = pub.PublicKey{
+			ID:           pub.IRI(fmt.Sprintf("%s#main", iri)),
+			Owner:        iri,
+			PublicKeyPem: string(pem.EncodeToMemory(&pubB)),
+		}
+		return nil
+	})
+	return nil
+}
+
+func generateECKeyPair() (pem.Block, pem.Block) {
+	// TODO(marius): make this actually produce proper keys
+	keyPub, keyPrv, _ := ed25519.GenerateKey(rand.New(rand.NewSource(6667)))
+
+	pubEnc, err := x509.MarshalPKIXPublicKey(keyPub)
+	if err != nil {
+		panic(err)
+	}
+	prvEnc, err := x509.MarshalPKCS8PrivateKey(keyPrv)
+	if err != nil {
+		panic(err)
+	}
+	p := pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubEnc,
+	}
+	r := pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: prvEnc,
+	}
+	return p, r
 }
 
 func createOrOpenFile(p string) (*os.File, error) {

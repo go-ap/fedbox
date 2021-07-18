@@ -1,15 +1,23 @@
 package cmd
 
 import (
-	"encoding/json"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"math/rand"
+	"os"
+	"time"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/jsonld"
+	"golang.org/x/crypto/ed25519"
 	"gopkg.in/urfave/cli.v2"
-	"os"
-	"time"
 )
 
 var AccountsCmd = &cli.Command{
@@ -18,6 +26,7 @@ var AccountsCmd = &cli.Command{
 	Subcommands: []*cli.Command{
 		exportAccountsMetadataCmd,
 		importAccountsMetadataCmd,
+		generateKeysCmd,
 	},
 }
 
@@ -73,7 +82,7 @@ func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 			}
 			allMeta[it.GetLink()] = *m
 		}
-		bytes, err := json.Marshal(allMeta)
+		bytes, err := jsonld.Marshal(allMeta)
 		if err != nil {
 			return err
 		}
@@ -123,7 +132,7 @@ func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 			}
 
 			metadata := make(map[pub.IRI]storage.Metadata, 0)
-			err = json.Unmarshal(buf, &metadata)
+			err = jsonld.Unmarshal(buf, &metadata)
 			if err != nil {
 				Errf("Error unmarshaling JSON: %s", err)
 				continue
@@ -143,4 +152,121 @@ func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 		}
 		return nil
 	}
+}
+
+var generateKeysCmd = &cli.Command{
+	Name:   "gen-keys",
+	Usage:  "Generate public/private key pairs for actors that are missing them",
+	Action: generateKeys(&ctl),
+}
+
+func generateKeys(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		baseIRI := ap.ActorsType.IRI(pub.IRI(ctl.Conf.BaseURL))
+		f := ap.FiltersNew(
+			ap.IRI(baseIRI),
+			ap.Type(pub.PersonType),
+		)
+		// TODO(marius): we should improve this with filtering based on public key existing in the actor,
+		//  and with batching.
+		col, err := ctl.Storage.Load(f.GetLink())
+		if err != nil {
+			return err
+		}
+		metaSaver, ok := ctl.Storage.(storage.MetadataTyper)
+		if !ok {
+			return errors.Newf("storage doesn't support saving key")
+		}
+		return pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
+			for _, it := range c.Collection() {
+				err = pub.OnActor(it, func(act *pub.Actor) error {
+					if act.Type != pub.PersonType {
+						return nil
+					}
+
+					m, err := metaSaver.LoadMetadata(act.ID)
+					if err != nil && !errors.IsNotFound(err) {
+						Errf("Error loading metadata: %s", err.Error())
+						return err
+					}
+					if m == nil {
+						m = new(storage.Metadata)
+					}
+					var pubB, prvB pem.Block
+					if m.PrivateKey == nil {
+						pubB, prvB = GenerateECKeyPair()
+						m.PrivateKey = pem.EncodeToMemory(&prvB)
+						if err = metaSaver.SaveMetadata(*m, act.ID); err != nil {
+							Errf("Error saving metadata: %s", err.Error())
+							return nil
+						}
+					} else {
+						pubB = publicKeyFrom(m.PrivateKey)
+					}
+					if len(pubB.Bytes) > 0 {
+						act.PublicKey = pub.PublicKey{
+							ID:           pub.IRI(fmt.Sprintf("%s#main", act.ID)),
+							Owner:        act.ID,
+							PublicKeyPem: string(pem.EncodeToMemory(&pubB)),
+						}
+					}
+					return nil
+				})
+				if err != nil {
+					Errf("Error processing actor: %s", err.Error())
+					continue
+				}
+				if _, err = ctl.Storage.Save(it); err != nil {
+					Errf("Error saving actor: %s", err.Error())
+					continue
+				}
+			}
+			return nil
+		})
+	}
+}
+func publicKeyFrom(prvBytes []byte) pem.Block {
+	prv, _ := pem.Decode(prvBytes)
+	var pubKey crypto.PublicKey
+	if key, _ := x509.ParseECPrivateKey(prvBytes); key != nil {
+		pubKey = key.PublicKey
+	}
+	if key, _ := x509.ParsePKCS8PrivateKey(prv.Bytes); pubKey == nil && key != nil {
+		switch k := key.(type) {
+		case *rsa.PrivateKey:
+			pubKey = k.PublicKey
+		case *ecdsa.PrivateKey:
+			pubKey = k.PublicKey
+		case ed25519.PrivateKey:
+			pubKey = k.Public()
+		}
+	}
+	pubEnc, err := x509.MarshalPKIXPublicKey(pubKey);
+	if err != nil {
+		return pem.Block{}
+	}
+	return pem.Block{Type: "PUBLIC KEY", Bytes: pubEnc}
+}
+
+func GenerateECKeyPair() (pem.Block, pem.Block) {
+	// TODO(marius): make this actually produce proper keys
+	keyPub, keyPrv, _ := ed25519.GenerateKey(rand.New(rand.NewSource(6667)))
+
+	pubEnc, err := x509.MarshalPKIXPublicKey(keyPub)
+	if err != nil {
+		panic(err)
+	}
+	prvEnc, err := x509.MarshalPKCS8PrivateKey(keyPrv)
+	if err != nil {
+		panic(err)
+	}
+	p := pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubEnc,
+	}
+	r := pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: prvEnc,
+	}
+	return p, r
 }
