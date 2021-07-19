@@ -4,7 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"os"
+	"time"
+
 	pub "github.com/go-ap/activitypub"
+	pubcl "github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/config"
@@ -15,8 +19,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/urfave/cli.v2"
-	"os"
-	"time"
 )
 
 type Control struct {
@@ -28,10 +30,22 @@ type Control struct {
 
 func New(authDB osin.Storage, actorDb storage.Store, conf config.Options) *Control {
 	baseIRI := pub.IRI(conf.BaseURL)
+
+	clientErrLogger := func(...pubcl.Ctx) pubcl.LogFn {
+		return logger.Errorf
+	}
+	clientInfoLogger := func(...pubcl.Ctx) pubcl.LogFn {
+		return logger.Infof
+	}
 	p, _, _ := processing.New(
 		processing.SetIRI(baseIRI),
 		processing.SetStorage(actorDb),
 		processing.SetIDGenerator(app.GenerateID(baseIRI)),
+		processing.SetClient(pubcl.New(
+			pubcl.SetInfoLogger(clientInfoLogger),
+			pubcl.SetErrorLogger(clientErrLogger),
+			pubcl.SkipTLSValidation(!conf.Env.IsProd()),
+		)),
 	)
 	return &Control{
 		Conf:        conf,
