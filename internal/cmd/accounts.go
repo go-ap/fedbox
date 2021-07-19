@@ -157,16 +157,78 @@ func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 var generateKeysCmd = &cli.Command{
 	Name:   "gen-keys",
 	Usage:  "Generate public/private key pairs for actors that are missing them",
+	ArgsUsage: "IRI...",
 	Action: generateKeys(&ctl),
+}
+
+func AddKeyToPerson (metaSaver storage.MetadataTyper) func (act *pub.Actor) error {
+	return func (act *pub.Actor) error {
+		if act.Type != pub.PersonType {
+			return nil
+		}
+
+		m, err := metaSaver.LoadMetadata(act.ID)
+		if err != nil && !errors.IsNotFound(err) {
+			return errors.Annotatef(err, "failed loading metadata: %s", act.ID)
+		}
+		if m == nil {
+			m = new(storage.Metadata)
+		}
+		var pubB, prvB pem.Block
+		if m.PrivateKey == nil {
+			pubB, prvB = GenerateECKeyPair()
+			m.PrivateKey = pem.EncodeToMemory(&prvB)
+			if err = metaSaver.SaveMetadata(*m, act.ID); err != nil {
+				return errors.Annotatef(err, "failed saving metadata for actor: %s", act.ID)
+			}
+		} else {
+			pubB = publicKeyFrom(m.PrivateKey)
+		}
+		if len(pubB.Bytes) > 0 {
+			act.PublicKey = pub.PublicKey{
+				ID:           pub.IRI(fmt.Sprintf("%s#main", act.ID)),
+				Owner:        act.ID,
+				PublicKeyPem: string(pem.EncodeToMemory(&pubB)),
+			}
+		}
+		return nil
+	}
+}
+
+func AddKeyToItem(metaSaver storage.MetadataTyper, it pub.Item) error {
+	if err := pub.OnActor(it, AddKeyToPerson(metaSaver)); err != nil {
+		return errors.Annotatef(err, "failed to process actor: %s", it.GetID())
+	}
+	if _, err := ctl.Storage.Save(it); err != nil {
+		return errors.Annotatef(err, "failed to save actor: %s", it.GetID())
+	}
+	return nil
 }
 
 func generateKeys(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		baseIRI := ap.ActorsType.IRI(pub.IRI(ctl.Conf.BaseURL))
-		f := ap.FiltersNew(
+
+		filterFns := []ap.FilterFn{
 			ap.IRI(baseIRI),
 			ap.Type(pub.PersonType),
-		)
+		}
+
+		actors := make([]string, 0)
+		for i := 0; i <= c.Args().Len(); i++ {
+			iri := c.Args().Get(i)
+			ob, err := ctl.Storage.Load(pub.IRI(iri))
+			if err != nil {
+				Errf(err.Error())
+				continue
+			}
+			actors = append(actors, ob.GetLink().String())
+		}
+		if len(actors) > 0 {
+			filterFns = append(filterFns, ap.ItemKey(actors...))
+		}
+
+		f := ap.FiltersNew(filterFns...)
 		// TODO(marius): we should improve this with filtering based on public key existing in the actor,
 		//  and with batching.
 		col, err := ctl.Storage.Load(f.GetLink())
@@ -179,46 +241,8 @@ func generateKeys(ctl *Control) cli.ActionFunc {
 		}
 		return pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
 			for _, it := range c.Collection() {
-				err = pub.OnActor(it, func(act *pub.Actor) error {
-					if act.Type != pub.PersonType {
-						return nil
-					}
-
-					m, err := metaSaver.LoadMetadata(act.ID)
-					if err != nil && !errors.IsNotFound(err) {
-						Errf("Error loading metadata: %s", err.Error())
-						return err
-					}
-					if m == nil {
-						m = new(storage.Metadata)
-					}
-					var pubB, prvB pem.Block
-					if m.PrivateKey == nil {
-						pubB, prvB = GenerateECKeyPair()
-						m.PrivateKey = pem.EncodeToMemory(&prvB)
-						if err = metaSaver.SaveMetadata(*m, act.ID); err != nil {
-							Errf("Error saving metadata: %s", err.Error())
-							return nil
-						}
-					} else {
-						pubB = publicKeyFrom(m.PrivateKey)
-					}
-					if len(pubB.Bytes) > 0 {
-						act.PublicKey = pub.PublicKey{
-							ID:           pub.IRI(fmt.Sprintf("%s#main", act.ID)),
-							Owner:        act.ID,
-							PublicKeyPem: string(pem.EncodeToMemory(&pubB)),
-						}
-					}
-					return nil
-				})
-				if err != nil {
-					Errf("Error processing actor: %s", err.Error())
-					continue
-				}
-				if _, err = ctl.Storage.Save(it); err != nil {
-					Errf("Error saving actor: %s", err.Error())
-					continue
+				if err = AddKeyToItem(metaSaver, it); err != nil {
+					Errf("Error: %s", err.Error())
 				}
 			}
 			return nil

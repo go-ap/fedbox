@@ -94,6 +94,11 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 				Errf("Error adding %s: %s\n", name, err)
 			}
 			fmt.Printf("Added %q [%s]: %s\n", typ, name, p.GetLink())
+			if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
+				if err := AddKeyToItem(metaSaver, p); err != nil {
+					Errf("Error saving metadata for %s: %s", name, err)
+				}
+			}
 			actors = append(actors, p)
 		}
 		return nil
