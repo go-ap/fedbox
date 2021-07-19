@@ -10,8 +10,8 @@ ENV ENV=${ENV:-dev}
 ENV STORAGE=${STORAGE:-all}
 ENV VERSION=${VERSION}
 
-RUN make ENV=${ENV} STORAGE=${STORAGE} VERSION=${VERSION} all
-RUN docker/gen-certs.sh fedbox
+RUN make ENV=${ENV} STORAGE=${STORAGE} VERSION=${VERSION} all && \
+    docker/gen-certs.sh fedbox
 
 FROM gcr.io/distroless/static
 
