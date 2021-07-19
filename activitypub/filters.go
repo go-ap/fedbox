@@ -167,7 +167,7 @@ type Filters struct {
 	Req           *http.Request    `qstring:"-"`
 }
 
-func ItemKey(keys ...string) filterFn {
+func ItemKey(keys ...string) FilterFn {
 	return func(f *Filters) error {
 		if len(f.ItemKey) == 0 {
 			f.ItemKey = make(CompStrs, 0)
@@ -179,14 +179,14 @@ func ItemKey(keys ...string) filterFn {
 	}
 }
 
-func IRI(i pub.IRI) filterFn {
+func IRI(i pub.IRI) FilterFn {
 	return func(f *Filters) error {
 		f.IRI = i
 		return nil
 	}
 }
 
-func Name(names ...string) filterFn {
+func Name(names ...string) FilterFn {
 	return func(f *Filters) error {
 		if len(f.Name) == 0 {
 			f.Name = make(CompStrs, 0)
@@ -198,7 +198,7 @@ func Name(names ...string) filterFn {
 	}
 }
 
-func Type(types ...pub.ActivityVocabularyType) filterFn {
+func Type(types ...pub.ActivityVocabularyType) FilterFn {
 	return func(f *Filters) error {
 		if f.Type == nil {
 			f.Type = make(CompStrs, 0)
@@ -210,7 +210,7 @@ func Type(types ...pub.ActivityVocabularyType) filterFn {
 	}
 }
 
-func BaseIRI(iri pub.IRI, col h.CollectionType) filterFn {
+func BaseIRI(iri pub.IRI, col h.CollectionType) FilterFn {
 	return func(f *Filters) error {
 		f.baseURL = iri
 		f.Collection = col
@@ -218,9 +218,9 @@ func BaseIRI(iri pub.IRI, col h.CollectionType) filterFn {
 	}
 }
 
-type filterFn func(f *Filters) error
+type FilterFn func(f *Filters) error
 
-func FiltersNew(filters ...filterFn) *Filters {
+func FiltersNew(filters ...FilterFn) *Filters {
 	f := &Filters{}
 	for _, fn := range filters {
 		fn(f)
