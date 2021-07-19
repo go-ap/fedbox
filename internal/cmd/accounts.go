@@ -3,11 +3,11 @@ package cmd
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"math/rand"
 	"os"
 	"time"
 
@@ -250,7 +250,7 @@ func publicKeyFrom(prvBytes []byte) pem.Block {
 
 func GenerateECKeyPair() (pem.Block, pem.Block) {
 	// TODO(marius): make this actually produce proper keys
-	keyPub, keyPrv, _ := ed25519.GenerateKey(rand.New(rand.NewSource(6667)))
+	keyPub, keyPrv, _ := ed25519.GenerateKey(rand.Reader)
 
 	pubEnc, err := x509.MarshalPKIXPublicKey(keyPub)
 	if err != nil {
