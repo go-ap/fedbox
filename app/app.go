@@ -14,8 +14,8 @@ import (
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/handlers"
 	st "github.com/go-ap/storage"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 )

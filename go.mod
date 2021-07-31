@@ -17,7 +17,7 @@ require (
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
 	github.com/go-ap/processing v0.0.0-20210731171330-e9d15f4b8608
 	github.com/go-ap/storage v0.0.0-20210721173357-49ac4c33fa4d
-	github.com/go-chi/chi v4.1.2+incompatible
+	github.com/go-chi/chi/v5 v5.0.3
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.3.0

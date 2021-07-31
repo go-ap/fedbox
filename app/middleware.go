@@ -10,7 +10,7 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/storage"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 // RepoMw adds an implementation of the storage.Loader to a Request's context so it can be used
