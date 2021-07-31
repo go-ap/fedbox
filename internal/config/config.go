@@ -62,7 +62,7 @@ const (
 	KeyDBPw         = "DB_PASSWORD"
 	KeyStorage      = "STORAGE"
 	KeyStoragePath  = "STORAGE_PATH"
-	KeyCacheDisable = "CACHE_DISABLE"
+	KeyCacheDisable = "DISABLE_CACHE"
 	StorageBoltDB   = StorageType("boltdb")
 	StorageFS       = StorageType("fs")
 	StorageBadger   = StorageType("badger")
