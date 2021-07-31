@@ -735,10 +735,8 @@ func isSingleItem(f s.Filterable) bool {
 
 func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 	var it pub.Item
-	if isSingleItem(f) {
-		if cachedIt := r.cache.Get(f.GetLink()); cachedIt != nil {
-			it = cachedIt
-		}
+	if cachedIt := r.cache.Get(f.GetLink()); cachedIt != nil {
+		it = cachedIt
 	}
 	if pub.IsNil(it) {
 		raw, err := loadRawFromPath(p)
@@ -781,9 +779,7 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 		})
 	}
 
-	if pub.IsObject(it) {
-		r.cache.Set(it.GetLink(), it)
-	}
+	r.cache.Set(it.GetLink(), it)
 	if f != nil {
 		return ap.FilterIt(it, f)
 	}
