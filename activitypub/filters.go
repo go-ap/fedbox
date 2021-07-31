@@ -1099,6 +1099,13 @@ func FiltersOnActivityActor(f s.Filterable) bool {
 	return false
 }
 
+func FiltersOnActivityTarget(f s.Filterable) bool {
+	if ff, ok := f.(*Filters); ok {
+		return ff.Target != nil
+	}
+	return false
+}
+
 // CacheKey generates a unique pub.IRI hash based on its authenticated user and other parameters
 func CacheKey(f *Filters) pub.IRI {
 	var iri pub.IRI

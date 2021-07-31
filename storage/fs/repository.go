@@ -733,6 +733,33 @@ func isSingleItem(f s.Filterable) bool {
 	return false
 }
 
+func loadFilteredPropsForActivity(r repo, f s.Filterable) func(a *pub.Activity) error {
+	return func(a *pub.Activity) error {
+		if ap.FiltersOnActivityObject(f) && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
+			if ob, err := r.loadOneFromPath(a.Object.GetLink()); err == nil {
+				a.Object = ob
+			}
+		}
+		return pub.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, f))
+	}
+}
+
+func loadFilteredPropsForIntransitiveActivity(r repo, f s.Filterable) func(a *pub.IntransitiveActivity) error {
+	return func(a *pub.IntransitiveActivity) error {
+		if ap.FiltersOnActivityActor(f) && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
+			if act, err := r.loadOneFromPath(a.Actor.GetLink()); err == nil {
+				a.Actor = act
+			}
+		}
+		if ap.FiltersOnActivityTarget(f) && !pub.IsNil(a.Target) && pub.IsIRI(a.Target) {
+			if t, err := r.loadOneFromPath(a.Target.GetLink()); err == nil {
+				a.Target = t
+			}
+		}
+		return nil
+	}
+}
+
 func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 	var it pub.Item
 	if cachedIt := r.cache.Get(f.GetLink()); cachedIt != nil {
@@ -761,22 +788,11 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 	if pub.IsIRI(it) {
 		it, _ = r.loadOneFromPath(it.GetLink())
 	}
+	if pub.IntransitiveActivityTypes.Contains(it.GetType()) {
+		pub.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f))
+	}
 	if pub.ActivityTypes.Contains(it.GetType()) {
-		pub.OnActivity(it, func(a *pub.Activity) error {
-			if it.GetType() == pub.CreateType || ap.FiltersOnActivityObject(f) {
-				// TODO(marius): this seems terribly not nice
-				if a.Object != nil && !a.Object.IsObject() {
-					a.Object, _ = r.loadOneFromPath(a.Object.GetLink())
-				}
-			}
-			if ap.FiltersOnActivityActor(f) {
-				// TODO(marius): this seems terribly not nice
-				if a.Actor != nil && !a.Actor.IsObject() {
-					a.Actor, _ = r.loadOneFromPath(a.Actor.GetLink())
-				}
-			}
-			return nil
-		})
+		pub.OnActivity(it, loadFilteredPropsForActivity(r, f))
 	}
 
 	r.cache.Set(it.GetLink(), it)
