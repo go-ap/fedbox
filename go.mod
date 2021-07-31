@@ -9,13 +9,13 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.0
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/go-ap/activitypub v0.0.0-20210721173251-e7844f6e2bba
-	github.com/go-ap/auth v0.0.0-20210721174201-aa5097ecaf26
-	github.com/go-ap/client v0.0.0-20210721173941-b663f6ee13e1
+	github.com/go-ap/auth v0.0.0-20210731171253-8137bc93400b
+	github.com/go-ap/client v0.0.0-20210731171030-e56817c2f34e
 	github.com/go-ap/errors v0.0.0-20210527074045-78cc5b9dcc94
-	github.com/go-ap/handlers v0.0.0-20210721173653-78291be189c5
+	github.com/go-ap/handlers v0.0.0-20210731170504-f9cc94ae3980
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210721174536-d9574c2aed82
+	github.com/go-ap/processing v0.0.0-20210731171330-e9d15f4b8608
 	github.com/go-ap/storage v0.0.0-20210721173357-49ac4c33fa4d
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/google/uuid v1.3.0 // indirect

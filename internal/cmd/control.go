@@ -25,7 +25,7 @@ type Control struct {
 	Conf        config.Options
 	AuthStorage osin.Storage
 	Storage     storage.Store
-	Saver       processing.Processor
+	Saver       processing.C2SProcessor
 }
 
 func New(authDB osin.Storage, actorDb storage.Store, conf config.Options) *Control {
