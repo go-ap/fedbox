@@ -19,6 +19,7 @@ func Bootstrap(conf config.Options) error {
 	r, err := New(Config{
 		StoragePath: path.Dir(conf.BaseStoragePath()),
 		BaseURL:     conf.BaseURL,
+		EnableCache: conf.StorageCache,
 	})
 	if err != nil {
 		return err

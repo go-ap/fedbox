@@ -27,18 +27,20 @@ type BackendConfig struct {
 }
 
 type Options struct {
-	Env         env.Type
-	LogLevel    log.Level
-	LogOutput   string
-	TimeOut     time.Duration
-	Secure      bool
-	CertPath    string
-	KeyPath     string
-	Host        string
-	Listen      string
-	BaseURL     string
-	Storage     StorageType
-	StoragePath string
+	Env          env.Type
+	LogLevel     log.Level
+	LogOutput    string
+	TimeOut      time.Duration
+	Secure       bool
+	CertPath     string
+	KeyPath      string
+	Host         string
+	Listen       string
+	BaseURL      string
+	Storage      StorageType
+	StoragePath  string
+	StorageCache bool
+	RequestCache bool
 }
 
 type StorageType string
@@ -60,6 +62,7 @@ const (
 	KeyDBPw         = "DB_PASSWORD"
 	KeyStorage      = "STORAGE"
 	KeyStoragePath  = "STORAGE_PATH"
+	KeyCacheDisable = "CACHE_DISABLE"
 	StorageBoltDB   = StorageType("boltdb")
 	StorageFS       = StorageType("fs")
 	StorageBadger   = StorageType("badger")
@@ -186,6 +189,10 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 		conf.StoragePath = os.TempDir()
 	}
 	conf.StoragePath = path.Clean(conf.StoragePath)
+	// TODO(marius): change to two different settings
+	disableCache, _ := strconv.ParseBool(loadKeyFromEnv(KeyCacheDisable, "false"))
+	conf.StorageCache = !disableCache
+	conf.RequestCache = !disableCache
 
 	return conf, nil
 }

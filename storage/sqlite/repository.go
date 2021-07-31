@@ -36,6 +36,7 @@ type loggerFn func(string, ...interface{})
 var defaultLogFn = func(string, ...interface{}) {}
 
 type Config struct {
+	EnableCache bool
 	StoragePath string
 	BaseURL     string
 }
@@ -48,7 +49,7 @@ func New(c Config) (*repo, error) {
 		baseURL: c.BaseURL,
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
-		cache:   cache.New(true),
+		cache:   cache.New(c.EnableCache),
 	}, err
 }
 

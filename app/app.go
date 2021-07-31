@@ -86,7 +86,7 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o o
 		storage: fedboxStorage{repo: db, oauth: o},
 		infFn:   emptyLogFn,
 		errFn:   emptyLogFn,
-		caches:  cache.New(!(conf.Env.IsTest() || conf.Env.IsDev())),
+		caches:  cache.New(conf.RequestCache),
 	}
 	if l != nil {
 		app.infFn = l.Infof

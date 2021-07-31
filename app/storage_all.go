@@ -77,6 +77,7 @@ func getFsStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storag
 	db, err := fs.New(fs.Config{
 		StoragePath: path.Dir(p),
 		BaseURL:     c.BaseURL,
+		EnableCache: c.StorageCache,
 	})
 	if err != nil {
 		return nil, oauth, err
@@ -95,6 +96,7 @@ func getSqliteStorage(c config.Options, l logrus.FieldLogger) (st.Store, osin.St
 	db, err := sqlite.New(sqlite.Config{
 		StoragePath: path,
 		BaseURL:     c.BaseURL,
+		EnableCache: c.StorageCache,
 	})
 	if err != nil {
 		return nil, nil, errors.Annotatef(err, "unable to connect to sqlite storage")

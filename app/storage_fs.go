@@ -24,6 +24,7 @@ func Storage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, er
 	db, err := fs.New(fs.Config{
 		StoragePath: path.Dir(p),
 		BaseURL:     c.BaseURL,
+		EnableCache: c.StorageCache,
 	})
 	if err != nil {
 		return nil, oauth, err

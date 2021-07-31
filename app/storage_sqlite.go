@@ -23,6 +23,7 @@ func Storage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, er
 	db, err := sqlite.New(sqlite.Config{
 		StoragePath: path,
 		BaseURL:     c.BaseURL,
+		EnableCache: c.StorageCache,
 	})
 
 	if err != nil {
