@@ -587,12 +587,28 @@ func filterTombstone(it pub.Item, ff *Filters) (bool, pub.Item) {
 	return keep, it
 }
 
+func filterIRI(it pub.IRI, ff *Filters) (bool, pub.IRI) {
+	keep := true
+	if iris := ff.IRIs(); len(iris) > 0 {
+		if !filterItem(iris, it) {
+			keep = false
+		}
+	}
+	if !filterURLs(ff.URLs(), it) {
+		keep = false
+	}
+	return keep, it
+}
+
 func filterLink(it pub.Item, ff *Filters) (bool, pub.Item) {
 	if ff == nil {
 		return true, it
 	}
 	if !it.IsLink() {
 		return false, it
+	}
+	if pub.IsIRI(it) {
+		return filterIRI(it.GetLink(), ff)
 	}
 	keep := true
 	pub.OnLink(it, func(l *pub.Link) error {
