@@ -42,6 +42,11 @@ func (f FedBOX) Routes() func(chi.Router) {
 
 		r.Group(f.OAuthRoutes())
 
+
+		if f.conf.Env.IsDev() && !f.conf.Secure {
+			r.Mount("/debug", middleware.Profiler())
+		}
+
 		notFound := errors.HandleError(errors.NotFoundf("invalid url"))
 		r.Handle("/favicon.ico", notFound)
 		r.NotFound(notFound.ServeHTTP)

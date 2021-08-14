@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	aletheia.icu/broccoli/fs v0.0.0-20200506212414-5bc1e2f86a59
-	git.sr.ht/~mariusor/wrapper v0.0.0-20210115104709-99415538f4b7
+	git.sr.ht/~mariusor/wrapper v0.0.0-20210811103446-5ac4651a733e
 	github.com/andybalholm/brotli v1.0.3 // indirect
 	github.com/dgraph-io/badger/v3 v3.2103.0
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
@@ -34,6 +34,7 @@ require (
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e // indirect
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717
 	modernc.org/sqlite v1.10.8
 )

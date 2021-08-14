@@ -41,6 +41,7 @@ type Options struct {
 	StoragePath  string
 	StorageCache bool
 	RequestCache bool
+	Profile      bool
 }
 
 type StorageType string

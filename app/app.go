@@ -141,11 +141,13 @@ func (f *FedBOX) Run() error {
 	defer cancel()
 
 	listenOn := "HTTP"
-	if len(f.conf.CertPath) + len(f.conf.KeyPath) > 0 {
+	setters := []w.SetFn{w.Handler(f.R), w.ListenOn(f.conf.Listen)}
+	if f.conf.Secure && len(f.conf.CertPath)+len(f.conf.KeyPath) > 0 {
 		listenOn = "HTTPS"
+		setters = append(setters, w.SSL(f.conf.CertPath, f.conf.KeyPath))
 	}
 	// Get start/stop functions for the http server
-	srvRun, srvStop := w.HttpServer(ctx, w.Handler(f.R), w.ListenOn(f.conf.Listen), w.SSL(f.conf.CertPath, f.conf.KeyPath))
+	srvRun, srvStop := w.HttpServer(ctx, setters...)
 	f.infFn("Listening on %s %s", listenOn, f.conf.Listen)
 	f.stopFn = func() {
 		if err := srvStop(); err != nil {

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/go-ap/fedbox/internal/cmd"
 	"os"
+
+	"github.com/go-ap/fedbox/internal/cmd"
 )
 
 var version = "HEAD"
