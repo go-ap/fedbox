@@ -28,13 +28,13 @@ func init() {
 type LogFn func(string, ...interface{})
 
 type fedboxStorage struct {
-	repo st.Store
+	repo  st.Store
 	oauth osin.Storage
 }
 
 func (s *fedboxStorage) Close() error {
 	s.oauth.Close()
-	closable, ok :=  s.repo.(io.Closer)
+	closable, ok := s.repo.(io.Closer)
 	if !ok {
 		return nil
 	}
@@ -137,8 +137,8 @@ func (f *FedBOX) Stop() {
 // Run is the wrapper for starting the web-server and handling signals
 func (f *FedBOX) Run() error {
 	// Create a deadline to wait for.
-	ctx, cancel := context.WithTimeout(context.TODO(), f.conf.TimeOut)
-	defer cancel()
+	ctx, cancelFn := context.WithTimeout(context.TODO(), f.conf.TimeOut)
+	defer cancelFn()
 
 	listenOn := "HTTP"
 	setters := []w.SetFn{w.Handler(f.R), w.ListenOn(f.conf.Listen)}
@@ -172,7 +172,7 @@ func (f *FedBOX) Run() error {
 			exit <- 0
 		},
 	}).Exec(func() error {
-		if err := srvRun(); err != nil{
+		if err := srvRun(); err != nil {
 			f.errFn("Error: %s", err)
 			return err
 		}
