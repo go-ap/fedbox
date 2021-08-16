@@ -557,15 +557,22 @@ func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(va
 			return errors.NewNotFound(err, "not found")
 		}
 		if !it.IsObject() && it.IsLink() {
-			*col, err = r.loadItemsElements(f, it.GetLink())
-			return err
-		} else if it.IsCollection() {
-			return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
-				if isColFn(f) {
-					f = c.Collection()
-				}
-				*col, err = r.loadItemsElements(f, c.Collection()...)
+			c, err := r.loadItemsElements(f, it.GetLink())
+			if err != nil {
 				return err
+			}
+			*col = append(*col, c...)
+		} else if it.IsCollection() {
+			return pub.OnCollectionIntf(it, func(ci pub.CollectionInterface) error {
+				if isColFn(f) {
+					f = ci.Collection()
+				}
+				c, err := r.loadItemsElements(f, ci.Collection()...)
+				if err != nil {
+					return err
+				}
+				*col = append(*col, c...)
+				return nil
 			})
 		} else {
 			if it.GetType() == pub.CreateType {
@@ -611,6 +618,7 @@ func iterKeyIsTooDeep(base, k []byte, depth int) bool {
 
 func (r *repo) loadFromPath(f s.Filterable, loadMaxOne bool) (pub.ItemCollection, error) {
 	col := make(pub.ItemCollection, 0)
+
 	err := r.d.View(func(tx *badger.Txn) error {
 		iri := f.GetLink()
 		fullPath := itemPath(iri)
@@ -636,8 +644,10 @@ func (r *repo) loadFromPath(f s.Filterable, loadMaxOne bool) (pub.ItemCollection
 			}
 			if isObjectKey(k) {
 				if err := i.Value(r.loadFromIterator(&col, f)); err != nil {
+					r.errFn(logrus.Fields{"k": k, "err": err.Error()}, "unable to load")
 					continue
-				} else if loadMaxOne {
+				}
+				if len(col) == 1 && loadMaxOne {
 					break
 				}
 			}
