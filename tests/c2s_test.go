@@ -1,3 +1,4 @@
+//go:build integration && c2s
 // +build integration,c2s
 
 package tests
@@ -17,14 +18,14 @@ func ActorsURL() string {
 
 func CreateC2SObject(actor *testAccount, object pub.Item) actC2SMock {
 	return actC2SMock{
-		ActorId:  actor.Id,
-		Object:   object,
+		ActorId: actor.Id,
+		Object:  object,
 	}
 }
 
 var ActorsCollectionTests = testPairs{
 	{
-		name:  "ActorsCollection",
+		name:    "ActorsCollection",
 		configs: c2sConfigs,
 		tests: []testPair{
 			{
@@ -65,7 +66,7 @@ var ActorsCollectionTests = testPairs{
 		},
 	},
 	{
-		name:  "ActorsCollectionTypePerson",
+		name:    "ActorsCollectionTypePerson",
 		configs: c2sConfigs,
 		tests: []testPair{
 			{
@@ -106,7 +107,7 @@ var ActorsCollectionTests = testPairs{
 		},
 	},
 	{
-		name:  "ActorsCollectionTypeGroup",
+		name:    "ActorsCollectionTypeGroup",
 		configs: c2sConfigs,
 		tests: []testPair{
 			{
@@ -130,7 +131,7 @@ var ActorsCollectionTests = testPairs{
 		},
 	},
 	{
-		name:  "ActorsCollectionTypeApplication",
+		name:    "ActorsCollectionTypeApplication",
 		configs: c2sConfigs,
 		tests: []testPair{
 			{
@@ -153,7 +154,7 @@ var ActorsCollectionTests = testPairs{
 		},
 	},
 	{
-		name: "A lot of actors",
+		name:    "A lot of actors",
 		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/actors/service.json",
@@ -297,7 +298,7 @@ var ActorsCollectionTests = testPairs{
 
 var ActivitiesCollectionTests = testPairs{
 	{
-		name: "ActivitiesCollection",
+		name:    "ActivitiesCollection",
 		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/service.json",
@@ -320,7 +321,7 @@ var ActivitiesCollectionTests = testPairs{
 		},
 	},
 	{
-		name: "Create activity filtering",
+		name:    "Create activities filtering",
 		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/service.json",
@@ -421,13 +422,51 @@ var ActivitiesCollectionTests = testPairs{
 					},
 				},
 			},
+			{
+				name: "Filter by object.inReplyTo different than nil",
+				mocks: []string{
+					"mocks/objects/page-2.json",
+					"mocks/activities/create-2.json",
+				},
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/activities?object.inReplyTo=!-", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/activities?object.inReplyTo=%%21-", apiURL),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				name: "Filter by object.inReplyTo be nil",
+				mocks: []string{
+					"mocks/objects/page-2.json",
+					"mocks/activities/create-2.json",
+				},
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/activities?object.inReplyTo=-", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/activities?object.inReplyTo=-", apiURL),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
 		},
 	},
 }
 
 var ObjectsCollectionTests = testPairs{
 	{
-		name: "ObjectsCollection",
+		name:    "ObjectsCollection",
 		configs: c2sConfigs,
 		tests: []testPair{
 			{
@@ -450,7 +489,7 @@ var ObjectsCollectionTests = testPairs{
 		},
 	},
 	{
-		name: "A lot of objects",
+		name:    "A lot of objects",
 		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/objects/note-1.json",
@@ -655,13 +694,43 @@ var ObjectsCollectionTests = testPairs{
 					},
 				},
 			},
+			{
+				name: "Filter by inReplyTo different than nil",
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?inReplyTo=!-", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?inReplyTo=%%21-", apiURL),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				name: "Filter by inReplyTo be nil",
+				req: testReq{
+					met: http.MethodGet,
+					url: fmt.Sprintf("%s/objects?inReplyTo=-", apiURL),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        fmt.Sprintf("%s/objects?inReplyTo=-", apiURL),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 3,
+					},
+				},
+			},
 		},
 	},
 }
 
 var SingleItemLoadTests = testPairs{
 	{
-		name:  "SelfService",
+		name:    "SelfService",
 		configs: c2sConfigs,
 		tests: []testPair{
 			{
@@ -691,7 +760,7 @@ var SingleItemLoadTests = testPairs{
 
 var C2STests = testPairs{
 	{
-		name:  "CreateActor",
+		name:    "CreateActor",
 		configs: c2sConfigs,
 		tests: []testPair{
 			{
@@ -725,7 +794,7 @@ var C2STests = testPairs{
 		},
 	},
 	{
-		name:  "CreateActorAnonymously",
+		name:    "CreateActorAnonymously",
 		configs: c2sConfigs,
 		tests: []testPair{
 			{
@@ -746,7 +815,7 @@ var C2STests = testPairs{
 		},
 	},
 	{
-		name:  "UpdateActor",
+		name:    "UpdateActor",
 		configs: c2sConfigs,
 		tests: []testPair{
 			{
@@ -787,7 +856,7 @@ var C2STests = testPairs{
 		},
 	},
 	{
-		name:  "DeleteActor",
+		name:    "DeleteActor",
 		configs: c2sConfigs,
 		tests: []testPair{
 			{
@@ -819,7 +888,7 @@ var C2STests = testPairs{
 		},
 	},
 	{
-		name:  "CreateArticle",
+		name:    "CreateArticle",
 		configs: c2sConfigs,
 		tests: []testPair{
 			{
@@ -928,7 +997,7 @@ var C2STests = testPairs{
 		},
 	},
 	{
-		name: "LikeNote",
+		name:    "LikeNote",
 		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/service.json",
@@ -1030,7 +1099,7 @@ var C2STests = testPairs{
 		},
 	},
 	{
-		name: "FollowActor",
+		name:    "FollowActor",
 		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/service.json",
@@ -1098,7 +1167,7 @@ var C2STests = testPairs{
 		},
 	},
 	{
-		name: "BlockActor",
+		name:    "BlockActor",
 		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/service.json",
@@ -1181,7 +1250,7 @@ var S2SSendTests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson(
+					bodyFn: loadMockJson(
 						"mocks/c2s/create-object-with-federated-cc.json",
 						CreateC2SObject(defaultC2SAccount(), loadMockFromDisk("mocks/objects/note-1.json", nil)),
 					),
@@ -1197,21 +1266,21 @@ var S2SSendTests = testPairs{
 							name:              "Johnathan Doe",
 						},
 						obj: &objectVal{
-							id:                loadMockFromDisk("mocks/objects/note-1.json", nil).GetID().String(),
-							typ:               string(loadMockFromDisk("mocks/objects/note-1.json", nil).GetType()),
+							id:  loadMockFromDisk("mocks/objects/note-1.json", nil).GetID().String(),
+							typ: string(loadMockFromDisk("mocks/objects/note-1.json", nil).GetType()),
 						},
 					},
 				},
 			},
 			{
 				req: testReq{
-					met:     http.MethodGet,
-					urlFn:   InboxURL(defaultS2SAccount()),
+					met:   http.MethodGet,
+					urlFn: InboxURL(defaultS2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ: string(pub.OrderedCollectionType),
+						typ:       string(pub.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},

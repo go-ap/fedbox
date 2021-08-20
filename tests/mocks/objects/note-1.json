@@ -2,6 +2,7 @@
   "@context": "https://www.w3.org/ns/activitystreams",
   "id": "http://127.0.0.1:9998/objects/1",
   "type": "Note",
+  "inReplyTo": "http://127.0.0.1:9998/objects/2",
   "attributedTo": "http://127.0.0.1:9998/actors/2",
   "content": "<p>Hello</p>\n<p><code>world</code>!</p>\n",
   "mediaType": "text/html",
