@@ -138,6 +138,13 @@ func aggregateActivityIRIs(toRemove *pub.IRIs, a *pub.Activity, typ h.Collection
 		*toRemove = append(*toRemove, aIRI)
 	}
 
+	withSideEffects := pub.ActivityVocabularyTypes{pub.UpdateType, pub.UndoType, pub.DeleteType}
+	if withSideEffects.Contains(a.GetType()) {
+		base := path.Dir(a.Object.GetLink().String())
+		*toRemove = append(*toRemove, pub.IRI(base))
+		*toRemove = append(*toRemove, a.Object.GetLink())
+	}
+
 	return aggregateItemIRIs(toRemove, a.Object)
 }
 
