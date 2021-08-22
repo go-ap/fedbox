@@ -15,7 +15,7 @@ require (
 	github.com/go-ap/handlers v0.0.0-20210820202728-0122eaeca91c
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210820203007-809c17e11484
+	github.com/go-ap/processing v0.0.0-20210822113335-794068aaff24
 	github.com/go-ap/storage v0.0.0-20210820202518-54ab4623ea53
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/google/uuid v1.3.0 // indirect

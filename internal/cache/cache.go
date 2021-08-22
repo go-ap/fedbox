@@ -1,15 +1,16 @@
 package cache
 
 import (
-	pub "github.com/go-ap/activitypub"
-	h "github.com/go-ap/handlers"
 	"path"
 	"sync"
+
+	pub "github.com/go-ap/activitypub"
+	h "github.com/go-ap/handlers"
 )
 
 type (
 	iriMap map[pub.IRI]pub.Item
-	store struct {
+	store  struct {
 		enabled bool
 		w       sync.RWMutex
 		c       iriMap
@@ -21,7 +22,7 @@ type (
 	}
 )
 
-func New(enabled bool, ) *store {
+func New(enabled bool) *store {
 	return &store{enabled: enabled, c: make(iriMap)}
 }
 
@@ -76,33 +77,41 @@ func (r *store) Remove(iris ...pub.IRI) bool {
 	return true
 }
 
+func removeAccum(toRemove *pub.IRIs, iri pub.IRI, col h.CollectionType) {
+	if repl := col.IRI(iri); !toRemove.Contains(repl) {
+		*toRemove = append(*toRemove, repl)
+	}
+}
+
+func accumForProperty(it pub.Item, toRemove *pub.IRIs, col h.CollectionType) {
+	if pub.IsNil(it) {
+		return
+	}
+	if pub.IsItemCollection(it) {
+		pub.OnItemCollection(it, func(c *pub.ItemCollection) error {
+			for _, ob := range c.Collection() {
+				removeAccum(toRemove, ob.GetLink(), h.Replies)
+			}
+			return nil
+		})
+	} else {
+		removeAccum(toRemove, it.GetLink(), h.Replies)
+	}
+}
+
 func aggregateItemIRIs(toRemove *pub.IRIs, it pub.Item) error {
 	if it == nil {
 		return nil
 	}
-	if obIRI := it.GetLink(); len(obIRI) > 0 && !toRemove.Contains(obIRI){
+	if obIRI := it.GetLink(); len(obIRI) > 0 && !toRemove.Contains(obIRI) {
 		*toRemove = append(*toRemove, obIRI)
 	}
 	if !it.IsObject() {
 		return nil
 	}
 	return pub.OnObject(it, func(o *pub.Object) error {
-		if !pub.IsNil(o.InReplyTo) {
-			pub.OnObject(o.InReplyTo, func(object *pub.Object) error {
-				if repl := h.Replies.IRI(it.GetLink()); !toRemove.Contains(repl) {
-					*toRemove = append(*toRemove, repl)
-				}
-				return nil
-			})
-		}
-		if !pub.IsNil(o.AttributedTo) {
-			pub.OnObject(o.AttributedTo, func(object *pub.Object) error {
-				if repl := h.Outbox.IRI(it.GetLink()); !toRemove.Contains(repl) {
-					*toRemove = append(*toRemove, repl)
-				}
-				return nil
-			})
-		}
+		accumForProperty(o.InReplyTo, toRemove, h.Replies)
+		accumForProperty(o.AttributedTo, toRemove, h.Outbox)
 		return nil
 	})
 }
@@ -118,9 +127,7 @@ func aggregateActivityIRIs(toRemove *pub.IRIs, a *pub.Activity, typ h.Collection
 				*toRemove = append(*toRemove, iri)
 			}
 		} else {
-			if inbox := h.Inbox.IRI(r); !toRemove.Contains(inbox) {
-				*toRemove = append(*toRemove, inbox)
-			}
+			accumForProperty(r, toRemove, h.Inbox)
 		}
 	}
 	if destCol := typ.IRI(a.Actor); !toRemove.Contains(destCol) {
