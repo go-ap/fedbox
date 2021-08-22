@@ -90,12 +90,12 @@ func accumForProperty(it pub.Item, toRemove *pub.IRIs, col h.CollectionType) {
 	if pub.IsItemCollection(it) {
 		pub.OnItemCollection(it, func(c *pub.ItemCollection) error {
 			for _, ob := range c.Collection() {
-				removeAccum(toRemove, ob.GetLink(), h.Replies)
+				removeAccum(toRemove, ob.GetLink(), col)
 			}
 			return nil
 		})
 	} else {
-		removeAccum(toRemove, it.GetLink(), h.Replies)
+		removeAccum(toRemove, it.GetLink(), col)
 	}
 }
 
