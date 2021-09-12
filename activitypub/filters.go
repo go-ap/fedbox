@@ -577,7 +577,7 @@ func filterTombstone(it pub.Item, ff *Filters) (bool, pub.Item) {
 	if !keep {
 		return keep, it
 	}
-	if len(ff.Name) > 0 {
+	if len(ff.Name)+len(ff.Content()) > 0 {
 		return false, it
 	}
 	pub.OnObject(it, func(ob *pub.Object) error {
@@ -727,6 +727,9 @@ func matchLangRefs(filter CompStr, refs ...pub.LangRefValue) bool {
 	var match bool
 	if filter.Operator == "!" {
 		match = !match
+		if len(refs) == 0 {
+			return false
+		}
 	}
 	for _, ref := range refs {
 		m := matchStringFilter(filter, ref.Value.String())
@@ -1138,7 +1141,7 @@ func CacheKey(f *Filters) pub.IRI {
 	return pub.IRI(u.String())
 }
 
-func FiltersFromIRI (i pub.IRI) (*Filters, error) {
+func FiltersFromIRI(i pub.IRI) (*Filters, error) {
 	f := FiltersNew()
 	u, _ := i.URL()
 	if f.baseURL == "" {

@@ -963,7 +963,7 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 					{},
 				},
 			},
-			want: true,
+			want: false,
 		},
 		{
 			name: "one value: exact match success",
