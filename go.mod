@@ -15,7 +15,7 @@ require (
 	github.com/go-ap/handlers v0.0.0-20210912105933-774664dd70f2
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20210912110257-f93d3f8ba42d
+	github.com/go-ap/processing v0.0.0-20210917083006-b5cb51b97c85
 	github.com/go-ap/storage v0.0.0-20210912105355-93011b85be7b
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/google/uuid v1.3.0 // indirect
@@ -32,9 +32,9 @@ require (
 	github.com/tdewolff/test v1.0.6 // indirect
 	github.com/unrolled/render v1.0.2
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	golang.org/x/crypto v0.0.0-20210915214749-c084706c2272
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210910150752-751e447fb3d0 // indirect
+	golang.org/x/sys v0.0.0-20210915083310-ed5796bab164 // indirect
 	gopkg.in/urfave/cli.v2 v2.0.0-20190806201727-b62605953717
 	modernc.org/sqlite v1.10.8
 )
