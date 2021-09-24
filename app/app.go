@@ -122,7 +122,7 @@ func (f FedBOX) Config() config.Options {
 	return f.conf
 }
 
-func (f *FedBOX) Storage() st.Store {
+func (f FedBOX) Storage() st.Store {
 	return f.storage.repo
 }
 
@@ -141,16 +141,18 @@ func (f *FedBOX) Run() error {
 	defer cancelFn()
 
 	listenOn := "HTTP"
-	setters := []w.SetFn{w.Handler(f.R), w.ListenOn(f.conf.Listen)}
+	setters := []w.SetFn{w.Handler(f.R)}
 	if f.conf.Secure && len(f.conf.CertPath)+len(f.conf.KeyPath) > 0 {
 		listenOn = "HTTPS"
-		setters = append(setters, w.SSL(f.conf.CertPath, f.conf.KeyPath))
+		setters = append(setters, w.HTTPS(f.conf.Listen, f.conf.CertPath, f.conf.KeyPath))
+	} else {
+		setters = append(setters, w.HTTP(f.conf.Listen))
 	}
 	// Get start/stop functions for the http server
-	srvRun, srvStop := w.HttpServer(ctx, setters...)
+	srvRun, srvStop := w.HttpServer(setters...)
 	f.infFn("Listening on %s %s", listenOn, f.conf.Listen)
 	f.stopFn = func() {
-		if err := srvStop(); err != nil {
+		if err := srvStop(ctx); err != nil {
 			f.errFn("Err: %s", err)
 		}
 	}
@@ -179,9 +181,8 @@ func (f *FedBOX) Run() error {
 		var err error
 		// Doesn't block if no connections, but will otherwise wait until the timeout deadline.
 		go func(e error) {
-			if err = srvStop(); err != nil {
-				f.errFn("Error: %s", err)
-			}
+			f.errFn("Error: %s", err)
+			f.stopFn()
 		}(err)
 		return err
 	})

@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	aletheia.icu/broccoli/fs v0.0.0-20200506212414-5bc1e2f86a59
-	git.sr.ht/~mariusor/wrapper v0.0.0-20210811103446-5ac4651a733e
+	git.sr.ht/~mariusor/wrapper v0.0.0-20210922184837-693a2dc4a44b
 	github.com/andybalholm/brotli v1.0.3 // indirect
 	github.com/dgraph-io/badger/v3 v3.2103.0
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
