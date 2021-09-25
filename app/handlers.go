@@ -77,44 +77,46 @@ func orderItems(col pub.ItemCollection) pub.ItemCollection {
 // that return ActivityPub objects or activities
 func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 	return func(typ h.CollectionType, r *http.Request, repo storage.ReadStore) (pub.CollectionInterface, error) {
-		f, err := ap.FromRequest(r, fb.Config().BaseURL)
-		if it := fb.caches.Get(ap.CacheKey(f)); !pub.IsNil(it) {
-			return it.(pub.CollectionInterface), nil
+		if !ap.ValidCollection(typ) {
+			return nil, errors.NotFoundf("collection '%s' not found", typ)
 		}
+
+		f, err := ap.FromRequest(r, fb.Config().BaseURL)
 		if err != nil {
 			return nil, errors.NewNotValid(err, "unable to load filters from request")
 		}
 		ap.LoadCollectionFilters(r, f)
-		if !ap.ValidCollection(typ) {
+
+		cacheKey := ap.CacheKey(f)
+		it := fb.caches.Get(cacheKey)
+		fromCache := !pub.IsNil(it)
+
+		if !fromCache {
+			if it, err = repo.Load(f.GetLink()); err != nil {
+				return nil, err
+			}
+		}
+		if !it.IsCollection() {
 			return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
 		}
 
-		ob, err := repo.Load(f.GetLink())
+		c := new(pub.OrderedCollection)
+		c.Type = pub.OrderedCollectionType
+		err = pub.OnCollectionIntf(it, func(items pub.CollectionInterface) error {
+			ff := *f
+			ff.Authenticated = nil
+			c.ID = ff.GetLink()
+			c.OrderedItems = orderItems(items.Collection())
+			c.OrderedItems = filterItems(c.OrderedItems, f.Audience())
+			c.TotalItems = items.Count()
+			return nil
+		})
 		if err != nil {
 			return nil, err
 		}
-		if !ob.IsCollection() {
-			return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
-		}
+
 		var col pub.CollectionInterface
-		if ob.GetType() == pub.CollectionOfItems {
-			c := new(pub.OrderedCollection)
-			c.Type = pub.OrderedCollectionType
-			err = pub.OnCollectionIntf(ob, func(items pub.CollectionInterface) error {
-				ff := *f
-				ff.Authenticated = nil
-				c.ID = ff.GetLink()
-				c.OrderedItems = orderItems(items.Collection())
-				c.OrderedItems = filterItems(c.OrderedItems, f.Audience())
-				c.TotalItems = items.Count()
-				col = c
-				return nil
-			})
-		}
-		if err != nil {
-			return nil, err
-		}
-		if col, err = ap.PaginateCollection(col, f); err != nil {
+		if col, err = ap.PaginateCollection(c, f); err != nil {
 			return nil, err
 		}
 		for _, it := range col.Collection() {
@@ -124,8 +126,8 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 				s.Clean()
 			}
 		}
-		if col.Count() > 0 {
-			fb.caches.Set(ap.CacheKey(f), col)
+		if !fromCache && col.Count() > 0 {
+			fb.caches.Set(cacheKey, col)
 		}
 		return col, err
 	}
@@ -258,79 +260,83 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 	return func(r *http.Request, repo storage.ReadStore) (pub.Item, error) {
 		collection := h.Typer.Type(r)
 
-		var items pub.ItemCollection
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
-		if it := fb.caches.Get(ap.CacheKey(f)); !pub.IsNil(it) {
-			return it, nil
-		}
-		where := ""
-		what := ""
-		if len(collection) > 0 {
-			where = fmt.Sprintf(" in %s", collection)
-		}
 		if err != nil {
-			return nil, errors.NotFoundf("%snot found", what)
+			return nil, errors.NewNotValid(err, "unable to load filters from request")
 		}
 		ap.LoadItemFilters(r, f)
+
+		cacheKey := ap.CacheKey(f)
+		it := fb.caches.Get(cacheKey)
+		fromCache :=  !pub.IsNil(it)
 
 		iri := reqURL(r, fb.Config().Secure)
 		if len(f.IRI) == 0 {
 			f.IRI = pub.IRI(iri)
 		}
+
+		where := ""
+		what := ""
+		if len(collection) > 0 {
+			where = fmt.Sprintf(" in %s", collection)
+		}
 		what = fmt.Sprintf("%s ", path.Base(iri))
 		f.MaxItems = 1
 
-		if ap.ValidCollection(f.Collection) || f.Collection == "" {
-			ob, err := repo.Load(f.GetLink())
+		var items pub.ItemCollection
+		if !fromCache {
+
+		}
+
+		if (ap.ValidCollection(f.Collection) || f.Collection == "") && !fromCache {
+			if it, err = repo.Load(f.GetLink()); err != nil {
+				return nil, err
+			}
+		}
+		if pub.IsItemCollection(it) {
+			err = pub.OnCollectionIntf(it, func(col pub.CollectionInterface) error {
+				items = col.Collection()
+				return nil
+			})
 			if err != nil {
 				return nil, err
 			}
-			if pub.IsItemCollection(ob) {
-				err = pub.OnCollectionIntf(ob, func(col pub.CollectionInterface) error {
-					items = col.Collection()
-					return nil
-				})
-				if err != nil {
+		} else {
+			items = pub.ItemCollection{it}
+		}
+
+		if f.Collection == "" && len(items) == 0 {
+			if saver, ok := repo.(st.CanBootstrap); ok {
+				service := ap.Self(ap.DefaultServiceIRI(f.IRI.String()))
+				if err := saver.CreateService(service); err != nil {
 					return nil, err
 				}
-			} else {
-				items = pub.ItemCollection{ob}
-			}
-
-			if f.Collection == "" && len(items) == 0 {
-				if saver, ok := repo.(st.CanBootstrap); ok {
-					service := ap.Self(ap.DefaultServiceIRI(f.IRI.String()))
-					err := saver.CreateService(service)
-					if err != nil {
-						return nil, err
-					}
-					items = pub.ItemCollection{service}
-				}
+				items = pub.ItemCollection{service}
 			}
 		}
 
-		if err != nil {
-			return nil, err
-		}
-		items = filterItems(items, f.Audience())
-		if len(items) == 0 {
+		if items = filterItems(items, f.Audience()); len(items) == 0 {
 			return nil, errors.NotFoundf("%snot found%s", what, where)
 		}
+
 		for _, it := range items {
 			// Remove bcc and bto - probably should be moved to a different place
 			if s, ok := it.(pub.HasRecipients); ok {
 				s.Clean()
 			}
 		}
+
 		if len(items) > 1 {
-			return nil, errors.Errorf("Too many %s found%s", what, where)
+			return nil, errors.Conflictf("Too many %s found%s", what, where)
 		}
-		it, err := loadItem(items, f, reqURL(r, fb.Config().Secure))
-		if err != nil {
+
+		if it, err = loadItem(items, f, reqURL(r, fb.Config().Secure)); err != nil {
 			return nil, errors.NotFoundf("%snot found", what)
 		}
 
-		fb.caches.Set(ap.CacheKey(f), it)
+		if !fromCache {
+			fb.caches.Set(cacheKey, it)
+		}
 		return it, nil
 	}
 }
