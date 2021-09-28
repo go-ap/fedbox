@@ -50,8 +50,20 @@ func (r *store) Set(iri pub.IRI, it pub.Item) {
 	r.c[iri] = it
 }
 
+func (r *store) Clear() {
+	if r == nil || !r.enabled {
+		return
+	}
+}
+
 func (r *store) Remove(iris ...pub.IRI) bool {
 	if r == nil || !r.enabled {
+		return true
+	}
+	if len(iris) == 0 {
+		for key := range r.c {
+			delete(r.c, key)
+		}
 		return true
 	}
 	toInvalidate := pub.IRIs(iris)

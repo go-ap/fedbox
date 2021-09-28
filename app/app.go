@@ -134,6 +134,12 @@ func (f *FedBOX) Stop() {
 	}
 }
 
+func (f *FedBOX) reload() (err error) {
+	f.conf, err = config.LoadFromEnv(f.conf.Env, f.conf.TimeOut)
+	f.caches.Remove()
+	return err
+}
+
 // Run is the wrapper for starting the web-server and handling signals
 func (f *FedBOX) Run() error {
 	// Create a deadline to wait for.
@@ -160,6 +166,9 @@ func (f *FedBOX) Run() error {
 	exit := w.RegisterSignalHandlers(w.SignalHandlers{
 		syscall.SIGHUP: func(_ chan int) {
 			f.infFn("SIGHUP received, reloading configuration")
+			if err := f.reload(); err != nil {
+				f.errFn("Failed: %s", err.Error())
+			}
 		},
 		syscall.SIGINT: func(exit chan int) {
 			f.infFn("SIGINT received, stopping")
