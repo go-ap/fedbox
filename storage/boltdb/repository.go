@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"time"
 
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
@@ -366,37 +365,20 @@ func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket,
 const objectKey = "__raw"
 const metaDataKey = "__meta_data"
 
-func delete(r *repo, it pub.Item) (pub.Item, error) {
+func delete(r *repo, it pub.Item) error {
 	if it.IsCollection() {
-		err := pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+		return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
 			var err error
 			for _, it := range c.Collection() {
-				if it, err = delete(r, it); err != nil {
-					return err
+				if err = deleteItem(r, it); err != nil {
+					r.logFn(nil, "Unable to remove item %s", it.GetLink())
 				}
 			}
 			return nil
 		})
-		return it, err
 	}
-	f := ap.FiltersNew()
-	f.IRI = it.GetLink()
-	if it.IsObject() {
-		f.Type = ap.CompStrs{ap.StringEquals(string(it.GetType()))}
-	}
-	old, _ := r.loadOneFromBucket(f)
 
-	deleteCollections(r, it)
-	t := pub.Tombstone{
-		ID:   it.GetLink(),
-		Type: pub.TombstoneType,
-		To: pub.ItemCollection{
-			pub.PublicNS,
-		},
-		Deleted:    time.Now().UTC(),
-		FormerType: old.GetType(),
-	}
-	return save(r, t)
+	return deleteItem(r, it.GetLink())
 }
 
 // Create
@@ -444,7 +426,7 @@ func createCollectionInBucket(b *bolt.Bucket, it pub.Item) (pub.Item, error) {
 	return it.GetLink(), nil
 }
 
-func deleteCollectionFromBucket(b *bolt.Bucket, it pub.Item) error {
+func deleteBucket(b *bolt.Bucket, it pub.Item) error {
 	if pub.IsNil(it) {
 		return nil
 	}
@@ -491,14 +473,11 @@ func createCollectionsInBucket(b *bolt.Bucket, it pub.Item) error {
 	})
 }
 
-// deleteCollections
-func deleteCollections(r *repo, it pub.Item) error {
+// deleteItem
+func deleteItem(r *repo, it pub.Item) error {
 	pathInBucket := itemBucketPath(it.GetLink())
 	return r.d.Update(func(tx *bolt.Tx) error {
-		root, err := tx.CreateBucketIfNotExists(r.root)
-		if err != nil {
-			return errors.Errorf("Not able to write to root bucket %s", r.root)
-		}
+		root := tx.Bucket(r.root)
 		if root == nil {
 			return ErrorInvalidRoot(r.root)
 		}
@@ -512,7 +491,7 @@ func deleteCollections(r *repo, it pub.Item) error {
 		if !b.Writable() {
 			return errors.Errorf("Non writeable bucket %s", pathInBucket)
 		}
-		return deleteCollectionsFromBucket(b, it)
+		return deleteBucket(b, it)
 	})
 }
 
@@ -521,20 +500,20 @@ func deleteCollectionsFromBucket(b *bolt.Bucket, it pub.Item) error {
 	if pub.ActorTypes.Contains(it.GetType()) {
 		return pub.OnActor(it, func(p *pub.Actor) error {
 			var err error
-			err = deleteCollectionFromBucket(b, handlers.Inbox.IRI(p))
-			err = deleteCollectionFromBucket(b, handlers.Outbox.IRI(p))
-			err = deleteCollectionFromBucket(b, handlers.Followers.IRI(p))
-			err = deleteCollectionFromBucket(b, handlers.Following.IRI(p))
-			err = deleteCollectionFromBucket(b, handlers.Liked.IRI(p))
+			err = deleteBucket(b, handlers.Inbox.IRI(p))
+			err = deleteBucket(b, handlers.Outbox.IRI(p))
+			err = deleteBucket(b, handlers.Followers.IRI(p))
+			err = deleteBucket(b, handlers.Following.IRI(p))
+			err = deleteBucket(b, handlers.Liked.IRI(p))
 			return err
 		})
 	}
 	if pub.ObjectTypes.Contains(it.GetType()) {
 		return pub.OnObject(it, func(o *pub.Object) error {
 			var err error
-			err = deleteCollectionFromBucket(b, handlers.Replies.IRI(o))
-			err = deleteCollectionFromBucket(b, handlers.Likes.IRI(o))
-			err = deleteCollectionFromBucket(b, handlers.Shares.IRI(o))
+			err = deleteBucket(b, handlers.Replies.IRI(o))
+			err = deleteBucket(b, handlers.Likes.IRI(o))
+			err = deleteBucket(b, handlers.Shares.IRI(o))
 			return err
 		})
 	}
@@ -715,25 +694,13 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 }
 
 // Delete
-func (r *repo) Delete(it pub.Item) (pub.Item, error) {
-	var err error
-	err = r.Open()
+func (r *repo) Delete(it pub.Item) error {
+	err := r.Open()
 	if err != nil {
-		return it, err
+		return err
 	}
 	defer r.Close()
-	var bucket handlers.CollectionType
-	if pub.ActivityTypes.Contains(it.GetType()) {
-		bucket = bucketActivities
-	} else if pub.ActorTypes.Contains(it.GetType()) {
-		bucket = bucketActors
-	} else {
-		bucket = bucketObjects
-	}
-	if it, err = delete(r, it); err == nil {
-		r.logFn(nil, "Added new %s: %s", bucket[:len(bucket)-1], it.GetLink())
-	}
-	return it, err
+	return delete(r, it)
 }
 
 // Open opens the boltdb database if possible.

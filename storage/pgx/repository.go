@@ -4,6 +4,10 @@ package pgx
 
 import (
 	"fmt"
+	"path"
+	"strings"
+	"time"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -16,9 +20,6 @@ import (
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/pgtype"
 	"github.com/sirupsen/logrus"
-	"path"
-	"strings"
-	"time"
 )
 
 var encodeFn = jsonld.Marshal
@@ -324,6 +325,23 @@ func saveToDb(l repo, table string, it pub.Item) (pub.Item, error) {
 	return it, nil
 }
 
+func (r repo) deleteItem(table string, it pub.Item) error {
+	iri := it.GetLink()
+	if len(iri) == 0 {
+		return errors.Newf("Invalid update item does not have a valid IRI")
+	}
+
+	query := fmt.Sprintf("DELETE FROM %s WHERE iri = $1;", table)
+	if _, err := r.conn.Exec(query, iri); err != nil {
+		r.errFn(logrus.Fields{
+			"err": err.Error(),
+		}, "query error")
+		return errors.Annotatef(err, "query error")
+	}
+
+	return nil
+}
+
 func (r repo) updateItem(table string, it pub.Item) (pub.Item, error) {
 	if table == "activities" {
 		return it, errors.Newf("update action Invalid, activities are immutable")
@@ -347,13 +365,9 @@ func (r repo) updateItem(table string, it pub.Item) (pub.Item, error) {
 		}
 	}
 	raw, _ := encodeFn(it)
+	nowTz := pgtype.Timestamptz{Time: now, Status: pgtype.Present}
 
-	nowTz := pgtype.Timestamptz{
-		Time:   now,
-		Status: pgtype.Present,
-	}
-	_, err := r.conn.Exec(query, it.GetType(), &nowTz, raw, iri)
-	if err != nil {
+	if _, err := r.conn.Exec(query, it.GetType(), &nowTz, raw, iri); err != nil {
 		r.errFn(logrus.Fields{
 			"err": err.Error(),
 		}, "query error")
@@ -364,14 +378,14 @@ func (r repo) updateItem(table string, it pub.Item) (pub.Item, error) {
 }
 
 // Delete
-func (r repo) Delete(it pub.Item) (pub.Item, error) {
+func (r repo) Delete(it pub.Item) error {
 	if pub.IsNil(it) {
-		return it, errors.Newf("not saving nil item")
+		return errors.Newf("not saving nil item")
 	}
 	var table string
 
 	if pub.ActivityTypes.Contains(it.GetType()) {
-		return nil, errors.Newf("unable to delete activity")
+		return errors.Newf("unable to delete activity")
 	} else if pub.ActorTypes.Contains(it.GetType()) {
 		table = "actors"
 	} else {
@@ -401,7 +415,7 @@ func (r repo) Delete(it pub.Item) (pub.Item, error) {
 			"iri":   it.GetLink(),
 			"err":   err.Error(),
 		}, "unable to find old item")
-		return it, err
+		return err
 	}
 	old := found.First()
 
@@ -415,7 +429,7 @@ func (r repo) Delete(it pub.Item) (pub.Item, error) {
 		FormerType: old.GetType(),
 	}
 
-	return r.updateItem(table, t)
+	return r.deleteItem(table, t)
 }
 
 // Open opens the underlying db connections

@@ -12,7 +12,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
@@ -214,47 +213,27 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 }
 
 // Delete
-func (r *repo) Delete(it pub.Item) (pub.Item, error) {
+func (r *repo) Delete(it pub.Item) error {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if it.IsCollection() {
 		err := pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
 			var err error
 			for _, it := range c.Collection() {
-				if it, err = r.Delete(it); err != nil {
+				if err = r.Delete(it); err != nil {
 					return err
 				}
 			}
 			return nil
 		})
-		return it, err
-	}
-	f := ap.FiltersNew()
-	f.IRI = it.GetLink()
-
-	t := pub.Tombstone{
-		ID:   it.GetLink(),
-		Type: pub.TombstoneType,
-		To: pub.ItemCollection{
-			pub.PublicNS,
-		},
-		Deleted: time.Now().UTC(),
+		return err
 	}
 
-	if it.IsObject() {
-		t.FormerType = it.GetType()
-	} else {
-		if old, err := loadFromThreeTables(r, f); err == nil {
-			t.FormerType = old.GetType()
-		}
-	}
-
-	//deleteCollections(*r, it)
-	return save(*r, t)
+	return delete(*r, it)
 }
 
 // PasswordSet
@@ -757,6 +736,33 @@ func loadFromDb(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
 		ret = append(ret, retOb...)
 	}
 	return ret, nil
+}
+
+func delete(l repo, it pub.Item) error {
+	iri := it.GetLink()
+
+	table := string(ap.ObjectsType)
+	if pub.ActivityTypes.Contains(it.GetType()) {
+		table = string(ap.ActivitiesType)
+	} else if pub.ActorTypes.Contains(it.GetType()) {
+		table = string(ap.ActorsType)
+	} else if it.GetType() == pub.TombstoneType {
+		if strings.Contains(iri.String(), string(ap.ActorsType)) {
+			table = string(ap.ActorsType)
+		}
+		if strings.Contains(iri.String(), string(ap.ActivitiesType)) {
+			table = string(ap.ActivitiesType)
+		}
+	}
+
+	query := fmt.Sprintf("DELETE FROM %s where iri = $1;", table)
+	if _, err := l.conn.Exec(query, it.GetLink()); err != nil {
+		l.errFn("query error: %s\n%s", err, query)
+		return errors.Annotatef(err, "query error")
+	}
+
+	l.cache.Remove(it.GetLink())
+	return nil
 }
 
 func save(l repo, it pub.Item) (pub.Item, error) {

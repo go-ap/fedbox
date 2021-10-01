@@ -7,15 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
-	"math/rand"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
-	"syscall"
-	"time"
-
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -26,6 +17,13 @@ import (
 	s "github.com/go-ap/storage"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ed25519"
+	"io/ioutil"
+	"math/rand"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+	"syscall"
 )
 
 var encodeFn = jsonld.Marshal
@@ -216,6 +214,8 @@ func isHardLink(fi os.FileInfo) bool {
 	return nlink > 1 && !fi.IsDir()
 }
 
+var allStorageCollections = append(handlers.ActivityPubCollections, ap.FedBOXCollections...)
+
 // AddTo
 func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 	err := r.Open()
@@ -224,7 +224,6 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 		return err
 	}
 
-	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedBOXCollections...)
 	ob, t := allStorageCollections.Split(col)
 	var link pub.IRI
 	if isStorageCollectionKey(string(t)) {
@@ -283,48 +282,27 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 	})
 }
 
+var validRemoveTypes = append(pub.ActivityTypes, append(pub.IntransitiveActivityTypes, pub.OfferType)...)
+
+
 // Delete
-func (r *repo) Delete(it pub.Item) (pub.Item, error) {
+func (r *repo) Delete(it pub.Item) error {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	if it.IsCollection() {
-		err := pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
-			var err error
-			for _, it := range c.Collection() {
-				if it, err = r.Delete(it); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-		return it, err
+	if !validRemoveTypes.Contains(it.GetType()) {
+		return errors.Conflictf("unable to delete item of type %q from storage", it.GetType())
 	}
 	f := ap.FiltersNew()
 	f.IRI = it.GetLink()
-
-	t := pub.Tombstone{
-		ID:   it.GetLink(),
-		Type: pub.TombstoneType,
-		To: pub.ItemCollection{
-			pub.PublicNS,
-		},
-		Deleted: time.Now().UTC(),
+	old, err := r.loadOneFromPath(f)
+	if err != nil {
+		return err
 	}
-
-	if it.IsObject() {
-		t.FormerType = it.GetType()
-	} else {
-		if old, err := r.loadOneFromPath(f); err == nil {
-			t.FormerType = old.GetType()
-		}
-	}
-
-	deleteCollections(*r, it)
-	return save(r, t)
+	deleteCollections(*r, old)
+	return delete(r, old)
 }
 
 // PasswordSet
@@ -629,6 +607,26 @@ func getAbsStoragePath(p string) (string, error) {
 		return "", errors.NotValidf("path %s is invalid for storage", p)
 	}
 	return p, nil
+}
+
+func delete(r *repo, it pub.Item) error {
+	if it.IsCollection() {
+		return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+			for _, it := range c.Collection() {
+				if err := delete(r, it); err != nil {
+					r.logFn("Unable to remove item %s", it.GetLink())
+				}
+			}
+			return nil
+		})
+	}
+	objPath := getObjectKey(r.itemPath(it.GetLink()))
+	err := os.RemoveAll(objPath)
+	if err != nil {
+		return err
+	}
+	r.cache.Remove(it.GetLink())
+	return nil
 }
 
 func save(r *repo, it pub.Item) (pub.Item, error) {

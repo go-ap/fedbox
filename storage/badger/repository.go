@@ -9,7 +9,6 @@ import (
 	"encoding/pem"
 	"os"
 	"path"
-	"time"
 
 	"github.com/dgraph-io/badger/v3"
 	pub "github.com/go-ap/activitypub"
@@ -249,25 +248,14 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 }
 
 // Delete
-func (r *repo) Delete(it pub.Item) (pub.Item, error) {
+func (r *repo) Delete(it pub.Item) error {
 	var err error
 	err = r.Open()
 	if err != nil {
-		return it, err
+		return err
 	}
 	defer r.Close()
-	var bucket handlers.CollectionType
-	if pub.ActivityTypes.Contains(it.GetType()) {
-		bucket = pathActivities
-	} else if pub.ActorTypes.Contains(it.GetType()) {
-		bucket = pathActors
-	} else {
-		bucket = pathObjects
-	}
-	if it, err = delete(r, it); err == nil {
-		r.logFn(nil, "Added new %s: %s", bucket[:len(bucket)-1], it.GetLink())
-	}
-	return it, err
+	return delete(r, it)
 }
 
 func getMetadataKey(p []byte) []byte {
@@ -401,37 +389,30 @@ func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
 const objectKey = "__raw"
 const metaDataKey = "__meta_data"
 
-func delete(r *repo, it pub.Item) (pub.Item, error) {
+func delete(r *repo, it pub.Item) error {
 	if it.IsCollection() {
-		err := pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
-			var err error
+		return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
 			for _, it := range c.Collection() {
-				if it, err = delete(r, it); err != nil {
-					return err
+				if err := delete(r, it); err != nil {
+					r.logFn(nil, "Unable to remove item %s", it.GetLink())
 				}
 			}
 			return nil
 		})
-		return it, err
 	}
 	f := ap.FiltersNew()
 	f.IRI = it.GetLink()
 	if it.IsObject() {
 		f.Type = ap.CompStrs{ap.StringEquals(string(it.GetType()))}
 	}
-	old, _ := r.loadOneFromPath(f)
-
-	deleteCollections(r, old)
-	t := pub.Tombstone{
-		ID:   it.GetLink(),
-		Type: pub.TombstoneType,
-		To: pub.ItemCollection{
-			pub.PublicNS,
-		},
-		Deleted:    time.Now().UTC(),
-		FormerType: old.GetType(),
+	old, err := r.loadOneFromPath(f)
+	if err != nil {
+		return err
 	}
-	return save(r, t)
+
+	return r.d.Update(func(tx *badger.Txn) error {
+		return deleteFromPath(r, tx, old)
+	})
 }
 
 // createCollections
@@ -479,20 +460,20 @@ func deleteCollections(r *repo, it pub.Item) error {
 		if pub.ActorTypes.Contains(it.GetType()) {
 			return pub.OnActor(it, func(p *pub.Actor) error {
 				var err error
-				err = deleteCollectionFromPath(r, tx, handlers.Inbox.IRI(p))
-				err = deleteCollectionFromPath(r, tx, handlers.Outbox.IRI(p))
-				err = deleteCollectionFromPath(r, tx, handlers.Followers.IRI(p))
-				err = deleteCollectionFromPath(r, tx, handlers.Following.IRI(p))
-				err = deleteCollectionFromPath(r, tx, handlers.Liked.IRI(p))
+				err = deleteFromPath(r, tx, handlers.Inbox.IRI(p))
+				err = deleteFromPath(r, tx, handlers.Outbox.IRI(p))
+				err = deleteFromPath(r, tx, handlers.Followers.IRI(p))
+				err = deleteFromPath(r, tx, handlers.Following.IRI(p))
+				err = deleteFromPath(r, tx, handlers.Liked.IRI(p))
 				return err
 			})
 		}
 		if pub.ObjectTypes.Contains(it.GetType()) {
 			return pub.OnObject(it, func(o *pub.Object) error {
 				var err error
-				err = deleteCollectionFromPath(r, tx, handlers.Replies.IRI(o))
-				err = deleteCollectionFromPath(r, tx, handlers.Likes.IRI(o))
-				err = deleteCollectionFromPath(r, tx, handlers.Shares.IRI(o))
+				err = deleteFromPath(r, tx, handlers.Replies.IRI(o))
+				err = deleteFromPath(r, tx, handlers.Likes.IRI(o))
+				err = deleteFromPath(r, tx, handlers.Shares.IRI(o))
 				return err
 			})
 		}
@@ -538,12 +519,16 @@ func createCollectionInPath(b *badger.Txn, it pub.Item) (pub.Item, error) {
 	return it.GetLink(), nil
 }
 
-func deleteCollectionFromPath(r *repo, b *badger.Txn, it pub.Item) error {
+func deleteFromPath(r *repo, b *badger.Txn, it pub.Item) error {
 	if pub.IsNil(it) {
 		return nil
 	}
 	p := getObjectKey(itemPath(it.GetLink()))
-	return b.Delete(p)
+	if err := b.Delete(p); err != nil {
+		return err
+	}
+	r.cache.Remove(it.GetLink())
+	return nil
 }
 
 func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(val []byte) error {
