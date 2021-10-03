@@ -7,6 +7,14 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+	"syscall"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -17,13 +25,6 @@ import (
 	s "github.com/go-ap/storage"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ed25519"
-	"io/ioutil"
-	"math/rand"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
-	"syscall"
 )
 
 var encodeFn = jsonld.Marshal
@@ -183,7 +184,7 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 	linkPath := r.itemPath(link)
 	name := path.Base(r.itemPath(it.GetLink()))
 	// we create a symlink to the persisted object in the current collection
-	return onCollection(r, col, it, func(p string) error {
+	err = onCollection(r, col, it, func(p string) error {
 		inCollection := false
 		if fileInfo, err := ioutil.ReadDir(p); err == nil {
 			for _, fi := range fileInfo {
@@ -198,6 +199,11 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	r.cache.Remove(it.GetLink())
+	return nil
 }
 
 func isSymLink(fi os.FileInfo) bool {
@@ -282,18 +288,12 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 	})
 }
 
-var validRemoveTypes = append(pub.ActivityTypes, append(pub.IntransitiveActivityTypes, pub.OfferType)...)
-
-
 // Delete
 func (r *repo) Delete(it pub.Item) error {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
 		return err
-	}
-	if !validRemoveTypes.Contains(it.GetType()) {
-		return errors.Conflictf("unable to delete item of type %q from storage", it.GetType())
 	}
 	f := ap.FiltersNew()
 	f.IRI = it.GetLink()
@@ -302,7 +302,11 @@ func (r *repo) Delete(it pub.Item) error {
 		return err
 	}
 	deleteCollections(*r, old)
-	return delete(r, old)
+	if err = delete(r, old); err != nil {
+		return err
+	}
+	r.cache.Remove(old.GetLink())
+	return nil
 }
 
 // PasswordSet
