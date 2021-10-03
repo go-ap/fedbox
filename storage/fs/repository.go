@@ -295,18 +295,22 @@ func (r *repo) Delete(it pub.Item) error {
 	if err != nil {
 		return err
 	}
-	f := ap.FiltersNew()
-	f.IRI = it.GetLink()
-	old, err := r.loadOneFromPath(f)
-	if err != nil {
-		return err
+	return delete(r, it)
+}
+
+func delete(r *repo, it pub.Item) error {
+	if it.IsCollection() {
+		return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+			var err error
+			for _, it := range c.Collection() {
+				if err = deleteItem(r, it); err != nil {
+					r.logFn("Unable to remove item %s", it.GetLink())
+				}
+			}
+			return nil
+		})
 	}
-	deleteCollections(*r, old)
-	if err = delete(r, old); err != nil {
-		return err
-	}
-	r.cache.Remove(old.GetLink())
-	return nil
+	return deleteItem(r, it.GetLink())
 }
 
 // PasswordSet
@@ -613,20 +617,9 @@ func getAbsStoragePath(p string) (string, error) {
 	return p, nil
 }
 
-func delete(r *repo, it pub.Item) error {
-	if it.IsCollection() {
-		return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
-			for _, it := range c.Collection() {
-				if err := delete(r, it); err != nil {
-					r.logFn("Unable to remove item %s", it.GetLink())
-				}
-			}
-			return nil
-		})
-	}
-	objPath := getObjectKey(r.itemPath(it.GetLink()))
-	err := os.RemoveAll(objPath)
-	if err != nil {
+func deleteItem(r *repo, it pub.Item) error {
+	itemPath := r.itemPath(it.GetLink())
+	if err := os.RemoveAll(itemPath); err != nil {
 		return err
 	}
 	r.cache.Remove(it.GetLink())
