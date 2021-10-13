@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
-	"gopkg.in/urfave/cli.v2"
+	"github.com/urfave/cli/v2"
 )
 
 var BootstrapCmd = &cli.Command{

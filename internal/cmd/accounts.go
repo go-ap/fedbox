@@ -16,8 +16,8 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/jsonld"
+	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ed25519"
-	"gopkg.in/urfave/cli.v2"
 )
 
 var AccountsCmd = &cli.Command{
@@ -155,14 +155,14 @@ func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 }
 
 var generateKeysCmd = &cli.Command{
-	Name:   "gen-keys",
-	Usage:  "Generate public/private key pairs for actors that are missing them",
+	Name:      "gen-keys",
+	Usage:     "Generate public/private key pairs for actors that are missing them",
 	ArgsUsage: "IRI...",
-	Action: generateKeys(&ctl),
+	Action:    generateKeys(&ctl),
 }
 
-func AddKeyToPerson (metaSaver storage.MetadataTyper) func (act *pub.Actor) error {
-	return func (act *pub.Actor) error {
+func AddKeyToPerson(metaSaver storage.MetadataTyper) func(act *pub.Actor) error {
+	return func(act *pub.Actor) error {
 		if act.Type != pub.PersonType {
 			return nil
 		}
@@ -265,7 +265,7 @@ func publicKeyFrom(prvBytes []byte) pem.Block {
 			pubKey = k.Public()
 		}
 	}
-	pubEnc, err := x509.MarshalPKIXPublicKey(pubKey);
+	pubEnc, err := x509.MarshalPKIXPublicKey(pubKey)
 	if err != nil {
 		return pem.Block{}
 	}

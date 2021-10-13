@@ -17,7 +17,7 @@ import (
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
-	"gopkg.in/urfave/cli.v2"
+	"github.com/urfave/cli/v2"
 )
 
 var PubCmd = &cli.Command{
@@ -344,8 +344,8 @@ func (c *Control) List(initialPath string, types ...string) (pub.ItemCollection,
 				items = append(items, c.Collection()...)
 				return nil
 			})
-	 	} else {
-	 		items = append(items, col)
+		} else {
+			items = append(items, col)
 		}
 		return nil
 	}
@@ -615,9 +615,9 @@ func showObjectAct(ctl *Control) cli.ActionFunc {
 }
 
 var showObjectCmd = &cli.Command{
-	Name:    "show",
-	Aliases: []string{"cat"},
-	Usage:   "Show an object",
+	Name:      "show",
+	Aliases:   []string{"cat"},
+	Usage:     "Show an object",
 	ArgsUsage: "IRI...",
 	Flags: []cli.Flag{
 		&cli.StringFlag{

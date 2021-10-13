@@ -1,9 +1,11 @@
+//go:build storage_pgx
 // +build storage_pgx
 
 package cmd
 
 import (
 	"fmt"
+
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/pgx"
 	"golang.org/x/crypto/ssh/terminal"

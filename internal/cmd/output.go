@@ -3,9 +3,10 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	pub "github.com/go-ap/activitypub"
 	"io"
 	"strings"
+
+	pub "github.com/go-ap/activitypub"
 )
 
 func bytef(s string, p ...interface{}) []byte {
@@ -67,7 +68,7 @@ func outActivity(a *pub.Activity, b io.Writer) error {
 		b.Write(bytef("\n\tObject: "))
 		outItem(a.Object, b)
 	}
-	
+
 	return nil
 }
 

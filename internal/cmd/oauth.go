@@ -14,7 +14,7 @@ import (
 	fedbox "github.com/go-ap/fedbox/app"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
-	"gopkg.in/urfave/cli.v2"
+	"github.com/urfave/cli/v2"
 )
 
 var client = &cli.Command{
@@ -176,11 +176,11 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 		}
 	}
 	p := &pub.Person{
-		Type: pub.ApplicationType,
+		Type:         pub.ApplicationType,
 		AttributedTo: self.GetLink(),
 		Generator:    self.GetLink(),
 		Published:    now,
-		Updated: now,
+		Updated:      now,
 		PreferredUsername: pub.NaturalLanguageValues{
 			{pub.NilLangRef, name},
 		},

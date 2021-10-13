@@ -17,8 +17,8 @@ import (
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
-	"gopkg.in/urfave/cli.v2"
 )
 
 type Control struct {
@@ -85,7 +85,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 	if err != nil {
 		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}
-	if path != "."  {
+	if path != "." {
 		conf.StoragePath = path
 	}
 	typ := c.String("type")

@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
+
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"gopkg.in/urfave/cli.v2"
+	"github.com/urfave/cli/v2"
 )
 
 func types(c *cli.Context) ap.CompStrs {

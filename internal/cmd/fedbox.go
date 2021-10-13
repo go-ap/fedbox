@@ -8,7 +8,7 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
-	"gopkg.in/urfave/cli.v2"
+	"github.com/urfave/cli/v2"
 )
 
 const defaultTimeout = time.Second * 15
@@ -30,9 +30,9 @@ func NewApp(version string) *cli.App {
 				Value: "",
 			},
 			&cli.BoolFlag{
-				Name:        "profile",
-				Hidden:      true,
-				Value:       false,
+				Name:   "profile",
+				Hidden: true,
+				Value:  false,
 			},
 		},
 		Action: run(version),
