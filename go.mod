@@ -18,11 +18,11 @@ require (
 	github.com/go-ap/processing v0.0.0-20211003144116-b27ba8b96374
 	github.com/go-ap/storage v0.0.0-20211003132226-22541092f5c4
 	github.com/go-chi/chi/v5 v5.0.3
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.3.0
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d
+	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/openshift/osin v1.0.1
 	github.com/pborman/uuid v1.2.1
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
@@ -34,7 +34,11 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20211003122950-b1ebd4e1001c // indirect
-	modernc.org/sqlite v1.10.8
+	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
+	golang.org/x/tools v0.1.7 // indirect
+	modernc.org/ccgo/v3 v3.12.24 // indirect
+	modernc.org/libc v1.11.31 // indirect
+	modernc.org/sqlite v1.13.1
 )
