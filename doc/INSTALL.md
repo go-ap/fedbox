@@ -14,7 +14,7 @@ $ make all
 ## editing the configuration 
 
 ```sh
-$ cp .env.example .env
+$ cp .env.dist .env
 $ $EDITOR .env
 ```
 
