@@ -114,25 +114,26 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 		if err != nil {
 			return nil, err
 		}
+
 		var toStore pub.OrderedCollection
 		if !fromCache && c.Count() > 0 {
 			toStore = *c
 		}
-
-		if _, err = ap.PaginateCollection(c, f); err != nil {
+		var col pub.CollectionInterface = c
+		if col, err = ap.PaginateCollection(col, f); err != nil {
 			return nil, err
 		}
 		if !fromCache && toStore.Collection() != nil {
 			fb.caches.Set(cacheKey, toStore)
 		}
-		for _, it := range c.Collection() {
+		for _, it := range col.Collection() {
 			// Remove bcc and bto - probably should be moved to a different place
 			// TODO(marius): move this to the go-ap/activtiypub helpers: CleanRecipients(Item)
 			if s, ok := it.(pub.HasRecipients); ok {
 				s.Clean()
 			}
 		}
-		return c, err
+		return col, err
 	}
 }
 
@@ -271,7 +272,7 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 
 		cacheKey := ap.CacheKey(f)
 		it := fb.caches.Get(cacheKey)
-		fromCache :=  !pub.IsNil(it)
+		fromCache := !pub.IsNil(it)
 
 		iri := reqURL(r, fb.Config().Secure)
 		if len(f.IRI) == 0 {
