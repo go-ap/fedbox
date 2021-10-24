@@ -523,6 +523,9 @@ func filterObjectNoNameNoType(ob *pub.Object, ff *Filters) bool {
 			return false
 		}
 	}
+	if !filterAudience(ff.Audience(), ob.Recipients(), pub.ItemCollection{ob.AttributedTo}) {
+		return false
+	}
 	if !filterNaturalLanguageValues(ff.Content(), ob.Content, ob.Summary) {
 		return false
 	}
@@ -783,7 +786,7 @@ func filterItems(filters CompStrs, items ...pub.Item) bool {
 	return false
 }
 
-func FilterAudience(filters CompStrs, colArr ...pub.ItemCollection) bool {
+func filterAudience(filters CompStrs, colArr ...pub.ItemCollection) bool {
 	if len(filters) == 0 {
 		return true
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"path"
 	"sort"
 	"strings"
@@ -48,24 +49,6 @@ func reqURL(r *http.Request, secure bool) string {
 	return fmt.Sprintf("%s://%s%s", scheme, r.Host, r.RequestURI)
 }
 
-func filterItems(col pub.ItemCollection, f ap.CompStrs) pub.ItemCollection {
-	if len(f) == 0 {
-		return col
-	}
-	ret := make(pub.ItemCollection, 0)
-	for _, it := range col {
-		valid := true
-		pub.OnObject(it, func(ob *pub.Object) error {
-			valid = ap.FilterAudience(f, ob.Recipients(), pub.ItemCollection{ob.AttributedTo})
-			return nil
-		})
-		if valid {
-			ret = append(ret, it)
-		}
-	}
-	return ret
-}
-
 func orderItems(col pub.ItemCollection) pub.ItemCollection {
 	sort.SliceStable(col, func(i, j int) bool {
 		return pub.ItemOrderTimestamp(col[i], col[j])
@@ -107,7 +90,6 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 			ff.Authenticated = nil
 			c.ID = ff.GetLink()
 			c.OrderedItems = orderItems(items.Collection())
-			c.OrderedItems = filterItems(c.OrderedItems, f.Audience())
 			c.TotalItems = c.OrderedItems.Count()
 			return nil
 		})
@@ -285,6 +267,10 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 			where = fmt.Sprintf(" in %s", collection)
 		}
 		what = fmt.Sprintf("%s ", path.Base(iri))
+		if u, err := url.ParseRequestURI(iri); err == nil {
+			what = fmt.Sprintf("%s ", path.Base(u.Path))
+		}
+
 		f.MaxItems = 1
 
 		var items pub.ItemCollection
@@ -319,15 +305,8 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 			}
 		}
 
-		if items = filterItems(items, f.Audience()); len(items) == 0 {
+		if len(items) == 0 {
 			return nil, errors.NotFoundf("%snot found%s", what, where)
-		}
-
-		for _, it := range items {
-			// Remove bcc and bto - probably should be moved to a different place
-			if s, ok := it.(pub.HasRecipients); ok {
-				s.Clean()
-			}
 		}
 
 		if len(items) > 1 {
@@ -340,6 +319,11 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 
 		if !fromCache {
 			fb.caches.Set(cacheKey, it)
+		}
+
+		if s, ok := it.(pub.HasRecipients); ok {
+			// Remove bcc and bto - probably should be moved to a different place
+			s.Clean()
 		}
 		return it, nil
 	}
