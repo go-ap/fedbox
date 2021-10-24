@@ -108,7 +108,7 @@ func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
 			c.ID = ff.GetLink()
 			c.OrderedItems = orderItems(items.Collection())
 			c.OrderedItems = filterItems(c.OrderedItems, f.Audience())
-			c.TotalItems = items.Count()
+			c.TotalItems = c.OrderedItems.Count()
 			return nil
 		})
 		if err != nil {
