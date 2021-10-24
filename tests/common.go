@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package tests
@@ -601,16 +602,8 @@ func getRequest(t *testing.T, st int) func(iri string, acc *testAccount) map[str
 			return nil
 		}
 		tVal := testPair{
-			req: testReq{
-				met: http.MethodGet,
-				url: iri,
-			},
-			res: testRes{
-				code: st,
-			},
-		}
-		if acc != nil {
-			tVal.req.account = acc
+			req: testReq{met: http.MethodGet, url: iri, account: acc},
+			res: testRes{code: st},
 		}
 		return errOnRequest(t)(tVal)
 	}
@@ -750,8 +743,8 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 }
 
 var (
-	Verbose bool
-	Silent bool
+	Verbose   bool
+	Silent    bool
 	formatter = logrus.TextFormatter{
 		ForceColors:      true,
 		DisableQuote:     true,
