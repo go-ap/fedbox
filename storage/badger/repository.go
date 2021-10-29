@@ -713,22 +713,11 @@ func (r *repo) loadItem(b *badger.Txn, path []byte, f s.Filterable) (pub.Item, e
 	if pub.IsIRI(it) {
 		it, _ = r.loadOneFromPath(it.GetLink())
 	}
+	if pub.IntransitiveActivityTypes.Contains(it.GetType()) {
+		pub.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f))
+	}
 	if pub.ActivityTypes.Contains(it.GetType()) {
-		pub.OnActivity(it, func(a *pub.Activity) error {
-			if it.GetType() == pub.CreateType || ap.FiltersOnActivityObject(f) {
-				// TODO(marius): this seems terribly not nice
-				if a.Object != nil && !a.Object.IsObject() {
-					a.Object, _ = r.loadOneFromPath(a.Object.GetLink())
-				}
-			}
-			if ap.FiltersOnActivityActor(f) {
-				// TODO(marius): this seems terribly not nice
-				if a.Actor != nil && !a.Actor.IsObject() {
-					a.Actor, _ = r.loadOneFromPath(a.Actor.GetLink())
-				}
-			}
-			return nil
-		})
+		pub.OnActivity(it, loadFilteredPropsForActivity(r, f))
 	}
 	if f != nil {
 		return ap.FilterIt(it, f)
@@ -744,6 +733,38 @@ func loadItem(raw []byte) (pub.Item, error) {
 	return pub.UnmarshalJSON(raw)
 }
 
+func loadFilteredPropsForActivity(r *repo, f s.Filterable) func(a *pub.Activity) error {
+	return func(a *pub.Activity) error {
+		if ok, fo := ap.FiltersOnActivityObject(f); ok && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
+			if ob, err := r.loadOneFromPath(a.Object.GetLink()); err == nil {
+				if ob, _ = ap.FilterIt(ob, fo); ob != nil {
+					a.Object = ob
+				}
+			}
+		}
+		return pub.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, f))
+	}
+}
+
+func loadFilteredPropsForIntransitiveActivity(r *repo, f s.Filterable) func(a *pub.IntransitiveActivity) error {
+	return func(a *pub.IntransitiveActivity) error {
+		if ok, fa := ap.FiltersOnActivityActor(f); ok && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
+			if act, err := r.loadOneFromPath(a.Actor.GetLink()); err == nil {
+				if act, _ = ap.FilterIt(act, fa); act != nil {
+					a.Actor = act
+				}
+			}
+		}
+		if ok, ft := ap.FiltersOnActivityTarget(f); ok && !pub.IsNil(a.Target) && pub.IsIRI(a.Target) {
+			if t, err := r.loadOneFromPath(a.Target.GetLink()); err == nil {
+				if t, _ = ap.FilterIt(t, ft); t != nil {
+					a.Target = t
+				}
+			}
+		}
+		return nil
+	}
+}
 func itemPath(iri pub.IRI) []byte {
 	url, err := iri.URL()
 	if err != nil {
@@ -751,6 +772,7 @@ func itemPath(iri pub.IRI) []byte {
 	}
 	return []byte(path.Join(url.Host, url.Path))
 }
+
 func (r *repo) CreateService(service pub.Service) error {
 	err := r.Open()
 	defer r.Close()

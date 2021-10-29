@@ -1107,25 +1107,25 @@ func FilterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
 	return nil, errors.Errorf("Invalid filter %T", f)
 }
 
-func FiltersOnActivityObject(f s.Filterable) bool {
+func FiltersOnActivityObject(f s.Filterable) (bool, s.Filterable) {
 	if ff, ok := f.(*Filters); ok {
-		return ff.Object != nil
+		return ff.Object != nil, ff.Object
 	}
-	return false
+	return false, nil
 }
 
-func FiltersOnActivityActor(f s.Filterable) bool {
+func FiltersOnActivityActor(f s.Filterable) (bool, s.Filterable) {
 	if ff, ok := f.(*Filters); ok {
-		return ff.Actor != nil
+		return ff.Actor != nil, ff.Actor
 	}
-	return false
+	return false, nil
 }
 
-func FiltersOnActivityTarget(f s.Filterable) bool {
+func FiltersOnActivityTarget(f s.Filterable) (bool, s.Filterable) {
 	if ff, ok := f.(*Filters); ok {
-		return ff.Target != nil
+		return ff.Target != nil, ff.Target
 	}
-	return false
+	return false, nil
 }
 
 // CacheKey generates a unique pub.IRI hash based on its authenticated user and other parameters

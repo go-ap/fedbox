@@ -730,9 +730,11 @@ func isSingleItem(f s.Filterable) bool {
 
 func loadFilteredPropsForActivity(r repo, f s.Filterable) func(a *pub.Activity) error {
 	return func(a *pub.Activity) error {
-		if ap.FiltersOnActivityObject(f) && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
+		if ok, fo := ap.FiltersOnActivityObject(f); ok && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
 			if ob, err := r.loadOneFromPath(a.Object.GetLink()); err == nil {
-				a.Object = ob
+				if ob, _ = ap.FilterIt(ob, fo); ob != nil {
+					a.Object = ob
+				}
 			}
 		}
 		return pub.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, f))
@@ -741,14 +743,18 @@ func loadFilteredPropsForActivity(r repo, f s.Filterable) func(a *pub.Activity) 
 
 func loadFilteredPropsForIntransitiveActivity(r repo, f s.Filterable) func(a *pub.IntransitiveActivity) error {
 	return func(a *pub.IntransitiveActivity) error {
-		if ap.FiltersOnActivityActor(f) && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
+		if ok, fa := ap.FiltersOnActivityActor(f); ok && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
 			if act, err := r.loadOneFromPath(a.Actor.GetLink()); err == nil {
-				a.Actor = act
+				if act, _ = ap.FilterIt(act, fa); act != nil {
+					a.Actor = act
+				}
 			}
 		}
-		if ap.FiltersOnActivityTarget(f) && !pub.IsNil(a.Target) && pub.IsIRI(a.Target) {
+		if ok, ft := ap.FiltersOnActivityTarget(f); ok && !pub.IsNil(a.Target) && pub.IsIRI(a.Target) {
 			if t, err := r.loadOneFromPath(a.Target.GetLink()); err == nil {
-				a.Target = t
+				if t, _ = ap.FilterIt(t, ft); t != nil {
+					a.Target = t
+				}
 			}
 		}
 		return nil

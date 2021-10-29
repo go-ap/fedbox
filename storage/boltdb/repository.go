@@ -107,27 +107,49 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 	if pub.IsIRI(it) {
 		it, _ = r.loadOneFromBucket(it.GetLink())
 	}
+	if pub.IntransitiveActivityTypes.Contains(it.GetType()) {
+		pub.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f))
+	}
 	if pub.ActivityTypes.Contains(it.GetType()) {
-		pub.OnActivity(it, func(a *pub.Activity) error {
-			if it.GetType() == pub.CreateType || ap.FiltersOnActivityObject(f) {
-				// TODO(marius): this seems terribly not nice
-				if a.Object != nil && !a.Object.IsObject() {
-					a.Object, _ = r.loadOneFromBucket(a.Object.GetLink())
-				}
-			}
-			if ap.FiltersOnActivityActor(f) {
-				// TODO(marius): this seems terribly not nice
-				if a.Actor != nil && !a.Actor.IsObject() {
-					a.Actor, _ = r.loadOneFromBucket(a.Actor.GetLink())
-				}
-			}
-			return nil
-		})
+		pub.OnActivity(it, loadFilteredPropsForActivity(r, f))
 	}
 	if f != nil {
 		return ap.FilterIt(it, f)
 	}
 	return it, nil
+}
+
+func loadFilteredPropsForActivity(r *repo, f s.Filterable) func(a *pub.Activity) error {
+	return func(a *pub.Activity) error {
+		if ok, fo := ap.FiltersOnActivityObject(f); ok && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
+			if ob, err := r.loadOneFromBucket(a.Object.GetLink()); err == nil {
+				if ob, _ = ap.FilterIt(ob, fo); ob != nil {
+					a.Object = ob
+				}
+			}
+		}
+		return pub.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, f))
+	}
+}
+
+func loadFilteredPropsForIntransitiveActivity(r *repo, f s.Filterable) func(a *pub.IntransitiveActivity) error {
+	return func(a *pub.IntransitiveActivity) error {
+		if ok, fa := ap.FiltersOnActivityActor(f); ok && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
+			if act, err := r.loadOneFromBucket(a.Actor.GetLink()); err == nil {
+				if act, _ = ap.FilterIt(act, fa); act != nil {
+					a.Actor = act
+				}
+			}
+		}
+		if ok, ft := ap.FiltersOnActivityTarget(f); ok && !pub.IsNil(a.Target) && pub.IsIRI(a.Target) {
+			if t, err := r.loadOneFromBucket(a.Target.GetLink()); err == nil {
+				if t, _ = ap.FilterIt(t, ft); t != nil {
+					a.Target = t
+				}
+			}
+		}
+		return nil
+	}
 }
 
 func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemCollection, error) {
