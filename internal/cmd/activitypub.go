@@ -17,6 +17,7 @@ import (
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
+	"github.com/go-ap/storage"
 	"github.com/urfave/cli/v2"
 )
 
@@ -30,6 +31,7 @@ var PubCmd = &cli.Command{
 		listObjectsCmd,
 		showObjectCmd,
 		delObjectsCmd,
+		moveObjectsCmd,
 		exportCmd,
 		importCmd,
 	},
@@ -628,4 +630,56 @@ var showObjectCmd = &cli.Command{
 		},
 	},
 	Action: showObjectAct(&ctl),
+}
+
+var moveObjectsCmd = &cli.Command{
+	Name:    "move",
+	Aliases: []string{"mv"},
+	Usage:   "Move ActivityPub objects\nUsage: activitypub move IRI CollectionIRI",
+	Action:  movePubObjects(&ctl),
+}
+
+func movePubObjects(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		if c.NArg() < 2 {
+			return errors.Errorf("Need a source IRI and a destination collection IRI")
+		}
+		source := pub.IRI(c.Args().Get(0))
+		destination := pub.IRI(c.Args().Get(1))
+		return ctl.MoveObjects(source, destination)
+	}
+}
+
+func (c *Control) MoveObjects(from, to pub.IRI) error {
+	st, ok := c.Storage.(storage.CollectionStore)
+	if !ok {
+		return errors.Newf("invalid storage %T", c.Storage)
+	}
+	col, err := c.Storage.Load(to)
+	if err != nil {
+		return err
+	}
+	if !handlers.ValidCollectionIRI(col.GetLink()) {
+		return errors.Newf("destination is not a valid collection %s", col.GetLink())
+	}
+
+	it, err := c.Storage.Load(from)
+	if err != nil {
+		return err
+	}
+	if pub.IsItemCollection(it) {
+		return pub.OnCollectionIntf(it, func(col pub.CollectionInterface) error {
+			for _, it := range col.Collection() {
+				if err := c.MoveObjects(it.GetLink(), to); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	}
+	if !pub.IsObject(it) {
+		return errors.Newf("Invalid object at IRI %s, %v", from, it)
+	}
+
+	return st.AddTo(col.GetLink(), it)
 }
