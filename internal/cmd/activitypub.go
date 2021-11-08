@@ -650,11 +650,38 @@ func movePubObjects(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func (c *Control) MoveObjects(from, to pub.IRI) error {
+func (c *Control) CopyObjects(to pub.IRI, from ...pub.Item) error {
 	st, ok := c.Storage.(storage.CollectionStore)
 	if !ok {
 		return errors.Newf("invalid storage %T", c.Storage)
 	}
+
+	copyFn := func(col pub.IRI, it pub.Item) error {
+		return st.AddTo(col.GetLink(), it)
+	}
+	return c.operateOnObjects(copyFn, to, from...)
+}
+
+func (c *Control) MoveObjects(to pub.IRI, from ...pub.Item) error {
+	st, ok := c.Storage.(storage.CollectionStore)
+	if !ok {
+		return errors.Newf("invalid storage %T", c.Storage)
+	}
+
+	copyFn := func(col pub.IRI, it pub.Item) error {
+		if err := st.AddTo(col.GetLink(), it); err != nil {
+			return err
+		}
+
+		if err := c.Storage.Delete(it.GetLink()); err != nil {
+			return err
+		}
+		return nil
+	}
+	return c.operateOnObjects(copyFn, to, from...)
+}
+
+func (c *Control) operateOnObjects(fn func(col pub.IRI, it pub.Item) error, to pub.IRI, from ...pub.Item) error {
 	col, err := c.Storage.Load(to)
 	if err != nil {
 		return err
@@ -663,23 +690,24 @@ func (c *Control) MoveObjects(from, to pub.IRI) error {
 		return errors.Newf("destination is not a valid collection %s", col.GetLink())
 	}
 
-	it, err := c.Storage.Load(from)
-	if err != nil {
-		return err
-	}
-	if pub.IsItemCollection(it) {
-		return pub.OnCollectionIntf(it, func(col pub.CollectionInterface) error {
-			for _, it := range col.Collection() {
-				if err := c.MoveObjects(it.GetLink(), to); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-	}
-	if !pub.IsObject(it) {
-		return errors.Newf("Invalid object at IRI %s, %v", from, it)
+	for _, iri := range from {
+		it, err := c.Storage.Load(iri.GetLink())
+		if err != nil {
+			return err
+		}
+		if pub.IsItemCollection(it) {
+			return pub.OnCollectionIntf(it, func(col pub.CollectionInterface) error {
+				return c.operateOnObjects(fn, to, col.Collection()...)
+			})
+		}
+		if !pub.IsObject(it) {
+			return errors.Newf("Invalid object at IRI %s, %v", from, it)
+		}
+
+		if err = fn(col.GetLink(), it); err != nil {
+			return err
+		}
 	}
 
-	return st.AddTo(col.GetLink(), it)
+	return nil
 }
