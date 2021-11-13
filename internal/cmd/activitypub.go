@@ -32,6 +32,7 @@ var PubCmd = &cli.Command{
 		showObjectCmd,
 		delObjectsCmd,
 		moveObjectsCmd,
+		copyObjectsCmd,
 		exportCmd,
 		importCmd,
 	},
@@ -615,9 +616,7 @@ func showObjectAct(ctl *Control) cli.ActionFunc {
 		return nil
 	}
 }
-
-var showObjectCmd = &cli.Command{
-	Name:      "show",
+var showObjectCmd = &cli.Command{ Name:      "show",
 	Aliases:   []string{"cat"},
 	Usage:     "Show an object",
 	ArgsUsage: "IRI...",
@@ -630,55 +629,6 @@ var showObjectCmd = &cli.Command{
 		},
 	},
 	Action: showObjectAct(&ctl),
-}
-
-var moveObjectsCmd = &cli.Command{
-	Name:    "move",
-	Aliases: []string{"mv"},
-	Usage:   "Move ActivityPub objects\nUsage: activitypub move IRI CollectionIRI",
-	Action:  movePubObjects(&ctl),
-}
-
-func movePubObjects(ctl *Control) cli.ActionFunc {
-	return func(c *cli.Context) error {
-		if c.NArg() < 2 {
-			return errors.Errorf("Need a source IRI and a destination collection IRI")
-		}
-		source := pub.IRI(c.Args().Get(0))
-		destination := pub.IRI(c.Args().Get(1))
-		return ctl.MoveObjects(source, destination)
-	}
-}
-
-func (c *Control) CopyObjects(to pub.IRI, from ...pub.Item) error {
-	st, ok := c.Storage.(storage.CollectionStore)
-	if !ok {
-		return errors.Newf("invalid storage %T", c.Storage)
-	}
-
-	copyFn := func(col pub.IRI, it pub.Item) error {
-		return st.AddTo(col.GetLink(), it)
-	}
-	return c.operateOnObjects(copyFn, to, from...)
-}
-
-func (c *Control) MoveObjects(to pub.IRI, from ...pub.Item) error {
-	st, ok := c.Storage.(storage.CollectionStore)
-	if !ok {
-		return errors.Newf("invalid storage %T", c.Storage)
-	}
-
-	copyFn := func(col pub.IRI, it pub.Item) error {
-		if err := st.AddTo(col.GetLink(), it); err != nil {
-			return err
-		}
-
-		if err := c.Storage.Delete(it.GetLink()); err != nil {
-			return err
-		}
-		return nil
-	}
-	return c.operateOnObjects(copyFn, to, from...)
 }
 
 func (c *Control) operateOnObjects(fn func(col pub.IRI, it pub.Item) error, to pub.IRI, from ...pub.Item) error {
@@ -710,4 +660,71 @@ func (c *Control) operateOnObjects(fn func(col pub.IRI, it pub.Item) error, to p
 	}
 
 	return nil
+}
+
+var moveObjectsCmd = &cli.Command{
+	Name:    "move",
+	Aliases: []string{"mv"},
+	Usage:   "Move ActivityPub objects\nUsage: activitypub move IRI CollectionIRI",
+	Action:  movePubObjects(&ctl),
+}
+
+func movePubObjects(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		if c.NArg() < 2 {
+			return errors.Errorf("Need a source IRI and a destination collection IRI")
+		}
+		source := pub.IRI(c.Args().Get(0))
+		destination := pub.IRI(c.Args().Get(1))
+		return ctl.MoveObjects(source, destination)
+	}
+}
+
+func (c *Control) MoveObjects(to pub.IRI, from ...pub.Item) error {
+	st, ok := c.Storage.(storage.CollectionStore)
+	if !ok {
+		return errors.Newf("invalid storage %T", c.Storage)
+	}
+
+	copyFn := func(col pub.IRI, it pub.Item) error {
+		if err := st.AddTo(col.GetLink(), it); err != nil {
+			return err
+		}
+
+		if err := c.Storage.Delete(it.GetLink()); err != nil {
+			return err
+		}
+		return nil
+	}
+	return c.operateOnObjects(copyFn, to, from...)
+}
+
+var copyObjectsCmd = &cli.Command{
+	Name:    "copy",
+	Aliases: []string{"cp"},
+	Usage:   "Copy ActivityPub objects\nUsage: activitypub copy IRI CollectionIRI",
+	Action:  copyPubObjects(&ctl),
+}
+
+func copyPubObjects(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		if c.NArg() < 2 {
+			return errors.Errorf("Need a source IRI and a destination collection IRI")
+		}
+		source := pub.IRI(c.Args().Get(0))
+		destination := pub.IRI(c.Args().Get(1))
+		return ctl.CopyObjects(source, destination)
+	}
+}
+
+func (c *Control) CopyObjects(to pub.IRI, from ...pub.Item) error {
+	st, ok := c.Storage.(storage.CollectionStore)
+	if !ok {
+		return errors.Newf("invalid storage %T", c.Storage)
+	}
+
+	copyFn := func(col pub.IRI, it pub.Item) error {
+		return st.AddTo(col.GetLink(), it)
+	}
+	return c.operateOnObjects(copyFn, to, from...)
 }
