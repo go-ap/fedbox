@@ -629,12 +629,12 @@ var showObjectCmd = &cli.Command{ Name:      "show",
 }
 
 func (c *Control) operateOnObjects(fn func(col pub.IRI, it pub.Item) error, to pub.IRI, from ...pub.Item) error {
-	col, err := c.Storage.Load(to)
+	if !handlers.ValidCollectionIRI(to) {
+		return errors.Newf("destination is not a valid collection %s", to)
+	}
+	_, err := c.Storage.Load(to)
 	if err != nil {
 		return err
-	}
-	if !handlers.ValidCollectionIRI(col.GetLink()) {
-		return errors.Newf("destination is not a valid collection %s", col.GetLink())
 	}
 
 	for _, iri := range from {
@@ -651,7 +651,7 @@ func (c *Control) operateOnObjects(fn func(col pub.IRI, it pub.Item) error, to p
 			return errors.Newf("Invalid object at IRI %s, %v", from, it)
 		}
 
-		if err = fn(col.GetLink(), it); err != nil {
+		if err = fn(to, it); err != nil {
 			return err
 		}
 	}
@@ -708,9 +708,13 @@ func copyPubObjects(ctl *Control) cli.ActionFunc {
 		if c.NArg() < 2 {
 			return errors.Errorf("Need a source IRI and a destination collection IRI")
 		}
-		source := pub.IRI(c.Args().Get(0))
-		destination := pub.IRI(c.Args().Get(1))
-		return ctl.CopyObjects(source, destination)
+		argSl := c.Args().Slice()
+		var source pub.ItemCollection
+		for _, arg := range argSl[:c.NArg()-1] {
+			source = append(source, pub.IRI(arg))
+		}
+		destination := pub.IRI(argSl[c.NArg()-1])
+		return ctl.CopyObjects(destination, source...)
 	}
 }
 
@@ -721,7 +725,11 @@ func (c *Control) CopyObjects(to pub.IRI, from ...pub.Item) error {
 	}
 
 	copyFn := func(col pub.IRI, it pub.Item) error {
-		return st.AddTo(col.GetLink(), it)
+		err := st.AddTo(col.GetLink(), it)
+		if err != nil {
+			Errf("Error: %s", err)
+		}
+		return nil
 	}
 	return c.operateOnObjects(copyFn, to, from...)
 }
