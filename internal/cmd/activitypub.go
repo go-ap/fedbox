@@ -252,11 +252,6 @@ var listObjectsCmd = &cli.Command{
 			DefaultText: fmt.Sprintf("Valid values: %v", []string{"json", "text"}),
 			Value:       "text",
 		},
-		&cli.StringFlag{
-			Name:  "path",
-			Usage: "Pass the URL path at which to start from.",
-			Value: "/",
-		},
 	},
 	Action: listObjectsAct(&ctl),
 }
@@ -270,9 +265,29 @@ func printItem(it pub.Item, outType string) error {
 
 func listObjectsAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		initialPath := c.String("path")
 		typeFl := c.StringSlice("type")
-		all, err := ctl.List(initialPath, typeFl...)
+
+		var paths pub.IRIs
+		if c.NArg() == 0 {
+			paths = append(paths,
+				ap.ObjectsType.IRI(pub.IRI(ctl.Conf.BaseURL)),
+				ap.ActorsType.IRI(pub.IRI(ctl.Conf.BaseURL)),
+				ap.ActivitiesType.IRI(pub.IRI(ctl.Conf.BaseURL)),
+			)
+		} else {
+			for _, path := range c.Args().Slice() {
+				u, err := url.ParseRequestURI(path)
+				if err != nil {
+					continue
+				}
+				if u.Host == "" {
+					u.Host = ctl.Conf.BaseURL
+				}
+				paths = append(paths, pub.IRI(u.String()))
+			}
+		}
+
+		all, err := ctl.List(paths, typeFl...)
 		if err != nil {
 			return err
 		}
@@ -292,7 +307,7 @@ func listObjectsAct(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func loadPubTypes(types []string) (pub.ActivityVocabularyTypes, pub.ActivityVocabularyTypes, pub.ActivityVocabularyTypes) {
+func loadPubTypes(types []string) []pub.ActivityVocabularyType {
 	objectTyp := make(pub.ActivityVocabularyTypes, 0)
 	actorTyp := make(pub.ActivityVocabularyTypes, 0)
 	activityTyp := make(pub.ActivityVocabularyTypes, 0)
@@ -323,25 +338,28 @@ func loadPubTypes(types []string) (pub.ActivityVocabularyTypes, pub.ActivityVoca
 			}
 		}
 	}
-	return objectTyp, actorTyp, activityTyp
+	return append(append(objectTyp, actorTyp...), activityTyp...)
 }
 
-func (c *Control) List(initialPath string, types ...string) (pub.ItemCollection, error) {
+func (c *Control) List(iris pub.IRIs, types ...string) (pub.ItemCollection, error) {
+	var typeFilter []pub.ActivityVocabularyType
+	if len(types) > 0 {
+		typeFilter = loadPubTypes(types)
+	}
 	var items pub.ItemCollection
-	objectTyp, actorTyp, activityTyp := loadPubTypes(types)
-	accFn := func(baseIRI pub.IRI, types pub.ActivityVocabularyTypes) error {
-		if len(types) == 0 {
-			return nil
+	var err error
+	for _, iri := range iris {
+		f, _ := ap.FiltersFromIRI(iri)
+		if len(typeFilter) > 0 {
+			ap.Type(typeFilter...)(f)
 		}
-		f := ap.FiltersNew(
-			ap.BaseIRI(handlers.Split(baseIRI)),
-			ap.Type(types...),
-		)
-		col, err := c.Storage.Load(f.GetLink())
-		if err != nil {
-			return err
-		}
+		f.MaxItems = ap.MaxItems
 
+		col, err := c.Storage.Load(f.GetLink())
+
+		if err != nil {
+			return items, err
+		}
 		if col.IsCollection() {
 			err = pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
 				items = append(items, c.Collection()...)
@@ -350,27 +368,6 @@ func (c *Control) List(initialPath string, types ...string) (pub.ItemCollection,
 		} else {
 			items = append(items, col)
 		}
-		return nil
-	}
-	var err error
-	if initialPath == "" || initialPath == "/" {
-		obIRI := ap.ObjectsType.IRI(pub.IRI(ctl.Conf.BaseURL))
-		err = accFn(obIRI, objectTyp)
-		if err != nil {
-			return items, err
-		}
-		actorsIRI := ap.ActorsType.IRI(pub.IRI(ctl.Conf.BaseURL))
-		err = accFn(actorsIRI, actorTyp)
-		if err != nil {
-			return items, err
-		}
-		activitiesIRI := ap.ActivitiesType.IRI(pub.IRI(ctl.Conf.BaseURL))
-		err = accFn(activitiesIRI, activityTyp)
-	} else {
-		if initialPath[0] != '/' {
-			initialPath = "/" + initialPath
-		}
-		err = accFn(pub.IRI(ctl.Conf.BaseURL).AddPath(initialPath), activityTyp)
 	}
 	return items, err
 }
