@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	aletheia.icu/broccoli/fs v0.0.0-20200506212414-5bc1e2f86a59
-	git.sr.ht/~mariusor/wrapper v0.0.0-20210922184837-693a2dc4a44b
+	git.sr.ht/~mariusor/wrapper v0.0.0-20211204175238-24c69c2faf9c
 	github.com/andybalholm/brotli v1.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect

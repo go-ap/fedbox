@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"io"
+	"os"
+	"path/filepath"
 	"syscall"
 
 	w "git.sr.ht/~mariusor/wrapper"
@@ -146,13 +148,21 @@ func (f *FedBOX) Run() error {
 	ctx, cancelFn := context.WithTimeout(context.TODO(), f.conf.TimeOut)
 	defer cancelFn()
 
-	listenOn := "HTTP"
+	listenOn := ""
 	setters := []w.SetFn{w.Handler(f.R)}
-	if f.conf.Secure && len(f.conf.CertPath)+len(f.conf.KeyPath) > 0 {
-		listenOn = "HTTPS"
-		setters = append(setters, w.HTTPS(f.conf.Listen, f.conf.CertPath, f.conf.KeyPath))
+	dir, _ := filepath.Split(f.conf.Listen)
+	if _, err := os.Stat(dir); err == nil {
+		listenOn = "socket"
+		setters = append(setters, w.Socket(f.conf.Listen))
+		defer func() { os.RemoveAll(f.conf.Listen) }()
 	} else {
-		setters = append(setters, w.HTTP(f.conf.Listen))
+		if f.conf.Secure && len(f.conf.CertPath)+len(f.conf.KeyPath) > 0 {
+			listenOn = "HTTPS"
+			setters = append(setters, w.HTTPS(f.conf.Listen, f.conf.CertPath, f.conf.KeyPath))
+		} else {
+			listenOn = "HTTP"
+			setters = append(setters, w.HTTP(f.conf.Listen))
+		}
 	}
 	// Get start/stop functions for the http server
 	srvRun, srvStop := w.HttpServer(setters...)
