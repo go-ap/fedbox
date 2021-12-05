@@ -764,7 +764,10 @@ func loadFilteredPropsForIntransitiveActivity(r repo, f s.Filterable) func(a *pu
 
 func (r repo) asPathErr(err error) error {
 	if perr, ok := err.(*fs.PathError); ok {
-		perr.Path = strings.TrimPrefix(strings.TrimPrefix(perr.Path, r.path), "/")
+		p := strings.TrimPrefix(perr.Path, r.path)
+		p = strings.TrimSuffix(p, objectKey)
+		p = strings.TrimSuffix(p, metaDataKey)
+		perr.Path = strings.Trim(p, "/")
 		return perr
 	}
 	return err
