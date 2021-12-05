@@ -1,3 +1,4 @@
+//go:build storage_fs || storage_all || (!storage_boltdb && !storage_badger && !storage_pgx && !storage_sqlite)
 // +build storage_fs storage_all !storage_boltdb,!storage_badger,!storage_pgx,!storage_sqlite
 
 package fs
@@ -7,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -349,7 +351,7 @@ func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 	p := r.itemPath(iri)
 	raw, err := loadRawFromPath(getMetadataKey(p))
 	if err != nil {
-		return nil, errors.NewNotFound(err, "Could not find metadata in path %s", p)
+		return nil, errors.NewNotFound(r.asPathErr(err), "Could not find metadata in path %s", p)
 	}
 	err = decodeFn(raw, m)
 	if err != nil {
@@ -391,7 +393,7 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
 	m, err := r.LoadMetadata(iri)
 	if err != nil {
-		return nil, err
+		return nil, r.asPathErr(err)
 	}
 	b, _ := pem.Decode(m.PrivateKey)
 	if b == nil {
@@ -403,7 +405,6 @@ func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
 	}
 	return prvKey, nil
 }
-
 
 // GenKey creates and saves a private key for an actor found by its IRI
 func (r *repo) GenKey(iri pub.IRI) error {
@@ -429,7 +430,7 @@ func (r *repo) GenKey(iri pub.IRI) error {
 	m.PrivateKey = pem.EncodeToMemory(&prvB)
 
 	if err = r.SaveMetadata(*m, iri); err != nil {
-		return  err
+		return err
 	}
 	pub.OnActor(ob, func(act *pub.Actor) error {
 		act.PublicKey = pub.PublicKey{
@@ -540,7 +541,7 @@ func getObjectKey(p string) string {
 
 func createCollectionInPath(r repo, it pub.Item) (pub.Item, error) {
 	itPath := r.itemPath(it.GetLink())
-	return it.GetLink(), mkDirIfNotExists(itPath)
+	return it.GetLink(), r.asPathErr(mkDirIfNotExists(itPath))
 }
 
 func deleteCollectionFromPath(r repo, it pub.Item) error {
@@ -550,7 +551,7 @@ func deleteCollectionFromPath(r repo, it pub.Item) error {
 	itPath := r.itemPath(it.GetLink())
 	if fi, err := os.Stat(itPath); err != nil {
 		if !os.IsNotExist(err) {
-			return err
+			return errors.NewNotFound(r.asPathErr(err), "not found")
 		}
 	} else if fi.IsDir() {
 		return os.Remove(itPath)
@@ -647,7 +648,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 	objPath := getObjectKey(itPath)
 	f, err := os.OpenFile(objPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		return it, err
+		return it, errors.NewNotFound(err, "%s not found", objPath)
 	}
 	defer f.Close()
 	wrote, err := f.Write(entryBytes)
@@ -684,7 +685,7 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(p string) error) er
 		}
 		return errors.Annotatef(err, "Unable to save entries to collection %s", itPath)
 	}
-	return err
+	return nil
 }
 
 func loadRawFromPath(itPath string) ([]byte, error) {
@@ -761,6 +762,14 @@ func loadFilteredPropsForIntransitiveActivity(r repo, f s.Filterable) func(a *pu
 	}
 }
 
+func (r repo) asPathErr(err error) error {
+	if perr, ok := err.(*fs.PathError); ok {
+		perr.Path = strings.TrimPrefix(strings.TrimPrefix(perr.Path, r.path), "/")
+		return perr
+	}
+	return err
+}
+
 func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 	var it pub.Item
 	if cachedIt := r.cache.Get(f.GetLink()); cachedIt != nil {
@@ -769,14 +778,14 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 	if pub.IsNil(it) {
 		raw, err := loadRawFromPath(p)
 		if err != nil {
-			return nil, err
+			return nil, r.asPathErr(err)
 		}
 		if raw == nil {
 			return nil, nil
 		}
 		it, err = loadFromRaw(raw)
 		if err != nil {
-			return nil, err
+			return nil, r.asPathErr(err)
 		}
 		if pub.IsNil(it) {
 			return nil, errors.NotFoundf("not found")
@@ -812,7 +821,7 @@ func (r repo) loadFromPath(f s.Filterable) (pub.ItemCollection, error) {
 		err = filepath.Walk(itPath, func(p string, info os.FileInfo, err error) error {
 			if err != nil && os.IsNotExist(err) {
 				if isStorageCollectionKey(p) {
-					return errors.NewNotFound(err, "%s not found", p)
+					return errors.NewNotFound(r.asPathErr(err), "not found")
 				}
 				r.errFn("Error when loading path %s: %s", p, err)
 				return nil
@@ -824,7 +833,7 @@ func (r repo) loadFromPath(f s.Filterable) (pub.ItemCollection, error) {
 			}
 			if _, ok := f.(pub.IRI); ok {
 				// when loading a collection by path, we want to avoid filtering out IRIs that don't specifically
-				// contain the path, so we nil the filter
+				// contain the path, so we set the filter to a nil value
 				f = nil
 			}
 			if it, _ := r.loadItem(getObjectKey(p), f); !pub.IsNil(it) {
