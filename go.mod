@@ -11,15 +11,15 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-ap/activitypub v0.0.0-20211003130144-0895ecc34f1c
-	github.com/go-ap/auth v0.0.0-20211003133016-6c889d086f4a
-	github.com/go-ap/client v0.0.0-20211003132919-f62213d3cc8d
-	github.com/go-ap/errors v0.0.0-20210814172742-e0897299dceb
-	github.com/go-ap/handlers v0.0.0-20211003132354-0e7943dcfde5
+	github.com/go-ap/activitypub v0.0.0-20211112190508-c1e48c1eef48
+	github.com/go-ap/auth v0.0.0-20211205144238-e20fcd9547b8
+	github.com/go-ap/client v0.0.0-20211205144204-87f14c68979b
+	github.com/go-ap/errors v0.0.0-20211205144020-607e3e4f0191
+	github.com/go-ap/handlers v0.0.0-20211205144120-bcbc490d8935
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20211003144116-b27ba8b96374
-	github.com/go-ap/storage v0.0.0-20211003132226-22541092f5c4
+	github.com/go-ap/processing v0.0.0-20211205144252-d5e0a77cd17a
+	github.com/go-ap/storage v0.0.0-20211205141250-cc2d730a9cfb
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible
