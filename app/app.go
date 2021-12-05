@@ -95,7 +95,7 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o o
 		app.errFn = l.Errorf
 	}
 
-	errors.IncludeBacktrace = conf.Env.IsDev() || conf.Env.IsTest()
+	errors.IncludeBacktrace = conf.LogLevel == log.TraceLevel
 
 	as, err := auth.New(conf.BaseURL, app.storage.oauth, app.storage.repo, l)
 	if err != nil {
