@@ -273,16 +273,15 @@ func HandleItem(fb FedBOX) h.ItemHandlerFn {
 
 		f.MaxItems = 1
 
-		var items pub.ItemCollection
-		if !fromCache {
-
+		if len(f.Collection) > 0 && !ap.ValidCollection(f.Collection) {
+			return nil, errors.NotFoundf("%s not found", r.URL.Path)
 		}
-
-		if (ap.ValidCollection(f.Collection) || f.Collection == "") && !fromCache {
+		if !fromCache {
 			if it, err = repo.Load(f.GetLink()); err != nil {
 				return nil, err
 			}
 		}
+		var items pub.ItemCollection
 		if pub.IsItemCollection(it) {
 			err = pub.OnCollectionIntf(it, func(col pub.CollectionInterface) error {
 				items = col.Collection()
