@@ -1,3 +1,4 @@
+//go:build integration && s2s
 // +build integration,s2s
 
 package tests
@@ -23,7 +24,7 @@ func CreateS2SObject(actor *testAccount, object interface{}) actS2SMock {
 		objectId = string(ob.GetID())
 	}
 	return actS2SMock{
-		Id: id,
+		Id:       id,
 		ActorId:  actor.Id,
 		ObjectId: objectId,
 	}
@@ -38,9 +39,9 @@ var S2SReceiveTests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
-					"mocks/application.json",
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
+					"mocks/c2s/actors/application.json",
 					// S2S objects need to be present
 					"mocks/s2s/activities/create-actor-666.json",
 					"mocks/s2s/actors/actor-666.json",
@@ -49,7 +50,7 @@ var S2SReceiveTests = testPairs{
 					met:     http.MethodPost,
 					account: defaultS2SAccount(),
 					urlFn:   InboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson(
+					bodyFn: loadMockJson(
 						"mocks/s2s/create-object.json",
 						CreateS2SObject(defaultS2SAccount(), defaultS2SAccount()),
 					),
@@ -80,9 +81,9 @@ var S2SReceiveTests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
-					"mocks/application.json",
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
+					"mocks/c2s/actors/application.json",
 					// s2s entities that need to exist
 					"mocks/s2s/actors/actor-666.json",
 					"mocks/s2s/objects/note-1.json",
@@ -92,7 +93,7 @@ var S2SReceiveTests = testPairs{
 					met:     http.MethodPost,
 					account: defaultS2SAccount(),
 					urlFn:   InboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson(
+					bodyFn: loadMockJson(
 						"mocks/s2s/create-object.json",
 						CreateS2SObject(defaultS2SAccount(), loadMockFromDisk("mocks/s2s/objects/note-1.json", nil)),
 					),
@@ -108,8 +109,8 @@ var S2SReceiveTests = testPairs{
 							name:              "Loucien Cypher",
 						},
 						obj: &objectVal{
-							id:                loadMockFromDisk("mocks/s2s/objects/note-1.json", nil).GetID().String(),
-							typ:               string(loadMockFromDisk("mocks/s2s/objects/note-1.json", nil).GetType()),
+							id:  loadMockFromDisk("mocks/s2s/objects/note-1.json", nil).GetID().String(),
+							typ: string(loadMockFromDisk("mocks/s2s/objects/note-1.json", nil).GetType()),
 						},
 					},
 				},
@@ -117,7 +118,6 @@ var S2SReceiveTests = testPairs{
 		},
 	},
 }
-
 
 func Test_S2SReceiveRequests(t *testing.T) {
 	runTestSuite(t, S2SReceiveTests)

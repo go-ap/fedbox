@@ -1,0 +1,5 @@
+{
+  "type": "Block",
+  "actor": "{{ .Id }}",
+  "object": "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"
+}

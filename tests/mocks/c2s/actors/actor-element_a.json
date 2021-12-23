@@ -8,6 +8,7 @@
   "inbox": "http://127.0.0.1:9998/actors/2/inbox",
   "outbox": "http://127.0.0.1:9998/actors/2/outbox",
   "preferredUsername": "element_a",
+  "tag": ["http://127.0.0.1:9998/objects/t1"],
   "endpoints": {
     "oauthAuthorizationEndpoint": "http://127.0.0.1:9998/oauth/authorize",
     "oauthTokenEndpoint": "http://127.0.0.1:9998/oauth/token",

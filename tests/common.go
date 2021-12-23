@@ -112,7 +112,7 @@ type testReq struct {
 	headers  http.Header
 	account  *testAccount
 	clientID string
-	bodyFn   func() string
+	bodyFn   func() (string, error)
 	body     string
 }
 
@@ -670,7 +670,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 				test.res.code = http.StatusCreated
 			}
 			if test.req.bodyFn != nil {
-				test.req.body = test.req.bodyFn()
+				test.req.body, _ = test.req.bodyFn()
 			}
 			body := []byte(test.req.body)
 			b := make([]byte, 0)

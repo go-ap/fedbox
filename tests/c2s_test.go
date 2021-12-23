@@ -30,8 +30,8 @@ var ActorsCollectionTests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
 				},
 				req: testReq{
 					met: http.MethodGet,
@@ -71,8 +71,8 @@ var ActorsCollectionTests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
 				},
 				req: testReq{
 					met: http.MethodGet,
@@ -112,8 +112,8 @@ var ActorsCollectionTests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
 				},
 				req: testReq{
 					met: http.MethodGet,
@@ -136,7 +136,7 @@ var ActorsCollectionTests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
+					"mocks/c2s/actors/service.json",
 				},
 				req: testReq{
 					met: http.MethodGet,
@@ -157,27 +157,27 @@ var ActorsCollectionTests = testPairs{
 		name:    "A lot of actors",
 		configs: c2sConfigs,
 		mocks: []string{
-			"mocks/actors/service.json",
-			"mocks/actors/actor-admin.json",
-			"mocks/actors/actor-element_a.json",
-			"mocks/actors/actor-element_b.json",
-			"mocks/actors/actor-element_c.json",
-			"mocks/actors/actor-element_d.json",
-			"mocks/actors/actor-element_e.json",
-			"mocks/actors/actor-element_f.json",
-			"mocks/actors/actor-element_g.json",
-			"mocks/actors/actor-element_h.json",
-			"mocks/actors/actor-element_i.json",
-			"mocks/actors/application-11.json",
-			"mocks/actors/application-12.json",
-			"mocks/actors/application-13.json",
-			"mocks/actors/application-14.json",
-			"mocks/actors/application-15.json",
-			"mocks/actors/group-16.json",
-			"mocks/actors/group-17.json",
-			"mocks/actors/group-18.json",
-			"mocks/actors/group-19.json",
-			"mocks/actors/group-20.json",
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-admin.json",
+			"mocks/c2s/actors/actor-element_a.json",
+			"mocks/c2s/actors/actor-element_b.json",
+			"mocks/c2s/actors/actor-element_c.json",
+			"mocks/c2s/actors/actor-element_d.json",
+			"mocks/c2s/actors/actor-element_e.json",
+			"mocks/c2s/actors/actor-element_f.json",
+			"mocks/c2s/actors/actor-element_g.json",
+			"mocks/c2s/actors/actor-element_h.json",
+			"mocks/c2s/actors/actor-element_i.json",
+			"mocks/c2s/actors/application-11.json",
+			"mocks/c2s/actors/application-12.json",
+			"mocks/c2s/actors/application-13.json",
+			"mocks/c2s/actors/application-14.json",
+			"mocks/c2s/actors/application-15.json",
+			"mocks/c2s/actors/group-16.json",
+			"mocks/c2s/actors/group-17.json",
+			"mocks/c2s/actors/group-18.json",
+			"mocks/c2s/actors/group-19.json",
+			"mocks/c2s/actors/group-20.json",
 		},
 		tests: []testPair{
 			{
@@ -301,8 +301,8 @@ var ActivitiesCollectionTests = testPairs{
 		name:    "ActivitiesCollection",
 		configs: c2sConfigs,
 		mocks: []string{
-			"mocks/service.json",
-			"mocks/actor-johndoe.json",
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
 		},
 		tests: []testPair{
 			{
@@ -324,10 +324,10 @@ var ActivitiesCollectionTests = testPairs{
 		name:    "Create activities filtering",
 		configs: c2sConfigs,
 		mocks: []string{
-			"mocks/service.json",
-			"mocks/actors/actor-element_a.json",
-			"mocks/objects/note-1.json",
-			"mocks/activities/create-1.json",
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-element_a.json",
+			"mocks/c2s/objects/note-1.json",
+			"mocks/c2s/activities/create-1.json",
 		},
 		tests: []testPair{
 			{
@@ -425,8 +425,8 @@ var ActivitiesCollectionTests = testPairs{
 			{
 				name: "Filter by object.inReplyTo different than nil",
 				mocks: []string{
-					"mocks/objects/page-2.json",
-					"mocks/activities/create-2.json",
+					"mocks/c2s/objects/page-2.json",
+					"mocks/c2s/activities/create-2.json",
 				},
 				req: testReq{
 					met: http.MethodGet,
@@ -444,8 +444,8 @@ var ActivitiesCollectionTests = testPairs{
 			{
 				name: "Filter by object.inReplyTo be nil",
 				mocks: []string{
-					"mocks/objects/page-2.json",
-					"mocks/activities/create-2.json",
+					"mocks/c2s/objects/page-2.json",
+					"mocks/c2s/activities/create-2.json",
 				},
 				req: testReq{
 					met: http.MethodGet,
@@ -471,8 +471,8 @@ var ObjectsCollectionTests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
 				},
 				req: testReq{
 					met: http.MethodGet,
@@ -492,10 +492,10 @@ var ObjectsCollectionTests = testPairs{
 		name:    "A lot of objects",
 		configs: c2sConfigs,
 		mocks: []string{
-			"mocks/objects/note-1.json",
-			"mocks/objects/page-2.json",
-			"mocks/objects/tombstone-3.json",
-			"mocks/objects/place-4.json",
+			"mocks/c2s/objects/note-1.json",
+			"mocks/c2s/objects/page-2.json",
+			"mocks/c2s/objects/tombstone-3.json",
+			"mocks/c2s/objects/place-4.json",
 		},
 		tests: []testPair{
 			{
@@ -735,7 +735,7 @@ var SingleItemLoadTests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
+					"mocks/c2s/actors/service.json",
 				},
 				req: testReq{
 					met: http.MethodGet,
@@ -765,15 +765,15 @@ var C2STests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
-					"mocks/application.json",
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
+					"mocks/c2s/actors/application.json",
 				},
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/create-actor.json", defaultC2SAccount()),
+					bodyFn:  loadMockJson("mocks/c2s/activities/create-actor.json", defaultC2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusCreated,
@@ -799,14 +799,14 @@ var C2STests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
-					"mocks/application.json",
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
+					"mocks/c2s/actors/application.json",
 				},
 				req: testReq{
 					met:    http.MethodPost,
 					urlFn:  OutboxURL(defaultC2SAccount()),
-					bodyFn: loadMockJson("mocks/create-actor.json", defaultC2SAccount()),
+					bodyFn: loadMockJson("mocks/c2s/activities/create-actor.json", defaultC2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusUnauthorized,
@@ -820,15 +820,15 @@ var C2STests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
-					"mocks/application.json",
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
+					"mocks/c2s/actors/application.json",
 				},
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/update-actor.json", defaultC2SAccount()),
+					bodyFn:  loadMockJson("mocks/c2s/activities/update-actor.json", defaultC2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusCreated,
@@ -861,14 +861,14 @@ var C2STests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
 				},
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/activity.json", actS2SMock{Type: "Delete", ActorId: defaultC2SAccount().Id, ObjectId: defaultC2SAccount().Id}),
+					bodyFn:  loadMockJson("mocks/c2s/activities/activity.json", actS2SMock{Type: "Delete", ActorId: defaultC2SAccount().Id, ObjectId: defaultC2SAccount().Id}),
 				},
 				res: testRes{
 					code: http.StatusGone,
@@ -893,14 +893,14 @@ var C2STests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
 				},
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/create-article.json", defaultC2SAccount()),
+					bodyFn:  loadMockJson("mocks/c2s/activities/create-article.json", defaultC2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusCreated,
@@ -1000,9 +1000,9 @@ var C2STests = testPairs{
 		name:    "LikeNote",
 		configs: c2sConfigs,
 		mocks: []string{
-			"mocks/service.json",
-			"mocks/actor-johndoe.json",
-			"mocks/note.json",
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+			"mocks/c2s/objects/note.json",
 		},
 		tests: []testPair{
 			{
@@ -1010,7 +1010,7 @@ var C2STests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/activity.json", &actS2SMock{Type: "Like", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/objects/41e7ec45-ff92-473a-b79d-974bf30a0aba"}),
+					bodyFn:  loadMockJson("mocks/c2s/activities/activity.json", &actS2SMock{Type: "Like", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/objects/41e7ec45-ff92-473a-b79d-974bf30a0aba"}),
 				},
 				res: testRes{
 					code: http.StatusCreated,
@@ -1102,9 +1102,9 @@ var C2STests = testPairs{
 		name:    "FollowActor",
 		configs: c2sConfigs,
 		mocks: []string{
-			"mocks/service.json",
-			"mocks/actor-johndoe.json",
-			"mocks/actor-extra.json",
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+			"mocks/c2s/actors/actor-extra.json",
 		},
 		tests: []testPair{
 			{
@@ -1112,7 +1112,7 @@ var C2STests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/activity.json", &actS2SMock{Type: "Follow", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
+					bodyFn:  loadMockJson("mocks/c2s/activities/activity.json", &actS2SMock{Type: "Follow", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
 				},
 				res: testRes{
 					code: http.StatusCreated,
@@ -1170,9 +1170,9 @@ var C2STests = testPairs{
 		name:    "BlockActor",
 		configs: c2sConfigs,
 		mocks: []string{
-			"mocks/service.json",
-			"mocks/actor-johndoe.json",
-			"mocks/actor-extra.json",
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+			"mocks/c2s/actors/actor-extra.json",
 		},
 		tests: []testPair{
 			{
@@ -1180,7 +1180,7 @@ var C2STests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/activity-private.json", &actS2SMock{Type: "Block", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
+					bodyFn:  loadMockJson("mocks/c2s/activities/activity-private.json", &actS2SMock{Type: "Block", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
 				},
 				res: testRes{
 					code: http.StatusCreated,
@@ -1240,9 +1240,9 @@ var S2SSendTests = testPairs{
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/service.json",
-					"mocks/actor-johndoe.json",
-					"mocks/application.json",
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
+					"mocks/c2s/actors/application.json",
 					// s2s entities that need to exist
 					"mocks/s2s/actors/actor-666.json",
 				},
@@ -1251,8 +1251,8 @@ var S2SSendTests = testPairs{
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
 					bodyFn: loadMockJson(
-						"mocks/c2s/create-object-with-federated-cc.json",
-						CreateC2SObject(defaultC2SAccount(), loadMockFromDisk("mocks/objects/note-1.json", nil)),
+						"mocks/c2s/activities/create-object-with-federated-cc.json",
+						CreateC2SObject(defaultC2SAccount(), loadMockFromDisk("mocks/c2s/objects/note-1.json", nil)),
 					),
 				},
 				res: testRes{
@@ -1266,8 +1266,8 @@ var S2SSendTests = testPairs{
 							name:              "Johnathan Doe",
 						},
 						obj: &objectVal{
-							id:  loadMockFromDisk("mocks/objects/note-1.json", nil).GetID().String(),
-							typ: string(loadMockFromDisk("mocks/objects/note-1.json", nil).GetType()),
+							id:  loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetID().String(),
+							typ: string(loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetType()),
 						},
 					},
 				},

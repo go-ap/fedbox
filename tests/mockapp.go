@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package tests
@@ -38,20 +39,20 @@ func jsonldMarshal(i pub.Item) string {
 	return string(j)
 }
 
-func loadMockJson(file string, model interface{}) func() string {
+func loadMockJson(file string, model interface{}) func() (string, error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		return func() string { return "" }
+		return func() (string, error) { return "", err }
 	}
 	data = bytes.Trim(data, "\x00")
 
 	t := template.Must(template.New(fmt.Sprintf("mock_%s", path.Base(file))).
 		Funcs(template.FuncMap{"json": jsonldMarshal}).Parse(string(data)))
 
-	return func() string {
+	return func() (string, error) {
 		bytes := bytes.Buffer{}
-		t.Execute(&bytes, model)
-		return bytes.String()
+		err := t.Execute(&bytes, model)
+		return bytes.String(), err
 	}
 }
 
@@ -126,7 +127,10 @@ func loadPrivateKeyFromDisk(file string) crypto.PrivateKey {
 }
 
 func loadMockFromDisk(file string, model interface{}) pub.Item {
-	json := loadMockJson(file, model)()
+	json, err := loadMockJson(file, model)()
+	if err != nil {
+		panic(err)
+	}
 	act, err := pub.UnmarshalJSON([]byte(json))
 	if err != nil {
 		panic(err)
@@ -154,7 +158,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 
 	mocks := make(pub.ItemCollection, 0)
 	o := cmd.New(aDb, db, options)
-	act := loadMockFromDisk("mocks/application.json", nil)
+	act := loadMockFromDisk("mocks/c2s/actors/application.json", nil)
 	mocks = append(mocks, act)
 	if clSaver, ok := aDb.(app.ClientSaver); ok {
 		clSaver.CreateClient(&osin.DefaultClient{
