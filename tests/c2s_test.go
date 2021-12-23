@@ -16,6 +16,10 @@ func ActorsURL() string {
 	return ServiceActorsURL(&service)
 }
 
+func ObjectsURL() string {
+	return ServiceObjectsURL(&service)
+}
+
 func CreateC2SObject(actor *testAccount, object pub.Item) actC2SMock {
 	return actC2SMock{
 		ActorId: actor.Id,
@@ -289,6 +293,64 @@ var ActorsCollectionTests = testPairs{
 						id:        fmt.Sprintf("%s?name=%s&name=%s", ActorsURL(), "element_a", "element_b"),
 						typ:       string(pub.OrderedCollectionType),
 						itemCount: 2,
+					},
+				},
+			},
+		},
+	},
+	{
+		name:    "Actor with tag",
+		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/actor-element_a.json",
+			"mocks/c2s/objects/tag-mod.json",
+		},
+		tests: []testPair{
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: ActorsURL(),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        ActorsURL(),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 2,
+						items: map[string]*objectVal{
+							"2": {
+								id:  "http://127.0.0.1:9998/actors/2",
+								typ: string(pub.PersonType),
+								tag: []*objectVal{
+									{
+										id:   "http://127.0.0.1:9998/objects/t1",
+										typ:  "",
+										name: "#mod",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				req: testReq{
+					met: http.MethodGet,
+					url: ObjectsURL(),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        ObjectsURL(),
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+						items: map[string]*objectVal{
+							"t1": {
+								id:   "http://127.0.0.1:9998/objects/t1",
+								typ:  "",
+								name: "#mod",
+							},
+						},
 					},
 				},
 			},

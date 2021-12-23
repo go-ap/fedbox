@@ -160,6 +160,7 @@ type objectVal struct {
 	liked             *objectVal
 	act               *objectVal
 	obj               *objectVal
+	tag               []*objectVal
 	itemCount         int64
 	first             *objectVal
 	next              *objectVal
@@ -195,6 +196,10 @@ func OutboxURL(account *testAccount) func() string {
 	return func() string {
 		return fmt.Sprintf("%s/outbox", account.Id)
 	}
+}
+
+func ServiceObjectsURL(service *testAccount) string {
+	return fmt.Sprintf("%s/objects", service.Id)
 }
 
 func ServiceActorsURL(service *testAccount) string {
@@ -394,6 +399,15 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 				v2, okB := tVal.([]string)
 				assertTrue(okA || okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
 				assertArrayValues(v1, v2)
+			case []*objectVal:
+				v1, okA := val.([]interface{})
+				v2, okB := tVal.([]*objectVal)
+				assertTrue(okA && okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
+				for i, intf := range v1 {
+					ob, ok := intf.(map[string]interface{})
+					assertTrue(ok, "Unable to convert %s prop with value %#v to %T", key, intf, ob)
+					assertObjectProperties(ob, v2[i])
+				}
 			default:
 				assertTrue(false, "UNKNOWN check for %q, %#v expected %#v", key, val, t)
 			}
@@ -539,6 +553,17 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 				if tVal.partOf.typ != "" && len(tVal.partOf.id) > 0 {
 					derefCol := assertGetRequest(tVal.partOf.id, nil)
 					assertObjectProperties(derefCol, tVal.partOf)
+				}
+			}
+			if tVal.tag != nil {
+				assertMapKey(ob, "tag", tVal.tag)
+				if len(tVal.tag) > 0 {
+					for _, tVal := range tVal.tag {
+						if len(tVal.id) > 0 {
+							derefCol := assertGetRequest(tVal.id, nil)
+							assertObjectProperties(derefCol, tVal)
+						}
+					}
 				}
 			}
 			if tVal.itemCount > 0 {
