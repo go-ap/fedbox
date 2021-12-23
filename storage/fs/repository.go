@@ -729,6 +729,31 @@ func isSingleItem(f s.Filterable) bool {
 	return false
 }
 
+func loadFilteredPropsForActor(r repo, f s.Filterable) func(a *pub.Actor) error {
+	return func(a *pub.Actor) error {
+		return pub.OnObject(a, loadFilteredPropsForObject(r, f))
+	}
+}
+
+func loadFilteredPropsForObject(r repo, f s.Filterable) func(o *pub.Object) error {
+	return func(o *pub.Object) error {
+		if len(o.Tag) == 0 {
+			return nil
+		}
+		return pub.OnItemCollection(o.Tag, func(col *pub.ItemCollection) error {
+			for i, t := range *col {
+				if pub.IsNil(t) || !pub.IsIRI(t) {
+					return nil
+				}
+				if ob, err := r.loadOneFromPath(t.GetLink()); err == nil {
+					(*col)[i] = ob
+				}
+			}
+			return nil
+		})
+	}
+}
+
 func loadFilteredPropsForActivity(r repo, f s.Filterable) func(a *pub.Activity) error {
 	return func(a *pub.Activity) error {
 		if ok, fo := ap.FiltersOnActivityObject(f); ok && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
@@ -758,7 +783,7 @@ func loadFilteredPropsForIntransitiveActivity(r repo, f s.Filterable) func(a *pu
 				}
 			}
 		}
-		return nil
+		return pub.OnObject(a, loadFilteredPropsForObject(r, f))
 	}
 }
 
@@ -806,6 +831,12 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 	}
 	if pub.ActivityTypes.Contains(it.GetType()) {
 		pub.OnActivity(it, loadFilteredPropsForActivity(r, f))
+	}
+	if pub.ActorTypes.Contains(it.GetType()) {
+		pub.OnActor(it, loadFilteredPropsForActor(r, f))
+	}
+	if pub.ObjectTypes.Contains(it.GetType()) {
+		pub.OnObject(it, loadFilteredPropsForObject(r, f))
 	}
 
 	r.cache.Set(it.GetLink(), it)
