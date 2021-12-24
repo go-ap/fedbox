@@ -1,3 +1,4 @@
+//go:build storage_badger || storage_all || (!storage_pgx && !storage_boltdb && !storage_fs && !storage_sqlite)
 // +build storage_badger storage_all !storage_pgx,!storage_boltdb,!storage_fs,!storage_sqlite
 
 package badger
@@ -576,7 +577,76 @@ func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(va
 				return err
 			}
 			if it != nil {
+				if pub.ActorTypes.Contains(it.GetType()) {
+					pub.OnActor(it, loadFilteredPropsForActor(r, f))
+				}
+				if pub.ObjectTypes.Contains(it.GetType()) {
+					pub.OnObject(it, loadFilteredPropsForObject(r, f))
+				}
+				if pub.IntransitiveActivityTypes.Contains(it.GetType()) {
+					pub.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f))
+				}
+				if pub.ActivityTypes.Contains(it.GetType()) {
+					pub.OnActivity(it, loadFilteredPropsForActivity(r, f))
+				}
 				*col = append(*col, it)
+			}
+		}
+		return nil
+	}
+}
+
+func loadFilteredPropsForActor(r *repo, f s.Filterable) func(a *pub.Actor) error {
+	return func(a *pub.Actor) error {
+		return pub.OnObject(a, loadFilteredPropsForObject(r, f))
+	}
+}
+
+func loadFilteredPropsForObject(r *repo, f s.Filterable) func(o *pub.Object) error {
+	return func(o *pub.Object) error {
+		if len(o.Tag) == 0 {
+			return nil
+		}
+		return pub.OnItemCollection(o.Tag, func(col *pub.ItemCollection) error {
+			for i, t := range *col {
+				if pub.IsNil(t) || !pub.IsIRI(t) {
+					return nil
+				}
+				if ob, err := r.loadOneFromPath(t.GetLink()); err == nil {
+					(*col)[i] = ob
+				}
+			}
+			return nil
+		})
+	}
+}
+func loadFilteredPropsForActivity(r *repo, f s.Filterable) func(a *pub.Activity) error {
+	return func(a *pub.Activity) error {
+		if ok, fo := ap.FiltersOnActivityObject(f); ok && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
+			if ob, err := r.loadOneFromPath(a.Object.GetLink()); err == nil {
+				if ob, _ = ap.FilterIt(ob, fo); ob != nil {
+					a.Object = ob
+				}
+			}
+		}
+		return pub.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, f))
+	}
+}
+
+func loadFilteredPropsForIntransitiveActivity(r *repo, f s.Filterable) func(a *pub.IntransitiveActivity) error {
+	return func(a *pub.IntransitiveActivity) error {
+		if ok, fa := ap.FiltersOnActivityActor(f); ok && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
+			if act, err := r.loadOneFromPath(a.Actor.GetLink()); err == nil {
+				if act, _ = ap.FilterIt(act, fa); act != nil {
+					a.Actor = act
+				}
+			}
+		}
+		if ok, ft := ap.FiltersOnActivityTarget(f); ok && !pub.IsNil(a.Target) && pub.IsIRI(a.Target) {
+			if t, err := r.loadOneFromPath(a.Target.GetLink()); err == nil {
+				if t, _ = ap.FilterIt(t, ft); t != nil {
+					a.Target = t
+				}
 			}
 		}
 		return nil
@@ -713,12 +783,6 @@ func (r *repo) loadItem(b *badger.Txn, path []byte, f s.Filterable) (pub.Item, e
 	if pub.IsIRI(it) {
 		it, _ = r.loadOneFromPath(it.GetLink())
 	}
-	if pub.IntransitiveActivityTypes.Contains(it.GetType()) {
-		pub.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f))
-	}
-	if pub.ActivityTypes.Contains(it.GetType()) {
-		pub.OnActivity(it, loadFilteredPropsForActivity(r, f))
-	}
 	if f != nil {
 		return ap.FilterIt(it, f)
 	}
@@ -733,38 +797,6 @@ func loadItem(raw []byte) (pub.Item, error) {
 	return pub.UnmarshalJSON(raw)
 }
 
-func loadFilteredPropsForActivity(r *repo, f s.Filterable) func(a *pub.Activity) error {
-	return func(a *pub.Activity) error {
-		if ok, fo := ap.FiltersOnActivityObject(f); ok && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
-			if ob, err := r.loadOneFromPath(a.Object.GetLink()); err == nil {
-				if ob, _ = ap.FilterIt(ob, fo); ob != nil {
-					a.Object = ob
-				}
-			}
-		}
-		return pub.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, f))
-	}
-}
-
-func loadFilteredPropsForIntransitiveActivity(r *repo, f s.Filterable) func(a *pub.IntransitiveActivity) error {
-	return func(a *pub.IntransitiveActivity) error {
-		if ok, fa := ap.FiltersOnActivityActor(f); ok && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
-			if act, err := r.loadOneFromPath(a.Actor.GetLink()); err == nil {
-				if act, _ = ap.FilterIt(act, fa); act != nil {
-					a.Actor = act
-				}
-			}
-		}
-		if ok, ft := ap.FiltersOnActivityTarget(f); ok && !pub.IsNil(a.Target) && pub.IsIRI(a.Target) {
-			if t, err := r.loadOneFromPath(a.Target.GetLink()); err == nil {
-				if t, _ = ap.FilterIt(t, ft); t != nil {
-					a.Target = t
-				}
-			}
-		}
-		return nil
-	}
-}
 func itemPath(iri pub.IRI) []byte {
 	url, err := iri.URL()
 	if err != nil {
