@@ -1,3 +1,4 @@
+//go:build storage_sqlite || storage_all || (!sqlite_fs && !storage_boltdb && !storage_badger && !storage_pgx)
 // +build storage_sqlite storage_all !sqlite_fs,!storage_boltdb,!storage_badger,!storage_pgx
 
 package sqlite
@@ -71,7 +72,7 @@ func (r *repo) Open() (err error) {
 
 // Close closes the sqlite database
 func (r *repo) Close() (err error) {
-	if r.conn == nil  {
+	if r.conn == nil {
 		return
 	}
 	err = r.conn.Close()
@@ -457,7 +458,12 @@ func loadFromOneTable(r *repo, table handlers.CollectionType, f *ap.Filters) (pu
 		}
 		ret = append(ret, it)
 	}
-
+	if table == "objects" {
+		ret = loadObjectFirstLevelIRIProperties(r, ret, f)
+	}
+	if table == "actors" {
+		ret = loadObjectFirstLevelIRIProperties(r, ret, f)
+	}
 	if table == "activities" {
 		ret = runActivityFilters(r, ret, f)
 	}
@@ -555,6 +561,33 @@ func keepTarget(f *ap.Filters) func(act *pub.Activity, ob pub.Item) bool {
 		}
 		return keep
 	}
+}
+
+func loadTagsForObject(r *repo) func(o *pub.Object) error {
+	return func(o *pub.Object) error {
+		if len(o.Tag) == 0 {
+			return nil
+		}
+		return pub.OnItemCollection(o.Tag, func(col *pub.ItemCollection) error {
+			for i, t := range *col {
+				if pub.IsNil(t) || !pub.IsIRI(t) {
+					return nil
+				}
+				f, _ := ap.FiltersFromIRI(t.GetLink())
+				if ob, err := loadFromOneTable(r, "objects", f); err == nil {
+					(*col)[i] = ob.First()
+				}
+			}
+			return nil
+		})
+	}
+}
+
+func loadObjectFirstLevelIRIProperties(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.ItemCollection {
+	for _, it := range ret {
+		pub.OnObject(it, loadTagsForObject(r))
+	}
+	return ret
 }
 
 func runActivityFilters(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.ItemCollection {
