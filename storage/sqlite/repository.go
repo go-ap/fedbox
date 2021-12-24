@@ -458,10 +458,10 @@ func loadFromOneTable(r *repo, table handlers.CollectionType, f *ap.Filters) (pu
 		}
 		ret = append(ret, it)
 	}
-	if table == "objects" {
-		ret = loadObjectFirstLevelIRIProperties(r, ret, f)
-	}
 	if table == "actors" {
+		ret = loadActorFirstLevelIRIProperties(r, ret, f)
+	}
+	if table == "objects" {
 		ret = loadObjectFirstLevelIRIProperties(r, ret, f)
 	}
 	if table == "activities" {
@@ -581,6 +581,10 @@ func loadTagsForObject(r *repo) func(o *pub.Object) error {
 			return nil
 		})
 	}
+}
+
+func loadActorFirstLevelIRIProperties(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.ItemCollection {
+	return loadObjectFirstLevelIRIProperties(r, ret, f)
 }
 
 func loadObjectFirstLevelIRIProperties(r *repo, ret pub.ItemCollection, f *ap.Filters) pub.ItemCollection {
