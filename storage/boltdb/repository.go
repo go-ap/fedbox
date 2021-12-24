@@ -1,3 +1,4 @@
+//go:build storage_boltdb || storage_all || (!storage_pgx && !storage_fs && !storage_badger && !storage_sqlite)
 // +build storage_boltdb storage_all !storage_pgx,!storage_fs,!storage_badger,!storage_sqlite
 
 package boltdb
@@ -107,6 +108,12 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 	if pub.IsIRI(it) {
 		it, _ = r.loadOneFromBucket(it.GetLink())
 	}
+	if pub.ActorTypes.Contains(it.GetType()) {
+		pub.OnActor(it, loadFilteredPropsForActor(r, f))
+	}
+	if pub.ObjectTypes.Contains(it.GetType()) {
+		pub.OnObject(it, loadFilteredPropsForObject(r, f))
+	}
 	if pub.IntransitiveActivityTypes.Contains(it.GetType()) {
 		pub.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f))
 	}
@@ -117,6 +124,31 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 		return ap.FilterIt(it, f)
 	}
 	return it, nil
+}
+
+func loadFilteredPropsForActor(r *repo, f s.Filterable) func(a *pub.Actor) error {
+	return func(a *pub.Actor) error {
+		return pub.OnObject(a, loadFilteredPropsForObject(r, f))
+	}
+}
+
+func loadFilteredPropsForObject(r *repo, f s.Filterable) func(o *pub.Object) error {
+	return func(o *pub.Object) error {
+		if len(o.Tag) == 0 {
+			return nil
+		}
+		return pub.OnItemCollection(o.Tag, func(col *pub.ItemCollection) error {
+			for i, t := range *col {
+				if pub.IsNil(t) || !pub.IsIRI(t) {
+					return nil
+				}
+				if ob, err := r.loadOneFromBucket(t.GetLink()); err == nil {
+					(*col)[i] = ob
+				}
+			}
+			return nil
+		})
+	}
 }
 
 func loadFilteredPropsForActivity(r *repo, f s.Filterable) func(a *pub.Activity) error {
@@ -919,7 +951,7 @@ func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
 	return prvKey, nil
 }
 
-func Path (c Config) (string, error){
+func Path(c Config) (string, error) {
 	if !filepath.IsAbs(c.Path) {
 		c.Path, _ = filepath.Abs(c.Path)
 	}
