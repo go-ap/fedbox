@@ -11,7 +11,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-ap/activitypub v0.0.0-20211112190508-c1e48c1eef48
+	github.com/go-ap/activitypub v0.0.0-20211112192149-67a86322d89b
 	github.com/go-ap/auth v0.0.0-20211214113350-05decf619fc2
 	github.com/go-ap/client v0.0.0-20211205144204-87f14c68979b
 	github.com/go-ap/errors v0.0.0-20211205144917-1b5bb9681d99
@@ -38,10 +38,10 @@ require (
 	github.com/unrolled/render v1.4.0
 	github.com/urfave/cli/v2 v2.3.0
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/crypto v0.0.0-20211209193657-4570a0811e8b
+	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
-	golang.org/x/sys v0.0.0-20211213223007-03aa0b5f6827 // indirect
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.7 // indirect
