@@ -11,7 +11,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-ap/activitypub v0.0.0-20220113155114-2647d68b4500
+	github.com/go-ap/activitypub v0.0.0-20220113195601-41f034c70c5d
 	github.com/go-ap/auth v0.0.0-20220113155443-c455f429895a
 	github.com/go-ap/client v0.0.0-20220113155351-c73f2eb036f3
 	github.com/go-ap/errors v0.0.0-20211205144917-1b5bb9681d99

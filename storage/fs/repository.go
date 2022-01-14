@@ -4,8 +4,10 @@
 package fs
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/x509"
+	"encoding/gob"
 	"encoding/pem"
 	"fmt"
 	"io/fs"
@@ -23,14 +25,20 @@ import (
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/handlers"
-	"github.com/go-ap/jsonld"
 	s "github.com/go-ap/storage"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ed25519"
 )
 
-var encodeFn = jsonld.Marshal
-var decodeFn = jsonld.Unmarshal
+var encodeFn = func(it interface{}) ([]byte, error) {
+	b := bytes.Buffer{}
+	err := gob.NewEncoder(&b).Encode(it)
+	return b.Bytes(), err
+}
+
+var decodeFn = func(data []byte, i interface{}) error {
+	return gob.NewDecoder(bytes.NewReader(data)).Decode(i)
+}
 
 var errNotImplemented = errors.NotImplementedf("not implemented")
 
