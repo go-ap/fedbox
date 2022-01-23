@@ -8,6 +8,7 @@ import (
 	"crypto"
 	"crypto/x509"
 	"encoding/gob"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io/fs"
@@ -36,8 +37,21 @@ var encodeFn = func(it interface{}) ([]byte, error) {
 	return b.Bytes(), err
 }
 
-var decodeFn = func(data []byte, i interface{}) error {
-	return gob.NewDecoder(bytes.NewReader(data)).Decode(i)
+var decodeItemFn = func(data []byte) (pub.Item, error) {
+	if data[0] == '{' {
+		return pub.UnmarshalJSON(data)
+	}
+	return pub.GobDecode(data)
+}
+
+var decodeMetadataFn = func(data []byte) (*storage.Metadata, error) {
+	m := new(storage.Metadata)
+	if data[0] == '{' {
+		err := json.Unmarshal(data, m)
+		return m, err
+	}
+	err := gob.NewDecoder(bytes.NewReader(data)).Decode(m)
+	return m, err
 }
 
 var errNotImplemented = errors.NotImplementedf("not implemented")
@@ -355,13 +369,12 @@ func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 		return nil, err
 	}
 
-	m := new(storage.Metadata)
 	p := r.itemPath(iri)
 	raw, err := loadRawFromPath(getMetadataKey(p))
 	if err != nil {
 		return nil, errors.NewNotFound(r.asPathErr(err), "Could not find metadata in path %s", p)
 	}
-	err = decodeFn(raw, m)
+	m, err := decodeMetadataFn(raw)
 	if err != nil {
 		return nil, errors.Annotatef(err, "Could not unmarshal metadata")
 	}
@@ -705,7 +718,7 @@ func loadFromRaw(raw []byte) (pub.Item, error) {
 		// TODO(marius): log this instead of stopping the iteration and returning an error
 		return nil, errors.Errorf("empty raw item")
 	}
-	return pub.UnmarshalJSON(raw)
+	return decodeItemFn(raw)
 }
 
 func (r repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {
@@ -834,16 +847,17 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 	if pub.IsIRI(it) {
 		it, _ = r.loadOneFromPath(it.GetLink())
 	}
-	if pub.IntransitiveActivityTypes.Contains(it.GetType()) {
+	typ := it.GetType()
+	if pub.IntransitiveActivityTypes.Contains(typ) {
 		pub.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f))
 	}
-	if pub.ActivityTypes.Contains(it.GetType()) {
+	if pub.ActivityTypes.Contains(typ) {
 		pub.OnActivity(it, loadFilteredPropsForActivity(r, f))
 	}
-	if pub.ActorTypes.Contains(it.GetType()) {
+	if pub.ActorTypes.Contains(typ) {
 		pub.OnActor(it, loadFilteredPropsForActor(r, f))
 	}
-	if pub.ObjectTypes.Contains(it.GetType()) {
+	if pub.ObjectTypes.Contains(typ) {
 		pub.OnObject(it, loadFilteredPropsForObject(r, f))
 	}
 
