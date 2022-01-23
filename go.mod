@@ -11,15 +11,15 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-ap/activitypub v0.0.0-20220113195601-41f034c70c5d
-	github.com/go-ap/auth v0.0.0-20220113155443-c455f429895a
-	github.com/go-ap/client v0.0.0-20220113155351-c73f2eb036f3
+	github.com/go-ap/activitypub v0.0.0-20220123155513-fbee7c142639
+	github.com/go-ap/auth v0.0.0-20220123160105-0e19b7d73e1a
+	github.com/go-ap/client v0.0.0-20220123155916-f7efe756a6c6
 	github.com/go-ap/errors v0.0.0-20211205144917-1b5bb9681d99
-	github.com/go-ap/handlers v0.0.0-20220113155309-b36791f64c88
+	github.com/go-ap/handlers v0.0.0-20220114152710-01c8503de407
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220113155739-49d2d0195c64
-	github.com/go-ap/storage v0.0.0-20220113155153-e0e3874b99e2
+	github.com/go-ap/processing v0.0.0-20220123160246-e3179a50ef54
+	github.com/go-ap/storage v0.0.0-20220123155624-c25e6f9bbfae
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible
@@ -39,13 +39,12 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce
-	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
-	golang.org/x/sys v0.0.0-20220111092808-5a964db01320 // indirect
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
-	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/tools v0.1.7 // indirect
+	golang.org/x/tools v0.1.8 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	modernc.org/ccgo/v3 v3.12.40 // indirect
-	modernc.org/sqlite v1.13.1
+	lukechampine.com/uint128 v1.2.0 // indirect
+	modernc.org/ccgo/v3 v3.15.11 // indirect
+	modernc.org/sqlite v1.14.5
 )
