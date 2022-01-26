@@ -75,8 +75,7 @@ func cleanDB(t *testing.T, opt config.Options) {
 		opt.Storage = config.StorageFS
 	}
 	t.Logf("resetting %q db: %s", opt.Storage, opt.StoragePath)
-	err := cmd.Reset(opt)
-	if err != nil {
+	if err := cmd.Reset(opt); err != nil {
 		t.Error(err)
 	}
 	if fedboxApp != nil {
@@ -131,11 +130,11 @@ func loadMockFromDisk(file string, model interface{}) pub.Item {
 	if err != nil {
 		panic(err)
 	}
-	act, err := pub.UnmarshalJSON([]byte(json))
+	it, err := pub.UnmarshalJSON([]byte(json))
 	if err != nil {
 		panic(err)
 	}
-	return act
+	return it
 }
 
 func seedTestData(t *testing.T, testData []string, options config.Options) {

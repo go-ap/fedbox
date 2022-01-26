@@ -8,13 +8,10 @@ import (
 	"context"
 	"crypto"
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -35,7 +32,6 @@ import (
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/httpsig"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/ed25519"
 )
 
 // UserAgent value that the client uses when performing requests
@@ -271,37 +267,6 @@ var (
 
 	lastActivity = &objectVal{}
 )
-
-func generateECKeyPair() (pem.Block, pem.Block) {
-	keyPub, keyPrv, _ := ed25519.GenerateKey(rand.New(rand.NewSource(6667)))
-
-	pubEnc, err := x509.MarshalPKIXPublicKey(keyPub)
-	if err != nil {
-		panic(err)
-	}
-	prvEnc, err := x509.MarshalPKCS8PrivateKey(keyPrv)
-	if err != nil {
-		panic(err)
-	}
-	p := pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pubEnc,
-	}
-	r := pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: prvEnc,
-	}
-	return p, r
-}
-
-/*
-func init() {
-	p, r := generateECKeyPair()
-	fmt.Printf("public: %s\n", pem.EncodeToMemory(&p))
-	fmt.Printf("private: %s\n", pem.EncodeToMemory(&r))
-	os.Exit(1)
-}
-*/
 
 type assertFn func(v bool, msg string, args ...interface{})
 type errFn func(format string, args ...interface{})
@@ -820,7 +785,9 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 			}
 		})
 		for i, options := range suite.configs {
-			cleanDB(t, options)
+			if !t.Failed() {
+				cleanDB(t, options)
+			}
 			apps[i].Stop()
 		}
 	}
