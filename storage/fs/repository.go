@@ -32,12 +32,18 @@ import (
 )
 
 var encodeFn = func(it interface{}) ([]byte, error) {
+	if i, ok := it.(pub.Item); ok {
+		return pub.GobEncode(i)
+	}
 	b := bytes.Buffer{}
 	err := gob.NewEncoder(&b).Encode(it)
 	return b.Bytes(), err
 }
 
 var decodeItemFn = func(data []byte) (pub.Item, error) {
+	if len(data) == 0 {
+		return nil, nil
+	}
 	if data[0] == '{' {
 		return pub.UnmarshalJSON(data)
 	}
@@ -468,21 +474,18 @@ func generateECKeyPair() (pem.Block, pem.Block) {
 	// TODO(marius): make this actually produce proper keys
 	keyPub, keyPrv, _ := ed25519.GenerateKey(rand.New(rand.NewSource(6667)))
 
-	pubEnc, err := x509.MarshalPKIXPublicKey(keyPub)
-	if err != nil {
-		panic(err)
+	var p, r pem.Block
+	if pubEnc, err := x509.MarshalPKIXPublicKey(keyPub); err == nil {
+		p = pem.Block{
+			Type:  "PUBLIC KEY",
+			Bytes: pubEnc,
+		}
 	}
-	prvEnc, err := x509.MarshalPKCS8PrivateKey(keyPrv)
-	if err != nil {
-		panic(err)
-	}
-	p := pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pubEnc,
-	}
-	r := pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: prvEnc,
+	if prvEnc, err := x509.MarshalPKCS8PrivateKey(keyPrv); err == nil {
+		r = pem.Block{
+			Type:  "PRIVATE KEY",
+			Bytes: prvEnc,
+		}
 	}
 	return p, r
 }
@@ -548,8 +551,8 @@ func createCollections(r repo, it pub.Item) error {
 }
 
 const (
-	objectKey   = "__raw.json"
-	metaDataKey = "__meta_data.json"
+	objectKey   = "__raw"
+	metaDataKey = "__meta_data"
 )
 
 func getMetadataKey(p string) string {
