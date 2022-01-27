@@ -106,7 +106,9 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 		return it, nil
 	}
 	if pub.IsIRI(it) {
-		it, _ = r.loadOneFromBucket(it.GetLink())
+		if it, _ = r.loadOneFromBucket(it.GetLink()); pub.IsNil(it) {
+			return nil, errors.NotFoundf("not found")
+		}
 	}
 	if pub.ActorTypes.Contains(it.GetType()) {
 		pub.OnActor(it, loadFilteredPropsForActor(r, f))

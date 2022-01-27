@@ -848,7 +848,9 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 		return it, nil
 	}
 	if pub.IsIRI(it) {
-		it, _ = r.loadOneFromPath(it.GetLink())
+		if it, _ = r.loadOneFromPath(it.GetLink()); pub.IsNil(it) {
+			return nil, errors.NotFoundf("not found")
+		}
 	}
 	typ := it.GetType()
 	if pub.IntransitiveActivityTypes.Contains(typ) {
