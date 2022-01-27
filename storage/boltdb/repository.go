@@ -110,16 +110,17 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 			return nil, errors.NotFoundf("not found")
 		}
 	}
-	if pub.ActorTypes.Contains(it.GetType()) {
+	typ := it.GetType()
+	if pub.ActorTypes.Contains(typ) {
 		pub.OnActor(it, loadFilteredPropsForActor(r, f))
 	}
-	if pub.ObjectTypes.Contains(it.GetType()) {
+	if pub.ObjectTypes.Contains(typ) {
 		pub.OnObject(it, loadFilteredPropsForObject(r, f))
 	}
-	if pub.IntransitiveActivityTypes.Contains(it.GetType()) {
+	if pub.IntransitiveActivityTypes.Contains(typ) {
 		pub.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f))
 	}
-	if pub.ActivityTypes.Contains(it.GetType()) {
+	if pub.ActivityTypes.Contains(typ) {
 		pub.OnActivity(it, loadFilteredPropsForActivity(r, f))
 	}
 	if f != nil {
