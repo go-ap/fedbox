@@ -4,10 +4,8 @@
 package fs
 
 import (
-	"bytes"
 	"crypto"
 	"crypto/x509"
-	"encoding/gob"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -31,32 +29,13 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-var encodeFn = func(it interface{}) ([]byte, error) {
-	if i, ok := it.(pub.Item); ok {
-		return pub.GobEncode(i)
-	}
-	b := bytes.Buffer{}
-	err := gob.NewEncoder(&b).Encode(it)
-	return b.Bytes(), err
-}
+var encodeFn = pub.MarshalJSON
+var decodeItemFn = pub.UnmarshalJSON
 
-var decodeItemFn = func(data []byte) (pub.Item, error) {
-	if len(data) == 0 {
-		return nil, nil
-	}
-	if data[0] == '{' {
-		return pub.UnmarshalJSON(data)
-	}
-	return pub.GobDecode(data)
-}
-
+var encodeMetadataFn = json.Marshal
 var decodeMetadataFn = func(data []byte) (*storage.Metadata, error) {
 	m := new(storage.Metadata)
-	if data[0] == '{' {
-		err := json.Unmarshal(data, m)
-		return m, err
-	}
-	err := gob.NewDecoder(bytes.NewReader(data)).Decode(m)
+	err := json.Unmarshal(data, m)
 	return m, err
 }
 
@@ -402,7 +381,7 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 	}
 	defer f.Close()
 
-	entryBytes, err := encodeFn(m)
+	entryBytes, err := encodeMetadataFn(m)
 	if err != nil {
 		return errors.Annotatef(err, "Could not marshal metadata")
 	}
