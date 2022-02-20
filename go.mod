@@ -18,7 +18,7 @@ require (
 	github.com/go-ap/handlers v0.0.0-20220128115534-642daef8ea73
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220128115713-d757639f2361
+	github.com/go-ap/processing v0.0.0-20220220185648-ad7543e379bb
 	github.com/go-ap/storage v0.0.0-20220128115328-e81c98966d84
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/golang/glog v1.0.0 // indirect
@@ -38,9 +38,9 @@ require (
 	github.com/unrolled/render v1.4.0
 	github.com/urfave/cli/v2 v2.3.0
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/crypto v0.0.0-20220126234351-aa10faf2a1f8
+	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
+	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/tools v0.1.8 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
