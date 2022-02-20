@@ -12,6 +12,7 @@ import (
 	"github.com/go-ap/errors"
 	apub "github.com/go-ap/fedbox/activitypub"
 	fedbox "github.com/go-ap/fedbox/app"
+	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/urfave/cli/v2"
@@ -189,6 +190,11 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 	app, err := c.AddActor(p, pw)
 	if err != nil {
 		return "", err
+	}
+	if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
+		if err := AddKeyToItem(metaSaver, p); err != nil {
+			Errf("Error saving metadata for application %s: %s", name, err)
+		}
 	}
 
 	id = path.Base(string(app.GetID()))
