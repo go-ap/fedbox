@@ -163,7 +163,7 @@ var generateKeysCmd = &cli.Command{
 
 func AddKeyToPerson(metaSaver storage.MetadataTyper) func(act *pub.Actor) error {
 	return func(act *pub.Actor) error {
-		if act.Type != pub.PersonType {
+		if !pub.ActorTypes.Contains(act.Type) {
 			return nil
 		}
 
