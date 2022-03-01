@@ -470,7 +470,7 @@ func generateECKeyPair() (pem.Block, pem.Block) {
 }
 
 func createOrOpenFile(p string) (*os.File, error) {
-	err := mkDirIfNotExists(path.Base(p))
+	err := mkDirIfNotExists(path.Dir(p))
 	if err != nil {
 		return nil, err
 	}
