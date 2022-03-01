@@ -23,9 +23,6 @@ func Self(baseURL pub.IRI) pub.Service {
 		AttributedTo: developer,
 		Audience:     pub.ItemCollection{pub.PublicNS},
 		Content:      nil, //pub.NaturalLanguageValues{{Ref: pub.NilLangRef, Value: ""}},
-		Icon:         nil,
-		Image:        nil,
-		Location:     nil,
 		Summary:      pub.NaturalLanguageValues{{Ref: pub.NilLangRef, Value: pub.Content("Generic ActivityPub service")}},
 		Tag:          nil,
 		URL:          baseURL,
@@ -37,6 +34,7 @@ func Self(baseURL pub.IRI) pub.Service {
 
 	s.Inbox = handlers.Inbox.IRI(s)
 	s.Outbox = handlers.Outbox.IRI(s)
+	s.Streams = pub.ItemCollection{ActorsType.IRI(s), ActivitiesType.IRI(s), ObjectsType.IRI(s)}
 	return s
 }
 
@@ -72,12 +70,12 @@ func GenerateID(it pub.Item, partOf pub.IRI, by pub.Item) (pub.ID, error) {
 		})
 		return id, err
 	}
-	 if it.IsLink() {
-		 return id, pub.OnLink(it, func(l *pub.Link) error {
-			 l.ID = id
-			 return nil
-		 })
-	 }
+	if it.IsLink() {
+		return id, pub.OnLink(it, func(l *pub.Link) error {
+			l.ID = id
+			return nil
+		})
+	}
 	return id, pub.OnObject(it, func(o *pub.Object) error {
 		o.ID = id
 		return nil
