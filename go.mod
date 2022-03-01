@@ -6,25 +6,22 @@ require (
 	aletheia.icu/broccoli/fs v0.0.0-20200506212414-5bc1e2f86a59
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/andybalholm/brotli v1.0.4 // indirect
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-ap/activitypub v0.0.0-20220128114759-c61421fde822
-	github.com/go-ap/auth v0.0.0-20220128115652-f0b6e7dc5bdc
-	github.com/go-ap/client v0.0.0-20220128115557-8eb88416eb0f
+	github.com/go-ap/activitypub v0.0.0-20220301152214-16bd1c8aa0b3
+	github.com/go-ap/auth v0.0.0-20220301152601-0e61b85433f8
+	github.com/go-ap/client v0.0.0-20220301152450-ecde1e987b19
 	github.com/go-ap/errors v0.0.0-20211205144917-1b5bb9681d99
-	github.com/go-ap/handlers v0.0.0-20220128115534-642daef8ea73
+	github.com/go-ap/handlers v0.0.0-20220301152424-9bb086e17a50
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220220185648-ad7543e379bb
-	github.com/go-ap/storage v0.0.0-20220128115328-e81c98966d84
+	github.com/go-ap/processing v0.0.0-20220301152733-532c24c97469
+	github.com/go-ap/storage v0.0.0-20220301152322-b3a5743b1b6f
 	github.com/go-chi/chi/v5 v5.0.4
-	github.com/golang/glog v1.0.0 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0
-	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d
 	github.com/mattn/go-isatty v0.0.14 // indirect
@@ -40,8 +37,7 @@ require (
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
-	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
+	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
 	golang.org/x/tools v0.1.8 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
