@@ -79,12 +79,12 @@ func Before(c *cli.Context) error {
 }
 
 func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
-	path := c.String("path")
 	environ := env.Type(c.String("env"))
 	conf, err := config.LoadFromEnv(environ, time.Second)
 	if err != nil {
 		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}
+	path := c.String("path")
 	if path != "." {
 		conf.StoragePath = path
 	}

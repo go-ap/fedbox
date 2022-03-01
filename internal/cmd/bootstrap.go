@@ -5,7 +5,9 @@ import (
 	"os"
 
 	"github.com/go-ap/errors"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
+	s "github.com/go-ap/fedbox/storage"
 	"github.com/urfave/cli/v2"
 )
 
@@ -48,6 +50,15 @@ func resetAct(c *Control) cli.ActionFunc {
 
 func bootstrapAct(c *Control) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
+		service := ap.Self(ap.DefaultServiceIRI(c.Conf.BaseURL))
+		if _, err := c.Storage.Save(&service); err != nil {
+			Errf("Error adding service: %s\n", err)
+		}
+		if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
+			if err := AddKeyToItem(metaSaver, &service); err != nil {
+				Errf("Error saving metadata for service: %s", err)
+			}
+		}
 		return Bootstrap(c.Conf)
 	}
 }
@@ -56,7 +67,7 @@ func Bootstrap(conf config.Options) error {
 	if err := bootstrapFn(conf); err != nil {
 		return errors.Annotatef(err, "Unable to create %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}
-	fmt.Fprintf(os.Stdout, "Successful created %s db for storage %s\n", conf.BaseStoragePath(), conf.Storage)
+	fmt.Fprintf(os.Stdout, "Successfuly created %s db for storage %s\n", conf.BaseStoragePath(), conf.Storage)
 	return nil
 }
 

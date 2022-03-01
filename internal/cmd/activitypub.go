@@ -112,35 +112,34 @@ func (c *Control) AddActor(p *pub.Person, pw []byte) (*pub.Person, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	self := ap.Self(pub.IRI(c.Conf.BaseURL))
-	now := time.Now().UTC()
 
 	act := &pub.Activity{
-		Type:         pub.CreateType,
-		AttributedTo: self.GetLink(),
-		Actor:        self.GetLink(),
-		To:           pub.ItemCollection{pub.PublicNS},
-		CC:           pub.ItemCollection{self.ID},
-		Updated:      now,
-		Object:       p,
+		Type:    pub.CreateType,
+		To:      pub.ItemCollection{pub.PublicNS},
+		Updated: time.Now().UTC(),
+		Object:  p,
 	}
-
-	var err error
-	_, err = c.Saver.ProcessClientActivity(act)
-	if err != nil {
-		return nil, err
-	}
-
-	if pw == nil {
-		return p, nil
-	}
-	if pwManager, ok := c.Storage.(s.PasswordChanger); ok {
-		if err := pwManager.PasswordSet(p.GetLink(), pw); err != nil {
-			return p, err
+	if self, err := c.Storage.Load(pub.IRI(c.Conf.BaseURL)); err == nil {
+		if act.AttributedTo == nil {
+			act.AttributedTo = self.GetLink()
+		}
+		if act.Actor == nil {
+			act.Actor = self.GetLink()
+		}
+		if !act.CC.Contains(self.GetLink()) {
+			act.CC.Append(self.GetLink())
 		}
 	}
 
-	return p, nil
+	if _, err := c.Saver.ProcessClientActivity(act); err != nil {
+		return nil, err
+	}
+
+	var err error
+	if pwManager, ok := c.Storage.(s.PasswordChanger); ok && pw != nil {
+		err = pwManager.PasswordSet(p.GetLink(), pw)
+	}
+	return p, err
 }
 
 var ValidGenericTypes = pub.ActivityVocabularyTypes{pub.ObjectType, pub.ActorType}
@@ -613,7 +612,8 @@ func showObjectAct(ctl *Control) cli.ActionFunc {
 		return nil
 	}
 }
-var showObjectCmd = &cli.Command{ Name:      "show",
+
+var showObjectCmd = &cli.Command{Name: "show",
 	Aliases:   []string{"cat"},
 	Usage:     "Show an object",
 	ArgsUsage: "IRI...",
