@@ -11,7 +11,7 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-ap/activitypub v0.0.0-20220301152214-16bd1c8aa0b3
-	github.com/go-ap/auth v0.0.0-20220301152601-0e61b85433f8
+	github.com/go-ap/auth v0.0.0-20220304144523-8203e29552db
 	github.com/go-ap/client v0.0.0-20220301152450-ecde1e987b19
 	github.com/go-ap/errors v0.0.0-20211205144917-1b5bb9681d99
 	github.com/go-ap/handlers v0.0.0-20220301152424-9bb086e17a50
@@ -24,7 +24,6 @@ require (
 	github.com/joho/godotenv v1.4.0
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d
-	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/openshift/osin v1.0.1
 	github.com/pborman/uuid v1.2.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
@@ -37,10 +36,6 @@ require (
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
-	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
-	golang.org/x/tools v0.1.8 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	lukechampine.com/uint128 v1.2.0 // indirect
-	modernc.org/ccgo/v3 v3.15.11 // indirect
-	modernc.org/sqlite v1.14.5
+	modernc.org/sqlite v1.14.8
 )
