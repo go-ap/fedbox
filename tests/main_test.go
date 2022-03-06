@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package tests
@@ -8,8 +9,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	st := m.Run()
-	if st != 0 {
+	if st := m.Run(); st != 0 {
 		os.Exit(st)
 	}
 }

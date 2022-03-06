@@ -31,6 +31,7 @@ import (
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/handlers"
 	"github.com/go-ap/httpsig"
+	"github.com/go-ap/jsonld"
 	"github.com/sirupsen/logrus"
 )
 
@@ -715,16 +716,17 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 					}
 				}
 			}
-			err = json.Unmarshal(b, &res)
-			assertTrue(err == nil, "Error: unmarshal failed: %s", err)
-			assertTrue(res != nil, "Error: unmarshal failed: nil result")
-
-			if test.res.val != nil {
-				if test.req.met == http.MethodGet {
-					assertObjectProperties(res, test.res.val)
-				} else if loadAfterPost(test, req) {
-					saved := assertGetRequest(test.res.val.id, test.req.account)
-					assertObjectProperties(saved, test.res.val)
+			if resp.Header.Get("Content-Type") == jsonld.ContentType {
+				err = json.Unmarshal(b, &res)
+				assertTrue(err == nil, "Error: unmarshal failed: %s", err)
+				assertTrue(res != nil, "Error: unmarshal failed: nil result")
+				if test.res.val != nil {
+					if test.req.met == http.MethodGet {
+						assertObjectProperties(res, test.res.val)
+					} else if loadAfterPost(test, req) {
+						saved := assertGetRequest(test.res.val.id, test.req.account)
+						assertObjectProperties(saved, test.res.val)
+					}
 				}
 			}
 		})
