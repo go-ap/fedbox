@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"syscall"
 
 	w "git.sr.ht/~mariusor/wrapper"
@@ -50,6 +51,7 @@ type FedBOX struct {
 	ver     string
 	caches  cache.CanStore
 	OAuth   authService
+	stopW   sync.Mutex
 	stopFn  func()
 	infFn   LogFn
 	errFn   LogFn
@@ -131,9 +133,11 @@ func (f FedBOX) Storage() st.Store {
 // Stop
 func (f *FedBOX) Stop() {
 	defer f.storage.Close()
+	f.stopW.Lock()
 	if f.stopFn != nil {
 		f.stopFn()
 	}
+	f.stopW.Unlock()
 }
 
 func (f *FedBOX) reload() (err error) {
@@ -167,11 +171,13 @@ func (f *FedBOX) Run() error {
 	// Get start/stop functions for the http server
 	srvRun, srvStop := w.HttpServer(setters...)
 	f.infFn("Listening on %s %s", listenOn, f.conf.Listen)
+	f.stopW.Lock()
 	f.stopFn = func() {
 		if err := srvStop(ctx); err != nil {
 			f.errFn("Err: %s", err)
 		}
 	}
+	f.stopW.Unlock()
 
 	exit := w.RegisterSignalHandlers(w.SignalHandlers{
 		syscall.SIGHUP: func(_ chan int) {

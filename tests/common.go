@@ -790,7 +790,7 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 			if !t.Failed() {
 				cleanDB(t, options)
 			}
-			apps[i].Stop()
+			go apps[i].Stop()
 		}
 	}
 }
