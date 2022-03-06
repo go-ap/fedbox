@@ -216,19 +216,21 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 		if err = validateFn(it, f.IRI); err != nil {
 			return it, http.StatusNotAcceptable, err
 		}
-		err = pub.OnActivity(it, func(a *pub.Activity) error {
+		pub.OnActivity(it, func(a *pub.Activity) error {
 			// TODO(marius): this should be handled in the processing package
 			if a.AttributedTo == nil {
 				a.AttributedTo = f.Authenticated
 			}
-
-			if it, err = processFn(a); err != nil {
-				return errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
-			}
-			return cache.ActivityPurge(fb.caches, a, typ)
+			return nil
+		})
+		if it, err = processFn(it); err != nil {
+			return it, errors.HttpStatus(err), errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
+		}
+		err = pub.OnActivity(it, func(act *pub.Activity) error {
+			return cache.ActivityPurge(fb.caches, act, typ)
 		})
 		if err != nil {
-			return it, errors.HttpStatus(err), err
+			infoLogger("unable to purge cache: %s", err)
 		}
 
 		status := http.StatusCreated
