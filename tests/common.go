@@ -767,10 +767,15 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 
 func runTestSuite(t *testing.T, pairs testPairs) {
 	for _, suite := range pairs {
-		apps := make([]*fedbox.FedBOX, len(suite.configs))
-		for i, options := range suite.configs {
-			apps[i] = SetupAPP(options)
-			go apps[i].Run()
+		for _, options := range suite.configs {
+			app := SetupAPP(options)
+			go app.Run()
+			defer func() {
+				if !t.Failed() {
+					cleanDB(t, options)
+				}
+				app.Stop()
+			}()
 		}
 		name := suite.name
 		t.Run(name, func(t *testing.T) {
@@ -786,11 +791,5 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 				})
 			}
 		})
-		for i, options := range suite.configs {
-			if !t.Failed() {
-				cleanDB(t, options)
-			}
-			go apps[i].Stop()
-		}
 	}
 }
