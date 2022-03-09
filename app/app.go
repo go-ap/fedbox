@@ -58,6 +58,7 @@ type FedBOX struct {
 var (
 	emptyFieldsLogFn = func(logrus.Fields, string, ...interface{}) {}
 	emptyLogFn       = func(string, ...interface{}) {}
+	emptyStopFn      = func() {}
 	InfoLogFn        = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
 		if l == nil {
 			return emptyFieldsLogFn
@@ -85,8 +86,8 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o o
 		ver:     ver,
 		conf:    conf,
 		R:       chi.NewRouter(),
-		stopFn:  func() {},
 		storage: fedboxStorage{repo: db, oauth: o},
+		stopFn:  emptyStopFn,
 		infFn:   emptyLogFn,
 		errFn:   emptyLogFn,
 		caches:  cache.New(conf.RequestCache),
