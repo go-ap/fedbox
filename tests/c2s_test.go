@@ -1315,7 +1315,7 @@ var QuestionTests = testPairs{
 					),
 				},
 				res: testRes{
-					code: http.StatusCreated,
+					code: http.StatusNoContent,
 					val: &objectVal{
 						typ: string(pub.QuestionType),
 						act: &objectVal{
