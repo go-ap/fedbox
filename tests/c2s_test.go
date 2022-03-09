@@ -1293,6 +1293,43 @@ var C2STests = testPairs{
 	},
 }
 
+var QuestionTests = testPairs{
+	{
+		name:    "SimpleQuestion",
+		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
+		tests: []testPair{
+			{
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn: loadMockJson(
+						"mocks/c2s/activities/question.json",
+						&actS2SMock{
+							ActorId: defaultC2SAccount().Id,
+						},
+					),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(pub.QuestionType),
+						act: &objectVal{
+							typ:               string(pub.PersonType),
+							preferredUsername: "johndoe",
+						},
+						obj: nil,
+					},
+				},
+			},
+		},
+	},
+}
+
 // S2SSendTests builds tests for verifying how a FedBOX instance processes C2S activities that contain
 // recipients belonging to other federated services
 var S2SSendTests = testPairs{
@@ -1373,4 +1410,8 @@ func Test_C2SRequests(t *testing.T) {
 
 func Test_S2SSendRequests(t *testing.T) {
 	runTestSuite(t, S2SSendTests)
+}
+
+func Test_QuestionRequests(t *testing.T) {
+	runTestSuite(t, QuestionTests)
 }

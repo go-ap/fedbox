@@ -17,7 +17,7 @@ require (
 	github.com/go-ap/handlers v0.0.0-20220306123851-cc5a6600786b
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220306144221-9671ab2753e0
+	github.com/go-ap/processing v0.0.0-20220309144708-4b6653b87e48
 	github.com/go-ap/storage v0.0.0-20220306123718-7b3113a02b59
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
@@ -34,8 +34,9 @@ require (
 	github.com/unrolled/render v1.4.0
 	github.com/urfave/cli/v2 v2.3.0
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
+	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
+	golang.org/x/sys v0.0.0-20220307203707-22a9840ba4d7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	modernc.org/sqlite v1.14.8
 )
