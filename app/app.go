@@ -132,7 +132,7 @@ func (f FedBOX) Storage() st.Store {
 
 // Stop
 func (f *FedBOX) Stop() {
-	defer f.storage.Close()
+	f.storage.Close()
 	f.stopFn()
 }
 
