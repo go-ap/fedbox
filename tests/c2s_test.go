@@ -820,7 +820,7 @@ var SingleItemLoadTests = testPairs{
 	},
 }
 
-var C2STests = testPairs{
+var CreateTests = testPairs{
 	{
 		name:    "CreateActor",
 		configs: c2sConfigs,
@@ -849,100 +849,6 @@ var C2STests = testPairs{
 							typ:               string(pub.PersonType),
 							preferredUsername: "jennyjane",
 							name:              "Jane Doe",
-						},
-					},
-				},
-			},
-		},
-	},
-	{
-		name:    "CreateActorAnonymously",
-		configs: c2sConfigs,
-		tests: []testPair{
-			{
-				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
-					"mocks/c2s/actors/application.json",
-				},
-				req: testReq{
-					met:    http.MethodPost,
-					urlFn:  OutboxURL(defaultC2SAccount()),
-					bodyFn: loadMockJson("mocks/c2s/activities/create-actor.json", defaultC2SAccount()),
-				},
-				res: testRes{
-					code: http.StatusUnauthorized,
-				},
-			},
-		},
-	},
-	{
-		name:    "UpdateActor",
-		configs: c2sConfigs,
-		tests: []testPair{
-			{
-				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
-					"mocks/c2s/actors/application.json",
-				},
-				req: testReq{
-					met:     http.MethodPost,
-					account: defaultC2SAccount(),
-					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/c2s/activities/update-actor.json", defaultC2SAccount()),
-				},
-				res: testRes{
-					code: http.StatusCreated,
-					val: &objectVal{
-						typ: string(pub.UpdateType),
-						act: &objectVal{
-							id:  defaultC2SAccount().Id,
-							typ: string(pub.PersonType),
-						},
-						obj: &objectVal{
-							id:                defaultC2SAccount().Id,
-							name:              "Jane Doe",
-							preferredUsername: "jennyjane",
-							typ:               string(pub.PersonType),
-							inbox: &objectVal{
-								id: fmt.Sprintf("%s/inbox", defaultC2SAccount().Id),
-							},
-							outbox: &objectVal{
-								id: OutboxURL(defaultC2SAccount())(),
-							},
-						},
-					},
-				},
-			},
-		},
-	},
-	{
-		name:    "DeleteActor",
-		configs: c2sConfigs,
-		tests: []testPair{
-			{
-				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
-				},
-				req: testReq{
-					met:     http.MethodPost,
-					account: defaultC2SAccount(),
-					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/c2s/activities/activity.json", actS2SMock{Type: "Delete", ActorId: defaultC2SAccount().Id, ObjectId: defaultC2SAccount().Id}),
-				},
-				res: testRes{
-					code: http.StatusGone,
-					val: &objectVal{
-						typ: string(pub.DeleteType),
-						act: &objectVal{
-							id:  defaultC2SAccount().Id,
-							typ: string(pub.TombstoneType),
-						},
-						obj: &objectVal{
-							id:  defaultC2SAccount().Id,
-							typ: string(pub.TombstoneType),
 						},
 					},
 				},
@@ -1059,6 +965,164 @@ var C2STests = testPairs{
 		},
 	},
 	{
+		name:    "CreateActorAnonymously",
+		configs: c2sConfigs,
+		tests: []testPair{
+			{
+				mocks: []string{
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
+					"mocks/c2s/actors/application.json",
+				},
+				req: testReq{
+					met:    http.MethodPost,
+					urlFn:  OutboxURL(defaultC2SAccount()),
+					bodyFn: loadMockJson("mocks/c2s/activities/create-actor.json", defaultC2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusUnauthorized,
+				},
+			},
+		},
+	},
+	{
+		// This builds a test for verifying how a FedBOX instance processes C2S activities that contain
+		// recipients belonging to other federated services
+		name:    "CreateNote",
+		configs: s2sConfigs,
+		tests: []testPair{
+			{
+				mocks: []string{
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
+					"mocks/c2s/actors/application.json",
+					// s2s entities that need to exist
+					"mocks/s2s/actors/actor-666.json",
+				},
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn: loadMockJson(
+						"mocks/c2s/activities/create-object-with-federated-cc.json",
+						CreateC2SObject(defaultC2SAccount(), loadMockFromDisk("mocks/c2s/objects/note-1.json", nil)),
+					),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(pub.CreateType),
+						act: &objectVal{
+							id:                defaultC2SAccount().Id,
+							typ:               string(pub.PersonType),
+							preferredUsername: "johndoe",
+							name:              "Johnathan Doe",
+						},
+						obj: &objectVal{
+							id:  loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetID().String(),
+							typ: string(loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetType()),
+						},
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: InboxURL(defaultS2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						typ:       string(pub.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+		},
+	},
+}
+
+var UpdateTests = testPairs{
+	{
+		name:    "UpdateActor",
+		configs: c2sConfigs,
+		tests: []testPair{
+			{
+				mocks: []string{
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
+					"mocks/c2s/actors/application.json",
+				},
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn:  loadMockJson("mocks/c2s/activities/update-actor.json", defaultC2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(pub.UpdateType),
+						act: &objectVal{
+							id:  defaultC2SAccount().Id,
+							typ: string(pub.PersonType),
+						},
+						obj: &objectVal{
+							id:                defaultC2SAccount().Id,
+							name:              "Jane Doe",
+							preferredUsername: "jennyjane",
+							typ:               string(pub.PersonType),
+							inbox: &objectVal{
+								id: fmt.Sprintf("%s/inbox", defaultC2SAccount().Id),
+							},
+							outbox: &objectVal{
+								id: OutboxURL(defaultC2SAccount())(),
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+var DeleteTests = testPairs{
+	{
+		name:    "DeleteActor",
+		configs: c2sConfigs,
+		tests: []testPair{
+			{
+				mocks: []string{
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
+				},
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn:  loadMockJson("mocks/c2s/activities/activity.json", actS2SMock{Type: "Delete", ActorId: defaultC2SAccount().Id, ObjectId: defaultC2SAccount().Id}),
+				},
+				res: testRes{
+					code: http.StatusGone,
+					val: &objectVal{
+						typ: string(pub.DeleteType),
+						act: &objectVal{
+							id:  defaultC2SAccount().Id,
+							typ: string(pub.TombstoneType),
+						},
+						obj: &objectVal{
+							id:  defaultC2SAccount().Id,
+							typ: string(pub.TombstoneType),
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+var LikeTests = testPairs{
+	{
 		name:    "LikeNote",
 		configs: c2sConfigs,
 		mocks: []string{
@@ -1160,6 +1224,9 @@ var C2STests = testPairs{
 			},
 		},
 	},
+}
+
+var FollowTests = testPairs{
 	{
 		name:    "FollowActor",
 		configs: c2sConfigs,
@@ -1228,6 +1295,9 @@ var C2STests = testPairs{
 			},
 		},
 	},
+}
+
+var BlockTests = testPairs{
 	{
 		name:    "BlockActor",
 		configs: c2sConfigs,
@@ -1330,64 +1400,6 @@ var QuestionTests = testPairs{
 	},
 }
 
-// S2SSendTests builds tests for verifying how a FedBOX instance processes C2S activities that contain
-// recipients belonging to other federated services
-var S2SSendTests = testPairs{
-	{
-		name:    "CreateNote",
-		configs: s2sConfigs,
-		tests: []testPair{
-			{
-				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
-					"mocks/c2s/actors/application.json",
-					// s2s entities that need to exist
-					"mocks/s2s/actors/actor-666.json",
-				},
-				req: testReq{
-					met:     http.MethodPost,
-					account: defaultC2SAccount(),
-					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn: loadMockJson(
-						"mocks/c2s/activities/create-object-with-federated-cc.json",
-						CreateC2SObject(defaultC2SAccount(), loadMockFromDisk("mocks/c2s/objects/note-1.json", nil)),
-					),
-				},
-				res: testRes{
-					code: http.StatusCreated,
-					val: &objectVal{
-						typ: string(pub.CreateType),
-						act: &objectVal{
-							id:                defaultC2SAccount().Id,
-							typ:               string(pub.PersonType),
-							preferredUsername: "johndoe",
-							name:              "Johnathan Doe",
-						},
-						obj: &objectVal{
-							id:  loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetID().String(),
-							typ: string(loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetType()),
-						},
-					},
-				},
-			},
-			{
-				req: testReq{
-					met:   http.MethodGet,
-					urlFn: InboxURL(defaultS2SAccount()),
-				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						typ:       string(pub.OrderedCollectionType),
-						itemCount: 1,
-					},
-				},
-			},
-		},
-	},
-}
-
 func Test_SingleItemLoad(t *testing.T) {
 	runTestSuite(t, SingleItemLoadTests)
 }
@@ -1404,14 +1416,30 @@ func Test_ActorsCollection(t *testing.T) {
 	runTestSuite(t, ActorsCollectionTests)
 }
 
-func Test_C2SRequests(t *testing.T) {
-	runTestSuite(t, C2STests)
+func Test_C2S_CreateRequests(t *testing.T) {
+	runTestSuite(t, CreateTests)
 }
 
-func Test_S2SSendRequests(t *testing.T) {
-	runTestSuite(t, S2SSendTests)
+func Test_C2S_UpdateRequests(t *testing.T) {
+	runTestSuite(t, UpdateTests)
 }
 
-func Test_QuestionRequests(t *testing.T) {
+func Test_C2S_DeleteRequests(t *testing.T) {
+	runTestSuite(t, DeleteTests)
+}
+
+func Test_C2S_LikeRequests(t *testing.T) {
+	runTestSuite(t, LikeTests)
+}
+
+func Test_C2S_FollowRequests(t *testing.T) {
+	runTestSuite(t, FollowTests)
+}
+
+func Test_C2S_BlockRequests(t *testing.T) {
+	runTestSuite(t, BlockTests)
+}
+
+func Test_C2S_QuestionRequests(t *testing.T) {
 	runTestSuite(t, QuestionTests)
 }
