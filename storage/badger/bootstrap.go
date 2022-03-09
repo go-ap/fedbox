@@ -1,3 +1,4 @@
+//go:build storage_badger || storage_all || (!storage_pgx && !storage_boltdb && !storage_fs && !storage_sqlite)
 // +build storage_badger storage_all !storage_pgx,!storage_boltdb,!storage_fs,!storage_sqlite
 
 package badger
@@ -20,6 +21,9 @@ func Bootstrap(conf config.Options) error {
 		Path:    conf.BaseStoragePath(),
 		BaseURL: conf.BaseURL,
 	})
+	if err != nil {
+		return err
+	}
 	self := activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL))
 	actors := &pub.OrderedCollection{ID: activitypub.ActorsType.IRI(&self)}
 	activities := &pub.OrderedCollection{ID: activitypub.ActivitiesType.IRI(&self)}
