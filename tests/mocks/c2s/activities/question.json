@@ -1,0 +1,5 @@
+{
+  "type": "Question",
+  "to": ["https://www.w3.org/ns/activitystreams#Public", "http://127.0.0.1:9998"],
+  "actor": "{{ .ActorId }}"
+}
