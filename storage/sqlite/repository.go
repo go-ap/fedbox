@@ -819,11 +819,12 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 	params := []interface{}{interface{}(raw)}
 
 	table := string(ap.ObjectsType)
-	if pub.ActivityTypes.Contains(it.GetType()) {
+	typ := it.GetType()
+	if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
 		table = string(ap.ActivitiesType)
-	} else if pub.ActorTypes.Contains(it.GetType()) {
+	} else if pub.ActorTypes.Contains(typ) {
 		table = string(ap.ActorsType)
-	} else if it.GetType() == pub.TombstoneType {
+	} else if typ == pub.TombstoneType {
 		if strings.Contains(iri.String(), string(ap.ActorsType)) {
 			table = string(ap.ActorsType)
 		}

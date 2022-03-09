@@ -1,10 +1,10 @@
+//go:build storage_sqlite || storage_all || (!sqlite_fs && !storage_boltdb && !storage_badger && !storage_pgx)
 // +build storage_sqlite storage_all !sqlite_fs,!storage_boltdb,!storage_badger,!storage_pgx
 
 package sqlite
 
 const (
-
-createActorsQuery = `
+	createActorsQuery = `
 CREATE TABLE actors (
   "raw" BLOB,
   "meta" BLOB,
@@ -24,7 +24,7 @@ CREATE TABLE actors (
 -- CREATE INDEX actors_published ON actors(published);
 `
 
-createActivitiesQuery = `
+	createActivitiesQuery = `
 CREATE TABLE activities (
   "raw" BLOB,
   "meta" BLOB,
@@ -37,7 +37,7 @@ CREATE TABLE activities (
   "published" timestamp GENERATED ALWAYS AS (json_extract(raw, '$.published')) VIRTUAL,
   "url" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.url')) VIRTUAL,
   "actor" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.actor')) VIRTUAL NOT NULL CONSTRAINT activities_actors_iri_fk REFERENCES actors (iri),
-  "object" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.object')) VIRTUAL NOT NULL CONSTRAINT activities_objects_iri_fk REFERENCES objects (iri)
+  "object" TEXT GENERATED ALWAYS AS (json_extract(raw, '$.object')) VIRTUAL CONSTRAINT activities_objects_iri_fk REFERENCES objects (iri)
 );
 -- CREATE INDEX activities_type ON activities(type);
 -- CREATE INDEX activities_actor ON activities(actor);
@@ -45,7 +45,7 @@ CREATE TABLE activities (
 -- CREATE INDEX activities_published ON activities(published);
 `
 
-createObjectsQuery = `
+	createObjectsQuery = `
 CREATE TABLE objects (
   "raw" BLOB,
   "meta" BLOB,
@@ -68,14 +68,14 @@ CREATE TABLE objects (
 -- CREATE INDEX objects_published ON objects(published);
 `
 
-createCollectionsQuery = `
+	createCollectionsQuery = `
 create table collections (
   "published" timestamp default CURRENT_TIMESTAMP,
   "iri" varchar,
   "object" varchar
 );`
 
-tuneQuery = `
+	tuneQuery = `
 -- Use WAL mode (writers don't block readers):
 PRAGMA journal_mode = DELETE;
 -- Use memory as temporary storage:
