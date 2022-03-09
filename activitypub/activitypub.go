@@ -52,7 +52,8 @@ func DefaultServiceIRI(baseURL string) pub.IRI {
 func GenerateID(it pub.Item, partOf pub.IRI, by pub.Item) (pub.ID, error) {
 	uuid := uuid.New()
 	id := partOf.GetLink().AddPath(uuid)
-	if pub.ActivityTypes.Contains(it.GetType()) {
+	typ := it.GetType()
+	if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
 		err := pub.OnActivity(it, func(a *pub.Activity) error {
 			rec := append(a.To, append(a.CC, append(a.Bto, a.BCC...)...)...)
 			if !rec.Contains(pub.PublicNS) {
