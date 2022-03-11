@@ -10,15 +10,15 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-ap/activitypub v0.0.0-20220306123418-d29b4fa0aeb9
-	github.com/go-ap/auth v0.0.0-20220311111926-032ecd9f2260
-	github.com/go-ap/client v0.0.0-20220309154751-552bf6e49d09
+	github.com/go-ap/activitypub v0.0.0-20220311154756-eed05617790c
+	github.com/go-ap/auth v0.0.0-20220311155106-0086b4bb305c
+	github.com/go-ap/client v0.0.0-20220311155036-4862ea9d7c69
 	github.com/go-ap/errors v0.0.0-20211205144917-1b5bb9681d99
-	github.com/go-ap/handlers v0.0.0-20220309154652-05d6cb5ef72a
+	github.com/go-ap/handlers v0.0.0-20220311154943-79634f8f134b
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220309154937-8d2230fd1b94
-	github.com/go-ap/storage v0.0.0-20220306123718-7b3113a02b59
+	github.com/go-ap/processing v0.0.0-20220311155242-e455b913e516
+	github.com/go-ap/storage v0.0.0-20220311154839-1a0ccdeeb25a
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0
