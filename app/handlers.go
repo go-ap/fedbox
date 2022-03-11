@@ -142,7 +142,7 @@ func GenerateID(base pub.IRI) func(it pub.Item, col pub.Item, by pub.Item) (pub.
 		typ := it.GetType()
 
 		var partOf pub.IRI
-		if pub.ActivityTypes.Contains(typ) {
+		if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
 			partOf = ap.ActivitiesType.IRI(base)
 		} else if pub.ActorTypes.Contains(typ) || typ == pub.ActorType {
 			partOf = ap.ActorsType.IRI(base)
