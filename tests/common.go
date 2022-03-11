@@ -766,15 +766,18 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 }
 
 func runTestSuite(t *testing.T, pairs testPairs) {
+	m := sync.Mutex{}
 	for _, suite := range pairs {
 		for _, options := range suite.configs {
-			app := SetupAPP(options)
+			app := SetupAPP(options, &m)
 			go app.Run()
 			defer func() {
+				m.Lock()
 				if !t.Failed() {
 					cleanDB(t, options)
 				}
-				app.Stop()
+				go app.Stop()
+				m.Unlock()
 			}()
 		}
 		name := suite.name

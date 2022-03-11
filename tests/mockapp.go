@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"path"
 	"strings"
+	"sync"
 	"testing"
 	"text/template"
 	"time"
@@ -202,10 +203,13 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	}
 }
 
-func SetupAPP(options config.Options) *app.FedBOX {
+func SetupAPP(options config.Options, m *sync.Mutex) *app.FedBOX {
 	if options.Storage == "all" {
 		options.Storage = config.StorageFS
 	}
+	m.Lock()
+	defer m.Unlock()
+
 	fields := logrus.Fields{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
 
 	l := logger()
