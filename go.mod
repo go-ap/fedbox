@@ -11,7 +11,7 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-ap/activitypub v0.0.0-20220306123418-d29b4fa0aeb9
-	github.com/go-ap/auth v0.0.0-20220309154854-d141ed75d491
+	github.com/go-ap/auth v0.0.0-20220311111926-032ecd9f2260
 	github.com/go-ap/client v0.0.0-20220309154751-552bf6e49d09
 	github.com/go-ap/errors v0.0.0-20211205144917-1b5bb9681d99
 	github.com/go-ap/handlers v0.0.0-20220309154652-05d6cb5ef72a
@@ -36,7 +36,6 @@ require (
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
-	golang.org/x/sys v0.0.0-20220307203707-22a9840ba4d7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	modernc.org/sqlite v1.14.8
 )
