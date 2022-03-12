@@ -11,13 +11,13 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-ap/activitypub v0.0.0-20220311154756-eed05617790c
-	github.com/go-ap/auth v0.0.0-20220311155106-0086b4bb305c
-	github.com/go-ap/client v0.0.0-20220311155036-4862ea9d7c69
+	github.com/go-ap/auth v0.0.0-20220312084553-53355657eab6
+	github.com/go-ap/client v0.0.0-20220312084440-f4072521af31
 	github.com/go-ap/errors v0.0.0-20211205144917-1b5bb9681d99
-	github.com/go-ap/handlers v0.0.0-20220311154943-79634f8f134b
+	github.com/go-ap/handlers v0.0.0-20220312083712-e96b92622003
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220311155242-e455b913e516
+	github.com/go-ap/processing v0.0.0-20220312084614-38161defdd50
 	github.com/go-ap/storage v0.0.0-20220311154839-1a0ccdeeb25a
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
