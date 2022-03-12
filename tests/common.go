@@ -784,7 +784,7 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 				if !t.Failed() {
 					cleanDB(t, options)
 				}
-				go app.Stop()
+				app.Stop()
 				m.Unlock()
 			}()
 		}
