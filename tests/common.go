@@ -804,9 +804,6 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 	for _, suite := range pairs {
 		for _, options := range suite.configs {
 			go SetupAPP(options).Run()
-			// NOTE(marius): we removed the deferred app.Stop(),
-			// to avoid race conditions when running multiple FedBOX instances for the federated tests
-			defer cleanDB(t, options)
 		}
 		name := suite.name
 		t.Run(name, func(t *testing.T) {
@@ -822,5 +819,10 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 				})
 			}
 		})
+		for _, options := range suite.configs {
+			// NOTE(marius): we removed the deferred app.Stop(),
+			// to avoid race conditions when running multiple FedBOX instances for the federated tests
+			cleanDB(t, options)
+		}
 	}
 }
