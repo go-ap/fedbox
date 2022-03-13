@@ -793,19 +793,12 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 }
 
 func runTestSuite(t *testing.T, pairs testPairs) {
-	m := sync.Mutex{}
 	for _, suite := range pairs {
 		for _, options := range suite.configs {
-			app := SetupAPP(options, &m)
-			go app.Run()
-			defer func() {
-				m.Lock()
-				if !t.Failed() {
-					cleanDB(t, options)
-				}
-				app.Stop()
-				m.Unlock()
-			}()
+			go SetupAPP(options).Run()
+			// NOTE(marius): we removed the deferred app.Stop(),
+			// to avoid race conditions when running multiple FedBOX instances for the federated tests
+			defer cleanDB(t, options)
 		}
 		name := suite.name
 		t.Run(name, func(t *testing.T) {
