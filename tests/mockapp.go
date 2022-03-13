@@ -12,6 +12,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 	"testing"
@@ -83,6 +84,9 @@ func cleanDB(t *testing.T, opt config.Options) {
 			st.Reset()
 		}
 	}
+
+	basePath := path.Clean(path.Join(opt.StoragePath, string(opt.Storage)))
+	os.RemoveAll(basePath)
 }
 
 func publicKeyFrom(key crypto.PrivateKey) crypto.PublicKey {
