@@ -755,13 +755,13 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 				err = json.Unmarshal(b, &res)
 				assertTrue(err == nil, "Error: unmarshal failed: %s", err)
 				assertTrue(res != nil, "Error: unmarshal failed: nil result")
-				if test.res.val != nil {
-					if test.req.met == http.MethodGet {
-						assertObjectProperties(res, test.res.val)
-					} else if loadAfterPost(test, req) {
-						saved := assertGetRequest(test.res.val.id, test.req.account)
-						assertObjectProperties(saved, test.res.val)
-					}
+			}
+			if test.res.val != nil {
+				if test.req.met == http.MethodGet {
+					assertObjectProperties(res, test.res.val)
+				} else if loadAfterPost(test, req) {
+					saved := assertGetRequest(test.res.val.id, test.req.account)
+					assertObjectProperties(saved, test.res.val)
 				}
 			}
 		})
