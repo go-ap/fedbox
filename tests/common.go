@@ -743,7 +743,8 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 					}
 				}
 			}
-			if resp.Header.Get("Content-Type") == jsonld.ContentType {
+			contentType := resp.Header.Get("Content-Type")
+			if contentType == jsonld.ContentType || contentType == client.ContentTypeActivityJson {
 				err = json.Unmarshal(b, &res)
 				assertTrue(err == nil, "Error: unmarshal failed: %s", err)
 				assertTrue(res != nil, "Error: unmarshal failed: nil result")
