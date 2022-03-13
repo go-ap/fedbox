@@ -85,8 +85,8 @@ func cleanDB(t *testing.T, opt config.Options) {
 		}
 	}
 
-	basePath := path.Clean(path.Join(opt.StoragePath, string(opt.Storage)))
-	os.RemoveAll(basePath)
+	// As we're using ioutil.Tempdir for the storage path, we can remove it fully
+	os.RemoveAll(path.Clean(opt.StoragePath))
 }
 
 func publicKeyFrom(key crypto.PrivateKey) crypto.PublicKey {

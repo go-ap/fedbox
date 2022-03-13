@@ -48,7 +48,7 @@ var C2SConfig = config.Options{
 	Listen:      "127.0.0.1:9998",
 	BaseURL:     "http://127.0.0.1:9998/",
 	LogLevel:    log.DebugLevel,
-	StoragePath: ".cache",
+	StoragePath: storagePath(),
 	Storage:     storageType(),
 }
 
@@ -58,7 +58,7 @@ var S2SConfig = config.Options{
 	Listen:      "127.0.2.1:9999",
 	BaseURL:     "http://127.0.2.1:9999/",
 	LogLevel:    log.DebugLevel,
-	StoragePath: ".cache",
+	StoragePath: storagePath(),
 	Storage:     storageType(),
 }
 
@@ -169,6 +169,13 @@ type objectVal struct {
 	audience          []string
 }
 
+var storagePath = func() string {
+	path, err := ioutil.TempDir(".cache", "*")
+	if err != nil {
+		panic(err)
+	}
+	return path
+}
 var storageType = func() config.StorageType {
 	envStorage := os.Getenv("STORAGE")
 	if len(envStorage) > 0 {
