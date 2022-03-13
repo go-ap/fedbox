@@ -157,8 +157,8 @@ type objectVal struct {
 	liked             *objectVal
 	act               *objectVal
 	obj               *objectVal
-	oneOf             *objectVal
-	anyOf             *objectVal
+	oneOf             []*objectVal
+	anyOf             []*objectVal
 	tag               []*objectVal
 	itemCount         int64
 	first             *objectVal
@@ -481,12 +481,6 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 					assertObjectProperties(dOb, tVal.obj)
 				}
 			}
-			if tVal.anyOf != nil {
-				assertMapKey(ob, "anyOf", tVal.anyOf)
-			}
-			if tVal.oneOf != nil {
-				assertMapKey(ob, "oneOf", tVal.oneOf)
-			}
 			if tVal.audience != nil {
 				assertMapKey(ob, "audience", tVal.audience)
 				audOb, _ := ob["audience"]
@@ -533,10 +527,35 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 				assertMapKey(ob, "tag", tVal.tag)
 				if len(tVal.tag) > 0 {
 					for _, tVal := range tVal.tag {
-						if len(tVal.id) > 0 {
-							derefCol := assertGetRequest(tVal.id, nil)
-							assertObjectProperties(derefCol, tVal)
+						if len(tVal.id) == 0 {
+							continue
 						}
+						derefCol := assertGetRequest(tVal.id, nil)
+						assertObjectProperties(derefCol, tVal)
+					}
+				}
+			}
+			if tVal.anyOf != nil {
+				assertMapKey(ob, "anyOf", tVal.anyOf)
+				if len(tVal.anyOf) > 0 {
+					for _, tVal := range tVal.anyOf {
+						if len(tVal.id) == 0 {
+							continue
+						}
+						derefCol := assertGetRequest(tVal.id, nil)
+						assertObjectProperties(derefCol, tVal)
+					}
+				}
+			}
+			if tVal.oneOf != nil {
+				assertMapKey(ob, "oneOf", tVal.oneOf)
+				if len(tVal.oneOf) > 0 {
+					for _, tVal := range tVal.oneOf {
+						if len(tVal.id) == 0 {
+							continue
+						}
+						derefCol := assertGetRequest(tVal.id, nil)
+						assertObjectProperties(derefCol, tVal)
 					}
 				}
 			}
