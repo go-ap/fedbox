@@ -1427,7 +1427,49 @@ var QuestionTests = testPairs{
 							typ:               string(pub.PersonType),
 							preferredUsername: "johndoe",
 						},
-						obj: nil,
+						oneOf: []*objectVal{
+							{name: "Answer 1"},
+							{name: "Answer 2"},
+						},
+					},
+				},
+			},
+		},
+	},
+	{
+		name:    "QuestionWithAnyOfAnswer",
+		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
+		tests: []testPair{
+			{
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn: loadMockJson(
+						"mocks/c2s/activities/question-with-anyOf.json",
+						&actS2SMock{
+							ActorId: defaultC2SAccount().Id,
+						},
+					),
+				},
+				res: testRes{
+					code: http.StatusNoContent,
+					val: &objectVal{
+						typ:  string(pub.QuestionType),
+						name: "Some question",
+						act: &objectVal{
+							typ:               string(pub.PersonType),
+							preferredUsername: "johndoe",
+						},
+						anyOf: []*objectVal{
+							{name: "Answer 1"},
+							{name: "Answer 2"},
+							{name: "Answer 3"},
+						},
 					},
 				},
 			},

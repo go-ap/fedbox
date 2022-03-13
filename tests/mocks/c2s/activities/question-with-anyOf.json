@@ -1,0 +1,17 @@
+{
+  "type": "Question",
+  "to": ["https://www.w3.org/ns/activitystreams#Public", "http://127.0.0.1:9998"],
+  "actor": "{{ .ActorId }}",
+  "name": "Some question",
+  "anyOf": [
+    {
+      "name": "Answer 1"
+    },
+    {
+      "name": "Answer 2"
+    },
+    {
+      "name": "Answer 3"
+    }
+  ]
+}
