@@ -40,9 +40,3 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	modernc.org/sqlite v1.14.8
 )
-
-replace (
-	github.com/go-ap/activitypub => ../go-ap/activitypub
-	github.com/go-ap/auth => ../go-ap/auth
-	github.com/go-ap/processing => ../go-ap/processing
-)
