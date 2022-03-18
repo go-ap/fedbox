@@ -10,15 +10,15 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-ap/activitypub v0.0.0-20220313102530-8eefc7992f87
-	github.com/go-ap/auth v0.0.0-20220313103045-2d97f141d4c4
-	github.com/go-ap/client v0.0.0-20220313103000-29bb8eadf587
+	github.com/go-ap/activitypub v0.0.0-20220316105155-826f263bfec3
+	github.com/go-ap/auth v0.0.0-20220318130631-e546db0f3497
+	github.com/go-ap/client v0.0.0-20220318130527-00e93c8a0a99
 	github.com/go-ap/errors v0.0.0-20211205144917-1b5bb9681d99
-	github.com/go-ap/handlers v0.0.0-20220313102855-071af346d1c7
+	github.com/go-ap/handlers v0.0.0-20220318130434-b284abadbfe8
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220313103113-5fafcd15d732
-	github.com/go-ap/storage v0.0.0-20220313102613-ca908916b62e
+	github.com/go-ap/processing v0.0.0-20220318130657-641a5ead955e
+	github.com/go-ap/storage v0.0.0-20220318130355-6cb6cab3a722
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0
@@ -34,8 +34,15 @@ require (
 	github.com/unrolled/render v1.4.0
 	github.com/urfave/cli/v2 v2.3.0
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/crypto v0.0.0-20220313003712-b769efc7c000
+	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
+	golang.org/x/sys v0.0.0-20220318055525-2edf467146b5 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	modernc.org/sqlite v1.14.8
+)
+
+replace (
+	github.com/go-ap/activitypub => ../go-ap/activitypub
+	github.com/go-ap/auth => ../go-ap/auth
+	github.com/go-ap/processing => ../go-ap/processing
 )
