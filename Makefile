@@ -51,7 +51,7 @@ TEST := $(GO) test $(BUILDFLAGS)
 all: fedbox ctl
 
 download:
-	$(GO) mod tidy
+	$(GO) mod download
 
 install_broccoli:
 	$(GO) install aletheia.icu/broccoli@5bc1e2f86a59
