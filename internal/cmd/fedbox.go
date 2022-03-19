@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -62,6 +63,6 @@ func run(version string) cli.ActionFunc {
 			return err
 		}
 
-		return a.Run()
+		return a.Run(context.Background())
 	}
 }

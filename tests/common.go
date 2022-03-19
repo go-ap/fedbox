@@ -809,7 +809,7 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 func runTestSuite(t *testing.T, pairs testPairs) {
 	for _, suite := range pairs {
 		for _, options := range suite.configs {
-			go SetupAPP(options).Run()
+			go SetupAPP(options).Run(context.TODO())
 		}
 		name := suite.name
 		t.Run(name, func(t *testing.T) {
