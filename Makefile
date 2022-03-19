@@ -18,7 +18,7 @@ M4_FLAGS =
 DESTDIR ?= /
 INSTALL_PREFIX ?= usr/local
 
-GO := go
+GO ?= go
 APPSOURCES := $(wildcard app/*.go activitypub/*.go internal/*/*.go storage/*/*.go)
 APPSOURCES := $(filter-out internal/assets/assets.gen.go, $(APPSOURCES))
 ASSETFILES := $(wildcard templates/*)
@@ -84,7 +84,7 @@ clean:
 	$(MAKE) -C tests $@
 
 test: TEST_TARGET := ./{activitypub,app,storage,internal}/...
-test: assets
+test: assets download
 	$(TEST) $(TEST_FLAGS) -tags "$(TAGS)" $(TEST_TARGET)
 
 coverage: TEST_TARGET := .
