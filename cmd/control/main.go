@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
@@ -16,7 +17,9 @@ func main() {
 	app := cli.App{}
 	app.Name = "fedbox-ctl"
 	app.Usage = "helper utility to manage a FedBOX instance"
-	app.Version = version
+	if build, ok := debug.ReadBuildInfo(); ok && version == "HEAD" {
+		app.Version = build.Main.Version
+	}
 	app.Before = cmd.Before
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{

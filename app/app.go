@@ -143,9 +143,9 @@ func (f *FedBOX) reload() (err error) {
 }
 
 // Run is the wrapper for starting the web-server and handling signals
-func (f *FedBOX) Run() error {
+func (f *FedBOX) Run(c context.Context) error {
 	// Create a deadline to wait for.
-	ctx, cancelFn := context.WithTimeout(context.TODO(), f.conf.TimeOut)
+	ctx, cancelFn := context.WithTimeout(c, f.conf.TimeOut)
 	defer cancelFn()
 
 	listenOn := ""
