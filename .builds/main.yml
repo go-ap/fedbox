@@ -9,7 +9,7 @@ environment:
   GO111MODULE: 'on'
 tasks:
   - setup: |
-      cd fedbox && go mod vendor
+      cd fedbox && make download && go mod vendor
   - build: |
       cd fedbox
       make STORAGE=fs clean all

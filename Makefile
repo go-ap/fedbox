@@ -46,19 +46,19 @@ endif
 BUILD := $(GO) build $(BUILDFLAGS)
 TEST := $(GO) test $(BUILDFLAGS)
 
-.PHONY: all run clean test coverage integration install download
+.PHONY: all run clean test coverage integration install download install_broccoli
 
 all: fedbox ctl
 
 download:
-	$(GO) mod download
+	$(GO) mod download all
 
 install_broccoli:
 	$(GO) install aletheia.icu/broccoli@5bc1e2f86a59
 
 assets: internal/assets/assets.gen.go
 
-internal/assets/assets.gen.go: download install_broccoli assets.go $(ASSETFILES)
+internal/assets/assets.gen.go: download assets.go $(ASSETFILES)
 	$(GO) generate -tags "$(TAGS)" ./assets.go
 
 fedbox: bin/fedbox
