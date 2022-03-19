@@ -6,15 +6,15 @@ require (
 	aletheia.icu/broccoli/fs v0.0.0-20200506212414-5bc1e2f86a59
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/dgraph-io/badger/v3 v3.2103.2
-	github.com/go-ap/activitypub v0.0.0-20220316105155-826f263bfec3
-	github.com/go-ap/auth v0.0.0-20220318130631-e546db0f3497
-	github.com/go-ap/client v0.0.0-20220318130527-00e93c8a0a99
+	github.com/go-ap/activitypub v0.0.0-20220319193000-0b791c7c7fd9
+	github.com/go-ap/auth v0.0.0-20220319194145-b1edcc5736b9
+	github.com/go-ap/client v0.0.0-20220319194101-38839aec3e64
 	github.com/go-ap/errors v0.0.0-20211205144917-1b5bb9681d99
-	github.com/go-ap/handlers v0.0.0-20220318130434-b284abadbfe8
+	github.com/go-ap/handlers v0.0.0-20220319193821-b3d780857903
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220319152944-1a0336522305
-	github.com/go-ap/storage v0.0.0-20220318130355-6cb6cab3a722
+	github.com/go-ap/processing v0.0.0-20220319194251-8b12bbf10b68
+	github.com/go-ap/storage v0.0.0-20220319193711-c4e7072539bb
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0
