@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path"
 	"sort"
 	"strings"
 	"time"
@@ -63,7 +62,11 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		names := c.Args().Slice()
 		if len(names) == 0 {
-			return errors.Errorf("Missing actor name")
+			name, err := loadFromStdin("Enter the actor's name")
+			if err != nil {
+				return errors.Errorf("Missing the actor's name")
+			}
+			names = append(names, string(name))
 		}
 
 		var actors = make(pub.ItemCollection, 0)
@@ -108,18 +111,14 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func (c *Control) AddActor(p *pub.Person, pw []byte) (*pub.Person, error) {
-	if c.Storage == nil {
-		return nil, errors.Errorf("invalid storage backend")
-	}
-
-	act := &pub.Activity{
+func wrapObjectInCreate(r storage.Store, selfIRI pub.IRI, p pub.Item) pub.Activity {
+	act := pub.Activity{
 		Type:    pub.CreateType,
 		To:      pub.ItemCollection{pub.PublicNS},
 		Updated: time.Now().UTC(),
 		Object:  p,
 	}
-	if self, err := c.Storage.Load(pub.IRI(c.Conf.BaseURL)); err == nil {
+	if self, err := r.Load(selfIRI); err == nil {
 		if act.AttributedTo == nil {
 			act.AttributedTo = self.GetLink()
 		}
@@ -130,8 +129,26 @@ func (c *Control) AddActor(p *pub.Person, pw []byte) (*pub.Person, error) {
 			act.CC.Append(self.GetLink())
 		}
 	}
+	return act
+}
 
-	if _, err := c.Saver.ProcessClientActivity(act); err != nil {
+func (c *Control) AddObject(p *pub.Object) (*pub.Object, error) {
+	if c.Storage == nil {
+		return nil, errors.Errorf("invalid storage backend")
+	}
+	if _, err := c.Saver.ProcessClientActivity(wrapObjectInCreate(c.Storage, pub.IRI(c.Conf.BaseURL), p)); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+func (c *Control) AddActor(p *pub.Person, pw []byte) (*pub.Person, error) {
+	if c.Storage == nil {
+		return nil, errors.Errorf("invalid storage backend")
+	}
+
+	create := wrapObjectInCreate(c.Storage, pub.IRI(c.Conf.BaseURL), p)
+	if _, err := c.Saver.ProcessClientActivity(create); err != nil {
 		return nil, err
 	}
 
@@ -168,6 +185,7 @@ func delObjectsAct(ctl *Control) cli.ActionFunc {
 }
 
 func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string) error {
+	invalidRemoveTypes := append(append(pub.ActivityTypes, pub.IntransitiveActivityTypes...), pub.TombstoneType)
 	self := ap.Self(pub.IRI(c.Conf.BaseURL))
 
 	d := new(pub.Delete)
@@ -194,45 +212,34 @@ func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string
 	delItems := make(pub.ItemCollection, 0)
 	for _, id := range ids {
 		iri := pub.IRI(id)
-		u, err := iri.URL()
+
+		it, err := c.Storage.Load(iri)
 		if err != nil {
 			continue
 		}
-		base, _ := path.Split(u.Path)
-		typ := strings.Trim(base, "/")
-
-		var it pub.Item
-		if strings.ToLower(typ) != strings.ToLower(string(ap.ActorsType)) && strings.ToLower(typ) != strings.ToLower(string(ap.ObjectsType)) {
-			continue
-		}
-		it, err = c.Storage.Load(iri)
-		if err != nil || it.GetType() == pub.TombstoneType {
-			continue
-		}
-		if it.IsCollection() {
-			pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
-				for _, ob := range c.Collection() {
-					pub.OnObject(ob, func(o *pub.Object) error {
-						if o.AttributedTo != nil {
-							d.CC = append(d.CC, o.AttributedTo.GetLink())
-						}
-						return nil
-					})
-					delItems = append(delItems, ob.GetLink())
-				}
+		// NOTE(marius): this should work if "it" is a collection or a single object
+		pub.OnObject(it, func(o *pub.Object) error {
+			if invalidRemoveTypes.Contains(o.GetType()) {
 				return nil
-			})
-		}
+			}
+			if o.AttributedTo != nil {
+				d.CC = append(d.CC, o.AttributedTo.GetLink())
+			}
+			delItems = append(delItems, o.GetLink())
+			return nil
+		})
 	}
 	if len(delItems) == 0 {
 		return errors.NotFoundf("No items found to delete")
 	}
 	d.Object = delItems
 
-	act, err := c.Saver.ProcessClientActivity(d)
+	if _, err := c.Saver.ProcessClientActivity(d); err != nil {
+		return err
+	}
 
-	printItem(act, "text")
-	return err
+	printItem(d, "text")
+	return nil
 }
 
 var listObjectsCmd = &cli.Command{
@@ -388,37 +395,37 @@ var addObjectCmd = &cli.Command{
 func addObjectAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		f, _ := LoadFilters(c)
-		typ := f.Type[0]
-		if pub.ActorTypes.Contains(pub.ActivityVocabularyType(typ.Str)) {
-			name, err := loadFromStdin("Enter the %s name", typ)
-			pw, err := loadPwFromStdin(true, "%s's", name)
-			if err != nil {
-				return err
+		typ := pub.ActivityVocabularyType("")
+		if len(f.Type) > 0 {
+			typ = pub.ActivityVocabularyType(f.Type[0].Str)
+		}
+		if len(f.Name) == 0 {
+			if name, err := loadFromStdin("Enter the %s name", typ); err == nil {
+				f.Name = append(f.Name, ap.StringEquals(string(name)))
 			}
-
+		}
+		if append(pub.ObjectTypes, pub.ObjectType, "").Contains(typ) {
+			name := f.Name[0].Str
 			self := ap.Self(pub.IRI(ctl.Conf.BaseURL))
 			now := time.Now().UTC()
-			p := &pub.Person{
-				Type: pub.ActivityVocabularyType(typ.Str),
+			p := &pub.Object{
+				Type: typ,
 				// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
 				AttributedTo: self.GetLink(),
-				Generator:    self.GetLink(),
 				Published:    now,
-				Summary: pub.NaturalLanguageValues{
-					{pub.NilLangRef, pub.Content("Generated actor")},
-				},
-				Updated: now,
-				PreferredUsername: pub.NaturalLanguageValues{
+				Updated:      now,
+				Name: pub.NaturalLanguageValues{
 					{pub.NilLangRef, pub.Content(name)},
 				},
 			}
-			if p, err = ctl.AddActor(p, pw); err != nil {
-				Errf("Error adding %s: %s\n", name, err)
+			var err error
+			if p, err = ctl.AddObject(p); err != nil {
+				return errors.Annotatef(err, "Unable to save object")
 			}
 			fmt.Printf("Added %s [%s]: %s\n", typ, name, p.GetLink())
 			return nil
 		}
-		return errors.Errorf("Unknown type %s", typ)
+		return errors.Errorf("This command only supports only object types %v", pub.ObjectTypes)
 	}
 }
 

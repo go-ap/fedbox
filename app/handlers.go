@@ -136,7 +136,8 @@ func ValidateRequest(r *http.Request) (bool, error) {
 	return false, errors.Newf("Invalid request")
 }
 
-// GenerateID
+// GenerateID creates an IRI that can be used to uniquely identify the "it" item, based on the collection "col" and
+// its creator "by"
 func GenerateID(base pub.IRI) func(it pub.Item, col pub.Item, by pub.Item) (pub.ID, error) {
 	return func(it pub.Item, col pub.Item, by pub.Item) (pub.ID, error) {
 		typ := it.GetType()
@@ -200,6 +201,9 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize validator and processor")
 		}
 		validator.SetActor(f.Authenticated)
+		if metaSaver, ok := repo.(st.MetadataTyper); ok {
+			processing.SetActorKeyGenerator(AddKeyToPerson(metaSaver))
+		}
 
 		var validateFn func(pub.Item, pub.IRI) error
 		var processFn func(pub.Item) (pub.Item, error)

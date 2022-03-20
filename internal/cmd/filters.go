@@ -24,6 +24,18 @@ func types(c *cli.Context) ap.CompStrs {
 	return types
 }
 
+func names(c *cli.Context) ap.CompStrs {
+	if c == nil {
+		return nil
+	}
+	name := c.StringSlice("name")
+	names := make(ap.CompStrs, 0)
+	for _, t := range name {
+		names = append(names, ap.StringEquals(t))
+	}
+	return names
+}
+
 func FilterFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
@@ -96,5 +108,6 @@ func LoadFilters(c *cli.Context) (*ap.Filters, error) {
 	}
 	f := new(ap.Filters)
 	f.Type = types(c)
+	f.Name = names(c)
 	return f, nil
 }
