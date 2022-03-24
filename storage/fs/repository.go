@@ -1,5 +1,4 @@
 //go:build storage_fs || storage_all || (!storage_boltdb && !storage_badger && !storage_pgx && !storage_sqlite)
-// +build storage_fs storage_all !storage_boltdb,!storage_badger,!storage_pgx,!storage_sqlite
 
 package fs
 
@@ -761,9 +760,7 @@ func loadFilteredPropsForActivity(r repo, f s.Filterable) func(a *pub.Activity) 
 	return func(a *pub.Activity) error {
 		if ok, fo := ap.FiltersOnActivityObject(f); ok && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
 			if ob, err := r.loadOneFromPath(a.Object.GetLink()); err == nil {
-				if ob, _ = ap.FilterIt(ob, fo); ob != nil {
-					a.Object = ob
-				}
+				a.Object, _ = ap.FilterIt(ob, fo)
 			}
 		}
 		return pub.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, f))
@@ -774,16 +771,12 @@ func loadFilteredPropsForIntransitiveActivity(r repo, f s.Filterable) func(a *pu
 	return func(a *pub.IntransitiveActivity) error {
 		if ok, fa := ap.FiltersOnActivityActor(f); ok && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
 			if act, err := r.loadOneFromPath(a.Actor.GetLink()); err == nil {
-				if act, _ = ap.FilterIt(act, fa); act != nil {
-					a.Actor = act
-				}
+				a.Actor, _ = ap.FilterIt(act, fa)
 			}
 		}
 		if ok, ft := ap.FiltersOnActivityTarget(f); ok && !pub.IsNil(a.Target) && pub.IsIRI(a.Target) {
 			if t, err := r.loadOneFromPath(a.Target.GetLink()); err == nil {
-				if t, _ = ap.FilterIt(t, ft); t != nil {
-					a.Target = t
-				}
+				a.Target, _ = ap.FilterIt(t, ft)
 			}
 		}
 		return pub.OnObject(a, loadFilteredPropsForObject(r, f))
