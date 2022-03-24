@@ -737,6 +737,8 @@ func loadFilteredPropsForActor(r repo, f s.Filterable) func(a *pub.Actor) error 
 	}
 }
 
+var subFilterValidationError = errors.NotValidf("subfilter failed validation")
+
 func loadFilteredPropsForObject(r repo, f s.Filterable) func(o *pub.Object) error {
 	return func(o *pub.Object) error {
 		if len(o.Tag) == 0 {
@@ -762,6 +764,9 @@ func loadFilteredPropsForActivity(r repo, f s.Filterable) func(a *pub.Activity) 
 			if ob, err := r.loadOneFromPath(a.Object.GetLink()); err == nil {
 				a.Object, _ = ap.FilterIt(ob, fo)
 			}
+			if a.Object == nil {
+				return subFilterValidationError
+			}
 		}
 		return pub.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, f))
 	}
@@ -773,10 +778,16 @@ func loadFilteredPropsForIntransitiveActivity(r repo, f s.Filterable) func(a *pu
 			if act, err := r.loadOneFromPath(a.Actor.GetLink()); err == nil {
 				a.Actor, _ = ap.FilterIt(act, fa)
 			}
+			if a.Actor == nil {
+				return subFilterValidationError
+			}
 		}
 		if ok, ft := ap.FiltersOnActivityTarget(f); ok && !pub.IsNil(a.Target) && pub.IsIRI(a.Target) {
 			if t, err := r.loadOneFromPath(a.Target.GetLink()); err == nil {
 				a.Target, _ = ap.FilterIt(t, ft)
+			}
+			if a.Target == nil {
+				return subFilterValidationError
 			}
 		}
 		return pub.OnObject(a, loadFilteredPropsForObject(r, f))
@@ -825,17 +836,27 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 		}
 	}
 	typ := it.GetType()
+	// NOTE(marius): this can probably expedite filtering if we early exit if we fail to load the
+	// properties that need to load for sub-filters.
 	if pub.IntransitiveActivityTypes.Contains(typ) {
-		pub.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f))
+		if validErr := pub.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f)); validErr != nil {
+			return nil, nil
+		}
 	}
 	if pub.ActivityTypes.Contains(typ) {
-		pub.OnActivity(it, loadFilteredPropsForActivity(r, f))
+		if validErr := pub.OnActivity(it, loadFilteredPropsForActivity(r, f)); validErr != nil {
+			return nil, nil
+		}
 	}
 	if pub.ActorTypes.Contains(typ) {
-		pub.OnActor(it, loadFilteredPropsForActor(r, f))
+		if validErr := pub.OnActor(it, loadFilteredPropsForActor(r, f)); validErr != nil {
+			return nil, nil
+		}
 	}
 	if pub.ObjectTypes.Contains(typ) {
-		pub.OnObject(it, loadFilteredPropsForObject(r, f))
+		if validErr := pub.OnObject(it, loadFilteredPropsForObject(r, f)); validErr != nil {
+			return nil, nil
+		}
 	}
 
 	r.cache.Set(it.GetLink(), it)
