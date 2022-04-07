@@ -43,13 +43,16 @@ type Config struct {
 // New returns a new repo repository
 func New(c Config) (*repo, error) {
 	p, err := getFullPath(c)
+	if err != nil {
+		return nil, err
+	}
 	return &repo{
 		path:    p,
 		baseURL: c.BaseURL,
 		logFn:   defaultLogFn,
 		errFn:   defaultLogFn,
 		cache:   cache.New(c.EnableCache),
-	}, err
+	}, nil
 }
 
 type repo struct {
@@ -63,8 +66,10 @@ type repo struct {
 
 // Open opens the sqlite database
 func (r *repo) Open() (err error) {
-	if r.conn, err = sql.Open("sqlite", r.path); err != nil {
-		return err
+	if r.conn == nil {
+		if r.conn, err = sql.Open("sqlite", r.path); err != nil {
+			return err
+		}
 	}
 	return err
 }
