@@ -1,4 +1,4 @@
-// +build storage_sqlite storage_all !sqlite_fs,!storage_boltdb,!storage_badger,!storage_pgx
+//go:build storage_sqlite || storage_all || (!storage_fs && !storage_boltdb && !storage_badger && !storage_pgx)
 
 package sqlite
 
@@ -41,7 +41,7 @@ func Bootstrap(conf config.Options) (err error) {
 	if err = r.Open(); err != nil {
 		return err
 	}
-	defer func () {
+	defer func() {
 		err = r.Close()
 	}()
 
@@ -72,4 +72,4 @@ func Bootstrap(conf config.Options) (err error) {
 	return
 }
 
-func (r *repo) Reset() { }
+func (r *repo) Reset() {}
