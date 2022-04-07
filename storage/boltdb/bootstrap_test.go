@@ -1,13 +1,14 @@
-// +build storage_boltdb storage_all !storage_pgx,!storage_fs,!storage_badger,!storage_sqlite
+//go:build storage_boltdb || storage_all || (!storage_pgx && !storage_fs && !storage_badger && !storage_sqlite)
 
 package boltdb
 
 import (
+	"os"
+	"testing"
+
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	bolt "go.etcd.io/bbolt"
-	"os"
-	"testing"
 )
 
 func TestBootstrap(t *testing.T) {

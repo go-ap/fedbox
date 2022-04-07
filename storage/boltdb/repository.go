@@ -1,5 +1,4 @@
 //go:build storage_boltdb || storage_all || (!storage_pgx && !storage_fs && !storage_badger && !storage_sqlite)
-// +build storage_boltdb storage_all !storage_pgx,!storage_fs,!storage_badger,!storage_sqlite
 
 package boltdb
 
