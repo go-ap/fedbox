@@ -7,13 +7,13 @@ require (
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/go-ap/activitypub v0.0.0-20220323151940-947bcada60f7
-	github.com/go-ap/auth v0.0.0-20220323152425-01e914b88378
-	github.com/go-ap/client v0.0.0-20220323152300-c3a9528522de
-	github.com/go-ap/errors v0.0.0-20211205144917-1b5bb9681d99
-	github.com/go-ap/handlers v0.0.0-20220323152234-bd24563ded0c
+	github.com/go-ap/auth v0.0.0-20220407124754-ab465538c60c
+	github.com/go-ap/client v0.0.0-20220407124711-524feff013fe
+	github.com/go-ap/errors v0.0.0-20220407124202-394efeb1ec53
+	github.com/go-ap/handlers v0.0.0-20220407124418-bc648cfc459b
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220323152441-763a51f07e48
+	github.com/go-ap/processing v0.0.0-20220407124843-23dccd26d149
 	github.com/go-ap/storage v0.0.0-20220323152147-7b1ff73eb5c1
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
@@ -27,7 +27,7 @@ require (
 	github.com/unrolled/render v1.4.0
 	github.com/urfave/cli/v2 v2.3.0
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064
+	golang.org/x/crypto v0.0.0-20220331220935-ae2d96664a29
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
 	modernc.org/sqlite v1.14.8
 )
@@ -62,7 +62,7 @@ require (
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
+	golang.org/x/sys v0.0.0-20220406163625-3f8b81556e12 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.9 // indirect
