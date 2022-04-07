@@ -1,4 +1,4 @@
-// +build storage_badger storage_all !storage_pgx,!storage_boltdb,!storage_fs,!storage_sqlite
+//go:build storage_badger || storage_all || (!storage_pgx && !storage_boltdb && !storage_fs && !storage_sqlite)
 
 package badger
 
@@ -23,11 +23,11 @@ func (l logger) Infof(s string, p ...interface{}) {
 	if l.logFn == nil {
 		return
 	}
-	l.logFn(nil, "INFO: " + s, p...)
+	l.logFn(nil, "INFO: "+s, p...)
 }
 func (l logger) Debugf(s string, p ...interface{}) {
 	if l.logFn == nil {
 		return
 	}
-	l.logFn(nil, "DEBUG: " + s, p...)
+	l.logFn(nil, "DEBUG: "+s, p...)
 }
