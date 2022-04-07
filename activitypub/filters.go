@@ -355,7 +355,7 @@ func (f Filters) Count() uint {
 const MaxItems uint = 100
 
 var ErrNotFound = func(s string) error {
-	return errors.Newf(fmt.Sprintf("%s not found", s))
+	return errors.Errorf("%s not found", s)
 }
 
 func fullURL(u *url.URL) string {
