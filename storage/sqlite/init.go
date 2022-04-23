@@ -76,12 +76,18 @@ create table collections (
 
 	tuneQuery = `
 -- Use WAL mode (writers don't block readers):
-PRAGMA journal_mode = DELETE;
+--PRAGMA journal_mode = DELETE;
 -- Use memory as temporary storage:
 PRAGMA temp_store = 2;
 -- Faster synchronization that still keeps the data safe:
-PRAGMA synchronous = 1;
+--PRAGMA synchronous = 1;
 -- Increase cache size (in this case to 64MB), the default is 2MB
 PRAGMA cache_size = -64000;
+-- from BJohnson's recommendations to use with litestream
+PRAGMA journal_mode = wal;
+PRAGMA busy_timeout = 5000;
+PRAGMA wal_autocheckpoint = 0;
+PRAGMA strict=ON;
+PRAGMA synchronous = NORMAL;
 `
 )
