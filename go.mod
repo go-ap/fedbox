@@ -7,7 +7,7 @@ require (
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/go-ap/activitypub v0.0.0-20220420091113-4837641dc83b
-	github.com/go-ap/auth v0.0.0-20220420091502-276847dc8196
+	github.com/go-ap/auth v0.0.0-20220513154040-e81bc9763a9b
 	github.com/go-ap/client v0.0.0-20220420091414-cc6486886d23
 	github.com/go-ap/errors v0.0.0-20220407124202-394efeb1ec53
 	github.com/go-ap/handlers v0.0.0-20220420091345-cdf654d8ae98
@@ -27,9 +27,9 @@ require (
 	github.com/unrolled/render v1.4.0
 	github.com/urfave/cli/v2 v2.3.0
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+	golang.org/x/crypto v0.0.0-20220511200225-c6db032c6c88
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
-	modernc.org/sqlite v1.14.8
+	modernc.org/sqlite v1.17.2
 )
 
 require (
@@ -62,7 +62,7 @@ require (
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.9 // indirect
@@ -70,11 +70,11 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
-	modernc.org/cc/v3 v3.35.24 // indirect
-	modernc.org/ccgo/v3 v3.15.16 // indirect
-	modernc.org/libc v1.14.9 // indirect
+	modernc.org/cc/v3 v3.36.0 // indirect
+	modernc.org/ccgo/v3 v3.16.6 // indirect
+	modernc.org/libc v1.16.7 // indirect
 	modernc.org/mathutil v1.4.1 // indirect
-	modernc.org/memory v1.0.6 // indirect
+	modernc.org/memory v1.1.1 // indirect
 	modernc.org/opt v0.1.1 // indirect
 	modernc.org/strutil v1.1.1 // indirect
 	modernc.org/token v1.0.0 // indirect

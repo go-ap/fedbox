@@ -80,7 +80,9 @@ func (r *repo) Close() (err error) {
 		return
 	}
 	err = r.conn.Close()
-	r.conn = nil
+	if err == nil {
+		r.conn = nil
+	}
 	return
 }
 
