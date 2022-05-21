@@ -1067,8 +1067,10 @@ func LoadItemFilters(r *http.Request, f *Filters) error {
 		if f.Target != nil {
 			f.Target.Authenticated = f.Authenticated
 		}
+		if f.Tag != nil {
+			f.Tag.Authenticated = f.Authenticated
+		}
 	}
-
 	return nil
 }
 
@@ -1168,6 +1170,18 @@ func FiltersFromIRI(i pub.IRI) (*Filters, error) {
 		req := new(http.Request)
 		req.URL = u
 		f.Collection = h.Typer.Type(req)
+	}
+	if f.Object != nil {
+		f.Object.Authenticated = f.Authenticated
+	}
+	if f.Actor != nil {
+		f.Actor.Authenticated = f.Authenticated
+	}
+	if f.Target != nil {
+		f.Target.Authenticated = f.Authenticated
+	}
+	if f.Tag != nil {
+		f.Tag.Authenticated = f.Authenticated
 	}
 
 	if f.MaxItems > MaxItems {
