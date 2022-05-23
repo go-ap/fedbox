@@ -102,14 +102,18 @@ func mockItem() pub.Object {
 		Source:       pub.Source{},
 	}
 }
+func LikeString(s string) CompStr {
+	return CompStr{Operator: "~", Str: s}
+}
 
 func EqualsString(s string) CompStr {
 	return CompStr{Operator: "=", Str: s}
 }
+
 func IRIsFilter(iris ...pub.IRI) CompStrs {
 	r := make(CompStrs, len(iris))
 	for i, iri := range iris {
-		r[i] = EqualsString(iri.String())
+		r[i] = LikeString(iri.String())
 	}
 	return r
 }
@@ -696,7 +700,7 @@ func TestFilters_Targets(t *testing.T) {
 			t.Errorf("filter %v doesn't contain any of %v", f.Targets(), act.Target)
 		}
 	})
-	act.Target = pub.ItemCollection{pub.IRI("/objects/test123"), pub.IRI("https://example.com")}
+	act.Target = pub.ItemCollection{pub.IRI("/objects/example123"), pub.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
 		if testItInIRIs(IRIsFilter(f.Targets()...), act.Target) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.Targets(), act.Target)
