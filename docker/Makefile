@@ -53,7 +53,7 @@ bootstrap: storage
 		-e ENV=$(ENV) \
 		-e FEDBOX_HOSTNAME=$(FEDBOX_HOSTNAME) \
 		$(FEDBOX_HOSTNAME)/app:$(TAG) \
-		/bin/ctl bootstrap
+		/bin/fedboxctl bootstrap
 
 run: build $(STORAGE_OBJECTS)
 	$(RUN_CMD) -v $(STORAGE_PATH):/storage \

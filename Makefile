@@ -48,7 +48,7 @@ TEST := $(GO) test $(BUILDFLAGS)
 
 .PHONY: all run clean test coverage integration install download install_broccoli
 
-all: fedbox ctl
+all: fedbox fedboxctl
 
 download:
 	$(GO) mod download all
@@ -71,8 +71,8 @@ systemd/fedbox.service: systemd/fedbox.service.in
 systemd/fedbox.socket: systemd/fedbox.socket.in
 	$(M4) -DLISTEN_HOST=$(LISTEN_HOST) -DLISTEN_PORT=$(LISTEN_PORT) $< >$@
 
-ctl: bin/ctl
-bin/ctl: go.mod cmd/control/main.go $(APPSOURCES)
+fedboxctl: bin/fedboxctl
+bin/fedboxctl: go.mod cmd/control/main.go $(APPSOURCES)
 	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/control/main.go
 
 run: fedbox

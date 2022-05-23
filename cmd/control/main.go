@@ -15,7 +15,7 @@ var version = "HEAD"
 
 func main() {
 	app := cli.App{}
-	app.Name = "fedbox-ctl"
+	app.Name = "fedboxctl"
 	app.Usage = "helper utility to manage a FedBOX instance"
 	if build, ok := debug.ReadBuildInfo(); ok && version == "HEAD" {
 		app.Version = build.Main.Version

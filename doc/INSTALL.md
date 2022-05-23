@@ -5,13 +5,13 @@ $ git clone https://github.com/go-ap/fedbox
 $ cd fedbox
 ```
 
-## compiling 
+## compiling
 
 ```sh
 $ make all
 ```
 
-## editing the configuration 
+## editing the configuration
 
 ```sh
 $ cp .env.dist .env
@@ -21,13 +21,13 @@ $ $EDITOR .env
 ## bootstrapping
 
 ```sh
-$ ./bin/ctl bootstrap
+$ ./bin/fedboxctl bootstrap
 
-$ ./bin/ctl ap actor add admin
-admin's pw: 
-pw again: 
+$ ./bin/fedboxctl ap actor add admin
+admin's pw:
+pw again:
 
-$ ./bin/ctl oauth client add --redirectUri http://example.com/callback
+$ ./bin/fedboxctl oauth client add --redirectUri http://example.com/callback
 client's pw:
 pw again:
 ```
