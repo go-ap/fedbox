@@ -8,20 +8,12 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/go-ap/activitypub v0.0.0-20220420091113-4837641dc83b
 	github.com/go-ap/auth v0.0.0-20220522130202-3f2f5ca4f15c
-	github.com/go-ap/client v0.0.0-20220522130110-06d86d696f18
-	github.com/go-ap/errors v0.0.0-20220522120501-423698972a61
-	github.com/go-ap/handlers v0.0.0-20220522130040-890899689614
-	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
-	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220522130327-6eeef01902a8
-	github.com/go-ap/auth v0.0.0-20220513154040-e81bc9763a9b
 	github.com/go-ap/client v0.0.0-20220523184839-262b0ef6e176
 	github.com/go-ap/errors v0.0.0-20220522120501-423698972a61
 	github.com/go-ap/handlers v0.0.0-20220523184723-6921b4d323c1
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
 	github.com/go-ap/processing v0.0.0-20220523185029-7194a32da24f
->>>>>>> 739035f (Updated handlers package)
 	github.com/go-ap/storage v0.0.0-20220420091247-5a9edd34862b
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
