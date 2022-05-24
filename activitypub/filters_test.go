@@ -102,6 +102,7 @@ func mockItem() pub.Object {
 		Source:       pub.Source{},
 	}
 }
+
 func LikeString(s string) CompStr {
 	return CompStr{Operator: "~", Str: s}
 }
@@ -113,10 +114,11 @@ func EqualsString(s string) CompStr {
 func IRIsFilter(iris ...pub.IRI) CompStrs {
 	r := make(CompStrs, len(iris))
 	for i, iri := range iris {
-		r[i] = LikeString(iri.String())
+		r[i] = EqualsString(iri.String())
 	}
 	return r
 }
+
 func TestFilters_Actors(t *testing.T) {
 	f := Filters{
 		Actor: &Filters{Key: []Hash{Hash("test")}},
