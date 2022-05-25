@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	w "git.sr.ht/~mariusor/wrapper"
 	pub "github.com/go-ap/activitypub"
@@ -13,6 +14,7 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/handlers"
 	st "github.com/go-ap/storage"
@@ -79,6 +81,10 @@ var AnonymousAcct = account{
 }
 
 var InternalIRI = pub.IRI("https://fedbox/")
+
+func Config(e string, to time.Duration) (config.Options, error) {
+	return config.LoadFromEnv(env.Type(e), to)
+}
 
 // New instantiates a new FedBOX instance
 func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o osin.Storage) (*FedBOX, error) {

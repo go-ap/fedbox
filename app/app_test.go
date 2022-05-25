@@ -6,7 +6,7 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 )
 
-var defaultConfig =config.Options{
+var defaultConfig = config.Options{
 	Storage: config.StorageFS,
 }
 
