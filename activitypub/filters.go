@@ -658,24 +658,39 @@ func filterObject(it pub.Item, ff *Filters) (bool, pub.Item) {
 	return filterTypes(ff.Types(), it.GetType()), it
 }
 
-// NOTE(marius): this is being called even if it is an IntransitiveActivity
-//  and probably will crash when accessing act.Object
-func filterActivity(it pub.Item, ff *Filters) (bool, pub.Item) {
+func filterIntransitiveActivity(it pub.Item, ff *Filters) (bool, pub.Item) {
 	if ff == nil {
 		return true, it
 	}
 	keep := true
-	pub.OnActivity(it, func(act *pub.Activity) error {
+	pub.OnIntransitiveActivity(it, func(act *pub.IntransitiveActivity) error {
 		if keep, _ = filterObject(act, ff); !keep {
 			return nil
 		}
 		if keep = ff.Actor.ItemsMatch(act.Actor); !keep {
 			return nil
 		}
+		keep = ff.Target.ItemsMatch(act.Target)
+		return nil
+	})
+	if !keep {
+		return keep, it
+	}
+	return filterTypes(ff.Types(), it.GetType()), it
+}
+
+func filterActivity(it pub.Item, ff *Filters) (bool, pub.Item) {
+	if ff == nil {
+		return true, it
+	}
+	keep := true
+	pub.OnActivity(it, func(act *pub.Activity) error {
+		if keep, _ = filterIntransitiveActivity(act, ff); !keep {
+			return nil
+		}
 		if keep = ff.Object.ItemsMatch(act.Object); !keep {
 			return nil
 		}
-		keep = ff.Target.ItemsMatch(act.Target)
 		return nil
 	})
 	if !keep {
@@ -1011,7 +1026,9 @@ func (f *Filters) ItemsMatch(col ...pub.Item) bool {
 			})
 		} else if it.IsObject() {
 			typ := it.GetType()
-			if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
+			if pub.IntransitiveActivityTypes.Contains(typ) {
+				loopValid, _ = filterIntransitiveActivity(it, f)
+			} else if pub.ActivityTypes.Contains(typ) {
 				loopValid, _ = filterActivity(it, f)
 			} else if pub.ActorTypes.Contains(typ) {
 				if mustBeActivity {
