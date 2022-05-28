@@ -3,18 +3,18 @@ module github.com/go-ap/fedbox
 go 1.18
 
 require (
-	aletheia.icu/broccoli/fs v0.0.0-20200506212414-5bc1e2f86a59
+	aletheia.icu/broccoli/fs v0.0.0-20210820105650-3e2e00017061
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/dgraph-io/badger/v3 v3.2103.2
-	github.com/go-ap/activitypub v0.0.0-20220525124636-1c635844632e
-	github.com/go-ap/auth v0.0.0-20220525125009-d1fc4077ea0d
-	github.com/go-ap/client v0.0.0-20220525124938-e4f9fd1b45f7
+	github.com/go-ap/activitypub v0.0.0-20220528111045-f32e7aa1f4e7
+	github.com/go-ap/auth v0.0.0-20220528120756-0bb6a9030a08
+	github.com/go-ap/client v0.0.0-20220528120701-61a5e0fd3a1c
 	github.com/go-ap/errors v0.0.0-20220522120501-423698972a61
-	github.com/go-ap/handlers v0.0.0-20220525124910-f3dbe6e62181
+	github.com/go-ap/handlers v0.0.0-20220528120242-789dce20beec
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220525125052-f0f14c6df872
-	github.com/go-ap/storage v0.0.0-20220525124810-e15209ce8ea5
+	github.com/go-ap/processing v0.0.0-20220528120842-18504004488d
+	github.com/go-ap/storage v0.0.0-20220528115612-05d518625324
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0
@@ -27,7 +27,7 @@ require (
 	github.com/unrolled/render v1.4.0
 	github.com/urfave/cli/v2 v2.3.0
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/crypto v0.0.0-20220518034528-6f7dac969898
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
 	modernc.org/sqlite v1.17.2
 )
