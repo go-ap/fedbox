@@ -13,7 +13,7 @@ require (
 	github.com/go-ap/handlers v0.0.0-20220528120242-789dce20beec
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220528120842-18504004488d
+	github.com/go-ap/processing v0.0.0-20220529093403-0599df4d47e0
 	github.com/go-ap/storage v0.0.0-20220528115612-05d518625324
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
