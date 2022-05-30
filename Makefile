@@ -52,6 +52,7 @@ all: fedbox fedboxctl
 
 download:
 	$(GO) mod download all
+	$(GO) mod tidy
 
 install_broccoli:
 	$(GO) install aletheia.icu/broccoli@5bc1e2f86a59
