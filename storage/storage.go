@@ -2,7 +2,7 @@ package storage
 
 import (
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/storage"
+	"github.com/go-ap/processing"
 )
 
 type CanBootstrap interface {
@@ -20,8 +20,8 @@ type Metadata struct {
 }
 
 type MetadataTyper interface {
-	LoadMetadata (pub.IRI) (*Metadata, error)
-	SaveMetadata (Metadata, pub.IRI) error
+	LoadMetadata(pub.IRI) (*Metadata, error)
+	SaveMetadata(Metadata, pub.IRI) error
 }
 
 type MimeTypeSaver interface {
@@ -33,4 +33,4 @@ type Resetter interface {
 	Reset()
 }
 
-type OptionFn func(s storage.Store) error
+type OptionFn func(s processing.Store) error

@@ -6,7 +6,6 @@ import (
 	"path"
 
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/handlers"
 	"github.com/pborman/uuid"
 )
 
@@ -32,8 +31,8 @@ func Self(baseURL pub.IRI) pub.Service {
 		},
 	}
 
-	s.Inbox = handlers.Inbox.IRI(s)
-	s.Outbox = handlers.Outbox.IRI(s)
+	s.Inbox = pub.Inbox.IRI(s)
+	s.Outbox = pub.Outbox.IRI(s)
 	s.Streams = pub.ItemCollection{ActorsType.IRI(s), ActivitiesType.IRI(s), ObjectsType.IRI(s)}
 	return s
 }
@@ -62,7 +61,7 @@ func GenerateID(it pub.Item, partOf pub.IRI, by pub.Item) (pub.ID, error) {
 				}
 				if !pub.IsNil(by) {
 					// if it's not a public activity, save it to it's actor outbox instead of global activities collection
-					outbox := handlers.Outbox.IRI(by)
+					outbox := pub.Outbox.IRI(by)
 					id = pub.ID(fmt.Sprintf("%s/%s", outbox, uuid))
 				}
 			}

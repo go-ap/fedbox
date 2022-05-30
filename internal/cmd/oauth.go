@@ -13,7 +13,7 @@ import (
 	apub "github.com/go-ap/fedbox/activitypub"
 	fedbox "github.com/go-ap/fedbox/app"
 	s "github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/storage"
+	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
 	"github.com/urfave/cli/v2"
 )
@@ -259,7 +259,7 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 	}
 
 	now := time.Now().UTC()
-	var f storage.Filterable
+	var f processing.Filterable
 	if u, err := url.Parse(actorIdentifier); err == nil {
 		f = pub.IRI(u.String())
 	} else {

@@ -15,7 +15,6 @@ import (
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/assets"
 	st "github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
 	"github.com/openshift/osin"
@@ -169,7 +168,7 @@ func (i authService) ValidateClient(r *http.Request) (*pub.Actor, error) {
 		if err != nil {
 			return nil, err
 		}
-		if newId, err := i.genID(newClient, handlers.Outbox.IRI(actor), nil); err == nil {
+		if newId, err := i.genID(newClient, pub.Outbox.IRI(actor), nil); err == nil {
 			newClient.ID = newId
 		}
 		clientActor, err = i.storage.repo.Save(newClient)
@@ -211,7 +210,7 @@ func (i authService) ValidateClient(r *http.Request) (*pub.Actor, error) {
 
 var scopeAnonymousUserCreate = "anonUserCreate"
 
-func (i *authService) loadAccountByID (id string) (*pub.Actor, error) {
+func (i *authService) loadAccountByID(id string) (*pub.Actor, error) {
 	f := activitypub.FiltersNew()
 
 	a := activitypub.Self(i.baseIRI)
@@ -517,7 +516,7 @@ var (
 		DisableHTTPErrorRendering: false,
 	}
 	errRenderer = render.New(defaultRenderOptions)
-	ren = render.New(defaultRenderOptions)
+	ren         = render.New(defaultRenderOptions)
 )
 
 func (i *authService) renderTemplate(r *http.Request, w http.ResponseWriter, name string, m authModel) {
@@ -535,6 +534,7 @@ func name(act *pub.Actor) string {
 	}
 	return n
 }
+
 // ShowLogin serves GET /login requests
 func (i *authService) ShowLogin(w http.ResponseWriter, r *http.Request) {
 	tit := "Login to FedBOX"
@@ -574,7 +574,6 @@ var (
 	errUnauthorized = errors.Unauthorizedf("Invalid username or password")
 	errNotFound     = activitypub.ErrNotFound("actor not found")
 )
-
 
 // HandleLogin handles POST /login requests
 func (i *authService) HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -651,7 +650,7 @@ func (i *authService) ShowChangePw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m := pwChange{
-		title: "Change password",
+		title:   "Change password",
 		account: *actor,
 	}
 

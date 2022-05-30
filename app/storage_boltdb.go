@@ -1,3 +1,4 @@
+//go:build storage_boltdb
 // +build storage_boltdb
 
 package app
@@ -6,12 +7,12 @@ import (
 	auth "github.com/go-ap/auth/boltdb"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/boltdb"
-	st "github.com/go-ap/storage"
+	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 )
 
-func Storage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
+func Storage(c config.Options, l logrus.FieldLogger) (processing.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
 	l.Debugf("Initializing boltdb storage at %s", path)
 	db, err := boltdb.New(boltdb.Config{

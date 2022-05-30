@@ -26,7 +26,7 @@ import (
 	ls "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/httpsig"
 	"github.com/go-ap/jsonld"
-	"github.com/go-ap/storage"
+	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ed25519"
@@ -57,7 +57,7 @@ func loadMockJson(file string, model interface{}) func() (string, error) {
 	}
 }
 
-func addMockObjects(r storage.Store, obj pub.ItemCollection, errFn app.LogFn) error {
+func addMockObjects(r processing.Store, obj pub.ItemCollection, errFn app.LogFn) error {
 	var err error
 	for _, it := range obj {
 		if it.GetLink() == "" {

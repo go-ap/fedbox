@@ -22,8 +22,7 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/handlers"
-	s "github.com/go-ap/storage"
+	"github.com/go-ap/processing"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ed25519"
 )
@@ -173,7 +172,7 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 		return err
 	}
 
-	ob, t := handlers.Split(col)
+	ob, t := pub.Split(col)
 	var link pub.IRI
 	if ap.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
@@ -228,7 +227,7 @@ func isHardLink(fi os.FileInfo) bool {
 	return nlink > 1 && !fi.IsDir()
 }
 
-var allStorageCollections = append(handlers.ActivityPubCollections, ap.FedBOXCollections...)
+var allStorageCollections = append(pub.ActivityPubCollections, ap.FedBOXCollections...)
 
 // AddTo
 func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
@@ -477,8 +476,8 @@ func createOrOpenFile(p string) (*os.File, error) {
 }
 
 func isStorageCollectionKey(p string) bool {
-	lst := handlers.CollectionType(path.Base(p))
-	return ap.FedBOXCollections.Contains(lst) || handlers.OnActor.Contains(lst) || handlers.OnObject.Contains(lst)
+	lst := pub.CollectionPath(path.Base(p))
+	return ap.FedBOXCollections.Contains(lst) || pub.OfActor.Contains(lst) || pub.OfObject.Contains(lst)
 }
 
 func (r repo) itemPath(iri pub.IRI) string {
@@ -567,20 +566,20 @@ func deleteCollections(r repo, it pub.Item) error {
 	if pub.ActorTypes.Contains(it.GetType()) {
 		return pub.OnActor(it, func(p *pub.Actor) error {
 			var err error
-			err = deleteCollectionFromPath(r, handlers.Inbox.IRI(p))
-			err = deleteCollectionFromPath(r, handlers.Outbox.IRI(p))
-			err = deleteCollectionFromPath(r, handlers.Followers.IRI(p))
-			err = deleteCollectionFromPath(r, handlers.Following.IRI(p))
-			err = deleteCollectionFromPath(r, handlers.Liked.IRI(p))
+			err = deleteCollectionFromPath(r, pub.Inbox.IRI(p))
+			err = deleteCollectionFromPath(r, pub.Outbox.IRI(p))
+			err = deleteCollectionFromPath(r, pub.Followers.IRI(p))
+			err = deleteCollectionFromPath(r, pub.Following.IRI(p))
+			err = deleteCollectionFromPath(r, pub.Liked.IRI(p))
 			return err
 		})
 	}
 	if pub.ObjectTypes.Contains(it.GetType()) {
 		return pub.OnObject(it, func(o *pub.Object) error {
 			var err error
-			err = deleteCollectionFromPath(r, handlers.Replies.IRI(o))
-			err = deleteCollectionFromPath(r, handlers.Likes.IRI(o))
-			err = deleteCollectionFromPath(r, handlers.Shares.IRI(o))
+			err = deleteCollectionFromPath(r, pub.Replies.IRI(o))
+			err = deleteCollectionFromPath(r, pub.Likes.IRI(o))
+			err = deleteCollectionFromPath(r, pub.Shares.IRI(o))
 			return err
 		})
 	}
@@ -702,7 +701,7 @@ func loadFromRaw(raw []byte) (pub.Item, error) {
 	return decodeItemFn(raw)
 }
 
-func (r repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {
+func (r repo) loadOneFromPath(f processing.Filterable) (pub.Item, error) {
 	col, err := r.loadFromPath(f)
 	if err != nil {
 		return nil, err
@@ -721,7 +720,7 @@ func (r repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {
 	return col, nil
 }
 
-func isSingleItem(f s.Filterable) bool {
+func isSingleItem(f processing.Filterable) bool {
 	if _, isIRI := f.(pub.IRI); isIRI {
 		return true
 	}
@@ -731,7 +730,7 @@ func isSingleItem(f s.Filterable) bool {
 	return false
 }
 
-func loadFilteredPropsForActor(r repo, f s.Filterable) func(a *pub.Actor) error {
+func loadFilteredPropsForActor(r repo, f processing.Filterable) func(a *pub.Actor) error {
 	return func(a *pub.Actor) error {
 		return pub.OnObject(a, loadFilteredPropsForObject(r, f))
 	}
@@ -739,7 +738,7 @@ func loadFilteredPropsForActor(r repo, f s.Filterable) func(a *pub.Actor) error 
 
 var subFilterValidationError = errors.NotValidf("subfilter failed validation")
 
-func loadFilteredPropsForObject(r repo, f s.Filterable) func(o *pub.Object) error {
+func loadFilteredPropsForObject(r repo, f processing.Filterable) func(o *pub.Object) error {
 	return func(o *pub.Object) error {
 		if len(o.Tag) == 0 {
 			return nil
@@ -758,7 +757,7 @@ func loadFilteredPropsForObject(r repo, f s.Filterable) func(o *pub.Object) erro
 	}
 }
 
-func loadFilteredPropsForActivity(r repo, f s.Filterable) func(a *pub.Activity) error {
+func loadFilteredPropsForActivity(r repo, f processing.Filterable) func(a *pub.Activity) error {
 	return func(a *pub.Activity) error {
 		if ok, fo := ap.FiltersOnActivityObject(f); ok && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
 			if ob, err := r.loadOneFromPath(a.Object.GetLink()); err == nil {
@@ -772,7 +771,7 @@ func loadFilteredPropsForActivity(r repo, f s.Filterable) func(a *pub.Activity) 
 	}
 }
 
-func loadFilteredPropsForIntransitiveActivity(r repo, f s.Filterable) func(a *pub.IntransitiveActivity) error {
+func loadFilteredPropsForIntransitiveActivity(r repo, f processing.Filterable) func(a *pub.IntransitiveActivity) error {
 	return func(a *pub.IntransitiveActivity) error {
 		if ok, fa := ap.FiltersOnActivityActor(f); ok && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
 			if act, err := r.loadOneFromPath(a.Actor.GetLink()); err == nil {
@@ -805,7 +804,7 @@ func (r repo) asPathErr(err error) error {
 	return err
 }
 
-func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
+func (r repo) loadItem(p string, f processing.Filterable) (pub.Item, error) {
 	var it pub.Item
 	if cachedIt := r.cache.Get(f.GetLink()); cachedIt != nil {
 		it = cachedIt
@@ -866,7 +865,7 @@ func (r repo) loadItem(p string, f s.Filterable) (pub.Item, error) {
 	return it, nil
 }
 
-func (r repo) loadFromPath(f s.Filterable) (pub.ItemCollection, error) {
+func (r repo) loadFromPath(f processing.Filterable) (pub.ItemCollection, error) {
 	var err error
 	col := make(pub.ItemCollection, 0)
 

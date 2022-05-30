@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	pub "github.com/go-ap/activitypub"
-	h "github.com/go-ap/handlers"
 )
 
 type (
@@ -68,7 +67,7 @@ func (r *store) Remove(iris ...pub.IRI) bool {
 	}
 	toInvalidate := pub.IRIs(iris)
 	for _, iri := range iris {
-		if h.ValidCollectionIRI(iri) {
+		if pub.ValidCollectionIRI(iri) {
 			continue
 		}
 		c := pub.IRI(path.Dir(iri.String()))
@@ -89,13 +88,13 @@ func (r *store) Remove(iris ...pub.IRI) bool {
 	return true
 }
 
-func removeAccum(toRemove *pub.IRIs, iri pub.IRI, col h.CollectionType) {
+func removeAccum(toRemove *pub.IRIs, iri pub.IRI, col pub.CollectionPath) {
 	if repl := col.IRI(iri); !toRemove.Contains(repl) {
 		*toRemove = append(*toRemove, repl)
 	}
 }
 
-func accumForProperty(it pub.Item, toRemove *pub.IRIs, col h.CollectionType) {
+func accumForProperty(it pub.Item, toRemove *pub.IRIs, col pub.CollectionPath) {
 	if pub.IsNil(it) {
 		return
 	}
@@ -122,24 +121,24 @@ func aggregateItemIRIs(toRemove *pub.IRIs, it pub.Item) error {
 		return nil
 	}
 	return pub.OnObject(it, func(o *pub.Object) error {
-		accumForProperty(o.InReplyTo, toRemove, h.Replies)
-		accumForProperty(o.AttributedTo, toRemove, h.Outbox)
+		accumForProperty(o.InReplyTo, toRemove, pub.Replies)
+		accumForProperty(o.AttributedTo, toRemove, pub.Outbox)
 		return nil
 	})
 }
 
-func aggregateActivityIRIs(toRemove *pub.IRIs, a *pub.Activity, typ h.CollectionType) error {
+func aggregateActivityIRIs(toRemove *pub.IRIs, a *pub.Activity, typ pub.CollectionPath) error {
 	for _, r := range a.Recipients() {
 		if r.GetLink().Equals(pub.PublicNS, false) {
 			continue
 		}
-		if iri := r.GetLink(); h.ValidCollectionIRI(iri) {
+		if iri := r.GetLink(); pub.ValidCollectionIRI(iri) {
 			// TODO(marius): for followers, following collections this should dereference the members
 			if !toRemove.Contains(iri) {
 				*toRemove = append(*toRemove, iri)
 			}
 		} else {
-			accumForProperty(r, toRemove, h.Inbox)
+			accumForProperty(r, toRemove, pub.Inbox)
 		}
 	}
 	if destCol := typ.IRI(a.Actor); !toRemove.Contains(destCol) {
@@ -160,7 +159,7 @@ func aggregateActivityIRIs(toRemove *pub.IRIs, a *pub.Activity, typ h.Collection
 	return aggregateItemIRIs(toRemove, a.Object)
 }
 
-func ActivityPurge(cache CanStore, a *pub.Activity, typ h.CollectionType) error {
+func ActivityPurge(cache CanStore, a *pub.Activity, typ pub.CollectionPath) error {
 	toRemove := make(pub.IRIs, 0)
 	err := aggregateActivityIRIs(&toRemove, a, typ)
 	if err != nil {

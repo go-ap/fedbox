@@ -16,9 +16,8 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
-	s "github.com/go-ap/storage"
+	"github.com/go-ap/processing"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -223,8 +222,8 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 }
 
 func addCollectionOnObject(r *repo, col pub.IRI) error {
-	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedBOXCollections...)
-	if ob, t := allStorageCollections.Split(col); handlers.ValidCollection(t) {
+	allStorageCollections := append(pub.ActivityPubCollections, ap.FedBOXCollections...)
+	if ob, t := allStorageCollections.Split(col); pub.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
 		if i, _ := r.LoadOne(ob); i != nil {
 			if _, ok := t.AddTo(i); ok {
@@ -460,20 +459,20 @@ func deleteCollections(r *repo, it pub.Item) error {
 		if pub.ActorTypes.Contains(it.GetType()) {
 			return pub.OnActor(it, func(p *pub.Actor) error {
 				var err error
-				err = deleteFromPath(r, tx, handlers.Inbox.IRI(p))
-				err = deleteFromPath(r, tx, handlers.Outbox.IRI(p))
-				err = deleteFromPath(r, tx, handlers.Followers.IRI(p))
-				err = deleteFromPath(r, tx, handlers.Following.IRI(p))
-				err = deleteFromPath(r, tx, handlers.Liked.IRI(p))
+				err = deleteFromPath(r, tx, pub.Inbox.IRI(p))
+				err = deleteFromPath(r, tx, pub.Outbox.IRI(p))
+				err = deleteFromPath(r, tx, pub.Followers.IRI(p))
+				err = deleteFromPath(r, tx, pub.Following.IRI(p))
+				err = deleteFromPath(r, tx, pub.Liked.IRI(p))
 				return err
 			})
 		}
 		if pub.ObjectTypes.Contains(it.GetType()) {
 			return pub.OnObject(it, func(o *pub.Object) error {
 				var err error
-				err = deleteFromPath(r, tx, handlers.Replies.IRI(o))
-				err = deleteFromPath(r, tx, handlers.Likes.IRI(o))
-				err = deleteFromPath(r, tx, handlers.Shares.IRI(o))
+				err = deleteFromPath(r, tx, pub.Replies.IRI(o))
+				err = deleteFromPath(r, tx, pub.Likes.IRI(o))
+				err = deleteFromPath(r, tx, pub.Shares.IRI(o))
 				return err
 			})
 		}
@@ -531,8 +530,8 @@ func deleteFromPath(r *repo, b *badger.Txn, it pub.Item) error {
 	return nil
 }
 
-func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(val []byte) error {
-	isColFn := func(ff s.Filterable) bool {
+func (r *repo) loadFromIterator(col *pub.ItemCollection, f processing.Filterable) func(val []byte) error {
+	isColFn := func(ff processing.Filterable) bool {
 		_, ok := ff.(pub.IRI)
 		return ok
 	}
@@ -595,13 +594,13 @@ func (r *repo) loadFromIterator(col *pub.ItemCollection, f s.Filterable) func(va
 	}
 }
 
-func loadFilteredPropsForActor(r *repo, f s.Filterable) func(a *pub.Actor) error {
+func loadFilteredPropsForActor(r *repo, f processing.Filterable) func(a *pub.Actor) error {
 	return func(a *pub.Actor) error {
 		return pub.OnObject(a, loadFilteredPropsForObject(r, f))
 	}
 }
 
-func loadFilteredPropsForObject(r *repo, f s.Filterable) func(o *pub.Object) error {
+func loadFilteredPropsForObject(r *repo, f processing.Filterable) func(o *pub.Object) error {
 	return func(o *pub.Object) error {
 		if len(o.Tag) == 0 {
 			return nil
@@ -619,7 +618,7 @@ func loadFilteredPropsForObject(r *repo, f s.Filterable) func(o *pub.Object) err
 		})
 	}
 }
-func loadFilteredPropsForActivity(r *repo, f s.Filterable) func(a *pub.Activity) error {
+func loadFilteredPropsForActivity(r *repo, f processing.Filterable) func(a *pub.Activity) error {
 	return func(a *pub.Activity) error {
 		if ok, fo := ap.FiltersOnActivityObject(f); ok && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
 			if ob, err := r.loadOneFromPath(a.Object.GetLink()); err == nil {
@@ -632,7 +631,7 @@ func loadFilteredPropsForActivity(r *repo, f s.Filterable) func(a *pub.Activity)
 	}
 }
 
-func loadFilteredPropsForIntransitiveActivity(r *repo, f s.Filterable) func(a *pub.IntransitiveActivity) error {
+func loadFilteredPropsForIntransitiveActivity(r *repo, f processing.Filterable) func(a *pub.IntransitiveActivity) error {
 	return func(a *pub.IntransitiveActivity) error {
 		if ok, fa := ap.FiltersOnActivityActor(f); ok && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
 			if act, err := r.loadOneFromPath(a.Actor.GetLink()); err == nil {
@@ -659,8 +658,8 @@ func isObjectKey(k []byte) bool {
 }
 
 func isStorageCollectionKey(p []byte) bool {
-	lst := handlers.CollectionType(path.Base(string(p)))
-	return handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}.Contains(lst)
+	lst := pub.CollectionPath(path.Base(string(p)))
+	return pub.CollectionPaths{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}.Contains(lst)
 }
 
 func iterKeyIsTooDeep(base, k []byte, depth int) bool {
@@ -670,7 +669,7 @@ func iterKeyIsTooDeep(base, k []byte, depth int) bool {
 	return cnt > depth
 }
 
-func (r *repo) loadFromPath(f s.Filterable, loadMaxOne bool) (pub.ItemCollection, error) {
+func (r *repo) loadFromPath(f processing.Filterable, loadMaxOne bool) (pub.ItemCollection, error) {
 	col := make(pub.ItemCollection, 0)
 
 	err := r.d.View(func(tx *badger.Txn) error {
@@ -681,7 +680,7 @@ func (r *repo) loadFromPath(f s.Filterable, loadMaxOne bool) (pub.ItemCollection
 		if isStorageCollectionKey(fullPath) {
 			depth = 1
 		}
-		if handlers.ValidCollectionIRI(pub.IRI(fullPath)) {
+		if pub.ValidCollectionIRI(pub.IRI(fullPath)) {
 			depth = 2
 		}
 		opt := badger.DefaultIteratorOptions
@@ -715,7 +714,7 @@ func (r *repo) loadFromPath(f s.Filterable, loadMaxOne bool) (pub.ItemCollection
 	return col, err
 }
 
-func (r *repo) LoadOne(f s.Filterable) (pub.Item, error) {
+func (r *repo) LoadOne(f processing.Filterable) (pub.Item, error) {
 	err := r.Open()
 	if err != nil {
 		return nil, err
@@ -724,7 +723,7 @@ func (r *repo) LoadOne(f s.Filterable) (pub.Item, error) {
 	return r.loadOneFromPath(f)
 }
 
-func (r *repo) loadOneFromPath(f s.Filterable) (pub.Item, error) {
+func (r *repo) loadOneFromPath(f processing.Filterable) (pub.Item, error) {
 	col, err := r.loadFromPath(f, true)
 	if err != nil {
 		return nil, err
@@ -739,7 +738,7 @@ func getObjectKey(p []byte) []byte {
 	return bytes.Join([][]byte{p, []byte(objectKey)}, sep)
 }
 
-func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemCollection, error) {
+func (r *repo) loadItemsElements(f processing.Filterable, iris ...pub.Item) (pub.ItemCollection, error) {
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *badger.Txn) error {
 		for _, iri := range iris {
@@ -754,7 +753,7 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 	return col, err
 }
 
-func (r *repo) loadItem(b *badger.Txn, path []byte, f s.Filterable) (pub.Item, error) {
+func (r *repo) loadItem(b *badger.Txn, path []byte, f processing.Filterable) (pub.Item, error) {
 	i, err := b.Get(getObjectKey(path))
 	if err != nil {
 		return nil, errors.NewNotFound(err, "Unable to load path %s", path)

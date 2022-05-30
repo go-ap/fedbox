@@ -16,8 +16,7 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
-	"github.com/go-ap/handlers"
-	st "github.com/go-ap/storage"
+	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/openshift/osin"
@@ -26,13 +25,13 @@ import (
 
 func init() {
 	// set local path typer to validate collections
-	handlers.Typer = pathTyper{}
+	processing.Typer = pathTyper{}
 }
 
 type LogFn func(string, ...interface{})
 
 type fedboxStorage struct {
-	repo  st.Store
+	repo  processing.Store
 	oauth osin.Storage
 }
 
@@ -87,7 +86,7 @@ func Config(e string, to time.Duration) (config.Options, error) {
 }
 
 // New instantiates a new FedBOX instance
-func New(l logrus.FieldLogger, ver string, conf config.Options, db st.Store, o osin.Storage) (*FedBOX, error) {
+func New(l logrus.FieldLogger, ver string, conf config.Options, db processing.Store, o osin.Storage) (*FedBOX, error) {
 	app := FedBOX{
 		ver:     ver,
 		conf:    conf,
@@ -132,7 +131,7 @@ func (f FedBOX) Config() config.Options {
 	return f.conf
 }
 
-func (f FedBOX) Storage() st.Store {
+func (f FedBOX) Storage() processing.Store {
 	return f.storage.repo
 }
 

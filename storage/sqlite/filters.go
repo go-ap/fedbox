@@ -9,8 +9,7 @@ import (
 
 	pub "github.com/go-ap/activitypub"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/handlers"
-	"github.com/go-ap/storage"
+	"github.com/go-ap/processing"
 )
 
 func isCollection(col string) bool {
@@ -113,9 +112,9 @@ func getURLWheres(strs ap.CompStrs) (string, []interface{}) {
 	return clause, values
 }
 
-var MandatoryCollections = handlers.CollectionTypes{
-	handlers.Inbox,
-	handlers.Outbox,
+var MandatoryCollections = pub.CollectionPaths{
+	pub.Inbox,
+	pub.Outbox,
 }
 
 func getIRIWheres(strs ap.CompStrs, id pub.IRI) (string, []interface{}) {
@@ -209,7 +208,7 @@ func getWhereClauses(f *ap.Filters) ([]string, []interface{}) {
 	return clauses, values
 }
 
-func getLimit(f storage.Filterable) string {
+func getLimit(f processing.Filterable) string {
 	if f, ok := f.(*ap.Filters); ok {
 		if f.MaxItems == 0 {
 			return ""

@@ -15,9 +15,8 @@ import (
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
-	s "github.com/go-ap/storage"
+	"github.com/go-ap/processing"
 	"github.com/sirupsen/logrus"
 	bolt "go.etcd.io/bbolt"
 	"golang.org/x/crypto/bcrypt"
@@ -84,7 +83,7 @@ func loadItem(raw []byte) (pub.Item, error) {
 	return pub.UnmarshalJSON(raw)
 }
 
-func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, error) {
+func (r *repo) loadItem(b *bolt.Bucket, key []byte, f processing.Filterable) (pub.Item, error) {
 	// we have found an item
 	if len(key) == 0 {
 		key = []byte(objectKey)
@@ -128,13 +127,13 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f s.Filterable) (pub.Item, e
 	return it, nil
 }
 
-func loadFilteredPropsForActor(r *repo, f s.Filterable) func(a *pub.Actor) error {
+func loadFilteredPropsForActor(r *repo, f processing.Filterable) func(a *pub.Actor) error {
 	return func(a *pub.Actor) error {
 		return pub.OnObject(a, loadFilteredPropsForObject(r, f))
 	}
 }
 
-func loadFilteredPropsForObject(r *repo, f s.Filterable) func(o *pub.Object) error {
+func loadFilteredPropsForObject(r *repo, f processing.Filterable) func(o *pub.Object) error {
 	return func(o *pub.Object) error {
 		if len(o.Tag) == 0 {
 			return nil
@@ -153,7 +152,7 @@ func loadFilteredPropsForObject(r *repo, f s.Filterable) func(o *pub.Object) err
 	}
 }
 
-func loadFilteredPropsForActivity(r *repo, f s.Filterable) func(a *pub.Activity) error {
+func loadFilteredPropsForActivity(r *repo, f processing.Filterable) func(a *pub.Activity) error {
 	return func(a *pub.Activity) error {
 		if ok, fo := ap.FiltersOnActivityObject(f); ok && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
 			if ob, err := r.loadOneFromBucket(a.Object.GetLink()); err == nil {
@@ -166,7 +165,7 @@ func loadFilteredPropsForActivity(r *repo, f s.Filterable) func(a *pub.Activity)
 	}
 }
 
-func loadFilteredPropsForIntransitiveActivity(r *repo, f s.Filterable) func(a *pub.IntransitiveActivity) error {
+func loadFilteredPropsForIntransitiveActivity(r *repo, f processing.Filterable) func(a *pub.IntransitiveActivity) error {
 	return func(a *pub.IntransitiveActivity) error {
 		if ok, fa := ap.FiltersOnActivityActor(f); ok && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
 			if act, err := r.loadOneFromBucket(a.Actor.GetLink()); err == nil {
@@ -186,7 +185,7 @@ func loadFilteredPropsForIntransitiveActivity(r *repo, f s.Filterable) func(a *p
 	}
 }
 
-func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemCollection, error) {
+func (r *repo) loadItemsElements(f processing.Filterable, iris ...pub.Item) (pub.ItemCollection, error) {
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *bolt.Tx) error {
 		rb := tx.Bucket(r.root)
@@ -212,7 +211,7 @@ func (r *repo) loadItemsElements(f s.Filterable, iris ...pub.Item) (pub.ItemColl
 	return col, err
 }
 
-func (r *repo) loadOneFromBucket(f s.Filterable) (pub.Item, error) {
+func (r *repo) loadOneFromBucket(f processing.Filterable) (pub.Item, error) {
 	col, err := r.loadFromBucket(f)
 	if err != nil {
 		return nil, err
@@ -232,7 +231,7 @@ func (r *repo) CreateService(service pub.Service) error {
 	return createService(r.d, service)
 }
 
-func (r *repo) iterateInBucket(b *bolt.Bucket, f s.Filterable) (pub.ItemCollection, uint, error) {
+func (r *repo) iterateInBucket(b *bolt.Bucket, f processing.Filterable) (pub.ItemCollection, uint, error) {
 	if b == nil {
 		return nil, 0, errors.Errorf("invalid bucket to load from")
 	}
@@ -248,7 +247,7 @@ func (r *repo) iterateInBucket(b *bolt.Bucket, f s.Filterable) (pub.ItemCollecti
 	// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
 	for key, _ := c.First(); key != nil; key, _ = c.Next() {
 		ob := b
-		//lst := handlers.CollectionType(path.Base(string(key)))
+		//lst := pub.CollectionPath(path.Base(string(key)))
 		//if ap.ValidActivityCollection(lst) || ap.ValidObjectCollection(lst) {
 		//	return col, uint(len(col)), errors.Newf("we shouldn't have a collection inside the current bucket %s", key)
 		//}
@@ -283,7 +282,7 @@ var ErrorInvalidRoot = func(b []byte) error {
 	return errors.Errorf("Invalid root bucket %s", b)
 }
 
-func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, error) {
+func (r *repo) loadFromBucket(f processing.Filterable) (pub.ItemCollection, error) {
 	col := make(pub.ItemCollection, 0)
 	err := r.d.View(func(tx *bolt.Tx) error {
 		rb := tx.Bucket(r.root)
@@ -308,7 +307,7 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, error) {
 		if b == nil {
 			return errors.Errorf("Invalid bucket %s", fullPath)
 		}
-		lst := handlers.CollectionType(path.Base(string(fullPath)))
+		lst := pub.CollectionPath(path.Base(string(fullPath)))
 		if isStorageCollectionKey(lst) {
 			fromBucket, _, err := r.iterateInBucket(b, f)
 			if err != nil {
@@ -329,7 +328,7 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, error) {
 				return errors.NotFoundf("not found")
 			}
 			if it.IsCollection() {
-				isColFn := func(ff s.Filterable) bool {
+				isColFn := func(ff processing.Filterable) bool {
 					_, ok := ff.(pub.IRI)
 					return ok
 				}
@@ -350,7 +349,7 @@ func (r *repo) loadFromBucket(f s.Filterable) (pub.ItemCollection, error) {
 	return col, err
 }
 
-func (r repo) buildIRIs(c handlers.CollectionType, hashes ...ap.Hash) pub.IRIs {
+func (r repo) buildIRIs(c pub.CollectionPath, hashes ...ap.Hash) pub.IRIs {
 	iris := make(pub.IRIs, 0)
 	for _, hash := range hashes {
 		i := c.IRI(pub.IRI(r.baseURL)).AddPath(hash.String())
@@ -412,7 +411,7 @@ func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket,
 	}
 	remBuckets := buckets[lvl:]
 	path = bytes.Join(remBuckets, []byte{'/'})
-	if len(remBuckets) > 0 && !ap.HiddenCollections.Contains(handlers.CollectionType(path)) {
+	if len(remBuckets) > 0 && !ap.HiddenCollections.Contains(pub.CollectionPath(path)) {
 		return b, path, errors.NotFoundf("%s not found", remBuckets[0])
 	}
 	return b, path, nil
@@ -498,32 +497,32 @@ func createCollectionsInBucket(b *bolt.Bucket, it pub.Item) error {
 	if pub.ActorTypes.Contains(it.GetType()) {
 		pub.OnActor(it, func(p *pub.Actor) error {
 			if p.Inbox != nil {
-				p.Inbox, _ = createCollectionInBucket(b, handlers.Inbox.IRI(p))
+				p.Inbox, _ = createCollectionInBucket(b, pub.Inbox.IRI(p))
 			}
 			if p.Outbox != nil {
-				p.Outbox, _ = createCollectionInBucket(b, handlers.Outbox.IRI(p))
+				p.Outbox, _ = createCollectionInBucket(b, pub.Outbox.IRI(p))
 			}
 			if p.Followers != nil {
-				p.Followers, _ = createCollectionInBucket(b, handlers.Followers.IRI(p))
+				p.Followers, _ = createCollectionInBucket(b, pub.Followers.IRI(p))
 			}
 			if p.Following != nil {
-				p.Following, _ = createCollectionInBucket(b, handlers.Liked.IRI(p))
+				p.Following, _ = createCollectionInBucket(b, pub.Liked.IRI(p))
 			}
 			if p.Liked != nil {
-				p.Liked, _ = createCollectionInBucket(b, handlers.Liked.IRI(p))
+				p.Liked, _ = createCollectionInBucket(b, pub.Liked.IRI(p))
 			}
 			return nil
 		})
 	}
 	return pub.OnObject(it, func(o *pub.Object) error {
 		if o.Replies != nil {
-			o.Replies, _ = createCollectionInBucket(b, handlers.Replies.IRI(o))
+			o.Replies, _ = createCollectionInBucket(b, pub.Replies.IRI(o))
 		}
 		if o.Likes != nil {
-			o.Likes, _ = createCollectionInBucket(b, handlers.Likes.IRI(o))
+			o.Likes, _ = createCollectionInBucket(b, pub.Likes.IRI(o))
 		}
 		if o.Shares != nil {
-			o.Shares, _ = createCollectionInBucket(b, handlers.Shares.IRI(o))
+			o.Shares, _ = createCollectionInBucket(b, pub.Shares.IRI(o))
 		}
 		return nil
 	})
@@ -556,20 +555,20 @@ func deleteCollectionsFromBucket(b *bolt.Bucket, it pub.Item) error {
 	if pub.ActorTypes.Contains(it.GetType()) {
 		return pub.OnActor(it, func(p *pub.Actor) error {
 			var err error
-			err = deleteBucket(b, handlers.Inbox.IRI(p))
-			err = deleteBucket(b, handlers.Outbox.IRI(p))
-			err = deleteBucket(b, handlers.Followers.IRI(p))
-			err = deleteBucket(b, handlers.Following.IRI(p))
-			err = deleteBucket(b, handlers.Liked.IRI(p))
+			err = deleteBucket(b, pub.Inbox.IRI(p))
+			err = deleteBucket(b, pub.Outbox.IRI(p))
+			err = deleteBucket(b, pub.Followers.IRI(p))
+			err = deleteBucket(b, pub.Following.IRI(p))
+			err = deleteBucket(b, pub.Liked.IRI(p))
 			return err
 		})
 	}
 	if pub.ObjectTypes.Contains(it.GetType()) {
 		return pub.OnObject(it, func(o *pub.Object) error {
 			var err error
-			err = deleteBucket(b, handlers.Replies.IRI(o))
-			err = deleteBucket(b, handlers.Likes.IRI(o))
-			err = deleteBucket(b, handlers.Shares.IRI(o))
+			err = deleteBucket(b, pub.Replies.IRI(o))
+			err = deleteBucket(b, pub.Likes.IRI(o))
+			err = deleteBucket(b, pub.Shares.IRI(o))
 			return err
 		})
 	}
@@ -721,14 +720,14 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 	})
 }
 
-func isStorageCollectionKey(lst handlers.CollectionType) bool {
-	return ap.FedBOXCollections.Contains(lst) || handlers.OnActor.Contains(lst) || handlers.OnObject.Contains(lst)
+func isStorageCollectionKey(lst pub.CollectionPath) bool {
+	return ap.FedBOXCollections.Contains(lst) || pub.OfActor.Contains(lst) || pub.OfObject.Contains(lst)
 }
 
 func addCollectionOnObject(r *repo, col pub.IRI) error {
 	var err error
-	allStorageCollections := append(handlers.ActivityPubCollections, ap.FedBOXCollections...)
-	if ob, t := allStorageCollections.Split(col); handlers.ValidCollection(t) {
+	allStorageCollections := append(pub.ActivityPubCollections, ap.FedBOXCollections...)
+	if ob, t := allStorageCollections.Split(col); pub.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
 		i, _ := r.loadOneFromBucket(ob)
 		if _, ok := t.AddTo(i); ok {

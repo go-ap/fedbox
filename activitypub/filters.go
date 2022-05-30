@@ -11,8 +11,7 @@ import (
 	pub "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	h "github.com/go-ap/handlers"
-	s "github.com/go-ap/storage"
+	"github.com/go-ap/processing"
 	"github.com/mariusor/qstring"
 )
 
@@ -54,33 +53,30 @@ func (h Hash) Matches(i pub.IRI) bool {
 const (
 	// ActorsType is a constant that represents the URL path for the local actors collection.
 	// It is used as the parent for all To IDs
-	ActorsType = h.CollectionType("actors")
+	ActorsType = pub.CollectionPath("actors")
 	// ActivitiesType is a constant that represents the URL path for the local activities collection
 	// It is used as the parent for all Activity IDs
-	ActivitiesType = h.CollectionType("activities")
+	ActivitiesType = pub.CollectionPath("activities")
 	// ObjectsType is a constant that represents the URL path for the local objects collection
 	// It is used as the parent for all non To, non Activity Object IDs
-	ObjectsType = h.CollectionType("objects")
+	ObjectsType = pub.CollectionPath("objects")
 
 	// BlockedType is an internally used collection, to store a list of actors the actor has blocked
-	BlockedType = h.CollectionType("blocked")
+	BlockedType = pub.CollectionPath("blocked")
 
 	// IgnoredType is an internally used collection, to store a list of actors the actor has ignored
-	IgnoredType = h.CollectionType("ignored")
-
-	// ModType is an internally used collection, to store a list of actors the instance
-	ModType = h.CollectionType("mods")
+	IgnoredType = pub.CollectionPath("ignored")
 )
 
 // TODO(marius): here we need a better separation between the collections which are exposed in the HTTP API
 //   (activities,actors,objects) and the ones that are internal (blocked,ignored)
 var (
-	HiddenCollections = h.CollectionTypes{
+	HiddenCollections = pub.CollectionPaths{
 		BlockedType,
 		IgnoredType,
 	}
 
-	FedBOXCollections = h.CollectionTypes{
+	FedBOXCollections = pub.CollectionPaths{
 		ActivitiesType,
 		ActorsType,
 		ObjectsType,
@@ -88,83 +84,83 @@ var (
 		IgnoredType,
 	}
 
-	validActivityCollection = []h.CollectionType{
+	validActivityCollection = pub.CollectionPaths{
 		ActivitiesType,
 	}
 
-	validObjectCollection = []h.CollectionType{
+	validObjectCollection = pub.CollectionPaths{
 		ActorsType,
 		ObjectsType,
 	}
 )
 
-func getValidActivityCollection(typ h.CollectionType) h.CollectionType {
+func getValidActivityCollection(typ pub.CollectionPath) pub.CollectionPath {
 	for _, t := range validActivityCollection {
 		if strings.ToLower(string(typ)) == string(t) {
 			return t
 		}
 	}
-	return h.Unknown
+	return pub.Unknown
 }
 
-func getValidObjectCollection(typ h.CollectionType) h.CollectionType {
+func getValidObjectCollection(typ pub.CollectionPath) pub.CollectionPath {
 	for _, t := range validObjectCollection {
 		if strings.ToLower(string(typ)) == string(t) {
 			return t
 		}
 	}
-	return h.Unknown
+	return pub.Unknown
 }
 
 // ValidCollection shows if the current ActivityPub end-point type is a valid collection
-func ValidCollection(typ h.CollectionType) bool {
+func ValidCollection(typ pub.CollectionPath) bool {
 	return ValidActivityCollection(typ) || ValidObjectCollection(typ)
 }
 
 // ValidActivityCollection shows if the current ActivityPub end-point type is a valid collection for handling Activities
-func ValidActivityCollection(typ h.CollectionType) bool {
-	return getValidActivityCollection(typ) != h.Unknown || h.ValidActivityCollection(typ)
+func ValidActivityCollection(typ pub.CollectionPath) bool {
+	return getValidActivityCollection(typ) != pub.Unknown || pub.ValidActivityCollection(typ)
 }
 
 // ValidObjectCollection shows if the current ActivityPub end-point type is a valid collection for handling Objects
-func ValidObjectCollection(typ h.CollectionType) bool {
-	return getValidObjectCollection(typ) != h.Unknown || h.ValidObjectCollection(typ)
+func ValidObjectCollection(typ pub.CollectionPath) bool {
+	return getValidObjectCollection(typ) != pub.Unknown || pub.ValidObjectCollection(typ)
 }
 
 // Filters
 // TODO(marius) we can make some small changes so it's not necessary to export this struct
 type Filters struct {
-	baseURL       pub.IRI          `qstring:"-"`
-	Name          CompStrs         `qstring:"name,omitempty"`
-	Cont          CompStrs         `qstring:"content,omitempty"`
-	Authenticated *pub.Actor       `qstring:"-"`
-	To            *pub.Actor       `qstring:"-"`
-	Author        *pub.Actor       `qstring:"-"`
-	Parent        *pub.Actor       `qstring:"-"`
-	IRI           pub.IRI          `qstring:"-"`
-	Collection    h.CollectionType `qstring:"-"`
-	URL           CompStrs         `qstring:"url,omitempty"`
-	MedTypes      []pub.MimeType   `qstring:"mediaType,omitempty"`
-	Aud           CompStrs         `qstring:"recipients,omitempty"`
-	Gen           CompStrs         `qstring:"generator,omitempty"`
-	Key           []Hash           `qstring:"-"`
-	ItemKey       CompStrs         `qstring:"iri,omitempty"`
-	Type          CompStrs         `qstring:"type,omitempty"`
-	AttrTo        CompStrs         `qstring:"attributedTo,omitempty"`
-	InReplTo      CompStrs         `qstring:"inReplyTo,omitempty"`
-	OP            CompStrs         `qstring:"context,omitempty"`
-	FollowedBy    []Hash           `qstring:"followedBy,omitempty"` // todo(marius): not really used
-	OlderThan     time.Time        `qstring:"olderThan,omitempty"`
-	NewerThan     time.Time        `qstring:"newerThan,omitempty"`
-	Prev          Hash             `qstring:"before,omitempty"`
-	Next          Hash             `qstring:"after,omitempty"`
-	Object        *Filters         `qstring:"object,omitempty"`
-	Actor         *Filters         `qstring:"actor,omitempty"`
-	Target        *Filters         `qstring:"target,omitempty"`
-	Tag           *Filters         `qstring:"tag,omitempty"`
-	CurPage       uint             `qstring:"page,omitempty"`
-	MaxItems      uint             `qstring:"maxItems,omitempty"`
-	Req           *http.Request    `qstring:"-"`
+	baseURL       pub.IRI            `qstring:"-"`
+	Name          CompStrs           `qstring:"name,omitempty"`
+	Cont          CompStrs           `qstring:"content,omitempty"`
+	Authenticated *pub.Actor         `qstring:"-"`
+	To            *pub.Actor         `qstring:"-"`
+	Author        *pub.Actor         `qstring:"-"`
+	Parent        *pub.Actor         `qstring:"-"`
+	IRI           pub.IRI            `qstring:"-"`
+	Collection    pub.CollectionPath `qstring:"-"`
+	URL           CompStrs           `qstring:"url,omitempty"`
+	MedTypes      []pub.MimeType     `qstring:"mediaType,omitempty"`
+	Aud           CompStrs           `qstring:"recipients,omitempty"`
+	Gen           CompStrs           `qstring:"generator,omitempty"`
+	Key           []Hash             `qstring:"-"`
+	ItemKey       CompStrs           `qstring:"iri,omitempty"`
+	Type          CompStrs           `qstring:"type,omitempty"`
+	AttrTo        CompStrs           `qstring:"attributedTo,omitempty"`
+	InReplTo      CompStrs           `qstring:"inReplyTo,omitempty"`
+	OP            CompStrs           `qstring:"context,omitempty"`
+	FollowedBy    []Hash             `qstring:"followedBy,omitempty"` // todo(marius): not really used
+	OlderThan     time.Time          `qstring:"olderThan,omitempty"`
+	NewerThan     time.Time          `qstring:"newerThan,omitempty"`
+	Prev          Hash               `qstring:"before,omitempty"`
+	Next          Hash               `qstring:"after,omitempty"`
+	Object        *Filters           `qstring:"object,omitempty"`
+	Actor         *Filters           `qstring:"actor,omitempty"`
+	Target        *Filters           `qstring:"target,omitempty"`
+	Tag           *Filters           `qstring:"tag,omitempty"`
+	CurPage       uint               `qstring:"page,omitempty"`
+	MaxItems      uint               `qstring:"maxItems,omitempty"`
+	Req           *http.Request      `qstring:"-"`
 }
 
 func ItemKey(keys ...string) FilterFn {
@@ -210,7 +206,7 @@ func Type(types ...pub.ActivityVocabularyType) FilterFn {
 	}
 }
 
-func BaseIRI(iri pub.IRI, col h.CollectionType) FilterFn {
+func BaseIRI(iri pub.IRI, col pub.CollectionPath) FilterFn {
 	return func(f *Filters) error {
 		f.baseURL = iri
 		f.Collection = col
@@ -267,7 +263,7 @@ func IRIf(f Filters, iri string) string {
 	}
 	col := f.Collection
 	if col != ActorsType && col != ActivitiesType && col != ObjectsType {
-		if h.ValidObjectCollection(f.Collection) {
+		if pub.ValidObjectCollection(f.Collection) {
 			col = ObjectsType
 		} else if ValidActivityCollection(f.Collection) {
 			col = ActivitiesType
@@ -305,10 +301,10 @@ func (f *Filters) IsItemIRI() bool {
 	if err != nil {
 		return false
 	}
-	maybeID := h.CollectionType(path.Base(u.Path))
-	maybeCol := h.CollectionType(path.Base(path.Dir(u.Path)))
-	return !(FedBOXCollections.Contains(maybeID) || h.OnActor.Contains(maybeID) || h.OnObject.Contains(maybeID)) &&
-		(FedBOXCollections.Contains(maybeCol) || h.OnActor.Contains(maybeCol) || h.OnObject.Contains(maybeCol))
+	maybeID := pub.CollectionPath(path.Base(u.Path))
+	maybeCol := pub.CollectionPath(path.Base(path.Dir(u.Path)))
+	return !(FedBOXCollections.Contains(maybeID) || pub.OfActor.Contains(maybeID) || pub.OfObject.Contains(maybeID)) &&
+		(FedBOXCollections.Contains(maybeCol) || pub.OfActor.Contains(maybeCol) || pub.OfObject.Contains(maybeCol))
 }
 
 // GetLink returns a list of IRIs to filter against
@@ -1092,7 +1088,7 @@ func LoadItemFilters(r *http.Request, f *Filters) error {
 }
 
 // FilterIt
-func FilterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
+func FilterIt(it pub.Item, f processing.Filterable) (pub.Item, error) {
 	if pub.IsNil(it) {
 		return it, nil
 	}
@@ -1103,14 +1099,14 @@ func FilterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
 			return nil, nil
 		}
 	}
-	if f1, ok := f.(s.Filterable); ok {
+	if f1, ok := f.(processing.Filterable); ok {
 		if f1.GetLink().Equals(it.GetLink(), false) {
 			return it, nil
 		} else {
 			return nil, nil
 		}
 	}
-	if f1, ok := f.(s.FilterableItems); ok {
+	if f1, ok := f.(processing.FilterableItems); ok {
 		iris := f1.IRIs()
 		// FIXME(marius): the Contains method returns true for the case where IRIs is empty, we don't want that
 		if len(iris) > 0 && !iris.Contains(it.GetLink()) {
@@ -1126,21 +1122,21 @@ func FilterIt(it pub.Item, f s.Filterable) (pub.Item, error) {
 	return nil, errors.Errorf("Invalid filter %T", f)
 }
 
-func FiltersOnActivityObject(f s.Filterable) (bool, s.Filterable) {
+func FiltersOnActivityObject(f processing.Filterable) (bool, processing.Filterable) {
 	if ff, ok := f.(*Filters); ok {
 		return ff.Object != nil, ff.Object
 	}
 	return false, nil
 }
 
-func FiltersOnActivityActor(f s.Filterable) (bool, s.Filterable) {
+func FiltersOnActivityActor(f processing.Filterable) (bool, processing.Filterable) {
 	if ff, ok := f.(*Filters); ok {
 		return ff.Actor != nil, ff.Actor
 	}
 	return false, nil
 }
 
-func FiltersOnActivityTarget(f s.Filterable) (bool, s.Filterable) {
+func FiltersOnActivityTarget(f processing.Filterable) (bool, processing.Filterable) {
 	if ff, ok := f.(*Filters); ok {
 		return ff.Target != nil, ff.Target
 	}
@@ -1186,7 +1182,7 @@ func FiltersFromIRI(i pub.IRI) (*Filters, error) {
 	if f.Collection == "" {
 		req := new(http.Request)
 		req.URL = u
-		f.Collection = h.Typer.Type(req)
+		f.Collection = processing.Typer.Type(req)
 	}
 	if f.Object != nil {
 		f.Object.Authenticated = f.Authenticated
@@ -1228,7 +1224,7 @@ func FromRequest(r *http.Request, baseUrl string) (*Filters, error) {
 	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
 		return f, err
 	}
-	f.Collection = h.Typer.Type(r)
+	f.Collection = processing.Typer.Type(r)
 
 	if f.MaxItems > MaxItems {
 		f.MaxItems = MaxItems

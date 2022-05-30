@@ -14,9 +14,7 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/app"
 	s "github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
-	"github.com/go-ap/storage"
 	"github.com/urfave/cli/v2"
 )
 
@@ -111,7 +109,7 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func wrapObjectInCreate(r storage.Store, selfIRI pub.IRI, p pub.Item) pub.Activity {
+func wrapObjectInCreate(r processing.Store, selfIRI pub.IRI, p pub.Item) pub.Activity {
 	act := pub.Activity{
 		Type:    pub.CreateType,
 		To:      pub.ItemCollection{pub.PublicNS},
@@ -572,10 +570,10 @@ func exportPubObjects(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		baseURL := pub.IRI(ctl.Conf.BaseURL)
 		objects := make(pub.ItemCollection, 0)
-		allCollections := handlers.CollectionTypes{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
+		allCollections := pub.CollectionPaths{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
 		for _, c := range allCollections {
 			dump, err := dumpAll(&ap.Filters{
-				IRI: handlers.IRIf(baseURL, c),
+				IRI: pub.IRIf(baseURL, c),
 			})
 			if err != nil {
 				return err
@@ -636,7 +634,7 @@ var showObjectCmd = &cli.Command{Name: "show",
 }
 
 func (c *Control) operateOnObjects(fn func(col pub.IRI, it pub.Item) error, to pub.IRI, from ...pub.Item) error {
-	if !handlers.ValidCollectionIRI(to) {
+	if !pub.ValidCollectionIRI(to) {
 		return errors.Newf("destination is not a valid collection %s", to)
 	}
 	_, err := c.Storage.Load(to)
@@ -685,7 +683,7 @@ func movePubObjects(ctl *Control) cli.ActionFunc {
 }
 
 func (c *Control) MoveObjects(to pub.IRI, from ...pub.Item) error {
-	st, ok := c.Storage.(storage.CollectionStore)
+	st, ok := c.Storage.(processing.CollectionStore)
 	if !ok {
 		return errors.Newf("invalid storage %T", c.Storage)
 	}
@@ -726,7 +724,7 @@ func copyPubObjects(ctl *Control) cli.ActionFunc {
 }
 
 func (c *Control) CopyObjects(to pub.IRI, from ...pub.Item) error {
-	st, ok := c.Storage.(storage.CollectionStore)
+	st, ok := c.Storage.(processing.CollectionStore)
 	if !ok {
 		return errors.Newf("invalid storage %T", c.Storage)
 	}

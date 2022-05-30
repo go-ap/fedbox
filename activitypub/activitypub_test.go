@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/handlers"
 )
 
 func TestItemByType(t *testing.T) {
@@ -102,7 +101,7 @@ func TestSelf(t *testing.T) {
 	if s.URL != testIRI {
 		t.Errorf("Invalid URL %s, expected %v", s.URL, testURL)
 	}
-	inb := handlers.Inbox.IRI(testIRI)
+	inb := pub.Inbox.IRI(testIRI)
 	if s.Inbox != inb {
 		t.Errorf("Invalid Inbox %s, expected %v", s.Inbox, inb)
 	}
@@ -124,7 +123,7 @@ func Test_CacheKey(t *testing.T) {
 		},
 		{
 			name: "authenticated",
-			args: args{f: &Filters{IRI: "http://example.com", Authenticated: &pub.Actor{ID:"http://example.com/jdoe"}}},
+			args: args{f: &Filters{IRI: "http://example.com", Authenticated: &pub.Actor{ID: "http://example.com/jdoe"}}},
 			want: pub.IRI("http://jdoe@example.com"),
 		},
 	}

@@ -14,7 +14,6 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/processing"
-	"github.com/go-ap/storage"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -24,11 +23,11 @@ import (
 type Control struct {
 	Conf        config.Options
 	AuthStorage osin.Storage
-	Storage     storage.Store
+	Storage     processing.Store
 	Saver       processing.C2SProcessor
 }
 
-func New(authDB osin.Storage, actorDb storage.Store, conf config.Options) *Control {
+func New(authDB osin.Storage, actorDb processing.Store, conf config.Options) *Control {
 	baseIRI := pub.IRI(conf.BaseURL)
 
 	clientErrLogger := func(...pubcl.Ctx) pubcl.LogFn {

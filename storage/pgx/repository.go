@@ -1,3 +1,4 @@
+//go:build storage_pgx || storage_all || (!storage_boltdb && !storage_fs && !storage_badger && !storage_sqlite)
 // +build storage_pgx storage_all !storage_boltdb,!storage_fs,!storage_badger,!storage_sqlite
 
 package pgx
@@ -13,10 +14,8 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	"github.com/go-ap/processing"
-	s "github.com/go-ap/storage"
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/pgtype"
 	"github.com/sirupsen/logrus"
@@ -81,27 +80,27 @@ func (r repo) Load(i pub.IRI) (pub.Item, error) {
 	return loadOneFromDb(r.conn, getCollectionTable(f.Collection), f)
 }
 
-func getCollectionTable(typ handlers.CollectionType) string {
+func getCollectionTable(typ pub.CollectionPath) string {
 	switch typ {
-	case handlers.Followers:
+	case pub.Followers:
 		fallthrough
-	case handlers.Following:
+	case pub.Following:
 		fallthrough
 	case "actors":
 		return "actors"
-	case handlers.Inbox:
+	case pub.Inbox:
 		fallthrough
-	case handlers.Outbox:
+	case pub.Outbox:
 		fallthrough
-	case handlers.Shares:
+	case pub.Shares:
 		fallthrough
-	case handlers.Liked:
+	case pub.Liked:
 		fallthrough
-	case handlers.Likes:
+	case pub.Likes:
 		fallthrough
 	case "activities":
 		return "activities"
-	case handlers.Replies:
+	case pub.Replies:
 		fallthrough
 	default:
 		return "objects"
@@ -109,7 +108,7 @@ func getCollectionTable(typ handlers.CollectionType) string {
 	return "objects"
 }
 
-func loadOneFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (pub.Item, error) {
+func loadOneFromDb(conn *pgx.ConnPool, table string, f processing.Filterable) (pub.Item, error) {
 	col, _, err := loadFromDb(conn, table, f)
 	if err != nil {
 		return nil, err
@@ -128,7 +127,7 @@ func loadOneFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (pub.Item, 
 	return col, nil
 }
 
-func loadFromDb(conn *pgx.ConnPool, table string, f s.Filterable) (pub.ItemCollection, uint, error) {
+func loadFromDb(conn *pgx.ConnPool, table string, f processing.Filterable) (pub.ItemCollection, uint, error) {
 	clauses, values := getWhereClauses(f)
 	var total uint = 0
 
@@ -208,7 +207,7 @@ func (r repo) Save(it pub.Item) (pub.Item, error) {
 		return it, err
 	}
 
-	colIRI := handlers.CollectionType(table).IRI(pub.IRI(r.baseURL))
+	colIRI := pub.CollectionPath(table).IRI(pub.IRI(r.baseURL))
 	err = r.AddTo(colIRI, it)
 	if err != nil {
 		// This errs

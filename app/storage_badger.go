@@ -1,3 +1,4 @@
+//go:build storage_badger
 // +build storage_badger
 
 package app
@@ -8,12 +9,12 @@ import (
 	auth "github.com/go-ap/auth/badger"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/badger"
-	st "github.com/go-ap/storage"
+	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
 )
 
-func Storage(c config.Options, l logrus.FieldLogger) (st.Store, osin.Storage, error) {
+func Storage(c config.Options, l logrus.FieldLogger) (processing.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
 	conf := badger.Config{
 		Path:    path,

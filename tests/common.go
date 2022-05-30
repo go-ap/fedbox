@@ -29,7 +29,6 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
-	"github.com/go-ap/handlers"
 	"github.com/go-ap/httpsig"
 	"github.com/go-ap/jsonld"
 	"github.com/sirupsen/logrus"
@@ -710,7 +709,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			if test.req.urlFn != nil {
 				test.req.url = test.req.urlFn()
 			}
-			isClientRequest := path.Base(test.req.url) == string(handlers.Outbox)
+			isClientRequest := path.Base(test.req.url) == string(pub.Outbox)
 			ctx := context.Background()
 			req, err := http.NewRequestWithContext(ctx, test.req.met, test.req.url, bytes.NewReader(body))
 			assertTrue(err == nil, "Error: unable to create request: %s", err)

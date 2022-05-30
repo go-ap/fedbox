@@ -18,9 +18,8 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
-	s "github.com/go-ap/storage"
+	"github.com/go-ap/processing"
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
 )
@@ -101,43 +100,43 @@ func (r repo) CreateService(service pub.Service) (err error) {
 	return err
 }
 
-func getCollectionTypeFromIRI(i string) handlers.CollectionType {
-	col := handlers.CollectionType(path.Base(i))
-	if !(ap.FedBOXCollections.Contains(col) || handlers.ActivityPubCollections.Contains(col)) {
+func getCollectionTypeFromIRI(i string) pub.CollectionPath {
+	col := pub.CollectionPath(path.Base(i))
+	if !(ap.FedBOXCollections.Contains(col) || pub.ActivityPubCollections.Contains(col)) {
 		b, _ := path.Split(i)
-		col = handlers.CollectionType(path.Base(b))
+		col = pub.CollectionPath(path.Base(b))
 	}
 	return getCollectionTable(col)
 }
 
-func getCollectionTable(typ handlers.CollectionType) handlers.CollectionType {
+func getCollectionTable(typ pub.CollectionPath) pub.CollectionPath {
 	switch typ {
-	case handlers.Followers:
+	case pub.Followers:
 		fallthrough
-	case handlers.Following:
+	case pub.Following:
 		fallthrough
 	case "actors":
 		return "actors"
-	case handlers.Inbox:
+	case pub.Inbox:
 		fallthrough
-	case handlers.Outbox:
+	case pub.Outbox:
 		fallthrough
-	case handlers.Shares:
+	case pub.Shares:
 		fallthrough
-	case handlers.Likes:
+	case pub.Likes:
 		fallthrough
 	case "activities":
 		return "activities"
-	case handlers.Liked:
+	case pub.Liked:
 		fallthrough
-	case handlers.Replies:
+	case pub.Replies:
 		fallthrough
 	default:
 		return "objects"
 	}
 }
 
-func getCollectionTableFromFilter(f *ap.Filters) handlers.CollectionType {
+func getCollectionTableFromFilter(f *ap.Filters) pub.CollectionPath {
 	return getCollectionTable(f.Collection)
 }
 
@@ -380,7 +379,7 @@ func loadMetadataFromTable(conn *sql.DB, iri pub.IRI) ([]byte, error) {
 	return meta, err
 }
 
-func isSingleItem(f s.Filterable) bool {
+func isSingleItem(f processing.Filterable) bool {
 	if _, isIRI := f.(pub.IRI); isIRI {
 		return true
 	}
@@ -414,7 +413,7 @@ func loadFromThreeTables(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
 	return result, nil
 }
 
-func loadFromOneTable(r *repo, table handlers.CollectionType, f *ap.Filters) (pub.ItemCollection, error) {
+func loadFromOneTable(r *repo, table pub.CollectionPath, f *ap.Filters) (pub.ItemCollection, error) {
 	conn := r.conn
 	// NOTE(marius): this doesn't seem to be working, our filter is never an IRI or Item
 	if isSingleItem(f) {
@@ -703,7 +702,7 @@ func loadFromDb(r *repo, f *ap.Filters) (pub.ItemCollection, error) {
 	if err := conn.QueryRow(colCntQ, iriValue).Scan(&total); err != nil && err != sql.ErrNoRows {
 		return nil, errors.Annotatef(err, "unable to count all rows")
 	}
-	if total == 0 && handlers.ActivityPubCollections.Contains(f.Collection) && !MandatoryCollections.Contains(f.Collection) {
+	if total == 0 && pub.ActivityPubCollections.Contains(f.Collection) && !MandatoryCollections.Contains(f.Collection) {
 		return nil, errors.NotFoundf("Unable to find collection %s", f.Collection)
 	}
 	sel := fmt.Sprintf("SELECT iri, object FROM %s WHERE %s %s", "collections", iriClause, getLimit(f))
@@ -846,9 +845,9 @@ func save(l repo, it pub.Item) (pub.Item, error) {
 		return it, errors.Annotatef(err, "query error")
 	}
 	col, key := path.Split(iri.String())
-	if len(key) > 0 && handlers.ValidCollection(handlers.CollectionType(path.Base(col))) {
+	if len(key) > 0 && pub.ValidCollection(pub.CollectionPath(path.Base(col))) {
 		// Add private items to the collections table
-		if colIRI, k := handlers.Split(pub.IRI(col)); k == "" {
+		if colIRI, k := pub.Split(pub.IRI(col)); k == "" {
 			if err := l.addTo(colIRI, it); err != nil {
 				return it, err
 			}

@@ -7,7 +7,6 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/handlers"
 	"github.com/go-ap/jsonld"
 	bolt "go.etcd.io/bbolt"
 )
@@ -108,13 +107,13 @@ func AddTestMockActor(path string, actor pub.Actor) error {
 
 		raw, _ := jsonld.Marshal(actor)
 		actorBucket, _, err := descendInBucket(root, itPath, true)
-		actorBucket.Put([]byte(handlers.Inbox), nil)
-		actorBucket.Put([]byte(handlers.Outbox), nil)
-		actorBucket.Put([]byte(handlers.Following), nil)
-		actorBucket.Put([]byte(handlers.Followers), nil)
-		actorBucket.Put([]byte(handlers.Liked), nil)
-		actorBucket.Put([]byte(handlers.Likes), nil)
-		actorBucket.Put([]byte(handlers.Shares), nil)
+		actorBucket.Put([]byte(pub.Inbox), nil)
+		actorBucket.Put([]byte(pub.Outbox), nil)
+		actorBucket.Put([]byte(pub.Following), nil)
+		actorBucket.Put([]byte(pub.Followers), nil)
+		actorBucket.Put([]byte(pub.Liked), nil)
+		actorBucket.Put([]byte(pub.Likes), nil)
+		actorBucket.Put([]byte(pub.Shares), nil)
 		if err != nil {
 			return errors.Errorf("could not create actor bucket: %s", err)
 		}

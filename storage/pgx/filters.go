@@ -1,16 +1,17 @@
-// +build storage_pgx storage_all !storage_boltdb,!storage_fs,!storage_badger,!storage_sqlite
+//go:build storage_pgx || storage_all || (!storage_boltdb && !storage_fs && !storage_badger && !storage_sqlite)
 
 package pgx
 
 import (
 	"fmt"
+	"strings"
+
 	pub "github.com/go-ap/activitypub"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/storage"
-	"strings"
+	"github.com/go-ap/processing"
 )
 
-func getWhereClauses(f storage.Filterable) ([]string, []interface{}) {
+func getWhereClauses(f processing.Filterable) ([]string, []interface{}) {
 	var clauses = make([]string, 0)
 	var values = make([]interface{}, 0)
 
@@ -41,7 +42,7 @@ func getWhereClauses(f storage.Filterable) ([]string, []interface{}) {
 	//	}
 	//}
 
-	if f, ok := f.(storage.FilterableItems); ok {
+	if f, ok := f.(processing.FilterableItems); ok {
 		types := f.Types()
 		if len(types) > 0 {
 			keyWhere := make([]string, 0)
@@ -111,7 +112,7 @@ func getWhereClauses(f storage.Filterable) ([]string, []interface{}) {
 	return clauses, values
 }
 
-func getLimit(f storage.Filterable) string {
+func getLimit(f processing.Filterable) string {
 	if f, ok := f.(*ap.Filters); ok {
 		if f.MaxItems == 0 {
 			return ""

@@ -15,23 +15,21 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
 	st "github.com/go-ap/fedbox/storage"
-	h "github.com/go-ap/handlers"
 	"github.com/go-ap/processing"
-	"github.com/go-ap/storage"
 )
 
 type pathTyper struct{}
 
-func (d pathTyper) Type(r *http.Request) h.CollectionType {
-	col := h.Unknown
+func (d pathTyper) Type(r *http.Request) pub.CollectionPath {
+	col := pub.Unknown
 	if r.URL == nil || len(r.URL.Path) == 0 {
 		return col
 	}
 
 	pathElements := strings.Split(r.URL.Path[1:], "/") // Skip first /
 	for i := len(pathElements) - 1; i >= 0; i-- {
-		col = h.CollectionType(strings.ToLower(pathElements[i]))
-		if h.ActivityPubCollections.Contains(col) {
+		col = pub.CollectionPath(strings.ToLower(pathElements[i]))
+		if pub.ActivityPubCollections.Contains(col) {
 			return col
 		}
 		if ap.FedBOXCollections.Contains(col) {
@@ -58,8 +56,8 @@ func orderItems(col pub.ItemCollection) pub.ItemCollection {
 
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
-func HandleCollection(fb FedBOX) h.CollectionHandlerFn {
-	return func(typ h.CollectionType, r *http.Request, repo storage.ReadStore) (pub.CollectionInterface, error) {
+func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
+	return func(typ pub.CollectionPath, r *http.Request, repo processing.ReadStore) (pub.CollectionInterface, error) {
 		if !ap.ValidCollection(typ) {
 			return nil, errors.NotFoundf("collection '%s' not found", typ)
 		}
@@ -155,7 +153,7 @@ func GenerateID(base pub.IRI) func(it pub.Item, col pub.Item, by pub.Item) (pub.
 }
 
 // HandleRequest handles POST requests to an ActivityPub To's inbox/outbox, based on the CollectionType
-func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
+func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 	errLogger := client.LogFn(fb.errFn)
 	infoLogger := client.LogFn(fb.infFn)
 	clientErrLogger := func(...client.Ctx) client.LogFn {
@@ -164,7 +162,7 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 	clientInfoLogger := func(...client.Ctx) client.LogFn {
 		return infoLogger
 	}
-	return func(typ h.CollectionType, r *http.Request, repo storage.Store) (pub.Item, int, error) {
+	return func(typ pub.CollectionPath, r *http.Request, repo processing.Store) (pub.Item, int, error) {
 		var it pub.Item
 
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
@@ -208,10 +206,10 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 		var validateFn func(pub.Item, pub.IRI) error
 		var processFn func(pub.Item) (pub.Item, error)
 		switch typ {
-		case h.Outbox:
+		case pub.Outbox:
 			validateFn = validator.ValidateClientActivity
 			processFn = processor.ProcessClientActivity
-		case h.Inbox:
+		case pub.Inbox:
 			validateFn = validator.ValidateServerActivity
 			processFn = processor.ProcessServerActivity
 		default:
@@ -248,9 +246,9 @@ func HandleRequest(fb FedBOX) h.ActivityHandlerFn {
 
 // HandleItem serves content from the following, followers, liked, and likes end-points
 // that returns a single ActivityPub object
-func HandleItem(fb FedBOX) h.ItemHandlerFn {
-	return func(r *http.Request, repo storage.ReadStore) (pub.Item, error) {
-		collection := h.Typer.Type(r)
+func HandleItem(fb FedBOX) processing.ItemHandlerFn {
+	return func(r *http.Request, repo processing.ReadStore) (pub.Item, error) {
+		collection := processing.Typer.Type(r)
 
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
 		if err != nil {
