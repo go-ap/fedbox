@@ -1,20 +1,21 @@
 package cache
 
 import (
-	pub "github.com/go-ap/activitypub"
 	"reflect"
 	"testing"
+
+	vocab "github.com/go-ap/activitypub"
 )
 
 func Test_reqCache_get(t *testing.T) {
 	type args struct {
-		iri pub.IRI
+		iri vocab.IRI
 	}
 	tests := []struct {
 		name string
 		r    store
 		args args
-		want pub.Item
+		want vocab.Item
 	}{
 		{
 			name: "",
@@ -34,64 +35,64 @@ func Test_reqCache_get(t *testing.T) {
 
 func Test_reqCache_remove(t *testing.T) {
 	type args struct {
-		iri pub.IRI
+		iri vocab.IRI
 	}
 	tests := []struct {
 		name      string
 		r         store
 		args      args
 		want      bool
-		leftovers pub.IRIs
+		leftovers vocab.IRIs
 	}{
 		{
 			name: "simple",
 			r: store{
 				enabled: true,
-				c: iriMap{pub.IRI("example1"): &pub.Object{ID: pub.IRI("example1")}},
+				c:       iriMap{vocab.IRI("example1"): &vocab.Object{ID: vocab.IRI("example1")}},
 			},
-			args:      args{pub.IRI("example1") },
+			args:      args{vocab.IRI("example1")},
 			want:      true,
-			leftovers: pub.IRIs{},
+			leftovers: vocab.IRIs{},
 		},
 		{
 			name: "same_url",
 			r: store{
 				enabled: true,
-				c: iriMap{pub.IRI("http://example.com"): &pub.Actor{ID: pub.IRI("http://example.com")}},
+				c:       iriMap{vocab.IRI("http://example.com"): &vocab.Actor{ID: vocab.IRI("http://example.com")}},
 			},
-			args:      args{pub.IRI("http://example.com")},
+			args:      args{vocab.IRI("http://example.com")},
 			want:      true,
-			leftovers: pub.IRIs{},
+			leftovers: vocab.IRIs{},
 		},
 		{
 			name: "different_urls",
 			r: store{
 				enabled: true,
-				c: iriMap{pub.IRI("http://example.com/inbox"): &pub.Actor{ID: pub.IRI("http://example.com")}},
+				c:       iriMap{vocab.IRI("http://example.com/inbox"): &vocab.Actor{ID: vocab.IRI("http://example.com")}},
 			},
-			args:      args{pub.IRI("http://example.com")},
+			args:      args{vocab.IRI("http://example.com")},
 			want:      true,
-			leftovers: pub.IRIs{},
+			leftovers: vocab.IRIs{},
 		},
 		{
 			name: "with_replies",
 			r: store{
 				enabled: true,
 				c: iriMap{
-					pub.IRI("http://example.com/elefant"): pub.IRI("http://example.com/elefant"),
-					pub.IRI("http://example.com/test"): &pub.Object{
-						ID: pub.IRI("http://example.com/test"),
-						Replies: pub.IRI("http://example.com/test/replies"),
+					vocab.IRI("http://example.com/elefant"): vocab.IRI("http://example.com/elefant"),
+					vocab.IRI("http://example.com/test"): &vocab.Object{
+						ID:      vocab.IRI("http://example.com/test"),
+						Replies: vocab.IRI("http://example.com/test/replies"),
 					},
-					pub.IRI("http://example.com/test/replies"): pub.ItemCollection{
-						pub.IRI("http://example.com/0"),
-						pub.IRI("http://example.com/1"),
+					vocab.IRI("http://example.com/test/replies"): vocab.ItemCollection{
+						vocab.IRI("http://example.com/0"),
+						vocab.IRI("http://example.com/1"),
 					},
 				},
 			},
-			args:      args{pub.IRI("http://example.com/test")},
+			args:      args{vocab.IRI("http://example.com/test")},
 			want:      true,
-			leftovers: pub.IRIs{pub.IRI("http://example.com/elefant")},
+			leftovers: vocab.IRIs{vocab.IRI("http://example.com/elefant")},
 		},
 	}
 	for _, tt := range tests {
@@ -118,8 +119,8 @@ func Test_reqCache_remove(t *testing.T) {
 
 func Test_reqCache_set(t *testing.T) {
 	type args struct {
-		iri pub.IRI
-		it  pub.Item
+		iri vocab.IRI
+		it  vocab.Item
 	}
 	tests := []struct {
 		name string

@@ -17,7 +17,7 @@ import (
 	"strings"
 	"syscall"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
@@ -27,8 +27,8 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-var encodeFn = pub.MarshalJSON
-var decodeItemFn = pub.UnmarshalJSON
+var encodeFn = vocab.MarshalJSON
+var decodeItemFn = vocab.UnmarshalJSON
 
 var encodeMetadataFn = json.Marshal
 var decodeMetadataFn = func(data []byte) (*storage.Metadata, error) {
@@ -99,7 +99,7 @@ func (r *repo) Close() error {
 	return os.Chdir(r.cwd)
 }
 
-func (r *repo) CreateService(service pub.Service) error {
+func (r *repo) CreateService(service vocab.Service) error {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
@@ -117,7 +117,7 @@ func (r *repo) CreateService(service pub.Service) error {
 }
 
 // Load
-func (r *repo) Load(i pub.IRI) (pub.Item, error) {
+func (r *repo) Load(i vocab.IRI) (vocab.Item, error) {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
@@ -136,8 +136,8 @@ func (r *repo) Load(i pub.IRI) (pub.Item, error) {
 }
 
 // Create
-func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, error) {
-	if pub.IsNil(col) {
+func (r *repo) Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error) {
+	if vocab.IsNil(col) {
 		return col, errors.Newf("Unable to operate on nil element")
 	}
 	if len(col.GetLink()) == 0 {
@@ -147,7 +147,7 @@ func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, err
 }
 
 // Save
-func (r *repo) Save(it pub.Item) (pub.Item, error) {
+func (r *repo) Save(it vocab.Item) (vocab.Item, error) {
 	err := r.Open()
 	if err != nil {
 		return nil, err
@@ -165,15 +165,15 @@ func (r *repo) Save(it pub.Item) (pub.Item, error) {
 }
 
 // RemoveFrom
-func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
+func (r *repo) RemoveFrom(col vocab.IRI, it vocab.Item) error {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
 		return err
 	}
 
-	ob, t := pub.Split(col)
-	var link pub.IRI
+	ob, t := vocab.Split(col)
+	var link vocab.IRI
 	if ap.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
 		i, err := r.loadOneFromPath(ob)
@@ -227,10 +227,10 @@ func isHardLink(fi os.FileInfo) bool {
 	return nlink > 1 && !fi.IsDir()
 }
 
-var allStorageCollections = append(pub.ActivityPubCollections, ap.FedBOXCollections...)
+var allStorageCollections = append(vocab.ActivityPubCollections, ap.FedBOXCollections...)
 
 // AddTo
-func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
+func (r *repo) AddTo(col vocab.IRI, it vocab.Item) error {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
@@ -238,7 +238,7 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 	}
 
 	ob, t := allStorageCollections.Split(col)
-	var link pub.IRI
+	var link vocab.IRI
 	if isStorageCollectionKey(string(t)) {
 		// Create the collection on the object, if it doesn't exist
 		i, err := r.loadOneFromPath(ob)
@@ -296,7 +296,7 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 }
 
 // Delete
-func (r *repo) Delete(it pub.Item) error {
+func (r *repo) Delete(it vocab.Item) error {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
@@ -305,9 +305,9 @@ func (r *repo) Delete(it pub.Item) error {
 	return delete(r, it)
 }
 
-func delete(r *repo, it pub.Item) error {
+func delete(r *repo, it vocab.Item) error {
 	if it.IsCollection() {
-		return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+		return vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
 			var err error
 			for _, it := range c.Collection() {
 				if err = deleteItem(r, it); err != nil {
@@ -321,7 +321,7 @@ func delete(r *repo, it pub.Item) error {
 }
 
 // PasswordSet
-func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
+func (r *repo) PasswordSet(it vocab.Item, pw []byte) error {
 	pw, err := bcrypt.GenerateFromPassword(pw, -1)
 	if err != nil {
 		return errors.Annotatef(err, "could not generate pw hash")
@@ -333,7 +333,7 @@ func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 }
 
 // PasswordCheck
-func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
+func (r *repo) PasswordCheck(it vocab.Item, pw []byte) error {
 	m, err := r.LoadMetadata(it.GetLink())
 	if err != nil {
 		return errors.Annotatef(err, "Could not find load metadata for %s", it)
@@ -345,7 +345,7 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 }
 
 // LoadMetadata
-func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
+func (r *repo) LoadMetadata(iri vocab.IRI) (*storage.Metadata, error) {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
@@ -365,7 +365,7 @@ func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 }
 
 // SaveMetadata
-func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
+func (r *repo) SaveMetadata(m storage.Metadata, iri vocab.IRI) error {
 	err := r.Open()
 	defer r.Close()
 	if err != nil {
@@ -394,7 +394,7 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 }
 
 // LoadKey loads a private key for an actor found by its IRI
-func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
+func (r *repo) LoadKey(iri vocab.IRI) (crypto.PrivateKey, error) {
 	m, err := r.LoadMetadata(iri)
 	if err != nil {
 		return nil, r.asPathErr(err)
@@ -411,12 +411,12 @@ func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
 }
 
 // GenKey creates and saves a private key for an actor found by its IRI
-func (r *repo) GenKey(iri pub.IRI) error {
+func (r *repo) GenKey(iri vocab.IRI) error {
 	ob, err := r.loadOneFromPath(iri)
 	if err != nil {
 		return err
 	}
-	if ob.GetType() != pub.PersonType {
+	if ob.GetType() != vocab.PersonType {
 		return errors.Newf("trying to generate keys for invalid ActivityPub object type: %s", ob.GetType())
 	}
 	m, err := r.LoadMetadata(iri)
@@ -436,9 +436,9 @@ func (r *repo) GenKey(iri pub.IRI) error {
 	if err = r.SaveMetadata(*m, iri); err != nil {
 		return err
 	}
-	pub.OnActor(ob, func(act *pub.Actor) error {
-		act.PublicKey = pub.PublicKey{
-			ID:           pub.IRI(fmt.Sprintf("%s#main", iri)),
+	vocab.OnActor(ob, func(act *vocab.Actor) error {
+		act.PublicKey = vocab.PublicKey{
+			ID:           vocab.IRI(fmt.Sprintf("%s#main", iri)),
 			Owner:        iri,
 			PublicKeyPem: string(pem.EncodeToMemory(&pubB)),
 		}
@@ -476,11 +476,11 @@ func createOrOpenFile(p string) (*os.File, error) {
 }
 
 func isStorageCollectionKey(p string) bool {
-	lst := pub.CollectionPath(path.Base(p))
-	return ap.FedBOXCollections.Contains(lst) || pub.OfActor.Contains(lst) || pub.OfObject.Contains(lst)
+	lst := vocab.CollectionPath(path.Base(p))
+	return ap.FedBOXCollections.Contains(lst) || vocab.OfActor.Contains(lst) || vocab.OfObject.Contains(lst)
 }
 
-func (r repo) itemPath(iri pub.IRI) string {
+func (r repo) itemPath(iri vocab.IRI) string {
 	url, err := iri.URL()
 	if err != nil {
 		return ""
@@ -489,12 +489,12 @@ func (r repo) itemPath(iri pub.IRI) string {
 }
 
 // createCollections
-func createCollections(r repo, it pub.Item) error {
-	if pub.IsNil(it) || !it.IsObject() {
+func createCollections(r repo, it vocab.Item) error {
+	if vocab.IsNil(it) || !it.IsObject() {
 		return nil
 	}
-	if pub.ActorTypes.Contains(it.GetType()) {
-		pub.OnActor(it, func(p *pub.Actor) error {
+	if vocab.ActorTypes.Contains(it.GetType()) {
+		vocab.OnActor(it, func(p *vocab.Actor) error {
 			if p.Inbox != nil {
 				p.Inbox, _ = createCollectionInPath(r, p.Inbox)
 			}
@@ -513,7 +513,7 @@ func createCollections(r repo, it pub.Item) error {
 			return nil
 		})
 	}
-	return pub.OnObject(it, func(o *pub.Object) error {
+	return vocab.OnObject(it, func(o *vocab.Object) error {
 		if o.Replies != nil {
 			o.Replies, _ = createCollectionInPath(r, o.Replies)
 		}
@@ -540,13 +540,13 @@ func getObjectKey(p string) string {
 	return path.Join(p, objectKey)
 }
 
-func createCollectionInPath(r repo, it pub.Item) (pub.Item, error) {
+func createCollectionInPath(r repo, it vocab.Item) (vocab.Item, error) {
 	itPath := r.itemPath(it.GetLink())
 	return it.GetLink(), r.asPathErr(mkDirIfNotExists(itPath))
 }
 
-func deleteCollectionFromPath(r repo, it pub.Item) error {
-	if pub.IsNil(it) {
+func deleteCollectionFromPath(r repo, it vocab.Item) error {
+	if vocab.IsNil(it) {
 		return nil
 	}
 	itPath := r.itemPath(it.GetLink())
@@ -562,24 +562,24 @@ func deleteCollectionFromPath(r repo, it pub.Item) error {
 }
 
 // deleteCollections
-func deleteCollections(r repo, it pub.Item) error {
-	if pub.ActorTypes.Contains(it.GetType()) {
-		return pub.OnActor(it, func(p *pub.Actor) error {
+func deleteCollections(r repo, it vocab.Item) error {
+	if vocab.ActorTypes.Contains(it.GetType()) {
+		return vocab.OnActor(it, func(p *vocab.Actor) error {
 			var err error
-			err = deleteCollectionFromPath(r, pub.Inbox.IRI(p))
-			err = deleteCollectionFromPath(r, pub.Outbox.IRI(p))
-			err = deleteCollectionFromPath(r, pub.Followers.IRI(p))
-			err = deleteCollectionFromPath(r, pub.Following.IRI(p))
-			err = deleteCollectionFromPath(r, pub.Liked.IRI(p))
+			err = deleteCollectionFromPath(r, vocab.Inbox.IRI(p))
+			err = deleteCollectionFromPath(r, vocab.Outbox.IRI(p))
+			err = deleteCollectionFromPath(r, vocab.Followers.IRI(p))
+			err = deleteCollectionFromPath(r, vocab.Following.IRI(p))
+			err = deleteCollectionFromPath(r, vocab.Liked.IRI(p))
 			return err
 		})
 	}
-	if pub.ObjectTypes.Contains(it.GetType()) {
-		return pub.OnObject(it, func(o *pub.Object) error {
+	if vocab.ObjectTypes.Contains(it.GetType()) {
+		return vocab.OnObject(it, func(o *vocab.Object) error {
 			var err error
-			err = deleteCollectionFromPath(r, pub.Replies.IRI(o))
-			err = deleteCollectionFromPath(r, pub.Likes.IRI(o))
-			err = deleteCollectionFromPath(r, pub.Shares.IRI(o))
+			err = deleteCollectionFromPath(r, vocab.Replies.IRI(o))
+			err = deleteCollectionFromPath(r, vocab.Likes.IRI(o))
+			err = deleteCollectionFromPath(r, vocab.Shares.IRI(o))
 			return err
 		})
 	}
@@ -619,7 +619,7 @@ func getAbsStoragePath(p string) (string, error) {
 	return p, nil
 }
 
-func deleteItem(r *repo, it pub.Item) error {
+func deleteItem(r *repo, it vocab.Item) error {
 	itemPath := r.itemPath(it.GetLink())
 	if err := os.RemoveAll(itemPath); err != nil {
 		return err
@@ -628,7 +628,7 @@ func deleteItem(r *repo, it pub.Item) error {
 	return nil
 }
 
-func save(r *repo, it pub.Item) (pub.Item, error) {
+func save(r *repo, it vocab.Item) (vocab.Item, error) {
 	itPath := r.itemPath(it.GetLink())
 	mkDirIfNotExists(itPath)
 
@@ -664,8 +664,8 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 	return it, nil
 }
 
-func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(p string) error) error {
-	if pub.IsNil(it) {
+func onCollection(r *repo, col vocab.IRI, it vocab.Item, fn func(p string) error) error {
+	if vocab.IsNil(it) {
 		return errors.Newf("Unable to operate on nil element")
 	}
 	if len(col) == 0 {
@@ -674,7 +674,7 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(p string) error) er
 	if len(it.GetLink()) == 0 {
 		return errors.Newf("Invalid collection, it does not have a valid IRI")
 	}
-	if !col.GetLink().Contains(pub.IRI(r.baseURL), false) {
+	if !col.GetLink().Contains(vocab.IRI(r.baseURL), false) {
 		return errors.Newf("Unable to save to non local collection %s", col)
 	}
 
@@ -693,7 +693,7 @@ func loadRawFromPath(itPath string) ([]byte, error) {
 	return ioutil.ReadFile(itPath)
 }
 
-func loadFromRaw(raw []byte) (pub.Item, error) {
+func loadFromRaw(raw []byte) (vocab.Item, error) {
 	if raw == nil || len(raw) == 0 {
 		// TODO(marius): log this instead of stopping the iteration and returning an error
 		return nil, errors.Errorf("empty raw item")
@@ -701,7 +701,7 @@ func loadFromRaw(raw []byte) (pub.Item, error) {
 	return decodeItemFn(raw)
 }
 
-func (r repo) loadOneFromPath(f processing.Filterable) (pub.Item, error) {
+func (r repo) loadOneFromPath(f processing.Filterable) (vocab.Item, error) {
 	col, err := r.loadFromPath(f)
 	if err != nil {
 		return nil, err
@@ -710,8 +710,8 @@ func (r repo) loadOneFromPath(f processing.Filterable) (pub.Item, error) {
 		return nil, errors.NotFoundf("nothing found")
 	}
 	if col.IsCollection() {
-		var result pub.Item
-		pub.OnCollectionIntf(col, func(col pub.CollectionInterface) error {
+		var result vocab.Item
+		vocab.OnCollectionIntf(col, func(col vocab.CollectionInterface) error {
 			result = col.Collection().First()
 			return nil
 		})
@@ -721,31 +721,31 @@ func (r repo) loadOneFromPath(f processing.Filterable) (pub.Item, error) {
 }
 
 func isSingleItem(f processing.Filterable) bool {
-	if _, isIRI := f.(pub.IRI); isIRI {
+	if _, isIRI := f.(vocab.IRI); isIRI {
 		return true
 	}
-	if _, isItem := f.(pub.Item); isItem {
+	if _, isItem := f.(vocab.Item); isItem {
 		return true
 	}
 	return false
 }
 
-func loadFilteredPropsForActor(r repo, f processing.Filterable) func(a *pub.Actor) error {
-	return func(a *pub.Actor) error {
-		return pub.OnObject(a, loadFilteredPropsForObject(r, f))
+func loadFilteredPropsForActor(r repo, f processing.Filterable) func(a *vocab.Actor) error {
+	return func(a *vocab.Actor) error {
+		return vocab.OnObject(a, loadFilteredPropsForObject(r, f))
 	}
 }
 
 var subFilterValidationError = errors.NotValidf("subfilter failed validation")
 
-func loadFilteredPropsForObject(r repo, f processing.Filterable) func(o *pub.Object) error {
-	return func(o *pub.Object) error {
+func loadFilteredPropsForObject(r repo, f processing.Filterable) func(o *vocab.Object) error {
+	return func(o *vocab.Object) error {
 		if len(o.Tag) == 0 {
 			return nil
 		}
-		return pub.OnItemCollection(o.Tag, func(col *pub.ItemCollection) error {
+		return vocab.OnItemCollection(o.Tag, func(col *vocab.ItemCollection) error {
 			for i, t := range *col {
-				if pub.IsNil(t) || !pub.IsIRI(t) {
+				if vocab.IsNil(t) || !vocab.IsIRI(t) {
 					return nil
 				}
 				if ob, err := r.loadOneFromPath(t.GetLink()); err == nil {
@@ -757,9 +757,9 @@ func loadFilteredPropsForObject(r repo, f processing.Filterable) func(o *pub.Obj
 	}
 }
 
-func loadFilteredPropsForActivity(r repo, f processing.Filterable) func(a *pub.Activity) error {
-	return func(a *pub.Activity) error {
-		if ok, fo := ap.FiltersOnActivityObject(f); ok && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
+func loadFilteredPropsForActivity(r repo, f processing.Filterable) func(a *vocab.Activity) error {
+	return func(a *vocab.Activity) error {
+		if ok, fo := ap.FiltersOnActivityObject(f); ok && !vocab.IsNil(a.Object) && vocab.IsIRI(a.Object) {
 			if ob, err := r.loadOneFromPath(a.Object.GetLink()); err == nil {
 				a.Object, _ = ap.FilterIt(ob, fo)
 			}
@@ -767,13 +767,13 @@ func loadFilteredPropsForActivity(r repo, f processing.Filterable) func(a *pub.A
 				return subFilterValidationError
 			}
 		}
-		return pub.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, f))
+		return vocab.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, f))
 	}
 }
 
-func loadFilteredPropsForIntransitiveActivity(r repo, f processing.Filterable) func(a *pub.IntransitiveActivity) error {
-	return func(a *pub.IntransitiveActivity) error {
-		if ok, fa := ap.FiltersOnActivityActor(f); ok && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
+func loadFilteredPropsForIntransitiveActivity(r repo, f processing.Filterable) func(a *vocab.IntransitiveActivity) error {
+	return func(a *vocab.IntransitiveActivity) error {
+		if ok, fa := ap.FiltersOnActivityActor(f); ok && !vocab.IsNil(a.Actor) && vocab.IsIRI(a.Actor) {
 			if act, err := r.loadOneFromPath(a.Actor.GetLink()); err == nil {
 				a.Actor, _ = ap.FilterIt(act, fa)
 			}
@@ -781,7 +781,7 @@ func loadFilteredPropsForIntransitiveActivity(r repo, f processing.Filterable) f
 				return subFilterValidationError
 			}
 		}
-		if ok, ft := ap.FiltersOnActivityTarget(f); ok && !pub.IsNil(a.Target) && pub.IsIRI(a.Target) {
+		if ok, ft := ap.FiltersOnActivityTarget(f); ok && !vocab.IsNil(a.Target) && vocab.IsIRI(a.Target) {
 			if t, err := r.loadOneFromPath(a.Target.GetLink()); err == nil {
 				a.Target, _ = ap.FilterIt(t, ft)
 			}
@@ -789,7 +789,7 @@ func loadFilteredPropsForIntransitiveActivity(r repo, f processing.Filterable) f
 				return subFilterValidationError
 			}
 		}
-		return pub.OnObject(a, loadFilteredPropsForObject(r, f))
+		return vocab.OnObject(a, loadFilteredPropsForObject(r, f))
 	}
 }
 
@@ -804,12 +804,12 @@ func (r repo) asPathErr(err error) error {
 	return err
 }
 
-func (r repo) loadItem(p string, f processing.Filterable) (pub.Item, error) {
-	var it pub.Item
+func (r repo) loadItem(p string, f processing.Filterable) (vocab.Item, error) {
+	var it vocab.Item
 	if cachedIt := r.cache.Get(f.GetLink()); cachedIt != nil {
 		it = cachedIt
 	}
-	if pub.IsNil(it) {
+	if vocab.IsNil(it) {
 		raw, err := loadRawFromPath(p)
 		if err != nil {
 			return nil, r.asPathErr(err)
@@ -821,7 +821,7 @@ func (r repo) loadItem(p string, f processing.Filterable) (pub.Item, error) {
 		if err != nil {
 			return nil, r.asPathErr(err)
 		}
-		if pub.IsNil(it) {
+		if vocab.IsNil(it) {
 			return nil, errors.NotFoundf("not found")
 		}
 	}
@@ -829,31 +829,31 @@ func (r repo) loadItem(p string, f processing.Filterable) (pub.Item, error) {
 		// we need to dereference them, so no further filtering/processing is needed here
 		return it, nil
 	}
-	if pub.IsIRI(it) {
-		if it, _ = r.loadOneFromPath(it.GetLink()); pub.IsNil(it) {
+	if vocab.IsIRI(it) {
+		if it, _ = r.loadOneFromPath(it.GetLink()); vocab.IsNil(it) {
 			return nil, errors.NotFoundf("not found")
 		}
 	}
 	typ := it.GetType()
 	// NOTE(marius): this can probably expedite filtering if we early exit if we fail to load the
 	// properties that need to load for sub-filters.
-	if pub.IntransitiveActivityTypes.Contains(typ) {
-		if validErr := pub.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f)); validErr != nil {
+	if vocab.IntransitiveActivityTypes.Contains(typ) {
+		if validErr := vocab.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f)); validErr != nil {
 			return nil, nil
 		}
 	}
-	if pub.ActivityTypes.Contains(typ) {
-		if validErr := pub.OnActivity(it, loadFilteredPropsForActivity(r, f)); validErr != nil {
+	if vocab.ActivityTypes.Contains(typ) {
+		if validErr := vocab.OnActivity(it, loadFilteredPropsForActivity(r, f)); validErr != nil {
 			return nil, nil
 		}
 	}
-	if pub.ActorTypes.Contains(typ) {
-		if validErr := pub.OnActor(it, loadFilteredPropsForActor(r, f)); validErr != nil {
+	if vocab.ActorTypes.Contains(typ) {
+		if validErr := vocab.OnActor(it, loadFilteredPropsForActor(r, f)); validErr != nil {
 			return nil, nil
 		}
 	}
-	if pub.ObjectTypes.Contains(typ) {
-		if validErr := pub.OnObject(it, loadFilteredPropsForObject(r, f)); validErr != nil {
+	if vocab.ObjectTypes.Contains(typ) {
+		if validErr := vocab.OnObject(it, loadFilteredPropsForObject(r, f)); validErr != nil {
 			return nil, nil
 		}
 	}
@@ -865,9 +865,9 @@ func (r repo) loadItem(p string, f processing.Filterable) (pub.Item, error) {
 	return it, nil
 }
 
-func (r repo) loadFromPath(f processing.Filterable) (pub.ItemCollection, error) {
+func (r repo) loadFromPath(f processing.Filterable) (vocab.ItemCollection, error) {
 	var err error
-	col := make(pub.ItemCollection, 0)
+	col := make(vocab.ItemCollection, 0)
 
 	itPath := r.itemPath(f.GetLink())
 	if isStorageCollectionKey(itPath) || itPath == r.path {
@@ -884,12 +884,12 @@ func (r repo) loadFromPath(f processing.Filterable) (pub.ItemCollection, error) 
 			if dir != itPath {
 				return nil
 			}
-			if _, ok := f.(pub.IRI); ok {
+			if _, ok := f.(vocab.IRI); ok {
 				// when loading a collection by path, we want to avoid filtering out IRIs that don't specifically
 				// contain the path, so we set the filter to a nil value
 				f = nil
 			}
-			if it, _ := r.loadItem(getObjectKey(p), f); !pub.IsNil(it) {
+			if it, _ := r.loadItem(getObjectKey(p), f); !vocab.IsNil(it) {
 				col = append(col, it)
 			}
 			return nil
@@ -899,7 +899,7 @@ func (r repo) loadFromPath(f processing.Filterable) (pub.ItemCollection, error) 
 		if err != nil {
 			return nil, errors.NewNotFound(err, "not found")
 		}
-		if !pub.IsNil(it) {
+		if !vocab.IsNil(it) {
 			col = append(col, it)
 		}
 	}

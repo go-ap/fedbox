@@ -4,20 +4,20 @@ import (
 	"path"
 	"sync"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 )
 
 type (
-	iriMap map[pub.IRI]pub.Item
+	iriMap map[vocab.IRI]vocab.Item
 	store  struct {
 		enabled bool
 		w       sync.RWMutex
 		c       iriMap
 	}
 	CanStore interface {
-		Set(iri pub.IRI, it pub.Item)
-		Get(iri pub.IRI) pub.Item
-		Remove(iris ...pub.IRI) bool
+		Set(iri vocab.IRI, it vocab.Item)
+		Get(iri vocab.IRI) vocab.Item
+		Remove(iris ...vocab.IRI) bool
 	}
 )
 
@@ -25,7 +25,7 @@ func New(enabled bool) *store {
 	return &store{enabled: enabled, c: make(iriMap)}
 }
 
-func (r *store) Get(iri pub.IRI) pub.Item {
+func (r *store) Get(iri vocab.IRI) vocab.Item {
 	if r == nil || !r.enabled {
 		return nil
 	}
@@ -37,14 +37,14 @@ func (r *store) Get(iri pub.IRI) pub.Item {
 	return nil
 }
 
-func (r *store) Set(iri pub.IRI, it pub.Item) {
+func (r *store) Set(iri vocab.IRI, it vocab.Item) {
 	if r == nil || !r.enabled {
 		return
 	}
 	r.w.Lock()
 	defer r.w.Unlock()
 	if r.c == nil {
-		r.c = make(map[pub.IRI]pub.Item)
+		r.c = make(map[vocab.IRI]vocab.Item)
 	}
 	r.c[iri] = it
 }
@@ -55,7 +55,7 @@ func (r *store) Clear() {
 	}
 }
 
-func (r *store) Remove(iris ...pub.IRI) bool {
+func (r *store) Remove(iris ...vocab.IRI) bool {
 	if r == nil || !r.enabled {
 		return true
 	}
@@ -65,12 +65,12 @@ func (r *store) Remove(iris ...pub.IRI) bool {
 		}
 		return true
 	}
-	toInvalidate := pub.IRIs(iris)
+	toInvalidate := vocab.IRIs(iris)
 	for _, iri := range iris {
-		if pub.ValidCollectionIRI(iri) {
+		if vocab.ValidCollectionIRI(iri) {
 			continue
 		}
-		c := pub.IRI(path.Dir(iri.String()))
+		c := vocab.IRI(path.Dir(iri.String()))
 		if !toInvalidate.Contains(c) {
 			toInvalidate = append(toInvalidate, c)
 		}
@@ -88,18 +88,18 @@ func (r *store) Remove(iris ...pub.IRI) bool {
 	return true
 }
 
-func removeAccum(toRemove *pub.IRIs, iri pub.IRI, col pub.CollectionPath) {
+func removeAccum(toRemove *vocab.IRIs, iri vocab.IRI, col vocab.CollectionPath) {
 	if repl := col.IRI(iri); !toRemove.Contains(repl) {
 		*toRemove = append(*toRemove, repl)
 	}
 }
 
-func accumForProperty(it pub.Item, toRemove *pub.IRIs, col pub.CollectionPath) {
-	if pub.IsNil(it) {
+func accumForProperty(it vocab.Item, toRemove *vocab.IRIs, col vocab.CollectionPath) {
+	if vocab.IsNil(it) {
 		return
 	}
-	if pub.IsItemCollection(it) {
-		pub.OnItemCollection(it, func(c *pub.ItemCollection) error {
+	if vocab.IsItemCollection(it) {
+		vocab.OnItemCollection(it, func(c *vocab.ItemCollection) error {
 			for _, ob := range c.Collection() {
 				removeAccum(toRemove, ob.GetLink(), col)
 			}
@@ -110,7 +110,7 @@ func accumForProperty(it pub.Item, toRemove *pub.IRIs, col pub.CollectionPath) {
 	}
 }
 
-func aggregateItemIRIs(toRemove *pub.IRIs, it pub.Item) error {
+func aggregateItemIRIs(toRemove *vocab.IRIs, it vocab.Item) error {
 	if it == nil {
 		return nil
 	}
@@ -120,25 +120,25 @@ func aggregateItemIRIs(toRemove *pub.IRIs, it pub.Item) error {
 	if !it.IsObject() {
 		return nil
 	}
-	return pub.OnObject(it, func(o *pub.Object) error {
-		accumForProperty(o.InReplyTo, toRemove, pub.Replies)
-		accumForProperty(o.AttributedTo, toRemove, pub.Outbox)
+	return vocab.OnObject(it, func(o *vocab.Object) error {
+		accumForProperty(o.InReplyTo, toRemove, vocab.Replies)
+		accumForProperty(o.AttributedTo, toRemove, vocab.Outbox)
 		return nil
 	})
 }
 
-func aggregateActivityIRIs(toRemove *pub.IRIs, a *pub.Activity, typ pub.CollectionPath) error {
+func aggregateActivityIRIs(toRemove *vocab.IRIs, a *vocab.Activity, typ vocab.CollectionPath) error {
 	for _, r := range a.Recipients() {
-		if r.GetLink().Equals(pub.PublicNS, false) {
+		if r.GetLink().Equals(vocab.PublicNS, false) {
 			continue
 		}
-		if iri := r.GetLink(); pub.ValidCollectionIRI(iri) {
+		if iri := r.GetLink(); vocab.ValidCollectionIRI(iri) {
 			// TODO(marius): for followers, following collections this should dereference the members
 			if !toRemove.Contains(iri) {
 				*toRemove = append(*toRemove, iri)
 			}
 		} else {
-			accumForProperty(r, toRemove, pub.Inbox)
+			accumForProperty(r, toRemove, vocab.Inbox)
 		}
 	}
 	if destCol := typ.IRI(a.Actor); !toRemove.Contains(destCol) {
@@ -149,18 +149,18 @@ func aggregateActivityIRIs(toRemove *pub.IRIs, a *pub.Activity, typ pub.Collecti
 		*toRemove = append(*toRemove, aIRI)
 	}
 
-	withSideEffects := pub.ActivityVocabularyTypes{pub.UpdateType, pub.UndoType, pub.DeleteType}
+	withSideEffects := vocab.ActivityVocabularyTypes{vocab.UpdateType, vocab.UndoType, vocab.DeleteType}
 	if withSideEffects.Contains(a.GetType()) {
 		base := path.Dir(a.Object.GetLink().String())
-		*toRemove = append(*toRemove, pub.IRI(base))
+		*toRemove = append(*toRemove, vocab.IRI(base))
 		*toRemove = append(*toRemove, a.Object.GetLink())
 	}
 
 	return aggregateItemIRIs(toRemove, a.Object)
 }
 
-func ActivityPurge(cache CanStore, a *pub.Activity, typ pub.CollectionPath) error {
-	toRemove := make(pub.IRIs, 0)
+func ActivityPurge(cache CanStore, a *vocab.Activity, typ vocab.CollectionPath) error {
+	toRemove := make(vocab.IRIs, 0)
 	err := aggregateActivityIRIs(&toRemove, a, typ)
 	if err != nil {
 		return err

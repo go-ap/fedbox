@@ -1,5 +1,4 @@
 //go:build integration && c2s
-// +build integration,c2s
 
 package tests
 
@@ -9,7 +8,7 @@ import (
 	"net/url"
 	"testing"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 )
 
 func ActorsURL() string {
@@ -20,7 +19,7 @@ func ObjectsURL() string {
 	return ServiceObjectsURL(&service)
 }
 
-func CreateC2SObject(actor *testAccount, object pub.Item) actC2SMock {
+func CreateC2SObject(actor *testAccount, object vocab.Item) actC2SMock {
 	return actC2SMock{
 		ActorId: actor.Id,
 		Object:  object,
@@ -45,12 +44,12 @@ var ActorsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        ActorsURL(),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 2,
 						items: map[string]*objectVal{
 							"e869bdca-dd5e-4de7-9c5d-37845eccc6a1": {
 								id:      "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
-								typ:     string(pub.PersonType),
+								typ:     string(vocab.PersonType),
 								summary: "Generated actor",
 								content: "Generated actor",
 								url:     "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
@@ -80,18 +79,18 @@ var ActorsCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s", ActorsURL(), pub.PersonType),
+					url: fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.PersonType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), pub.PersonType),
-						typ:       string(pub.OrderedCollectionType),
+						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.PersonType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 						items: map[string]*objectVal{
 							"e869bdca-dd5e-4de7-9c5d-37845eccc6a1": {
 								id:      "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
-								typ:     string(pub.PersonType),
+								typ:     string(vocab.PersonType),
 								summary: "Generated actor",
 								content: "Generated actor",
 								url:     "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
@@ -121,13 +120,13 @@ var ActorsCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s", ActorsURL(), pub.GroupType),
+					url: fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.GroupType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), pub.GroupType),
-						typ:       string(pub.OrderedCollectionType),
+						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.GroupType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 0,
 					},
 				},
@@ -144,13 +143,13 @@ var ActorsCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s", ActorsURL(), pub.ApplicationType),
+					url: fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.ApplicationType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), pub.ApplicationType),
-						typ:       string(pub.OrderedCollectionType),
+						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.ApplicationType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -193,7 +192,7 @@ var ActorsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        ActorsURL(),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 21,
 					},
 				},
@@ -201,13 +200,13 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s", ActorsURL(), pub.ApplicationType),
+					url: fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.ApplicationType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), pub.ApplicationType),
-						typ:       string(pub.OrderedCollectionType),
+						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.ApplicationType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 6,
 					},
 				},
@@ -215,13 +214,13 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s", ActorsURL(), pub.GroupType),
+					url: fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.GroupType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), pub.GroupType),
-						typ:       string(pub.OrderedCollectionType),
+						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.GroupType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 5,
 					},
 				},
@@ -229,13 +228,13 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s", ActorsURL(), pub.PersonType),
+					url: fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.PersonType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), pub.PersonType),
-						typ:       string(pub.OrderedCollectionType),
+						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.PersonType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 10,
 					},
 				},
@@ -243,13 +242,13 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s&type=%s", ActorsURL(), pub.PersonType, pub.GroupType),
+					url: fmt.Sprintf("%s?type=%s&type=%s", ActorsURL(), vocab.PersonType, vocab.GroupType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s&type=%s", ActorsURL(), pub.PersonType, pub.GroupType),
-						typ:       string(pub.OrderedCollectionType),
+						id:        fmt.Sprintf("%s?type=%s&type=%s", ActorsURL(), vocab.PersonType, vocab.GroupType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 15,
 					},
 				},
@@ -263,7 +262,7 @@ var ActorsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s?name=%s", ActorsURL(), "element_a"),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -277,7 +276,7 @@ var ActorsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s?name=~%s", ActorsURL(), "element"),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 9,
 					},
 				},
@@ -291,7 +290,7 @@ var ActorsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s?name=%s&name=%s", ActorsURL(), "element_a", "element_b"),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 2,
 					},
 				},
@@ -315,12 +314,12 @@ var ActorsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        ActorsURL(),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 2,
 						items: map[string]*objectVal{
 							"2": {
 								id:  "http://127.0.0.1:9998/actors/2",
-								typ: string(pub.PersonType),
+								typ: string(vocab.PersonType),
 								tag: []*objectVal{
 									{
 										id:   "http://127.0.0.1:9998/objects/t1",
@@ -342,7 +341,7 @@ var ActorsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        ObjectsURL(),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 						items: map[string]*objectVal{
 							"t1": {
@@ -498,7 +497,7 @@ var ActivitiesCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/activities?object.inReplyTo=%%21-", apiURL),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -517,7 +516,7 @@ var ActivitiesCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/activities?object.inReplyTo=-", apiURL),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -543,7 +542,7 @@ var ObjectsCollectionTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 0,
 					},
 				},
@@ -569,7 +568,7 @@ var ObjectsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects", apiURL),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 4,
 					},
 				},
@@ -577,13 +576,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?type=%s", apiURL, pub.TombstoneType),
+					url: fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.TombstoneType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, pub.TombstoneType),
-						typ:       string(pub.OrderedCollectionType),
+						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.TombstoneType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -591,13 +590,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?type=%s", apiURL, pub.PlaceType),
+					url: fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.PlaceType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, pub.PlaceType),
-						typ:       string(pub.OrderedCollectionType),
+						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.PlaceType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -605,13 +604,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?type=%s", apiURL, pub.NoteType),
+					url: fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.NoteType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, pub.NoteType),
-						typ:       string(pub.OrderedCollectionType),
+						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.NoteType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -619,13 +618,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?type=%s", apiURL, pub.PageType),
+					url: fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.PageType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, pub.PageType),
-						typ:       string(pub.OrderedCollectionType),
+						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.PageType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -633,13 +632,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?type=%s&type=%s", apiURL, pub.PageType, pub.PlaceType),
+					url: fmt.Sprintf("%s/objects?type=%s&type=%s", apiURL, vocab.PageType, vocab.PlaceType),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?type=%s&type=%s", apiURL, pub.PageType, pub.PlaceType),
-						typ:       string(pub.OrderedCollectionType),
+						id:        fmt.Sprintf("%s/objects?type=%s&type=%s", apiURL, vocab.PageType, vocab.PlaceType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 2,
 					},
 				},
@@ -653,7 +652,7 @@ var ObjectsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects?name=%s", apiURL, url.QueryEscape("You are here")),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -667,7 +666,7 @@ var ObjectsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects?name=~%s", apiURL, url.QueryEscape("You are")),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -681,7 +680,7 @@ var ObjectsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects?name=~%s&name=~%s", apiURL, "You", "Humble"),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 2,
 					},
 				},
@@ -695,7 +694,7 @@ var ObjectsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects?url=%s", apiURL, url.QueryEscape("https://github.com/mariusor/mpris-scrobbler")),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -709,7 +708,7 @@ var ObjectsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects?attributedTo=%s", apiURL, url.QueryEscape("http://127.0.0.1:9998/actors/2")),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 3,
 					},
 				},
@@ -723,7 +722,7 @@ var ObjectsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects?inReplyTo=%s", apiURL, url.QueryEscape("http://127.0.0.1:9998/objects/1")),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 0,
 					},
 				},
@@ -737,7 +736,7 @@ var ObjectsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects?iri=%%21-", apiURL),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 4,
 					},
 				},
@@ -751,7 +750,7 @@ var ObjectsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects?iri=%%21", apiURL),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 4,
 					},
 				},
@@ -766,7 +765,7 @@ var ObjectsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects?inReplyTo=%%21-", apiURL),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -781,7 +780,7 @@ var ObjectsCollectionTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects?inReplyTo=-", apiURL),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 3,
 					},
 				},
@@ -807,7 +806,7 @@ var SingleItemLoadTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:      "http://127.0.0.1:9998/",
-						typ:     string(pub.ServiceType),
+						typ:     string(vocab.ServiceType),
 						summary: "Generic ActivityPub service",
 						inbox: &objectVal{
 							id: "http://127.0.0.1:9998/inbox",
@@ -840,13 +839,13 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusCreated,
 					val: &objectVal{
-						typ: string(pub.CreateType),
+						typ: string(vocab.CreateType),
 						act: &objectVal{
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "johndoe",
 						},
 						obj: &objectVal{
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "jennyjane",
 							name:              "Jane Doe",
 						},
@@ -873,13 +872,13 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusCreated,
 					val: &objectVal{
-						typ: string(pub.CreateType),
+						typ: string(vocab.CreateType),
 						act: &objectVal{
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "johndoe",
 						},
 						obj: &objectVal{
-							typ:     string(pub.ArticleType),
+							typ:     string(vocab.ArticleType),
 							content: "<p>Hello world</p>",
 						},
 					},
@@ -894,7 +893,7 @@ var CreateTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        OutboxURL(defaultC2SAccount())(),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -908,7 +907,7 @@ var CreateTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/activities", apiURL),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -922,7 +921,7 @@ var CreateTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/objects", apiURL),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -936,7 +935,7 @@ var CreateTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/inbox", apiURL),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -1011,10 +1010,10 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusCreated,
 					val: &objectVal{
-						typ: string(pub.CreateType),
+						typ: string(vocab.CreateType),
 						act: &objectVal{
 							id:                defaultC2SAccount().Id,
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "johndoe",
 							name:              "Johnathan Doe",
 						},
@@ -1033,7 +1032,7 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -1062,16 +1061,16 @@ var UpdateTests = testPairs{
 				res: testRes{
 					code: http.StatusCreated,
 					val: &objectVal{
-						typ: string(pub.UpdateType),
+						typ: string(vocab.UpdateType),
 						act: &objectVal{
 							id:  defaultC2SAccount().Id,
-							typ: string(pub.PersonType),
+							typ: string(vocab.PersonType),
 						},
 						obj: &objectVal{
 							id:                defaultC2SAccount().Id,
 							name:              "Jane Doe",
 							preferredUsername: "jennyjane",
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							inbox: &objectVal{
 								id: fmt.Sprintf("%s/inbox", defaultC2SAccount().Id),
 							},
@@ -1105,14 +1104,14 @@ var DeleteTests = testPairs{
 				res: testRes{
 					code: http.StatusGone,
 					val: &objectVal{
-						typ: string(pub.DeleteType),
+						typ: string(vocab.DeleteType),
 						act: &objectVal{
 							id:  defaultC2SAccount().Id,
-							typ: string(pub.TombstoneType),
+							typ: string(vocab.TombstoneType),
 						},
 						obj: &objectVal{
 							id:  defaultC2SAccount().Id,
-							typ: string(pub.TombstoneType),
+							typ: string(vocab.TombstoneType),
 						},
 					},
 				},
@@ -1141,13 +1140,13 @@ var LikeTests = testPairs{
 				res: testRes{
 					code: http.StatusCreated,
 					val: &objectVal{
-						typ: string(pub.LikeType),
+						typ: string(vocab.LikeType),
 						act: &objectVal{
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "johndoe",
 						},
 						obj: &objectVal{
-							typ: string(pub.NoteType),
+							typ: string(vocab.NoteType),
 						},
 					},
 				},
@@ -1161,7 +1160,7 @@ var LikeTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        OutboxURL(defaultC2SAccount())(),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -1175,7 +1174,7 @@ var LikeTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/activities", apiURL),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -1189,7 +1188,7 @@ var LikeTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/inbox", apiURL),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -1203,7 +1202,7 @@ var LikeTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        fmt.Sprintf("%s/liked", defaultC2SAccount().Id),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -1246,13 +1245,13 @@ var FollowTests = testPairs{
 				res: testRes{
 					code: http.StatusCreated,
 					val: &objectVal{
-						typ: string(pub.FollowType),
+						typ: string(vocab.FollowType),
 						act: &objectVal{
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "johndoe",
 						},
 						obj: &objectVal{
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "extra",
 						},
 					},
@@ -1267,7 +1266,7 @@ var FollowTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        OutboxURL(defaultC2SAccount())(),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -1288,7 +1287,7 @@ var FollowTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        InboxURL(&extraAccount)(),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -1317,13 +1316,13 @@ var BlockTests = testPairs{
 				res: testRes{
 					code: http.StatusCreated,
 					val: &objectVal{
-						typ: string(pub.BlockType),
+						typ: string(vocab.BlockType),
 						act: &objectVal{
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "johndoe",
 						},
 						obj: &objectVal{
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "extra",
 						},
 					},
@@ -1339,7 +1338,7 @@ var BlockTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        OutboxURL(defaultC2SAccount())(),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
 				},
@@ -1354,7 +1353,7 @@ var BlockTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        InboxURL(&extraAccount)(),
-						typ:       string(pub.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 0,
 					},
 				},
@@ -1387,9 +1386,9 @@ var QuestionTests = testPairs{
 				res: testRes{
 					code: http.StatusNoContent,
 					val: &objectVal{
-						typ: string(pub.QuestionType),
+						typ: string(vocab.QuestionType),
 						act: &objectVal{
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "johndoe",
 						},
 						obj: nil,
@@ -1421,10 +1420,10 @@ var QuestionTests = testPairs{
 				res: testRes{
 					code: http.StatusNoContent,
 					val: &objectVal{
-						typ:  string(pub.QuestionType),
+						typ:  string(vocab.QuestionType),
 						name: "Some question",
 						act: &objectVal{
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "johndoe",
 						},
 						oneOf: []*objectVal{
@@ -1459,10 +1458,10 @@ var QuestionTests = testPairs{
 				res: testRes{
 					code: http.StatusNoContent,
 					val: &objectVal{
-						typ:  string(pub.QuestionType),
+						typ:  string(vocab.QuestionType),
 						name: "Some question",
 						act: &objectVal{
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "johndoe",
 						},
 						anyOf: []*objectVal{

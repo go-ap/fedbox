@@ -1,5 +1,4 @@
 //go:build integration && s2s
-// +build integration,s2s
 
 package tests
 
@@ -9,7 +8,7 @@ import (
 	"path"
 	"testing"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 )
 
 func CreateS2SObject(actor *testAccount, object interface{}) actS2SMock {
@@ -20,7 +19,7 @@ func CreateS2SObject(actor *testAccount, object interface{}) actS2SMock {
 		objectId = ob
 	case *testAccount:
 		objectId = ob.Id
-	case pub.Item:
+	case vocab.Item:
 		objectId = string(ob.GetID())
 	}
 	return actS2SMock{
@@ -58,15 +57,15 @@ var S2SReceiveTests = testPairs{
 				res: testRes{
 					code: http.StatusCreated,
 					val: &objectVal{
-						typ: string(pub.CreateType),
+						typ: string(vocab.CreateType),
 						act: &objectVal{
 							id:                defaultS2SAccount().Id,
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "lou",
 						},
 						obj: &objectVal{
 							id:                defaultS2SAccount().Id,
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "lou",
 							name:              "Loucien Cypher",
 						},
@@ -101,10 +100,10 @@ var S2SReceiveTests = testPairs{
 				res: testRes{
 					code: http.StatusCreated,
 					val: &objectVal{
-						typ: string(pub.CreateType),
+						typ: string(vocab.CreateType),
 						act: &objectVal{
 							id:                defaultS2SAccount().Id,
-							typ:               string(pub.PersonType),
+							typ:               string(vocab.PersonType),
 							preferredUsername: "lou",
 							name:              "Loucien Cypher",
 						},

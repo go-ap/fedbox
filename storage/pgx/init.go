@@ -1,16 +1,17 @@
-// +build storage_pgx storage_all !storage_boltdb,!storage_fs,!storage_badger,!storage_sqlite
+//go:build storage_pgx || storage_all || (!storage_boltdb && !storage_fs && !storage_badger && !storage_sqlite)
 
 package pgx
+
 const (
-dropDatabase = ``
-dropRole = ``
-createRoleWithPass = ``
-createDbForRole = ``
-extensionPgcrypto = `create extension if not exists pgcrypto with schema public; `
+	dropDatabase       = ``
+	dropRole           = ``
+	createRoleWithPass = ``
+	createDbForRole    = ``
+	extensionPgcrypto  = `create extension if not exists pgcrypto with schema public; `
 
-extensionLtree = `create extension if not exists ltree with schema public; `
+	extensionLtree = `create extension if not exists ltree with schema public; `
 
-dropTables = `
+	dropTables = `
 DROP TABLE IF EXISTS votes CASCADE;
 DROP TABLE IF EXISTS items CASCADE;
 DROP TABLE IF EXISTS accounts CASCADE;
@@ -20,7 +21,7 @@ DROP TABLE IF EXISTS activities CASCADE;
 DROP TABLE IF EXISTS actors CASCADE;
 `
 
-truncateTables = `
+	truncateTables = `
 TRUNCATE votes RESTART IDENTITY CASCADE;
 TRUNCATE accounts RESTART IDENTITY CASCADE;
 TRUNCATE items RESTART IDENTITY CASCADE;
@@ -30,7 +31,7 @@ TRUNCATE activities RESTART IDENTITY CASCADE;
 TRUNCATE actors RESTART IDENTITY CASCADE;
 `
 
-createAccounts = `
+	createAccounts = `
 create table accounts (
   id serial constraint accounts_pk primary key,
   key char(32) unique,
@@ -43,7 +44,7 @@ create table accounts (
   flags bit(8) default 0::bit(8)
 ); `
 
-createItems = `
+	createItems = `
 create table items (
   id serial constraint items_pk primary key,
   key char(32) unique,
@@ -59,7 +60,7 @@ create table items (
   flags bit(8) default 0::bit(8)
 ); `
 
-createVotes = `
+	createVotes = `
 create table votes (
   id serial constraint votes_pk primary key,
   submitted_by int references accounts(id),
@@ -71,7 +72,7 @@ create table votes (
   constraint unique_vote_submitted_item unique (submitted_by, item_id)
 ); `
 
-createInstances = `
+	createInstances = `
 create table instances
 (
   id serial constraint instances_pk primary key,
@@ -83,7 +84,7 @@ create table instances
   flags bit(8) default 0::bit(8)
 ); `
 
-createActivityPubActors = `
+	createActivityPubActors = `
 create table actors (
   "id" serial not null constraint actors_pkey primary key,
   "key" char(32) constraint actors_key_key unique,
@@ -107,7 +108,7 @@ create table actors (
   "following" varchar
 ); `
 
-createActivityPubActivities = `
+	createActivityPubActivities = `
 create table activities (
   "id" serial not null constraint activities_pkey primary key,
   "key" char(32) constraint activities_key_key unique,
@@ -122,7 +123,7 @@ create table activities (
   "audience" jsonb -- the [to, cc, bto, bcc fields]
 ); `
 
-createActivityPubObjects = `
+	createActivityPubObjects = `
 create table objects (
   "id" serial not null constraint objects_pkey primary key,
   "key" char(32) constraint objects_key_key unique,
@@ -134,7 +135,7 @@ create table objects (
   "updated" timestamp default CURRENT_TIMESTAMP
 ); `
 
-createActivityPubCollections = `
+	createActivityPubCollections = `
 create table collections (
   "id" serial not null constraint collections_pkey primary key,
   "collection" varchar not null,

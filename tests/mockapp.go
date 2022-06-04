@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 package tests
 
@@ -19,7 +18,7 @@ import (
 	"text/template"
 	"time"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
@@ -32,7 +31,7 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-func jsonldMarshal(i pub.Item) string {
+func jsonldMarshal(i vocab.Item) string {
 	j, err := jsonld.Marshal(i)
 	if err != nil {
 		panic(err)
@@ -57,7 +56,7 @@ func loadMockJson(file string, model interface{}) func() (string, error) {
 	}
 }
 
-func addMockObjects(r processing.Store, obj pub.ItemCollection, errFn app.LogFn) error {
+func addMockObjects(r processing.Store, obj vocab.ItemCollection, errFn app.LogFn) error {
 	var err error
 	for _, it := range obj {
 		if it.GetLink() == "" {
@@ -129,12 +128,12 @@ func loadPrivateKeyFromDisk(file string) crypto.PrivateKey {
 	return prvKey
 }
 
-func loadMockFromDisk(file string, model interface{}) pub.Item {
+func loadMockFromDisk(file string, model interface{}) vocab.Item {
 	json, err := loadMockJson(file, model)()
 	if err != nil {
 		panic(err)
 	}
-	it, err := pub.UnmarshalJSON([]byte(json))
+	it, err := vocab.UnmarshalJSON([]byte(json))
 	if err != nil {
 		panic(err)
 	}
@@ -159,7 +158,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	}
 	clientCode := path.Base(defaultTestApp.Id)
 
-	mocks := make(pub.ItemCollection, 0)
+	mocks := make(vocab.ItemCollection, 0)
 	o := cmd.New(aDb, db, options)
 	act := loadMockFromDisk("mocks/c2s/actors/application.json", nil)
 	mocks = append(mocks, act)
@@ -175,7 +174,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	seedMetadataForTestUser := false
 	for _, path := range testData {
 		it := loadMockFromDisk(path, nil)
-		if !it.GetLink().Contains(pub.IRI(options.BaseURL), false) {
+		if !it.GetLink().Contains(vocab.IRI(options.BaseURL), false) {
 			continue
 		}
 		if it.GetLink().String() == defaultTestAccountC2S.Id {
@@ -195,7 +194,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 				panic(err)
 			}
 			r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
-			err = metaSaver.SaveMetadata(ls.Metadata{PrivateKey: pem.EncodeToMemory(&r)}, pub.IRI(defaultTestAccountC2S.Id))
+			err = metaSaver.SaveMetadata(ls.Metadata{PrivateKey: pem.EncodeToMemory(&r)}, vocab.IRI(defaultTestAccountC2S.Id))
 			if err != nil {
 				l.Panicf("%s\n", err.Error())
 			}

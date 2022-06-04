@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/app"
@@ -67,31 +67,31 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 			names = append(names, string(name))
 		}
 
-		var actors = make(pub.ItemCollection, 0)
+		var actors = make(vocab.ItemCollection, 0)
 		for _, name := range names {
 			pw, err := loadPwFromStdin(true, "%s's", name)
 			if err != nil {
 				Errf(err.Error())
 				return err
 			}
-			typ := pub.ActivityVocabularyType(c.String("type"))
-			if !pub.ActorTypes.Contains(typ) {
-				typ = pub.PersonType
+			typ := vocab.ActivityVocabularyType(c.String("type"))
+			if !vocab.ActorTypes.Contains(typ) {
+				typ = vocab.PersonType
 			}
-			self := ap.Self(pub.IRI(ctl.Conf.BaseURL))
+			self := ap.Self(vocab.IRI(ctl.Conf.BaseURL))
 			now := time.Now().UTC()
-			p := &pub.Person{
+			p := &vocab.Person{
 				Type: typ,
 				// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
 				AttributedTo: self.GetLink(),
 				Generator:    self.GetLink(),
 				Published:    now,
-				Summary: pub.NaturalLanguageValues{
-					{pub.NilLangRef, pub.Content("Generated actor")},
+				Summary: vocab.NaturalLanguageValues{
+					{vocab.NilLangRef, vocab.Content("Generated actor")},
 				},
 				Updated: now,
-				PreferredUsername: pub.NaturalLanguageValues{
-					{pub.NilLangRef, pub.Content(name)},
+				PreferredUsername: vocab.NaturalLanguageValues{
+					{vocab.NilLangRef, vocab.Content(name)},
 				},
 			}
 			if p, err = ctl.AddActor(p, pw); err != nil {
@@ -109,10 +109,10 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func wrapObjectInCreate(r processing.Store, selfIRI pub.IRI, p pub.Item) pub.Activity {
-	act := pub.Activity{
-		Type:    pub.CreateType,
-		To:      pub.ItemCollection{pub.PublicNS},
+func wrapObjectInCreate(r processing.Store, selfIRI vocab.IRI, p vocab.Item) vocab.Activity {
+	act := vocab.Activity{
+		Type:    vocab.CreateType,
+		To:      vocab.ItemCollection{vocab.PublicNS},
 		Updated: time.Now().UTC(),
 		Object:  p,
 	}
@@ -130,22 +130,22 @@ func wrapObjectInCreate(r processing.Store, selfIRI pub.IRI, p pub.Item) pub.Act
 	return act
 }
 
-func (c *Control) AddObject(p *pub.Object) (*pub.Object, error) {
+func (c *Control) AddObject(p *vocab.Object) (*vocab.Object, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	if _, err := c.Saver.ProcessClientActivity(wrapObjectInCreate(c.Storage, pub.IRI(c.Conf.BaseURL), p)); err != nil {
+	if _, err := c.Saver.ProcessClientActivity(wrapObjectInCreate(c.Storage, vocab.IRI(c.Conf.BaseURL), p)); err != nil {
 		return nil, err
 	}
 	return p, nil
 }
 
-func (c *Control) AddActor(p *pub.Person, pw []byte) (*pub.Person, error) {
+func (c *Control) AddActor(p *vocab.Person, pw []byte) (*vocab.Person, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
 
-	create := wrapObjectInCreate(c.Storage, pub.IRI(c.Conf.BaseURL), p)
+	create := wrapObjectInCreate(c.Storage, vocab.IRI(c.Conf.BaseURL), p)
 	if _, err := c.Saver.ProcessClientActivity(create); err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (c *Control) AddActor(p *pub.Person, pw []byte) (*pub.Person, error) {
 	return p, err
 }
 
-var ValidGenericTypes = pub.ActivityVocabularyTypes{pub.ObjectType, pub.ActorType}
+var ValidGenericTypes = vocab.ActivityVocabularyTypes{vocab.ObjectType, vocab.ActorType}
 
 var delObjectsCmd = &cli.Command{
 	Name:    "delete",
@@ -183,40 +183,40 @@ func delObjectsAct(ctl *Control) cli.ActionFunc {
 }
 
 func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string) error {
-	invalidRemoveTypes := append(append(pub.ActivityTypes, pub.IntransitiveActivityTypes...), pub.TombstoneType)
-	self := ap.Self(pub.IRI(c.Conf.BaseURL))
+	invalidRemoveTypes := append(append(vocab.ActivityTypes, vocab.IntransitiveActivityTypes...), vocab.TombstoneType)
+	self := ap.Self(vocab.IRI(c.Conf.BaseURL))
 
-	d := new(pub.Delete)
-	d.Type = pub.DeleteType
-	d.To = pub.ItemCollection{pub.PublicNS}
-	d.CC = make(pub.ItemCollection, 0)
+	d := new(vocab.Delete)
+	d.Type = vocab.DeleteType
+	d.To = vocab.ItemCollection{vocab.PublicNS}
+	d.CC = make(vocab.ItemCollection, 0)
 	if reason != "" {
-		d.Content = pub.NaturalLanguageValuesNew()
-		d.Content.Append(pub.NilLangRef, pub.Content(reason))
+		d.Content = vocab.NaturalLanguageValuesNew()
+		d.Content.Append(vocab.NilLangRef, vocab.Content(reason))
 	}
 	if len(inReplyTo) > 0 {
-		replIRI := make(pub.ItemCollection, 0)
+		replIRI := make(vocab.ItemCollection, 0)
 		for _, repl := range inReplyTo {
 			if _, err := url.Parse(repl); err != nil {
 				continue
 			}
-			replIRI = append(replIRI, pub.IRI(repl))
+			replIRI = append(replIRI, vocab.IRI(repl))
 		}
 		d.InReplyTo = replIRI
 	}
 	d.Actor = self
 	d.CC = append(d.CC, self.GetLink())
 
-	delItems := make(pub.ItemCollection, 0)
+	delItems := make(vocab.ItemCollection, 0)
 	for _, id := range ids {
-		iri := pub.IRI(id)
+		iri := vocab.IRI(id)
 
 		it, err := c.Storage.Load(iri)
 		if err != nil {
 			continue
 		}
 		// NOTE(marius): this should work if "it" is a collection or a single object
-		pub.OnObject(it, func(o *pub.Object) error {
+		vocab.OnObject(it, func(o *vocab.Object) error {
 			if invalidRemoveTypes.Contains(o.GetType()) {
 				return nil
 			}
@@ -260,7 +260,7 @@ var listObjectsCmd = &cli.Command{
 	Action: listObjectsAct(&ctl),
 }
 
-func printItem(it pub.Item, outType string) error {
+func printItem(it vocab.Item, outType string) error {
 	if outType == "json" {
 		return outJSON(it)
 	}
@@ -271,12 +271,12 @@ func listObjectsAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		typeFl := c.StringSlice("type")
 
-		var paths pub.IRIs
+		var paths vocab.IRIs
 		if c.NArg() == 0 {
 			paths = append(paths,
-				ap.ObjectsType.IRI(pub.IRI(ctl.Conf.BaseURL)),
-				ap.ActorsType.IRI(pub.IRI(ctl.Conf.BaseURL)),
-				ap.ActivitiesType.IRI(pub.IRI(ctl.Conf.BaseURL)),
+				ap.ObjectsType.IRI(vocab.IRI(ctl.Conf.BaseURL)),
+				ap.ActorsType.IRI(vocab.IRI(ctl.Conf.BaseURL)),
+				ap.ActivitiesType.IRI(vocab.IRI(ctl.Conf.BaseURL)),
 			)
 		} else {
 			for _, path := range c.Args().Slice() {
@@ -287,7 +287,7 @@ func listObjectsAct(ctl *Control) cli.ActionFunc {
 				if u.Host == "" {
 					u.Host = ctl.Conf.BaseURL
 				}
-				paths = append(paths, pub.IRI(u.String()))
+				paths = append(paths, vocab.IRI(u.String()))
 			}
 		}
 
@@ -296,11 +296,11 @@ func listObjectsAct(ctl *Control) cli.ActionFunc {
 			return err
 		}
 		sort.Slice(all, func(i, j int) bool {
-			ob1, err := pub.ToObject(all[i])
+			ob1, err := vocab.ToObject(all[i])
 			if err != nil {
 				return false
 			}
-			ob2, err := pub.ToObject(all[j])
+			ob2, err := vocab.ToObject(all[j])
 			if err != nil {
 				return true
 			}
@@ -311,46 +311,46 @@ func listObjectsAct(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func loadPubTypes(types []string) []pub.ActivityVocabularyType {
-	objectTyp := make(pub.ActivityVocabularyTypes, 0)
-	actorTyp := make(pub.ActivityVocabularyTypes, 0)
-	activityTyp := make(pub.ActivityVocabularyTypes, 0)
+func loadPubTypes(types []string) []vocab.ActivityVocabularyType {
+	objectTyp := make(vocab.ActivityVocabularyTypes, 0)
+	actorTyp := make(vocab.ActivityVocabularyTypes, 0)
+	activityTyp := make(vocab.ActivityVocabularyTypes, 0)
 	if len(types) == 0 {
-		objectTyp = pub.ObjectTypes
-		actorTyp = pub.ActorTypes
-		activityTyp = pub.ActivityTypes
+		objectTyp = vocab.ObjectTypes
+		actorTyp = vocab.ActorTypes
+		activityTyp = vocab.ActivityTypes
 	} else {
 		for _, typ := range types {
-			t := pub.ActivityVocabularyType(typ)
-			if pub.ObjectTypes.Contains(t) {
+			t := vocab.ActivityVocabularyType(typ)
+			if vocab.ObjectTypes.Contains(t) {
 				objectTyp = append(objectTyp, t)
 			}
-			if pub.ActorTypes.Contains(t) {
+			if vocab.ActorTypes.Contains(t) {
 				actorTyp = append(actorTyp, t)
 			}
-			if pub.ActivityTypes.Contains(t) {
+			if vocab.ActivityTypes.Contains(t) {
 				activityTyp = append(activityTyp, t)
 			}
-			if strings.ToLower(typ) == strings.ToLower(string(pub.ObjectType)) {
-				objectTyp = pub.ObjectTypes
+			if strings.ToLower(typ) == strings.ToLower(string(vocab.ObjectType)) {
+				objectTyp = vocab.ObjectTypes
 			}
-			if strings.ToLower(typ) == strings.ToLower(string(pub.ActorType)) {
-				actorTyp = pub.ActorTypes
+			if strings.ToLower(typ) == strings.ToLower(string(vocab.ActorType)) {
+				actorTyp = vocab.ActorTypes
 			}
-			if strings.ToLower(typ) == strings.ToLower(string(pub.ActivityType)) {
-				activityTyp = pub.ActivityTypes
+			if strings.ToLower(typ) == strings.ToLower(string(vocab.ActivityType)) {
+				activityTyp = vocab.ActivityTypes
 			}
 		}
 	}
 	return append(append(objectTyp, actorTyp...), activityTyp...)
 }
 
-func (c *Control) List(iris pub.IRIs, types ...string) (pub.ItemCollection, error) {
-	var typeFilter []pub.ActivityVocabularyType
+func (c *Control) List(iris vocab.IRIs, types ...string) (vocab.ItemCollection, error) {
+	var typeFilter []vocab.ActivityVocabularyType
 	if len(types) > 0 {
 		typeFilter = loadPubTypes(types)
 	}
-	var items pub.ItemCollection
+	var items vocab.ItemCollection
 	var err error
 	for _, iri := range iris {
 		f, _ := ap.FiltersFromIRI(iri)
@@ -365,7 +365,7 @@ func (c *Control) List(iris pub.IRIs, types ...string) (pub.ItemCollection, erro
 			return items, err
 		}
 		if col.IsCollection() {
-			err = pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
+			err = vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
 				items = append(items, c.Collection()...)
 				return nil
 			})
@@ -393,27 +393,27 @@ var addObjectCmd = &cli.Command{
 func addObjectAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		f, _ := LoadFilters(c)
-		typ := pub.ActivityVocabularyType("")
+		typ := vocab.ActivityVocabularyType("")
 		if len(f.Type) > 0 {
-			typ = pub.ActivityVocabularyType(f.Type[0].Str)
+			typ = vocab.ActivityVocabularyType(f.Type[0].Str)
 		}
 		if len(f.Name) == 0 {
 			if name, err := loadFromStdin("Enter the %s name", typ); err == nil {
 				f.Name = append(f.Name, ap.StringEquals(string(name)))
 			}
 		}
-		if append(pub.ObjectTypes, pub.ObjectType, "").Contains(typ) {
+		if append(vocab.ObjectTypes, vocab.ObjectType, "").Contains(typ) {
 			name := f.Name[0].Str
-			self := ap.Self(pub.IRI(ctl.Conf.BaseURL))
+			self := ap.Self(vocab.IRI(ctl.Conf.BaseURL))
 			now := time.Now().UTC()
-			p := &pub.Object{
+			p := &vocab.Object{
 				Type: typ,
 				// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
 				AttributedTo: self.GetLink(),
 				Published:    now,
 				Updated:      now,
-				Name: pub.NaturalLanguageValues{
-					{pub.NilLangRef, pub.Content(name)},
+				Name: vocab.NaturalLanguageValues{
+					{vocab.NilLangRef, vocab.Content(name)},
 				},
 			}
 			var err error
@@ -423,11 +423,11 @@ func addObjectAct(ctl *Control) cli.ActionFunc {
 			fmt.Printf("Added %s [%s]: %s\n", typ, name, p.GetLink())
 			return nil
 		}
-		return errors.Errorf("This command only supports only object types %v", pub.ObjectTypes)
+		return errors.Errorf("This command only supports only object types %v", vocab.ObjectTypes)
 	}
 }
 
-func (c *Control) Add(types []string) (pub.ItemCollection, error) {
+func (c *Control) Add(types []string) (vocab.ItemCollection, error) {
 	return nil, nil
 }
 
@@ -451,7 +451,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 		files := c.Args().Slice()
 
 		processor, _, err := processing.New(
-			processing.SetIRI(pub.IRI(baseIRI), app.InternalIRI),
+			processing.SetIRI(vocab.IRI(baseIRI), app.InternalIRI),
 			processing.SetStorage(ctl.Storage),
 		)
 		if err != nil {
@@ -487,7 +487,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 			if len(toReplace) > 0 {
 				buf = bytes.Replace(buf, []byte(toReplace), []byte(baseIRI), -1)
 			}
-			ob, err := pub.UnmarshalJSON(buf)
+			ob, err := vocab.UnmarshalJSON(buf)
 			if err != nil {
 				Errf("Error unmarshaling JSON: %s", err)
 				continue
@@ -495,18 +495,18 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 
 			col := ob
 			if !ob.IsCollection() {
-				col = pub.ItemCollection{ob}
+				col = vocab.ItemCollection{ob}
 			}
 			start := time.Now()
 			count := 0
-			pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
+			vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
 				for _, it := range c.Collection() {
 					typ := it.GetType()
 					fmt.Printf("Saving %s\n", it.GetID())
 
 					var err error
-					if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
-						err = pub.OnActivity(it, func(a *pub.Activity) error {
+					if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
+						err = vocab.OnActivity(it, func(a *vocab.Activity) error {
 							if a == nil {
 								return nil
 							}
@@ -549,14 +549,14 @@ var exportCmd = &cli.Command{
 	Action: exportPubObjects(&ctl),
 }
 
-func dumpAll(f *ap.Filters) (pub.ItemCollection, error) {
-	col := make(pub.ItemCollection, 0)
+func dumpAll(f *ap.Filters) (vocab.ItemCollection, error) {
+	col := make(vocab.ItemCollection, 0)
 	objects, err := ctl.Storage.Load(f.GetLink())
 	if err != nil {
 		return col, err
 	}
 	if objects.IsCollection() {
-		pub.OnCollectionIntf(objects, func(c pub.CollectionInterface) error {
+		vocab.OnCollectionIntf(objects, func(c vocab.CollectionInterface) error {
 			col = append(col, c.Collection()...)
 			return nil
 		})
@@ -568,12 +568,12 @@ func dumpAll(f *ap.Filters) (pub.ItemCollection, error) {
 
 func exportPubObjects(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		baseURL := pub.IRI(ctl.Conf.BaseURL)
-		objects := make(pub.ItemCollection, 0)
-		allCollections := pub.CollectionPaths{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
+		baseURL := vocab.IRI(ctl.Conf.BaseURL)
+		objects := make(vocab.ItemCollection, 0)
+		allCollections := vocab.CollectionPaths{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
 		for _, c := range allCollections {
 			dump, err := dumpAll(&ap.Filters{
-				IRI: pub.IRIf(baseURL, c),
+				IRI: vocab.IRIf(baseURL, c),
 			})
 			if err != nil {
 				return err
@@ -581,11 +581,11 @@ func exportPubObjects(ctl *Control) cli.ActionFunc {
 			objects = append(objects, dump...)
 		}
 		sort.Slice(objects, func(i, j int) bool {
-			o1, err1 := pub.ToObject(objects[i])
+			o1, err1 := vocab.ToObject(objects[i])
 			if err1 != nil {
 				return false
 			}
-			o2, err2 := pub.ToObject(objects[j])
+			o2, err2 := vocab.ToObject(objects[j])
 			if err2 != nil {
 				return false
 			}
@@ -597,13 +597,13 @@ func exportPubObjects(ctl *Control) cli.ActionFunc {
 
 func showObjectAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		objects := make(pub.ItemCollection, 0)
+		objects := make(vocab.ItemCollection, 0)
 		if c.Args().Len() == 0 {
 			return errors.Errorf("No IRIs passed")
 		}
 		for i := 0; i <= c.Args().Len(); i++ {
 			iri := c.Args().Get(i)
-			ob, err := ctl.Storage.Load(pub.IRI(iri))
+			ob, err := ctl.Storage.Load(vocab.IRI(iri))
 			if err != nil {
 				Errf(err.Error())
 				continue
@@ -633,8 +633,8 @@ var showObjectCmd = &cli.Command{Name: "show",
 	Action: showObjectAct(&ctl),
 }
 
-func (c *Control) operateOnObjects(fn func(col pub.IRI, it pub.Item) error, to pub.IRI, from ...pub.Item) error {
-	if !pub.ValidCollectionIRI(to) {
+func (c *Control) operateOnObjects(fn func(col vocab.IRI, it vocab.Item) error, to vocab.IRI, from ...vocab.Item) error {
+	if !vocab.ValidCollectionIRI(to) {
 		return errors.Newf("destination is not a valid collection %s", to)
 	}
 	_, err := c.Storage.Load(to)
@@ -647,12 +647,12 @@ func (c *Control) operateOnObjects(fn func(col pub.IRI, it pub.Item) error, to p
 		if err != nil {
 			return err
 		}
-		if pub.IsItemCollection(it) {
-			return pub.OnCollectionIntf(it, func(col pub.CollectionInterface) error {
+		if vocab.IsItemCollection(it) {
+			return vocab.OnCollectionIntf(it, func(col vocab.CollectionInterface) error {
 				return c.operateOnObjects(fn, to, col.Collection()...)
 			})
 		}
-		if !pub.IsObject(it) {
+		if !vocab.IsObject(it) {
 			return errors.Newf("Invalid object at IRI %s, %v", from, it)
 		}
 
@@ -676,19 +676,19 @@ func movePubObjects(ctl *Control) cli.ActionFunc {
 		if c.NArg() < 2 {
 			return errors.Errorf("Need a source IRI and a destination collection IRI")
 		}
-		source := pub.IRI(c.Args().Get(0))
-		destination := pub.IRI(c.Args().Get(1))
+		source := vocab.IRI(c.Args().Get(0))
+		destination := vocab.IRI(c.Args().Get(1))
 		return ctl.MoveObjects(source, destination)
 	}
 }
 
-func (c *Control) MoveObjects(to pub.IRI, from ...pub.Item) error {
+func (c *Control) MoveObjects(to vocab.IRI, from ...vocab.Item) error {
 	st, ok := c.Storage.(processing.CollectionStore)
 	if !ok {
 		return errors.Newf("invalid storage %T", c.Storage)
 	}
 
-	copyFn := func(col pub.IRI, it pub.Item) error {
+	copyFn := func(col vocab.IRI, it vocab.Item) error {
 		if err := st.AddTo(col.GetLink(), it); err != nil {
 			return err
 		}
@@ -714,22 +714,22 @@ func copyPubObjects(ctl *Control) cli.ActionFunc {
 			return errors.Errorf("Need a source IRI and a destination collection IRI")
 		}
 		argSl := c.Args().Slice()
-		var source pub.ItemCollection
+		var source vocab.ItemCollection
 		for _, arg := range argSl[:c.NArg()-1] {
-			source = append(source, pub.IRI(arg))
+			source = append(source, vocab.IRI(arg))
 		}
-		destination := pub.IRI(argSl[c.NArg()-1])
+		destination := vocab.IRI(argSl[c.NArg()-1])
 		return ctl.CopyObjects(destination, source...)
 	}
 }
 
-func (c *Control) CopyObjects(to pub.IRI, from ...pub.Item) error {
+func (c *Control) CopyObjects(to vocab.IRI, from ...vocab.Item) error {
 	st, ok := c.Storage.(processing.CollectionStore)
 	if !ok {
 		return errors.Newf("invalid storage %T", c.Storage)
 	}
 
-	copyFn := func(col pub.IRI, it pub.Item) error {
+	copyFn := func(col vocab.IRI, it vocab.Item) error {
 		err := st.AddTo(col.GetLink(), it)
 		if err != nil {
 			Errf("Error: %s", err)

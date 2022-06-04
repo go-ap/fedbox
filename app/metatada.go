@@ -9,15 +9,15 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/storage"
 	"golang.org/x/crypto/ed25519"
 )
 
-func AddKeyToPerson(metaSaver storage.MetadataTyper) func(act *pub.Actor) error {
-	return func(act *pub.Actor) error {
-		if !pub.ActorTypes.Contains(act.Type) {
+func AddKeyToPerson(metaSaver storage.MetadataTyper) func(act *vocab.Actor) error {
+	return func(act *vocab.Actor) error {
+		if !vocab.ActorTypes.Contains(act.Type) {
 			return nil
 		}
 
@@ -36,8 +36,8 @@ func AddKeyToPerson(metaSaver storage.MetadataTyper) func(act *pub.Actor) error 
 			pubB = publicKeyFrom(m.PrivateKey)
 		}
 		if len(pubB.Bytes) > 0 {
-			act.PublicKey = pub.PublicKey{
-				ID:           pub.IRI(fmt.Sprintf("%s#main", act.ID)),
+			act.PublicKey = vocab.PublicKey{
+				ID:           vocab.IRI(fmt.Sprintf("%s#main", act.ID)),
 				Owner:        act.ID,
 				PublicKeyPem: string(pem.EncodeToMemory(&pubB)),
 			}

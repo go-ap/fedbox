@@ -6,19 +6,19 @@ import (
 	"io"
 	"strings"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 )
 
 func bytef(s string, p ...interface{}) []byte {
 	return []byte(fmt.Sprintf(s, p...))
 }
 
-func outObject(o *pub.Object, b io.Writer) error {
+func outObject(o *vocab.Object, b io.Writer) error {
 	b.Write(bytef("[%s] %s // %s", o.Type, o.ID, o.Published.Format("02 Jan 2006 15:04:05")))
 	if len(o.Name) > 0 {
 		for _, s := range o.Name {
 			ss := strings.Trim(s.Value.String(), "\n\r\t ")
-			if s.Ref != pub.NilLangRef {
+			if s.Ref != vocab.NilLangRef {
 				b.Write(bytef("\n\tName[%s]: %s", s.Ref, ss))
 			}
 			b.Write(bytef("\n\tName: %s", ss))
@@ -27,7 +27,7 @@ func outObject(o *pub.Object, b io.Writer) error {
 	if o.Summary != nil {
 		for _, s := range o.Summary {
 			ss := strings.Trim(s.Value.String(), "\n\r\t ")
-			if s.Ref != pub.NilLangRef {
+			if s.Ref != vocab.NilLangRef {
 				cont := s.Ref
 				if len(cont) > 72 {
 					cont = cont[:72]
@@ -40,7 +40,7 @@ func outObject(o *pub.Object, b io.Writer) error {
 	if o.Content != nil {
 		for _, c := range o.Content {
 			cc := strings.Trim(c.Value.String(), "\n\r\t ")
-			if c.Ref != pub.NilLangRef {
+			if c.Ref != vocab.NilLangRef {
 				cont := c.Ref
 				if len(cont) > 72 {
 					cont = cont[:72]
@@ -53,8 +53,8 @@ func outObject(o *pub.Object, b io.Writer) error {
 	return nil
 }
 
-func outActivity(a *pub.Activity, b io.Writer) error {
-	err := pub.OnObject(a, func(o *pub.Object) error {
+func outActivity(a *vocab.Activity, b io.Writer) error {
+	err := vocab.OnObject(a, func(o *vocab.Object) error {
 		return outObject(o, b)
 	})
 	if err != nil {
@@ -72,8 +72,8 @@ func outActivity(a *pub.Activity, b io.Writer) error {
 	return nil
 }
 
-func outActor(a *pub.Actor, b io.Writer) error {
-	err := pub.OnObject(a, func(o *pub.Object) error {
+func outActor(a *vocab.Actor, b io.Writer) error {
+	err := vocab.OnObject(a, func(o *vocab.Object) error {
 		return outObject(o, b)
 	})
 	if err != nil {
@@ -82,7 +82,7 @@ func outActor(a *pub.Actor, b io.Writer) error {
 	if len(a.PreferredUsername) > 0 {
 		for _, s := range a.PreferredUsername {
 			ss := strings.Trim(s.Value.String(), "\n\r\t ")
-			if s.Ref != pub.NilLangRef {
+			if s.Ref != vocab.NilLangRef {
 				b.Write(bytef("\n\tPreferredUsername[%s]: %s", s.Ref, ss))
 			}
 			b.Write(bytef("\n\tPreferredUsername: %s", ss))
@@ -90,9 +90,9 @@ func outActor(a *pub.Actor, b io.Writer) error {
 	}
 	return nil
 }
-func outItem(it pub.Item, b io.Writer) error {
+func outItem(it vocab.Item, b io.Writer) error {
 	if it.IsCollection() {
-		return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+		return vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
 			for _, it := range c.Collection() {
 				outItem(it, b)
 				b.Write([]byte("\n"))
@@ -105,22 +105,22 @@ func outItem(it pub.Item, b io.Writer) error {
 		return err
 	}
 	typ := it.GetType()
-	if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
-		return pub.OnActivity(it, func(a *pub.Activity) error {
+	if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
+		return vocab.OnActivity(it, func(a *vocab.Activity) error {
 			return outActivity(a, b)
 		})
 	}
-	if pub.ActorTypes.Contains(typ) {
-		return pub.OnActor(it, func(a *pub.Actor) error {
+	if vocab.ActorTypes.Contains(typ) {
+		return vocab.OnActor(it, func(a *vocab.Actor) error {
 			return outActor(a, b)
 		})
 	}
-	return pub.OnObject(it, func(o *pub.Object) error {
+	return vocab.OnObject(it, func(o *vocab.Object) error {
 		return outObject(o, b)
 	})
 }
 
-func outText(it pub.Item) error {
+func outText(it vocab.Item) error {
 	b := new(bytes.Buffer)
 	err := outItem(it, b)
 	if err != nil {
@@ -130,8 +130,8 @@ func outText(it pub.Item) error {
 	return nil
 }
 
-func outJSON(it pub.Item) error {
-	out, err := pub.MarshalJSON(it)
+func outJSON(it vocab.Item) error {
+	out, err := vocab.MarshalJSON(it)
 	if err != nil {
 		return err
 	}

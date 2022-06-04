@@ -3,9 +3,9 @@
 package boltdb
 
 import (
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/activitypub"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/jsonld"
 	bolt "go.etcd.io/bbolt"
@@ -21,10 +21,10 @@ func Bootstrap(conf config.Options) error {
 	}
 	defer r.Close()
 
-	self := activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL))
-	actors := &pub.OrderedCollection{ID: activitypub.ActorsType.IRI(&self)}
-	activities := &pub.OrderedCollection{ID: activitypub.ActivitiesType.IRI(&self)}
-	objects := &pub.OrderedCollection{ID: activitypub.ObjectsType.IRI(&self)}
+	self := ap.Self(ap.DefaultServiceIRI(conf.BaseURL))
+	actors := &vocab.OrderedCollection{ID: ap.ActorsType.IRI(&self)}
+	activities := &vocab.OrderedCollection{ID: ap.ActivitiesType.IRI(&self)}
+	objects := &vocab.OrderedCollection{ID: ap.ObjectsType.IRI(&self)}
 	if _, err = r.Create(actors); err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func Bootstrap(conf config.Options) error {
 	return nil
 }
 
-func createService(b *bolt.DB, service pub.Service) error {
+func createService(b *bolt.DB, service vocab.Service) error {
 	raw, err := jsonld.Marshal(service)
 	if err != nil {
 		return errors.Annotatef(err, "could not marshal service json")
@@ -93,7 +93,7 @@ func Clean(conf config.Options) error {
 }
 
 // FIXME(marius): I feel like this hasn't been used anywhere and as such might not work
-func AddTestMockActor(path string, actor pub.Actor) error {
+func AddTestMockActor(path string, actor vocab.Actor) error {
 	db, err := bolt.Open(path, 0600, nil)
 	if err != nil {
 		return errors.Annotatef(err, "could not open db")
@@ -107,13 +107,13 @@ func AddTestMockActor(path string, actor pub.Actor) error {
 
 		raw, _ := jsonld.Marshal(actor)
 		actorBucket, _, err := descendInBucket(root, itPath, true)
-		actorBucket.Put([]byte(pub.Inbox), nil)
-		actorBucket.Put([]byte(pub.Outbox), nil)
-		actorBucket.Put([]byte(pub.Following), nil)
-		actorBucket.Put([]byte(pub.Followers), nil)
-		actorBucket.Put([]byte(pub.Liked), nil)
-		actorBucket.Put([]byte(pub.Likes), nil)
-		actorBucket.Put([]byte(pub.Shares), nil)
+		actorBucket.Put([]byte(vocab.Inbox), nil)
+		actorBucket.Put([]byte(vocab.Outbox), nil)
+		actorBucket.Put([]byte(vocab.Following), nil)
+		actorBucket.Put([]byte(vocab.Followers), nil)
+		actorBucket.Put([]byte(vocab.Liked), nil)
+		actorBucket.Put([]byte(vocab.Likes), nil)
+		actorBucket.Put([]byte(vocab.Shares), nil)
 		if err != nil {
 			return errors.Errorf("could not create actor bucket: %s", err)
 		}

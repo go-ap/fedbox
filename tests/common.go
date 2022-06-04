@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 package tests
 
@@ -23,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
 	fedbox "github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/config"
@@ -80,7 +79,7 @@ type actS2SMock struct {
 type actC2SMock struct {
 	Type    string
 	ActorId string
-	Object  pub.Item
+	Object  vocab.Item
 }
 
 type testSuite struct {
@@ -574,7 +573,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			if tVal.itemCount > 0 {
 				assertMapKey(ob, "totalItems", tVal.itemCount)
 				itemsKey := func(typ string) string {
-					if typ == string(pub.CollectionType) {
+					if typ == string(vocab.CollectionType) {
 						return "items"
 					}
 					return "orderedItems"
@@ -709,7 +708,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			if test.req.urlFn != nil {
 				test.req.url = test.req.urlFn()
 			}
-			isClientRequest := path.Base(test.req.url) == string(pub.Outbox)
+			isClientRequest := path.Base(test.req.url) == string(vocab.Outbox)
 			ctx := context.Background()
 			req, err := http.NewRequestWithContext(ctx, test.req.met, test.req.url, bytes.NewReader(body))
 			assertTrue(err == nil, "Error: unable to create request: %s", err)

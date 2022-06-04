@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/urfave/cli/v2"
@@ -16,8 +16,8 @@ func types(c *cli.Context) ap.CompStrs {
 	typ := c.StringSlice("type")
 	types := make(ap.CompStrs, 0)
 	for _, t := range typ {
-		tt := pub.ActivityVocabularyType(t)
-		if pub.Types.Contains(tt) {
+		tt := vocab.ActivityVocabularyType(t)
+		if vocab.Types.Contains(tt) {
 			types = append(types, ap.StringEquals(string(tt)))
 		}
 	}
@@ -70,22 +70,22 @@ func FilterFlags() []cli.Flag {
 		},
 	}
 	/*
-		baseURL       pub.IRI                     `qstring:"-"`
+		baseURL       vocab.IRI                     `qstring:"-"`
 		Name          CompStrs                    `qstring:"name,omitempty"`
 		Cont          CompStrs                    `qstring:"content,omitempty"`
-		Authenticated *pub.Actor                  `qstring:"-"`
-		To            *pub.Actor                  `qstring:"-"`
-		Author        *pub.Actor                  `qstring:"-"`
-		Parent        *pub.Actor                  `qstring:"-"`
-		IRI           pub.IRI                     `qstring:"-"`
+		Authenticated *vocab.Actor                  `qstring:"-"`
+		To            *vocab.Actor                  `qstring:"-"`
+		Author        *vocab.Actor                  `qstring:"-"`
+		Parent        *vocab.Actor                  `qstring:"-"`
+		IRI           vocab.IRI                     `qstring:"-"`
 		Collection    h.CollectionType            `qstring:"-"`
 		URL           CompStrs                    `qstring:"url,omitempty"`
-		MedTypes      []pub.MimeType              `qstring:"mediaType,omitempty"`
+		MedTypes      []vocab.MimeType              `qstring:"mediaType,omitempty"`
 		Aud           CompStrs                    `qstring:"recipients,omitempty"`
 		Gen           CompStrs                    `qstring:"generator,omitempty"`
 		Key           []Hash                      `qstring:"-"`
 		ItemKey       CompStrs                    `qstring:"iri,omitempty"`
-		Type          pub.ActivityVocabularyTypes `qstring:"type,omitempty"`
+		Type          vocab.ActivityVocabularyTypes `qstring:"type,omitempty"`
 		AttrTo        CompStrs                    `qstring:"attributedTo,omitempty"`
 		InReplTo      CompStrs                    `qstring:"inReplyTo,omitempty"`
 		OP            CompStrs                    `qstring:"context,omitempty"`

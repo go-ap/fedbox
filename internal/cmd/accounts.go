@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/app"
@@ -37,19 +37,19 @@ func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 			return errors.Newf("")
 		}
 
-		baseIRI := ap.ActorsType.IRI(pub.IRI(ctl.Conf.BaseURL))
+		baseIRI := ap.ActorsType.IRI(vocab.IRI(ctl.Conf.BaseURL))
 		f := ap.FiltersNew(
 			ap.IRI(baseIRI),
-			ap.Type(pub.PersonType),
+			ap.Type(vocab.PersonType),
 		)
 		col, err := ctl.Storage.Load(f.GetLink())
 		if err != nil {
 			return err
 		}
 
-		items := make(pub.ItemCollection, 0)
+		items := make(vocab.ItemCollection, 0)
 		if col.IsCollection() {
-			err = pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
+			err = vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
 				items = append(items, c.Collection()...)
 				return nil
 			})
@@ -60,9 +60,9 @@ func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 			items = append(items, col)
 		}
 
-		allMeta := make(map[pub.IRI]storage.Metadata, len(items))
+		allMeta := make(map[vocab.IRI]storage.Metadata, len(items))
 		for _, it := range items {
-			if it.GetType() != pub.PersonType {
+			if it.GetType() != vocab.PersonType {
 				continue
 			}
 			m, err := metaLoader.LoadMetadata(it.GetLink())
@@ -125,7 +125,7 @@ func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 				continue
 			}
 
-			metadata := make(map[pub.IRI]storage.Metadata, 0)
+			metadata := make(map[vocab.IRI]storage.Metadata, 0)
 			err = jsonld.Unmarshal(buf, &metadata)
 			if err != nil {
 				Errf("Error unmarshaling JSON: %s", err)
@@ -155,8 +155,8 @@ var generateKeysCmd = &cli.Command{
 	Action:    generateKeys(&ctl),
 }
 
-func AddKeyToItem(metaSaver storage.MetadataTyper, it pub.Item) error {
-	if err := pub.OnActor(it, app.AddKeyToPerson(metaSaver)); err != nil {
+func AddKeyToItem(metaSaver storage.MetadataTyper, it vocab.Item) error {
+	if err := vocab.OnActor(it, app.AddKeyToPerson(metaSaver)); err != nil {
 		return errors.Annotatef(err, "failed to process actor: %s", it.GetID())
 	}
 	if _, err := ctl.Storage.Save(it); err != nil {
@@ -167,17 +167,17 @@ func AddKeyToItem(metaSaver storage.MetadataTyper, it pub.Item) error {
 
 func generateKeys(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		baseIRI := ap.ActorsType.IRI(pub.IRI(ctl.Conf.BaseURL))
+		baseIRI := ap.ActorsType.IRI(vocab.IRI(ctl.Conf.BaseURL))
 
 		filterFns := []ap.FilterFn{
 			ap.IRI(baseIRI),
-			ap.Type(pub.PersonType),
+			ap.Type(vocab.PersonType),
 		}
 
 		actors := make([]string, 0)
 		for i := 0; i <= c.Args().Len(); i++ {
 			iri := c.Args().Get(i)
-			ob, err := ctl.Storage.Load(pub.IRI(iri))
+			ob, err := ctl.Storage.Load(vocab.IRI(iri))
 			if err != nil {
 				Errf(err.Error())
 				continue
@@ -199,7 +199,7 @@ func generateKeys(ctl *Control) cli.ActionFunc {
 		if !ok {
 			return errors.Newf("storage doesn't support saving key")
 		}
-		return pub.OnCollectionIntf(col, func(c pub.CollectionInterface) error {
+		return vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
 			for _, it := range c.Collection() {
 				if err = AddKeyToItem(metaSaver, it); err != nil {
 					Errf("Error: %s", err.Error())

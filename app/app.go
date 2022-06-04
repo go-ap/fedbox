@@ -9,7 +9,7 @@ import (
 	"time"
 
 	w "git.sr.ht/~mariusor/wrapper"
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/cache"
@@ -79,7 +79,7 @@ var AnonymousAcct = account{
 	actor:    &auth.AnonymousActor,
 }
 
-var InternalIRI = pub.IRI("https://fedbox/")
+var InternalIRI = vocab.IRI("https://fedbox/")
 
 func Config(e string, to time.Duration) (config.Options, error) {
 	return config.LoadFromEnv(env.Type(e), to)
@@ -114,7 +114,7 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db processing.St
 	app.R.Use(middleware.RequestID)
 	app.R.Use(log.NewStructuredLogger(l))
 
-	baseIRI := pub.IRI(conf.BaseURL)
+	baseIRI := vocab.IRI(conf.BaseURL)
 	app.OAuth = authService{
 		baseIRI: baseIRI,
 		auth:    as,

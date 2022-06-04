@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	pub "github.com/go-ap/activitypub"
-	pubcl "github.com/go-ap/client"
+	vocab "github.com/go-ap/activitypub"
+	c "github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/internal/config"
@@ -28,22 +28,22 @@ type Control struct {
 }
 
 func New(authDB osin.Storage, actorDb processing.Store, conf config.Options) *Control {
-	baseIRI := pub.IRI(conf.BaseURL)
+	baseIRI := vocab.IRI(conf.BaseURL)
 
-	clientErrLogger := func(...pubcl.Ctx) pubcl.LogFn {
+	clientErrLogger := func(...c.Ctx) c.LogFn {
 		return logger.Errorf
 	}
-	clientInfoLogger := func(...pubcl.Ctx) pubcl.LogFn {
+	clientInfoLogger := func(...c.Ctx) c.LogFn {
 		return logger.Infof
 	}
 	p, _, _ := processing.New(
 		processing.SetIRI(baseIRI),
 		processing.SetStorage(actorDb),
 		processing.SetIDGenerator(app.GenerateID(baseIRI)),
-		processing.SetClient(pubcl.New(
-			pubcl.SetInfoLogger(clientInfoLogger),
-			pubcl.SetErrorLogger(clientErrLogger),
-			pubcl.SkipTLSValidation(!conf.Env.IsProd()),
+		processing.SetClient(c.New(
+			c.SetInfoLogger(clientInfoLogger),
+			c.SetErrorLogger(clientErrLogger),
+			c.SkipTLSValidation(!conf.Env.IsProd()),
 		)),
 	)
 	return &Control{

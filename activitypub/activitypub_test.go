@@ -5,23 +5,23 @@ import (
 	"strings"
 	"testing"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 )
 
 func TestItemByType(t *testing.T) {
-	type testPairs map[pub.ActivityVocabularyType]reflect.Type
+	type testPairs map[vocab.ActivityVocabularyType]reflect.Type
 
-	var collectionPtrType = reflect.TypeOf(new(*pub.Collection)).Elem()
-	var orderedCollectionPtrType = reflect.TypeOf(new(*pub.OrderedCollection)).Elem()
+	var collectionPtrType = reflect.TypeOf(new(*vocab.Collection)).Elem()
+	var orderedCollectionPtrType = reflect.TypeOf(new(*vocab.OrderedCollection)).Elem()
 
 	var tests = testPairs{
-		pub.CollectionType:        collectionPtrType,
-		pub.OrderedCollectionType: orderedCollectionPtrType,
+		vocab.CollectionType:        collectionPtrType,
+		vocab.OrderedCollectionType: orderedCollectionPtrType,
 	}
 
 	for typ, test := range tests {
 		t.Run(string(typ), func(t *testing.T) {
-			v, err := pub.GetItemByType(typ)
+			v, err := vocab.GetItemByType(typ)
 			if err != nil {
 				t.Error(err)
 			}
@@ -33,13 +33,13 @@ func TestItemByType(t *testing.T) {
 }
 
 func TestGenerateID(t *testing.T) {
-	var generateIDTests pub.ActivityVocabularyTypes
-	generateIDTests = append(generateIDTests, pub.ObjectTypes...)
-	generateIDTests = append(generateIDTests, pub.ActivityTypes...)
-	generateIDTests = append(generateIDTests, pub.ActorTypes...)
-	partOf := pub.IRI("http://example.com")
+	var generateIDTests vocab.ActivityVocabularyTypes
+	generateIDTests = append(generateIDTests, vocab.ObjectTypes...)
+	generateIDTests = append(generateIDTests, vocab.ActivityTypes...)
+	generateIDTests = append(generateIDTests, vocab.ActorTypes...)
+	partOf := vocab.IRI("http://example.com")
 	for _, typ := range generateIDTests {
-		it, err := pub.GetItemByType(typ)
+		it, err := vocab.GetItemByType(typ)
 		if err != nil {
 			t.Errorf("Unable to create object from type: %s", err)
 		}
@@ -62,22 +62,22 @@ func TestDefaultServiceIRI(t *testing.T) {
 
 func TestSelf(t *testing.T) {
 	testURL := "http://example.com:666"
-	s := Self(pub.IRI(testURL))
+	s := Self(vocab.IRI(testURL))
 
-	if s.ID != pub.ID(testURL) {
+	if s.ID != vocab.ID(testURL) {
 		t.Errorf("Invalid ID %s, expected %s", s.ID, testURL)
 	}
-	if s.Type != pub.ServiceType {
-		t.Errorf("Invalid Type %s, expected %s", s.Type, pub.ServiceType)
+	if s.Type != vocab.ServiceType {
+		t.Errorf("Invalid Type %s, expected %s", s.Type, vocab.ServiceType)
 	}
-	if !s.Name.First().Value.Equals(pub.Content("self")) {
+	if !s.Name.First().Value.Equals(vocab.Content("self")) {
 		t.Errorf("Invalid Name %s, expected %s", s.Name, "self")
 	}
 	if s.AttributedTo.GetLink() != "https://github.com/mariusor" {
 		t.Errorf("Invalid AttributedTo %s, expected %s", s.AttributedTo, "https://github.com/mariusor")
 	}
-	if s.Audience.First().GetLink() != pub.PublicNS {
-		t.Errorf("Invalid Audience %s, expected %s", s.Audience.First(), pub.PublicNS)
+	if s.Audience.First().GetLink() != vocab.PublicNS {
+		t.Errorf("Invalid Audience %s, expected %s", s.Audience.First(), vocab.PublicNS)
 	}
 	if s.Content != nil {
 		t.Errorf("Invalid Audience %s, expected %v", s.Content, nil)
@@ -91,17 +91,17 @@ func TestSelf(t *testing.T) {
 	if s.Location != nil {
 		t.Errorf("Invalid Location %s, expected %v", s.Location, nil)
 	}
-	if !s.Summary.First().Value.Equals(pub.Content("Generic ActivityPub service")) {
+	if !s.Summary.First().Value.Equals(vocab.Content("Generic ActivityPub service")) {
 		t.Errorf("Invalid Summary %s, expected %v", s.Summary, "Generic ActivityPub service")
 	}
 	if s.Tag != nil {
 		t.Errorf("Invalid Tag %s, expected %v", s.Tag, nil)
 	}
-	testIRI := pub.IRI(testURL)
+	testIRI := vocab.IRI(testURL)
 	if s.URL != testIRI {
 		t.Errorf("Invalid URL %s, expected %v", s.URL, testURL)
 	}
-	inb := pub.Inbox.IRI(testIRI)
+	inb := vocab.Inbox.IRI(testIRI)
 	if s.Inbox != inb {
 		t.Errorf("Invalid Inbox %s, expected %v", s.Inbox, inb)
 	}
@@ -114,17 +114,17 @@ func Test_CacheKey(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want pub.IRI
+		want vocab.IRI
 	}{
 		{
 			name: "example.com",
 			args: args{f: &Filters{IRI: "http://example.com"}},
-			want: pub.IRI("http://example.com"),
+			want: vocab.IRI("http://example.com"),
 		},
 		{
 			name: "authenticated",
-			args: args{f: &Filters{IRI: "http://example.com", Authenticated: &pub.Actor{ID: "http://example.com/jdoe"}}},
-			want: pub.IRI("http://jdoe@example.com"),
+			args: args{f: &Filters{IRI: "http://example.com", Authenticated: &vocab.Actor{ID: "http://example.com/jdoe"}}},
+			want: vocab.IRI("http://jdoe@example.com"),
 		},
 	}
 	for _, tt := range tests {

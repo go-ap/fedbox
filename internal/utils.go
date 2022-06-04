@@ -1,30 +1,36 @@
 package internal
 
-import pub "github.com/go-ap/activitypub"
+import vocab "github.com/go-ap/activitypub"
 
-func replaceHostInIRI(iri *pub.IRI, repl pub.IRI) *pub.IRI {
-	if iri.Contains(repl, false) { return iri }
+func replaceHostInIRI(iri *vocab.IRI, repl vocab.IRI) *vocab.IRI {
+	if iri.Contains(repl, false) {
+		return iri
+	}
 
 	u, eu := iri.URL()
-	if eu != nil { return iri }
+	if eu != nil {
+		return iri
+	}
 
 	ru, er := repl.URL()
-	if er != nil { return iri }
+	if er != nil {
+		return iri
+	}
 
 	u.Scheme = ru.Scheme
 	u.Host = ru.Host
-	*iri = pub.IRI(u.String())
+	*iri = vocab.IRI(u.String())
 	return iri
 }
 
-func replaceHostInActor(a *pub.Actor, repl pub.IRI) {
-	pub.OnObject(a, func(o *pub.Object) error {
+func replaceHostInActor(a *vocab.Actor, repl vocab.IRI) {
+	vocab.OnObject(a, func(o *vocab.Object) error {
 		replaceHostInObject(o, repl)
 		return nil
 	})
 }
 
-func replaceHostInObject(o *pub.Object, repl pub.IRI) {
+func replaceHostInObject(o *vocab.Object, repl vocab.IRI) {
 	replaceHostInIRI(&o.ID, repl)
 	replaceHostInItem(o.AttributedTo, repl)
 	replaceHostInItem(o.Attachment, repl)
@@ -46,16 +52,16 @@ func replaceHostInObject(o *pub.Object, repl pub.IRI) {
 	replaceHostInItem(o.Shares, repl)
 }
 
-func replaceHostInActivity(o *pub.Activity, repl pub.IRI) {
-	pub.OnIntransitiveActivity(o, func(o *pub.IntransitiveActivity) error {
+func replaceHostInActivity(o *vocab.Activity, repl vocab.IRI) {
+	vocab.OnIntransitiveActivity(o, func(o *vocab.IntransitiveActivity) error {
 		replaceHostInIntransitiveActivity(o, repl)
 		return nil
 	})
 	replaceHostInItem(o.Object, repl)
 }
 
-func replaceHostInIntransitiveActivity(o *pub.IntransitiveActivity, repl pub.IRI) {
-	pub.OnObject(o, func(o *pub.Object) error {
+func replaceHostInIntransitiveActivity(o *vocab.IntransitiveActivity, repl vocab.IRI) {
+	vocab.OnObject(o, func(o *vocab.Object) error {
 		replaceHostInObject(o, repl)
 		return nil
 	})
@@ -66,73 +72,73 @@ func replaceHostInIntransitiveActivity(o *pub.IntransitiveActivity, repl pub.IRI
 	replaceHostInItem(o.Instrument, repl)
 }
 
-func replaceHostInOrderedCollection (c *pub.OrderedCollection, repl pub.IRI) { }
-func replaceHostInOrderedCollectionPage (c *pub.OrderedCollectionPage, repl pub.IRI) { }
-func replaceHostInCollection (c *pub.Collection, repl pub.IRI) { }
-func replaceHostInCollectionPage (c *pub.CollectionPage, repl pub.IRI) { }
-func replaceHostInCollectionOfItems (c pub.ItemCollection, repl pub.IRI) {
+func replaceHostInOrderedCollection(c *vocab.OrderedCollection, repl vocab.IRI)         {}
+func replaceHostInOrderedCollectionPage(c *vocab.OrderedCollectionPage, repl vocab.IRI) {}
+func replaceHostInCollection(c *vocab.Collection, repl vocab.IRI)                       {}
+func replaceHostInCollectionPage(c *vocab.CollectionPage, repl vocab.IRI)               {}
+func replaceHostInCollectionOfItems(c vocab.ItemCollection, repl vocab.IRI) {
 	for _, it := range c {
 		replaceHostInItem(it, repl)
 	}
 }
 
-func replaceHostInItem(it pub.Item, repl pub.IRI) {
-	if pub.IsNil(it) {
+func replaceHostInItem(it vocab.Item, repl vocab.IRI) {
+	if vocab.IsNil(it) {
 		return
 	}
 	if it.IsCollection() {
-		if it.GetType() == pub.OrderedCollectionType {
-			pub.OnOrderedCollection(it, func(c *pub.OrderedCollection) error {
+		if it.GetType() == vocab.OrderedCollectionType {
+			vocab.OnOrderedCollection(it, func(c *vocab.OrderedCollection) error {
 				replaceHostInOrderedCollection(c, repl)
 				return nil
 			})
 		}
-		if it.GetType() == pub.OrderedCollectionPageType {
-			pub.OnOrderedCollectionPage(it, func(c *pub.OrderedCollectionPage) error {
+		if it.GetType() == vocab.OrderedCollectionPageType {
+			vocab.OnOrderedCollectionPage(it, func(c *vocab.OrderedCollectionPage) error {
 				replaceHostInOrderedCollectionPage(c, repl)
 				return nil
 			})
 		}
-		if it.GetType() == pub.CollectionType {
-			pub.OnCollection(it, func(c *pub.Collection) error {
+		if it.GetType() == vocab.CollectionType {
+			vocab.OnCollection(it, func(c *vocab.Collection) error {
 				replaceHostInCollection(c, repl)
 				return nil
 			})
 		}
-		if it.GetType() == pub.CollectionPageType {
-			pub.OnCollectionPage(it, func(c *pub.CollectionPage) error {
+		if it.GetType() == vocab.CollectionPageType {
+			vocab.OnCollectionPage(it, func(c *vocab.CollectionPage) error {
 				replaceHostInCollectionPage(c, repl)
 				return nil
 			})
 		}
-		if it.GetType() == pub.CollectionOfItems {
-			pub.OnItemCollection(it, func(c *pub.ItemCollection) error {
+		if it.GetType() == vocab.CollectionOfItems {
+			vocab.OnItemCollection(it, func(c *vocab.ItemCollection) error {
 				replaceHostInCollectionOfItems(*c, repl)
 				return nil
 			})
 		}
 	}
 	if it.IsObject() {
-		if pub.IntransitiveActivityTypes.Contains(it.GetType()) {
-			pub.OnIntransitiveActivity(it, func(a *pub.IntransitiveActivity) error {
+		if vocab.IntransitiveActivityTypes.Contains(it.GetType()) {
+			vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
 				replaceHostInIntransitiveActivity(a, repl)
 				return nil
 			})
 		}
-		if pub.ActivityTypes.Contains(it.GetType()) {
-			pub.OnActivity(it, func(a *pub.Activity) error {
+		if vocab.ActivityTypes.Contains(it.GetType()) {
+			vocab.OnActivity(it, func(a *vocab.Activity) error {
 				replaceHostInActivity(a, repl)
 				return nil
 			})
 		}
-		if pub.ActorTypes.Contains(it.GetType()) {
-			pub.OnActor(it, func(a *pub.Actor) error {
+		if vocab.ActorTypes.Contains(it.GetType()) {
+			vocab.OnActor(it, func(a *vocab.Actor) error {
 				replaceHostInActor(a, repl)
 				return nil
 			})
 		}
-		if pub.ObjectTypes.Contains(it.GetType()) {
-			pub.OnObject(it, func(o *pub.Object) error {
+		if vocab.ObjectTypes.Contains(it.GetType()) {
+			vocab.OnObject(it, func(o *vocab.Object) error {
 				replaceHostInObject(o, repl)
 				return nil
 			})
@@ -144,4 +150,3 @@ func replaceHostInItem(it pub.Item, repl pub.IRI) {
 		it = *replaceHostInIRI(&l, repl)
 	}
 }
-

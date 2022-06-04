@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	apub "github.com/go-ap/fedbox/activitypub"
 	fedbox "github.com/go-ap/fedbox/app"
@@ -162,28 +162,28 @@ const URISeparator = "\n"
 func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string, error) {
 	var id string
 
-	self := apub.Self(pub.IRI(ctl.Conf.BaseURL))
+	self := apub.Self(vocab.IRI(ctl.Conf.BaseURL))
 	now := time.Now().UTC()
-	name := pub.Content("oauth-client-app")
-	var appURL pub.IRI
+	name := vocab.Content("oauth-client-app")
+	var appURL vocab.IRI
 	for i, redirectUrl := range redirect {
 		if u, err := url.ParseRequestURI(redirectUrl); err == nil {
 			u.Path = path.Clean(u.Path)
-			name = pub.Content(u.Host)
+			name = vocab.Content(u.Host)
 			redirect[i] = u.String()
 			if appURL == "" {
-				appURL = pub.IRI(u.String())
+				appURL = vocab.IRI(u.String())
 			}
 		}
 	}
-	p := &pub.Person{
-		Type:         pub.ApplicationType,
+	p := &vocab.Person{
+		Type:         vocab.ApplicationType,
 		AttributedTo: self.GetLink(),
 		Generator:    self.GetLink(),
 		Published:    now,
 		Updated:      now,
-		PreferredUsername: pub.NaturalLanguageValues{
-			{pub.NilLangRef, name},
+		PreferredUsername: vocab.NaturalLanguageValues{
+			{vocab.NilLangRef, name},
 		},
 		URL: appURL,
 	}
@@ -205,7 +205,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 	}
 
 	// TODO(marius): add a local Client struct that implements Client and ClientSecretMatcher interfaces with bcrypt support
-	//   It could even be a struct composite from an pub.Application + secret and callback properties
+	//   It could even be a struct composite from an activitypub.Application + secret and callback properties
 	userData, _ := json.Marshal(u)
 	d := osin.DefaultClient{
 		Id:          id,
@@ -261,29 +261,29 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 	now := time.Now().UTC()
 	var f processing.Filterable
 	if u, err := url.Parse(actorIdentifier); err == nil {
-		f = pub.IRI(u.String())
+		f = vocab.IRI(u.String())
 	} else {
-		f = apub.FiltersNew(apub.Name(actorIdentifier), apub.Type(pub.ActorTypes...))
+		f = apub.FiltersNew(apub.Name(actorIdentifier), apub.Type(vocab.ActorTypes...))
 	}
 	list, err := c.Storage.Load(f.GetLink())
 	if err != nil {
 		return "", err
 	}
-	if pub.IsNil(list) {
+	if vocab.IsNil(list) {
 		return "", errors.NotFoundf("Handle not found")
 	}
-	var actor pub.Item
+	var actor vocab.Item
 	if list.IsCollection() {
-		err = pub.OnCollectionIntf(list, func(c pub.CollectionInterface) error {
+		err = vocab.OnCollectionIntf(list, func(c vocab.CollectionInterface) error {
 			f := c.Collection().First()
 			if f == nil {
 				return errors.NotFoundf("no actor found")
 			}
-			actor, err = pub.ToActor(f)
+			actor, err = vocab.ToActor(f)
 			return err
 		})
 	} else {
-		actor, err = pub.ToActor(list)
+		actor, err = vocab.ToActor(list)
 	}
 	if err != nil {
 		return "", err

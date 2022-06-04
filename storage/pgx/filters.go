@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/processing"
 )
@@ -47,7 +47,7 @@ func getWhereClauses(f processing.Filterable) ([]string, []interface{}) {
 		if len(types) > 0 {
 			keyWhere := make([]string, 0)
 			for _, typ := range types {
-				canHaveAudience = pub.ActivityTypes.Contains(typ) || pub.ObjectTypes.Contains(typ) || pub.ActorTypes.Contains(typ)
+				canHaveAudience = vocab.ActivityTypes.Contains(typ) || vocab.ObjectTypes.Contains(typ) || vocab.ActorTypes.Contains(typ)
 
 				keyWhere = append(keyWhere, fmt.Sprintf(`"type" = $%d`, counter))
 				values = append(values, interface{}(typ))
@@ -64,7 +64,7 @@ func getWhereClauses(f processing.Filterable) ([]string, []interface{}) {
 		//			// not a valid iri
 		//			keyWhere = append(keyWhere, fmt.Sprintf(`"key" ~* $%d`, counter))
 		//		} else {
-		//			if len(types) == 1 && types[0] == pub.LinkType {
+		//			if len(types) == 1 && types[0] == vocab.LinkType {
 		//				keyWhere = append(keyWhere, fmt.Sprintf(`"raw"::text ~* $%d`, counter))
 		//			} else if canHaveAudience {
 		//				// For Link type we need to search the full raw column
@@ -93,7 +93,7 @@ func getWhereClauses(f processing.Filterable) ([]string, []interface{}) {
 		keyWhere = append(keyWhere, fmt.Sprintf(`"raw"->>'audience' ~* $%d`, counter))
 		clauses = append(clauses, fmt.Sprintf("(%s)", strings.Join(keyWhere, " OR ")))
 		//if f.To == nil {
-		//	values = append(values, interface{}(pub.PublicNS))
+		//	values = append(values, interface{}(vocab.PublicNS))
 		//}
 	}
 

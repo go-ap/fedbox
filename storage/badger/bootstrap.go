@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/fedbox/activitypub"
+	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/jsonld"
 )
@@ -23,10 +23,10 @@ func Bootstrap(conf config.Options) error {
 	if err != nil {
 		return err
 	}
-	self := activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL))
-	actors := &pub.OrderedCollection{ID: activitypub.ActorsType.IRI(&self)}
-	activities := &pub.OrderedCollection{ID: activitypub.ActivitiesType.IRI(&self)}
-	objects := &pub.OrderedCollection{ID: activitypub.ObjectsType.IRI(&self)}
+	self := ap.Self(ap.DefaultServiceIRI(conf.BaseURL))
+	actors := &vocab.OrderedCollection{ID: ap.ActorsType.IRI(&self)}
+	activities := &vocab.OrderedCollection{ID: ap.ActivitiesType.IRI(&self)}
+	objects := &vocab.OrderedCollection{ID: ap.ObjectsType.IRI(&self)}
 	if _, err = r.Create(actors); err != nil {
 		return err
 	}

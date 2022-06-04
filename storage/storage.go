@@ -1,17 +1,17 @@
 package storage
 
 import (
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/processing"
 )
 
 type CanBootstrap interface {
-	CreateService(pub.Service) error
+	CreateService(vocab.Service) error
 }
 
 type PasswordChanger interface {
-	PasswordSet(pub.Item, []byte) error
-	PasswordCheck(pub.Item, []byte) error
+	PasswordSet(vocab.Item, []byte) error
+	PasswordCheck(vocab.Item, []byte) error
 }
 
 type Metadata struct {
@@ -20,13 +20,13 @@ type Metadata struct {
 }
 
 type MetadataTyper interface {
-	LoadMetadata(pub.IRI) (*Metadata, error)
-	SaveMetadata(Metadata, pub.IRI) error
+	LoadMetadata(vocab.IRI) (*Metadata, error)
+	SaveMetadata(Metadata, vocab.IRI) error
 }
 
 type MimeTypeSaver interface {
-	SaveNaturalLanguageValues(pub.NaturalLanguageValues) error
-	SaveMimeTypeContent(pub.MimeType, pub.NaturalLanguageValues) error
+	SaveNaturalLanguageValues(vocab.NaturalLanguageValues) error
+	SaveMimeTypeContent(vocab.MimeType, vocab.NaturalLanguageValues) error
 }
 
 type Resetter interface {

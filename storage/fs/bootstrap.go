@@ -6,8 +6,8 @@ import (
 	"os"
 	"path"
 
-	pub "github.com/go-ap/activitypub"
-	"github.com/go-ap/fedbox/activitypub"
+	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
 )
@@ -30,16 +30,16 @@ func Bootstrap(conf config.Options) error {
 		return err
 	}
 	defer r.Close()
-	self := activitypub.Self(activitypub.DefaultServiceIRI(conf.BaseURL))
-	actors := &pub.OrderedCollection{ID: activitypub.ActorsType.IRI(self)}
+	self := ap.Self(ap.DefaultServiceIRI(conf.BaseURL))
+	actors := &vocab.OrderedCollection{ID: ap.ActorsType.IRI(self)}
 	if _, err = r.Create(actors); err != nil {
 		return err
 	}
-	activities := &pub.OrderedCollection{ID: activitypub.ActivitiesType.IRI(self)}
+	activities := &vocab.OrderedCollection{ID: ap.ActivitiesType.IRI(self)}
 	if _, err = r.Create(activities); err != nil {
 		return err
 	}
-	objects := &pub.OrderedCollection{ID: activitypub.ObjectsType.IRI(self)}
+	objects := &vocab.OrderedCollection{ID: ap.ObjectsType.IRI(self)}
 	if _, err = r.Create(objects); err != nil {
 		return err
 	}

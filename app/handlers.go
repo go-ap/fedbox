@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -20,16 +20,16 @@ import (
 
 type pathTyper struct{}
 
-func (d pathTyper) Type(r *http.Request) pub.CollectionPath {
-	col := pub.Unknown
+func (d pathTyper) Type(r *http.Request) vocab.CollectionPath {
+	col := vocab.Unknown
 	if r.URL == nil || len(r.URL.Path) == 0 {
 		return col
 	}
 
 	pathElements := strings.Split(r.URL.Path[1:], "/") // Skip first /
 	for i := len(pathElements) - 1; i >= 0; i-- {
-		col = pub.CollectionPath(strings.ToLower(pathElements[i]))
-		if pub.ActivityPubCollections.Contains(col) {
+		col = vocab.CollectionPath(strings.ToLower(pathElements[i]))
+		if vocab.ActivityPubCollections.Contains(col) {
 			return col
 		}
 		if ap.FedBOXCollections.Contains(col) {
@@ -47,9 +47,9 @@ func reqURL(r *http.Request, secure bool) string {
 	return fmt.Sprintf("%s://%s%s", scheme, r.Host, r.RequestURI)
 }
 
-func orderItems(col pub.ItemCollection) pub.ItemCollection {
+func orderItems(col vocab.ItemCollection) vocab.ItemCollection {
 	sort.SliceStable(col, func(i, j int) bool {
-		return pub.ItemOrderTimestamp(col[i], col[j])
+		return vocab.ItemOrderTimestamp(col[i], col[j])
 	})
 	return col
 }
@@ -57,7 +57,7 @@ func orderItems(col pub.ItemCollection) pub.ItemCollection {
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
-	return func(typ pub.CollectionPath, r *http.Request, repo processing.ReadStore) (pub.CollectionInterface, error) {
+	return func(typ vocab.CollectionPath, r *http.Request, repo processing.ReadStore) (vocab.CollectionInterface, error) {
 		if !ap.ValidCollection(typ) {
 			return nil, errors.NotFoundf("collection '%s' not found", typ)
 		}
@@ -70,7 +70,7 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 
 		cacheKey := ap.CacheKey(f)
 		it := fb.caches.Get(cacheKey)
-		fromCache := !pub.IsNil(it)
+		fromCache := !vocab.IsNil(it)
 
 		if !fromCache {
 			if it, err = repo.Load(f.GetLink()); err != nil {
@@ -81,9 +81,9 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
 		}
 
-		c := new(pub.OrderedCollection)
-		c.Type = pub.OrderedCollectionType
-		err = pub.OnCollectionIntf(it, func(items pub.CollectionInterface) error {
+		c := new(vocab.OrderedCollection)
+		c.Type = vocab.OrderedCollectionType
+		err = vocab.OnCollectionIntf(it, func(items vocab.CollectionInterface) error {
 			ff := *f
 			ff.Authenticated = nil
 			c.ID = ff.GetLink()
@@ -95,11 +95,11 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			return nil, err
 		}
 
-		var toStore pub.OrderedCollection
+		var toStore vocab.OrderedCollection
 		if !fromCache && c.Count() > 0 {
 			toStore = *c
 		}
-		var col pub.CollectionInterface = c
+		var col vocab.CollectionInterface = c
 		if col, err = ap.PaginateCollection(col, f); err != nil {
 			return nil, err
 		}
@@ -109,7 +109,7 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 		for _, it := range col.Collection() {
 			// Remove bcc and bto - probably should be moved to a different place
 			// TODO(marius): move this to the go-ap/activtiypub helpers: CleanRecipients(Item)
-			if s, ok := it.(pub.HasRecipients); ok {
+			if s, ok := it.(vocab.HasRecipients); ok {
 				s.Clean()
 			}
 		}
@@ -136,14 +136,14 @@ func ValidateRequest(r *http.Request) (bool, error) {
 
 // GenerateID creates an IRI that can be used to uniquely identify the "it" item, based on the collection "col" and
 // its creator "by"
-func GenerateID(base pub.IRI) func(it pub.Item, col pub.Item, by pub.Item) (pub.ID, error) {
-	return func(it pub.Item, col pub.Item, by pub.Item) (pub.ID, error) {
+func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Item) (vocab.ID, error) {
+	return func(it vocab.Item, col vocab.Item, by vocab.Item) (vocab.ID, error) {
 		typ := it.GetType()
 
-		var partOf pub.IRI
-		if pub.ActivityTypes.Contains(typ) || pub.IntransitiveActivityTypes.Contains(typ) {
+		var partOf vocab.IRI
+		if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
 			partOf = ap.ActivitiesType.IRI(base)
-		} else if pub.ActorTypes.Contains(typ) || typ == pub.ActorType {
+		} else if vocab.ActorTypes.Contains(typ) || typ == vocab.ActorType {
 			partOf = ap.ActorsType.IRI(base)
 		} else {
 			partOf = ap.ObjectsType.IRI(base)
@@ -162,8 +162,8 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 	clientInfoLogger := func(...client.Ctx) client.LogFn {
 		return infoLogger
 	}
-	return func(typ pub.CollectionPath, r *http.Request, repo processing.Store) (pub.Item, int, error) {
-		var it pub.Item
+	return func(typ vocab.CollectionPath, r *http.Request, repo processing.Store) (vocab.Item, int, error) {
+		var it vocab.Item
 
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
 		if err != nil {
@@ -178,11 +178,11 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 		if err != nil || len(body) == 0 {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
 		}
-		if it, err = pub.UnmarshalJSON(body); err != nil {
+		if it, err = vocab.UnmarshalJSON(body); err != nil {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
 
-		baseIRI := pub.IRI(fb.Config().BaseURL)
+		baseIRI := vocab.IRI(fb.Config().BaseURL)
 		processor, validator, err := processing.New(
 			processing.SetIRI(baseIRI, InternalIRI),
 			processing.SetClient(client.New(
@@ -203,13 +203,13 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 			processing.SetActorKeyGenerator(AddKeyToPerson(metaSaver))
 		}
 
-		var validateFn func(pub.Item, pub.IRI) error
-		var processFn func(pub.Item) (pub.Item, error)
+		var validateFn func(vocab.Item, vocab.IRI) error
+		var processFn func(vocab.Item) (vocab.Item, error)
 		switch typ {
-		case pub.Outbox:
+		case vocab.Outbox:
 			validateFn = validator.ValidateClientActivity
 			processFn = processor.ProcessClientActivity
-		case pub.Inbox:
+		case vocab.Inbox:
 			validateFn = validator.ValidateServerActivity
 			processFn = processor.ProcessServerActivity
 		default:
@@ -218,7 +218,7 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 		if err = validateFn(it, f.IRI); err != nil {
 			return it, http.StatusNotAcceptable, err
 		}
-		pub.OnActivity(it, func(a *pub.Activity) error {
+		vocab.OnActivity(it, func(a *vocab.Activity) error {
 			// TODO(marius): this should be handled in the processing package
 			if a.AttributedTo == nil {
 				a.AttributedTo = f.Authenticated
@@ -228,7 +228,7 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 		if it, err = processFn(it); err != nil {
 			return it, errors.HttpStatus(err), errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 		}
-		err = pub.OnActivity(it, func(act *pub.Activity) error {
+		err = vocab.OnActivity(it, func(act *vocab.Activity) error {
 			return cache.ActivityPurge(fb.caches, act, typ)
 		})
 		if err != nil {
@@ -236,7 +236,7 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 		}
 
 		status := http.StatusCreated
-		if it.GetType() == pub.DeleteType {
+		if it.GetType() == vocab.DeleteType {
 			status = http.StatusGone
 		}
 
@@ -247,7 +247,7 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 // HandleItem serves content from the following, followers, liked, and likes end-points
 // that returns a single ActivityPub object
 func HandleItem(fb FedBOX) processing.ItemHandlerFn {
-	return func(r *http.Request, repo processing.ReadStore) (pub.Item, error) {
+	return func(r *http.Request, repo processing.ReadStore) (vocab.Item, error) {
 		collection := processing.Typer.Type(r)
 
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
@@ -258,11 +258,11 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 
 		cacheKey := ap.CacheKey(f)
 		it := fb.caches.Get(cacheKey)
-		fromCache := !pub.IsNil(it)
+		fromCache := !vocab.IsNil(it)
 
 		iri := reqURL(r, fb.Config().Secure)
 		if len(f.IRI) == 0 {
-			f.IRI = pub.IRI(iri)
+			f.IRI = vocab.IRI(iri)
 		}
 
 		where := ""
@@ -285,9 +285,9 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 				return nil, err
 			}
 		}
-		var items pub.ItemCollection
-		if pub.IsItemCollection(it) {
-			err = pub.OnCollectionIntf(it, func(col pub.CollectionInterface) error {
+		var items vocab.ItemCollection
+		if vocab.IsItemCollection(it) {
+			err = vocab.OnCollectionIntf(it, func(col vocab.CollectionInterface) error {
 				items = col.Collection()
 				return nil
 			})
@@ -295,7 +295,7 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 				return nil, err
 			}
 		} else {
-			items = pub.ItemCollection{it}
+			items = vocab.ItemCollection{it}
 		}
 
 		if f.Collection == "" && len(items) == 0 {
@@ -304,7 +304,7 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 				if err := saver.CreateService(service); err != nil {
 					return nil, err
 				}
-				items = pub.ItemCollection{service}
+				items = vocab.ItemCollection{service}
 			}
 		}
 
@@ -324,7 +324,7 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 			fb.caches.Set(cacheKey, it)
 		}
 
-		if s, ok := it.(pub.HasRecipients); ok {
+		if s, ok := it.(vocab.HasRecipients); ok {
 			// Remove bcc and bto - probably should be moved to a different place
 			s.Clean()
 		}
@@ -332,6 +332,6 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 	}
 }
 
-func loadItem(items pub.ItemCollection, f ap.Paginator, baseURL string) (pub.Item, error) {
+func loadItem(items vocab.ItemCollection, f ap.Paginator, baseURL string) (vocab.Item, error) {
 	return items.First(), nil
 }

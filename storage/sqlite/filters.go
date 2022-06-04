@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/processing"
 )
@@ -26,7 +26,7 @@ func getStringFieldInJSONWheres(strs ap.CompStrs, props ...string) (string, []in
 		switch n.Operator {
 		case "!":
 			for _, prop := range props {
-				if len(n.Str) == 0 || n.Str == pub.NilLangRef.String() {
+				if len(n.Str) == 0 || n.Str == vocab.NilLangRef.String() {
 					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') IS NOT NULL`, prop))
 				} else {
 					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') NOT LIKE ?`, prop))
@@ -42,7 +42,7 @@ func getStringFieldInJSONWheres(strs ap.CompStrs, props ...string) (string, []in
 			fallthrough
 		default:
 			for _, prop := range props {
-				if len(n.Str) == 0 || n.Str == pub.NilLangRef.String() {
+				if len(n.Str) == 0 || n.Str == vocab.NilLangRef.String() {
 					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') IS NULL`, prop))
 				} else {
 					keyWhere = append(keyWhere, fmt.Sprintf(`json_extract("raw", '$.%s') = ?`, prop))
@@ -64,7 +64,7 @@ func getStringFieldWheres(strs ap.CompStrs, fields ...string) (string, []interfa
 		switch t.Operator {
 		case "!":
 			for _, field := range fields {
-				if len(t.Str) == 0 || t.Str == pub.NilLangRef.String() {
+				if len(t.Str) == 0 || t.Str == vocab.NilLangRef.String() {
 					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" IS NOT NULL`, field))
 				} else {
 					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" NOT LIKE ?`, field))
@@ -78,7 +78,7 @@ func getStringFieldWheres(strs ap.CompStrs, fields ...string) (string, []interfa
 			}
 		case "", "=":
 			for _, field := range fields {
-				if len(t.Str) == 0 || t.Str == pub.NilLangRef.String() {
+				if len(t.Str) == 0 || t.Str == vocab.NilLangRef.String() {
 					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" IS NULL`, field))
 				} else {
 					keyWhere = append(keyWhere, fmt.Sprintf(`"%s" = ?`, field))
@@ -112,12 +112,12 @@ func getURLWheres(strs ap.CompStrs) (string, []interface{}) {
 	return clause, values
 }
 
-var MandatoryCollections = pub.CollectionPaths{
-	pub.Inbox,
-	pub.Outbox,
+var MandatoryCollections = vocab.CollectionPaths{
+	vocab.Inbox,
+	vocab.Outbox,
 }
 
-func getIRIWheres(strs ap.CompStrs, id pub.IRI) (string, []interface{}) {
+func getIRIWheres(strs ap.CompStrs, id vocab.IRI) (string, []interface{}) {
 	iriClause, iriValues := getStringFieldWheres(strs, "iri")
 
 	skipId := strings.Contains(iriClause, `"iri"`)
@@ -128,7 +128,7 @@ func getIRIWheres(strs ap.CompStrs, id pub.IRI) (string, []interface{}) {
 	if u, _ := id.URL(); u != nil {
 		u.RawQuery = ""
 		u.User = nil
-		id = pub.IRI(u.String())
+		id = vocab.IRI(u.String())
 	}
 	// FIXME(marius): this is a hack that avoids trying to use clause on IRI, when iri == "/"
 	if len(id) > 1 {

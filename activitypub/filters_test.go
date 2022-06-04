@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 )
 
 func TestFilters_GetLink(t *testing.T) {
-	val := pub.IRI("http://example.com")
+	val := vocab.IRI("http://example.com")
 	f := Filters{
 		IRI: val,
 	}
@@ -67,8 +67,8 @@ func TestValidActivityCollection(t *testing.T) {
 	t.Skipf("TODO")
 }
 
-func mockItem() pub.Object {
-	return pub.Object{
+func mockItem() vocab.Object {
+	return vocab.Object{
 		ID:           "",
 		Type:         "",
 		Name:         nil,
@@ -99,7 +99,7 @@ func mockItem() pub.Object {
 		Duration:     0,
 		Likes:        nil,
 		Shares:       nil,
-		Source:       pub.Source{},
+		Source:       vocab.Source{},
 	}
 }
 
@@ -111,7 +111,7 @@ func EqualsString(s string) CompStr {
 	return CompStr{Operator: "=", Str: s}
 }
 
-func IRIsFilter(iris ...pub.IRI) CompStrs {
+func IRIsFilter(iris ...vocab.IRI) CompStrs {
 	r := make(CompStrs, len(iris))
 	for i, iri := range iris {
 		r[i] = EqualsString(iri.String())
@@ -129,13 +129,13 @@ func TestFilters_Actors(t *testing.T) {
 		return
 	}
 	act := mockActivity()
-	act.Actor = pub.IRI("/actors/test")
+	act.Actor = vocab.IRI("/actors/test")
 	t.Run("exists", func(t *testing.T) {
 		if !testItInIRIs(IRIsFilter(f.Actors()...), act.Actor) {
 			t.Errorf("filter %v doesn't contain any of %v", f.Objects(), act.Actor)
 		}
 	})
-	act.Actor = pub.ItemCollection{pub.IRI("/actors/test123"), pub.IRI("https://example.com")}
+	act.Actor = vocab.ItemCollection{vocab.IRI("/actors/test123"), vocab.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
 		if testItInIRIs(IRIsFilter(f.Actors()...), act.Actor) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.Objects(), act.Actor)
@@ -143,11 +143,11 @@ func TestFilters_Actors(t *testing.T) {
 	})
 }
 
-func testItInIRIs(iris CompStrs, items ...pub.Item) bool {
+func testItInIRIs(iris CompStrs, items ...vocab.Item) bool {
 	contains := false
 	for _, val := range items {
 		if val.IsCollection() {
-			pub.OnCollectionIntf(val, func(c pub.CollectionInterface) error {
+			vocab.OnCollectionIntf(val, func(c vocab.CollectionInterface) error {
 				for _, it := range c.Collection() {
 					if filterItem(iris, it) {
 						contains = true
@@ -175,13 +175,13 @@ func TestFilters_AttributedTo(t *testing.T) {
 		return
 	}
 	it := mockItem()
-	it.InReplyTo = pub.ItemCollection{pub.IRI("/objects/test")}
+	it.InReplyTo = vocab.ItemCollection{vocab.IRI("/objects/test")}
 	t.Run("exists", func(t *testing.T) {
 		if !testItInIRIs(f.InReplyTo(), it.InReplyTo) {
 			t.Errorf("filter %v doesn't contain any of %v", f.InReplyTo(), it.InReplyTo)
 		}
 	})
-	it.InReplyTo = pub.ItemCollection{pub.IRI("/objects/test123"), pub.IRI("https://example.com")}
+	it.InReplyTo = vocab.ItemCollection{vocab.IRI("/objects/test123"), vocab.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
 		if testItInIRIs(f.InReplyTo(), it.InReplyTo) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.InReplyTo(), it.InReplyTo)
@@ -192,7 +192,7 @@ func TestFilters_AttributedTo(t *testing.T) {
 func TestFilters_Audience(t *testing.T) {
 	type args struct {
 		filters CompStrs
-		valArr  pub.ItemCollection
+		valArr  vocab.ItemCollection
 	}
 	tests := []struct {
 		name string
@@ -208,8 +208,8 @@ func TestFilters_Audience(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: pub.ItemCollection{
-					pub.IRI("ana"),
+				valArr: vocab.ItemCollection{
+					vocab.IRI("ana"),
 				},
 			},
 			want: true,
@@ -223,9 +223,9 @@ func TestFilters_Audience(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: pub.ItemCollection{
+				valArr: vocab.ItemCollection{
 					nil,
-					pub.IRI("ana"),
+					vocab.IRI("ana"),
 				},
 			},
 			want: true,
@@ -239,8 +239,8 @@ func TestFilters_Audience(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: pub.ItemCollection{
-					pub.IRI("ana"),
+				valArr: vocab.ItemCollection{
+					vocab.IRI("ana"),
 				},
 			},
 			want: true,
@@ -254,8 +254,8 @@ func TestFilters_Audience(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: pub.ItemCollection{
-					pub.IRI("anathema"),
+				valArr: vocab.ItemCollection{
+					vocab.IRI("anathema"),
 				},
 			},
 			want: true,
@@ -269,8 +269,8 @@ func TestFilters_Audience(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: pub.ItemCollection{
-					pub.IRI("bob"),
+				valArr: vocab.ItemCollection{
+					vocab.IRI("bob"),
 				},
 			},
 			want: true,
@@ -284,10 +284,10 @@ func TestFilters_Audience(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: pub.ItemCollection{
+				valArr: vocab.ItemCollection{
 					nil,
-					pub.IRI(""),
-					pub.IRI("bob"),
+					vocab.IRI(""),
+					vocab.IRI("bob"),
 				},
 			},
 			want: true,
@@ -301,8 +301,8 @@ func TestFilters_Audience(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: pub.ItemCollection{
-					pub.IRI("bob"),
+				valArr: vocab.ItemCollection{
+					vocab.IRI("bob"),
 				},
 			},
 			want: false,
@@ -316,9 +316,9 @@ func TestFilters_Audience(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: pub.ItemCollection{
+				valArr: vocab.ItemCollection{
 					nil,
-					pub.IRI("bob"),
+					vocab.IRI("bob"),
 				},
 			},
 			want: false,
@@ -332,8 +332,8 @@ func TestFilters_Audience(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: pub.ItemCollection{
-					pub.IRI("bob"),
+				valArr: vocab.ItemCollection{
+					vocab.IRI("bob"),
 				},
 			},
 			want: false,
@@ -347,8 +347,8 @@ func TestFilters_Audience(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: pub.ItemCollection{
-					pub.IRI("bobsyouruncle"),
+				valArr: vocab.ItemCollection{
+					vocab.IRI("bobsyouruncle"),
 				},
 			},
 			want: false,
@@ -362,8 +362,8 @@ func TestFilters_Audience(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: pub.ItemCollection{
-					pub.IRI("ana"),
+				valArr: vocab.ItemCollection{
+					vocab.IRI("ana"),
 				},
 			},
 			want: false,
@@ -377,9 +377,9 @@ func TestFilters_Audience(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: pub.ItemCollection{
+				valArr: vocab.ItemCollection{
 					nil,
-					pub.IRI(""),
+					vocab.IRI(""),
 				},
 			},
 			want: true,
@@ -388,8 +388,8 @@ func TestFilters_Audience(t *testing.T) {
 			name: "one value: exact match success",
 			args: args{
 				CompStrs{StringEquals("ana")},
-				pub.ItemCollection{
-					pub.IRI("ana"),
+				vocab.ItemCollection{
+					vocab.IRI("ana"),
 				},
 			},
 			want: true,
@@ -398,8 +398,8 @@ func TestFilters_Audience(t *testing.T) {
 			name: "one value: exact match failure",
 			args: args{
 				CompStrs{StringEquals("ana")},
-				pub.ItemCollection{
-					pub.IRI("na"),
+				vocab.ItemCollection{
+					vocab.IRI("na"),
 				},
 			},
 			want: false,
@@ -408,8 +408,8 @@ func TestFilters_Audience(t *testing.T) {
 			name: "one value: partial match success",
 			args: args{
 				CompStrs{StringLike("ana")},
-				pub.ItemCollection{
-					pub.IRI("analema"),
+				vocab.ItemCollection{
+					vocab.IRI("analema"),
 				},
 			},
 			want: true,
@@ -418,8 +418,8 @@ func TestFilters_Audience(t *testing.T) {
 			name: "one value: exact match failure",
 			args: args{
 				CompStrs{StringLike("ana")},
-				pub.ItemCollection{
-					pub.IRI("na"),
+				vocab.ItemCollection{
+					vocab.IRI("na"),
 				},
 			},
 			want: false,
@@ -428,8 +428,8 @@ func TestFilters_Audience(t *testing.T) {
 			name: "one value: negated match success",
 			args: args{
 				CompStrs{StringDifferent("ana")},
-				pub.ItemCollection{
-					pub.IRI("lema"),
+				vocab.ItemCollection{
+					vocab.IRI("lema"),
 				},
 			},
 			want: true,
@@ -438,8 +438,8 @@ func TestFilters_Audience(t *testing.T) {
 			name: "one value: negated match failure",
 			args: args{
 				CompStrs{StringDifferent("ana")},
-				pub.ItemCollection{
-					pub.IRI("ana"),
+				vocab.ItemCollection{
+					vocab.IRI("ana"),
 				},
 			},
 			want: false,
@@ -449,9 +449,9 @@ func TestFilters_Audience(t *testing.T) {
 			name: "multi filters: exact match success",
 			args: args{
 				CompStrs{StringEquals("ana")},
-				pub.ItemCollection{
-					pub.IRI("not-matching"),
-					pub.IRI("ana"),
+				vocab.ItemCollection{
+					vocab.IRI("not-matching"),
+					vocab.IRI("ana"),
 				},
 			},
 			want: true,
@@ -460,9 +460,9 @@ func TestFilters_Audience(t *testing.T) {
 			name: "multi filters: exact match failure",
 			args: args{
 				CompStrs{StringEquals("ana")},
-				pub.ItemCollection{
-					pub.IRI("not-matching"),
-					pub.IRI("na"),
+				vocab.ItemCollection{
+					vocab.IRI("not-matching"),
+					vocab.IRI("na"),
 				},
 			},
 			want: false,
@@ -471,9 +471,9 @@ func TestFilters_Audience(t *testing.T) {
 			name: "multi filters: partial match success",
 			args: args{
 				CompStrs{StringLike("ana")},
-				pub.ItemCollection{
-					pub.IRI("not-matching"),
-					pub.IRI("analema"),
+				vocab.ItemCollection{
+					vocab.IRI("not-matching"),
+					vocab.IRI("analema"),
 				},
 			},
 			want: true,
@@ -482,9 +482,9 @@ func TestFilters_Audience(t *testing.T) {
 			name: "multi filters: exact match failure",
 			args: args{
 				CompStrs{StringLike("ana")},
-				pub.ItemCollection{
-					pub.IRI("not-matching"),
-					pub.IRI("na"),
+				vocab.ItemCollection{
+					vocab.IRI("not-matching"),
+					vocab.IRI("na"),
 				},
 			},
 			want: false,
@@ -493,9 +493,9 @@ func TestFilters_Audience(t *testing.T) {
 			name: "multi filters: negated match success",
 			args: args{
 				CompStrs{StringDifferent("ana")},
-				pub.ItemCollection{
-					pub.IRI("not-matching"),
-					pub.IRI("lema"),
+				vocab.ItemCollection{
+					vocab.IRI("not-matching"),
+					vocab.IRI("lema"),
 				},
 			},
 			want: true,
@@ -504,9 +504,9 @@ func TestFilters_Audience(t *testing.T) {
 			name: "multi filters: negated match failure",
 			args: args{
 				CompStrs{StringDifferent("ana")},
-				pub.ItemCollection{
-					pub.IRI("not-matching"),
-					pub.IRI("ana"),
+				vocab.ItemCollection{
+					vocab.IRI("not-matching"),
+					vocab.IRI("ana"),
 				},
 			},
 			want: false,
@@ -515,7 +515,7 @@ func TestFilters_Audience(t *testing.T) {
 			name: "existing_matching",
 			args: args{
 				filters: CompStrs{CompStr{Str: "/actors/test"}},
-				valArr:  pub.ItemCollection{pub.IRI("/actors/test")},
+				valArr:  vocab.ItemCollection{vocab.IRI("/actors/test")},
 			},
 			want: true,
 		},
@@ -523,7 +523,7 @@ func TestFilters_Audience(t *testing.T) {
 			name: "existing_not_matching",
 			args: args{
 				filters: CompStrs{CompStr{Str: "/actors/test"}},
-				valArr:  pub.ItemCollection{pub.IRI("/actors/test123"), pub.IRI("https://example.com")},
+				valArr:  vocab.ItemCollection{vocab.IRI("/actors/test123"), vocab.IRI("https://example.com")},
 			},
 			want: false,
 		},
@@ -546,13 +546,13 @@ func TestFilters_Context(t *testing.T) {
 		return
 	}
 	it := mockItem()
-	it.Context = pub.IRI("/objects/test")
+	it.Context = vocab.IRI("/objects/test")
 	t.Run("exists", func(t *testing.T) {
 		if !testItInIRIs(f.Context(), it.Context) {
 			t.Errorf("filter %v doesn't contain any of %v", f.Context(), it.Context)
 		}
 	})
-	it.Context = pub.ItemCollection{pub.IRI("/objects/test123"), pub.IRI("https://example.com")}
+	it.Context = vocab.ItemCollection{vocab.IRI("/objects/test123"), vocab.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
 		if testItInIRIs(f.Context(), it.Context) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.Context(), it.Context)
@@ -569,13 +569,13 @@ func TestFilters_InReplyTo(t *testing.T) {
 		return
 	}
 	it := mockItem()
-	it.InReplyTo = pub.ItemCollection{pub.IRI("/objects/test")}
+	it.InReplyTo = vocab.ItemCollection{vocab.IRI("/objects/test")}
 	t.Run("exists", func(t *testing.T) {
 		if !testItInIRIs(f.InReplyTo(), it.InReplyTo) {
 			t.Errorf("filter %v doesn't contain any of %v", f.InReplyTo(), it.InReplyTo)
 		}
 	})
-	it.InReplyTo = pub.ItemCollection{pub.IRI("/objects/test123"), pub.IRI("https://example.com")}
+	it.InReplyTo = vocab.ItemCollection{vocab.IRI("/objects/test123"), vocab.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
 		if testItInIRIs(f.InReplyTo(), it.InReplyTo) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.InReplyTo(), it.InReplyTo)
@@ -587,14 +587,14 @@ func TestFilters_MediaTypes(t *testing.T) {
 	tests := []struct {
 		name string
 		args Filters
-		want []pub.MimeType
+		want []vocab.MimeType
 	}{
 		{
 			name: "empty",
 			args: Filters{
-				MedTypes: []pub.MimeType{},
+				MedTypes: []vocab.MimeType{},
 			},
-			want: []pub.MimeType{},
+			want: []vocab.MimeType{},
 		},
 	}
 	for _, tt := range tests {
@@ -629,8 +629,8 @@ func TestFilters_Names(t *testing.T) {
 	}
 }
 
-func mockActivity() pub.Activity {
-	return pub.Activity{
+func mockActivity() vocab.Activity {
+	return vocab.Activity{
 		ID:           "",
 		Type:         "",
 		Name:         nil,
@@ -677,13 +677,13 @@ func TestFilters_Objects(t *testing.T) {
 		return
 	}
 	act := mockActivity()
-	act.Object = pub.IRI("/objects/test")
+	act.Object = vocab.IRI("/objects/test")
 	t.Run("exists", func(t *testing.T) {
 		if !testItInIRIs(IRIsFilter(f.Objects()...), act.Object) {
 			t.Errorf("filter %v doesn't contain any of %v", f.Objects(), act.Object)
 		}
 	})
-	act.Object = pub.ItemCollection{pub.IRI("/objects/test123"), pub.IRI("https://example.com")}
+	act.Object = vocab.ItemCollection{vocab.IRI("/objects/test123"), vocab.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
 		if testItInIRIs(IRIsFilter(f.Objects()...), act.Object) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.Objects(), act.Object)
@@ -696,13 +696,13 @@ func TestFilters_Targets(t *testing.T) {
 		Target: &Filters{Key: []Hash{Hash("test")}},
 	}
 	act := mockActivity()
-	act.Target = pub.IRI("/objects/test")
+	act.Target = vocab.IRI("/objects/test")
 	t.Run("exists", func(t *testing.T) {
 		if !testItInIRIs(IRIsFilter(f.Targets()...), act.Target) {
 			t.Errorf("filter %v doesn't contain any of %v", f.Targets(), act.Target)
 		}
 	})
-	act.Target = pub.ItemCollection{pub.IRI("/objects/example123"), pub.IRI("https://example.com")}
+	act.Target = vocab.ItemCollection{vocab.IRI("/objects/example123"), vocab.IRI("https://example.com")}
 	t.Run("missing", func(t *testing.T) {
 		if testItInIRIs(IRIsFilter(f.Targets()...), act.Target) {
 			t.Errorf("filter %v shouldn't contain any of %v", f.Targets(), act.Target)
@@ -724,7 +724,7 @@ func TestFilters_FilterCollection(t *testing.T) {
 func Test_filterNaturalLanguageValues(t *testing.T) {
 	type args struct {
 		filters CompStrs
-		valArr  []pub.NaturalLanguageValues
+		valArr  []vocab.NaturalLanguageValues
 	}
 	tests := []struct {
 		name string
@@ -740,11 +740,11 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: []pub.NaturalLanguageValues{
+				valArr: []vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
-							Value: pub.Content("ana"),
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
+							Value: vocab.Content("ana"),
 						},
 					},
 				},
@@ -760,12 +760,12 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: []pub.NaturalLanguageValues{
+				valArr: []vocab.NaturalLanguageValues{
 					nil,
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
-							Value: pub.Content("ana"),
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
+							Value: vocab.Content("ana"),
 						},
 					},
 				},
@@ -781,11 +781,11 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: []pub.NaturalLanguageValues{
+				valArr: []vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
-							Value: pub.Content("ana"),
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
+							Value: vocab.Content("ana"),
 						},
 					},
 				},
@@ -801,11 +801,11 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: []pub.NaturalLanguageValues{
+				valArr: []vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
-							Value: pub.Content("anathema"),
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
+							Value: vocab.Content("anathema"),
 						},
 					},
 				},
@@ -821,11 +821,11 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: []pub.NaturalLanguageValues{
+				valArr: []vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
-							Value: pub.Content("bob"),
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
+							Value: vocab.Content("bob"),
 						},
 					},
 				},
@@ -841,13 +841,13 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: []pub.NaturalLanguageValues{
+				valArr: []vocab.NaturalLanguageValues{
 					nil,
 					{},
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
-							Value: pub.Content("bob"),
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
+							Value: vocab.Content("bob"),
 						},
 					},
 				},
@@ -863,11 +863,11 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: []pub.NaturalLanguageValues{
+				valArr: []vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
-							Value: pub.Content("bob"),
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
+							Value: vocab.Content("bob"),
 						},
 					},
 				},
@@ -883,12 +883,12 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: []pub.NaturalLanguageValues{
+				valArr: []vocab.NaturalLanguageValues{
 					nil,
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
-							Value: pub.Content("bob"),
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
+							Value: vocab.Content("bob"),
 						},
 					},
 				},
@@ -904,11 +904,11 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: []pub.NaturalLanguageValues{
+				valArr: []vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
-							Value: pub.Content("bob"),
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
+							Value: vocab.Content("bob"),
 						},
 					},
 				},
@@ -924,11 +924,11 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: []pub.NaturalLanguageValues{
+				valArr: []vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
-							Value: pub.Content("bobsyouruncle"),
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
+							Value: vocab.Content("bobsyouruncle"),
 						},
 					},
 				},
@@ -944,11 +944,11 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: []pub.NaturalLanguageValues{
+				valArr: []vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
-							Value: pub.Content("ana"),
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
+							Value: vocab.Content("ana"),
 						},
 					},
 				},
@@ -964,7 +964,7 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 						Str:      "ana",
 					},
 				},
-				valArr: []pub.NaturalLanguageValues{
+				valArr: []vocab.NaturalLanguageValues{
 					nil,
 					{},
 				},
@@ -975,10 +975,10 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 			name: "one value: exact match success",
 			args: args{
 				CompStrs{StringEquals("ana")},
-				[]pub.NaturalLanguageValues{
+				[]vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("ana"),
 						},
 					},
@@ -990,10 +990,10 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 			name: "one value: exact match failure",
 			args: args{
 				CompStrs{StringEquals("ana")},
-				[]pub.NaturalLanguageValues{
+				[]vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("na"),
 						},
 					},
@@ -1005,10 +1005,10 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 			name: "one value: partial match success",
 			args: args{
 				CompStrs{StringLike("ana")},
-				[]pub.NaturalLanguageValues{
+				[]vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("analema"),
 						},
 					},
@@ -1020,10 +1020,10 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 			name: "one value: exact match failure",
 			args: args{
 				CompStrs{StringLike("ana")},
-				[]pub.NaturalLanguageValues{
+				[]vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("na"),
 						},
 					},
@@ -1035,10 +1035,10 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 			name: "one value: negated match success",
 			args: args{
 				CompStrs{StringDifferent("ana")},
-				[]pub.NaturalLanguageValues{
+				[]vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("lema"),
 						},
 					},
@@ -1050,10 +1050,10 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 			name: "one value: negated match failure",
 			args: args{
 				CompStrs{StringDifferent("ana")},
-				[]pub.NaturalLanguageValues{
+				[]vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("ana"),
 						},
 					},
@@ -1066,14 +1066,14 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 			name: "multi filters: exact match success",
 			args: args{
 				CompStrs{StringEquals("ana")},
-				[]pub.NaturalLanguageValues{
+				[]vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("not-matching"),
 						},
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("ana"),
 						},
 					},
@@ -1085,14 +1085,14 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 			name: "multi filters: exact match failure",
 			args: args{
 				CompStrs{StringEquals("ana")},
-				[]pub.NaturalLanguageValues{
+				[]vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("not-matching"),
 						},
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("na"),
 						},
 					},
@@ -1104,14 +1104,14 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 			name: "multi filters: partial match success",
 			args: args{
 				CompStrs{StringLike("ana")},
-				[]pub.NaturalLanguageValues{
+				[]vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("not-matching"),
 						},
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("analema"),
 						},
 					},
@@ -1123,14 +1123,14 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 			name: "multi filters: exact match failure",
 			args: args{
 				CompStrs{StringLike("ana")},
-				[]pub.NaturalLanguageValues{
+				[]vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("not-matching"),
 						},
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("na"),
 						},
 					},
@@ -1142,14 +1142,14 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 			name: "multi filters: negated match success",
 			args: args{
 				CompStrs{StringDifferent("ana")},
-				[]pub.NaturalLanguageValues{
+				[]vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("not-matching"),
 						},
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("lema"),
 						},
 					},
@@ -1161,14 +1161,14 @@ func Test_filterNaturalLanguageValues(t *testing.T) {
 			name: "multi filters: negated match failure",
 			args: args{
 				CompStrs{StringDifferent("ana")},
-				[]pub.NaturalLanguageValues{
+				[]vocab.NaturalLanguageValues{
 					{
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("not-matching"),
 						},
-						pub.LangRefValue{
-							Ref:   pub.NilLangRef,
+						vocab.LangRefValue{
+							Ref:   vocab.NilLangRef,
 							Value: []byte("ana"),
 						},
 					},

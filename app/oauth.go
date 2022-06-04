@@ -9,7 +9,7 @@ import (
 	"path"
 	"time"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/activitypub"
@@ -26,7 +26,7 @@ import (
 type account struct {
 	username string
 	pw       string
-	actor    *pub.Actor
+	actor    *vocab.Actor
 }
 
 type ClientStorage interface {
@@ -53,13 +53,13 @@ func (a account) IsLogged() bool {
 	return a.actor != nil && a.actor.PreferredUsername.First().Value.String() == a.username
 }
 
-func (a *account) FromActor(p *pub.Actor) {
+func (a *account) FromActor(p *vocab.Actor) {
 	a.username = p.PreferredUsername.First().String()
 	a.actor = p
 }
 
 type authService struct {
-	baseIRI pub.IRI
+	baseIRI vocab.IRI
 	genID   processing.IDGenerator
 	storage fedboxStorage
 	auth    *auth.Server
@@ -87,36 +87,36 @@ func (i authService) IsValidRequest(r *http.Request) bool {
 	return true
 }
 
-func IndieAuthClientActor(author pub.Item, url *url.URL) *pub.Actor {
+func IndieAuthClientActor(author vocab.Item, url *url.URL) *vocab.Actor {
 	now := time.Now().UTC()
 	preferredUsername := url.Host
-	p := pub.Person{
-		Type:         pub.ApplicationType,
+	p := vocab.Person{
+		Type:         vocab.ApplicationType,
 		AttributedTo: author.GetLink(),
-		Audience:     pub.ItemCollection{pub.PublicNS},
+		Audience:     vocab.ItemCollection{vocab.PublicNS},
 		Generator:    author.GetLink(),
 		Published:    now,
-		Summary: pub.NaturalLanguageValues{
-			{pub.NilLangRef, pub.Content("IndieAuth generated actor")},
+		Summary: vocab.NaturalLanguageValues{
+			{vocab.NilLangRef, vocab.Content("IndieAuth generated actor")},
 		},
 		Updated: now,
-		PreferredUsername: pub.NaturalLanguageValues{
-			{pub.NilLangRef, pub.Content(preferredUsername)},
+		PreferredUsername: vocab.NaturalLanguageValues{
+			{vocab.NilLangRef, vocab.Content(preferredUsername)},
 		},
-		URL: pub.IRI(url.String()),
+		URL: vocab.IRI(url.String()),
 	}
 
 	return &p
 }
 
-func filters(r *http.Request, baseURL pub.IRI) *activitypub.Filters {
+func filters(r *http.Request, baseURL vocab.IRI) *activitypub.Filters {
 	f, _ := activitypub.FromRequest(r, baseURL.String())
 	f.IRI = f.IRI[:0]
 	f.Collection = activitypub.ActorsType
 	return f
 }
 
-func (i authService) ValidateClient(r *http.Request) (*pub.Actor, error) {
+func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 	r.ParseForm()
 	clientID, err := url.QueryUnescape(r.FormValue(clientIdKey))
 	if err != nil {
@@ -141,10 +141,10 @@ func (i authService) ValidateClient(r *http.Request) (*pub.Actor, error) {
 	}
 
 	// check for existing user actor
-	var actor pub.Item
+	var actor vocab.Item
 	if me != "" {
 		f := filters(r, i.baseIRI)
-		f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
+		f.Type = activitypub.CompStrs{activitypub.StringEquals(string(vocab.PersonType))}
 		f.URL = activitypub.CompStrs{activitypub.StringEquals(me)}
 		actor, err = i.storage.repo.Load(f.GetLink())
 		if err != nil {
@@ -157,7 +157,7 @@ func (i authService) ValidateClient(r *http.Request) (*pub.Actor, error) {
 
 	// check for existing application actor
 	f := filters(r, i.baseIRI)
-	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.ApplicationType))}
+	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(vocab.ApplicationType))}
 	f.URL = activitypub.CompStrs{activitypub.StringEquals(clientID)}
 	clientActor, err := i.storage.repo.Load(f.GetLink())
 	if err != nil {
@@ -168,7 +168,7 @@ func (i authService) ValidateClient(r *http.Request) (*pub.Actor, error) {
 		if err != nil {
 			return nil, err
 		}
-		if newId, err := i.genID(newClient, pub.Outbox.IRI(actor), nil); err == nil {
+		if newId, err := i.genID(newClient, vocab.Outbox.IRI(actor), nil); err == nil {
 			newClient.ID = newId
 		}
 		clientActor, err = i.storage.repo.Save(newClient)
@@ -202,7 +202,7 @@ func (i authService) ValidateClient(r *http.Request) (*pub.Actor, error) {
 	if osin.AuthorizeRequestType(r.FormValue(responseTypeKey)) == ID {
 		r.Form.Set(responseTypeKey, "code")
 	}
-	if act, ok := actor.(*pub.Actor); ok {
+	if act, ok := actor.(*vocab.Actor); ok {
 		return act, nil
 	}
 	return nil, nil
@@ -210,7 +210,7 @@ func (i authService) ValidateClient(r *http.Request) (*pub.Actor, error) {
 
 var scopeAnonymousUserCreate = "anonUserCreate"
 
-func (i *authService) loadAccountByID(id string) (*pub.Actor, error) {
+func (i *authService) loadAccountByID(id string) (*vocab.Actor, error) {
 	f := activitypub.FiltersNew()
 
 	a := activitypub.Self(i.baseIRI)
@@ -224,8 +224,8 @@ func (i *authService) loadAccountByID(id string) (*pub.Actor, error) {
 		return nil, errNotFound
 	}
 
-	var actor *pub.Actor
-	err = pub.OnActor(actors, func(act *pub.Actor) error {
+	var actor *vocab.Actor
+	err = vocab.OnActor(actors, func(act *vocab.Actor) error {
 		actor = act
 		return nil
 	})
@@ -249,7 +249,7 @@ func (i *authService) loadAccountFromPost(r *http.Request) (*account, error) {
 	f := activitypub.FiltersNew()
 	f.Name = activitypub.CompStrs{activitypub.CompStr{Str: handle}}
 	f.IRI = activitypub.ActorsType.IRI(a)
-	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(pub.PersonType))}
+	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(vocab.PersonType))}
 	actors, err := i.storage.repo.Load(f.GetLink())
 	if err != nil {
 		return nil, errUnauthorized
@@ -318,10 +318,10 @@ func (i *authService) Authorize(w http.ResponseWriter, r *http.Request) {
 	redirectOrOutput(resp, w, r)
 }
 
-func checkPw(it pub.Item, pw []byte, pwLoader st.PasswordChanger) (*account, error) {
+func checkPw(it vocab.Item, pw []byte, pwLoader st.PasswordChanger) (*account, error) {
 	acc := new(account)
 	found := false
-	err := pub.OnActor(it, func(p *pub.Actor) error {
+	err := vocab.OnActor(it, func(p *vocab.Actor) error {
 		if found {
 			return nil
 		}
@@ -349,14 +349,14 @@ func (i *authService) Token(w http.ResponseWriter, r *http.Request) {
 		case osin.PASSWORD:
 			if u, _ := url.ParseRequestURI(ar.Username); u != nil {
 				// NOTE(marius): here we send the full actor IRI as a username to avoid handler collisions
-				actorFilters.IRI = pub.IRI(ar.Username)
+				actorFilters.IRI = vocab.IRI(ar.Username)
 			} else {
 				actorFilters.IRI = activitypub.ActorsType.IRI(i.baseIRI)
 				actorFilters.Name = activitypub.CompStrs{activitypub.StringEquals(ar.Username)}
 			}
 		case osin.AUTHORIZATION_CODE:
 			if iri, ok := ar.UserData.(string); ok {
-				actorFilters.IRI = pub.IRI(iri)
+				actorFilters.IRI = vocab.IRI(iri)
 			}
 		}
 		actor, err := i.storage.repo.Load(actorFilters.GetLink())
@@ -368,7 +368,7 @@ func (i *authService) Token(w http.ResponseWriter, r *http.Request) {
 		if ar.Type == osin.PASSWORD {
 			if pwLoader, ok := i.storage.repo.(st.PasswordChanger); ok {
 				if actor.IsCollection() {
-					err = pub.OnCollectionIntf(actor, func(col pub.CollectionInterface) error {
+					err = vocab.OnCollectionIntf(actor, func(col vocab.CollectionInterface) error {
 						// NOTE(marius): This is a stupid way of doing pw authentication, as it will produce collisions
 						//  for users with the same handle/pw and it will login the first in the collection.
 						for _, actor := range col.Collection() {
@@ -394,7 +394,7 @@ func (i *authService) Token(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if ar.Type == osin.AUTHORIZATION_CODE {
-			pub.OnActor(actor, func(p *pub.Actor) error {
+			vocab.OnActor(actor, func(p *vocab.Actor) error {
 				acc = new(account)
 				acc.FromActor(p)
 				ar.Authorized = acc.IsLogged()
@@ -463,7 +463,7 @@ func redirectOrOutput(rs *osin.Response, w http.ResponseWriter, r *http.Request)
 
 type login struct {
 	title   string
-	account pub.Actor
+	account vocab.Actor
 	state   string
 	client  string
 }
@@ -472,7 +472,7 @@ func (l login) Title() string {
 	return l.title
 }
 
-func (l login) Account() pub.Actor {
+func (l login) Account() vocab.Actor {
 	return l.account
 }
 
@@ -497,7 +497,7 @@ type model interface {
 
 type authModel interface {
 	model
-	Account() pub.Actor
+	Account() vocab.Actor
 }
 
 var (
@@ -527,7 +527,7 @@ func (i *authService) renderTemplate(r *http.Request, w http.ResponseWriter, nam
 	}
 }
 
-func name(act *pub.Actor) string {
+func name(act *vocab.Actor) string {
 	n := act.Name.First().String()
 	if act.PreferredUsername != nil {
 		n = act.PreferredUsername.First().String()
@@ -547,7 +547,7 @@ func (i *authService) ShowLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// NOTE(marius): we allow only actors to login using oauth page
-		if actor.Type != pub.PersonType {
+		if actor.Type != vocab.PersonType {
 			errors.HandleError(errNotFound).ServeHTTP(w, r)
 			return
 		}
@@ -562,7 +562,7 @@ func (i *authService) ShowLogin(w http.ResponseWriter, r *http.Request) {
 			errors.HandleError(activitypub.ErrNotFound("client application not found")).ServeHTTP(w, r)
 			return
 		}
-		if app.Type == pub.ApplicationType {
+		if app.Type == vocab.ApplicationType {
 			m.client = clientId
 		}
 	}
@@ -584,11 +584,11 @@ func (i *authService) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	client := r.PostFormValue("client")
 	state := r.PostFormValue("state")
-	endpoints := pub.Endpoints{
-		OauthAuthorizationEndpoint: pub.IRI(fmt.Sprintf("%s/oauth/authorize", i.baseIRI)),
-		OauthTokenEndpoint:         pub.IRI(fmt.Sprintf("%s/oauth/token", i.baseIRI)),
+	endpoints := vocab.Endpoints{
+		OauthAuthorizationEndpoint: vocab.IRI(fmt.Sprintf("%s/oauth/authorize", i.baseIRI)),
+		OauthTokenEndpoint:         vocab.IRI(fmt.Sprintf("%s/oauth/token", i.baseIRI)),
 	}
-	if !pub.IsNil(acc.actor) && acc.actor.Endpoints != nil {
+	if !vocab.IsNil(acc.actor) && acc.actor.Endpoints != nil {
 		if acc.actor.Endpoints.OauthTokenEndpoint != nil {
 			endpoints.OauthTokenEndpoint = acc.actor.Endpoints.OauthTokenEndpoint
 		}
@@ -618,14 +618,14 @@ type OAuth struct {
 
 type pwChange struct {
 	title   string
-	account pub.Actor
+	account vocab.Actor
 }
 
 func (p pwChange) Title() string {
 	return p.title
 }
 
-func (p pwChange) Account() pub.Actor {
+func (p pwChange) Account() vocab.Actor {
 	return p.account
 }
 
@@ -690,7 +690,7 @@ func (i *authService) HandleChangePw(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (i *authService) loadActorFromOauth2Session(w http.ResponseWriter, r *http.Request) *pub.Actor {
+func (i *authService) loadActorFromOauth2Session(w http.ResponseWriter, r *http.Request) *vocab.Actor {
 	notF := errors.NotFoundf("Not found")
 	// TODO(marius): we land on this handler, coming from an email link containing a token identifying the Actor
 	tok := r.URL.Query().Get("s")
@@ -728,14 +728,14 @@ func (i *authService) loadActorFromOauth2Session(w http.ResponseWriter, r *http.
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
-	ob, err := i.storage.repo.Load(pub.IRI(actorIRI))
+	ob, err := i.storage.repo.Load(vocab.IRI(actorIRI))
 	if err != nil || ob == nil {
 		i.logger.Errorf("Error when loading actor from storage: %s", err)
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
-	var actor *pub.Actor
-	pub.OnActor(ob, func(p *pub.Actor) error {
+	var actor *vocab.Actor
+	vocab.OnActor(ob, func(p *vocab.Actor) error {
 		actor = p
 		return nil
 	})

@@ -5,7 +5,7 @@ import (
 	"path"
 	"time"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/mariusor/qstring"
 )
@@ -23,21 +23,21 @@ type Paginator interface {
 	Page() uint
 }
 
-func getURL(i pub.IRI, f Paginator) pub.IRI {
+func getURL(i vocab.IRI, f Paginator) vocab.IRI {
 	q, err := qstring.Marshal(f)
 	if err != nil {
 		return i
 	}
 	if u, err := i.URL(); err == nil {
 		u.RawQuery = q.Encode()
-		i = pub.IRI(u.String())
+		i = vocab.IRI(u.String())
 	}
 	return i
 }
 
-func paginateItems(col pub.ItemCollection, f Paginator) (pub.ItemCollection, string, string, error) {
+func paginateItems(col vocab.ItemCollection, f Paginator) (vocab.ItemCollection, string, string, error) {
 	var prev, next string
-	if pub.IsNil(col) {
+	if vocab.IsNil(col) {
 		return nil, prev, next, nil
 	}
 	if f == nil {
@@ -137,8 +137,8 @@ func copyFilter(f *Filters, p Paginator) {
 	}
 }
 
-// PaginateCollection is a function that populates the received collection pub
-func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.CollectionInterface, error) {
+// PaginateCollection is a function that populates the received collection
+func PaginateCollection(col vocab.CollectionInterface, f Paginator) (vocab.CollectionInterface, error) {
 	if col == nil {
 		return col, errors.Newf("unable to paginate nil collection")
 	}
@@ -146,7 +146,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 	u, _ := col.GetLink().URL()
 	u.User = nil
 	u.RawQuery = ""
-	baseURL := pub.IRI(u.String())
+	baseURL := vocab.IRI(u.String())
 	curURL := getURL(baseURL, f)
 
 	var haveItems bool
@@ -159,18 +159,18 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 	}
 	haveItems = count > 0
 
-	ordered := pub.ActivityVocabularyTypes{
-		pub.OrderedCollectionPageType,
-		pub.OrderedCollectionType,
+	ordered := vocab.ActivityVocabularyTypes{
+		vocab.OrderedCollectionPageType,
+		vocab.OrderedCollectionType,
 	}
-	unOrdered := pub.ActivityVocabularyTypes{
-		pub.CollectionPageType,
-		pub.CollectionType,
+	unOrdered := vocab.ActivityVocabularyTypes{
+		vocab.CollectionPageType,
+		vocab.CollectionType,
 	}
 
 	// TODO(marius): refactor this with OnCollection functions
 	if haveItems {
-		var firstURL pub.IRI
+		var firstURL vocab.IRI
 
 		if f != nil {
 			fp := FiltersNew()
@@ -181,15 +181,15 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 			}
 			firstURL = getURL(baseURL, fp)
 		}
-		if col.GetType() == pub.CollectionOfItems {
-			err := pub.OnItemCollection(col, func(items *pub.ItemCollection) error {
+		if col.GetType() == vocab.CollectionOfItems {
+			err := vocab.OnItemCollection(col, func(items *vocab.ItemCollection) error {
 				*items, _, _, _ = paginateItems(items.Collection(), f)
 				return nil
 			})
 			return col, err
 		}
 		if ordered.Contains(col.GetType()) {
-			pub.OnOrderedCollection(col, func(oc *pub.OrderedCollection) error {
+			vocab.OnOrderedCollection(col, func(oc *vocab.OrderedCollection) error {
 				if len(firstURL) > 0 {
 					oc.First = firstURL
 				}
@@ -198,13 +198,13 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 			})
 		}
 		if unOrdered.Contains(col.GetType()) {
-			pub.OnCollection(col, func(c *pub.Collection) error {
+			vocab.OnCollection(col, func(c *vocab.Collection) error {
 				c.First = firstURL
 				c.Items, prev, next, _ = paginateItems(c.Items, f)
 				return nil
 			})
 		}
-		var nextURL, prevURL pub.IRI
+		var nextURL, prevURL vocab.IRI
 		if len(next) > 0 {
 			np := FiltersNew()
 			copyFilter(np, f)
@@ -229,10 +229,10 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 		}
 
 		if f.Count() > 0 {
-			if col.GetType() == pub.OrderedCollectionType {
-				oc, err := pub.ToOrderedCollection(col)
+			if col.GetType() == vocab.OrderedCollectionType {
+				oc, err := vocab.ToOrderedCollection(col)
 				if err == nil {
-					page := pub.OrderedCollectionPageNew(oc)
+					page := vocab.OrderedCollectionPageNew(oc)
 					page.ID = curURL
 					page.PartOf = baseURL
 					if firstURL != curURL {
@@ -249,10 +249,10 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 					col = page
 				}
 			}
-			if col.GetType() == pub.CollectionType {
-				c, err := pub.ToCollection(col)
+			if col.GetType() == vocab.CollectionType {
+				c, err := vocab.ToCollection(col)
 				if err == nil {
-					page := pub.CollectionPageNew(c)
+					page := vocab.CollectionPageNew(c)
 					page.ID = curURL
 					page.PartOf = baseURL
 					page.First = c.First
@@ -271,7 +271,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 	}
 	updatedAt := time.Time{}
 	for _, it := range col.Collection() {
-		pub.OnObject(it, func(o *pub.Object) error {
+		vocab.OnObject(it, func(o *vocab.Object) error {
 			if o.Published.Sub(updatedAt) > 0 {
 				updatedAt = o.Published
 			}
@@ -281,7 +281,7 @@ func PaginateCollection(col pub.CollectionInterface, f Paginator) (pub.Collectio
 			return nil
 		})
 	}
-	pub.OnObject(col, func(o *pub.Object) error {
+	vocab.OnObject(col, func(o *vocab.Object) error {
 		o.Updated = updatedAt
 		return nil
 	})

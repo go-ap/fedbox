@@ -1,5 +1,4 @@
 //go:build storage_pgx || storage_all || (!storage_boltdb && !storage_fs && !storage_badger && !storage_sqlite)
-// +build storage_pgx storage_all !storage_boltdb,!storage_fs,!storage_badger,!storage_sqlite
 
 package pgx
 
@@ -9,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/log"
@@ -36,8 +35,8 @@ type repo struct {
 type loggerFn func(logrus.Fields, string, ...interface{})
 
 // IsLocalIRI shows if the received IRI belongs to the current instance
-func (r repo) IsLocalIRI(i pub.IRI) bool {
-	return i.Contains(pub.IRI(r.baseURL), false)
+func (r repo) IsLocalIRI(i vocab.IRI) bool {
+	return i.Contains(vocab.IRI(r.baseURL), false)
 }
 
 func logFn(l logrus.FieldLogger, lvl logrus.Level) loggerFn {
@@ -71,7 +70,7 @@ func New(conf Config, url string, lp logrus.FieldLogger) (*repo, error) {
 	return &l, nil
 }
 
-func (r repo) Load(i pub.IRI) (pub.Item, error) {
+func (r repo) Load(i vocab.IRI) (vocab.Item, error) {
 	f, err := ap.FiltersFromIRI(i)
 	if err != nil {
 		return nil, err
@@ -80,27 +79,27 @@ func (r repo) Load(i pub.IRI) (pub.Item, error) {
 	return loadOneFromDb(r.conn, getCollectionTable(f.Collection), f)
 }
 
-func getCollectionTable(typ pub.CollectionPath) string {
+func getCollectionTable(typ vocab.CollectionPath) string {
 	switch typ {
-	case pub.Followers:
+	case vocab.Followers:
 		fallthrough
-	case pub.Following:
+	case vocab.Following:
 		fallthrough
 	case "actors":
 		return "actors"
-	case pub.Inbox:
+	case vocab.Inbox:
 		fallthrough
-	case pub.Outbox:
+	case vocab.Outbox:
 		fallthrough
-	case pub.Shares:
+	case vocab.Shares:
 		fallthrough
-	case pub.Liked:
+	case vocab.Liked:
 		fallthrough
-	case pub.Likes:
+	case vocab.Likes:
 		fallthrough
 	case "activities":
 		return "activities"
-	case pub.Replies:
+	case vocab.Replies:
 		fallthrough
 	default:
 		return "objects"
@@ -108,17 +107,17 @@ func getCollectionTable(typ pub.CollectionPath) string {
 	return "objects"
 }
 
-func loadOneFromDb(conn *pgx.ConnPool, table string, f processing.Filterable) (pub.Item, error) {
+func loadOneFromDb(conn *pgx.ConnPool, table string, f processing.Filterable) (vocab.Item, error) {
 	col, _, err := loadFromDb(conn, table, f)
 	if err != nil {
 		return nil, err
 	}
-	if pub.IsNil(col) {
+	if vocab.IsNil(col) {
 		return nil, errors.NotFoundf("nothing found")
 	}
 	if col.IsCollection() {
-		var result pub.Item
-		pub.OnCollectionIntf(col, func(col pub.CollectionInterface) error {
+		var result vocab.Item
+		vocab.OnCollectionIntf(col, func(col vocab.CollectionInterface) error {
 			result = col.Collection().First()
 			return nil
 		})
@@ -127,7 +126,7 @@ func loadOneFromDb(conn *pgx.ConnPool, table string, f processing.Filterable) (p
 	return col, nil
 }
 
-func loadFromDb(conn *pgx.ConnPool, table string, f processing.Filterable) (pub.ItemCollection, uint, error) {
+func loadFromDb(conn *pgx.ConnPool, table string, f processing.Filterable) (vocab.ItemCollection, uint, error) {
 	clauses, values := getWhereClauses(f)
 	var total uint = 0
 
@@ -136,12 +135,12 @@ func loadFromDb(conn *pgx.ConnPool, table string, f processing.Filterable) (pub.
 	defer rows.Close()
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return pub.ItemCollection{}, total, nil
+			return vocab.ItemCollection{}, total, nil
 		}
 		return nil, total, errors.Annotatef(err, "unable to run select")
 	}
 
-	ret := make(pub.ItemCollection, 0)
+	ret := make(vocab.ItemCollection, 0)
 	// Iterate through the result set
 	for rows.Next() {
 		var id int64
@@ -155,7 +154,7 @@ func loadFromDb(conn *pgx.ConnPool, table string, f processing.Filterable) (pub.
 			return ret, total, errors.Annotatef(err, "scan values error")
 		}
 
-		it, err := pub.UnmarshalJSON(raw)
+		it, err := vocab.UnmarshalJSON(raw)
 		if err != nil {
 			return ret, total, errors.Annotatef(err, "unable to unmarshal raw item")
 		}
@@ -171,16 +170,16 @@ func loadFromDb(conn *pgx.ConnPool, table string, f processing.Filterable) (pub.
 }
 
 // Save
-func (r repo) Save(it pub.Item) (pub.Item, error) {
-	if pub.IsNil(it) {
+func (r repo) Save(it vocab.Item) (vocab.Item, error) {
+	if vocab.IsNil(it) {
 		return it, errors.Newf("not saving nil item")
 	}
 	var err error
 
 	var table string
-	if pub.ActivityTypes.Contains(it.GetType()) {
+	if vocab.ActivityTypes.Contains(it.GetType()) {
 		table = string(ap.ActivitiesType)
-	} else if pub.ActorTypes.Contains(it.GetType()) {
+	} else if vocab.ActorTypes.Contains(it.GetType()) {
 		table = string(ap.ActorsType)
 	} else {
 		table = string(ap.ObjectsType)
@@ -207,7 +206,7 @@ func (r repo) Save(it pub.Item) (pub.Item, error) {
 		return it, err
 	}
 
-	colIRI := pub.CollectionPath(table).IRI(pub.IRI(r.baseURL))
+	colIRI := vocab.CollectionPath(table).IRI(vocab.IRI(r.baseURL))
 	err = r.AddTo(colIRI, it)
 	if err != nil {
 		// This errs
@@ -215,7 +214,7 @@ func (r repo) Save(it pub.Item) (pub.Item, error) {
 	}
 
 	// TODO(marius) Move to somewhere else
-	if toFw, ok := it.(pub.HasRecipients); ok {
+	if toFw, ok := it.(vocab.HasRecipients); ok {
 		for _, fw := range toFw.Recipients() {
 			colIRI := fw.GetLink()
 			if r.IsLocalIRI(colIRI) {
@@ -229,8 +228,8 @@ func (r repo) Save(it pub.Item) (pub.Item, error) {
 }
 
 // Create
-func (r repo) Create(it pub.CollectionInterface) (pub.CollectionInterface, error) {
-	if pub.IsNil(it) {
+func (r repo) Create(it vocab.CollectionInterface) (vocab.CollectionInterface, error) {
+	if vocab.IsNil(it) {
 		return it, errors.Newf("unable to create nil collection")
 	}
 	if len(it.GetLink()) == 0 {
@@ -256,13 +255,13 @@ func (r repo) Create(it pub.CollectionInterface) (pub.CollectionInterface, error
 }
 
 // RemoveFrom
-func (r repo) RemoveFrom(col pub.IRI, it pub.Item) error {
+func (r repo) RemoveFrom(col vocab.IRI, it vocab.Item) error {
 	return errors.NotImplementedf("removing from collection is not yet implemented")
 }
 
 // AddTo
-func (r repo) AddTo(col pub.IRI, it pub.Item) error {
-	if pub.IsNil(it) {
+func (r repo) AddTo(col vocab.IRI, it vocab.Item) error {
+	if vocab.IsNil(it) {
 		return errors.Newf("unable to add nil element to collection")
 	}
 	if len(col) == 0 {
@@ -299,7 +298,7 @@ func (r repo) AddTo(col pub.IRI, it pub.Item) error {
 	return nil
 }
 
-func saveToDb(l repo, table string, it pub.Item) (pub.Item, error) {
+func saveToDb(l repo, table string, it vocab.Item) (vocab.Item, error) {
 	query := fmt.Sprintf("INSERT INTO %s (key, iri, created_at, type, raw) VALUES ($1, $2, $3::timestamptz, $4, $5::jsonb);", table)
 
 	iri := it.GetLink()
@@ -324,7 +323,7 @@ func saveToDb(l repo, table string, it pub.Item) (pub.Item, error) {
 	return it, nil
 }
 
-func (r repo) deleteItem(table string, it pub.Item) error {
+func (r repo) deleteItem(table string, it vocab.Item) error {
 	iri := it.GetLink()
 	if len(iri) == 0 {
 		return errors.Newf("Invalid update item does not have a valid IRI")
@@ -341,7 +340,7 @@ func (r repo) deleteItem(table string, it pub.Item) error {
 	return nil
 }
 
-func (r repo) updateItem(table string, it pub.Item) (pub.Item, error) {
+func (r repo) updateItem(table string, it vocab.Item) (vocab.Item, error) {
 	if table == "activities" {
 		return it, errors.Newf("update action Invalid, activities are immutable")
 	}
@@ -352,13 +351,13 @@ func (r repo) updateItem(table string, it pub.Item) (pub.Item, error) {
 
 	query := fmt.Sprintf("UPDATE %s SET type = $1, updated_at = $2::timestamptz,raw = $3::jsonb WHERE iri = $4;", table)
 	now := time.Now().UTC()
-	if pub.ActorTypes.Contains(it.GetType()) {
-		if p, err := pub.ToActor(it); err == nil {
+	if vocab.ActorTypes.Contains(it.GetType()) {
+		if p, err := vocab.ToActor(it); err == nil {
 			p.Updated = now
 			it = p
 		}
-	} else if pub.ObjectTypes.Contains(it.GetType()) && it.GetType() != pub.TombstoneType {
-		if o, err := pub.ToObject(it); err == nil {
+	} else if vocab.ObjectTypes.Contains(it.GetType()) && it.GetType() != vocab.TombstoneType {
+		if o, err := vocab.ToObject(it); err == nil {
 			o.Updated = now
 			it = o
 		}
@@ -377,15 +376,15 @@ func (r repo) updateItem(table string, it pub.Item) (pub.Item, error) {
 }
 
 // Delete
-func (r repo) Delete(it pub.Item) error {
-	if pub.IsNil(it) {
+func (r repo) Delete(it vocab.Item) error {
+	if vocab.IsNil(it) {
 		return errors.Newf("not saving nil item")
 	}
 	var table string
 
-	if pub.ActivityTypes.Contains(it.GetType()) {
+	if vocab.ActivityTypes.Contains(it.GetType()) {
 		return errors.Newf("unable to delete activity")
-	} else if pub.ActorTypes.Contains(it.GetType()) {
+	} else if vocab.ActorTypes.Contains(it.GetType()) {
 		table = "actors"
 	} else {
 		table = "objects"
@@ -397,7 +396,7 @@ func (r repo) Delete(it pub.Item) error {
 		f.Type = ap.CompStrs{ap.StringEquals(string(it.GetType()))}
 	}
 	var cnt uint
-	var found pub.ItemCollection
+	var found vocab.ItemCollection
 	found, cnt, _ = loadFromDb(r.conn, table, f)
 	if cnt == 0 {
 		if table == "objects" {
@@ -418,11 +417,11 @@ func (r repo) Delete(it pub.Item) error {
 	}
 	old := found.First()
 
-	t := pub.Tombstone{
-		ID:   pub.ID(it.GetLink()),
-		Type: pub.TombstoneType,
-		To: pub.ItemCollection{
-			pub.PublicNS,
+	t := vocab.Tombstone{
+		ID:   vocab.ID(it.GetLink()),
+		Type: vocab.TombstoneType,
+		To: vocab.ItemCollection{
+			vocab.PublicNS,
 		},
 		Deleted:    time.Now().UTC(),
 		FormerType: old.GetType(),
@@ -458,20 +457,20 @@ func (r *repo) Close() error {
 }
 
 // PasswordSet
-func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
+func (r *repo) PasswordSet(it vocab.Item, pw []byte) error {
 	return errors.NotImplementedf("PasswordSet is not implemented by the postgres storage layer")
 }
 
-func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
+func (r *repo) PasswordCheck(it vocab.Item, pw []byte) error {
 	return errors.NotImplementedf("PasswordCheck is not implemented by the postgres storage layer")
 }
 
 // LoadMetadata
-func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
+func (r *repo) LoadMetadata(iri vocab.IRI) (*storage.Metadata, error) {
 	return nil, errors.NotImplementedf("LoadMetadata is not implemented by the postgres storage layer")
 }
 
 // SaveMetadata
-func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
+func (r *repo) SaveMetadata(m storage.Metadata, iri vocab.IRI) error {
 	return errors.NotImplementedf("SaveMetadata is not implemented by the postgres storage layer")
 }

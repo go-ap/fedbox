@@ -11,7 +11,7 @@ import (
 	"path"
 	"path/filepath"
 
-	pub "github.com/go-ap/activitypub"
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/storage"
@@ -75,15 +75,15 @@ func New(c Config) (*repo, error) {
 	return &b, nil
 }
 
-func loadItem(raw []byte) (pub.Item, error) {
+func loadItem(raw []byte) (vocab.Item, error) {
 	if raw == nil || len(raw) == 0 {
 		// TODO(marius): log this instead of stopping the iteration and returning an error
 		return nil, errors.Errorf("empty raw item")
 	}
-	return pub.UnmarshalJSON(raw)
+	return vocab.UnmarshalJSON(raw)
 }
 
-func (r *repo) loadItem(b *bolt.Bucket, key []byte, f processing.Filterable) (pub.Item, error) {
+func (r *repo) loadItem(b *bolt.Bucket, key []byte, f processing.Filterable) (vocab.Item, error) {
 	// we have found an item
 	if len(key) == 0 {
 		key = []byte(objectKey)
@@ -96,30 +96,30 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f processing.Filterable) (pu
 	if err != nil {
 		return nil, err
 	}
-	if pub.IsNil(it) {
+	if vocab.IsNil(it) {
 		return nil, errors.NotFoundf("not found")
 	}
 	if it.IsCollection() {
 		// we need to dereference them, so no further filtering/processing is needed here
 		return it, nil
 	}
-	if pub.IsIRI(it) {
-		if it, _ = r.loadOneFromBucket(it.GetLink()); pub.IsNil(it) {
+	if vocab.IsIRI(it) {
+		if it, _ = r.loadOneFromBucket(it.GetLink()); vocab.IsNil(it) {
 			return nil, errors.NotFoundf("not found")
 		}
 	}
 	typ := it.GetType()
-	if pub.ActorTypes.Contains(typ) {
-		pub.OnActor(it, loadFilteredPropsForActor(r, f))
+	if vocab.ActorTypes.Contains(typ) {
+		vocab.OnActor(it, loadFilteredPropsForActor(r, f))
 	}
-	if pub.ObjectTypes.Contains(typ) {
-		pub.OnObject(it, loadFilteredPropsForObject(r, f))
+	if vocab.ObjectTypes.Contains(typ) {
+		vocab.OnObject(it, loadFilteredPropsForObject(r, f))
 	}
-	if pub.IntransitiveActivityTypes.Contains(typ) {
-		pub.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f))
+	if vocab.IntransitiveActivityTypes.Contains(typ) {
+		vocab.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(r, f))
 	}
-	if pub.ActivityTypes.Contains(typ) {
-		pub.OnActivity(it, loadFilteredPropsForActivity(r, f))
+	if vocab.ActivityTypes.Contains(typ) {
+		vocab.OnActivity(it, loadFilteredPropsForActivity(r, f))
 	}
 	if f != nil {
 		return ap.FilterIt(it, f)
@@ -127,20 +127,20 @@ func (r *repo) loadItem(b *bolt.Bucket, key []byte, f processing.Filterable) (pu
 	return it, nil
 }
 
-func loadFilteredPropsForActor(r *repo, f processing.Filterable) func(a *pub.Actor) error {
-	return func(a *pub.Actor) error {
-		return pub.OnObject(a, loadFilteredPropsForObject(r, f))
+func loadFilteredPropsForActor(r *repo, f processing.Filterable) func(a *vocab.Actor) error {
+	return func(a *vocab.Actor) error {
+		return vocab.OnObject(a, loadFilteredPropsForObject(r, f))
 	}
 }
 
-func loadFilteredPropsForObject(r *repo, f processing.Filterable) func(o *pub.Object) error {
-	return func(o *pub.Object) error {
+func loadFilteredPropsForObject(r *repo, f processing.Filterable) func(o *vocab.Object) error {
+	return func(o *vocab.Object) error {
 		if len(o.Tag) == 0 {
 			return nil
 		}
-		return pub.OnItemCollection(o.Tag, func(col *pub.ItemCollection) error {
+		return vocab.OnItemCollection(o.Tag, func(col *vocab.ItemCollection) error {
 			for i, t := range *col {
-				if pub.IsNil(t) || !pub.IsIRI(t) {
+				if vocab.IsNil(t) || !vocab.IsIRI(t) {
 					return nil
 				}
 				if ob, err := r.loadOneFromBucket(t.GetLink()); err == nil {
@@ -152,29 +152,29 @@ func loadFilteredPropsForObject(r *repo, f processing.Filterable) func(o *pub.Ob
 	}
 }
 
-func loadFilteredPropsForActivity(r *repo, f processing.Filterable) func(a *pub.Activity) error {
-	return func(a *pub.Activity) error {
-		if ok, fo := ap.FiltersOnActivityObject(f); ok && !pub.IsNil(a.Object) && pub.IsIRI(a.Object) {
+func loadFilteredPropsForActivity(r *repo, f processing.Filterable) func(a *vocab.Activity) error {
+	return func(a *vocab.Activity) error {
+		if ok, fo := ap.FiltersOnActivityObject(f); ok && !vocab.IsNil(a.Object) && vocab.IsIRI(a.Object) {
 			if ob, err := r.loadOneFromBucket(a.Object.GetLink()); err == nil {
 				if ob, _ = ap.FilterIt(ob, fo); ob != nil {
 					a.Object = ob
 				}
 			}
 		}
-		return pub.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, f))
+		return vocab.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(r, f))
 	}
 }
 
-func loadFilteredPropsForIntransitiveActivity(r *repo, f processing.Filterable) func(a *pub.IntransitiveActivity) error {
-	return func(a *pub.IntransitiveActivity) error {
-		if ok, fa := ap.FiltersOnActivityActor(f); ok && !pub.IsNil(a.Actor) && pub.IsIRI(a.Actor) {
+func loadFilteredPropsForIntransitiveActivity(r *repo, f processing.Filterable) func(a *vocab.IntransitiveActivity) error {
+	return func(a *vocab.IntransitiveActivity) error {
+		if ok, fa := ap.FiltersOnActivityActor(f); ok && !vocab.IsNil(a.Actor) && vocab.IsIRI(a.Actor) {
 			if act, err := r.loadOneFromBucket(a.Actor.GetLink()); err == nil {
 				if act, _ = ap.FilterIt(act, fa); act != nil {
 					a.Actor = act
 				}
 			}
 		}
-		if ok, ft := ap.FiltersOnActivityTarget(f); ok && !pub.IsNil(a.Target) && pub.IsIRI(a.Target) {
+		if ok, ft := ap.FiltersOnActivityTarget(f); ok && !vocab.IsNil(a.Target) && vocab.IsIRI(a.Target) {
 			if t, err := r.loadOneFromBucket(a.Target.GetLink()); err == nil {
 				if t, _ = ap.FilterIt(t, ft); t != nil {
 					a.Target = t
@@ -185,8 +185,8 @@ func loadFilteredPropsForIntransitiveActivity(r *repo, f processing.Filterable) 
 	}
 }
 
-func (r *repo) loadItemsElements(f processing.Filterable, iris ...pub.Item) (pub.ItemCollection, error) {
-	col := make(pub.ItemCollection, 0)
+func (r *repo) loadItemsElements(f processing.Filterable, iris ...vocab.Item) (vocab.ItemCollection, error) {
+	col := make(vocab.ItemCollection, 0)
 	err := r.d.View(func(tx *bolt.Tx) error {
 		rb := tx.Bucket(r.root)
 		if rb == nil {
@@ -201,7 +201,7 @@ func (r *repo) loadItemsElements(f processing.Filterable, iris ...pub.Item) (pub
 				continue
 			}
 			it, err := r.loadItem(b, []byte(objectKey), f)
-			if err != nil || pub.IsNil(it) {
+			if err != nil || vocab.IsNil(it) {
 				continue
 			}
 			col = append(col, it)
@@ -211,7 +211,7 @@ func (r *repo) loadItemsElements(f processing.Filterable, iris ...pub.Item) (pub
 	return col, err
 }
 
-func (r *repo) loadOneFromBucket(f processing.Filterable) (pub.Item, error) {
+func (r *repo) loadOneFromBucket(f processing.Filterable) (vocab.Item, error) {
 	col, err := r.loadFromBucket(f)
 	if err != nil {
 		return nil, err
@@ -222,7 +222,7 @@ func (r *repo) loadOneFromBucket(f processing.Filterable) (pub.Item, error) {
 	return col.First(), nil
 }
 
-func (r *repo) CreateService(service pub.Service) error {
+func (r *repo) CreateService(service vocab.Service) error {
 	var err error
 	if err = r.Open(); err != nil {
 		return err
@@ -231,7 +231,7 @@ func (r *repo) CreateService(service pub.Service) error {
 	return createService(r.d, service)
 }
 
-func (r *repo) iterateInBucket(b *bolt.Bucket, f processing.Filterable) (pub.ItemCollection, uint, error) {
+func (r *repo) iterateInBucket(b *bolt.Bucket, f processing.Filterable) (vocab.ItemCollection, uint, error) {
 	if b == nil {
 		return nil, 0, errors.Errorf("invalid bucket to load from")
 	}
@@ -243,28 +243,25 @@ func (r *repo) iterateInBucket(b *bolt.Bucket, f processing.Filterable) (pub.Ite
 	if c == nil {
 		return nil, 0, errors.Errorf("Invalid bucket cursor")
 	}
-	col := make(pub.ItemCollection, 0)
+	col := make(vocab.ItemCollection, 0)
 	// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
 	for key, _ := c.First(); key != nil; key, _ = c.Next() {
 		ob := b
-		//lst := pub.CollectionPath(path.Base(string(key)))
+		//lst := vocab.CollectionPath(path.Base(string(key)))
 		//if ap.ValidActivityCollection(lst) || ap.ValidObjectCollection(lst) {
 		//	return col, uint(len(col)), errors.Newf("we shouldn't have a collection inside the current bucket %s", key)
 		//}
 		if !isObjectKey(key) {
-			// FIXME(marius): I guess this should not happen (pub descendIntoBucket should 'descend' into 'path'
-			//    if it's a valid bucket)
-			ob = b.Bucket(key)
-			if ob == nil {
+			if ob = b.Bucket(key); ob == nil {
 				continue
 			}
 		}
 		it, err := r.loadItem(ob, []byte(objectKey), f)
-		if err != nil || pub.IsNil(it) {
+		if err != nil || vocab.IsNil(it) {
 			continue
 		}
 		if it.IsCollection() {
-			pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+			vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
 				itCol, err := r.loadItemsElements(f, c.Collection()...)
 				if len(itCol) > 0 {
 					col = append(col, itCol...)
@@ -282,8 +279,8 @@ var ErrorInvalidRoot = func(b []byte) error {
 	return errors.Errorf("Invalid root bucket %s", b)
 }
 
-func (r *repo) loadFromBucket(f processing.Filterable) (pub.ItemCollection, error) {
-	col := make(pub.ItemCollection, 0)
+func (r *repo) loadFromBucket(f processing.Filterable) (vocab.ItemCollection, error) {
+	col := make(vocab.ItemCollection, 0)
 	err := r.d.View(func(tx *bolt.Tx) error {
 		rb := tx.Bucket(r.root)
 		if rb == nil {
@@ -307,7 +304,7 @@ func (r *repo) loadFromBucket(f processing.Filterable) (pub.ItemCollection, erro
 		if b == nil {
 			return errors.Errorf("Invalid bucket %s", fullPath)
 		}
-		lst := pub.CollectionPath(path.Base(string(fullPath)))
+		lst := vocab.CollectionPath(path.Base(string(fullPath)))
 		if isStorageCollectionKey(lst) {
 			fromBucket, _, err := r.iterateInBucket(b, f)
 			if err != nil {
@@ -321,7 +318,7 @@ func (r *repo) loadFromBucket(f processing.Filterable) (pub.ItemCollection, erro
 			if err != nil {
 				return err
 			}
-			if pub.IsNil(it) {
+			if vocab.IsNil(it) {
 				if isStorageCollectionKey(lst) {
 					return nil
 				}
@@ -329,10 +326,10 @@ func (r *repo) loadFromBucket(f processing.Filterable) (pub.ItemCollection, erro
 			}
 			if it.IsCollection() {
 				isColFn := func(ff processing.Filterable) bool {
-					_, ok := ff.(pub.IRI)
+					_, ok := ff.(vocab.IRI)
 					return ok
 				}
-				return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+				return vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
 					if isColFn(f) {
 						f = c.Collection()
 					}
@@ -349,17 +346,17 @@ func (r *repo) loadFromBucket(f processing.Filterable) (pub.ItemCollection, erro
 	return col, err
 }
 
-func (r repo) buildIRIs(c pub.CollectionPath, hashes ...ap.Hash) pub.IRIs {
-	iris := make(pub.IRIs, 0)
+func (r repo) buildIRIs(c vocab.CollectionPath, hashes ...ap.Hash) vocab.IRIs {
+	iris := make(vocab.IRIs, 0)
 	for _, hash := range hashes {
-		i := c.IRI(pub.IRI(r.baseURL)).AddPath(hash.String())
+		i := c.IRI(vocab.IRI(r.baseURL)).AddPath(hash.String())
 		iris = append(iris, i)
 	}
 	return iris
 }
 
 // Load
-func (r *repo) Load(i pub.IRI) (pub.Item, error) {
+func (r *repo) Load(i vocab.IRI) (vocab.Item, error) {
 	var err error
 	if r.Open(); err != nil {
 		return nil, err
@@ -411,7 +408,7 @@ func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket,
 	}
 	remBuckets := buckets[lvl:]
 	path = bytes.Join(remBuckets, []byte{'/'})
-	if len(remBuckets) > 0 && !ap.HiddenCollections.Contains(pub.CollectionPath(path)) {
+	if len(remBuckets) > 0 && !ap.HiddenCollections.Contains(vocab.CollectionPath(path)) {
 		return b, path, errors.NotFoundf("%s not found", remBuckets[0])
 	}
 	return b, path, nil
@@ -420,9 +417,9 @@ func descendInBucket(root *bolt.Bucket, path []byte, create bool) (*bolt.Bucket,
 const objectKey = "__raw"
 const metaDataKey = "__meta_data"
 
-func delete(r *repo, it pub.Item) error {
+func delete(r *repo, it vocab.Item) error {
 	if it.IsCollection() {
-		return pub.OnCollectionIntf(it, func(c pub.CollectionInterface) error {
+		return vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
 			var err error
 			for _, it := range c.Collection() {
 				if err = deleteItem(r, it); err != nil {
@@ -437,7 +434,7 @@ func delete(r *repo, it pub.Item) error {
 }
 
 // Create
-func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, error) {
+func (r *repo) Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error) {
 	var err error
 	err = r.Open()
 	if err != nil {
@@ -461,7 +458,7 @@ func (r *repo) Create(col pub.CollectionInterface) (pub.CollectionInterface, err
 	return col, err
 }
 
-func itemBucketPath(iri pub.IRI) []byte {
+func itemBucketPath(iri vocab.IRI) []byte {
 	url, err := iri.URL()
 	if err != nil {
 		return nil
@@ -469,8 +466,8 @@ func itemBucketPath(iri pub.IRI) []byte {
 	return []byte(url.Host + url.Path)
 }
 
-func createCollectionInBucket(b *bolt.Bucket, it pub.Item) (pub.Item, error) {
-	if pub.IsNil(it) {
+func createCollectionInBucket(b *bolt.Bucket, it vocab.Item) (vocab.Item, error) {
+	if vocab.IsNil(it) {
 		return nil, nil
 	}
 	p := []byte(path.Base(it.GetLink().String()))
@@ -481,55 +478,55 @@ func createCollectionInBucket(b *bolt.Bucket, it pub.Item) (pub.Item, error) {
 	return it.GetLink(), nil
 }
 
-func deleteBucket(b *bolt.Bucket, it pub.Item) error {
-	if pub.IsNil(it) {
+func deleteBucket(b *bolt.Bucket, it vocab.Item) error {
+	if vocab.IsNil(it) {
 		return nil
 	}
 	p := []byte(it.GetLink())
 	return b.DeleteBucket(p)
 }
 
-func createCollectionsInBucket(b *bolt.Bucket, it pub.Item) error {
-	if pub.IsNil(it) || !it.IsObject() {
+func createCollectionsInBucket(b *bolt.Bucket, it vocab.Item) error {
+	if vocab.IsNil(it) || !it.IsObject() {
 		return nil
 	}
 	// create collections
-	if pub.ActorTypes.Contains(it.GetType()) {
-		pub.OnActor(it, func(p *pub.Actor) error {
+	if vocab.ActorTypes.Contains(it.GetType()) {
+		vocab.OnActor(it, func(p *vocab.Actor) error {
 			if p.Inbox != nil {
-				p.Inbox, _ = createCollectionInBucket(b, pub.Inbox.IRI(p))
+				p.Inbox, _ = createCollectionInBucket(b, vocab.Inbox.IRI(p))
 			}
 			if p.Outbox != nil {
-				p.Outbox, _ = createCollectionInBucket(b, pub.Outbox.IRI(p))
+				p.Outbox, _ = createCollectionInBucket(b, vocab.Outbox.IRI(p))
 			}
 			if p.Followers != nil {
-				p.Followers, _ = createCollectionInBucket(b, pub.Followers.IRI(p))
+				p.Followers, _ = createCollectionInBucket(b, vocab.Followers.IRI(p))
 			}
 			if p.Following != nil {
-				p.Following, _ = createCollectionInBucket(b, pub.Liked.IRI(p))
+				p.Following, _ = createCollectionInBucket(b, vocab.Liked.IRI(p))
 			}
 			if p.Liked != nil {
-				p.Liked, _ = createCollectionInBucket(b, pub.Liked.IRI(p))
+				p.Liked, _ = createCollectionInBucket(b, vocab.Liked.IRI(p))
 			}
 			return nil
 		})
 	}
-	return pub.OnObject(it, func(o *pub.Object) error {
+	return vocab.OnObject(it, func(o *vocab.Object) error {
 		if o.Replies != nil {
-			o.Replies, _ = createCollectionInBucket(b, pub.Replies.IRI(o))
+			o.Replies, _ = createCollectionInBucket(b, vocab.Replies.IRI(o))
 		}
 		if o.Likes != nil {
-			o.Likes, _ = createCollectionInBucket(b, pub.Likes.IRI(o))
+			o.Likes, _ = createCollectionInBucket(b, vocab.Likes.IRI(o))
 		}
 		if o.Shares != nil {
-			o.Shares, _ = createCollectionInBucket(b, pub.Shares.IRI(o))
+			o.Shares, _ = createCollectionInBucket(b, vocab.Shares.IRI(o))
 		}
 		return nil
 	})
 }
 
 // deleteItem
-func deleteItem(r *repo, it pub.Item) error {
+func deleteItem(r *repo, it vocab.Item) error {
 	pathInBucket := itemBucketPath(it.GetLink())
 	return r.d.Update(func(tx *bolt.Tx) error {
 		root := tx.Bucket(r.root)
@@ -551,30 +548,30 @@ func deleteItem(r *repo, it pub.Item) error {
 }
 
 // deleteCollectionsFromBucket
-func deleteCollectionsFromBucket(b *bolt.Bucket, it pub.Item) error {
-	if pub.ActorTypes.Contains(it.GetType()) {
-		return pub.OnActor(it, func(p *pub.Actor) error {
+func deleteCollectionsFromBucket(b *bolt.Bucket, it vocab.Item) error {
+	if vocab.ActorTypes.Contains(it.GetType()) {
+		return vocab.OnActor(it, func(p *vocab.Actor) error {
 			var err error
-			err = deleteBucket(b, pub.Inbox.IRI(p))
-			err = deleteBucket(b, pub.Outbox.IRI(p))
-			err = deleteBucket(b, pub.Followers.IRI(p))
-			err = deleteBucket(b, pub.Following.IRI(p))
-			err = deleteBucket(b, pub.Liked.IRI(p))
+			err = deleteBucket(b, vocab.Inbox.IRI(p))
+			err = deleteBucket(b, vocab.Outbox.IRI(p))
+			err = deleteBucket(b, vocab.Followers.IRI(p))
+			err = deleteBucket(b, vocab.Following.IRI(p))
+			err = deleteBucket(b, vocab.Liked.IRI(p))
 			return err
 		})
 	}
-	if pub.ObjectTypes.Contains(it.GetType()) {
-		return pub.OnObject(it, func(o *pub.Object) error {
+	if vocab.ObjectTypes.Contains(it.GetType()) {
+		return vocab.OnObject(it, func(o *vocab.Object) error {
 			var err error
-			err = deleteBucket(b, pub.Replies.IRI(o))
-			err = deleteBucket(b, pub.Likes.IRI(o))
-			err = deleteBucket(b, pub.Shares.IRI(o))
+			err = deleteBucket(b, vocab.Replies.IRI(o))
+			err = deleteBucket(b, vocab.Likes.IRI(o))
+			err = deleteBucket(b, vocab.Shares.IRI(o))
 			return err
 		})
 	}
 	return nil
 }
-func save(r *repo, it pub.Item) (pub.Item, error) {
+func save(r *repo, it vocab.Item) (vocab.Item, error) {
 	pathInBucket := itemBucketPath(it.GetLink())
 	err := r.d.Update(func(tx *bolt.Tx) error {
 		root, err := tx.CreateBucketIfNotExists(r.root)
@@ -618,7 +615,7 @@ func save(r *repo, it pub.Item) (pub.Item, error) {
 }
 
 // Save
-func (r *repo) Save(it pub.Item) (pub.Item, error) {
+func (r *repo) Save(it vocab.Item) (vocab.Item, error) {
 	var err error
 	err = r.Open()
 	if err != nil {
@@ -639,12 +636,12 @@ func (r *repo) Save(it pub.Item) (pub.Item, error) {
 }
 
 // IsLocalIRI shows if the received IRI belongs to the current instance
-func (r repo) IsLocalIRI(i pub.IRI) bool {
-	return i.Contains(pub.IRI(r.baseURL), false)
+func (r repo) IsLocalIRI(i vocab.IRI) bool {
+	return i.Contains(vocab.IRI(r.baseURL), false)
 }
 
-func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub.IRIs, error)) error {
-	if pub.IsNil(it) {
+func onCollection(r *repo, col vocab.IRI, it vocab.Item, fn func(iris vocab.IRIs) (vocab.IRIs, error)) error {
+	if vocab.IsNil(it) {
 		return errors.Newf("Unable to operate on nil element")
 	}
 	if len(col) == 0 {
@@ -683,7 +680,7 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub
 		if !b.Writable() {
 			return errors.Errorf("Non writeable bucket %s", path)
 		}
-		var iris pub.IRIs
+		var iris vocab.IRIs
 		raw := b.Get(rem)
 		if len(raw) > 0 {
 			err := decodeFn(raw, &iris)
@@ -708,8 +705,8 @@ func onCollection(r *repo, col pub.IRI, it pub.Item, fn func(iris pub.IRIs) (pub
 }
 
 // RemoveFrom
-func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
-	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
+func (r *repo) RemoveFrom(col vocab.IRI, it vocab.Item) error {
+	return onCollection(r, col, it, func(iris vocab.IRIs) (vocab.IRIs, error) {
 		for k, iri := range iris {
 			if iri.GetLink().Equals(it.GetLink(), false) {
 				iris = append(iris[:k], iris[k+1:]...)
@@ -720,14 +717,14 @@ func (r *repo) RemoveFrom(col pub.IRI, it pub.Item) error {
 	})
 }
 
-func isStorageCollectionKey(lst pub.CollectionPath) bool {
-	return ap.FedBOXCollections.Contains(lst) || pub.OfActor.Contains(lst) || pub.OfObject.Contains(lst)
+func isStorageCollectionKey(lst vocab.CollectionPath) bool {
+	return ap.FedBOXCollections.Contains(lst) || vocab.OfActor.Contains(lst) || vocab.OfObject.Contains(lst)
 }
 
-func addCollectionOnObject(r *repo, col pub.IRI) error {
+func addCollectionOnObject(r *repo, col vocab.IRI) error {
 	var err error
-	allStorageCollections := append(pub.ActivityPubCollections, ap.FedBOXCollections...)
-	if ob, t := allStorageCollections.Split(col); pub.ValidCollection(t) {
+	allStorageCollections := append(vocab.ActivityPubCollections, ap.FedBOXCollections...)
+	if ob, t := allStorageCollections.Split(col); vocab.ValidCollection(t) {
 		// Create the collection on the object, if it doesn't exist
 		i, _ := r.loadOneFromBucket(ob)
 		if _, ok := t.AddTo(i); ok {
@@ -738,9 +735,9 @@ func addCollectionOnObject(r *repo, col pub.IRI) error {
 }
 
 // AddTo
-func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
+func (r *repo) AddTo(col vocab.IRI, it vocab.Item) error {
 	addCollectionOnObject(r, col)
-	return onCollection(r, col, it, func(iris pub.IRIs) (pub.IRIs, error) {
+	return onCollection(r, col, it, func(iris vocab.IRIs) (vocab.IRIs, error) {
 		if iris.Contains(it.GetLink()) {
 			return iris, nil
 		}
@@ -749,7 +746,7 @@ func (r *repo) AddTo(col pub.IRI, it pub.Item) error {
 }
 
 // Delete
-func (r *repo) Delete(it pub.Item) error {
+func (r *repo) Delete(it vocab.Item) error {
 	err := r.Open()
 	if err != nil {
 		return err
@@ -783,7 +780,7 @@ func (r *repo) Close() error {
 }
 
 // PasswordSet
-func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
+func (r *repo) PasswordSet(it vocab.Item, pw []byte) error {
 	path := itemBucketPath(it.GetLink())
 	err := r.Open()
 	if err != nil {
@@ -833,7 +830,7 @@ func (r *repo) PasswordSet(it pub.Item, pw []byte) error {
 }
 
 // PasswordCheck
-func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
+func (r *repo) PasswordCheck(it vocab.Item, pw []byte) error {
 	path := itemBucketPath(it.GetLink())
 	err := r.Open()
 	if err != nil {
@@ -866,7 +863,7 @@ func (r *repo) PasswordCheck(it pub.Item, pw []byte) error {
 }
 
 // LoadMetadata
-func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
+func (r *repo) LoadMetadata(iri vocab.IRI) (*storage.Metadata, error) {
 	err := r.Open()
 	if err != nil {
 		return nil, err
@@ -893,7 +890,7 @@ func (r *repo) LoadMetadata(iri pub.IRI) (*storage.Metadata, error) {
 }
 
 // SaveMetadata
-func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
+func (r *repo) SaveMetadata(m storage.Metadata, iri vocab.IRI) error {
 	err := r.Open()
 	if err != nil {
 		return err
@@ -936,7 +933,7 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri pub.IRI) error {
 }
 
 // LoadKey loads a private key for an actor found by its IRI
-func (r *repo) LoadKey(iri pub.IRI) (crypto.PrivateKey, error) {
+func (r *repo) LoadKey(iri vocab.IRI) (crypto.PrivateKey, error) {
 	m, err := r.LoadMetadata(iri)
 	if err != nil {
 		return nil, err
