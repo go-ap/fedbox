@@ -6,13 +6,13 @@ require (
 	aletheia.icu/broccoli/fs v0.0.0-20210820105650-3e2e00017061
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/dgraph-io/badger/v3 v3.2103.2
-	github.com/go-ap/activitypub v0.0.0-20220612095808-4c61caf651ea
-	github.com/go-ap/auth v0.0.0-20220612142939-5ede3db1b1bd
-	github.com/go-ap/client v0.0.0-20220612142849-3821ee014b68
-	github.com/go-ap/errors v0.0.0-20220529131844-4c7dbeabb369
+	github.com/go-ap/activitypub v0.0.0-20220615144428-48208c70483b
+	github.com/go-ap/auth v0.0.0-20220615144634-9e069f633ffc
+	github.com/go-ap/client v0.0.0-20220615144543-8f9821f1974c
+	github.com/go-ap/errors v0.0.0-20220615144307-e8bc4a40ae9f
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
-	github.com/go-ap/jsonld v0.0.0-20200327122108-fafac2de2660
-	github.com/go-ap/processing v0.0.0-20220612143022-570d4fc352a7
+	github.com/go-ap/jsonld v0.0.0-20220615144122-1d862b15410d
+	github.com/go-ap/processing v0.0.0-20220615151818-1c5a0a04a26e
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0
@@ -60,7 +60,7 @@ require (
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/sys v0.0.0-20220610221304-9f5ed59c137d // indirect
+	golang.org/x/sys v0.0.0-20220614162138-6c1b26c55098 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.9 // indirect
