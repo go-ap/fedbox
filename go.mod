@@ -7,12 +7,12 @@ require (
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/go-ap/activitypub v0.0.0-20220615144428-48208c70483b
-	github.com/go-ap/auth v0.0.0-20220615144634-9e069f633ffc
-	github.com/go-ap/client v0.0.0-20220615144543-8f9821f1974c
-	github.com/go-ap/errors v0.0.0-20220615144307-e8bc4a40ae9f
+	github.com/go-ap/auth v0.0.0-20220618131344-1f27e08d156c
+	github.com/go-ap/client v0.0.0-20220618131302-7552b8309fb7
+	github.com/go-ap/errors v0.0.0-20220618122732-319f41ac54e1
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20220615144122-1d862b15410d
-	github.com/go-ap/processing v0.0.0-20220615151818-1c5a0a04a26e
+	github.com/go-ap/processing v0.0.0-20220618135753-b640a45861ea
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0
@@ -60,7 +60,7 @@ require (
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/sys v0.0.0-20220614162138-6c1b26c55098 // indirect
+	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.9 // indirect
