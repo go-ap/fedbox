@@ -71,6 +71,9 @@ func New(conf Config, url string, lp logrus.FieldLogger) (*repo, error) {
 }
 
 func (r repo) Load(i vocab.IRI) (vocab.Item, error) {
+	if !i.Contains(vocab.IRI(r.baseURL), false) {
+		return nil, errors.Newf("unable to load non-local IRI: %s", i)
+	}
 	f, err := ap.FiltersFromIRI(i)
 	if err != nil {
 		return nil, err

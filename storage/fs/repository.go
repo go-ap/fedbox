@@ -118,11 +118,14 @@ func (r *repo) CreateService(service vocab.Service) error {
 
 // Load
 func (r *repo) Load(i vocab.IRI) (vocab.Item, error) {
-	err := r.Open()
-	defer r.Close()
-	if err != nil {
+	if err := r.Open(); err != nil {
 		return nil, err
 	}
+	defer r.Close()
+	if !i.Contains(vocab.IRI(r.baseURL), false) {
+		return nil, errors.Newf("unable to load non-local IRI: %s", i)
+	}
+
 	f, err := ap.FiltersFromIRI(i)
 	if err != nil {
 		return nil, err
