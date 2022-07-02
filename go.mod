@@ -12,7 +12,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20220618122732-319f41ac54e1
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20220615144122-1d862b15410d
-	github.com/go-ap/processing v0.0.0-20220626183649-c0bf3e4e797a
+	github.com/go-ap/processing v0.0.0-20220702120538-9eaec46122ba
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0
@@ -60,7 +60,7 @@ require (
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/sys v0.0.0-20220624220833-87e55d714810 // indirect
+	golang.org/x/sys v0.0.0-20220702020025-31831981b65f // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.9 // indirect
