@@ -336,13 +336,13 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 				v, okA := val.(float64)
 
 				assertTrue(okA, "Unable to convert %#v to %T type, Received %#v:(%T)", val, v, val, val)
-				assertTrue(v == tt, "Invalid %q, %d expected, received %d", key, v, tt)
+				assertTrue(v == tt, "Invalid %q, %d expected, received %d", key, tt, v)
 			case int64, int32, int16, int8:
 				// for some reason the json.Decode extracts the int values as floats
 				v, okA := val.(float64)
 
 				assertTrue(okA, "Unable to convert %#v to %T type, Received %#v:(%T)", val, v, val, val)
-				assertTrue(int64(v) == tt, "Invalid %q, %d expected, received %d", key, int64(v), tt)
+				assertTrue(int64(v) == tt, "Invalid %q, %d expected, received %d", key, tt, int64(v))
 			case string, []byte:
 				// the case when the mock test value is a string, but corresponds to an object in the json
 				// so we need to verify the json's object id against our mock value
@@ -350,7 +350,7 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 				v2, okB := val.(map[string]interface{})
 				assertTrue(okA || okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
 				if okA {
-					assertTrue(v1 == tt, "Invalid %q, %q expected, received %q", key, v1, tt)
+					assertTrue(v1 == tt, "Invalid %q, %q expected, received %q", key, tt, v1)
 				}
 				if okB {
 					assertMapKey(v2, "id", tt)
