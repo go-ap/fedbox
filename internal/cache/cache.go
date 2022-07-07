@@ -159,8 +159,9 @@ func aggregateActivityIRIs(toRemove *vocab.IRIs, a *vocab.Activity, typ vocab.Co
 	return aggregateItemIRIs(toRemove, a.Object)
 }
 
-func ActivityPurge(cache CanStore, a *vocab.Activity, typ vocab.CollectionPath) error {
+func ActivityPurge(cache CanStore, a *vocab.Activity, iri vocab.IRI) error {
 	toRemove := make(vocab.IRIs, 0)
+	_, typ := vocab.Split(iri)
 	err := aggregateActivityIRIs(&toRemove, a, typ)
 	if err != nil {
 		return err

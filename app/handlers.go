@@ -162,7 +162,7 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 	clientInfoLogger := func(...client.Ctx) client.LogFn {
 		return infoLogger
 	}
-	return func(typ vocab.CollectionPath, r *http.Request, repo processing.Store) (vocab.Item, int, error) {
+	return func(receivedIn vocab.IRI, r *http.Request, repo processing.Store) (vocab.Item, int, error) {
 		var it vocab.Item
 
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
@@ -203,19 +203,7 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 			processing.SetActorKeyGenerator(AddKeyToPerson(metaSaver))
 		}
 
-		var validateFn func(vocab.Item, vocab.IRI) error
-		var processFn func(vocab.Item) (vocab.Item, error)
-		switch typ {
-		case vocab.Outbox:
-			validateFn = validator.ValidateClientActivity
-			processFn = processor.ProcessClientActivity
-		case vocab.Inbox:
-			validateFn = validator.ValidateServerActivity
-			processFn = processor.ProcessServerActivity
-		default:
-			return it, http.StatusNotAcceptable, errors.NewMethodNotAllowed(err, "Collection %s does not receive Activity requests", typ)
-		}
-		if err = validateFn(it, f.IRI); err != nil {
+		if err = validator.ValidateActivity(it, f.IRI); err != nil {
 			return it, http.StatusNotAcceptable, err
 		}
 		vocab.OnActivity(it, func(a *vocab.Activity) error {
@@ -225,11 +213,11 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 			}
 			return nil
 		})
-		if it, err = processFn(it); err != nil {
+		if it, err = processor.ProcessActivity(it, receivedIn); err != nil {
 			return it, errors.HttpStatus(err), errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 		}
 		err = vocab.OnActivity(it, func(act *vocab.Activity) error {
-			return cache.ActivityPurge(fb.caches, act, typ)
+			return cache.ActivityPurge(fb.caches, act, receivedIn)
 		})
 		if err != nil {
 			infoLogger("unable to purge cache: %s", err)

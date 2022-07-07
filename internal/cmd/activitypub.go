@@ -134,7 +134,8 @@ func (c *Control) AddObject(p *vocab.Object) (*vocab.Object, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	if _, err := c.Saver.ProcessClientActivity(wrapObjectInCreate(c.Storage, vocab.IRI(c.Conf.BaseURL), p)); err != nil {
+	create := wrapObjectInCreate(c.Storage, vocab.IRI(c.Conf.BaseURL), p)
+	if _, err := c.Saver.ProcessClientActivity(create, vocab.Outbox.Of(create.Actor).GetLink()); err != nil {
 		return nil, err
 	}
 	return p, nil
@@ -146,7 +147,7 @@ func (c *Control) AddActor(p *vocab.Person, pw []byte) (*vocab.Person, error) {
 	}
 
 	create := wrapObjectInCreate(c.Storage, vocab.IRI(c.Conf.BaseURL), p)
-	if _, err := c.Saver.ProcessClientActivity(create); err != nil {
+	if _, err := c.Saver.ProcessClientActivity(create, vocab.Outbox.Of(create.Actor).GetLink()); err != nil {
 		return nil, err
 	}
 
@@ -232,7 +233,7 @@ func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string
 	}
 	d.Object = delItems
 
-	if _, err := c.Saver.ProcessClientActivity(d); err != nil {
+	if _, err := c.Saver.ProcessClientActivity(d, vocab.Outbox.Of(d.Actor).GetLink()); err != nil {
 		return err
 	}
 
@@ -510,7 +511,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 							if a == nil {
 								return nil
 							}
-							_, err := processor.ProcessClientActivity(a)
+							_, err := processor.ProcessClientActivity(a, vocab.Outbox.Of(a.Actor).GetLink())
 							return err
 						})
 					} else {
