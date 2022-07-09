@@ -183,7 +183,7 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 		}
 
 		baseIRI := vocab.IRI(fb.Config().BaseURL)
-		processor, validator, err := processing.New(
+		processor, err := processing.New(
 			processing.SetIRI(baseIRI, InternalIRI),
 			processing.SetClient(client.New(
 				client.SetInfoLogger(clientInfoLogger),
@@ -198,12 +198,12 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 		if err != nil {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize validator and processor")
 		}
-		validator.SetActor(f.Authenticated)
+		processor.SetActor(f.Authenticated)
 		if metaSaver, ok := repo.(st.MetadataTyper); ok {
 			processing.SetActorKeyGenerator(AddKeyToPerson(metaSaver))
 		}
 
-		if err = validator.ValidateActivity(it, f.IRI); err != nil {
+		if err = processor.ValidateActivity(it, f.IRI); err != nil {
 			return it, http.StatusNotAcceptable, err
 		}
 		vocab.OnActivity(it, func(a *vocab.Activity) error {

@@ -451,7 +451,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 		toReplace := c.String("base")
 		files := c.Args().Slice()
 
-		processor, _, err := processing.New(
+		processor, err := processing.New(
 			processing.SetIRI(vocab.IRI(baseIRI), app.InternalIRI),
 			processing.SetStorage(ctl.Storage),
 		)

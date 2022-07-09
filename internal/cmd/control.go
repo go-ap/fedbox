@@ -36,7 +36,7 @@ func New(authDB osin.Storage, actorDb processing.Store, conf config.Options) *Co
 	clientInfoLogger := func(...c.Ctx) c.LogFn {
 		return logger.Infof
 	}
-	p, _, _ := processing.New(
+	p, _ := processing.New(
 		processing.SetIRI(baseIRI),
 		processing.SetStorage(actorDb),
 		processing.SetIDGenerator(app.GenerateID(baseIRI)),
