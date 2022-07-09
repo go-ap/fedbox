@@ -548,7 +548,12 @@ func (r *repo) loadFromIterator(col *vocab.ItemCollection, f processing.Filterab
 			if err != nil {
 				return err
 			}
-			*col = append(*col, c...)
+			for _, it := range c {
+				if col.Contains(it.GetLink()) {
+					continue
+				}
+				*col = append(*col, it)
+			}
 		} else if it.IsCollection() {
 			return vocab.OnCollectionIntf(it, func(ci vocab.CollectionInterface) error {
 				if isColFn(f) {
@@ -558,7 +563,12 @@ func (r *repo) loadFromIterator(col *vocab.ItemCollection, f processing.Filterab
 				if err != nil {
 					return err
 				}
-				*col = append(*col, c...)
+				for _, it := range c {
+					if col.Contains(it.GetLink()) {
+						continue
+					}
+					*col = append(*col, it)
+				}
 				return nil
 			})
 		} else {
@@ -590,7 +600,9 @@ func (r *repo) loadFromIterator(col *vocab.ItemCollection, f processing.Filterab
 				if vocab.ActivityTypes.Contains(it.GetType()) {
 					vocab.OnActivity(it, loadFilteredPropsForActivity(r, f))
 				}
-				*col = append(*col, it)
+				if !col.Contains(it.GetLink()) {
+					*col = append(*col, it)
+				}
 			}
 		}
 		return nil
@@ -746,7 +758,7 @@ func (r *repo) loadItemsElements(f processing.Filterable, iris ...vocab.Item) (v
 	err := r.d.View(func(tx *badger.Txn) error {
 		for _, iri := range iris {
 			it, err := r.loadItem(tx, itemPath(iri.GetLink()), f)
-			if err != nil || vocab.IsNil(it) {
+			if err != nil || vocab.IsNil(it) || col.Contains(it.GetLink()) {
 				continue
 			}
 			col = append(col, it)

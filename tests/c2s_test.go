@@ -987,7 +987,7 @@ var CreateTests = testPairs{
 	{
 		// This builds a test for verifying how a FedBOX instance processes C2S activities that contain
 		// recipients belonging to other federated services
-		name:    "CreateNote",
+		name:    "CreateNoteWithFederatedRecipient",
 		configs: s2sConfigs,
 		tests: []testPair{
 			{

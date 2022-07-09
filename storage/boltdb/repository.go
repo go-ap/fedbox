@@ -247,10 +247,9 @@ func (r *repo) iterateInBucket(b *bolt.Bucket, f processing.Filterable) (vocab.I
 	// if no path was returned from descendIntoBucket we iterate over all keys in the current bucket
 	for key, _ := c.First(); key != nil; key, _ = c.Next() {
 		ob := b
-		//lst := vocab.CollectionPath(path.Base(string(key)))
-		//if ap.ValidActivityCollection(lst) || ap.ValidObjectCollection(lst) {
-		//	return col, uint(len(col)), errors.Newf("we shouldn't have a collection inside the current bucket %s", key)
-		//}
+		// TODO(marius): we need to see if we can avoid iterating in a bucket for both the UUID, and the underlying
+		//  __raw object, because currently they both get loaded and we need to use col.Contains to avoid duplication
+		//  when loading some of the actor collections.
 		if !isObjectKey(key) {
 			if ob = b.Bucket(key); ob == nil {
 				continue
@@ -264,11 +263,16 @@ func (r *repo) iterateInBucket(b *bolt.Bucket, f processing.Filterable) (vocab.I
 			vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
 				itCol, err := r.loadItemsElements(f, c.Collection()...)
 				if len(itCol) > 0 {
-					col = append(col, itCol...)
+					for _, it := range itCol {
+						if col.Contains(it.GetLink()) {
+							continue
+						}
+						col = append(col, it)
+					}
 				}
 				return err
 			})
-		} else {
+		} else if !col.Contains(it.GetLink()) {
 			col = append(col, it)
 		}
 	}
@@ -337,7 +341,9 @@ func (r *repo) loadFromBucket(f processing.Filterable) (vocab.ItemCollection, er
 					return err
 				})
 			}
-			col = append(col, it)
+			if !col.Contains(it) {
+				col = append(col, it)
+			}
 			return nil
 		}
 		return nil
