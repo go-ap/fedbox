@@ -1,6 +1,7 @@
 FROM golang:1.18 as fedbox-builder
 
 ENV GO111MODULE=on
+ENV GOWORK=off
 
 ADD ./ /go/src/app
 
