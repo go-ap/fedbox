@@ -667,6 +667,11 @@ func save(r *repo, it vocab.Item) (vocab.Item, error) {
 	return it, nil
 }
 
+// IsLocalIRI shows if the received IRI belongs to the current instance
+func (r repo) IsLocalIRI(i vocab.IRI) bool {
+	return i.Contains(vocab.IRI(r.baseURL), false)
+}
+
 func onCollection(r *repo, col vocab.IRI, it vocab.Item, fn func(p string) error) error {
 	if vocab.IsNil(it) {
 		return errors.Newf("Unable to operate on nil element")
@@ -677,7 +682,7 @@ func onCollection(r *repo, col vocab.IRI, it vocab.Item, fn func(p string) error
 	if len(it.GetLink()) == 0 {
 		return errors.Newf("Invalid collection, it does not have a valid IRI")
 	}
-	if !col.GetLink().Contains(vocab.IRI(r.baseURL), false) {
+	if !r.IsLocalIRI(col) {
 		return errors.Newf("Unable to save to non local collection %s", col)
 	}
 

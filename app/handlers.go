@@ -194,6 +194,7 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 			processing.SetInfoLogger(infoLogger),
 			processing.SetErrorLogger(errLogger),
 			processing.SetIDGenerator(GenerateID(baseIRI)),
+			processing.SetLocalIRIChecker(st.IsLocalIRI(repo)),
 		)
 		if err != nil {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize validator and processor")

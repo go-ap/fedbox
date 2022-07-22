@@ -33,4 +33,17 @@ type Resetter interface {
 	Reset()
 }
 
+type IRIChecker interface {
+	IsLocalIRI(i vocab.IRI) bool
+}
+
+func IsLocalIRI(s processing.Store) processing.IRIValidator {
+	if c, ok := s.(IRIChecker); ok {
+		return c.IsLocalIRI
+	}
+	return func(i vocab.IRI) bool {
+		return false
+	}
+}
+
 type OptionFn func(s processing.Store) error
