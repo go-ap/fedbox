@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"math/rand"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -812,6 +813,35 @@ func (r repo) asPathErr(err error) error {
 	return err
 }
 
+func getOriginalIRI(p string) (vocab.Item, error) {
+	// NOTE(marius): if the __raw file wasn't found, but the path corresponds to a valid symlink,
+	// we can interpret that as an IRI (usually referencing an external object) and return that.
+	dir := path.Dir(p)
+	fi, err := os.Stat(dir)
+	if err != nil {
+		return nil, nil
+	}
+	if !fi.IsDir() {
+		return nil, nil
+	}
+	original, err := os.Readlink(dir)
+	if err != nil {
+		return nil, nil
+	}
+	original = strings.TrimLeft(path.Clean(original), "../")
+	pieces := strings.Split(original, "/")
+	if len(pieces) == 0 {
+		return nil, nil
+	}
+	upath := ""
+	host := pieces[0]
+	if len(pieces) > 1 {
+		upath = path.Join(pieces[1:]...)
+	}
+	u := url.URL{Scheme: "https", Host: host, Path: upath}
+	return vocab.IRI(u.String()), nil
+}
+
 func (r repo) loadItem(p string, f processing.Filterable) (vocab.Item, error) {
 	var it vocab.Item
 	if cachedIt := r.cache.Get(f.GetLink()); cachedIt != nil {
@@ -820,6 +850,9 @@ func (r repo) loadItem(p string, f processing.Filterable) (vocab.Item, error) {
 	if vocab.IsNil(it) {
 		raw, err := loadRawFromPath(p)
 		if err != nil {
+			if os.IsNotExist(err) {
+				return getOriginalIRI(p)
+			}
 			return nil, r.asPathErr(err)
 		}
 		if raw == nil {
