@@ -167,41 +167,50 @@ func AddKeyToItem(metaSaver storage.MetadataTyper, it vocab.Item) error {
 
 func generateKeys(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		baseIRI := ap.ActorsType.IRI(vocab.IRI(ctl.Conf.BaseURL))
-
-		filterFns := []ap.FilterFn{
-			ap.IRI(baseIRI),
-			ap.Type(vocab.PersonType),
-		}
-
-		actors := make([]string, 0)
-		for i := 0; i <= c.Args().Len(); i++ {
-			iri := c.Args().Get(i)
-			ob, err := ctl.Storage.Load(vocab.IRI(iri))
-			if err != nil {
-				Errf(err.Error())
-				continue
-			}
-			actors = append(actors, ob.GetLink().String())
-		}
-		if len(actors) > 0 {
-			filterFns = append(filterFns, ap.ItemKey(actors...))
-		}
-
-		f := ap.FiltersNew(filterFns...)
-		// TODO(marius): we should improve this with filtering based on public key existing in the actor,
-		//  and with batching.
-		col, err := ctl.Storage.Load(f.GetLink())
-		if err != nil {
-			return err
-		}
 		metaSaver, ok := ctl.Storage.(storage.MetadataTyper)
 		if !ok {
 			return errors.Newf("storage doesn't support saving key")
 		}
+
+		col := make(vocab.ItemCollection, 0)
+		for i := 0; i <= c.Args().Len(); i++ {
+			iri := c.Args().Get(i)
+			act, err := ctl.Storage.Load(vocab.IRI(iri))
+			if err != nil {
+				Errf(err.Error())
+				continue
+			}
+			vocab.OnActor(act, func(ob *vocab.Actor) error {
+				col = append(col, ob)
+				return nil
+			})
+		}
+
+		if c.Args().Len() == 0 {
+			baseIRI := ap.ActorsType.IRI(vocab.IRI(ctl.Conf.BaseURL))
+			filterFns := []ap.FilterFn{
+				ap.IRI(baseIRI),
+				ap.Type(vocab.PersonType),
+			}
+			f := ap.FiltersNew(filterFns...)
+			// TODO(marius): we should improve this with filtering based on public key existing in the actor,
+			//  and with batching.
+			actors, err := ctl.Storage.Load(f.GetLink())
+			if err != nil {
+				return err
+			}
+			vocab.OnObject(actors, func(ob *vocab.Object) error {
+				col = append(col, ob)
+				return nil
+			})
+		}
+
 		return vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
 			for _, it := range c.Collection() {
-				if err = AddKeyToItem(metaSaver, it); err != nil {
+				if !vocab.ActorTypes.Contains(it.GetType()) {
+					continue
+				}
+				if err := AddKeyToItem(metaSaver, it); err != nil {
 					Errf("Error: %s", err.Error())
 				}
 			}
