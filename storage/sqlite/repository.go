@@ -140,13 +140,18 @@ func getCollectionTableFromFilter(f *ap.Filters) vocab.CollectionPath {
 	return getCollectionTable(f.Collection)
 }
 
+// IsLocalIRI shows if the received IRI belongs to the current instance
+func (r repo) IsLocalIRI(i vocab.IRI) bool {
+	return i.Contains(vocab.IRI(r.baseURL), false)
+}
+
 // Load
 func (r *repo) Load(i vocab.IRI) (vocab.Item, error) {
 	if err := r.Open(); err != nil {
 		return nil, err
 	}
 	defer r.Close()
-	if !i.Contains(vocab.IRI(r.baseURL), false) {
+	if !r.IsLocalIRI(vocab.IRI(r.baseURL)) {
 		return nil, errors.Newf("unable to load non-local IRI: %s", i)
 	}
 
