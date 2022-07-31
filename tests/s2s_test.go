@@ -171,6 +171,20 @@ var S2SReceiveTests = testPairs{
 					},
 				},
 			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: FollowersURL(defaultC2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						typ:       string(vocab.OrderedCollectionType),
+						itemCount: 1,
+						items:     map[string]*objectVal{},
+					},
+				},
+			},
 		},
 	},
 }

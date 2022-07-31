@@ -196,6 +196,18 @@ func InboxURL(account *testAccount) func() string {
 	}
 }
 
+func FollowersURL(account *testAccount) func() string {
+	return func() string {
+		return fmt.Sprintf("%s/followers", account.Id)
+	}
+}
+
+func FollowingURL(account *testAccount) func() string {
+	return func() string {
+		return fmt.Sprintf("%s/following", account.Id)
+	}
+}
+
 func OutboxURL(account *testAccount) func() string {
 	return func() string {
 		return fmt.Sprintf("%s/outbox", account.Id)
