@@ -21,7 +21,6 @@ import (
 	"github.com/go-ap/jsonld"
 	"github.com/go-ap/processing"
 	"golang.org/x/crypto/bcrypt"
-	_ "modernc.org/sqlite"
 )
 
 var encodeFn = jsonld.Marshal
@@ -66,7 +65,7 @@ type repo struct {
 // Open opens the sqlite database
 func (r *repo) Open() (err error) {
 	if r.conn == nil {
-		if r.conn, err = sql.Open("sqlite", r.path); err != nil {
+		if r.conn, err = sqlOpen("sqlite", r.path); err != nil {
 			return err
 		}
 	}
