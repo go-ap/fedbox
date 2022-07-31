@@ -29,6 +29,11 @@ func CreateS2SObject(actor *testAccount, object interface{}) actS2SMock {
 	}
 }
 
+var generatedFollow = CreateS2SObject(
+	defaultS2SAccount(),
+	loadMockFromDisk("mocks/s2s/activities/follow-666-johndoe.json", nil),
+)
+
 // S2SReceiveTests builds tests for verifying a FedBOX instance receives and processes correctly
 // activities coming from federated requests.
 var S2SReceiveTests = testPairs{
@@ -110,6 +115,58 @@ var S2SReceiveTests = testPairs{
 						obj: &objectVal{
 							id:  loadMockFromDisk("mocks/s2s/objects/note-1.json", nil).GetID().String(),
 							typ: string(loadMockFromDisk("mocks/s2s/objects/note-1.json", nil).GetType()),
+						},
+					},
+				},
+			},
+		},
+	},
+	{
+		name:    "AcceptFollow",
+		configs: s2sConfigs,
+		tests: []testPair{
+			{
+				mocks: []string{
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
+					"mocks/c2s/actors/application.json",
+					// s2s entities that need to exist
+					"mocks/s2s/actors/actor-666.json",
+					"mocks/s2s/activities/follow-666-johndoe.json",
+					"mocks/s2s/activities/accept-follow-666-johndoe.json",
+				},
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultS2SAccount(),
+					urlFn:   InboxURL(defaultC2SAccount()),
+					bodyFn: loadMockJson(
+						"mocks/s2s/accept-follow.json",
+						generatedFollow,
+					),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(vocab.AcceptType),
+						act: &objectVal{
+							id:                defaultS2SAccount().Id,
+							typ:               string(vocab.PersonType),
+							preferredUsername: "lou",
+							name:              "Loucien Cypher",
+						},
+						obj: &objectVal{
+							id:  generatedFollow.ObjectId,
+							typ: string(vocab.FollowType),
+							obj: &objectVal{
+								id:  defaultC2SAccount().Id,
+								typ: string(vocab.PersonType),
+							},
+							act: &objectVal{
+								id:                defaultS2SAccount().Id,
+								typ:               string(vocab.PersonType),
+								preferredUsername: "lou",
+								name:              "Loucien Cypher",
+							},
 						},
 					},
 				},

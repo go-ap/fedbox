@@ -1,0 +1,12 @@
+{
+  "id": "http://127.0.2.1:9999/activities/2",
+  "type": "Follow",
+  "attributedTo": "https://127.0.2.1/actors/666",
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public",
+    "https://127.0.0.1/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1"
+  ],
+  "published": "2022-07-24T14:41:04Z",
+  "actor": "http://127.0.2.1:9999/actors/666",
+  "object": "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1"
+}

@@ -1,0 +1,7 @@
+{
+  "id": "http://127.0.2.1:9999/activities/3",
+  "type": "Accept",
+  "actor": "{{ .ActorId }}",
+  "object": "{{ .ObjectId }}",
+  "to": [ "https://www.w3.org/ns/activitystreams#Public" ]
+}
