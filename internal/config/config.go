@@ -71,7 +71,7 @@ const (
 	StorageSqlite   = StorageType("sqlite")
 )
 
-const defaultPerm = os.ModeDir | os.ModePerm | 0700
+const defaultDirPerm = os.ModeDir | os.ModePerm | 0700
 
 func (o Options) BaseStoragePath() string {
 	if !filepath.IsAbs(o.StoragePath) {
@@ -80,7 +80,7 @@ func (o Options) BaseStoragePath() string {
 	basePath := path.Clean(path.Join(o.StoragePath, string(o.Storage), string(o.Env), o.Host))
 	fi, err := os.Stat(basePath)
 	if err != nil && os.IsNotExist(err) {
-		err = os.MkdirAll(basePath, defaultPerm)
+		err = os.MkdirAll(basePath, defaultDirPerm)
 	}
 	if err != nil {
 		panic(err)
@@ -107,7 +107,7 @@ func prefKey(k string) string {
 	return k
 }
 
-func loadKeyFromEnv(name, def string) string {
+func Getval(name, def string) string {
 	if val := os.Getenv(prefKey(name)); len(val) > 0 {
 		return val
 	}
@@ -120,7 +120,7 @@ func loadKeyFromEnv(name, def string) string {
 func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	conf := Options{}
 	if !env.ValidType(e) {
-		e = env.Type(loadKeyFromEnv(KeyENV, ""))
+		e = env.Type(Getval(KeyENV, ""))
 	}
 	configs := []string{
 		".env",
@@ -142,7 +142,7 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 		godotenv.Overload(f)
 	}
 
-	lvl := loadKeyFromEnv(KeyLogLevel, "")
+	lvl := Getval(KeyLogLevel, "")
 	switch strings.ToLower(lvl) {
 	case "trace":
 		conf.LogLevel = log.TraceLevel
@@ -157,41 +157,41 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	default:
 		conf.LogLevel = log.InfoLevel
 	}
-	conf.LogOutput = loadKeyFromEnv(KeyLogOutput, "")
+	conf.LogOutput = Getval(KeyLogOutput, "")
 
 	if !env.ValidType(e) {
-		e = env.Type(loadKeyFromEnv(KeyENV, "dev"))
+		e = env.Type(Getval(KeyENV, "dev"))
 	}
 	conf.Env = e
 	if conf.Host == "" {
-		conf.Host = loadKeyFromEnv(KeyHostname, conf.Host)
+		conf.Host = Getval(KeyHostname, conf.Host)
 	}
 	conf.TimeOut = timeOut
-	if to, _ := time.ParseDuration(loadKeyFromEnv(KeyTimeOut, "")); to > 0 {
+	if to, _ := time.ParseDuration(Getval(KeyTimeOut, "")); to > 0 {
 		conf.TimeOut = to
 	}
-	conf.Secure, _ = strconv.ParseBool(loadKeyFromEnv(KeyHTTPS, "false"))
+	conf.Secure, _ = strconv.ParseBool(Getval(KeyHTTPS, "false"))
 	if conf.Secure {
 		conf.BaseURL = fmt.Sprintf("https://%s", conf.Host)
 	} else {
 		conf.BaseURL = fmt.Sprintf("http://%s", conf.Host)
 	}
-	conf.KeyPath = loadKeyFromEnv(KeyKeyPath, "")
-	conf.CertPath = loadKeyFromEnv(KeyCertPath, "")
+	conf.KeyPath = Getval(KeyKeyPath, "")
+	conf.CertPath = Getval(KeyCertPath, "")
 
-	conf.Listen = loadKeyFromEnv(KeyListen, "")
-	envStorage := loadKeyFromEnv(KeyStorage, string(DefaultStorage))
+	conf.Listen = Getval(KeyListen, "")
+	envStorage := Getval(KeyStorage, string(DefaultStorage))
 	if len(DefaultStorage) > 0 {
 		envStorage = string(DefaultStorage)
 	}
 	conf.Storage = StorageType(strings.ToLower(envStorage))
-	conf.StoragePath = loadKeyFromEnv(KeyStoragePath, "")
+	conf.StoragePath = Getval(KeyStoragePath, "")
 	if conf.StoragePath == "" {
 		conf.StoragePath = os.TempDir()
 	}
 	conf.StoragePath = path.Clean(conf.StoragePath)
 	// TODO(marius): change to two different settings
-	disableCache, _ := strconv.ParseBool(loadKeyFromEnv(KeyCacheDisable, "false"))
+	disableCache, _ := strconv.ParseBool(Getval(KeyCacheDisable, "false"))
 	conf.StorageCache = !disableCache
 	conf.RequestCache = !disableCache
 
