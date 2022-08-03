@@ -8,4 +8,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var sqlOpen = sql.Open
+var sqlOpen = func(dataSourceName string) (*sql.DB, error) {
+	return sql.Open("sqlite3", dataSourceName)
+}

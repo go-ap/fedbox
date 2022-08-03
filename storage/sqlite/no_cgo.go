@@ -8,4 +8,6 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var sqlOpen = sql.Open
+var sqlOpen = func(dataSourceName string) (*sql.DB, error) {
+	return sql.Open("sqlite", dataSourceName)
+}

@@ -1,3 +1,4 @@
+//go:build storage_sqlite
 // +build storage_sqlite
 
 package cmd

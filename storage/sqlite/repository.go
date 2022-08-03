@@ -65,7 +65,7 @@ type repo struct {
 // Open opens the sqlite database
 func (r *repo) Open() (err error) {
 	if r.conn == nil {
-		if r.conn, err = sqlOpen("sqlite", r.path); err != nil {
+		if r.conn, err = sqlOpen(r.path); err != nil {
 			return err
 		}
 	}
