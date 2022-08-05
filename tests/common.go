@@ -13,7 +13,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"runtime/debug"
 	"sort"
@@ -174,8 +173,9 @@ var storagePath = func() string {
 	}
 	return path
 }
+
 var storageType = func() config.StorageType {
-	envStorage := os.Getenv("STORAGE")
+	envStorage := config.Getval("STORAGE", "all")
 	if len(envStorage) > 0 {
 		return config.StorageType(envStorage)
 	}

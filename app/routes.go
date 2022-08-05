@@ -42,7 +42,6 @@ func (f FedBOX) Routes() func(chi.Router) {
 
 		r.Group(f.OAuthRoutes())
 
-
 		if f.conf.Env.IsDev() && !f.conf.Secure {
 			r.Mount("/debug", middleware.Profiler())
 		}
@@ -56,7 +55,7 @@ func (f FedBOX) Routes() func(chi.Router) {
 
 func (f *FedBOX) OAuthRoutes() func(router chi.Router) {
 	h := f.OAuth
-	return func (r chi.Router) {
+	return func(r chi.Router) {
 		r.Route("/oauth", func(r chi.Router) {
 			// Authorization code endpoint
 			r.Get("/authorize", h.Authorize)
