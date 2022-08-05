@@ -1,11 +1,7 @@
-// +build !prod,!qa
+//go:build !prod && !qa
 
 package assets
 
-import (
-	"os"
-	"path/filepath"
-)
+import "os"
 
-var walkFsFn = filepath.Walk
-var openFsFn = os.Open
+var Templates = os.DirFS("./internal/assets")

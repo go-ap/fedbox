@@ -504,7 +504,7 @@ var (
 	defaultRenderOptions = render.Options{
 		AssetNames:                assets.Files,
 		Asset:                     assets.Template,
-		Directory:                 "templates/",
+		Directory:                 assets.TemplatesPath,
 		Extensions:                []string{".html"},
 		Funcs:                     []template.FuncMap{{"HTTPErrors": errors.HttpErrors}},
 		Delims:                    render.Delims{Left: "{{", Right: "}}"},

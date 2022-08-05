@@ -20,7 +20,6 @@ INSTALL_PREFIX ?= usr/local
 
 GO ?= go
 APPSOURCES := $(wildcard app/*.go activitypub/*.go internal/*/*.go storage/*/*.go)
-APPSOURCES := $(filter-out internal/assets/assets.gen.go, $(APPSOURCES))
 ASSETFILES := $(wildcard templates/*)
 PROJECT_NAME := $(shell basename $(PWD))
 
@@ -57,13 +56,8 @@ download:
 install_broccoli:
 	$(GO) install aletheia.icu/broccoli@5bc1e2f86a59
 
-assets: internal/assets/assets.gen.go
-
-internal/assets/assets.gen.go: download assets.go $(ASSETFILES)
-	$(GO) generate -tags "$(TAGS)" ./assets.go
-
 fedbox: bin/fedbox
-bin/fedbox: go.mod cmd/fedbox/main.go internal/assets/assets.gen.go $(APPSOURCES)
+bin/fedbox: go.mod cmd/fedbox/main.go $(APPSOURCES)
 	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/fedbox/main.go
 
 systemd/fedbox.service: systemd/fedbox.service.in
@@ -81,11 +75,10 @@ run: fedbox
 
 clean:
 	-$(RM) bin/*
-	-$(RM) internal/assets/assets.gen.go
 	$(MAKE) -C tests $@
 
 test: TEST_TARGET := ./{activitypub,app,storage,internal}/...
-test: assets download
+test: download
 	$(TEST) $(TEST_FLAGS) -tags "$(TAGS)" $(TEST_TARGET)
 
 coverage: TEST_TARGET := .
