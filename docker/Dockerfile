@@ -35,6 +35,6 @@ VOLUME /storage
 VOLUME /.env
 
 COPY --from=builder /go/src/app/bin/* /bin/
-COPY --from=builder /go/src/app/docker/*.key /go/src/app/docker/*.crt /go/src/app/docker/*.pem /etc/ssl/certs/
+COPY --from=builder /go/src/app/*.key /go/src/app/*.crt /go/src/app/*.pem /etc/ssl/certs/
 
 CMD ["/bin/fedbox"]
