@@ -45,16 +45,13 @@ endif
 BUILD := $(GO) build $(BUILDFLAGS)
 TEST := $(GO) test $(BUILDFLAGS)
 
-.PHONY: all run clean test coverage integration install download install_broccoli
+.PHONY: all run clean test coverage integration install download
 
 all: fedbox fedboxctl
 
 download:
 	$(GO) mod download all
 	$(GO) mod tidy
-
-install_broccoli:
-	$(GO) install aletheia.icu/broccoli@5bc1e2f86a59
 
 fedbox: bin/fedbox
 bin/fedbox: go.mod cmd/fedbox/main.go $(APPSOURCES)
