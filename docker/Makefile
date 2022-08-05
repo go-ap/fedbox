@@ -34,7 +34,7 @@ clean:
 	@-$(RM) $(FEDBOX_HOSTNAME).{key,crt,pem}
 
 builder:
-	$(BUILD_CMD) -f Dockerfile.build -t fedbox-builder ..
+	$(BUILD_CMD) --build-arg HOSTNAME=$(FEDBOX_HOSTNAME) -f Dockerfile.build -t fedbox/builder ..
 
 build:
 	$(BUILD_CMD) --build-arg ENV=$(ENV) --build-arg STORAGE=$(STORAGE) --build-arg PORT=$(PORT) -f Dockerfile -t $(FEDBOX_HOSTNAME)/app:$(TAG) ..

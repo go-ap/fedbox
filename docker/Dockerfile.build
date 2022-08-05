@@ -1,4 +1,4 @@
-FROM golang:1.18 as fedbox-builder
+FROM golang:1.18
 
 ENV GO111MODULE=on
 ENV GOWORK=off
