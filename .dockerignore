@@ -1,4 +1,6 @@
 .builds/
 .cache/
-tests/
+.git/
+.idea/
 bin/
+tests/
