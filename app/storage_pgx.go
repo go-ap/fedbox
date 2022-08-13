@@ -1,5 +1,4 @@
 //go:build storage_pgx
-// +build storage_pgx
 
 package app
 

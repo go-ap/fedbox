@@ -1,5 +1,4 @@
 //go:build storage_boltdb
-// +build storage_boltdb
 
 package app
 

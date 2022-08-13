@@ -1,5 +1,4 @@
 //go:build storage_fs
-// +build storage_fs
 
 package app
 

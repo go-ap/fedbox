@@ -1,5 +1,4 @@
 //go:build storage_badger
-// +build storage_badger
 
 package app
 
