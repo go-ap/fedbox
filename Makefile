@@ -2,15 +2,15 @@ SHELL := bash
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 .DELETE_ON_ERROR:
+MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --no-builtin-rules
 
 FEDBOX_HOSTNAME ?= fedbox.git
 STORAGE ?= all
 ENV ?= dev
 LDFLAGS ?= -X main.version=$(VERSION)
-BUILDFLAGS ?= -trimpath -a -ldflags '$(LDFLAGS)'
+BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)'
 TEST_FLAGS ?= -count=1
-MAKEFLAGS += --warn-undefined-variables
-MAKEFLAGS += --no-builtin-rules
 
 M4 = /usr/bin/m4
 M4_FLAGS =
@@ -29,6 +29,7 @@ export CGO_ENABLED=0
 
 ifneq ($(ENV), dev)
 	LDFLAGS += -s -w -extldflags "-static"
+	BUILDFLAGS += -trimpath
 endif
 
 ifeq ($(VERSION), )
