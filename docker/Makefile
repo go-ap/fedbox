@@ -6,18 +6,10 @@ STORAGE_PATH ?= $(shell realpath .cache)
 STORAGE_OBJECTS = $(STORAGE_PATH)/objects
 TAG ?= $(ENV)
 
-HAVE_BUILDAH := $(shell buildah -v dot 2> /dev/null)
-ifdef HAVE_BUILDAH
-	BUILD_CMD=buildah bud
-	RUN_CMD=podman run
-	TAG_CMD=buildah tag
-	PUSH_CMD=buildah push --format v2s2
-else
-	BUILD_CMD=docker build
-	RUN_CMD=docker run
-	TAG_CMD=docker tag
-	PUSH_CMD=docker push
-endif
+BUILD_CMD=buildah bud
+RUN_CMD=podman run
+TAG_CMD=podman tag
+PUSH_CMD=podman push
 
 ifneq ($(STORAGE), all)
 	TAG=$(ENV)-$(STORAGE)
