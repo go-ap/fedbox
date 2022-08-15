@@ -21,7 +21,7 @@ INSTALL_PREFIX ?= usr/local
 GO ?= go
 APPSOURCES := $(wildcard app/*.go activitypub/*.go internal/*/*.go storage/*/*.go)
 ASSETFILES := $(wildcard templates/*)
-PROJECT_NAME := $(shell basename $(PWD))
+PROJECT_NAME := fedbox
 
 TAGS := $(ENV) storage_$(STORAGE)
 
