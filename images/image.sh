@@ -34,7 +34,7 @@ echo "Building image ${_image_name} for host=${_hostname} env:${_environment} st
 #RUN make ENV=${ENV} STORAGE=${STORAGE} VERSION=${VERSION} all && \
 #    docker/gen-certs.sh ${HOSTNAME}
 buildah run ${_builder} make ENV=${ENV:-dev} STORAGE=${STORAGE:-all} VERSION=${_version} all
-buildah run ${_builder} ./images/gen-certs.sh fedbox
+buildah run ${_builder} make -C images fedbox.pem
 
 #FROM gcr.io/distroless/static
 _image=$(buildah from gcr.io/distroless/static:latest)
@@ -72,9 +72,9 @@ buildah config --volume /.env ${_image}
 #COPY --from=builder /go/src/app/bin/* /bin/
 buildah copy --from ${_builder} ${_image} /go/src/app/bin/* /bin/
 #COPY --from=builder /go/src/app/*.key /go/src/app/*.crt /go/src/app/*.pem /etc/ssl/certs/
-buildah copy --from ${_builder} ${_image} /go/src/app/fedbox.key /etc/ssl/certs/
-buildah copy --from ${_builder} ${_image} /go/src/app/fedbox.crt /etc/ssl/certs/
-buildah copy --from ${_builder} ${_image} /go/src/app/fedbox.pem /etc/ssl/certs/
+buildah copy --from ${_builder} ${_image} /go/src/app/images/fedbox.key /etc/ssl/certs/
+buildah copy --from ${_builder} ${_image} /go/src/app/images/fedbox.crt /etc/ssl/certs/
+buildah copy --from ${_builder} ${_image} /go/src/app/images/fedbox.pem /etc/ssl/certs/
 
 #CMD ["/bin/fedbox"]
 buildah config --entrypoint '["/bin/fedbox"]' ${_image}
