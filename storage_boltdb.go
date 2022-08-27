@@ -1,6 +1,6 @@
 //go:build storage_boltdb
 
-package app
+package fedbox
 
 import (
 	auth "github.com/go-ap/auth/boltdb"

@@ -1,6 +1,6 @@
 //go:build storage_sqlite
 
-package app
+package fedbox
 
 import (
 	auth "github.com/go-ap/auth/sqlite"

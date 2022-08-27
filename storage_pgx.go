@@ -1,6 +1,6 @@
 //go:build storage_pgx
 
-package app
+package fedbox
 
 import (
 	auth "github.com/go-ap/auth/pgx"

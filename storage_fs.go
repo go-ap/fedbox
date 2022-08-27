@@ -1,6 +1,6 @@
 //go:build storage_fs
 
-package app
+package fedbox
 
 import (
 	"path"

@@ -19,7 +19,7 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/fedbox/app"
+	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	ls "github.com/go-ap/fedbox/storage"
@@ -56,7 +56,7 @@ func loadMockJson(file string, model interface{}) func() (string, error) {
 	}
 }
 
-func addMockObjects(r processing.Store, obj vocab.ItemCollection, errFn app.LogFn) error {
+func addMockObjects(r processing.Store, obj vocab.ItemCollection, errFn fedbox.LogFn) error {
 	var err error
 	for _, it := range obj {
 		if it.GetLink() == "" {
@@ -152,7 +152,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 
 	fields := logrus.Fields{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
 	l := logger().WithFields(fields)
-	db, aDb, err := app.Storage(options, l)
+	db, aDb, err := fedbox.Storage(options, l)
 	if err != nil {
 		panic(err)
 	}
@@ -162,7 +162,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	o := cmd.New(aDb, db, options)
 	act := loadMockFromDisk("mocks/c2s/actors/application.json", nil)
 	mocks = append(mocks, act)
-	if clSaver, ok := aDb.(app.ClientSaver); ok {
+	if clSaver, ok := aDb.(fedbox.ClientSaver); ok {
 		clSaver.CreateClient(&osin.DefaultClient{
 			Id:          clientCode,
 			Secret:      "hahah",
@@ -205,7 +205,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	}
 }
 
-func SetupAPP(options config.Options) *app.FedBOX {
+func SetupAPP(options config.Options) *fedbox.FedBOX {
 	if options.Storage == "all" {
 		options.Storage = config.StorageFS
 	}
@@ -213,14 +213,14 @@ func SetupAPP(options config.Options) *app.FedBOX {
 	fields := logrus.Fields{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
 
 	l := logger()
-	db, o, err := app.Storage(options, l.WithFields(fields))
+	db, o, err := fedbox.Storage(options, l.WithFields(fields))
 	if err != nil {
 		panic(err)
 	}
 	if err = cmd.Bootstrap(options); err != nil {
 		panic(err)
 	}
-	a, _ := app.New(l, "HEAD", options, db, o)
+	a, _ := fedbox.New(l, "HEAD", options, db, o)
 	if options.Storage == config.StorageFS {
 		time.Sleep(100 * time.Millisecond)
 	}

@@ -1,6 +1,6 @@
 //go:build storage_badger
 
-package app
+package fedbox
 
 import (
 	"unsafe"

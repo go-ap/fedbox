@@ -10,7 +10,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	c "github.com/go-ap/client"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/app"
+	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/processing"
@@ -39,7 +39,7 @@ func New(authDB osin.Storage, actorDb processing.Store, conf config.Options) *Co
 	p, _ := processing.New(
 		processing.SetIRI(baseIRI),
 		processing.SetStorage(actorDb),
-		processing.SetIDGenerator(app.GenerateID(baseIRI)),
+		processing.SetIDGenerator(fedbox.GenerateID(baseIRI)),
 		processing.SetClient(c.New(
 			c.SetInfoLogger(clientInfoLogger),
 			c.SetErrorLogger(clientErrLogger),
@@ -117,7 +117,7 @@ func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
 			Name:    user,
 		}
 	}
-	db, aDb, err := app.Storage(conf, l)
+	db, aDb, err := fedbox.Storage(conf, l)
 	if err != nil {
 		return nil, err
 	}

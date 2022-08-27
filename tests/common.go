@@ -23,7 +23,7 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
-	fedbox "github.com/go-ap/fedbox/app"
+	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"

@@ -11,8 +11,8 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/app"
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
 	"github.com/urfave/cli/v2"
@@ -452,7 +452,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 		files := c.Args().Slice()
 
 		processor, err := processing.New(
-			processing.SetIRI(vocab.IRI(baseIRI), app.InternalIRI),
+			processing.SetIRI(vocab.IRI(baseIRI), fedbox.InternalIRI),
 			processing.SetStorage(ctl.Storage),
 		)
 		if err != nil {

@@ -7,8 +7,8 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/app"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/jsonld"
 	"github.com/urfave/cli/v2"
@@ -156,7 +156,7 @@ var generateKeysCmd = &cli.Command{
 }
 
 func AddKeyToItem(metaSaver storage.MetadataTyper, it vocab.Item) error {
-	if err := vocab.OnActor(it, app.AddKeyToPerson(metaSaver)); err != nil {
+	if err := vocab.OnActor(it, fedbox.AddKeyToPerson(metaSaver)); err != nil {
 		return errors.Annotatef(err, "failed to process actor: %s", it.GetID())
 	}
 	if _, err := ctl.Storage.Save(it); err != nil {

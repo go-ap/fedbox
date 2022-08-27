@@ -10,8 +10,8 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox"
 	apub "github.com/go-ap/fedbox/activitypub"
-	fedbox "github.com/go-ap/fedbox/app"
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
 	"github.com/openshift/osin"

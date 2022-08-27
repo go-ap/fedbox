@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-ap/fedbox/app"
+	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/fedbox/internal/log"
@@ -53,11 +53,11 @@ func run(version string) cli.ActionFunc {
 			return err
 		}
 		l := log.New(log.Conf{Type: conf.LogOutput, Pretty: !conf.Env.IsProd(), Level: conf.LogLevel})
-		db, o, err := app.Storage(conf, l)
+		db, o, err := fedbox.Storage(conf, l)
 		if err != nil {
 			l.Errorf("Unable to initialize storage backend: %s", err)
 		}
-		a, err := app.New(l, version, conf, db, o)
+		a, err := fedbox.New(l, version, conf, db, o)
 		if err != nil {
 			l.Errorf("Unable to initialize: %s", err)
 			return err

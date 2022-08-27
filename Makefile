@@ -19,7 +19,7 @@ DESTDIR ?= /
 INSTALL_PREFIX ?= usr/local
 
 GO ?= go
-APPSOURCES := $(wildcard app/*.go activitypub/*.go internal/*/*.go storage/*/*.go)
+APPSOURCES := $(wildcard ./*.go activitypub/*.go internal/*/*.go storage/*/*.go)
 ASSETFILES := $(wildcard templates/*)
 PROJECT_NAME := fedbox
 
@@ -75,7 +75,7 @@ clean:
 	-$(RM) bin/*
 	$(MAKE) -C tests $@
 
-test: TEST_TARGET := ./{activitypub,app,storage,internal}/...
+test: TEST_TARGET := . ./{activitypub,storage,internal}/...
 test: download
 	$(TEST) $(TEST_FLAGS) -tags "$(TAGS)" $(TEST_TARGET)
 

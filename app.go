@@ -1,4 +1,4 @@
-package app
+package fedbox
 
 import (
 	"context"
@@ -171,7 +171,7 @@ func (f *FedBOX) Run(c context.Context) error {
 	}
 	// Get start/stop functions for the http server
 	srvRun, srvStop := w.HttpServer(setters...)
-	f.infFn("Listening on %s %s", listenOn, f.conf.Listen)
+	f.infFn("Started %s %s %s", f.conf.BaseURL, listenOn, f.conf.Listen)
 	f.stopFn = func() {
 		if err := srvStop(ctx); err != nil {
 			f.errFn("Err: %s", err)
