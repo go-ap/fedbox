@@ -110,7 +110,6 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db processing.St
 		return nil, err
 	}
 
-	app.R.Use(RepoMw(db))
 	app.R.Use(middleware.RequestID)
 	app.R.Use(log.NewStructuredLogger(l))
 

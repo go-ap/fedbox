@@ -57,7 +57,8 @@ func orderItems(col vocab.ItemCollection) vocab.ItemCollection {
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
-	return func(typ vocab.CollectionPath, r *http.Request, repo processing.ReadStore) (vocab.CollectionInterface, error) {
+	repo := fb.storage.repo
+	return func(typ vocab.CollectionPath, r *http.Request) (vocab.CollectionInterface, error) {
 		if !ap.ValidCollection(typ) {
 			return nil, errors.NotFoundf("collection '%s' not found", typ)
 		}
@@ -162,7 +163,8 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 	clientInfoLogger := func(...client.Ctx) client.LogFn {
 		return infoLogger
 	}
-	return func(receivedIn vocab.IRI, r *http.Request, repo processing.Store) (vocab.Item, int, error) {
+	repo := fb.storage.repo
+	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
 		var it vocab.Item
 
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)
@@ -236,7 +238,8 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 // HandleItem serves content from the following, followers, liked, and likes end-points
 // that returns a single ActivityPub object
 func HandleItem(fb FedBOX) processing.ItemHandlerFn {
-	return func(r *http.Request, repo processing.ReadStore) (vocab.Item, error) {
+	repo := fb.storage.repo
+	return func(r *http.Request) (vocab.Item, error) {
 		collection := processing.Typer.Type(r)
 
 		f, err := ap.FromRequest(r, fb.Config().BaseURL)

@@ -8,22 +8,8 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
 )
-
-// RepoMw adds an implementation of the processing.Loader to a Request's context so it can be used
-// further in the middleware chain
-func RepoMw(loader processing.ReadStore) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			newCtx := context.WithValue(ctx, processing.RepositoryKey, loader)
-			next.ServeHTTP(w, r.WithContext(newCtx))
-		}
-		return http.HandlerFunc(fn)
-	}
-}
 
 // ActorFromAuthHeader tries to load a local actor from the OAuth2 or HTTP Signatures Authorization headers
 func (f FedBOX) ActorFromAuthHeader(next http.Handler) http.Handler {
