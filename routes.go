@@ -11,14 +11,14 @@ import (
 func (f FedBOX) CollectionRoutes(descend bool) func(chi.Router) {
 	return func(r chi.Router) {
 		r.Group(func(r chi.Router) {
-			r.With(f.ActorFromAuthHeader).Method(http.MethodGet, "/", HandleCollection(f))
-			r.With(f.ActorFromAuthHeader).Method(http.MethodHead, "/", HandleCollection(f))
-			r.With(f.ActorFromAuthHeader).Method(http.MethodPost, "/", HandleRequest(f))
+			r.Method(http.MethodGet, "/", HandleCollection(f))
+			r.Method(http.MethodHead, "/", HandleCollection(f))
+			r.Method(http.MethodPost, "/", HandleRequest(f))
 
 			r.Route("/{id}", func(r chi.Router) {
 				r.Group(f.OAuthRoutes())
-				r.With(f.ActorFromAuthHeader).Method(http.MethodGet, "/", HandleItem(f))
-				r.With(f.ActorFromAuthHeader).Method(http.MethodHead, "/", HandleItem(f))
+				r.Method(http.MethodGet, "/", HandleItem(f))
+				r.Method(http.MethodHead, "/", HandleItem(f))
 				if descend {
 					r.Route("/{collection}", f.CollectionRoutes(false))
 				}
@@ -32,8 +32,8 @@ func (f FedBOX) Routes() func(chi.Router) {
 		r.Use(middleware.RealIP)
 		r.Use(CleanRequestPath)
 
-		r.With(f.ActorFromAuthHeader).Method(http.MethodGet, "/", HandleItem(f))
-		r.With(f.ActorFromAuthHeader).Method(http.MethodHead, "/", HandleItem(f))
+		r.Method(http.MethodGet, "/", HandleItem(f))
+		r.Method(http.MethodHead, "/", HandleItem(f))
 		// TODO(marius): we can separate here the FedBOX specific collections from the ActivityPub spec ones
 		// using some regular expressions
 		// Eg: "/{collection:(inbox|outbox|followed)}"

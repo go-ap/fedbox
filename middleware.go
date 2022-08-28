@@ -1,38 +1,11 @@
 package fedbox
 
 import (
-	"context"
 	"net/http"
 	"path"
 
-	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/auth"
-	"github.com/go-ap/errors"
 	"github.com/go-chi/chi/v5"
 )
-
-// ActorFromAuthHeader tries to load a local actor from the OAuth2 or HTTP Signatures Authorization headers
-func (f FedBOX) ActorFromAuthHeader(next http.Handler) http.Handler {
-	// TODO(marius): move this to the auth package and also add the possibility of getting the logger as a parameter
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		act, err := f.OAuth.auth.LoadActorFromAuthHeader(r)
-		// NOTE(marius): we can safely check just for POST here, as in ActivityPub that's the only supported
-		// method for submitting Activities
-		if r.Method == http.MethodPost && err != nil && errors.IsUnauthorized(err) {
-			if challenge := errors.Challenge(err); len(challenge) > 0 {
-				w.Header().Add("WWW-Authenticate", challenge)
-			}
-			f.errFn("%s", err)
-		}
-		if id := act.GetID(); id.IsValid() {
-			if !id.Equals(vocab.PublicNS, true) {
-				f.infFn("Loaded actor: %s", id)
-			}
-			r = r.WithContext(context.WithValue(r.Context(), auth.ActorKey, act))
-		}
-		next.ServeHTTP(w, r)
-	})
-}
 
 func CleanRequestPath(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

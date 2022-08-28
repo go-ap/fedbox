@@ -3,6 +3,7 @@ package fedbox
 import (
 	"context"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -144,6 +145,14 @@ func (f *FedBOX) reload() (err error) {
 	f.conf, err = config.LoadFromEnv(f.conf.Env, f.conf.TimeOut)
 	f.caches.Remove()
 	return err
+}
+
+func (f FedBOX) actorFromRequest(r *http.Request) *vocab.Actor {
+	act, err := f.OAuth.auth.LoadActorFromAuthHeader(r)
+	if err != nil {
+		return nil
+	}
+	return act
 }
 
 // Run is the wrapper for starting the web-server and handling signals

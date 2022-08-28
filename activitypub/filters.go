@@ -9,7 +9,6 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/processing"
 	"github.com/mariusor/qstring"
@@ -1055,13 +1054,13 @@ func (f *Filters) ItemsMatch(col ...vocab.Item) bool {
 
 // LoadCollectionFilters uses specific logic for adding elements to the filters when loading
 // collections from the database.
-func LoadCollectionFilters(r *http.Request, f *Filters) error {
-	return LoadItemFilters(r, f)
+func LoadCollectionFilters(f *Filters, auth *vocab.Actor) error {
+	return LoadItemFilters(f, auth)
 }
 
 // LoadItemFilters uses specific logic for adding elements to the filters when loading
 // single items from the database.
-func LoadItemFilters(r *http.Request, f *Filters) error {
+func LoadItemFilters(f *Filters, auth *vocab.Actor) error {
 	if len(f.Key) != 0 {
 		for _, k := range f.Key {
 			i := CompStr{Str: fmt.Sprintf("%s%s", f.IRI, k)}
@@ -1069,8 +1068,8 @@ func LoadItemFilters(r *http.Request, f *Filters) error {
 		}
 	}
 
-	if auth, ok := auth.ActorContext(r.Context()); ok {
-		f.Authenticated = &auth
+	if auth != nil && auth.ID != vocab.PublicNS {
+		f.Authenticated = auth
 		if f.Object != nil {
 			f.Object.Authenticated = f.Authenticated
 		}

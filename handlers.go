@@ -67,7 +67,7 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 		if err != nil {
 			return nil, errors.NewNotValid(err, "unable to load filters from request")
 		}
-		ap.LoadCollectionFilters(r, f)
+		ap.LoadCollectionFilters(f, fb.actorFromRequest(r))
 
 		cacheKey := ap.CacheKey(f)
 		it := fb.caches.Get(cacheKey)
@@ -171,7 +171,7 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 		if err != nil {
 			return it, 0, errors.NewNotValid(err, "unable to load filters from request")
 		}
-		ap.LoadCollectionFilters(r, f)
+		ap.LoadCollectionFilters(f, fb.actorFromRequest(r))
 
 		if ok, err := ValidateRequest(r); !ok {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unrecognized ActivityPub content type")
@@ -199,7 +199,7 @@ func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
 			processing.SetLocalIRIChecker(st.IsLocalIRI(repo)),
 		)
 		if err != nil {
-			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize validator and processor")
+			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize processor")
 		}
 		processor.SetActor(f.Authenticated)
 		if metaSaver, ok := repo.(st.MetadataTyper); ok {
@@ -246,7 +246,7 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 		if err != nil {
 			return nil, errors.NewNotValid(err, "unable to load filters from request")
 		}
-		ap.LoadItemFilters(r, f)
+		ap.LoadItemFilters(f, fb.actorFromRequest(r))
 
 		cacheKey := ap.CacheKey(f)
 		it := fb.caches.Get(cacheKey)
