@@ -108,13 +108,14 @@ func prefKey(k string) string {
 }
 
 func Getval(name, def string) string {
-	if val := os.Getenv(prefKey(name)); len(val) > 0 {
-		return val
+	val := def
+	if pf := os.Getenv(prefKey(name)); len(pf) > 0 {
+		val = pf
 	}
-	if val := os.Getenv(name); len(val) > 0 {
-		return val
+	if p := os.Getenv(name); len(p) > 0 {
+		val = p
 	}
-	return def
+	return val
 }
 
 func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
@@ -139,7 +140,7 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 		appendIfFile(e)
 	}
 	for _, f := range configs {
-		godotenv.Overload(f)
+		godotenv.Load(f)
 	}
 
 	lvl := Getval(KeyLogLevel, "")
