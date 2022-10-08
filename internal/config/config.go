@@ -47,28 +47,30 @@ type Options struct {
 type StorageType string
 
 const (
-	KeyENV          = "ENV"
-	KeyTimeOut      = "TIME_OUT"
-	KeyLogLevel     = "LOG_LEVEL"
-	KeyLogOutput    = "LOG_OUTPUT"
-	KeyHostname     = "HOSTNAME"
-	KeyHTTPS        = "HTTPS"
-	KeyCertPath     = "CERT_PATH"
-	KeyKeyPath      = "KEY_PATH"
-	KeyListen       = "LISTEN"
-	KeyDBHost       = "DB_HOST"
-	KeyDBPort       = "DB_PORT"
-	KeyDBName       = "DB_NAME"
-	KeyDBUser       = "DB_USER"
-	KeyDBPw         = "DB_PASSWORD"
-	KeyStorage      = "STORAGE"
-	KeyStoragePath  = "STORAGE_PATH"
-	KeyCacheDisable = "DISABLE_CACHE"
-	StorageBoltDB   = StorageType("boltdb")
-	StorageFS       = StorageType("fs")
-	StorageBadger   = StorageType("badger")
-	StoragePostgres = StorageType("postgres")
-	StorageSqlite   = StorageType("sqlite")
+	KeyENV                 = "ENV"
+	KeyTimeOut             = "TIME_OUT"
+	KeyLogLevel            = "LOG_LEVEL"
+	KeyLogOutput           = "LOG_OUTPUT"
+	KeyHostname            = "HOSTNAME"
+	KeyHTTPS               = "HTTPS"
+	KeyCertPath            = "CERT_PATH"
+	KeyKeyPath             = "KEY_PATH"
+	KeyListen              = "LISTEN"
+	KeyDBHost              = "DB_HOST"
+	KeyDBPort              = "DB_PORT"
+	KeyDBName              = "DB_NAME"
+	KeyDBUser              = "DB_USER"
+	KeyDBPw                = "DB_PASSWORD"
+	KeyStorage             = "STORAGE"
+	KeyStoragePath         = "STORAGE_PATH"
+	KeyCacheDisable        = "DISABLE_CACHE"
+	KeyStorageCacheDisable = "DISABLE_STORAGE_CACHE"
+	KeyRequestCacheDisable = "DISABLE_REQUEST_CACHE"
+	StorageBoltDB          = StorageType("boltdb")
+	StorageFS              = StorageType("fs")
+	StorageBadger          = StorageType("badger")
+	StoragePostgres        = StorageType("postgres")
+	StorageSqlite          = StorageType("sqlite")
 )
 
 const defaultDirPerm = os.ModeDir | os.ModePerm | 0700
@@ -191,10 +193,16 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 		conf.StoragePath = os.TempDir()
 	}
 	conf.StoragePath = path.Clean(conf.StoragePath)
-	// TODO(marius): change to two different settings
+
 	disableCache, _ := strconv.ParseBool(Getval(KeyCacheDisable, "false"))
 	conf.StorageCache = !disableCache
 	conf.RequestCache = !disableCache
+	if disableStorageCache, err := strconv.ParseBool(Getval(KeyStorageCacheDisable, "false")); err == nil {
+		conf.StorageCache = !disableStorageCache
+	}
+	if disableRequestCache, err := strconv.ParseBool(Getval(KeyRequestCacheDisable, "false")); err == nil {
+		conf.RequestCache = !disableRequestCache
+	}
 
 	return conf, nil
 }
