@@ -509,9 +509,7 @@ var (
 		Delims:                    render.Delims{Left: "{{", Right: "}}"},
 		Charset:                   "UTF-8",
 		DisableCharset:            false,
-		BinaryContentType:         "application/octet-stream",
 		HTMLContentType:           "text/html",
-		IsDevelopment:             true,
 		DisableHTTPErrorRendering: false,
 	}
 	errRenderer = render.New(defaultRenderOptions)

@@ -36,7 +36,6 @@ require (
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.0.0 // indirect
@@ -71,3 +70,5 @@ require (
 	modernc.org/strutil v1.1.3 // indirect
 	modernc.org/token v1.0.1 // indirect
 )
+
+replace github.com/unrolled/render => github.com/mariusor/render v1.5.1-0.20221016120107-df99e3977ca0
