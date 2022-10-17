@@ -502,7 +502,7 @@ type authModel interface {
 
 var (
 	defaultRenderOptions = render.Options{
-		FileSystem:                render.FS(assets.Templates),
+		FileSystem:                assets.Templates,
 		Directory:                 assets.TemplatesPath,
 		Extensions:                []string{".html"},
 		Funcs:                     []template.FuncMap{{"HTTPErrors": errors.HttpErrors}},
