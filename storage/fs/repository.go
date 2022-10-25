@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/url"
 	"os"
@@ -65,10 +66,11 @@ func New(c Config) (*repo, error) {
 	}
 	b := repo{
 		path:    p,
+		mount:   os.DirFS(p),
 		cwd:     cwd,
 		baseURL: c.BaseURL,
-		logFn:   defaultLogFn,
-		errFn:   defaultLogFn,
+		logFn:   log.Printf,
+		errFn:   log.Printf,
 		cache:   cache.New(c.EnableCache),
 	}
 	return &b, nil
@@ -76,6 +78,7 @@ func New(c Config) (*repo, error) {
 
 type repo struct {
 	baseURL string
+	mount   fs.FS
 	path    string
 	cwd     string
 	opened  bool
@@ -89,7 +92,7 @@ func (r *repo) Open() error {
 	if r.opened {
 		return nil
 	}
-	return os.Chdir(r.path)
+	return nil //os.Chdir(r.path)
 }
 
 // Close
@@ -97,7 +100,7 @@ func (r *repo) Close() error {
 	if r.opened {
 		return nil
 	}
-	return os.Chdir(r.cwd)
+	return nil //os.Chdir(r.cwd)
 }
 
 func (r *repo) CreateService(service vocab.Service) error {
@@ -357,7 +360,7 @@ func (r *repo) LoadMetadata(iri vocab.IRI) (*storage.Metadata, error) {
 	}
 
 	p := r.itemPath(iri)
-	raw, err := loadRawFromPath(getMetadataKey(p))
+	raw, err := r.loadRawFromPath(getMetadataKey(p))
 	if err != nil {
 		return nil, errors.NewNotFound(r.asPathErr(err), "Could not find metadata in path %s", p)
 	}
@@ -377,7 +380,7 @@ func (r *repo) SaveMetadata(m storage.Metadata, iri vocab.IRI) error {
 	}
 
 	p := getMetadataKey(r.itemPath(iri))
-	f, err := createOrOpenFile(p)
+	f, err := r.createOrOpenFile(p)
 	if err != nil {
 		return err
 	}
@@ -471,6 +474,13 @@ func generateECKeyPair() (pem.Block, pem.Block) {
 	return p, r
 }
 
+func (r repo) createOrOpenFile(p string) (fs.File, error) {
+	err := mkDirIfNotExists(path.Dir(p))
+	if err != nil {
+		return nil, err
+	}
+	return os.OpenFile(p, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+}
 func createOrOpenFile(p string) (*os.File, error) {
 	err := mkDirIfNotExists(path.Dir(p))
 	if err != nil {
@@ -489,7 +499,7 @@ func (r repo) itemPath(iri vocab.IRI) string {
 	if err != nil {
 		return ""
 	}
-	return path.Join(r.path, url.Host, url.Path)
+	return path.Join(url.Host, url.Path)
 }
 
 // createCollections
@@ -651,7 +661,7 @@ func save(r *repo, it vocab.Item) (vocab.Item, error) {
 		return it, errors.Annotatef(err, "could not create file")
 	}
 	objPath := getObjectKey(itPath)
-	f, err := os.OpenFile(objPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	f, err := r.mount.Open(objPath) // , os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600
 	if err != nil {
 		return it, errors.NewNotFound(err, "%s not found", objPath)
 	}
@@ -698,8 +708,9 @@ func onCollection(r *repo, col vocab.IRI, it vocab.Item, fn func(p string) error
 	return nil
 }
 
-func loadRawFromPath(itPath string) ([]byte, error) {
-	return ioutil.ReadFile(itPath)
+func (r repo) loadRawFromPath(itPath string) ([]byte, error) {
+	r.errFn("trying to read %s of fs %s", itPath, r.mount)
+	return fs.ReadFile(r.mount, itPath)
 }
 
 func loadFromRaw(raw []byte) (vocab.Item, error) {
@@ -848,7 +859,7 @@ func (r repo) loadItem(p string, f processing.Filterable) (vocab.Item, error) {
 		it = cachedIt
 	}
 	if vocab.IsNil(it) {
-		raw, err := loadRawFromPath(p)
+		raw, err := r.loadRawFromPath(p)
 		if err != nil {
 			if os.IsNotExist(err) {
 				return getOriginalIRI(p)
