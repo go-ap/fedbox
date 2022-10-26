@@ -17,9 +17,9 @@ import (
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
+	"github.com/mariusor/render"
 	"github.com/openshift/osin"
 	"github.com/sirupsen/logrus"
-	"github.com/unrolled/render"
 	"golang.org/x/oauth2"
 )
 
