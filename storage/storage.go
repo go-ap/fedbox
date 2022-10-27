@@ -15,8 +15,8 @@ type PasswordChanger interface {
 }
 
 type Metadata struct {
-	Pw         []byte `jsonld:"pw,omitempty"`
-	PrivateKey []byte `jsonld:"key,omitempty"`
+	Pw         []byte `jsonld:"pw,omitempty",json:"pw,omitempty"`
+	PrivateKey []byte `jsonld:"key,omitempty",json:"key,omitempty"`
 }
 
 type MetadataTyper interface {
