@@ -68,7 +68,8 @@ const (
 )
 
 // TODO(marius): here we need a better separation between the collections which are exposed in the HTTP API
-//   (activities,actors,objects) and the ones that are internal (blocked,ignored)
+//
+//	(activities,actors,objects) and the ones that are internal (blocked,ignored)
 var (
 	HiddenCollections = vocab.CollectionPaths{
 		BlockedType,
@@ -1084,6 +1085,18 @@ func LoadItemFilters(f *Filters, auth *vocab.Actor) error {
 		}
 	}
 	return nil
+}
+
+func ValidCollectionCount(col vocab.ItemCollection, f processing.Filterable) bool {
+	ff, ok := f.(*Filters)
+	if !ok {
+		return true
+	}
+	max := MaxItems
+	if ff.MaxItems > 0 {
+		max = ff.MaxItems
+	}
+	return uint(len(col)) < max
 }
 
 // FilterIt

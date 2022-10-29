@@ -4,11 +4,12 @@ package pgx
 
 import (
 	"fmt"
+
+	"git.sr.ht/~mariusor/lw"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/log"
 	"github.com/jackc/pgx"
-	"github.com/sirupsen/logrus"
 )
 
 var RootDb = "postgres"
@@ -18,7 +19,7 @@ func openConn(c pgx.ConnConfig) (*pgx.Conn, error) {
 }
 
 func Bootstrap(opt config.Options, rootUser string, rootPw []byte) error {
-	logger := logrus.New()
+	logger := lw.Dev(lw.SetLevel(lw.DebugLevel))
 	var conn *pgx.Conn
 	var err error
 
@@ -102,7 +103,7 @@ func Bootstrap(opt config.Options, rootUser string, rootPw []byte) error {
 }
 
 func Clean(opt config.Options, rootUser string, rootPw []byte) error {
-	logger := logrus.New()
+	logger := lw.Dev(lw.SetLevel(opt.LogLevel))
 	var conn *pgx.Conn
 	var err error
 

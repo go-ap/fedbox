@@ -9,7 +9,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -21,15 +20,14 @@ import (
 	"testing"
 	"time"
 
+	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/httpsig"
 	"github.com/go-ap/jsonld"
-	"github.com/sirupsen/logrus"
 )
 
 // UserAgent value that the client uses when performing requests
@@ -44,7 +42,7 @@ var C2SConfig = config.Options{
 	Host:        "127.0.0.1:9998",
 	Listen:      "127.0.0.1:9998",
 	BaseURL:     "http://127.0.0.1:9998/",
-	LogLevel:    log.DebugLevel,
+	LogLevel:    lw.DebugLevel,
 	StoragePath: storagePath(),
 	Storage:     storageType(),
 }
@@ -54,7 +52,7 @@ var S2SConfig = config.Options{
 	Host:        "127.0.2.1:9999",
 	Listen:      "127.0.2.1:9999",
 	BaseURL:     "http://127.0.2.1:9999/",
-	LogLevel:    log.DebugLevel,
+	LogLevel:    lw.DebugLevel,
 	StoragePath: storagePath(),
 	Storage:     storageType(),
 }
@@ -786,27 +784,14 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 }
 
 var (
-	Verbose   bool
-	Silent    bool
-	formatter = logrus.TextFormatter{
-		ForceColors:      true,
-		DisableQuote:     true,
-		DisableTimestamp: true,
-		DisableSorting:   true,
-		PadLevelText:     true,
-	}
-	Log logrus.FieldLogger
+	Verbose bool
+	Silent  bool
+	Log     lw.Logger
 )
 
-func logger() logrus.FieldLogger {
+func logger() lw.Logger {
 	new(sync.Once).Do(func() {
-		l := logrus.New()
-		if !Silent {
-			l.SetOutput(io.Discard)
-		} else if Verbose {
-			l.SetLevel(logrus.TraceLevel)
-		}
-		l.SetFormatter(&formatter)
+		l := lw.Dev(lw.SetLevel(lw.DebugLevel))
 		Log = l
 	})
 	return Log

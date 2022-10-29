@@ -9,6 +9,7 @@ import (
 	"path"
 	"time"
 
+	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
@@ -19,7 +20,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mariusor/render"
 	"github.com/openshift/osin"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 )
 
@@ -63,7 +63,7 @@ type authService struct {
 	genID   processing.IDGenerator
 	storage fedboxStorage
 	auth    *auth.Server
-	logger  logrus.FieldLogger
+	logger  lw.Logger
 }
 
 const (
@@ -239,7 +239,7 @@ func (i *authService) loadAccountFromPost(r *http.Request) (*account, error) {
 	pw := r.PostFormValue("pw")
 	handle := r.PostFormValue("handle")
 
-	i.logger.WithFields(logrus.Fields{
+	i.logger.WithContext(lw.Ctx{
 		"handle": handle,
 		"pass":   pw,
 	}).Info("received")
@@ -361,7 +361,7 @@ func (i *authService) Token(w http.ResponseWriter, r *http.Request) {
 		}
 		actor, err := i.storage.repo.Load(actorFilters.GetLink())
 		if err != nil {
-			i.logger.Error(errUnauthorized)
+			i.logger.Errorf("%s", errUnauthorized)
 			errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 			return
 		}
@@ -384,7 +384,7 @@ func (i *authService) Token(w http.ResponseWriter, r *http.Request) {
 				}
 				if err != nil || acc == nil {
 					if err != nil {
-						i.logger.Error(err)
+						i.logger.Errorf("%s", err)
 					}
 					errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 					return
@@ -519,7 +519,7 @@ var (
 func (i *authService) renderTemplate(r *http.Request, w http.ResponseWriter, name string, m authModel) {
 	if err := ren.HTML(w, http.StatusOK, name, m); err != nil {
 		new := errors.Annotatef(err, "failed to render template")
-		i.logger.WithFields(logrus.Fields{"template": name, "model": fmt.Sprintf("%T", m)}).Error(new.Error())
+		i.logger.WithContext(lw.Ctx{"template": name, "model": fmt.Sprintf("%T", m)}).Error(new.Error())
 		errRenderer.HTML(w, http.StatusInternalServerError, "error", new)
 	}
 }
@@ -671,7 +671,7 @@ func (i *authService) HandleChangePw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	i.logger.WithFields(logrus.Fields{
+	i.logger.WithContext(lw.Ctx{
 		"handle": actor.PreferredUsername.String(),
 		"pass":   pw,
 	}).Info("received")

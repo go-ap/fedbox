@@ -1,10 +1,11 @@
 package log
 
 import (
-	p "github.com/jackc/pgx"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"testing"
+
+	"git.sr.ht/~mariusor/lw"
+	p "github.com/jackc/pgx"
 )
 
 type wr string
@@ -19,7 +20,7 @@ func (w *wr) String() string {
 }
 
 func TestDBLogger(t *testing.T) {
-	lr := logrus.New()
+	lr := lw.Dev(lw.SetLevel(lw.DebugLevel))
 	l := NewPgxLogger(lr)
 
 	if l.l != lr {
@@ -29,10 +30,7 @@ func TestDBLogger(t *testing.T) {
 
 func TestDbLogger_Log(t *testing.T) {
 	w := new(wr)
-	lr := logrus.New()
-	lr.SetLevel(logrus.TraceLevel)
-	lr.SetFormatter(&logrus.TextFormatter{DisableColors: true, DisableTimestamp: true})
-	lr.SetOutput(w)
+	lr := lw.Prod(lw.SetLevel(lw.TraceLevel), lw.SetOutput(w))
 	l := NewPgxLogger(lr)
 
 	if l.l != lr {
@@ -41,7 +39,7 @@ func TestDbLogger_Log(t *testing.T) {
 	{
 		testMsg := "test - TRACE"
 		l.Log(p.LogLevelTrace, testMsg, nil)
-		if !strings.Contains(w.String(), "trace") {
+		if !strings.Contains(w.String(), "TRACE") {
 			t.Errorf("Could not find the log level in the log message, searching for 'trace' in %s", w.String())
 		}
 		if !strings.Contains(w.String(), testMsg) {

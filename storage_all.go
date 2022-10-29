@@ -6,6 +6,7 @@ import (
 	"path"
 	"unsafe"
 
+	"git.sr.ht/~mariusor/lw"
 	authbadger "github.com/go-ap/auth/badger"
 	authboltdb "github.com/go-ap/auth/boltdb"
 	authfs "github.com/go-ap/auth/fs"
@@ -20,10 +21,9 @@ import (
 	"github.com/go-ap/fedbox/storage/sqlite"
 	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
-	"github.com/sirupsen/logrus"
 )
 
-func getBadgerStorage(c config.Options, l logrus.FieldLogger) (processing.Store, osin.Storage, error) {
+func getBadgerStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
 	conf := badger.Config{
 		Path:    path,
@@ -44,7 +44,7 @@ func getBadgerStorage(c config.Options, l logrus.FieldLogger) (processing.Store,
 	return db, oauth, nil
 }
 
-func getBoltStorage(c config.Options, l logrus.FieldLogger) (processing.Store, osin.Storage, error) {
+func getBoltStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
 	l.Debugf("Initializing boltdb storage at %s", path)
 	db, err := boltdb.New(boltdb.Config{
@@ -66,7 +66,7 @@ func getBoltStorage(c config.Options, l logrus.FieldLogger) (processing.Store, o
 	return db, oauth, nil
 }
 
-func getFsStorage(c config.Options, l logrus.FieldLogger) (processing.Store, osin.Storage, error) {
+func getFsStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	p := c.BaseStoragePath()
 	l.Debugf("Initializing fs storage at %s", c.BaseStoragePath())
 	oauth := authfs.New(authfs.Config{
@@ -85,7 +85,7 @@ func getFsStorage(c config.Options, l logrus.FieldLogger) (processing.Store, osi
 	return db, oauth, nil
 }
 
-func getSqliteStorage(c config.Options, l logrus.FieldLogger) (processing.Store, osin.Storage, error) {
+func getSqliteStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
 	l.Debugf("Initializing sqlite storage at %s", path)
 	oauth := authsqlite.New(authsqlite.Config{
@@ -104,7 +104,7 @@ func getSqliteStorage(c config.Options, l logrus.FieldLogger) (processing.Store,
 	return db, oauth, nil
 }
 
-func getPgxStorage(c config.Options, l logrus.FieldLogger) (processing.Store, osin.Storage, error) {
+func getPgxStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	// @todo(marius): we're no longer loading SQL db config env variables
 	l.Debugf("Initializing pgx storage at %s", c.StoragePath)
 	conf := pgx.Config{}
@@ -125,7 +125,7 @@ func getPgxStorage(c config.Options, l logrus.FieldLogger) (processing.Store, os
 	return db, oauth, errors.NotImplementedf("pgx storage is not implemented yet")
 }
 
-func Storage(c config.Options, l logrus.FieldLogger) (processing.Store, osin.Storage, error) {
+func Storage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	switch c.Storage {
 	case config.StorageBoltDB:
 		return getBoltStorage(c, l)

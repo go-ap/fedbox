@@ -10,6 +10,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"git.sr.ht/~mariusor/lw"
 	"io/ioutil"
 	"os"
 	"path"
@@ -27,7 +28,6 @@ import (
 	"github.com/go-ap/jsonld"
 	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -150,8 +150,8 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 		return
 	}
 
-	fields := logrus.Fields{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
-	l := logger().WithFields(fields)
+	fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
+	l := logger().WithContext(fields)
 	db, aDb, err := fedbox.Storage(options, l)
 	if err != nil {
 		panic(err)
@@ -196,7 +196,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 			r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
 			err = metaSaver.SaveMetadata(ls.Metadata{PrivateKey: pem.EncodeToMemory(&r)}, vocab.IRI(defaultTestAccountC2S.Id))
 			if err != nil {
-				l.Panicf("%s\n", err.Error())
+				l.Critf("%s\n", err)
 			}
 		}
 		if tok, err := o.GenAuthToken(clientCode, defaultTestAccountC2S.Id, nil); err == nil {
@@ -210,10 +210,10 @@ func SetupAPP(options config.Options) *fedbox.FedBOX {
 		options.Storage = config.StorageFS
 	}
 
-	fields := logrus.Fields{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
+	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
 
 	l := logger()
-	db, o, err := fedbox.Storage(options, l.WithFields(fields))
+	db, o, err := fedbox.Storage(options, l.WithContext(fields))
 	if err != nil {
 		panic(err)
 	}

@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"git.sr.ht/~mariusor/lw"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/sirupsen/logrus"
 )
 
 func TestNew(t *testing.T) {
@@ -17,8 +17,8 @@ func TestNew(t *testing.T) {
 	conf := Config{
 		Path:    dir,
 		BaseURL: url,
-		LogFn:   func(f logrus.Fields, s string, p ...interface{}) { t.Logf(s, p...) },
-		ErrFn:   func(f logrus.Fields, s string, p ...interface{}) { t.Errorf(s, p...) },
+		LogFn:   func(f lw.Ctx, s string, p ...interface{}) { t.Logf(s, p...) },
+		ErrFn:   func(f lw.Ctx, s string, p ...interface{}) { t.Errorf(s, p...) },
 	}
 	repo, _ := New(conf)
 	if repo == nil {

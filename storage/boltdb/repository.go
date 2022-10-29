@@ -7,6 +7,7 @@ import (
 	"crypto"
 	"crypto/x509"
 	"encoding/pem"
+	"git.sr.ht/~mariusor/lw"
 	"os"
 	"path"
 	"path/filepath"
@@ -17,7 +18,6 @@ import (
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/jsonld"
 	"github.com/go-ap/processing"
-	"github.com/sirupsen/logrus"
 	bolt "go.etcd.io/bbolt"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -34,7 +34,7 @@ type repo struct {
 	errFn   loggerFn
 }
 
-type loggerFn func(logrus.Fields, string, ...interface{})
+type loggerFn func(lw.Ctx, string, ...interface{})
 
 const (
 	rootBucket       = ":"
@@ -51,7 +51,7 @@ type Config struct {
 	ErrFn   loggerFn
 }
 
-var emptyLogFn = func(logrus.Fields, string, ...interface{}) {}
+var emptyLogFn = func(lw.Ctx, string, ...interface{}) {}
 
 // New returns a new repo repository
 func New(c Config) (*repo, error) {

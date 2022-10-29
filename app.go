@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.sr.ht/~mariusor/lw"
 	w "git.sr.ht/~mariusor/wrapper"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
@@ -21,7 +22,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/openshift/osin"
-	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -58,20 +58,20 @@ type FedBOX struct {
 }
 
 var (
-	emptyFieldsLogFn = func(logrus.Fields, string, ...interface{}) {}
+	emptyFieldsLogFn = func(lw.Ctx, string, ...interface{}) {}
 	emptyLogFn       = func(string, ...interface{}) {}
 	emptyStopFn      = func() {}
-	InfoLogFn        = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
+	InfoLogFn        = func(l lw.Logger) func(lw.Ctx, string, ...interface{}) {
 		if l == nil {
 			return emptyFieldsLogFn
 		}
-		return func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Infof(s, p...) }
+		return func(f lw.Ctx, s string, p ...interface{}) { l.WithContext(f).Infof(s, p...) }
 	}
-	ErrLogFn = func(l logrus.FieldLogger) func(logrus.Fields, string, ...interface{}) {
+	ErrLogFn = func(l lw.Logger) func(lw.Ctx, string, ...interface{}) {
 		if l == nil {
 			return emptyFieldsLogFn
 		}
-		return func(f logrus.Fields, s string, p ...interface{}) { l.WithFields(f).Errorf(s, p...) }
+		return func(f lw.Ctx, s string, p ...interface{}) { l.WithContext(f).Errorf(s, p...) }
 	}
 )
 
@@ -87,7 +87,7 @@ func Config(e string, to time.Duration) (config.Options, error) {
 }
 
 // New instantiates a new FedBOX instance
-func New(l logrus.FieldLogger, ver string, conf config.Options, db processing.Store, o osin.Storage) (*FedBOX, error) {
+func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o osin.Storage) (*FedBOX, error) {
 	app := FedBOX{
 		ver:     ver,
 		conf:    conf,
@@ -103,7 +103,7 @@ func New(l logrus.FieldLogger, ver string, conf config.Options, db processing.St
 		app.errFn = l.Errorf
 	}
 
-	errors.IncludeBacktrace = conf.LogLevel == log.TraceLevel
+	errors.IncludeBacktrace = conf.LogLevel == lw.TraceLevel
 
 	as, err := auth.New(conf.BaseURL, app.storage.oauth, app.storage.repo, l)
 	if err != nil {

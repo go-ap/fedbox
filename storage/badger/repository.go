@@ -7,6 +7,7 @@ import (
 	"crypto"
 	"crypto/x509"
 	"encoding/pem"
+	"git.sr.ht/~mariusor/lw"
 	"os"
 	"path"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/jsonld"
 	"github.com/go-ap/processing"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -37,7 +37,7 @@ type repo struct {
 	errFn   loggerFn
 }
 
-type loggerFn func(logrus.Fields, string, ...interface{})
+type loggerFn func(lw.Ctx, string, ...interface{})
 
 // Config
 type Config struct {
@@ -47,7 +47,7 @@ type Config struct {
 	ErrFn   loggerFn
 }
 
-var emptyLogFn = func(logrus.Fields, string, ...interface{}) {}
+var emptyLogFn = func(lw.Ctx, string, ...interface{}) {}
 
 // New returns a new repo repository
 func New(c Config) (*repo, error) {
@@ -712,7 +712,7 @@ func (r *repo) loadFromPath(f processing.Filterable, loadMaxOne bool) (vocab.Ite
 			}
 			if isObjectKey(k) {
 				if err := i.Value(r.loadFromIterator(&col, f)); err != nil {
-					r.errFn(logrus.Fields{"k": k, "err": err.Error()}, "unable to load")
+					r.errFn(lw.Ctx{"k": k, "err": err.Error()}, "unable to load")
 					continue
 				}
 				if len(col) == 1 && loadMaxOne {

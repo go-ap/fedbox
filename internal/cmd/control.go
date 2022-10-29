@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	c "github.com/go-ap/client"
 	"github.com/go-ap/errors"
@@ -15,7 +16,6 @@ import (
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -55,29 +55,26 @@ func New(authDB osin.Storage, actorDb processing.Store, conf config.Options) *Co
 }
 
 var ctl Control
-var logger = logrus.New()
+var logger = lw.Dev()
 
 func Before(c *cli.Context) error {
-	logger.Level = logrus.WarnLevel
-	fields := logrus.Fields{}
+	fields := lw.Ctx{}
 	if c.Command != nil {
 		fields["cli"] = c.Command.Name
 	}
-	ct, err := setup(c, logger.WithFields(fields))
+	ct, err := setup(c, logger.WithContext(fields))
 	if err != nil {
 		// Ensure we don't print the default help message, which is not useful here
 		c.App.CustomAppHelpTemplate = "Failed"
-		logger.WithError(err).Error("Error")
+		logger.WithContext(lw.Ctx{"err": err}).Error("Error")
 		return err
 	}
 	ctl = *ct
-	// the level enums have same values
-	logger.Level = logrus.Level(ct.Conf.LogLevel)
 
 	return nil
 }
 
-func setup(c *cli.Context, l logrus.FieldLogger) (*Control, error) {
+func setup(c *cli.Context, l lw.Logger) (*Control, error) {
 	environ := env.Type(c.String("env"))
 	conf, err := config.LoadFromEnv(environ, time.Second)
 	if err != nil {

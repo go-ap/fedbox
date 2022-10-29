@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"git.sr.ht/~mariusor/lw"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/fedbox/internal/log"
 	"github.com/joho/godotenv"
 )
 
@@ -28,7 +28,7 @@ type BackendConfig struct {
 
 type Options struct {
 	Env          env.Type
-	LogLevel     log.Level
+	LogLevel     lw.Level
 	LogOutput    string
 	TimeOut      time.Duration
 	Secure       bool
@@ -148,17 +148,17 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	lvl := Getval(KeyLogLevel, "")
 	switch strings.ToLower(lvl) {
 	case "trace":
-		conf.LogLevel = log.TraceLevel
+		conf.LogLevel = lw.TraceLevel
 	case "debug":
-		conf.LogLevel = log.DebugLevel
+		conf.LogLevel = lw.DebugLevel
 	case "warn":
-		conf.LogLevel = log.WarnLevel
+		conf.LogLevel = lw.WarnLevel
 	case "error":
-		conf.LogLevel = log.ErrorLevel
+		conf.LogLevel = lw.ErrorLevel
 	case "info":
 		fallthrough
 	default:
-		conf.LogLevel = log.InfoLevel
+		conf.LogLevel = lw.InfoLevel
 	}
 	conf.LogOutput = Getval(KeyLogOutput, "")
 

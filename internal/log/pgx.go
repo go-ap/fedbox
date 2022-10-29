@@ -1,15 +1,15 @@
 package log
 
 import (
+	"git.sr.ht/~mariusor/lw"
 	"github.com/jackc/pgx"
-	"github.com/sirupsen/logrus"
 )
 
 type pgxLogger struct {
-	l logrus.FieldLogger
+	l lw.Logger
 }
 
-func NewPgxLogger(l logrus.FieldLogger) pgxLogger {
+func NewPgxLogger(l lw.Logger) pgxLogger {
 	return pgxLogger{
 		l: l,
 	}
@@ -21,15 +21,15 @@ func (d pgxLogger) Log(level pgx.LogLevel, msg string, data map[string]interface
 	case pgx.LogLevelNone:
 		fallthrough
 	case pgx.LogLevelTrace:
-		log = d.l.WithFields(data).Tracef
+		log = d.l.WithContext(data).Debugf
 	case pgx.LogLevelDebug:
-		log = d.l.WithFields(data).Debugf
+		log = d.l.WithContext(data).Debugf
 	case pgx.LogLevelInfo:
-		log = d.l.WithFields(data).Infof
+		log = d.l.WithContext(data).Infof
 	case pgx.LogLevelWarn:
-		log = d.l.WithFields(data).Warnf
+		log = d.l.WithContext(data).Warnf
 	case pgx.LogLevelError:
-		log = d.l.WithFields(data).Errorf
+		log = d.l.WithContext(data).Errorf
 	}
 	log(msg)
 }

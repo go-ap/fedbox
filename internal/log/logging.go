@@ -7,78 +7,38 @@ import (
 	"os"
 	"time"
 
+	"git.sr.ht/~mariusor/lw"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/sirupsen/logrus"
-)
-
-type Level int8
-
-const (
-	PanicLevel Level = iota
-	FatalLevel
-	ErrorLevel
-	WarnLevel
-	InfoLevel
-	DebugLevel
-	TraceLevel
 )
 
 type Conf struct {
 	Output io.Writer
 	Type   string
 	Pretty bool
-	Level  Level
+	Level  lw.Level
 }
 
-var jsonFormatter = logrus.JSONFormatter{
-	PrettyPrint: true,
-	TimestampFormat: time.StampMilli,
-}
-
-var devFormatter = logrus.TextFormatter{
-	ForceColors:            true,
-	TimestampFormat:        time.StampMilli,
-	FullTimestamp:          true,
-	DisableSorting:         true,
-	PadLevelText:           true,
-	QuoteEmptyFields:       true,
-}
-
-func New(conf Conf) logrus.FieldLogger {
-	l := logrus.New()
-	l.Level = logrus.Level(conf.Level)
-	if conf.Type == "json" {
-		jsonFormatter.PrettyPrint = conf.Pretty
-		l.SetFormatter(&jsonFormatter)
-	} else {
-		devFormatter.ForceColors = conf.Pretty
-		l.SetFormatter(&devFormatter)
-	}
+func New(conf Conf) lw.Logger {
 	if conf.Output == nil {
 		conf.Output = os.Stdout
 	}
-	l.Out = conf.Output
+	l := lw.Dev(lw.SetLevel(conf.Level), lw.SetOutput(conf.Output))
 	return l
 }
 
-func NewStructuredLogger(logger logrus.FieldLogger) func(next http.Handler) http.Handler {
+func NewStructuredLogger(logger lw.Logger) func(next http.Handler) http.Handler {
 	return middleware.RequestLogger(&StructuredLogger{logger})
 }
 
 type StructuredLogger struct {
-	Logger logrus.FieldLogger
+	Logger lw.Logger
 }
 
 func (l *StructuredLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
 	entry := &StructuredLoggerEntry{}
 
-	ll, ok := l.Logger.(*logrus.Logger)
-	if !ok {
-		return entry
-	}
-
-	entry.Logger = logrus.NewEntry(ll)
-	logFields := logrus.Fields{}
+	entry.Logger = l.Logger
+	logFields := lw.Ctx{}
 
 	logFields["ts"] = time.Now().UTC().Format(time.RFC1123)
 
@@ -99,33 +59,33 @@ func (l *StructuredLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
 
 	logFields["uri"] = fmt.Sprintf("%s://%s%s", scheme, r.Host, r.RequestURI)
 
-	entry.Logger = entry.Logger.WithFields(logFields)
+	entry.Logger = entry.Logger.WithContext(logFields)
 
 	return entry
 }
 
 type StructuredLoggerEntry struct {
-	Logger logrus.FieldLogger
+	Logger lw.Logger
 }
 
 func (l *StructuredLoggerEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, extra interface{}) {
-	l.Logger = l.Logger.WithFields(logrus.Fields{
+	l.Logger = l.Logger.WithContext(lw.Ctx{
 		"status":  status,
 		"len":     bytes,
 		"elapsed": elapsed,
 	})
 
-	var logFn func(args ...interface{})
+	var logFn func(string, ...interface{})
 	if status >= 200 && status < 400 {
-		logFn = l.Logger.Info
+		logFn = l.Logger.Infof
 	} else {
-		logFn = l.Logger.Error
+		logFn = l.Logger.Errorf
 	}
 	logFn(http.StatusText(status))
 }
 
 func (l *StructuredLoggerEntry) Panic(v interface{}, stack []byte) {
-	l.Logger = l.Logger.WithFields(logrus.Fields{
+	l.Logger = l.Logger.WithContext(lw.Ctx{
 		"stack": string(stack),
 		"panic": fmt.Sprintf("%+v", v),
 	})

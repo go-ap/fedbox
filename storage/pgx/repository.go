@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -17,7 +18,6 @@ import (
 	"github.com/go-ap/processing"
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/pgtype"
-	"github.com/sirupsen/logrus"
 )
 
 var encodeFn = jsonld.Marshal
@@ -27,22 +27,22 @@ type repo struct {
 	baseURL string
 	conn    *pgx.ConnPool
 	conf    Config
-	l       logrus.FieldLogger
+	l       lw.Logger
 	logFn   loggerFn
 	errFn   loggerFn
 }
 
-type loggerFn func(logrus.Fields, string, ...interface{})
+type loggerFn func(lw.Ctx, string, ...interface{})
 
 // IsLocalIRI shows if the received IRI belongs to the current instance
 func (r repo) IsLocalIRI(i vocab.IRI) bool {
 	return i.Contains(vocab.IRI(r.baseURL), false)
 }
 
-func logFn(l logrus.FieldLogger, lvl logrus.Level) loggerFn {
-	return func(w logrus.Fields, f string, par ...interface{}) {
+func logFn(l lw.Logger, lvl lw.Level) loggerFn {
+	return func(w lw.Ctx, f string, par ...interface{}) {
 		if l != nil {
-			l.WithFields(w).Logf(lvl, f, par...)
+			l.WithContext(w).Debugf(f, par...)
 		}
 	}
 }
@@ -56,12 +56,12 @@ type Config struct {
 	BaseURL  string
 }
 
-func New(conf Config, url string, lp logrus.FieldLogger) (*repo, error) {
+func New(conf Config, url string, lp lw.Logger) (*repo, error) {
 	l := repo{
 		baseURL: url,
 		conf:    conf,
 		l:       lp,
-		errFn:   logFn(lp, logrus.ErrorLevel),
+		errFn:   logFn(lp, lw.ErrorLevel),
 	}
 
 	if err := l.Open(); err != nil {
@@ -195,7 +195,7 @@ func (r repo) Save(it vocab.Item) (vocab.Item, error) {
 		)
 		if _, cnt, _ := loadFromDb(r.conn, table, ff); cnt != 0 {
 			err := processing.ErrDuplicateObject("%s in table %s", it.GetLink(), table)
-			r.errFn(logrus.Fields{
+			r.errFn(lw.Ctx{
 				"table": table,
 				"type":  it.GetType(),
 				"iri":   it.GetLink(),
@@ -213,7 +213,7 @@ func (r repo) Save(it vocab.Item) (vocab.Item, error) {
 	err = r.AddTo(colIRI, it)
 	if err != nil {
 		// This errs
-		r.errFn(logrus.Fields{"IRI": it.GetLink(), "collection": colIRI}, "unable to add to collection")
+		r.errFn(lw.Ctx{"IRI": it.GetLink(), "collection": colIRI}, "unable to add to collection")
 	}
 
 	// TODO(marius) Move to somewhere else
@@ -248,7 +248,7 @@ func (r repo) Create(it vocab.CollectionInterface) (vocab.CollectionInterface, e
 	}
 	_, err := r.conn.Exec(query, it.GetLink(), it.GetType(), &nowTz)
 	if err != nil {
-		r.errFn(logrus.Fields{
+		r.errFn(lw.Ctx{
 			"err": err.Error(),
 		}, "query error")
 		return it, errors.Annotatef(err, "query error")
@@ -286,13 +286,13 @@ func (r repo) AddTo(col vocab.IRI, it vocab.Item) error {
 	}
 	t, err := r.conn.Exec(query, &nowTz, it.GetLink(), col)
 	if err != nil {
-		r.errFn(logrus.Fields{
+		r.errFn(lw.Ctx{
 			"err": err.Error(),
 		}, "query error")
 		return errors.Annotatef(err, "query error")
 	}
 	if t.RowsAffected() != 1 {
-		r.errFn(logrus.Fields{
+		r.errFn(lw.Ctx{
 			"rows": t.RowsAffected(),
 		}, "query error")
 		return errors.Annotatef(err, "query error, Invalid updated rows")
@@ -317,7 +317,7 @@ func saveToDb(l repo, table string, it vocab.Item) (vocab.Item, error) {
 	}
 	_, err := l.conn.Exec(query, uuid, iri, &nowTz, it.GetType(), raw)
 	if err != nil {
-		l.errFn(logrus.Fields{
+		l.errFn(lw.Ctx{
 			"err": err.Error(),
 		}, "query error")
 		return it, errors.Annotatef(err, "query error")
@@ -334,7 +334,7 @@ func (r repo) deleteItem(table string, it vocab.Item) error {
 
 	query := fmt.Sprintf("DELETE FROM %s WHERE iri = $1;", table)
 	if _, err := r.conn.Exec(query, iri); err != nil {
-		r.errFn(logrus.Fields{
+		r.errFn(lw.Ctx{
 			"err": err.Error(),
 		}, "query error")
 		return errors.Annotatef(err, "query error")
@@ -369,7 +369,7 @@ func (r repo) updateItem(table string, it vocab.Item) (vocab.Item, error) {
 	nowTz := pgtype.Timestamptz{Time: now, Status: pgtype.Present}
 
 	if _, err := r.conn.Exec(query, it.GetType(), &nowTz, raw, iri); err != nil {
-		r.errFn(logrus.Fields{
+		r.errFn(lw.Ctx{
 			"err": err.Error(),
 		}, "query error")
 		return it, errors.Annotatef(err, "query error")
@@ -410,7 +410,7 @@ func (r repo) Delete(it vocab.Item) error {
 	}
 	if cnt == 0 {
 		err := errors.NotFoundf("%s in either actors or objects", it.GetLink())
-		r.errFn(logrus.Fields{
+		r.errFn(lw.Ctx{
 			"table": table,
 			"type":  it.GetType(),
 			"iri":   it.GetLink(),
