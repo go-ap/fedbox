@@ -5,9 +5,10 @@ packages:
   - podman
   - buildah
 sources:
-  - https://github.com/go-ap/fedbox
+  - https://git.sr.ht/~mariusor/fedbox
 tasks:
   - images: |
+      test ${BUILD_SUBMITTER} = "git.sr.ht" || complete-build
       set -a +x
       source ~/.buildah.env
 
@@ -42,4 +43,3 @@ tasks:
       _push badger
       _push boltdb
       _push sqlite
-
