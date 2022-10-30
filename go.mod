@@ -6,13 +6,13 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20221030084619-c7813ea7e638
 	git.sr.ht/~mariusor/wrapper v0.0.0-20221008121056-186252a01934
 	github.com/dgraph-io/badger/v3 v3.2103.2
-	github.com/go-ap/activitypub v0.0.0-20220917143152-e4e7018838c0
+	github.com/go-ap/activitypub v0.0.0-20221030091545-e2b6e01b277c
 	github.com/go-ap/auth v0.0.0-20221030084935-5c1711bac7b6
-	github.com/go-ap/client v0.0.0-20220917143634-73d671c1b49e
+	github.com/go-ap/client v0.0.0-20221030091733-9f80b7f1efcc
 	github.com/go-ap/errors v0.0.0-20220917143055-4283ea5dae18
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
-	github.com/go-ap/jsonld v0.0.0-20220917142617-76bf51585778
-	github.com/go-ap/processing v0.0.0-20220917143841-eaa4e873bb7b
+	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
+	github.com/go-ap/processing v0.0.0-20221030091919-bc9e0e27669f
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0
