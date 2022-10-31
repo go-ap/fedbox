@@ -3,12 +3,15 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
 	"time"
 
+	"git.sr.ht/~mariusor/lw"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/fedbox/internal/log"
 	"github.com/urfave/cli/v2"
 )
 
@@ -52,7 +55,15 @@ func run(version string) cli.ActionFunc {
 		if err != nil {
 			return err
 		}
-		l := log.New(log.Conf{Type: conf.LogOutput, Pretty: !conf.Env.IsProd(), Level: conf.LogLevel})
+		var out io.WriteCloser
+		if conf.LogOutput != "" {
+			out, err = os.Open(conf.LogOutput)
+			if err != nil {
+				return errors.Newf("Unable to output logs to %s: %s", conf.LogOutput, err)
+			}
+			defer out.Close()
+		}
+		l := lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
 		db, o, err := fedbox.Storage(conf, l)
 		if err != nil {
 			l.Errorf("Unable to initialize storage backend: %s", err)

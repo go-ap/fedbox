@@ -66,7 +66,7 @@ func Before(c *cli.Context) error {
 	if err != nil {
 		// Ensure we don't print the default help message, which is not useful here
 		c.App.CustomAppHelpTemplate = "Failed"
-		logger.WithContext(lw.Ctx{"err": err}).Error("Error")
+		logger.WithContext(lw.Ctx{"err": err}).Errorf("Error")
 		return err
 	}
 	ctl = *ct

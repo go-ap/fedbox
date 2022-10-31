@@ -17,7 +17,6 @@ import (
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/fedbox/internal/log"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -107,12 +106,12 @@ func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o os
 
 	as, err := auth.New(conf.BaseURL, app.storage.oauth, app.storage.repo, l)
 	if err != nil {
-		l.Warn(err.Error())
+		l.Warnf(err.Error())
 		return nil, err
 	}
 
 	app.R.Use(middleware.RequestID)
-	app.R.Use(log.NewStructuredLogger(l))
+	app.R.Use(middleware.RequestLogger(lw.Middleware(l)))
 
 	baseIRI := vocab.IRI(conf.BaseURL)
 	app.OAuth = authService{

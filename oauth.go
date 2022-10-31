@@ -242,7 +242,7 @@ func (i *authService) loadAccountFromPost(r *http.Request) (*account, error) {
 	i.logger.WithContext(lw.Ctx{
 		"handle": handle,
 		"pass":   pw,
-	}).Info("received")
+	}).Infof("received")
 
 	a := activitypub.Self(i.baseIRI)
 
@@ -519,7 +519,7 @@ var (
 func (i *authService) renderTemplate(r *http.Request, w http.ResponseWriter, name string, m authModel) {
 	if err := ren.HTML(w, http.StatusOK, name, m); err != nil {
 		new := errors.Annotatef(err, "failed to render template")
-		i.logger.WithContext(lw.Ctx{"template": name, "model": fmt.Sprintf("%T", m)}).Error(new.Error())
+		i.logger.WithContext(lw.Ctx{"template": name, "model": fmt.Sprintf("%T", m)}).Errorf(new.Error())
 		errRenderer.HTML(w, http.StatusInternalServerError, "error", new)
 	}
 }
@@ -674,7 +674,7 @@ func (i *authService) HandleChangePw(w http.ResponseWriter, r *http.Request) {
 	i.logger.WithContext(lw.Ctx{
 		"handle": actor.PreferredUsername.String(),
 		"pass":   pw,
-	}).Info("received")
+	}).Infof("received")
 
 	if pwSetter, ok := i.storage.repo.(st.PasswordChanger); ok {
 		err := pwSetter.PasswordSet(actor, []byte(pw))
