@@ -28,11 +28,10 @@ func getBadgerStorage(c config.Options, l lw.Logger) (processing.Store, osin.Sto
 	conf := badger.Config{
 		Path:    path,
 		BaseURL: c.BaseURL,
+		Logger:  l,
 	}
 	if l != nil {
 		l.Debugf("Initializing badger storage at %s", path)
-		conf.LogFn = InfoLogFn(l)
-		conf.ErrFn = ErrLogFn(l)
 	}
 	db, err := badger.New(conf)
 	if err != nil {

@@ -10,7 +10,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"git.sr.ht/~mariusor/lw"
 	"io/ioutil"
 	"os"
 	"path"
@@ -19,6 +18,7 @@ import (
 	"text/template"
 	"time"
 
+	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/cmd"

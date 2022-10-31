@@ -15,14 +15,13 @@ import (
 
 func Storage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
+	if l != nil {
+		l.Debugf("Initializing badger storage at %s", path)
+	}
 	conf := badger.Config{
 		Path:    path,
 		BaseURL: c.BaseURL,
-	}
-	if l != nil {
-		l.Debugf("Initializing badger storage at %s", path)
-		conf.LogFn = InfoLogFn(l)
-		conf.ErrFn = ErrLogFn(l)
+		Logger:  l,
 	}
 	db, err := badger.New(conf)
 	if err != nil {

@@ -33,8 +33,7 @@ type repo struct {
 	baseURL string
 	path    string
 	cache   cache.CanStore
-	logFn   loggerFn
-	errFn   loggerFn
+	logger  lw.Logger
 }
 
 type loggerFn func(lw.Ctx, string, ...interface{})
@@ -43,8 +42,7 @@ type loggerFn func(lw.Ctx, string, ...interface{})
 type Config struct {
 	Path    string
 	BaseURL string
-	LogFn   loggerFn
-	ErrFn   loggerFn
+	Logger  lw.Logger
 }
 
 var emptyLogFn = func(lw.Ctx, string, ...interface{}) {}
@@ -59,29 +57,23 @@ func New(c Config) (*repo, error) {
 	b := repo{
 		path:    c.Path,
 		baseURL: c.BaseURL,
-		logFn:   emptyLogFn,
-		errFn:   emptyLogFn,
-	}
-	if c.ErrFn != nil {
-		b.errFn = c.ErrFn
-	}
-	if c.LogFn != nil {
-		b.logFn = c.LogFn
+		logger:  c.Logger,
 	}
 	return &b, nil
 }
 
 // Open opens the badger database if possible.
 func (r *repo) Open() error {
-	var (
-		err error
-		c   badger.Options
-	)
-	c = badger.DefaultOptions(r.path).WithLogger(logger{logFn: r.logFn, errFn: r.errFn})
+	c := badger.DefaultOptions(r.path)
+	if r.logger != nil {
+		c = c.WithLogger(&logger{r.logger})
+	}
 	if r.path == "" {
 		c.InMemory = true
 	}
 	c.MetricsEnabled = false
+
+	var err error
 	r.d, err = badger.Open(c)
 	if err != nil {
 		err = errors.Annotatef(err, "unable to open storage")
@@ -149,7 +141,7 @@ func (r *repo) Save(it vocab.Item) (vocab.Item, error) {
 		if !id.IsValid() {
 			op = "Added new"
 		}
-		r.logFn(nil, "%s %s: %s", op, it.GetType(), it.GetLink())
+		r.logger.Infof("%s %s: %s", op, it.GetType(), it.GetLink())
 	}
 
 	return it, err
@@ -396,7 +388,7 @@ func delete(r *repo, it vocab.Item) error {
 		return vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
 			for _, it := range c.Collection() {
 				if err := delete(r, it); err != nil {
-					r.logFn(nil, "Unable to remove item %s", it.GetLink())
+					r.logger.Infof("Unable to remove item %s", it.GetLink())
 				}
 			}
 			return nil
@@ -712,7 +704,7 @@ func (r *repo) loadFromPath(f processing.Filterable, loadMaxOne bool) (vocab.Ite
 			}
 			if isObjectKey(k) {
 				if err := i.Value(r.loadFromIterator(&col, f)); err != nil {
-					r.errFn(lw.Ctx{"k": k, "err": err.Error()}, "unable to load")
+					r.logger.WithContext(lw.Ctx{"k": k, "err": err.Error()}).Errorf("unable to load")
 					continue
 				}
 				if len(col) == 1 && loadMaxOne {
@@ -830,7 +822,7 @@ func (r *repo) CreateService(service vocab.Service) error {
 		if !id.IsValid() {
 			op = "Added new"
 		}
-		r.logFn(nil, "%s %s: %s", op, it.GetType(), it.GetLink())
+		r.logger.Infof("%s %s: %s", op, it.GetType(), it.GetLink())
 	}
 	return err
 }
