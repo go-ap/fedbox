@@ -111,7 +111,7 @@ func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o os
 	}
 
 	app.R.Use(middleware.RequestID)
-	app.R.Use(middleware.RequestLogger(lw.Middleware(l)))
+	app.R.Use(lw.Middlewares(l)...)
 
 	baseIRI := vocab.IRI(conf.BaseURL)
 	app.OAuth = authService{

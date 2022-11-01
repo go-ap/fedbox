@@ -151,7 +151,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	}
 
 	fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
-	l := logger().WithContext(fields)
+	l := lw.Dev(lw.SetLevel(lw.DebugLevel)).WithContext(fields)
 	db, aDb, err := fedbox.Storage(options, l)
 	if err != nil {
 		panic(err)
@@ -159,7 +159,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	clientCode := path.Base(defaultTestApp.Id)
 
 	mocks := make(vocab.ItemCollection, 0)
-	o := cmd.New(aDb, db, options)
+	o := cmd.New(aDb, db, options, l)
 	act := loadMockFromDisk("mocks/c2s/actors/application.json", nil)
 	mocks = append(mocks, act)
 	if clSaver, ok := aDb.(fedbox.ClientSaver); ok {
@@ -212,7 +212,7 @@ func SetupAPP(options config.Options) *fedbox.FedBOX {
 
 	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
 
-	l := logger()
+	l := lw.Dev(lw.SetLevel(lw.DebugLevel))
 	db, o, err := fedbox.Storage(options, l.WithContext(fields))
 	if err != nil {
 		panic(err)

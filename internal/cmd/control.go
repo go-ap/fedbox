@@ -27,14 +27,14 @@ type Control struct {
 	Saver       processing.C2SProcessor
 }
 
-func New(authDB osin.Storage, actorDb processing.Store, conf config.Options) *Control {
+func New(authDB osin.Storage, actorDb processing.Store, conf config.Options, l lw.Logger) *Control {
 	baseIRI := vocab.IRI(conf.BaseURL)
 
 	clientErrLogger := func(...c.Ctx) c.LogFn {
-		return logger.Errorf
+		return l.Errorf
 	}
 	clientInfoLogger := func(...c.Ctx) c.LogFn {
-		return logger.Infof
+		return l.Infof
 	}
 	p, _ := processing.New(
 		processing.SetIRI(baseIRI),
@@ -55,13 +55,14 @@ func New(authDB osin.Storage, actorDb processing.Store, conf config.Options) *Co
 }
 
 var ctl Control
-var logger = lw.Dev()
 
 func Before(c *cli.Context) error {
 	fields := lw.Ctx{}
 	if c.Command != nil {
 		fields["cli"] = c.Command.Name
 	}
+
+	logger := lw.Dev()
 	ct, err := setup(c, logger.WithContext(fields))
 	if err != nil {
 		// Ensure we don't print the default help message, which is not useful here
@@ -118,7 +119,7 @@ func setup(c *cli.Context, l lw.Logger) (*Control, error) {
 	if err != nil {
 		return nil, err
 	}
-	return New(aDb, db, conf), nil
+	return New(aDb, db, conf, l), nil
 }
 
 func loadPwFromStdin(confirm bool, s string, params ...interface{}) ([]byte, error) {

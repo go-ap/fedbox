@@ -16,7 +16,6 @@ import (
 	"runtime/debug"
 	"sort"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -786,16 +785,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 var (
 	Verbose bool
 	Silent  bool
-	Log     lw.Logger
 )
-
-func logger() lw.Logger {
-	new(sync.Once).Do(func() {
-		l := lw.Dev(lw.SetLevel(lw.DebugLevel))
-		Log = l
-	})
-	return Log
-}
 
 func loadAfterPost(test testPair, req *http.Request) bool {
 	return test.res.val.id != "" && test.res.val.id != req.URL.String()
