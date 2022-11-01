@@ -3,7 +3,7 @@ module github.com/go-ap/fedbox
 go 1.18
 
 require (
-	git.sr.ht/~mariusor/lw v0.0.0-20221031154329-f1683ece2b50
+	git.sr.ht/~mariusor/lw v0.0.0-20221101063730-49d6031aa00a
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/go-ap/activitypub v0.0.0-20221030091545-e2b6e01b277c
