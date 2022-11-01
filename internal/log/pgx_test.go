@@ -69,7 +69,7 @@ func TestDbLogger_Log(t *testing.T) {
 	{
 		testMsg := "test - WARN"
 		l.Log(p.LogLevelWarn, testMsg, nil)
-		if !strings.Contains(w.String(), "warning") {
+		if !strings.Contains(w.String(), "WARN") {
 			t.Errorf("Could not find the log level in the log message, searching for 'warning' in %s", w.String())
 		}
 		if !strings.Contains(w.String(), testMsg) {

@@ -3,11 +3,11 @@ module github.com/go-ap/fedbox
 go 1.18
 
 require (
-	git.sr.ht/~mariusor/lw v0.0.0-20221101063730-49d6031aa00a
+	git.sr.ht/~mariusor/lw v0.0.0-20221101120135-75d6b7325677
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/go-ap/activitypub v0.0.0-20221030091545-e2b6e01b277c
-	github.com/go-ap/auth v0.0.0-20221031155910-addf476cc977
+	github.com/go-ap/auth v0.0.0-20221101120239-d475231c161b
 	github.com/go-ap/client v0.0.0-20221030091733-9f80b7f1efcc
 	github.com/go-ap/errors v0.0.0-20220917143055-4283ea5dae18
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
@@ -46,11 +46,12 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20220927061507-ef77025ab5aa // indirect
+	github.com/rs/zerolog v1.28.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
