@@ -147,6 +147,8 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 
 	lvl := Getval(KeyLogLevel, "")
 	switch strings.ToLower(lvl) {
+	case "none":
+		conf.LogLevel = lw.NoLevel
 	case "trace":
 		conf.LogLevel = lw.TraceLevel
 	case "debug":
