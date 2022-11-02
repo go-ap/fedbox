@@ -63,7 +63,12 @@ func run(version string) cli.ActionFunc {
 			}
 			defer out.Close()
 		}
-		l := lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+		var l lw.Logger
+		if conf.Env.IsDev() {
+			l = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+		} else {
+			l = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+		}
 		db, o, err := fedbox.Storage(conf, l)
 		if err != nil {
 			l.Errorf("Unable to initialize storage backend: %s", err)
