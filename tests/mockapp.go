@@ -212,7 +212,7 @@ func SetupAPP(options config.Options) *fedbox.FedBOX {
 
 	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
 
-	l := lw.Dev(lw.SetLevel(lw.DebugLevel))
+	l := lw.Dev(lw.SetLevel(options.LogLevel))
 	db, o, err := fedbox.Storage(options, l.WithContext(fields))
 	if err != nil {
 		panic(err)
