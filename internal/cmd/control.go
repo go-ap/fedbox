@@ -14,6 +14,7 @@ import (
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
+	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
 	"github.com/urfave/cli/v2"
@@ -45,7 +46,7 @@ func New(authDB osin.Storage, actorDb processing.Store, conf config.Options, l l
 			c.SetErrorLogger(clientErrLogger),
 			c.SkipTLSValidation(!conf.Env.IsProd()),
 		)),
-		processing.SetLocalIRIChecker(processing.IsLocalIRI(actorDb)),
+		processing.SetLocalIRIChecker(st.IsLocalIRI(actorDb)),
 	)
 	return &Control{
 		Conf:        conf,
