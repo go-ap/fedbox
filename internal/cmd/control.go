@@ -45,6 +45,7 @@ func New(authDB osin.Storage, actorDb processing.Store, conf config.Options, l l
 			c.SetErrorLogger(clientErrLogger),
 			c.SkipTLSValidation(!conf.Env.IsProd()),
 		)),
+		processing.SetLocalIRIChecker(processing.IsLocalIRI(actorDb)),
 	)
 	return &Control{
 		Conf:        conf,

@@ -121,7 +121,7 @@ func wrapObjectInCreate(r processing.Store, selfIRI vocab.IRI, p vocab.Item) voc
 			act.AttributedTo = self.GetLink()
 		}
 		if act.Actor == nil {
-			act.Actor = self.GetLink()
+			act.Actor = self
 		}
 		if !act.CC.Contains(self.GetLink()) {
 			act.CC.Append(self.GetLink())
@@ -454,6 +454,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 		processor, err := processing.New(
 			processing.SetIRI(vocab.IRI(baseIRI), fedbox.InternalIRI),
 			processing.SetStorage(ctl.Storage),
+			processing.SetLocalIRIChecker(s.IsLocalIRI(ctl.Storage)),
 		)
 		if err != nil {
 			Errf("Error initializing ActivityPub processor: %s", err)
