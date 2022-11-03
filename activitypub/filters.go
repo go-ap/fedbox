@@ -797,21 +797,25 @@ func filterItems(filters CompStrs, items ...vocab.Item) bool {
 	return false
 }
 
-func filterAudience(filters CompStrs, colArr ...vocab.ItemCollection) bool {
+func filterAudience(filters CompStrs, allAudienceCollection ...vocab.ItemCollection) bool {
 	if len(filters) == 0 {
 		return true
 	}
-	allItems := make(vocab.ItemCollection, 0)
-	for _, items := range colArr {
+	audience := make(vocab.ItemCollection, 0)
+	for _, items := range allAudienceCollection {
 		for _, it := range items {
-			if it != nil && !allItems.Contains(it.GetLink()) {
-				allItems = append(allItems, it)
+			if it != nil && !audience.Contains(it.GetLink()) {
+				audience = append(audience, it)
 			}
 		}
 	}
-	keep := (len(filters) == 1 && filters[0].String() == vocab.PublicNS.String()) && len(allItems) == 0
+	if len(audience) == 0 || audience.Contains(vocab.PublicNS) {
+		// Object is public
+		return true
+	}
+	keep := len(filters) == 1 && filters[0].String() == vocab.PublicNS.String()
 	for _, f := range filters {
-		for _, it := range allItems {
+		for _, it := range audience {
 			s := it.GetLink().String()
 			if f.Operator == "!" && !matchStringFilter(f, s) {
 				keep = false
