@@ -5,6 +5,13 @@ $ git clone https://github.com/go-ap/fedbox
 $ cd fedbox
 ```
 
+## getting the dependencies
+
+```sh
+$ go get .
+$ go get github.com/go-ap/fedbox/internal/cmd
+```
+
 ## compiling
 
 ```sh
