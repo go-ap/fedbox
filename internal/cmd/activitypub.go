@@ -109,32 +109,37 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func wrapObjectInCreate(r processing.Store, selfIRI vocab.IRI, p vocab.Item) vocab.Activity {
+func wrapObjectInCreate(r processing.Store, selfIRI vocab.IRI, p vocab.Item) (vocab.Activity, error) {
 	act := vocab.Activity{
 		Type:    vocab.CreateType,
 		To:      vocab.ItemCollection{vocab.PublicNS},
 		Updated: time.Now().UTC(),
 		Object:  p,
 	}
-	if self, err := r.Load(selfIRI); err == nil {
-		if act.AttributedTo == nil {
-			act.AttributedTo = self.GetLink()
-		}
-		if act.Actor == nil {
-			act.Actor = self
-		}
-		if !act.CC.Contains(self.GetLink()) {
-			act.CC.Append(self.GetLink())
-		}
+	self, err := r.Load(selfIRI)
+	if err != nil {
+		return act, err
 	}
-	return act
+	if act.AttributedTo == nil {
+		act.AttributedTo = self.GetLink()
+	}
+	if act.Actor == nil {
+		act.Actor = self
+	}
+	if !act.CC.Contains(self.GetLink()) {
+		act.CC.Append(self.GetLink())
+	}
+	return act, nil
 }
 
 func (c *Control) AddObject(p *vocab.Object) (*vocab.Object, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	create := wrapObjectInCreate(c.Storage, vocab.IRI(c.Conf.BaseURL), p)
+	create, err := wrapObjectInCreate(c.Storage, vocab.IRI(c.Conf.BaseURL), p)
+	if err != nil {
+		return nil, errors.Annotatef(err, "unable to wrap Object in Create activity")
+	}
 	if _, err := c.Saver.ProcessClientActivity(create, vocab.Outbox.Of(create.Actor).GetLink()); err != nil {
 		return nil, err
 	}
@@ -146,7 +151,10 @@ func (c *Control) AddActor(p *vocab.Person, pw []byte) (*vocab.Person, error) {
 		return nil, errors.Errorf("invalid storage backend")
 	}
 
-	create := wrapObjectInCreate(c.Storage, vocab.IRI(c.Conf.BaseURL), p)
+	create, err := wrapObjectInCreate(c.Storage, vocab.IRI(c.Conf.BaseURL), p)
+	if err != nil {
+		return nil, errors.Annotatef(err, "unable to wrap Actor in Create activity")
+	}
 	if vocab.IsNil(create.Actor) {
 		return nil, errors.Newf("current instance does not have an Actor configured")
 	}
@@ -158,7 +166,6 @@ func (c *Control) AddActor(p *vocab.Person, pw []byte) (*vocab.Person, error) {
 		return nil, err
 	}
 
-	var err error
 	if pwManager, ok := c.Storage.(s.PasswordChanger); ok && pw != nil {
 		err = pwManager.PasswordSet(p.GetLink(), pw)
 	}
