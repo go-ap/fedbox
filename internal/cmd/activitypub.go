@@ -147,7 +147,14 @@ func (c *Control) AddActor(p *vocab.Person, pw []byte) (*vocab.Person, error) {
 	}
 
 	create := wrapObjectInCreate(c.Storage, vocab.IRI(c.Conf.BaseURL), p)
-	if _, err := c.Saver.ProcessClientActivity(create, vocab.Outbox.Of(create.Actor).GetLink()); err != nil {
+	if vocab.IsNil(create.Actor) {
+		return nil, errors.Newf("current instance does not have an Actor configured")
+	}
+	outbox := vocab.Outbox.Of(create.Actor)
+	if vocab.IsNil(outbox) {
+		return nil, errors.Newf("unable to find Actor's outbox: %s", create.Actor.GetID())
+	}
+	if _, err := c.Saver.ProcessClientActivity(create, outbox.GetLink()); err != nil {
 		return nil, err
 	}
 
