@@ -153,8 +153,8 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 	}
 }
 
-// HandleRequest handles POST requests to an ActivityPub To's inbox/outbox, based on the CollectionType
-func HandleRequest(fb FedBOX) processing.ActivityHandlerFn {
+// HandleActivity handles POST requests to an ActivityPub To's inbox/outbox, based on the CollectionType
+func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 	errLogger := client.LogFn(fb.errFn)
 	infoLogger := client.LogFn(fb.infFn)
 	clientErrLogger := func(...client.Ctx) client.LogFn {

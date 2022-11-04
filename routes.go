@@ -13,7 +13,7 @@ func (f FedBOX) CollectionRoutes(descend bool) func(chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Method(http.MethodGet, "/", HandleCollection(f))
 			r.Method(http.MethodHead, "/", HandleCollection(f))
-			r.Method(http.MethodPost, "/", HandleRequest(f))
+			r.Method(http.MethodPost, "/", HandleActivity(f))
 
 			r.Route("/{id}", func(r chi.Router) {
 				r.Group(f.OAuthRoutes())
