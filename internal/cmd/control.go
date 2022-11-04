@@ -143,7 +143,6 @@ func loadFromStdin(s string, params ...interface{}) ([]byte, error) {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Printf(s+": ", params...)
 	input, _ := reader.ReadBytes('\n')
-	fmt.Println()
 	return input[:len(input)-1], nil
 }
 

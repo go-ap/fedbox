@@ -96,7 +96,6 @@ func addAct(c *Control) cli.ActionFunc {
 		}
 		pw, err := loadPwFromStdin(true, "client's")
 		if err != nil {
-			Errf(err.Error())
 			return err
 		}
 		id, err := ctl.AddClient(pw, redirectURIs, nil)

@@ -71,7 +71,6 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 		for _, name := range names {
 			pw, err := loadPwFromStdin(true, "%s's", name)
 			if err != nil {
-				Errf(err.Error())
 				return err
 			}
 			typ := vocab.ActivityVocabularyType(c.String("type"))
