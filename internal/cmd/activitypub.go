@@ -109,25 +109,21 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func wrapObjectInCreate(r processing.Store, selfIRI vocab.IRI, p vocab.Item) (vocab.Activity, error) {
+func wrapObjectInCreate(actor vocab.Item, p vocab.Item) (vocab.Activity, error) {
 	act := vocab.Activity{
 		Type:    vocab.CreateType,
 		To:      vocab.ItemCollection{vocab.PublicNS},
 		Updated: time.Now().UTC(),
 		Object:  p,
 	}
-	self, err := r.Load(selfIRI)
-	if err != nil {
-		return act, err
-	}
 	if act.AttributedTo == nil {
-		act.AttributedTo = self.GetLink()
+		act.AttributedTo = actor.GetLink()
 	}
 	if act.Actor == nil {
-		act.Actor = self
+		act.Actor = actor
 	}
-	if !act.CC.Contains(self.GetLink()) {
-		act.CC.Append(self.GetLink())
+	if !act.CC.Contains(actor.GetLink()) {
+		act.CC.Append(actor.GetLink())
 	}
 	return act, nil
 }
@@ -136,11 +132,21 @@ func (c *Control) AddObject(p *vocab.Object) (*vocab.Object, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	create, err := wrapObjectInCreate(c.Storage, vocab.IRI(c.Conf.BaseURL), p)
+	self, err := c.Storage.Load(vocab.IRI(c.Conf.BaseURL))
+	if err != nil {
+		return nil, errors.NewNotFound(err, "unable to load current's instance Service actor")
+	}
+
+	outbox := vocab.Outbox.Of(self).GetLink()
+	if vocab.IsNil(outbox) {
+		return nil, errors.Newf("unable to find Actor's outbox: %s", self)
+	}
+
+	create, err := wrapObjectInCreate(self, p)
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to wrap Object in Create activity")
 	}
-	if _, err := c.Saver.ProcessClientActivity(create, vocab.Outbox.Of(create.Actor).GetLink()); err != nil {
+	if _, err := c.Saver.ProcessClientActivity(create, outbox); err != nil {
 		return nil, err
 	}
 	return p, nil
@@ -150,17 +156,18 @@ func (c *Control) AddActor(p *vocab.Person, pw []byte) (*vocab.Person, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
+	self, err := c.Storage.Load(vocab.IRI(c.Conf.BaseURL))
+	if err != nil {
+		return nil, errors.NewNotFound(err, "unable to load current's instance Service actor")
+	}
 
-	create, err := wrapObjectInCreate(c.Storage, vocab.IRI(c.Conf.BaseURL), p)
+	create, err := wrapObjectInCreate(self, p)
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to wrap Actor in Create activity")
 	}
-	if vocab.IsNil(create.Actor) {
-		return nil, errors.Newf("current instance does not have an Actor configured")
-	}
-	outbox := vocab.Outbox.Of(create.Actor)
+	outbox := vocab.Outbox.Of(self)
 	if vocab.IsNil(outbox) {
-		return nil, errors.Newf("unable to find Actor's outbox: %s", create.Actor.GetID())
+		return nil, errors.Newf("unable to find Actor's outbox: %s", self)
 	}
 	if _, err := c.Saver.ProcessClientActivity(create, outbox.GetLink()); err != nil {
 		return nil, err
