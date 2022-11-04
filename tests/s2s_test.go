@@ -29,8 +29,9 @@ func CreateS2SObject(actor *testAccount, object interface{}) actS2SMock {
 	}
 }
 
-var generatedFollow = CreateS2SObject(
-	defaultS2SAccount(),
+// Generate test Accept with C2S account as actor and the Follow request as object
+var generatedAccept = CreateS2SObject(
+	defaultC2SAccount(),
 	loadMockFromDisk("mocks/s2s/activities/follow-666-johndoe.json", nil),
 )
 
@@ -133,15 +134,16 @@ var S2SReceiveTests = testPairs{
 					// s2s entities that need to exist
 					"mocks/s2s/actors/actor-666.json",
 					"mocks/s2s/activities/follow-666-johndoe.json",
+					// This is used for validation
 					"mocks/s2s/activities/accept-follow-666-johndoe.json",
 				},
 				req: testReq{
 					met:     http.MethodPost,
-					account: defaultS2SAccount(),
-					urlFn:   InboxURL(defaultC2SAccount()),
+					account: defaultC2SAccount(),
+					urlFn:   InboxURL(defaultS2SAccount()),
 					bodyFn: loadMockJson(
 						"mocks/s2s/accept-follow.json",
-						generatedFollow,
+						generatedAccept,
 					),
 				},
 				res: testRes{
@@ -149,32 +151,38 @@ var S2SReceiveTests = testPairs{
 					val: &objectVal{
 						typ: string(vocab.AcceptType),
 						act: &objectVal{
-							id:                defaultS2SAccount().Id,
+							id:                defaultC2SAccount().Id,
 							typ:               string(vocab.PersonType),
-							preferredUsername: "lou",
-							name:              "Loucien Cypher",
+							preferredUsername: defaultC2SAccount().Handle,
 						},
 						obj: &objectVal{
-							id:  generatedFollow.ObjectId,
+							id:  generatedAccept.ObjectId,
 							typ: string(vocab.FollowType),
 							obj: &objectVal{
 								id:  defaultC2SAccount().Id,
 								typ: string(vocab.PersonType),
 							},
 							act: &objectVal{
-								id:                defaultS2SAccount().Id,
-								typ:               string(vocab.PersonType),
-								preferredUsername: "lou",
-								name:              "Loucien Cypher",
+								id: defaultS2SAccount().Id,
 							},
 						},
 					},
 				},
 			},
 			{
+				// The followers collection doesn't really exist because we didn't mock it
 				req: testReq{
 					met:   http.MethodGet,
 					urlFn: FollowersURL(defaultC2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusNotFound,
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: FollowingURL(defaultS2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusOK,

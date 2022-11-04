@@ -40,7 +40,7 @@ func jsonldMarshal(i vocab.Item) string {
 }
 
 func loadMockJson(file string, model interface{}) func() (string, error) {
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 	if err != nil {
 		return func() (string, error) { return "", err }
 	}
