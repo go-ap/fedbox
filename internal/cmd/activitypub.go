@@ -226,7 +226,6 @@ func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string
 		d.InReplyTo = replIRI
 	}
 	d.Actor = self
-	d.CC = append(d.CC, self.GetLink())
 
 	delItems := make(vocab.ItemCollection, 0)
 	for _, id := range ids {
@@ -241,6 +240,10 @@ func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string
 			if invalidRemoveTypes.Contains(o.GetType()) {
 				return nil
 			}
+			d.To = o.To
+			d.Bto = o.Bto
+			d.CC = o.CC
+			d.BCC = o.BCC
 			if o.AttributedTo != nil {
 				d.CC = append(d.CC, o.AttributedTo.GetLink())
 			}
@@ -248,6 +251,7 @@ func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string
 			return nil
 		})
 	}
+	d.CC = append(d.CC, self.GetLink())
 	if len(delItems) == 0 {
 		return errors.NotFoundf("No items found to delete")
 	}
