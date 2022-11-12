@@ -479,9 +479,11 @@ func createOrOpenFile(p string) (*os.File, error) {
 	return os.OpenFile(p, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 }
 
+var storageCollectionPaths = append(ap.FedBOXCollections, append(vocab.OfActor, vocab.OfObject...)...)
+
 func isStorageCollectionKey(p string) bool {
 	lst := vocab.CollectionPath(path.Base(p))
-	return ap.FedBOXCollections.Contains(lst) || vocab.OfActor.Contains(lst) || vocab.OfObject.Contains(lst)
+	return storageCollectionPaths.Contains(lst)
 }
 
 func (r repo) itemPath(iri vocab.IRI) string {
