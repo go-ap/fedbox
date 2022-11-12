@@ -2,7 +2,7 @@ package fedbox
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -126,13 +126,25 @@ func validContentType(c string) bool {
 	return false
 }
 
+var validCollections = vocab.CollectionPaths{vocab.Outbox, vocab.Inbox}
+
+func validCollection(r *http.Request) bool {
+	return validCollections.Contains(processing.Typer.Type(r))
+}
+
 func ValidateRequest(r *http.Request) (bool, error) {
 	contType := r.Header.Get("Content-Type")
-	if validContentType(contType) {
-		return true, nil
+	if r.Method != http.MethodPost {
+		return false, errors.MethodNotAllowedf("invalid HTTP method")
+	}
+	if !validContentType(contType) {
+		return false, errors.NotValidf("invalid content type")
+	}
+	if !validCollection(r) {
+		return false, errors.NotValidf("invalid collection")
 	}
 
-	return false, errors.Newf("Invalid request")
+	return true, nil
 }
 
 // GenerateID creates an IRI that can be used to uniquely identify the "it" item, based on the collection "col" and
@@ -174,9 +186,9 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		ap.LoadCollectionFilters(f, fb.actorFromRequest(r))
 
 		if ok, err := ValidateRequest(r); !ok {
-			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unrecognized ActivityPub content type")
+			return it, errors.HttpStatus(err), err
 		}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil || len(body) == 0 {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
 		}
