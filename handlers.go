@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"path"
 	"sort"
 	"strings"
 
@@ -20,20 +19,19 @@ import (
 
 type pathTyper struct{}
 
+var validCollections = append(ap.FedBOXCollections, vocab.ActivityPubCollections...)
+
 func (d pathTyper) Type(r *http.Request) vocab.CollectionPath {
 	col := vocab.Unknown
 	if r.URL == nil || len(r.URL.Path) == 0 {
 		return col
 	}
-
-	pathElements := strings.Split(r.URL.Path[1:], "/") // Skip first /
+	pathElements := strings.Split(strings.TrimLeft(r.URL.Path, "/"), "/")
 	for i := len(pathElements) - 1; i >= 0; i-- {
-		col = vocab.CollectionPath(strings.ToLower(pathElements[i]))
-		if vocab.ActivityPubCollections.Contains(col) {
-			return col
-		}
-		if ap.FedBOXCollections.Contains(col) {
-			return col
+		piece := vocab.CollectionPath(strings.ToLower(pathElements[i]))
+		if validCollections.Contains(piece) {
+			col = piece
+			break
 		}
 	}
 	return col
@@ -59,6 +57,9 @@ func orderItems(col vocab.ItemCollection) vocab.ItemCollection {
 func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 	repo := fb.storage.repo
 	return func(typ vocab.CollectionPath, r *http.Request) (vocab.CollectionInterface, error) {
+		if typ == vocab.Unknown {
+			return nil, errors.NotFoundf("%s not found", r.URL.Path)
+		}
 		if !ap.ValidCollection(typ) {
 			return nil, errors.NotFoundf("collection '%s' not found", typ)
 		}
@@ -126,10 +127,10 @@ func validContentType(c string) bool {
 	return false
 }
 
-var validCollections = vocab.CollectionPaths{vocab.Outbox, vocab.Inbox}
+var validActivityCollections = vocab.CollectionPaths{vocab.Outbox, vocab.Inbox}
 
-func validCollection(r *http.Request) bool {
-	return validCollections.Contains(processing.Typer.Type(r))
+func validActivityCollection(r *http.Request) bool {
+	return validActivityCollections.Contains(processing.Typer.Type(r))
 }
 
 func ValidateRequest(r *http.Request) (bool, error) {
@@ -140,7 +141,7 @@ func ValidateRequest(r *http.Request) (bool, error) {
 	if !validContentType(contType) {
 		return false, errors.NotValidf("invalid content type")
 	}
-	if !validCollection(r) {
+	if !validActivityCollection(r) {
 		return false, errors.NotValidf("invalid collection")
 	}
 
@@ -271,12 +272,12 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 
 		where := ""
 		what := ""
+		if u, err := url.ParseRequestURI(iri); err == nil {
+			what = fmt.Sprintf("%s ", u.Path)
+		}
 		if len(collection) > 0 {
 			where = fmt.Sprintf(" in %s", collection)
-		}
-		what = fmt.Sprintf("%s ", path.Base(iri))
-		if u, err := url.ParseRequestURI(iri); err == nil {
-			what = fmt.Sprintf("%s ", path.Base(u.Path))
+			what = fmt.Sprintf("%s ", strings.Replace(what, string(collection), "", 1))
 		}
 
 		f.MaxItems = 1
@@ -302,7 +303,7 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 			items = vocab.ItemCollection{it}
 		}
 
-		if f.Collection == "" && len(items) == 0 {
+		if r.URL.Path == "/" && len(items) == 0 {
 			if saver, ok := repo.(st.CanBootstrap); ok {
 				service := ap.Self(ap.DefaultServiceIRI(f.IRI.String()))
 				if err := saver.CreateService(service); err != nil {
