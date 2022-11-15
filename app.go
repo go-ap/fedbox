@@ -14,9 +14,11 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
+	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -47,6 +49,7 @@ func (s *fedboxStorage) Close() error {
 type FedBOX struct {
 	R       chi.Router
 	conf    config.Options
+	self    vocab.Service
 	storage fedboxStorage
 	ver     string
 	caches  cache.CanStore
@@ -87,6 +90,9 @@ func Config(e string, to time.Duration) (config.Options, error) {
 
 // New instantiates a new FedBOX instance
 func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o osin.Storage) (*FedBOX, error) {
+	if db == nil {
+		return nil, errors.Newf("invalid storage")
+	}
 	app := FedBOX{
 		ver:     ver,
 		conf:    conf,
@@ -104,6 +110,23 @@ func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o os
 
 	errors.IncludeBacktrace = conf.LogLevel == lw.TraceLevel
 
+	selfIRI := ap.DefaultServiceIRI(conf.BaseURL)
+	self, _ := db.Load(selfIRI)
+	vocab.OnActor(self, func(actor *vocab.Actor) error {
+		app.self = *actor
+		return nil
+	})
+	if app.self.ID != selfIRI {
+		app.infFn("trying to bootstrap the instance's self service")
+		if saver, ok := db.(st.CanBootstrap); ok {
+			app.self = ap.Self(selfIRI)
+			if err := saver.CreateService(app.self); err != nil {
+				app.errFn("unable to save the instance's self service: %s", err)
+				return nil, err
+			}
+		}
+	}
+
 	as, err := auth.New(conf.BaseURL, app.storage.oauth, app.storage.repo, l)
 	if err != nil {
 		l.Warnf(err.Error())
@@ -113,7 +136,7 @@ func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o os
 	app.R.Use(middleware.RequestID)
 	app.R.Use(lw.Middlewares(l)...)
 
-	baseIRI := vocab.IRI(conf.BaseURL)
+	baseIRI := app.self.GetLink()
 	app.OAuth = authService{
 		baseIRI: baseIRI,
 		auth:    as,

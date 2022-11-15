@@ -220,7 +220,10 @@ func SetupAPP(options config.Options) *fedbox.FedBOX {
 	if err = cmd.Bootstrap(options); err != nil {
 		panic(err)
 	}
-	a, _ := fedbox.New(l, "HEAD", options, db, o)
+	a, err := fedbox.New(l, "HEAD", options, db, o)
+	if err != nil {
+		panic(err)
+	}
 	if options.Storage == config.StorageFS {
 		time.Sleep(100 * time.Millisecond)
 	}

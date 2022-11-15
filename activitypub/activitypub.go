@@ -40,7 +40,6 @@ func Self(baseURL vocab.IRI) vocab.Service {
 func DefaultServiceIRI(baseURL string) vocab.IRI {
 	u, _ := url.Parse(baseURL)
 	// TODO(marius): I don't like adding the / folder to something like http://fedbox.git
-	// I need to find an
 	if u.Path == "" {
 		u.Path = "/"
 	}

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -1221,7 +1222,7 @@ func FiltersFromIRI(i vocab.IRI) (*Filters, error) {
 }
 
 // FromRequest loads the filters we use for generating storage queries from the HTTP request
-func FromRequest(r *http.Request, baseUrl string) (*Filters, error) {
+func FromRequest(r *http.Request, baseUrl string) *Filters {
 	f := FiltersNew()
 	f.Req = r
 
@@ -1229,7 +1230,7 @@ func FromRequest(r *http.Request, baseUrl string) (*Filters, error) {
 	if baseUrl != "" {
 		f.baseURL = vocab.IRI(baseUrl)
 		u, _ = f.baseURL.URL()
-		u.Path = r.URL.Path
+		u.Path = filepath.Clean(r.URL.Path)
 	} else {
 		f.baseURL = vocab.IRI(baseURL(r.URL))
 		u = r.URL
@@ -1237,14 +1238,12 @@ func FromRequest(r *http.Request, baseUrl string) (*Filters, error) {
 	if len(f.IRI) == 0 {
 		f.IRI = vocab.IRI(fullURL(u))
 	}
-	if err := qstring.Unmarshal(r.URL.Query(), f); err != nil {
-		return f, err
-	}
 	f.Collection = processing.Typer.Type(r)
+	qstring.Unmarshal(r.URL.Query(), f)
 
 	if f.MaxItems > MaxItems {
 		f.MaxItems = MaxItems
 	}
 
-	return f, nil
+	return f
 }

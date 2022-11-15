@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -24,6 +25,9 @@ var validCollections = append(ap.FedBOXCollections, vocab.ActivityPubCollections
 func (d pathTyper) Type(r *http.Request) vocab.CollectionPath {
 	col := vocab.Unknown
 	if r.URL == nil || len(r.URL.Path) == 0 {
+		return col
+	}
+	if filepath.Clean(r.URL.Path) != r.URL.Path {
 		return col
 	}
 	pathElements := strings.Split(strings.TrimLeft(r.URL.Path, "/"), "/")
@@ -64,16 +68,14 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.NotFoundf("collection '%s' not found", typ)
 		}
 
-		f, err := ap.FromRequest(r, fb.Config().BaseURL)
-		if err != nil {
-			return nil, errors.NewNotValid(err, "unable to load filters from request")
-		}
+		f := ap.FromRequest(r, fb.Config().BaseURL)
 		ap.LoadCollectionFilters(f, fb.actorFromRequest(r))
 
 		cacheKey := ap.CacheKey(f)
 		it := fb.caches.Get(cacheKey)
 		fromCache := !vocab.IsNil(it)
 
+		var err error
 		if !fromCache {
 			if it, err = repo.Load(f.GetLink()); err != nil {
 				return nil, err
@@ -166,7 +168,7 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 	}
 }
 
-// HandleActivity handles POST requests to an ActivityPub To's inbox/outbox, based on the CollectionType
+// HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 	errLogger := client.LogFn(fb.errFn)
 	infoLogger := client.LogFn(fb.infFn)
@@ -180,10 +182,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
 		var it vocab.Item
 
-		f, err := ap.FromRequest(r, fb.Config().BaseURL)
-		if err != nil {
-			return it, 0, errors.NewNotValid(err, "unable to load filters from request")
-		}
+		f := ap.FromRequest(r, fb.Config().BaseURL)
 		ap.LoadCollectionFilters(f, fb.actorFromRequest(r))
 
 		if ok, err := ValidateRequest(r); !ok {
@@ -253,12 +252,11 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 	repo := fb.storage.repo
 	return func(r *http.Request) (vocab.Item, error) {
-		collection := processing.Typer.Type(r)
-
-		f, err := ap.FromRequest(r, fb.Config().BaseURL)
-		if err != nil {
-			return nil, errors.NewNotValid(err, "unable to load filters from request")
+		f := ap.FromRequest(r, fb.Config().BaseURL)
+		if !f.IRI.Equals(fb.self.GetLink(), true) && !ap.ValidCollection(f.Collection) {
+			return nil, errors.NotFoundf("%s not found", r.URL.Path)
 		}
+
 		ap.LoadItemFilters(f, fb.actorFromRequest(r))
 
 		cacheKey := ap.CacheKey(f)
@@ -275,16 +273,14 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 		if u, err := url.ParseRequestURI(iri); err == nil {
 			what = fmt.Sprintf("%s ", u.Path)
 		}
-		if len(collection) > 0 {
-			where = fmt.Sprintf(" in %s", collection)
-			what = fmt.Sprintf("%s ", strings.Replace(what, string(collection), "", 1))
+		if len(f.Collection) > 0 {
+			where = fmt.Sprintf(" in %s", f.Collection)
+			what = fmt.Sprintf("%s ", strings.Replace(what, string(f.Collection), "", 1))
 		}
 
 		f.MaxItems = 1
 
-		if len(f.Collection) > 0 && !ap.ValidCollection(f.Collection) {
-			return nil, errors.NotFoundf("%s not found", r.URL.Path)
-		}
+		var err error
 		if !fromCache {
 			if it, err = repo.Load(f.GetLink()); err != nil {
 				return nil, err
@@ -301,16 +297,6 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 			}
 		} else {
 			items = vocab.ItemCollection{it}
-		}
-
-		if r.URL.Path == "/" && len(items) == 0 {
-			if saver, ok := repo.(st.CanBootstrap); ok {
-				service := ap.Self(ap.DefaultServiceIRI(f.IRI.String()))
-				if err := saver.CreateService(service); err != nil {
-					return nil, err
-				}
-				items = vocab.ItemCollection{service}
-			}
 		}
 
 		if len(items) == 0 {

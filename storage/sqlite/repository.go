@@ -114,7 +114,9 @@ func getCollectionTable(typ vocab.CollectionPath) vocab.CollectionPath {
 		fallthrough
 	case vocab.Following:
 		fallthrough
-	case "actors":
+	case ap.ActorsType:
+		fallthrough
+	case vocab.Unknown:
 		return "actors"
 	case vocab.Inbox:
 		fallthrough
@@ -124,8 +126,10 @@ func getCollectionTable(typ vocab.CollectionPath) vocab.CollectionPath {
 		fallthrough
 	case vocab.Likes:
 		fallthrough
-	case "activities":
+	case ap.ActivitiesType:
 		return "activities"
+	case ap.ObjectsType:
+		fallthrough
 	case vocab.Liked:
 		fallthrough
 	case vocab.Replies:

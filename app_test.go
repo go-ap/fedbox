@@ -1,6 +1,7 @@
 package fedbox
 
 import (
+	"github.com/go-ap/fedbox/storage/fs"
 	"testing"
 
 	"github.com/go-ap/fedbox/internal/config"
@@ -11,7 +12,8 @@ var defaultConfig = config.Options{
 }
 
 func TestNew(t *testing.T) {
-	app, err := New(nil, "HEAD", defaultConfig, nil, nil)
+	store, _ := fs.New(fs.Config{})
+	app, err := New(nil, "HEAD", config.Options{}, store, nil)
 	if err != nil {
 		t.Errorf("Environment 'test' should not trigger an error: %s", err)
 	}

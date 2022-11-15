@@ -110,7 +110,7 @@ func IndieAuthClientActor(author vocab.Item, url *url.URL) *vocab.Actor {
 }
 
 func filters(r *http.Request, baseURL vocab.IRI) *activitypub.Filters {
-	f, _ := activitypub.FromRequest(r, baseURL.String())
+	f := activitypub.FromRequest(r, baseURL.String())
 	f.IRI = f.IRI[:0]
 	f.Collection = activitypub.ActorsType
 	return f

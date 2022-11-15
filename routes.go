@@ -46,9 +46,8 @@ func (f FedBOX) Routes() func(chi.Router) {
 			r.Mount("/debug", middleware.Profiler())
 		}
 
-		notFound := errors.HandleError(errors.NotFoundf("not found"))
-		r.Handle("/favicon.ico", notFound)
-		r.NotFound(notFound.ServeHTTP)
+		r.Handle("/favicon.ico", errors.NotFound)
+		r.NotFound(errors.NotFound.ServeHTTP)
 		r.MethodNotAllowed(errors.HandleError(errors.MethodNotAllowedf("method not allowed")).ServeHTTP)
 	}
 }
