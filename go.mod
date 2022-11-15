@@ -6,13 +6,13 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20221102084913-34fb8eae441e
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/dgraph-io/badger/v3 v3.2103.2
-	github.com/go-ap/activitypub v0.0.0-20221104180111-f052192b39ff
-	github.com/go-ap/auth v0.0.0-20221104180432-5072a40f0321
-	github.com/go-ap/client v0.0.0-20221104180253-4c7979edb393
-	github.com/go-ap/errors v0.0.0-20221104152707-ab7424daf0ae
+	github.com/go-ap/activitypub v0.0.0-20221115052618-716ebebd22df
+	github.com/go-ap/auth v0.0.0-20221115053450-b54ed9bb886d
+	github.com/go-ap/client v0.0.0-20221115053031-f505d4098fbe
+	github.com/go-ap/errors v0.0.0-20221115052505-8aaa26f930b4
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20221104180459-48af8832f4de
+	github.com/go-ap/processing v0.0.0-20221115053857-65a8eb512214
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0
@@ -23,8 +23,8 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/urfave/cli/v2 v2.3.0
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/crypto v0.1.0
-	golang.org/x/oauth2 v0.1.0
+	golang.org/x/crypto v0.2.0
+	golang.org/x/oauth2 v0.2.0
 	modernc.org/sqlite v1.19.1
 )
 
@@ -56,9 +56,9 @@ require (
 	github.com/valyala/fastjson v1.6.3 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/net v0.1.0 // indirect
-	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/term v0.1.0 // indirect
+	golang.org/x/net v0.2.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
+	golang.org/x/term v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
