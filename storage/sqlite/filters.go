@@ -115,6 +115,7 @@ func getURLWheres(strs ap.CompStrs) (string, []interface{}) {
 var MandatoryCollections = vocab.CollectionPaths{
 	vocab.Inbox,
 	vocab.Outbox,
+	vocab.Replies,
 }
 
 func getIRIWheres(strs ap.CompStrs, id vocab.IRI) (string, []interface{}) {
