@@ -12,7 +12,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20221115052505-8aaa26f930b4
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20221119121403-a6040a70fd46
+	github.com/go-ap/processing v0.0.0-20221120042224-7db5474c4a58
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0

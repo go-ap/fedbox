@@ -139,7 +139,6 @@ type objectVal struct {
 	preferredUsername string
 	summary           string
 	url               string
-	score             int64
 	content           string
 	mediaType         string
 	author            string
@@ -217,6 +216,12 @@ func ServiceObjectsURL(service *testAccount) string {
 
 func ServiceActorsURL(service *testAccount) string {
 	return fmt.Sprintf("%s/actors", service.Id)
+}
+
+func RepliesURL(ob vocab.Item) func() string {
+	return func() string {
+		return fmt.Sprintf("%s/replies", ob.GetID())
+	}
 }
 
 const (
@@ -432,9 +437,6 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			}
 			if tVal.summary != "" {
 				assertMapKey(ob, "summary", tVal.summary)
-			}
-			if tVal.score != 0 {
-				assertMapKey(ob, "score", tVal.score)
 			}
 			if tVal.url != "" {
 				assertMapKey(ob, "url", tVal.url)

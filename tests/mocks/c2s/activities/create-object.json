@@ -1,0 +1,6 @@
+{
+  "type": "Create",
+  "actor": "{{ .ActorId }}",
+  "object": {{ .Object | json }},
+  "to": [ "https://www.w3.org/ns/activitystreams#Public" ]
+}

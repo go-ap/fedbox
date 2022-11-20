@@ -1,0 +1,23 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "http://127.0.0.1:9998/objects/6",
+  "type": "Note",
+  "attributedTo": "http://127.0.0.1:9998/actors/4b39b035-e38a-4f79-a3e0-14cc0798fe42",
+  "content": "<p>A <s>second</s>third reply.</p>\n",
+  "mediaType": "text/html",
+  "inReplyTo": [
+    "http://127.0.0.1:9998/objects/1",
+    "http://127.0.0.1:9998/objects/2",
+    "http://127.0.0.1:9998/objects/5"
+  ],
+  "published": "2019-09-27T14:26:43.235793852Z",
+  "updated": "2019-09-27T14:26:43.235793852Z",
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "source": {
+    "content": "A ~~second~~third reply.",
+    "mediaType": "text/markdown"
+  }
+}
+

@@ -1039,6 +1039,198 @@ var CreateTests = testPairs{
 			},
 		},
 	},
+	{
+		name:    "CreateNoteWithMultipleInReplyTos",
+		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+			"mocks/c2s/actors/application.json",
+			"mocks/c2s/objects/page-2.json",
+		},
+		tests: []testPair{
+			{
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn: loadMockJson(
+						"mocks/c2s/activities/create-object.json",
+						CreateC2SObject(defaultC2SAccount(), loadMockFromDisk("mocks/c2s/objects/note-1.json", nil)),
+					),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(vocab.CreateType),
+						obj: &objectVal{
+							id:  loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetID().String(),
+							typ: string(loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetType()),
+						},
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: RepliesURL(loadMockFromDisk("mocks/c2s/objects/page-2.json", nil)),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						typ:       string(vocab.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: RepliesURL(loadMockFromDisk("mocks/c2s/objects/note-1.json", nil)),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						typ:       string(vocab.OrderedCollectionType),
+						itemCount: 0,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn: loadMockJson(
+						"mocks/c2s/activities/create-object.json",
+						CreateC2SObject(defaultC2SAccount(), loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-and-2.json", nil)),
+					),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(vocab.CreateType),
+						obj: &objectVal{
+							id:  loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-and-2.json", nil).GetID().String(),
+							typ: string(loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-and-2.json", nil).GetType()),
+						},
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: RepliesURL(loadMockFromDisk("mocks/c2s/objects/page-2.json", nil)),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						typ:       string(vocab.OrderedCollectionType),
+						itemCount: 2,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: RepliesURL(loadMockFromDisk("mocks/c2s/objects/note-1.json", nil)),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						typ:       string(vocab.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: RepliesURL(loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-and-2.json", nil)),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						typ:       string(vocab.OrderedCollectionType),
+						itemCount: 0,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn: loadMockJson(
+						"mocks/c2s/activities/create-object.json",
+						CreateC2SObject(defaultC2SAccount(), loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-2-5.json", nil)),
+					),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(vocab.CreateType),
+						obj: &objectVal{
+							id:  loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-2-5.json", nil).GetID().String(),
+							typ: string(loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-2-5.json", nil).GetType()),
+						},
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: RepliesURL(loadMockFromDisk("mocks/c2s/objects/page-2.json", nil)),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						typ:       string(vocab.OrderedCollectionType),
+						itemCount: 3,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: RepliesURL(loadMockFromDisk("mocks/c2s/objects/note-1.json", nil)),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						typ:       string(vocab.OrderedCollectionType),
+						itemCount: 2,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: RepliesURL(loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-and-2.json", nil)),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						typ:       string(vocab.OrderedCollectionType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: RepliesURL(loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-2-5.json", nil)),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						typ:       string(vocab.OrderedCollectionType),
+						itemCount: 0,
+					},
+				},
+			},
+		},
+	},
 }
 
 var UpdateTests = testPairs{
