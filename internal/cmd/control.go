@@ -12,6 +12,7 @@ import (
 	c "github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	st "github.com/go-ap/fedbox/storage"
@@ -23,6 +24,7 @@ import (
 
 type Control struct {
 	Conf        config.Options
+	Self        vocab.Actor
 	AuthStorage osin.Storage
 	Storage     processing.Store
 	Saver       processing.C2SProcessor
@@ -48,8 +50,10 @@ func New(authDB osin.Storage, actorDb processing.Store, conf config.Options, l l
 		)),
 		processing.SetLocalIRIChecker(st.IsLocalIRI(actorDb)),
 	)
+	self, _ := ap.LoadSelfActor(actorDb, ap.DefaultServiceIRI(conf.BaseURL))
 	return &Control{
 		Conf:        conf,
+		Self:        self,
 		AuthStorage: authDB,
 		Storage:     actorDb,
 		Saver:       p,

@@ -94,7 +94,8 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 				},
 			}
 			if p, err = ctl.AddActor(p, pw); err != nil {
-				Errf("Error adding %s: %s\n", name, err)
+				//Errf("Error adding %s: %s\n", name, err)
+				return err
 			}
 			fmt.Printf("Added %q [%s]: %s\n", typ, name, p.GetLink())
 			if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
@@ -131,9 +132,12 @@ func (c *Control) AddObject(p *vocab.Object) (*vocab.Object, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	self, err := c.Storage.Load(vocab.IRI(c.Conf.BaseURL))
+	self, err := ap.LoadSelfActor(c.Storage, ap.DefaultServiceIRI(c.Conf.BaseURL))
 	if err != nil {
-		return nil, errors.NewNotFound(err, "unable to load current's instance Service actor")
+		return nil, errors.NewNotFound(err, "unable to load current's instance Application actor")
+	}
+	if self.ID == "" {
+		return nil, errors.NotFoundf("unable to load current's instance Application actor")
 	}
 
 	outbox := vocab.Outbox.Of(self).GetLink()
@@ -155,18 +159,17 @@ func (c *Control) AddActor(p *vocab.Person, pw []byte) (*vocab.Person, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	self, err := c.Storage.Load(vocab.IRI(c.Conf.BaseURL))
-	if err != nil {
-		return nil, errors.NewNotFound(err, "unable to load current's instance Service actor")
+	if c.Self.ID == "" {
+		return nil, errors.NotFoundf("unable to load current's instance Application actor: %s", c.Conf.BaseURL)
 	}
 
-	create, err := wrapObjectInCreate(self, p)
+	create, err := wrapObjectInCreate(c.Self, p)
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to wrap Actor in Create activity")
 	}
-	outbox := vocab.Outbox.Of(self)
+	outbox := vocab.Outbox.Of(c.Self)
 	if vocab.IsNil(outbox) {
-		return nil, errors.Newf("unable to find Actor's outbox: %s", self)
+		return nil, errors.Newf("unable to find Actor's outbox: %s", c.Self)
 	}
 	if _, err := c.Saver.ProcessClientActivity(create, outbox.GetLink()); err != nil {
 		return nil, err

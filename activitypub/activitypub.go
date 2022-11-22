@@ -6,6 +6,7 @@ import (
 	"path"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/processing"
 	"github.com/pborman/uuid"
 )
 
@@ -44,6 +45,16 @@ func DefaultServiceIRI(baseURL string) vocab.IRI {
 		u.Path = "/"
 	}
 	return vocab.IRI(u.String())
+}
+
+func LoadSelfActor(st processing.ReadStore, selfIRI vocab.IRI) (vocab.Actor, error) {
+	var self vocab.Actor
+	selfCol, err := st.Load(selfIRI)
+	err = vocab.OnActor(selfCol, func(actor *vocab.Actor) error {
+		self = *actor
+		return nil
+	})
+	return self, err
 }
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.

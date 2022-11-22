@@ -111,11 +111,7 @@ func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o os
 	errors.IncludeBacktrace = conf.LogLevel == lw.TraceLevel
 
 	selfIRI := ap.DefaultServiceIRI(conf.BaseURL)
-	self, _ := db.Load(selfIRI)
-	vocab.OnActor(self, func(actor *vocab.Actor) error {
-		app.self = *actor
-		return nil
-	})
+	app.self, _ = ap.LoadSelfActor(db, selfIRI)
 	if app.self.ID != selfIRI {
 		app.infFn("trying to bootstrap the instance's self service")
 		if saver, ok := db.(st.CanBootstrap); ok {

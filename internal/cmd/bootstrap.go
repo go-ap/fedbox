@@ -50,16 +50,22 @@ func resetAct(c *Control) cli.ActionFunc {
 
 func bootstrapAct(c *Control) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
+		if err := Bootstrap(c.Conf); err != nil {
+			Errf("Error adding service: %s\n", err)
+			return err
+		}
 		service := ap.Self(ap.DefaultServiceIRI(c.Conf.BaseURL))
 		if _, err := c.Storage.Save(&service); err != nil {
 			Errf("Error adding service: %s\n", err)
+			return err
 		}
 		if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
 			if err := AddKeyToItem(metaSaver, &service); err != nil {
 				Errf("Error saving metadata for service: %s", err)
+				return err
 			}
 		}
-		return Bootstrap(c.Conf)
+		return nil
 	}
 }
 
