@@ -3,12 +3,10 @@
 package cmd
 
 import (
-	"os"
-
 	authsqlite "github.com/go-ap/auth/sqlite"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/storage/badger"
+	"github.com/go-ap/storage-badger"
 	"github.com/go-ap/storage-boltdb"
 	fs "github.com/go-ap/storage-fs"
 	sqlite "github.com/go-ap/storage-sqlite"
@@ -29,7 +27,8 @@ var (
 			return boltdb.Bootstrap(c, conf.BaseURL)
 		}
 		if conf.Storage == config.StorageBadger {
-			return badger.Bootstrap(conf)
+			c := badger.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}
+			return badger.Bootstrap(c, conf.BaseURL)
 		}
 		if conf.Storage == config.StorageFS {
 			c := fs.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}
@@ -62,8 +61,8 @@ var (
 			//}
 		}
 		if conf.Storage == config.StorageBadger {
-			os.RemoveAll(conf.BadgerOAuth2(conf.BaseStoragePath()))
-			return badger.Clean(conf)
+			c := badger.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}
+			return badger.Clean(c)
 		}
 		if conf.Storage == config.StorageFS {
 			conf := fs.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}

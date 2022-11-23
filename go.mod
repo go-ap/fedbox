@@ -5,7 +5,6 @@ go 1.18
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20221102084913-34fb8eae441e
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
-	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/go-ap/activitypub v0.0.0-20221119120906-cb8207231e18
 	github.com/go-ap/auth v0.0.0-20221119121244-66f93d52b757
 	github.com/go-ap/client v0.0.0-20221119121059-9d87174a90b2
@@ -13,9 +12,10 @@ require (
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20221120042224-7db5474c4a58
-	github.com/go-ap/storage-boltdb v0.0.0-20221123094125-81846f356ad6
+	github.com/go-ap/storage-badger v0.0.0-20221123102433-bc154b6d2343
+	github.com/go-ap/storage-boltdb v0.0.0-20221123103108-7ecba4fd67fa
 	github.com/go-ap/storage-fs v0.0.0-20221123024348-19a08cc7073d
-	github.com/go-ap/storage-sqlite v0.0.0-20221123024310-853f05eee965
+	github.com/go-ap/storage-sqlite v0.0.0-20221123103157-40e8e7e108b7
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0
@@ -33,6 +33,7 @@ require (
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
+	github.com/dgraph-io/badger/v3 v3.2103.4 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
@@ -42,10 +43,10 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/flatbuffers v22.9.29+incompatible // indirect
+	github.com/google/flatbuffers v22.11.22+incompatible // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/klauspost/compress v1.15.11 // indirect
+	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-sqlite3 v1.14.16 // indirect
@@ -56,7 +57,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
-	go.opencensus.io v0.23.0 // indirect
+	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect

@@ -3,9 +3,6 @@
 package fedbox
 
 import (
-	"path"
-	"unsafe"
-
 	"git.sr.ht/~mariusor/lw"
 	authbadger "github.com/go-ap/auth/badger"
 	authboltdb "github.com/go-ap/auth/boltdb"
@@ -14,9 +11,9 @@ import (
 	authsqlite "github.com/go-ap/auth/sqlite"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/storage/badger"
 	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/processing"
+	"github.com/go-ap/storage-badger"
 	"github.com/go-ap/storage-boltdb"
 	fs "github.com/go-ap/storage-fs"
 	sqlite "github.com/go-ap/storage-sqlite"
@@ -25,11 +22,7 @@ import (
 
 func getBadgerStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
-	conf := badger.Config{
-		Path:    path,
-		BaseURL: c.BaseURL,
-		Logger:  l,
-	}
+	conf := badger.Config{Path: path, Logger: l}
 	if l != nil {
 		l.Debugf("Initializing badger storage at %s", path)
 	}
@@ -37,9 +30,8 @@ func getBadgerStorage(c config.Options, l lw.Logger) (processing.Store, osin.Sto
 	if err != nil {
 		return db, nil, err
 	}
-	authConf := (*authbadger.Config)(unsafe.Pointer(&conf))
-	authConf.Path = c.BadgerOAuth2(path)
-	oauth := authbadger.New(*authConf)
+	authConf := authbadger.Config{Path: c.BadgerOAuth2(path)}
+	oauth := authbadger.New(authConf)
 	return db, oauth, nil
 }
 

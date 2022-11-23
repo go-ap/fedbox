@@ -4,15 +4,14 @@
 package cmd
 
 import (
-	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/storage/badger"
+	"github.com/go-ap/storage-badger"
 )
 
 var (
 	bootstrapFn = func(conf storageConf) error {
-		return badger.Bootstrap(config.Options{StoragePath: conf.Path, BaseURL: conf.BaseURL})
+		return badger.Bootstrap(badger.Config{Path: conf.Path}, conf.BaseURL)
 	}
 	cleanFn = func(conf storageConf) error {
-		return badger.Clean(config.Options{StoragePath: conf.Path, BaseURL: conf.BaseURL})
+		return badger.Clean(badger.Config{Path: conf.Path})
 	}
 )
