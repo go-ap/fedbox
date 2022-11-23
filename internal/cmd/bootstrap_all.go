@@ -1,4 +1,4 @@
-//go:build storage_all || (!storage_pgx && !storage_boltdb && !storage_fs && !storage_badger && !storage_sqlite)
+//go:build storage_all || (!storage_boltdb && !storage_fs && !storage_badger && !storage_sqlite)
 
 package cmd
 
@@ -14,14 +14,6 @@ import (
 
 var (
 	bootstrapFn = func(conf storageConf) error {
-		if conf.Storage == config.StoragePostgres {
-			//var pgRoot string
-			//// ask for root pw
-			//fmt.Printf("%s password: ", pgRoot)
-			//pgPw, _ := terminal.ReadPassword(0)
-			//fmt.Println()
-			//return pgx.Bootstrap(conf, pgRoot, pgPw)
-		}
 		if conf.Storage == config.StorageBoltDB {
 			c := boltdb.Config{Path: conf.Path}
 			return boltdb.Bootstrap(c, conf.BaseURL)
@@ -48,17 +40,6 @@ var (
 		if conf.Storage == config.StorageBoltDB {
 			c := boltdb.Config{Path: conf.Path}
 			return boltdb.Clean(c)
-		}
-		if conf.Storage == config.StoragePostgres {
-			//var pgRoot string
-			//// ask for root pw
-			//fmt.Printf("%s password: ", pgRoot)
-			//pgPw, _ := terminal.ReadPassword(0)
-			//fmt.Println()
-			//err := pgx.Clean(conf, pgRoot, pgPw)
-			//if err != nil {
-			//	return errors.Annotatef(err, "Unable to update %s db", conf.Storage)
-			//}
 		}
 		if conf.Storage == config.StorageBadger {
 			c := badger.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}

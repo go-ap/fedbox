@@ -17,7 +17,6 @@ require (
 	github.com/go-ap/storage-fs v0.0.0-20221123024348-19a08cc7073d
 	github.com/go-ap/storage-sqlite v0.0.0-20221123103157-40e8e7e108b7
 	github.com/go-chi/chi/v5 v5.0.7
-	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/joho/godotenv v1.4.0
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d
 	github.com/mariusor/render v1.5.1-0.20221026090743-ab78c1b3aa95
@@ -62,7 +61,6 @@ require (
 	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/term v0.2.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/tools v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect

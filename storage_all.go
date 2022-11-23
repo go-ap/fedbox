@@ -1,4 +1,4 @@
-//go:build storage_all || (!storage_pgx && !storage_boltdb && !storage_fs && !storage_badger && !storage_sqlite)
+//go:build storage_all || (!storage_boltdb && !storage_fs && !storage_badger && !storage_sqlite)
 
 package fedbox
 
@@ -7,11 +7,9 @@ import (
 	authbadger "github.com/go-ap/auth/badger"
 	authboltdb "github.com/go-ap/auth/boltdb"
 	authfs "github.com/go-ap/auth/fs"
-	authpgx "github.com/go-ap/auth/pgx"
 	authsqlite "github.com/go-ap/auth/sqlite"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/processing"
 	"github.com/go-ap/storage-badger"
 	"github.com/go-ap/storage-boltdb"
@@ -90,26 +88,6 @@ func getSqliteStorage(c config.Options, l lw.Logger) (processing.Store, osin.Sto
 	return db, oauth, nil
 }
 
-func getPgxStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
-	// @todo(marius): we're no longer loading SQL db config env variables
-	l.Debugf("Initializing pgx storage at %s", c.StoragePath)
-	conf := pgx.Config{}
-	db, err := pgx.New(conf, c.BaseURL, l)
-	if err != nil {
-		return nil, nil, errors.Annotatef(err, "unable to connect to pgx storage")
-	}
-	oauth := authpgx.New(authpgx.Config{
-		Enabled: true,
-		Host:    conf.Host,
-		Port:    int64(conf.Port),
-		User:    conf.User,
-		Pw:      conf.Password,
-		Name:    conf.Database,
-		LogFn:   InfoLogFn(l),
-		ErrFn:   ErrLogFn(l),
-	})
-	return db, oauth, errors.NotImplementedf("pgx storage is not implemented yet")
-}
 
 func Storage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	switch c.Storage {
@@ -117,8 +95,6 @@ func Storage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, err
 		return getBoltStorage(c, l)
 	case config.StorageBadger:
 		return getBadgerStorage(c, l)
-	case config.StoragePostgres:
-		return getPgxStorage(c, l)
 	case config.StorageSqlite:
 		return getSqliteStorage(c, l)
 	case config.StorageFS:
