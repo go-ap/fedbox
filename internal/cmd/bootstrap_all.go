@@ -3,29 +3,26 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	authsqlite "github.com/go-ap/auth/sqlite"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/badger"
-	"github.com/go-ap/fedbox/storage/pgx"
 	"github.com/go-ap/storage-boltdb"
 	fs "github.com/go-ap/storage-fs"
 	sqlite "github.com/go-ap/storage-sqlite"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 var (
 	bootstrapFn = func(conf storageConf) error {
 		if conf.Storage == config.StoragePostgres {
-			var pgRoot string
-			// ask for root pw
-			fmt.Printf("%s password: ", pgRoot)
-			pgPw, _ := terminal.ReadPassword(0)
-			fmt.Println()
-			return pgx.Bootstrap(conf, pgRoot, pgPw)
+			//var pgRoot string
+			//// ask for root pw
+			//fmt.Printf("%s password: ", pgRoot)
+			//pgPw, _ := terminal.ReadPassword(0)
+			//fmt.Println()
+			//return pgx.Bootstrap(conf, pgRoot, pgPw)
 		}
 		if conf.Storage == config.StorageBoltDB {
 			c := boltdb.Config{Path: conf.Path}
@@ -60,15 +57,15 @@ var (
 			return boltdb.Clean(c)
 		}
 		if conf.Storage == config.StoragePostgres {
-			var pgRoot string
-			// ask for root pw
-			fmt.Printf("%s password: ", pgRoot)
-			pgPw, _ := terminal.ReadPassword(0)
-			fmt.Println()
-			err := pgx.Clean(conf, pgRoot, pgPw)
-			if err != nil {
-				return errors.Annotatef(err, "Unable to update %s db", conf.Storage)
-			}
+			//var pgRoot string
+			//// ask for root pw
+			//fmt.Printf("%s password: ", pgRoot)
+			//pgPw, _ := terminal.ReadPassword(0)
+			//fmt.Println()
+			//err := pgx.Clean(conf, pgRoot, pgPw)
+			//if err != nil {
+			//	return errors.Annotatef(err, "Unable to update %s db", conf.Storage)
+			//}
 		}
 		if conf.Storage == config.StorageBadger {
 			os.RemoveAll(conf.BadgerOAuth2(conf.BaseStoragePath()))
