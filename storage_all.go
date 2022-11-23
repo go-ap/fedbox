@@ -73,10 +73,7 @@ func getFsStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage
 		LogFn: InfoLogFn(l),
 		ErrFn: ErrLogFn(l),
 	})
-	db, err := fs.New(fs.Config{
-		Path:        path.Dir(p),
-		CacheEnable: c.StorageCache,
-	})
+	db, err := fs.New(fs.Config{Path: p, CacheEnable: c.StorageCache})
 	if err != nil {
 		return nil, oauth, err
 	}

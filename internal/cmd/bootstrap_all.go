@@ -32,20 +32,14 @@ var (
 			return badger.Bootstrap(conf)
 		}
 		if conf.Storage == config.StorageFS {
-			c := fs.Config{
-				Path:        conf.StoragePath,
-				CacheEnable: conf.StorageCache,
-			}
+			c := fs.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}
 			return fs.Bootstrap(c, conf.BaseURL)
 		}
 		if conf.Storage == config.StorageSqlite {
-			if err := authsqlite.Bootstrap(authsqlite.Config{Path: conf.BaseStoragePath()}, nil); err != nil {
+			if err := authsqlite.Bootstrap(authsqlite.Config{Path: conf.Path}, nil); err != nil {
 				return err
 			}
-			c := sqlite.Config{
-				Path:        conf.StoragePath,
-				CacheEnable: conf.StorageCache,
-			}
+			c := sqlite.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}
 			return sqlite.Bootstrap(c, conf.BaseURL)
 
 		}
@@ -72,17 +66,11 @@ var (
 			return badger.Clean(conf)
 		}
 		if conf.Storage == config.StorageFS {
-			conf := fs.Config{
-				Path:        conf.StoragePath,
-				CacheEnable: conf.StorageCache,
-			}
+			conf := fs.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}
 			return fs.Clean(conf)
 		}
 		if conf.Storage == config.StorageSqlite {
-			conf := sqlite.Config{
-				Path:        conf.StoragePath,
-				CacheEnable: conf.StorageCache,
-			}
+			conf := sqlite.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}
 			return sqlite.Clean(conf)
 		}
 		return errors.NotImplementedf("Invalid storage type %s", conf.Storage)
