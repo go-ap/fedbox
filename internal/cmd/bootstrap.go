@@ -69,8 +69,18 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 	}
 }
 
+type storageConf struct {
+	Path string
+	BaseURL string
+	CacheEnable bool
+}
+
+func confFn(opt config.Options) storageConf {
+	return storageConf{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache}
+}
+
 func Bootstrap(conf config.Options) error {
-	if err := bootstrapFn(conf); err != nil {
+	if err := bootstrapFn(confFn(conf)); err != nil {
 		return errors.Annotatef(err, "Unable to create %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}
 	fmt.Fprintf(os.Stdout, "Successfuly created %s db for storage %s\n", conf.BaseStoragePath(), conf.Storage)
@@ -78,7 +88,7 @@ func Bootstrap(conf config.Options) error {
 }
 
 func Reset(conf config.Options) error {
-	if err := cleanFn(conf); err != nil {
+	if err := cleanFn(confFn(conf)); err != nil {
 		return errors.Annotatef(err, "Unable to reset %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}
 	fmt.Fprintf(os.Stdout, "Successful reset %s db for storage %s\n", conf.BaseStoragePath(), conf.Storage)

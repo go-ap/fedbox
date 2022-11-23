@@ -1,10 +1,10 @@
 package fedbox
 
 import (
-	"github.com/go-ap/fedbox/storage/fs"
 	"testing"
 
 	"github.com/go-ap/fedbox/internal/config"
+	fs "github.com/go-ap/storage-fs"
 )
 
 var defaultConfig = config.Options{

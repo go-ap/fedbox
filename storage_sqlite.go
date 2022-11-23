@@ -7,8 +7,8 @@ import (
 	auth "github.com/go-ap/auth/sqlite"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/storage/sqlite"
 	"github.com/go-ap/processing"
+	sqlite "github.com/go-ap/storage-sqlite"
 	"github.com/openshift/osin"
 )
 
@@ -21,9 +21,8 @@ func Storage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, err
 		ErrFn: ErrLogFn(l),
 	})
 	db, err := sqlite.New(sqlite.Config{
-		StoragePath: path,
-		BaseURL:     c.BaseURL,
-		EnableCache: c.StorageCache,
+		Path:        path,
+		CacheEnable: c.StorageCache,
 	})
 
 	if err != nil {

@@ -16,10 +16,10 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/badger"
 	"github.com/go-ap/fedbox/storage/boltdb"
-	"github.com/go-ap/fedbox/storage/fs"
 	"github.com/go-ap/fedbox/storage/pgx"
-	"github.com/go-ap/fedbox/storage/sqlite"
 	"github.com/go-ap/processing"
+	fs "github.com/go-ap/storage-fs"
+	sqlite "github.com/go-ap/storage-sqlite"
 	"github.com/openshift/osin"
 )
 
@@ -74,9 +74,8 @@ func getFsStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage
 		ErrFn: ErrLogFn(l),
 	})
 	db, err := fs.New(fs.Config{
-		StoragePath: path.Dir(p),
-		BaseURL:     c.BaseURL,
-		EnableCache: c.StorageCache,
+		Path:        path.Dir(p),
+		CacheEnable: c.StorageCache,
 	})
 	if err != nil {
 		return nil, oauth, err
@@ -93,9 +92,8 @@ func getSqliteStorage(c config.Options, l lw.Logger) (processing.Store, osin.Sto
 		ErrFn: ErrLogFn(l),
 	})
 	db, err := sqlite.New(sqlite.Config{
-		StoragePath: path,
-		BaseURL:     c.BaseURL,
-		EnableCache: c.StorageCache,
+		Path:        path,
+		CacheEnable: c.StorageCache,
 	})
 	if err != nil {
 		return nil, nil, errors.Annotatef(err, "unable to connect to sqlite storage")

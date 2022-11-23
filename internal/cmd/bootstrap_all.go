@@ -1,5 +1,4 @@
 //go:build storage_all || (!storage_pgx && !storage_boltdb && !storage_fs && !storage_badger && !storage_sqlite)
-// +build storage_all !storage_pgx,!storage_boltdb,!storage_fs,!storage_badger,!storage_sqlite
 
 package cmd
 
@@ -12,14 +11,14 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/badger"
 	"github.com/go-ap/fedbox/storage/boltdb"
-	"github.com/go-ap/fedbox/storage/fs"
 	"github.com/go-ap/fedbox/storage/pgx"
-	"github.com/go-ap/fedbox/storage/sqlite"
+	fs "github.com/go-ap/storage-fs"
+	sqlite "github.com/go-ap/storage-sqlite"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 var (
-	bootstrapFn = func(conf config.Options) error {
+	bootstrapFn = func(conf storageConf) error {
 		if conf.Storage == config.StoragePostgres {
 			var pgRoot string
 			// ask for root pw
@@ -35,17 +34,26 @@ var (
 			return badger.Bootstrap(conf)
 		}
 		if conf.Storage == config.StorageFS {
-			return fs.Bootstrap(conf)
+			c := fs.Config{
+				Path:        conf.StoragePath,
+				CacheEnable: conf.StorageCache,
+			}
+			return fs.Bootstrap(c, conf.BaseURL)
 		}
 		if conf.Storage == config.StorageSqlite {
 			if err := authsqlite.Bootstrap(authsqlite.Config{Path: conf.BaseStoragePath()}, nil); err != nil {
 				return err
 			}
-			return sqlite.Bootstrap(conf)
+			c := sqlite.Config{
+				Path:        conf.StoragePath,
+				CacheEnable: conf.StorageCache,
+			}
+			return sqlite.Bootstrap(c, conf.BaseURL)
+
 		}
 		return errors.NotImplementedf("Invalid storage type %s", conf.Storage)
 	}
-	cleanFn = func(conf config.Options) error {
+	cleanFn = func(conf storageConf) error {
 		if conf.Storage == config.StorageBoltDB {
 			return boltdb.Clean(conf)
 		}
@@ -65,9 +73,17 @@ var (
 			return badger.Clean(conf)
 		}
 		if conf.Storage == config.StorageFS {
+			conf := fs.Config{
+				Path:        conf.StoragePath,
+				CacheEnable: conf.StorageCache,
+			}
 			return fs.Clean(conf)
 		}
 		if conf.Storage == config.StorageSqlite {
+			conf := sqlite.Config{
+				Path:        conf.StoragePath,
+				CacheEnable: conf.StorageCache,
+			}
 			return sqlite.Clean(conf)
 		}
 		return errors.NotImplementedf("Invalid storage type %s", conf.Storage)
