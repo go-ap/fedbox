@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	bootstrapFn = func(conf config.Options) error {
+	bootstrapFn = func(conf storageConf) error {
 		var pgRoot string
 		// ask for root pw
 		fmt.Printf("%s password: ", pgRoot)

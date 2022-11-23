@@ -70,13 +70,14 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 }
 
 type storageConf struct {
+	Storage config.StorageType
 	Path string
 	BaseURL string
 	CacheEnable bool
 }
 
 func confFn(opt config.Options) storageConf {
-	return storageConf{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache}
+	return storageConf{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache, BaseURL: opt.BaseURL, Storage: opt.Storage}
 }
 
 func Bootstrap(conf config.Options) error {

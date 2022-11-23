@@ -367,9 +367,6 @@ func (r *repo) Load(i vocab.IRI) (vocab.Item, error) {
 		return nil, err
 	}
 	defer r.Close()
-	if !r.IsLocalIRI(vocab.IRI(r.baseURL)) {
-		return nil, errors.Newf("unable to load non-local IRI: %s", i)
-	}
 
 	f, err := ap.FiltersFromIRI(i)
 	if err != nil {

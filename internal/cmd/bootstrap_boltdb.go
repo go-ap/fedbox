@@ -2,9 +2,15 @@
 
 package cmd
 
-import "github.com/go-ap/fedbox/storage/boltdb"
+import (
+	"github.com/go-ap/fedbox/storage/boltdb"
+)
 
 var (
-	bootstrapFn = boltdb.Bootstrap
-	cleanFn     = boltdb.Clean
+	bootstrapFn = func(conf storageConf) error {
+		return boltdb.Bootstrap(boltdb.Config{Path: conf.Path, BaseURL: conf.BaseURL}, conf.BaseURL)
+	}
+	cleanFn = func(conf storageConf) error {
+		return boltdb.Clean(boltdb.Config{Path: conf.Path, BaseURL: conf.BaseURL})
+	}
 )
