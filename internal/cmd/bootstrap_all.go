@@ -10,8 +10,8 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/storage/badger"
-	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/fedbox/storage/pgx"
+	"github.com/go-ap/storage-boltdb"
 	fs "github.com/go-ap/storage-fs"
 	sqlite "github.com/go-ap/storage-sqlite"
 	"golang.org/x/crypto/ssh/terminal"
@@ -28,7 +28,8 @@ var (
 			return pgx.Bootstrap(conf, pgRoot, pgPw)
 		}
 		if conf.Storage == config.StorageBoltDB {
-			return boltdb.Bootstrap(conf)
+			c := boltdb.Config{Path: conf.Path}
+			return boltdb.Bootstrap(c, conf.BaseURL)
 		}
 		if conf.Storage == config.StorageBadger {
 			return badger.Bootstrap(conf)
@@ -55,7 +56,8 @@ var (
 	}
 	cleanFn = func(conf storageConf) error {
 		if conf.Storage == config.StorageBoltDB {
-			return boltdb.Clean(conf)
+			c := boltdb.Config{Path: conf.Path}
+			return boltdb.Clean(c)
 		}
 		if conf.Storage == config.StoragePostgres {
 			var pgRoot string

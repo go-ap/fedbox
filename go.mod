@@ -13,6 +13,7 @@ require (
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20221120042224-7db5474c4a58
+	github.com/go-ap/storage-boltdb v0.0.0-20221123094125-81846f356ad6
 	github.com/go-ap/storage-fs v0.0.0-20221123024348-19a08cc7073d
 	github.com/go-ap/storage-sqlite v0.0.0-20221123024310-853f05eee965
 	github.com/go-chi/chi/v5 v5.0.7
@@ -23,7 +24,6 @@ require (
 	github.com/openshift/osin v1.0.1
 	github.com/pborman/uuid v1.2.1
 	github.com/urfave/cli/v2 v2.3.0
-	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.3.0
 	golang.org/x/oauth2 v0.2.0
 )
@@ -55,6 +55,7 @@ require (
 	github.com/rs/zerolog v1.28.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
+	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.2.0 // indirect

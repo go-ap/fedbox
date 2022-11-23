@@ -1,10 +1,8 @@
-// +build storage_boltdb
+//go:build storage_boltdb
 
 package cmd
 
-import (
-	"github.com/go-ap/fedbox/storage/boltdb"
-)
+import "github.com/go-ap/storage-boltdb"
 
 var (
 	bootstrapFn = func(conf storageConf) error {

@@ -6,8 +6,8 @@ import (
 	"git.sr.ht/~mariusor/lw"
 	auth "github.com/go-ap/auth/boltdb"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/storage/boltdb"
 	"github.com/go-ap/processing"
+	"github.com/go-ap/storage-boltdb"
 	"github.com/openshift/osin"
 )
 
