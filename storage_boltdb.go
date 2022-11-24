@@ -4,7 +4,6 @@ package fedbox
 
 import (
 	"git.sr.ht/~mariusor/lw"
-	auth "github.com/go-ap/auth/boltdb"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/processing"
 	"github.com/go-ap/storage-boltdb"
@@ -13,22 +12,16 @@ import (
 
 func Storage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
-	l.Debugf("Initializing boltdb storage at %s", path)
+	l = l.WithContext(lw.Ctx{"path": path})
+	l.Debugf("Initializing boltdb storage")
 	db, err := boltdb.New(boltdb.Config{
 		Path:    path,
 		BaseURL: c.BaseURL,
-		LogFn:   InfoLogFn(l),
-		ErrFn:   ErrLogFn(l),
+		LogFn:   l.Debugf,
+		ErrFn:   l.Warnf,
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-
-	oauth := auth.New(auth.Config{
-		Path:       c.BoltDBOAuth2(),
-		BucketName: c.Host,
-		LogFn:      InfoLogFn(l),
-		ErrFn:      ErrLogFn(l),
-	})
-	return db, oauth, nil
+	return db, db, nil
 }

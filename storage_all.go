@@ -5,7 +5,6 @@ package fedbox
 import (
 	"git.sr.ht/~mariusor/lw"
 	authbadger "github.com/go-ap/auth/badger"
-	authboltdb "github.com/go-ap/auth/boltdb"
 	authsqlite "github.com/go-ap/auth/sqlite"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
@@ -34,24 +33,18 @@ func getBadgerStorage(c config.Options, l lw.Logger) (processing.Store, osin.Sto
 
 func getBoltStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
-	l.Debugf("Initializing boltdb storage at %s", path)
+	l = l.WithContext(lw.Ctx{"path": path})
+	l.Debugf("Initializing boltdb storage")
 	db, err := boltdb.New(boltdb.Config{
 		Path:    path,
 		BaseURL: c.BaseURL,
-		LogFn:   InfoLogFn(l),
-		ErrFn:   ErrLogFn(l),
+		LogFn:   l.Debugf,
+		ErrFn:   l.Warnf,
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-
-	oauth := authboltdb.New(authboltdb.Config{
-		Path:       c.BoltDBOAuth2(),
-		BucketName: c.Host,
-		LogFn:      InfoLogFn(l),
-		ErrFn:      ErrLogFn(l),
-	})
-	return db, oauth, nil
+	return db, db, nil
 }
 
 func getFsStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
