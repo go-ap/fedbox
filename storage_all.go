@@ -4,7 +4,6 @@ package fedbox
 
 import (
 	"git.sr.ht/~mariusor/lw"
-	authbadger "github.com/go-ap/auth/badger"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/processing"
@@ -17,17 +16,18 @@ import (
 
 func getBadgerStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
-	conf := badger.Config{Path: path, Logger: l}
-	if l != nil {
-		l.Debugf("Initializing badger storage at %s", path)
+	l = l.WithContext(lw.Ctx{"path": path})
+	l.Debugf("Initializing badger storage")
+	conf := badger.Config{
+		Path:  path,
+		LogFn: l.Debugf,
+		ErrFn: l.Warnf,
 	}
 	db, err := badger.New(conf)
 	if err != nil {
 		return db, nil, err
 	}
-	authConf := authbadger.Config{Path: c.BadgerOAuth2(path)}
-	oauth := authbadger.New(authConf)
-	return db, oauth, nil
+	return db, db, nil
 }
 
 func getBoltStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
