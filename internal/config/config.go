@@ -79,7 +79,7 @@ func (o Options) BaseStoragePath() string {
 	if !filepath.IsAbs(o.StoragePath) {
 		o.StoragePath, _ = filepath.Abs(o.StoragePath)
 	}
-	basePath := path.Clean(path.Join(o.StoragePath, string(o.Storage), string(o.Env), o.Host))
+	basePath := path.Clean(path.Join(o.StoragePath, string(o.Storage), string(o.Env)))
 	fi, err := os.Stat(basePath)
 	if err != nil && os.IsNotExist(err) {
 		err = os.MkdirAll(basePath, defaultDirPerm)
