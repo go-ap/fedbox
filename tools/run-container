@@ -1,0 +1,35 @@
+#!/bin/sh
+
+_path=${1}
+_what=${2}
+
+#set -ex
+#set -e
+if [ -z "${_path}" ]; then
+    echo "you must pass the path where to run the container"
+    exit 1
+fi
+
+if [ -z "${_what}" ]; then
+    echo "you must pass the container image to run"
+    exit 1
+fi
+
+_storage=$(realpath ${_path})
+if [ ! -d ${_storage} ]; then
+    echo "Storage path is not accessible ${_storage}"
+    exit 1
+fi
+
+_env=$(find ${_storage} -iname ".env*" | tail -n1)
+echo $_env
+if [ ! -f ${_env} ]; then
+    echo "env file is not accessible in path ${_storage}"
+    exit 1
+fi
+_name=$(grep HOSTNAME ${_env} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
+_port=$(grep LISTEN ${_env} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
+
+CMD=$(command -v podman || which docker)
+
+$CMD run --pull=always --network=host --name=${_name} --replace -v ${_env}:/.env -v ${_storage}:/storage --env-file=${_env} ${_what}
