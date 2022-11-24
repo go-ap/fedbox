@@ -3,7 +3,6 @@
 package cmd
 
 import (
-	authsqlite "github.com/go-ap/auth/sqlite"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/storage-badger"
@@ -27,9 +26,6 @@ var (
 			return fs.Bootstrap(c, conf.BaseURL)
 		}
 		if conf.Storage == config.StorageSqlite {
-			if err := authsqlite.Bootstrap(authsqlite.Config{Path: conf.Path}, nil); err != nil {
-				return err
-			}
 			c := sqlite.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}
 			return sqlite.Bootstrap(c, conf.BaseURL)
 
