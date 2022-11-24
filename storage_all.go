@@ -5,14 +5,13 @@ package fedbox
 import (
 	"git.sr.ht/~mariusor/lw"
 	authbadger "github.com/go-ap/auth/badger"
-	authsqlite "github.com/go-ap/auth/sqlite"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/processing"
 	"github.com/go-ap/storage-badger"
 	"github.com/go-ap/storage-boltdb"
-	fs "github.com/go-ap/storage-fs"
-	sqlite "github.com/go-ap/storage-sqlite"
+	"github.com/go-ap/storage-fs"
+	"github.com/go-ap/storage-sqlite"
 	"github.com/openshift/osin"
 )
 
@@ -52,10 +51,10 @@ func getFsStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage
 	l = l.WithContext(lw.Ctx{"path": p})
 	l.Debugf("Initializing fs storage")
 	db, err := fs.New(fs.Config{
-		Path: p,
+		Path:        p,
 		CacheEnable: c.StorageCache,
-		LogFn: l.Debugf,
-		ErrFn: l.Warnf,
+		LogFn:       l.Debugf,
+		ErrFn:       l.Warnf,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -65,20 +64,19 @@ func getFsStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage
 
 func getSqliteStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	path := c.BaseStoragePath()
-	l.Debugf("Initializing sqlite storage at %s", path)
-	oauth := authsqlite.New(authsqlite.Config{
-		Path:  path,
-		LogFn: InfoLogFn(l),
-		ErrFn: ErrLogFn(l),
-	})
+	l = l.WithContext(lw.Ctx{"path": path})
+	l.Debugf("Initializing sqlite storage")
 	db, err := sqlite.New(sqlite.Config{
 		Path:        path,
 		CacheEnable: c.StorageCache,
+		LogFn:       l.Debugf,
+		ErrFn:       l.Warnf,
 	})
+
 	if err != nil {
 		return nil, nil, errors.Annotatef(err, "unable to connect to sqlite storage")
 	}
-	return db, oauth, nil
+	return db, db, nil
 }
 
 func Storage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
