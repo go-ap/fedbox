@@ -6,7 +6,6 @@ import (
 	"git.sr.ht/~mariusor/lw"
 	authbadger "github.com/go-ap/auth/badger"
 	authboltdb "github.com/go-ap/auth/boltdb"
-	authfs "github.com/go-ap/auth/fs"
 	authsqlite "github.com/go-ap/auth/sqlite"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
@@ -57,17 +56,18 @@ func getBoltStorage(c config.Options, l lw.Logger) (processing.Store, osin.Stora
 
 func getFsStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	p := c.BaseStoragePath()
-	l.Debugf("Initializing fs storage at %s", c.BaseStoragePath())
-	oauth := authfs.New(authfs.Config{
-		Path:  p,
-		LogFn: InfoLogFn(l),
-		ErrFn: ErrLogFn(l),
+	l = l.WithContext(lw.Ctx{"path": p})
+	l.Debugf("Initializing fs storage")
+	db, err := fs.New(fs.Config{
+		Path: p,
+		CacheEnable: c.StorageCache,
+		LogFn: l.Debugf,
+		ErrFn: l.Warnf,
 	})
-	db, err := fs.New(fs.Config{Path: p, CacheEnable: c.StorageCache})
 	if err != nil {
-		return nil, oauth, err
+		return nil, nil, err
 	}
-	return db, oauth, nil
+	return db, db, nil
 }
 
 func getSqliteStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
@@ -87,7 +87,6 @@ func getSqliteStorage(c config.Options, l lw.Logger) (processing.Store, osin.Sto
 	}
 	return db, oauth, nil
 }
-
 
 func Storage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
 	switch c.Storage {

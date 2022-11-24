@@ -121,6 +121,11 @@ func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o os
 				return nil, err
 			}
 		}
+		if saver, ok := db.(st.MetadataTyper); ok {
+			if err := AddKeyToPerson(saver)(&app.self); err != nil {
+				app.errFn("unable to save the instance's self service public key: %s", err)
+			}
+		}
 	}
 
 	as, err := auth.New(conf.BaseURL, app.storage.oauth, app.storage.repo, l)

@@ -3,7 +3,7 @@ module github.com/go-ap/fedbox
 go 1.18
 
 require (
-	git.sr.ht/~mariusor/lw v0.0.0-20221102084913-34fb8eae441e
+	git.sr.ht/~mariusor/lw v0.0.0-20221124080058-e91ea2c1fdc2
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/go-ap/activitypub v0.0.0-20221119120906-cb8207231e18
 	github.com/go-ap/auth v0.0.0-20221119121244-66f93d52b757
@@ -14,7 +14,7 @@ require (
 	github.com/go-ap/processing v0.0.0-20221120042224-7db5474c4a58
 	github.com/go-ap/storage-badger v0.0.0-20221123102433-bc154b6d2343
 	github.com/go-ap/storage-boltdb v0.0.0-20221123103108-7ecba4fd67fa
-	github.com/go-ap/storage-fs v0.0.0-20221123024348-19a08cc7073d
+	github.com/go-ap/storage-fs v0.0.0-20221124085114-0bd89221cb70
 	github.com/go-ap/storage-sqlite v0.0.0-20221123103157-40e8e7e108b7
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/joho/godotenv v1.4.0
@@ -42,7 +42,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/flatbuffers v22.11.22+incompatible // indirect
+	github.com/google/flatbuffers v22.11.23+incompatible // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.15.12 // indirect
