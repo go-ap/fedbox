@@ -1,4 +1,4 @@
-# Fed::BOX as an ActivityPub server supporting C2S interactions
+# FedBOX as an ActivityPub server supporting C2S interactions
 
 Here I will do a dump of my assumptions regarding how the "client to server[1]" (or C2S) interactions should work on FedBOX.
 

@@ -2,22 +2,19 @@
 
 [![MIT Licensed](https://img.shields.io/github/license/go-ap/fedbox.svg)](https://raw.githubusercontent.com/go-ap/fedbox/master/LICENSE)
 [![Build Status](https://builds.sr.ht/~mariusor/fedbox.svg)](https://builds.sr.ht/~mariusor/fedbox)
-[![Test Coverage](https://img.shields.io/codecov/c/github/go-ap/fedbox.svg)](https://codecov.io/gh/go-ap/fedbox)
 [![Go Report Card](https://goreportcard.com/badge/github.com/go-ap/fedbox)](https://goreportcard.com/report/github.com/go-ap/fedbox)
 
-FedBOX is a very simple ActivityPub enabled service. Its serves as a reference implementation for the rest of the [go-ap](https://github.com/go-ap) packages.
+FedBOX is a simple ActivityPub enabled server. Its goal is to serve as a reference implementation for the rest of the [GoActivityPub](https://github.com/go-ap) packages.
 
 It provides the base for some of the common functionality that such a service would require, such as: HTTP handlers and middlewares, storage and filtering etc.
 
-The current iteration can persist data to [BoltDB](https://go.etcd.io/bbolt), [Badger](https://github.com/dgraph-io/badger), and plain file system,
-but I want to also add support for sqlite and PostgreSQL.
+The current iteration can persist data to [BoltDB](https://go.etcd.io/bbolt), [Badger](https://github.com/dgraph-io/badger), [SQLite](https://gitlab.com/cznic/sqlite) and directly on the file system, but I want to also add support for PostgreSQL.
 
 ## Features
 
 ### Support for C2S ActivityPub:
 
  * Support for content management actitivies: `Create`, `Update`, `Delete`.
- All Object types are supported, but they have no local side-effects like caching images, video and audio.
  * `Follow`, `Accept`, `Reject` with actors as objects.
  * Appreciation activities: `Like`, `Dislike`.
  * Reaction activities: `Block` on actors, `Flag` on objects.
@@ -26,8 +23,19 @@ but I want to also add support for sqlite and PostgreSQL.
 
 ### Support for S2S ActivityPub
 
-`TODO`
+ * Support the same operations as the client to server activities.
+ * Capabilities of generating and loading HTTP Signatures from requests.
 
-## Install
+## Installation
 
-See [INSTALL](./doc/INSTALL.md) file.
+See the [INSTALL](./doc/INSTALL.md) file.
+
+## Further reading
+
+If you are interested in using FedBOX from an application developer point of view, make sure to read the [Client to Server](./doc/c2s.md) document, which details how the local flavour of ActivityPub C2S API can be used.
+
+More information about FedBOX and the other packages in the GoActivityPub library can be found on the [wiki](https://man.sr.ht/~mariusor/go-activitypub/index.md).
+
+## Contact and feedback
+
+If you have problems, questions, ideas or suggestions, please contact us by posting to the [mailing list](https://lists.sr.ht/~mariusor/activitypub-go), or on [GitHub](https://github.com/go-ap/fedbox/issues). If you desire quick feedback, the mailing list is preferred, as the GitHub issues are not checked very often.
