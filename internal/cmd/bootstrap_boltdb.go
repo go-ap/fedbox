@@ -6,9 +6,9 @@ import "github.com/go-ap/storage-boltdb"
 
 var (
 	bootstrapFn = func(conf storageConf) error {
-		return boltdb.Bootstrap(boltdb.Config{Path: conf.Path, BaseURL: conf.BaseURL}, conf.BaseURL)
+		return boltdb.Bootstrap(boltdb.Config{Path: conf.Path}, conf.BaseURL)
 	}
 	cleanFn = func(conf storageConf) error {
-		return boltdb.Clean(boltdb.Config{Path: conf.Path, BaseURL: conf.BaseURL})
+		return boltdb.Clean(boltdb.Config{Path: conf.Path})
 	}
 )

@@ -269,14 +269,14 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 		return "", err
 	}
 	if vocab.IsNil(list) {
-		return "", errors.NotFoundf("Handle not found")
+		return "", errors.NotFoundf("not found")
 	}
 	var actor vocab.Item
 	if list.IsCollection() {
 		err = vocab.OnCollectionIntf(list, func(c vocab.CollectionInterface) error {
 			f := c.Collection().First()
 			if f == nil {
-				return errors.NotFoundf("no actor found")
+				return errors.NotFoundf("no actor found %s", c.GetLink())
 			}
 			actor, err = vocab.ToActor(f)
 			return err

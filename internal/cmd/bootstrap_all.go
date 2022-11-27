@@ -7,8 +7,8 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/storage-badger"
 	"github.com/go-ap/storage-boltdb"
-	fs "github.com/go-ap/storage-fs"
-	sqlite "github.com/go-ap/storage-sqlite"
+	"github.com/go-ap/storage-fs"
+	"github.com/go-ap/storage-sqlite"
 )
 
 var (

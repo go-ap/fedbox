@@ -35,10 +35,9 @@ func getBoltStorage(c config.Options, l lw.Logger) (processing.Store, osin.Stora
 	l = l.WithContext(lw.Ctx{"path": path})
 	l.Debugf("Initializing boltdb storage")
 	db, err := boltdb.New(boltdb.Config{
-		Path:    path,
-		BaseURL: c.BaseURL,
-		LogFn:   l.Debugf,
-		ErrFn:   l.Warnf,
+		Path:  path,
+		LogFn: l.Debugf,
+		ErrFn: l.Warnf,
 	})
 	if err != nil {
 		return nil, nil, err
