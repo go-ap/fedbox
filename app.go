@@ -93,6 +93,9 @@ func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o os
 	if db == nil {
 		return nil, errors.Newf("invalid storage")
 	}
+	if conf.BaseURL == "" {
+		return nil, errors.Newf("invalid empty BaseURL config")
+	}
 	app := FedBOX{
 		ver:     ver,
 		conf:    conf,

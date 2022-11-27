@@ -12,8 +12,11 @@ var defaultConfig = config.Options{
 }
 
 func TestNew(t *testing.T) {
-	store, _ := fs.New(fs.Config{})
-	app, err := New(nil, "HEAD", config.Options{}, store, nil)
+	store, err := fs.New(fs.Config{Path: t.TempDir()})
+	if err != nil {
+		t.Errorf("unable to initialize fs storage: %s", err)
+	}
+	app, err := New(nil, "HEAD", config.Options{BaseURL: "http://example.com"}, store, nil)
 	if err != nil {
 		t.Errorf("Environment 'test' should not trigger an error: %s", err)
 	}
