@@ -120,21 +120,25 @@ func outItem(it vocab.Item, b io.Writer) error {
 	})
 }
 
-func outText(it vocab.Item) error {
-	b := new(bytes.Buffer)
-	err := outItem(it, b)
-	if err != nil {
-		return err
+func outText(where io.Writer) func(it vocab.Item) error {
+	return func(it vocab.Item) error {
+		b := new(bytes.Buffer)
+		err := outItem(it, b)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(where, "%s", b.Bytes())
+		return nil
 	}
-	fmt.Printf("%s", b.Bytes())
-	return nil
 }
 
-func outJSON(it vocab.Item) error {
-	out, err := vocab.MarshalJSON(it)
-	if err != nil {
-		return err
+func outJSON(where io.Writer) func(it vocab.Item) error {
+	return func(it vocab.Item) error {
+		out, err := vocab.MarshalJSON(it)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(where , "%s", out)
+		return nil
 	}
-	fmt.Printf("%s", out)
-	return nil
 }

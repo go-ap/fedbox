@@ -290,9 +290,9 @@ var listObjectsCmd = &cli.Command{
 
 func printItem(it vocab.Item, outType string) error {
 	if outType == "json" {
-		return outJSON(it)
+		return outJSON(os.Stdout)(it)
 	}
-	return outText(it)
+	return outText(os.Stdout)(it)
 }
 
 func listObjectsAct(ctl *Control) cli.ActionFunc {
@@ -569,10 +569,8 @@ var exportCmd = &cli.Command{
 	Usage:   "Exports ActivityPub objects",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:        "output",
-			Usage:       fmt.Sprintf("The format in which to output the items (%v)", []string{"json", "text"}),
-			DefaultText: "Default: json",
-			Value:       "json",
+			Name:        "path",
+			Usage:       fmt.Sprintf("The path where to output the items, if absent it will be printed to stdout."),
 		},
 	},
 	Action: exportPubObjects(&ctl),
@@ -620,7 +618,15 @@ func exportPubObjects(ctl *Control) cli.ActionFunc {
 			}
 			return o1.Published.Sub(o2.Published) < 0
 		})
-		return printItem(objects, c.String("output"))
+		where := os.Stdout
+		if c.String("path") != "" {
+			f, err := os.OpenFile(c.String("path"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+			if err != nil {
+				return err
+			}
+			where = f
+		}
+		return outJSON(where)(objects)
 	}
 }
 

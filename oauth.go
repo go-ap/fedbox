@@ -134,7 +134,7 @@ func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 	if err != nil {
 		return nil, err
 	}
-	// load the me value of the actor that wants to authenticate
+	// load the 'me' value of the actor that wants to authenticate
 	me, err := url.QueryUnescape(r.FormValue(meKey))
 	if err != nil {
 		return nil, err

@@ -68,7 +68,7 @@ func Before(c *cli.Context) error {
 		fields["cli"] = c.Command.Name
 	}
 
-	logger := lw.Dev()
+	logger := lw.Dev(lw.SetOutput(os.Stderr))
 	ct, err := setup(c, logger.WithContext(fields))
 	if err != nil {
 		// Ensure we don't print the default help message, which is not useful here
