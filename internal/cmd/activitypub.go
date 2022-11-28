@@ -537,6 +537,15 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 					if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
 						err = vocab.OnActivity(it, func(a *vocab.Activity) error {
 							if a == nil {
+								Errf("invalid nil activity: %s", it.GetLink())
+								return nil
+							}
+							if a.Actor == nil {
+								Errf("invalid activity, actor is nil: %s", it.GetLink())
+								return nil
+							}
+							if a.Object == nil {
+								Errf("invalid activity, object is nil: %s", it.GetLink())
 								return nil
 							}
 							_, err := processor.ProcessClientActivity(a, vocab.Outbox.Of(a.Actor).GetLink())
