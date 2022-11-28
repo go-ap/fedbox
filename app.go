@@ -150,6 +150,11 @@ func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o os
 	}
 
 	app.R.Group(app.Routes())
+
+	if conf.Env.IsDev() || conf.Env.IsTest() {
+		app.R.Mount("/debug", middleware.Profiler())
+	}
+
 	return &app, err
 }
 
