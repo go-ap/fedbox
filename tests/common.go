@@ -9,9 +9,10 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"runtime/debug"
 	"sort"
@@ -163,7 +164,7 @@ type objectVal struct {
 }
 
 var storagePath = func() string {
-	path, err := ioutil.TempDir(".cache", "*")
+	path, err := os.MkdirTemp(".cache", "*")
 	if err != nil {
 		panic(err)
 	}
@@ -734,7 +735,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			assertTrue(resp != nil, "Error: request failed: response is nil")
 			assertTrue(err == nil, "Error: request failed: %s", err)
 
-			b, err = ioutil.ReadAll(resp.Body)
+			b, err = io.ReadAll(resp.Body)
 			assertTrue(err == nil, "Error: invalid HTTP body! Read %d bytes %s", len(b), b)
 
 			assertTrue(resp.StatusCode == test.res.code,
