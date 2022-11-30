@@ -181,18 +181,25 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 	repo := fb.storage.repo
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
 		var it vocab.Item
+		fb.infFn("received req %s: %s", r.Method, r.RequestURI)
+		if auth := r.Header.Get("Authorization"); len(auth) > 0 {
+			fb.infFn("authorized: %s", auth)
+		}
 
 		f := ap.FromRequest(r, fb.Config().BaseURL)
 		ap.LoadCollectionFilters(f, fb.actorFromRequest(r))
 
 		if ok, err := ValidateRequest(r); !ok {
+			fb.errFn("failed request validation: %+s", err)
 			return it, errors.HttpStatus(err), err
 		}
 		body, err := io.ReadAll(r.Body)
 		if err != nil || len(body) == 0 {
+			fb.errFn("failed loading body: %+s", err)
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
 		}
 		if it, err = vocab.UnmarshalJSON(body); err != nil {
+			fb.errFn("failed unmarshaling jsonld body: %+s", err)
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
 
@@ -211,14 +218,17 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			processing.SetLocalIRIChecker(st.IsLocalIRI(repo)),
 		)
 		if err != nil {
+			fb.errFn("failed initializing the Activity processor: %+s", err)
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize processor")
 		}
 		processor.SetActor(f.Authenticated)
 		if metaSaver, ok := repo.(st.MetadataTyper); ok {
+			fb.infFn("setting actor key generator %T", metaSaver)
 			processing.SetActorKeyGenerator(AddKeyToPerson(metaSaver))
 		}
 
 		if err = processor.ValidateActivity(it, f.IRI); err != nil {
+			fb.errFn("failed processor validation: %+s", err)
 			return it, http.StatusNotAcceptable, err
 		}
 		vocab.OnActivity(it, func(a *vocab.Activity) error {
@@ -229,13 +239,14 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			return nil
 		})
 		if it, err = processor.ProcessActivity(it, receivedIn); err != nil {
+			fb.errFn("failed processing activity: %+s", err)
 			return it, errors.HttpStatus(err), errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
 		}
 		err = vocab.OnActivity(it, func(act *vocab.Activity) error {
 			return cache.ActivityPurge(fb.caches, act, receivedIn)
 		})
 		if err != nil {
-			infoLogger("unable to purge cache: %s", err)
+			fb.errFn("unable to purge cache: %+s", err)
 		}
 
 		status := http.StatusCreated
@@ -243,6 +254,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			status = http.StatusGone
 		}
 
+		fb.infFn("All OK!")
 		return it, status, nil
 	}
 }
