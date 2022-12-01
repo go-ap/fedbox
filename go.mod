@@ -12,7 +12,7 @@ require (
 	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20221201102220-dd615a9d780b
-	github.com/go-ap/storage-badger v0.0.0-20221201101243-0e71be6d1a71
+	github.com/go-ap/storage-badger v0.0.0-20221201130548-e0ab18be823f
 	github.com/go-ap/storage-boltdb v0.0.0-20221201101211-90329d96cb0d
 	github.com/go-ap/storage-fs v0.0.0-20221201100851-119eae9e748c
 	github.com/go-ap/storage-sqlite v0.0.0-20221201100922-269fc9b62617
