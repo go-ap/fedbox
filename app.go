@@ -13,6 +13,7 @@ import (
 	w "git.sr.ht/~mariusor/wrapper"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
+	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
@@ -50,6 +51,7 @@ type FedBOX struct {
 	R       chi.Router
 	conf    config.Options
 	self    vocab.Service
+	client  client.C
 	storage fedboxStorage
 	ver     string
 	caches  cache.CanStore
@@ -131,7 +133,19 @@ func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o os
 		}
 	}
 
-	as, err := auth.New(conf.BaseURL, app.storage.oauth, app.storage.repo, l)
+	clientErrLogger := func(c ...client.Ctx) client.LogFn {
+		return l.WithContext(c...).Errorf
+	}
+	clientInfoLogger := func(c ...client.Ctx) client.LogFn {
+		return l.WithContext(c...).Infof
+	}
+
+	app.client = *client.New(
+		client.SetInfoLogger(clientInfoLogger),
+		client.SetErrorLogger(clientErrLogger),
+		client.SkipTLSValidation(!conf.Env.IsProd()),
+	)
+	as, err := auth.New(conf.BaseURL, app.storage.oauth, app.storage.repo, &app.client, l)
 	if err != nil {
 		l.Warnf(err.Error())
 		return nil, err

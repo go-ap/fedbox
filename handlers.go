@@ -170,14 +170,6 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
-	errLogger := client.LogFn(fb.errFn)
-	infoLogger := client.LogFn(fb.infFn)
-	clientErrLogger := func(...client.Ctx) client.LogFn {
-		return errLogger
-	}
-	clientInfoLogger := func(...client.Ctx) client.LogFn {
-		return infoLogger
-	}
 	repo := fb.storage.repo
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
 		var it vocab.Item
@@ -206,11 +198,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		baseIRI := vocab.IRI(fb.Config().BaseURL)
 		processor, err := processing.New(
 			processing.SetIRI(baseIRI, InternalIRI),
-			processing.SetClient(client.New(
-				client.SetInfoLogger(clientInfoLogger),
-				client.SetErrorLogger(clientErrLogger),
-				client.SkipTLSValidation(!fb.Config().Env.IsProd()),
-			)),
+			processing.SetClient(&fb.client),
 			processing.SetStorage(repo),
 			processing.SetInfoLogger(infoLogger),
 			processing.SetErrorLogger(errLogger),
