@@ -15,7 +15,7 @@ ifneq ($(STORAGE), all)
 	TAG=$(ENV)-$(STORAGE)
 endif
 
-.PHONY: clean build builder run push cert storage bootstrap
+.PHONY: clean build builder run push cert
 
 $(FEDBOX_HOSTNAME).pem:
 	./gen-certs.sh $(FEDBOX_HOSTNAME)
@@ -32,31 +32,6 @@ builder:
 build:
 	#$(BUILD_CMD) --build-arg ENV=$(ENV) --build-arg VERSION=$(VERSION) --build-arg STORAGE=$(STORAGE) --build-arg PORT=$(PORT) -f Dockerfile -t $(FEDBOX_HOSTNAME)/app:$(TAG) ..
 	ENV=$(ENV) VERSION=$(VERSION) STORAGE=$(STORAGE) PORT=$(PORT) HOSTNAME=$(FEDBOX_HOSTNAME) ./image.sh $(FEDBOX_HOSTNAME)/app:$(TAG)
-
-storage: $(STORAGE_PATH)
-
-$(STORAGE_PATH):
-	echo $(STORAGE_PATH)
-	echo $(STORAGE_OBJECTS)
-	mkdir -p $(STORAGE_PATH)
-
-$(STORAGE_OBJECTS): bootstrap
-
-bootstrap: storage
-	$(RUN_CMD) -v $(STORAGE_PATH):/storage \
-		-e ENV=$(ENV) \
-		-e FEDBOX_HOSTNAME=$(FEDBOX_HOSTNAME) \
-		$(FEDBOX_HOSTNAME)/app:$(TAG) \
-		/bin/fedboxctl bootstrap
-
-run: build $(STORAGE_OBJECTS)
-	$(RUN_CMD) -v $(STORAGE_PATH):/storage \
-		-v $(realpath ./.env.default):/.env \
-		-p $(PORT):$(PORT) \
-		-e ENV=$(ENV) \
-		-e LISTEN=:$(PORT) \
-		-e FEDBOX_HOSTNAME=$(FEDBOX_HOSTNAME) \
-		$(FEDBOX_HOSTNAME)/app:$(TAG)
 
 push: build
 	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/go-ap/fedbox:$(TAG)
