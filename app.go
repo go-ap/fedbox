@@ -107,7 +107,7 @@ func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o os
 		caches:  cache.New(conf.RequestCache),
 	}
 	if l != nil {
-		app.infFn = l.Infof
+		app.infFn = l.Debugf
 		app.errFn = l.Errorf
 	}
 
