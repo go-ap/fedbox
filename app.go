@@ -42,8 +42,7 @@ type FedBOX struct {
 	caches  cache.CanStore
 	OAuth   authService
 	stopFn  func()
-	infFn   LogFn
-	errFn   LogFn
+	logger  lw.Logger
 }
 
 var (
@@ -89,13 +88,8 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 		R:       chi.NewRouter(),
 		storage: db,
 		stopFn:  emptyStopFn,
-		infFn:   emptyLogFn,
-		errFn:   emptyLogFn,
+		logger:  l,
 		caches:  cache.New(conf.RequestCache),
-	}
-	if l != nil {
-		app.infFn = l.Debugf
-		app.errFn = l.Errorf
 	}
 
 	errors.IncludeBacktrace = conf.LogLevel == lw.TraceLevel
@@ -193,65 +187,87 @@ func (f *FedBOX) Run(c context.Context) error {
 	ctx, cancelFn := context.WithTimeout(c, f.conf.TimeOut)
 	defer cancelFn()
 
-	listenOn := ""
+	sockType := ""
 	setters := []w.SetFn{w.Handler(f.R)}
 	dir, _ := filepath.Split(f.conf.Listen)
 	if _, err := os.Stat(dir); err == nil {
-		listenOn = "socket"
+		sockType = "socket"
 		setters = append(setters, w.Socket(f.conf.Listen))
 		defer func() { os.RemoveAll(f.conf.Listen) }()
 	} else {
 		if f.conf.Secure && len(f.conf.CertPath)+len(f.conf.KeyPath) > 0 {
-			listenOn = "HTTPS"
+			sockType = "HTTPS"
 			setters = append(setters, w.HTTPS(f.conf.Listen, f.conf.CertPath, f.conf.KeyPath))
 		} else {
-			listenOn = "HTTP"
+			sockType = "HTTP"
 			setters = append(setters, w.HTTP(f.conf.Listen))
 		}
 	}
+	logCtx := lw.Ctx{
+		"URL":      f.conf.BaseURL,
+		"version":  f.ver,
+		"listenOn": f.conf.Listen,
+	}
+	if sockType != "" {
+		logCtx["listenOn"] = f.conf.Listen + "[" + sockType + "]"
+	}
+
 	// Get start/stop functions for the http server
 	srvRun, srvStop := w.HttpServer(setters...)
-	f.infFn("Started %s %s %s", f.conf.BaseURL, listenOn, f.conf.Listen)
+	logger := f.logger.WithContext(logCtx)
+	logger.Infof("Started")
 	f.stopFn = func() {
 		if err := srvStop(ctx); err != nil {
-			f.errFn("Err: %s", err)
+			logger.Errorf(err.Error())
 		}
 	}
 
 	exit := w.RegisterSignalHandlers(w.SignalHandlers{
 		syscall.SIGHUP: func(_ chan int) {
-			f.infFn("SIGHUP received, reloading configuration")
+			logger.Infof("SIGHUP received, reloading configuration")
 			if err := f.reload(); err != nil {
-				f.errFn("Failed: %s", err.Error())
+				logger.Errorf("Failed: %+s", err.Error())
 			}
 		},
 		syscall.SIGINT: func(exit chan int) {
-			f.infFn("SIGINT received, stopping")
+			logger.Infof("SIGINT received, stopping")
 			exit <- 0
 		},
 		syscall.SIGTERM: func(exit chan int) {
-			f.infFn("SIGITERM received, force stopping")
+			logger.Infof("SIGITERM received, force stopping")
 			exit <- 0
 		},
 		syscall.SIGQUIT: func(exit chan int) {
-			f.infFn("SIGQUIT received, force stopping with core-dump")
+			logger.Infof("SIGQUIT received, force stopping with core-dump")
 			exit <- 0
 		},
 	}).Exec(func() error {
 		if err := srvRun(); err != nil {
-			f.errFn("Error: %s", err)
+			logger.Errorf(err.Error())
 			return err
 		}
 		var err error
 		// Doesn't block if no connections, but will otherwise wait until the timeout deadline.
 		go func(e error) {
-			f.errFn("Error: %s", err)
+			logger.Errorf(err.Error())
 			f.stopFn()
 		}(err)
 		return err
 	})
 	if exit == 0 {
-		f.infFn("Shutting down")
+		logger.Infof("Shutting down")
 	}
 	return nil
+}
+
+func (f FedBOX) infFn(s string, p ...any) {
+	if f.logger != nil {
+		f.logger.Infof(s, p...)
+	}
+}
+
+func (f FedBOX) errFn(s string, p ...any) {
+	if f.logger != nil {
+		f.logger.Errorf(s, p...)
+	}
 }

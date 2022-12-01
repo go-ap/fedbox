@@ -174,9 +174,6 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
 		var it vocab.Item
 		fb.infFn("received req %s: %s", r.Method, r.RequestURI)
-		if auth := r.Header.Get("Authorization"); len(auth) > 0 {
-			fb.infFn("authorized: %s", auth)
-		}
 
 		f := ap.FromRequest(r, fb.Config().BaseURL)
 		ap.LoadCollectionFilters(f, fb.actorFromRequest(r))
@@ -200,8 +197,8 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			processing.SetIRI(baseIRI, InternalIRI),
 			processing.SetClient(&fb.client),
 			processing.SetStorage(repo),
-			processing.SetInfoLogger(infoLogger),
-			processing.SetErrorLogger(errLogger),
+			processing.SetInfoLogger(fb.logger.Debugf),
+			processing.SetErrorLogger(fb.logger.Warnf),
 			processing.SetIDGenerator(GenerateID(baseIRI)),
 			processing.SetLocalIRIChecker(st.IsLocalIRI(repo)),
 		)
