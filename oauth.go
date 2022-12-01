@@ -29,9 +29,12 @@ type account struct {
 	actor    *vocab.Actor
 }
 
-type ClientStorage interface {
+type FullStorage interface {
 	ClientSaver
 	ClientLister
+	osin.Storage
+	processing.Store
+	st.PasswordChanger
 }
 
 type ClientSaver interface {
@@ -61,7 +64,7 @@ func (a *account) FromActor(p *vocab.Actor) {
 type authService struct {
 	baseIRI vocab.IRI
 	genID   processing.IDGenerator
-	storage fedboxStorage
+	storage FullStorage
 	auth    *auth.Server
 	logger  lw.Logger
 }
@@ -146,7 +149,7 @@ func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 		f := filters(r, i.baseIRI)
 		f.Type = activitypub.CompStrs{activitypub.StringEquals(string(vocab.PersonType))}
 		f.URL = activitypub.CompStrs{activitypub.StringEquals(me)}
-		actor, err = i.storage.repo.Load(f.GetLink())
+		actor, err = i.storage.Load(f.GetLink())
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +162,7 @@ func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 	f := filters(r, i.baseIRI)
 	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(vocab.ApplicationType))}
 	f.URL = activitypub.CompStrs{activitypub.StringEquals(clientID)}
-	clientActor, err := i.storage.repo.Load(f.GetLink())
+	clientActor, err := i.storage.Load(f.GetLink())
 	if err != nil {
 		return nil, err
 	}
@@ -171,14 +174,14 @@ func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 		if newId, err := i.genID(newClient, vocab.Outbox.IRI(actor), nil); err == nil {
 			newClient.ID = newId
 		}
-		clientActor, err = i.storage.repo.Save(newClient)
+		clientActor, err = i.storage.Save(newClient)
 		if err != nil {
 			return nil, err
 		}
 	}
 	id := path.Base(clientActor.GetID().String())
 	// must have a valid client
-	if _, err = i.storage.oauth.GetClient(id); err != nil {
+	if _, err = i.storage.GetClient(id); err != nil {
 		if errors.IsNotFound(err) {
 			// create client
 			newClient := osin.DefaultClient{
@@ -187,23 +190,20 @@ func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 				RedirectUri: unescapedUri,
 				//UserData:    userData,
 			}
-			st, ok := i.storage.oauth.(ClientStorage)
-			if !ok {
-				return nil, errors.Errorf("Unable to create new client for IndieAuth request")
-			}
-			if err = st.CreateClient(&newClient); err != nil {
+			if err = i.storage.CreateClient(&newClient); err != nil {
 				return nil, err
 			}
 		} else {
 			return nil, err
 		}
-	}
-	r.Form.Set(clientIdKey, id)
-	if osin.AuthorizeRequestType(r.FormValue(responseTypeKey)) == ID {
-		r.Form.Set(responseTypeKey, "code")
-	}
-	if act, ok := actor.(*vocab.Actor); ok {
-		return act, nil
+		r.Form.Set(clientIdKey, id)
+		if osin.AuthorizeRequestType(r.FormValue(responseTypeKey)) == ID {
+			r.Form.Set(responseTypeKey, "code")
+		}
+		if act, ok := actor.(*vocab.Actor); ok {
+			return act, nil
+		}
+
 	}
 	return nil, nil
 }
@@ -216,7 +216,7 @@ func (i *authService) loadAccountByID(id string) (*vocab.Actor, error) {
 	a := activitypub.Self(i.baseIRI)
 
 	f.IRI = activitypub.ActorsType.IRI(a).AddPath(id)
-	actors, err := i.storage.repo.Load(f.GetLink())
+	actors, err := i.storage.Load(f.GetLink())
 	if err != nil {
 		return nil, err
 	}
@@ -250,16 +250,14 @@ func (i *authService) loadAccountFromPost(r *http.Request) (*account, error) {
 	f.Name = activitypub.CompStrs{activitypub.CompStr{Str: handle}}
 	f.IRI = activitypub.ActorsType.IRI(a)
 	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(vocab.PersonType))}
-	actors, err := i.storage.repo.Load(f.GetLink())
+	actors, err := i.storage.Load(f.GetLink())
 	if err != nil {
 		return nil, errUnauthorized
 	}
 
 	var act *account
-	if pwLoader, ok := i.storage.repo.(st.PasswordChanger); ok {
-		if act, err = checkPw(actors, []byte(pw), pwLoader); err != nil {
-			return nil, err
-		}
+	if act, err = checkPw(actors, []byte(pw), i.storage); err != nil {
+		return nil, err
 	}
 	return act, nil
 }
@@ -359,39 +357,37 @@ func (i *authService) Token(w http.ResponseWriter, r *http.Request) {
 				actorFilters.IRI = vocab.IRI(iri)
 			}
 		}
-		actor, err := i.storage.repo.Load(actorFilters.GetLink())
+		actor, err := i.storage.Load(actorFilters.GetLink())
 		if err != nil {
 			i.logger.Errorf("%s", errUnauthorized)
 			errors.HandleError(errUnauthorized).ServeHTTP(w, r)
 			return
 		}
 		if ar.Type == osin.PASSWORD {
-			if pwLoader, ok := i.storage.repo.(st.PasswordChanger); ok {
-				if actor.IsCollection() {
-					err = vocab.OnCollectionIntf(actor, func(col vocab.CollectionInterface) error {
-						// NOTE(marius): This is a stupid way of doing pw authentication, as it will produce collisions
-						//  for users with the same handle/pw and it will login the first in the collection.
-						for _, actor := range col.Collection() {
-							acc, err = checkPw(actor, []byte(ar.Password), pwLoader)
-							if err == nil {
-								return nil
-							}
+			if actor.IsCollection() {
+				err = vocab.OnCollectionIntf(actor, func(col vocab.CollectionInterface) error {
+					// NOTE(marius): This is a stupid way of doing pw authentication, as it will produce collisions
+					//  for users with the same handle/pw and it will login the first in the collection.
+					for _, actor := range col.Collection() {
+						acc, err = checkPw(actor, []byte(ar.Password), i.storage)
+						if err == nil {
+							return nil
 						}
-						return errors.Newf("No actor matched the password")
-					})
-				} else {
-					acc, err = checkPw(actor, []byte(ar.Password), pwLoader)
-				}
-				if err != nil || acc == nil {
-					if err != nil {
-						i.logger.Errorf("%s", err)
 					}
-					errors.HandleError(errUnauthorized).ServeHTTP(w, r)
-					return
-				}
-				ar.Authorized = acc.IsLogged()
-				ar.UserData = acc.actor.GetLink()
+					return errors.Newf("No actor matched the password")
+				})
+			} else {
+				acc, err = checkPw(actor, []byte(ar.Password), i.storage)
 			}
+			if err != nil || acc == nil {
+				if err != nil {
+					i.logger.Errorf("%s", err)
+				}
+				errors.HandleError(errUnauthorized).ServeHTTP(w, r)
+				return
+			}
+			ar.Authorized = acc.IsLogged()
+			ar.UserData = acc.actor.GetLink()
 		}
 		if ar.Type == osin.AUTHORIZATION_CODE {
 			vocab.OnActor(actor, func(p *vocab.Actor) error {
@@ -676,15 +672,13 @@ func (i *authService) HandleChangePw(w http.ResponseWriter, r *http.Request) {
 		"pass":   pw,
 	}).Infof("received")
 
-	if pwSetter, ok := i.storage.repo.(st.PasswordChanger); ok {
-		err := pwSetter.PasswordSet(actor, []byte(pw))
-		if err != nil {
-			i.logger.Errorf("Error when saving password: %s", err)
-			errors.HandleError(errors.NotValidf("Unable to change password")).ServeHTTP(w, r)
-			return
-		}
-		i.storage.oauth.RemoveAuthorize(tok)
+	err := i.storage.PasswordSet(actor, []byte(pw))
+	if err != nil {
+		i.logger.Errorf("Error when saving password: %s", err)
+		errors.HandleError(errors.NotValidf("Unable to change password")).ServeHTTP(w, r)
+		return
 	}
+	i.storage.RemoveAuthorize(tok)
 }
 
 func (i *authService) loadActorFromOauth2Session(w http.ResponseWriter, r *http.Request) *vocab.Actor {
@@ -697,7 +691,7 @@ func (i *authService) loadActorFromOauth2Session(w http.ResponseWriter, r *http.
 		return nil
 	}
 
-	authSess, err := i.auth.Server.Storage.LoadAuthorize(tok)
+	authSess, err := i.storage.LoadAuthorize(tok)
 	if err != nil {
 		i.logger.Errorf("Error when loading authorize session: %s", err)
 		errors.HandleError(notF).ServeHTTP(w, r)
@@ -725,7 +719,7 @@ func (i *authService) loadActorFromOauth2Session(w http.ResponseWriter, r *http.
 		errors.HandleError(notF).ServeHTTP(w, r)
 		return nil
 	}
-	ob, err := i.storage.repo.Load(vocab.IRI(actorIRI))
+	ob, err := i.storage.Load(vocab.IRI(actorIRI))
 	if err != nil || ob == nil {
 		i.logger.Errorf("Error when loading actor from storage: %s", err)
 		errors.HandleError(notF).ServeHTTP(w, r)

@@ -2,7 +2,6 @@ package fedbox
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -33,26 +32,12 @@ func init() {
 
 type LogFn func(string, ...interface{})
 
-type fedboxStorage struct {
-	repo  processing.Store
-	oauth osin.Storage
-}
-
-func (s *fedboxStorage) Close() error {
-	s.oauth.Close()
-	closable, ok := s.repo.(io.Closer)
-	if !ok {
-		return nil
-	}
-	return closable.Close()
-}
-
 type FedBOX struct {
 	R       chi.Router
 	conf    config.Options
 	self    vocab.Service
 	client  client.C
-	storage fedboxStorage
+	storage FullStorage
 	ver     string
 	caches  cache.CanStore
 	OAuth   authService
@@ -91,7 +76,7 @@ func Config(e string, to time.Duration) (config.Options, error) {
 }
 
 // New instantiates a new FedBOX instance
-func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o osin.Storage) (*FedBOX, error) {
+func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX, error) {
 	if db == nil {
 		return nil, errors.Newf("invalid storage")
 	}
@@ -102,7 +87,7 @@ func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o os
 		ver:     ver,
 		conf:    conf,
 		R:       chi.NewRouter(),
-		storage: fedboxStorage{repo: db, oauth: o},
+		storage: db,
 		stopFn:  emptyStopFn,
 		infFn:   emptyLogFn,
 		errFn:   emptyLogFn,
@@ -145,7 +130,7 @@ func New(l lw.Logger, ver string, conf config.Options, db processing.Store, o os
 		client.SetErrorLogger(clientErrLogger),
 		client.SkipTLSValidation(!conf.Env.IsProd()),
 	)
-	as, err := auth.New(conf.BaseURL, app.storage.oauth, app.storage.repo, &app.client, l)
+	as, err := auth.New(conf.BaseURL, app.storage, &app.client, l)
 	if err != nil {
 		l.Warnf(err.Error())
 		return nil, err
@@ -177,12 +162,14 @@ func (f FedBOX) Config() config.Options {
 }
 
 func (f FedBOX) Storage() processing.Store {
-	return f.storage.repo
+	return f.storage
 }
 
 // Stop
 func (f *FedBOX) Stop() {
-	f.storage.Close()
+	if st, ok := f.storage.(osin.Storage); ok {
+		st.Close()
+	}
 	f.stopFn()
 }
 

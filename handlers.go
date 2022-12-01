@@ -59,7 +59,7 @@ func orderItems(col vocab.ItemCollection) vocab.ItemCollection {
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
-	repo := fb.storage.repo
+	repo := fb.storage
 	return func(typ vocab.CollectionPath, r *http.Request) (vocab.CollectionInterface, error) {
 		if typ == vocab.Unknown {
 			return nil, errors.NotFoundf("%s not found", r.URL.Path)
@@ -170,7 +170,7 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
-	repo := fb.storage.repo
+	repo := fb.storage
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
 		var it vocab.Item
 		fb.infFn("received req %s: %s", r.Method, r.RequestURI)
@@ -250,7 +250,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 // HandleItem serves content from the following, followers, liked, and likes end-points
 // that returns a single ActivityPub object
 func HandleItem(fb FedBOX) processing.ItemHandlerFn {
-	repo := fb.storage.repo
+	repo := fb.storage
 	return func(r *http.Request) (vocab.Item, error) {
 		f := ap.FromRequest(r, fb.Config().BaseURL)
 		if !f.IRI.Equals(fb.self.GetLink(), true) && !ap.ValidCollection(f.Collection) {

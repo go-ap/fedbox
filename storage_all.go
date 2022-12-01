@@ -6,15 +6,13 @@ import (
 	"git.sr.ht/~mariusor/lw"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/processing"
 	"github.com/go-ap/storage-badger"
 	"github.com/go-ap/storage-boltdb"
 	"github.com/go-ap/storage-fs"
 	"github.com/go-ap/storage-sqlite"
-	"github.com/openshift/osin"
 )
 
-func getBadgerStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
+func getBadgerStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 	path := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": path})
 	l.Debugf("Initializing badger storage")
@@ -25,12 +23,12 @@ func getBadgerStorage(c config.Options, l lw.Logger) (processing.Store, osin.Sto
 	}
 	db, err := badger.New(conf)
 	if err != nil {
-		return db, nil, err
+		return db, err
 	}
-	return db, db, nil
+	return db, nil
 }
 
-func getBoltStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
+func getBoltStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 	path := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": path})
 	l.Debugf("Initializing boltdb storage")
@@ -40,12 +38,12 @@ func getBoltStorage(c config.Options, l lw.Logger) (processing.Store, osin.Stora
 		ErrFn: l.Warnf,
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return db, db, nil
+	return db, nil
 }
 
-func getFsStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
+func getFsStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 	p := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": p})
 	l.Debugf("Initializing fs storage")
@@ -56,12 +54,12 @@ func getFsStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage
 		ErrFn:       l.Warnf,
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return db, db, nil
+	return db, nil
 }
 
-func getSqliteStorage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
+func getSqliteStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 	path := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": path})
 	l.Debugf("Initializing sqlite storage")
@@ -73,12 +71,12 @@ func getSqliteStorage(c config.Options, l lw.Logger) (processing.Store, osin.Sto
 	})
 
 	if err != nil {
-		return nil, nil, errors.Annotatef(err, "unable to connect to sqlite storage")
+		return nil, errors.Annotatef(err, "unable to connect to sqlite storage")
 	}
-	return db, db, nil
+	return db, nil
 }
 
-func Storage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, error) {
+func Storage(c config.Options, l lw.Logger) (FullStorage, error) {
 	switch c.Storage {
 	case config.StorageBoltDB:
 		return getBoltStorage(c, l)
@@ -89,5 +87,5 @@ func Storage(c config.Options, l lw.Logger) (processing.Store, osin.Storage, err
 	case config.StorageFS:
 		return getFsStorage(c, l)
 	}
-	return nil, nil, errors.NotImplementedf("Invalid storage type %s", c.Storage)
+	return nil, errors.NotImplementedf("Invalid storage type %s", c.Storage)
 }

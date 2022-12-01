@@ -17,20 +17,18 @@ import (
 	"github.com/go-ap/fedbox/internal/env"
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
-	"github.com/openshift/osin"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 type Control struct {
-	Conf        config.Options
-	Self        vocab.Actor
-	AuthStorage osin.Storage
-	Storage     processing.Store
-	Saver       processing.C2SProcessor
+	Conf    config.Options
+	Self    vocab.Actor
+	Storage fedbox.FullStorage
+	Saver   processing.C2SProcessor
 }
 
-func New(authDB osin.Storage, actorDb processing.Store, conf config.Options, l lw.Logger) *Control {
+func New(db fedbox.FullStorage, conf config.Options, l lw.Logger) *Control {
 	baseIRI := vocab.IRI(conf.BaseURL)
 
 	clientErrLogger := func(...c.Ctx) c.LogFn {
@@ -41,22 +39,21 @@ func New(authDB osin.Storage, actorDb processing.Store, conf config.Options, l l
 	}
 	p, _ := processing.New(
 		processing.SetIRI(baseIRI),
-		processing.SetStorage(actorDb),
+		processing.SetStorage(db),
 		processing.SetIDGenerator(fedbox.GenerateID(baseIRI)),
 		processing.SetClient(c.New(
 			c.SetInfoLogger(clientInfoLogger),
 			c.SetErrorLogger(clientErrLogger),
 			c.SkipTLSValidation(!conf.Env.IsProd()),
 		)),
-		processing.SetLocalIRIChecker(st.IsLocalIRI(actorDb)),
+		processing.SetLocalIRIChecker(st.IsLocalIRI(db)),
 	)
-	self, _ := ap.LoadSelfActor(actorDb, ap.DefaultServiceIRI(conf.BaseURL))
+	self, _ := ap.LoadSelfActor(db, ap.DefaultServiceIRI(conf.BaseURL))
 	return &Control{
-		Conf:        conf,
-		Self:        self,
-		AuthStorage: authDB,
-		Storage:     actorDb,
-		Saver:       p,
+		Conf:    conf,
+		Self:    self,
+		Storage: db,
+		Saver:   p,
 	}
 }
 
@@ -121,11 +118,11 @@ func setup(c *cli.Context, l lw.Logger) (*Control, error) {
 			Name:    user,
 		}
 	}
-	db, aDb, err := fedbox.Storage(conf, l)
+	db, err := fedbox.Storage(conf, l)
 	if err != nil {
 		return nil, err
 	}
-	return New(aDb, db, conf, l), nil
+	return New(db, conf, l), nil
 }
 
 func loadPwFromStdin(confirm bool, s string, params ...interface{}) ([]byte, error) {

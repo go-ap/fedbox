@@ -3,6 +3,7 @@ package fedbox
 import (
 	"testing"
 
+	"git.sr.ht/~mariusor/lw"
 	"github.com/go-ap/fedbox/internal/config"
 	fs "github.com/go-ap/storage-fs"
 )
@@ -16,7 +17,7 @@ func TestNew(t *testing.T) {
 	if err != nil {
 		t.Errorf("unable to initialize fs storage: %s", err)
 	}
-	app, err := New(nil, "HEAD", config.Options{BaseURL: "http://example.com"}, store, nil)
+	app, err := New(lw.Dev(), "HEAD", config.Options{BaseURL: "http://example.com"}, store)
 	if err != nil {
 		t.Errorf("Environment 'test' should not trigger an error: %s", err)
 	}

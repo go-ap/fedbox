@@ -10,7 +10,6 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox"
 	apub "github.com/go-ap/fedbox/activitypub"
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
@@ -213,12 +212,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 		UserData:    userData,
 	}
 
-	if saver, ok := c.AuthStorage.(fedbox.ClientSaver); ok {
-		err = saver.CreateClient(&d)
-	} else {
-		err = errors.Newf("invalid OAuth2 client backend")
-	}
-	return id, err
+	return id, c.Storage.CreateClient(&d)
 }
 
 func (c *Control) DeleteClient(uuid string) error {
@@ -228,31 +222,18 @@ func (c *Control) DeleteClient(uuid string) error {
 		return err
 	}
 
-	if saver, ok := c.AuthStorage.(fedbox.ClientSaver); ok {
-		err = saver.RemoveClient(uuid)
-	} else {
-		err = errors.Newf("invalid OAuth2 client backend")
-	}
-	return err
+	return c.Storage.RemoveClient(uuid)
 }
 
 func (c *Control) ListClients() ([]osin.Client, error) {
-	var err error
-
-	if ls, ok := c.AuthStorage.(fedbox.ClientLister); ok {
-		return ls.ListClients()
-	} else {
-		err = errors.Newf("invalid OAuth2 client backend")
-	}
-
-	return nil, err
+	return c.Storage.ListClients()
 }
 
 func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}) (string, error) {
 	if u, err := url.Parse(clientID); err == nil {
 		clientID = path.Base(u.Path)
 	}
-	cl, err := c.AuthStorage.GetClient(clientID)
+	cl, err := c.Storage.GetClient(clientID)
 	if err != nil {
 		return "", err
 	}
@@ -330,11 +311,11 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 		return "", err
 	}
 	// save authorize data
-	if err = c.AuthStorage.SaveAuthorize(aud); err != nil {
+	if err = c.Storage.SaveAuthorize(aud); err != nil {
 		return "", err
 	}
 	// save access token
-	if err = c.AuthStorage.SaveAccess(ad); err != nil {
+	if err = c.Storage.SaveAccess(ad); err != nil {
 		return "", err
 	}
 

@@ -69,11 +69,11 @@ func run(version string) cli.ActionFunc {
 		} else {
 			l = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
 		}
-		db, o, err := fedbox.Storage(conf, l)
+		db, err := fedbox.Storage(conf, l)
 		if err != nil {
 			l.Errorf("Unable to initialize storage backend: %s", err)
 		}
-		a, err := fedbox.New(l, version, conf, db, o)
+		a, err := fedbox.New(l, version, conf, db)
 		if err != nil {
 			l.Errorf("Unable to initialize: %s", err)
 			return err
