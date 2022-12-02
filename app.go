@@ -124,7 +124,13 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 		client.SetErrorLogger(clientErrLogger),
 		client.SkipTLSValidation(!conf.Env.IsProd()),
 	)
-	as, err := auth.New(conf.BaseURL, app.storage, &app.client, l)
+
+	as, err := auth.New(
+		auth.WithURL(conf.BaseURL),
+		auth.WithStorage(app.storage),
+		auth.WithClient(&app.client),
+		auth.WithLogger(l),
+	)
 	if err != nil {
 		l.Warnf(err.Error())
 		return nil, err
