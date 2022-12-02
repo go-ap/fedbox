@@ -212,10 +212,6 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			processing.SetActorKeyGenerator(AddKeyToPerson(metaSaver))
 		}
 
-		if err = processor.ValidateActivity(it, f.IRI); err != nil {
-			fb.errFn("failed processor validation: %+s", err)
-			return it, http.StatusNotAcceptable, err
-		}
 		vocab.OnActivity(it, func(a *vocab.Activity) error {
 			// TODO(marius): this should be handled in the processing package
 			if a.AttributedTo == nil {
