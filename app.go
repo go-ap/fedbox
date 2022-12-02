@@ -112,16 +112,8 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 		}
 	}
 
-	clientErrLogger := func(c ...client.Ctx) client.LogFn {
-		return l.WithContext(c...).Errorf
-	}
-	clientInfoLogger := func(c ...client.Ctx) client.LogFn {
-		return l.WithContext(c...).Infof
-	}
-
 	app.client = *client.New(
-		client.SetInfoLogger(clientInfoLogger),
-		client.SetErrorLogger(clientErrLogger),
+		client.WithLogger(l),
 		client.SkipTLSValidation(!conf.Env.IsProd()),
 	)
 
@@ -142,7 +134,7 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 	baseIRI := app.self.GetLink()
 	app.OAuth = authService{
 		baseIRI: baseIRI,
-		auth:    as,
+		auth:    *as,
 		genID:   GenerateID(baseIRI),
 		storage: app.storage,
 		logger:  l,

@@ -65,7 +65,7 @@ type authService struct {
 	baseIRI vocab.IRI
 	genID   processing.IDGenerator
 	storage FullStorage
-	auth    *auth.Server
+	auth    auth.Server
 	logger  lw.Logger
 }
 
@@ -263,7 +263,7 @@ func (i *authService) loadAccountFromPost(r *http.Request) (*account, error) {
 }
 
 func (i *authService) Authorize(w http.ResponseWriter, r *http.Request) {
-	s := i.auth.Server
+	s := i.auth
 	resp := s.NewResponse()
 	defer resp.Close()
 
@@ -336,7 +336,7 @@ func checkPw(it vocab.Item, pw []byte, pwLoader st.PasswordChanger) (*account, e
 }
 
 func (i *authService) Token(w http.ResponseWriter, r *http.Request) {
-	s := i.auth.Server
+	s := i.auth
 	resp := s.NewResponse()
 	defer resp.Close()
 

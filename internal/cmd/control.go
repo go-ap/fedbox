@@ -31,19 +31,12 @@ type Control struct {
 func New(db fedbox.FullStorage, conf config.Options, l lw.Logger) *Control {
 	baseIRI := vocab.IRI(conf.BaseURL)
 
-	clientErrLogger := func(...c.Ctx) c.LogFn {
-		return l.Errorf
-	}
-	clientInfoLogger := func(...c.Ctx) c.LogFn {
-		return l.Infof
-	}
 	p, _ := processing.New(
 		processing.SetIRI(baseIRI),
 		processing.SetStorage(db),
 		processing.SetIDGenerator(fedbox.GenerateID(baseIRI)),
 		processing.SetClient(c.New(
-			c.SetInfoLogger(clientInfoLogger),
-			c.SetErrorLogger(clientErrLogger),
+			c.WithLogger(l),
 			c.SkipTLSValidation(!conf.Env.IsProd()),
 		)),
 		processing.SetLocalIRIChecker(st.IsLocalIRI(db)),
