@@ -57,8 +57,7 @@ func run(version string) cli.ActionFunc {
 		}
 		var out io.WriteCloser
 		if conf.LogOutput != "" {
-			out, err = os.Open(conf.LogOutput)
-			if err != nil {
+			if out, err = os.Open(conf.LogOutput); err != nil {
 				return errors.Newf("Unable to output logs to %s: %s", conf.LogOutput, err)
 			}
 			defer out.Close()
@@ -69,11 +68,11 @@ func run(version string) cli.ActionFunc {
 		} else {
 			l = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
 		}
-		db, err := fedbox.Storage(conf, l)
+		db, err := fedbox.Storage(conf, l.WithContext(lw.Ctx{"log": "storage"}))
 		if err != nil {
 			l.Errorf("Unable to initialize storage backend: %s", err)
 		}
-		a, err := fedbox.New(l, version, conf, db)
+		a, err := fedbox.New(l.WithContext(lw.Ctx{"log": "fedbox"}), version, conf, db)
 		if err != nil {
 			l.Errorf("Unable to initialize: %s", err)
 			return err

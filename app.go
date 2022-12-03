@@ -113,7 +113,7 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 	}
 
 	app.client = *client.New(
-		client.WithLogger(l),
+		client.WithLogger(l.WithContext(lw.Ctx{"log": "client"})),
 		client.SkipTLSValidation(!conf.Env.IsProd()),
 	)
 
@@ -121,7 +121,7 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 		auth.WithURL(conf.BaseURL),
 		auth.WithStorage(app.storage),
 		auth.WithClient(&app.client),
-		auth.WithLogger(l),
+		auth.WithLogger(l.WithContext(lw.Ctx{"log": "osin"})),
 	)
 	if err != nil {
 		l.Warnf(err.Error())
@@ -137,7 +137,7 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 		auth:    *as,
 		genID:   GenerateID(baseIRI),
 		storage: app.storage,
-		logger:  l,
+		logger:  l.WithContext(lw.Ctx{"log": "auth-service"}),
 	}
 
 	app.R.Group(app.Routes())
@@ -171,10 +171,10 @@ func (f *FedBOX) reload() (err error) {
 	return err
 }
 
-func (f FedBOX) actorFromRequest(r *http.Request) *vocab.Actor {
+func (f FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
 	act, err := f.OAuth.auth.LoadActorFromAuthHeader(r)
 	if err != nil {
-		return nil
+		f.logger.Errorf("unable to load an authorized Actor from request: %+s", err)
 	}
 	return act
 }

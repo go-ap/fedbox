@@ -1060,13 +1060,13 @@ func (f *Filters) ItemsMatch(col ...vocab.Item) bool {
 
 // LoadCollectionFilters uses specific logic for adding elements to the filters when loading
 // collections from the database.
-func LoadCollectionFilters(f *Filters, auth *vocab.Actor) error {
+func LoadCollectionFilters(f *Filters, auth vocab.Actor) error {
 	return LoadItemFilters(f, auth)
 }
 
 // LoadItemFilters uses specific logic for adding elements to the filters when loading
 // single items from the database.
-func LoadItemFilters(f *Filters, auth *vocab.Actor) error {
+func LoadItemFilters(f *Filters, auth vocab.Actor) error {
 	if len(f.Key) != 0 {
 		for _, k := range f.Key {
 			i := CompStr{Str: fmt.Sprintf("%s%s", f.IRI, k)}
@@ -1074,8 +1074,8 @@ func LoadItemFilters(f *Filters, auth *vocab.Actor) error {
 		}
 	}
 
-	if auth != nil && auth.ID != vocab.PublicNS {
-		f.Authenticated = auth
+	if auth.ID != vocab.PublicNS {
+		f.Authenticated = &auth
 		if f.Object != nil {
 			f.Object.Authenticated = f.Authenticated
 		}

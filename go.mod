@@ -6,10 +6,10 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20221202111053-2dd31f3348e7
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/go-ap/activitypub v0.0.0-20221201100613-364a4fe06e5e
-	github.com/go-ap/auth v0.0.0-20221202111730-432540db0770
+	github.com/go-ap/auth v0.0.0-20221203064814-2837fc7e9990
 	github.com/go-ap/client v0.0.0-20221202111559-57ef6bd2c06d
 	github.com/go-ap/errors v0.0.0-20221201010224-09b9c5d09ea9
-	github.com/go-ap/httpsig v0.0.0-20210714162115-62a09257db51
+	github.com/go-ap/httpsig v0.0.0-20221203064646-3647b4d88fdf
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20221202111812-f0a71a7afb21
 	github.com/go-ap/storage-badger v0.0.0-20221202073039-431111408a40
