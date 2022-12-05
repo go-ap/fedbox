@@ -26,11 +26,9 @@ clean:
 	@-$(RM) $(FEDBOX_HOSTNAME).{key,crt,pem}
 
 builder:
-	#$(BUILD_CMD) --build-arg HOSTNAME=$(FEDBOX_HOSTNAME) -f Dockerfile.build -t fedbox/builder ..
 	./build.sh .. fedbox/builder
 
 build:
-	#$(BUILD_CMD) --build-arg ENV=$(ENV) --build-arg VERSION=$(VERSION) --build-arg STORAGE=$(STORAGE) --build-arg PORT=$(PORT) -f Dockerfile -t $(FEDBOX_HOSTNAME)/app:$(TAG) ..
 	ENV=$(ENV) VERSION=$(VERSION) STORAGE=$(STORAGE) PORT=$(PORT) HOSTNAME=$(FEDBOX_HOSTNAME) ./image.sh $(FEDBOX_HOSTNAME)/app:$(TAG)
 
 push: build
