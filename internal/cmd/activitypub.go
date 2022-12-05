@@ -479,9 +479,9 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 		files := c.Args().Slice()
 
 		processor, err := processing.New(
-			processing.SetIRI(vocab.IRI(baseIRI), fedbox.InternalIRI),
-			processing.SetStorage(ctl.Storage),
-			processing.SetLocalIRIChecker(s.IsLocalIRI(ctl.Storage)),
+			processing.WithIRI(vocab.IRI(baseIRI), fedbox.InternalIRI),
+			processing.WithStorage(ctl.Storage),
+			processing.WithLocalIRIChecker(s.IsLocalIRI(ctl.Storage)),
 		)
 		if err != nil {
 			Errf("Error initializing ActivityPub processor: %s", err)
@@ -578,8 +578,8 @@ var exportCmd = &cli.Command{
 	Usage:   "Exports ActivityPub objects",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:        "path",
-			Usage:       fmt.Sprintf("The path where to output the items, if absent it will be printed to stdout."),
+			Name:  "path",
+			Usage: fmt.Sprintf("The path where to output the items, if absent it will be printed to stdout."),
 		},
 	},
 	Action: exportPubObjects(&ctl),

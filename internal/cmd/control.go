@@ -32,14 +32,14 @@ func New(db fedbox.FullStorage, conf config.Options, l lw.Logger) *Control {
 	baseIRI := vocab.IRI(conf.BaseURL)
 
 	p, _ := processing.New(
-		processing.SetIRI(baseIRI),
-		processing.SetStorage(db),
-		processing.SetIDGenerator(fedbox.GenerateID(baseIRI)),
-		processing.SetClient(c.New(
+		processing.WithIRI(baseIRI),
+		processing.WithStorage(db),
+		processing.WithIDGenerator(fedbox.GenerateID(baseIRI)),
+		processing.WithClient(c.New(
 			c.WithLogger(l),
 			c.SkipTLSValidation(!conf.Env.IsProd()),
 		)),
-		processing.SetLocalIRIChecker(st.IsLocalIRI(db)),
+		processing.WithLocalIRIChecker(st.IsLocalIRI(db)),
 	)
 	self, _ := ap.LoadSelfActor(db, ap.DefaultServiceIRI(conf.BaseURL))
 	return &Control{

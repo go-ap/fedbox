@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
@@ -192,15 +193,17 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
 
+		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
 		baseIRI := vocab.IRI(fb.Config().BaseURL)
 		processor, err := processing.New(
-			processing.SetIRI(baseIRI, InternalIRI),
-			processing.SetClient(&fb.client),
-			processing.SetStorage(repo),
-			processing.SetInfoLogger(fb.logger.Debugf),
-			processing.SetErrorLogger(fb.logger.Warnf),
-			processing.SetIDGenerator(GenerateID(baseIRI)),
-			processing.SetLocalIRIChecker(st.IsLocalIRI(repo)),
+			processing.WithIRI(baseIRI, InternalIRI),
+			processing.WithClient(&fb.client),
+			processing.WithStorage(repo),
+			processing.WithLogger(l),
+			processing.WithInfoLogger(l.Infof),
+			processing.WithErrorLogger(l.Warnf),
+			processing.WithIDGenerator(GenerateID(baseIRI)),
+			processing.WithLocalIRIChecker(st.IsLocalIRI(repo)),
 		)
 		if err != nil {
 			fb.errFn("failed initializing the Activity processor: %+s", err)
@@ -209,7 +212,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		processor.SetActor(f.Authenticated)
 		if metaSaver, ok := repo.(st.MetadataTyper); ok {
 			fb.infFn("setting actor key generator %T", metaSaver)
-			processing.SetActorKeyGenerator(AddKeyToPerson(metaSaver))
+			processing.WithActorKeyGenerator(AddKeyToPerson(metaSaver))
 		}
 
 		vocab.OnActivity(it, func(a *vocab.Activity) error {
