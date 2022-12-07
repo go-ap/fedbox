@@ -11,10 +11,10 @@ require (
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
 	github.com/go-ap/httpsig v0.0.0-20221203064646-3647b4d88fdf
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20221207090406-7a5144619da7
+	github.com/go-ap/processing v0.0.0-20221207123651-6e003e75a313
 	github.com/go-ap/storage-badger v0.0.0-20221207090729-d284526bf663
 	github.com/go-ap/storage-boltdb v0.0.0-20221207090508-821a417c932e
-	github.com/go-ap/storage-fs v0.0.0-20221207090442-5c3a9c22a079
+	github.com/go-ap/storage-fs v0.0.0-20221207123736-86ce29ee5439
 	github.com/go-ap/storage-sqlite v0.0.0-20221207090839-be761e69655d
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/joho/godotenv v1.4.0
