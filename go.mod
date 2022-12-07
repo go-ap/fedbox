@@ -5,17 +5,17 @@ go 1.18
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20221202111053-2dd31f3348e7
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
-	github.com/go-ap/activitypub v0.0.0-20221206062958-cae46e718d79
-	github.com/go-ap/auth v0.0.0-20221206064224-405542ca8e9c
-	github.com/go-ap/client v0.0.0-20221206063717-d4349e6eaaa2
+	github.com/go-ap/activitypub v0.0.0-20221207073405-5d6d22cbc42e
+	github.com/go-ap/auth v0.0.0-20221207090318-8c34108d3547
+	github.com/go-ap/client v0.0.0-20221207090140-c371e630622e
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
 	github.com/go-ap/httpsig v0.0.0-20221203064646-3647b4d88fdf
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20221206064521-145eae03097d
-	github.com/go-ap/storage-badger v0.0.0-20221206064114-098ea4f64517
-	github.com/go-ap/storage-boltdb v0.0.0-20221206063858-229be618c7af
-	github.com/go-ap/storage-fs v0.0.0-20221206063810-0090ea775082
-	github.com/go-ap/storage-sqlite v0.0.0-20221206064027-9be47a9a93f8
+	github.com/go-ap/processing v0.0.0-20221207090406-7a5144619da7
+	github.com/go-ap/storage-badger v0.0.0-20221207090729-d284526bf663
+	github.com/go-ap/storage-boltdb v0.0.0-20221207090508-821a417c932e
+	github.com/go-ap/storage-fs v0.0.0-20221207090442-5c3a9c22a079
+	github.com/go-ap/storage-sqlite v0.0.0-20221207090839-be761e69655d
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/joho/godotenv v1.4.0
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d
@@ -24,7 +24,7 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/crypto v0.3.0
-	golang.org/x/oauth2 v0.2.0
+	golang.org/x/oauth2 v0.3.0
 )
 
 require (
@@ -59,10 +59,10 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/net v0.3.0 // indirect
+	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
-	golang.org/x/tools v0.3.0 // indirect
+	golang.org/x/tools v0.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
