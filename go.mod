@@ -15,7 +15,7 @@ require (
 	github.com/go-ap/storage-badger v0.0.0-20221207090729-d284526bf663
 	github.com/go-ap/storage-boltdb v0.0.0-20221207090508-821a417c932e
 	github.com/go-ap/storage-fs v0.0.0-20221207123736-86ce29ee5439
-	github.com/go-ap/storage-sqlite v0.0.0-20221207090839-be761e69655d
+	github.com/go-ap/storage-sqlite v0.0.0-20221208034930-17437ff26589
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/joho/godotenv v1.4.0
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d
@@ -23,7 +23,7 @@ require (
 	github.com/openshift/osin v1.0.1
 	github.com/pborman/uuid v1.2.1
 	github.com/urfave/cli/v2 v2.3.0
-	golang.org/x/crypto v0.3.0
+	golang.org/x/crypto v0.4.0
 	golang.org/x/oauth2 v0.3.0
 )
 
