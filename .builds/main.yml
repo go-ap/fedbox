@@ -29,7 +29,9 @@ tasks:
   - integration-sqlite: |
       cd fedbox
       make TEST_FLAGS='-count=1' CGO_ENABLED=0 STORAGE=sqlite integration
-      make FEDBOX_STORAGE=sqlite integration
+      make CGO_ENABLED=0 FEDBOX_STORAGE=sqlite integration
+      make TEST_FLAGS='-count=1 -race' CGO_ENABLED=1 STORAGE=sqlite integration
+      make TEST_FLAGS='-count=1 -race' CGO_ENABLED=1 FEDBOX_STORAGE=sqlite integration
   - integration-boltdb: |
       cd fedbox
       make TEST_FLAGS='-race -count=1' CGO_ENABLED=1 STORAGE=boltdb integration
