@@ -34,7 +34,7 @@ import (
 func jsonldMarshal(i vocab.Item) string {
 	j, err := jsonld.Marshal(i)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("%+v", err))
 	}
 	return string(j)
 }
@@ -115,7 +115,7 @@ func keyType(key crypto.PrivateKey) httpsig.Algorithm {
 func loadPrivateKeyFromDisk(file string) crypto.PrivateKey {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("%+v", err))
 	}
 	b, _ := pem.Decode(data)
 	if b == nil {
@@ -123,7 +123,7 @@ func loadPrivateKeyFromDisk(file string) crypto.PrivateKey {
 	}
 	prvKey, err := x509.ParsePKCS8PrivateKey(b.Bytes)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("%+v", err))
 	}
 	return prvKey
 }
@@ -131,11 +131,11 @@ func loadPrivateKeyFromDisk(file string) crypto.PrivateKey {
 func loadMockFromDisk(file string, model interface{}) vocab.Item {
 	json, err := loadMockJson(file, model)()
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("%+v", err))
 	}
 	it, err := vocab.UnmarshalJSON([]byte(json))
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("%+v", err))
 	}
 	return it
 }
@@ -154,7 +154,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	l := lw.Dev(lw.SetLevel(lw.DebugLevel)).WithContext(fields)
 	db, err := fedbox.Storage(options, l)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("%+v", err))
 	}
 	clientCode := path.Base(defaultTestApp.Id)
 
@@ -191,7 +191,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 			l.Infof("Seeding metadata for test user: %s", defaultTestAccountC2S.Id)
 			prvEnc, err := x509.MarshalPKCS8PrivateKey(defaultTestAccountC2S.PrivateKey)
 			if err != nil {
-				panic(err)
+				panic(fmt.Sprintf("%+v", err))
 			}
 			r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
 			err = metaSaver.SaveMetadata(ls.Metadata{PrivateKey: pem.EncodeToMemory(&r)}, vocab.IRI(defaultTestAccountC2S.Id))
@@ -215,14 +215,14 @@ func SetupAPP(options config.Options) *fedbox.FedBOX {
 	l := lw.Dev(lw.SetLevel(options.LogLevel))
 	db, err := fedbox.Storage(options, l.WithContext(fields))
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("%+v", err))
 	}
 	if err = cmd.Bootstrap(options); err != nil {
-		panic(err)
+		panic(fmt.Sprintf("%+v", err))
 	}
 	a, err := fedbox.New(l, "HEAD", options, db)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("%+v", err))
 	}
 	if options.Storage == config.StorageFS {
 		time.Sleep(100 * time.Millisecond)
