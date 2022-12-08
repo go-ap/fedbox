@@ -24,13 +24,17 @@ tasks:
       make coverage
   - integration-fs: |
       cd fedbox
+      make FEDBOX_STORAGE=fs integration
       make TEST_FLAGS='-race -count=1' CGO_ENABLED=1 STORAGE=fs integration
-  - integration-boltdb: |
-      cd fedbox
-      make TEST_FLAGS='-race -count=1' CGO_ENABLED=1 STORAGE=boltdb integration
   - integration-sqlite: |
       cd fedbox
       make TEST_FLAGS='-count=1' CGO_ENABLED=0 STORAGE=sqlite integration
+      make FEDBOX_STORAGE=sqlite integration
+  - integration-boltdb: |
+      cd fedbox
+      make TEST_FLAGS='-race -count=1' CGO_ENABLED=1 STORAGE=boltdb integration
+      make FEDBOX_STORAGE=boltdb integration
   - integration-badger: |
       cd fedbox
       make TEST_FLAGS='-count=1' CGO_ENABLED=0 STORAGE=badger integration
+      make FEDBOX_STORAGE=badger integration
