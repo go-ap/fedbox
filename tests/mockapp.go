@@ -10,7 +10,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -113,7 +112,7 @@ func keyType(key crypto.PrivateKey) httpsig.Algorithm {
 }
 
 func loadPrivateKeyFromDisk(file string) crypto.PrivateKey {
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 	if err != nil {
 		panic(fmt.Sprintf("%+v", err))
 	}
