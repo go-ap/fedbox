@@ -6,12 +6,12 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20221202111053-2dd31f3348e7
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/go-ap/activitypub v0.0.0-20221209114049-1ceafda50f9f
-	github.com/go-ap/auth v0.0.0-20221209114812-9798548ae655
-	github.com/go-ap/client v0.0.0-20221209114704-ee9adde8b2c2
+	github.com/go-ap/auth v0.0.0-20221211133636-b77913c8d4ca
+	github.com/go-ap/client v0.0.0-20221211133508-e3087682099e
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
 	github.com/go-ap/httpsig v0.0.0-20221203064646-3647b4d88fdf
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20221209114920-2605ed43f9c7
+	github.com/go-ap/processing v0.0.0-20221211133742-0e16f83231bf
 	github.com/go-ap/storage-badger v0.0.0-20221209115412-eb92be4abf9e
 	github.com/go-ap/storage-boltdb v0.0.0-20221209115213-4636e8c8388f
 	github.com/go-ap/storage-fs v0.0.0-20221211122113-cde8bad8fe33
