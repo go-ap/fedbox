@@ -149,14 +149,21 @@ func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 }
 
 var generateKeysCmd = &cli.Command{
-	Name:      "gen-keys",
-	Usage:     "Generate public/private key pairs for actors that are missing them",
+	Name:  "gen-keys",
+	Usage: "Generate public/private key pairs for actors that are missing them",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "key-type",
+			Usage: fmt.Sprintf("Type of keys to generate: %v", []string{fedbox.KeyTypeED25519, fedbox.KeyTypeRSA}),
+			Value: fedbox.KeyTypeED25519,
+		},
+	},
 	ArgsUsage: "IRI...",
 	Action:    generateKeys(&ctl),
 }
 
-func AddKeyToItem(metaSaver storage.MetadataTyper, it vocab.Item) error {
-	if err := vocab.OnActor(it, fedbox.AddKeyToPerson(metaSaver)); err != nil {
+func AddKeyToItem(metaSaver storage.MetadataTyper, it vocab.Item, typ string) error {
+	if err := vocab.OnActor(it, fedbox.AddKeyToPerson(metaSaver, typ)); err != nil {
 		return errors.Annotatef(err, "failed to process actor: %s", it.GetID())
 	}
 	if _, err := ctl.Storage.Save(it); err != nil {
@@ -167,6 +174,7 @@ func AddKeyToItem(metaSaver storage.MetadataTyper, it vocab.Item) error {
 
 func generateKeys(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		typ := c.String("key-type")
 		metaSaver, ok := ctl.Storage.(storage.MetadataTyper)
 		if !ok {
 			return errors.Newf("storage doesn't support saving key")
@@ -210,7 +218,7 @@ func generateKeys(ctl *Control) cli.ActionFunc {
 				if !vocab.ActorTypes.Contains(it.GetType()) {
 					continue
 				}
-				if err := AddKeyToItem(metaSaver, it); err != nil {
+				if err := AddKeyToItem(metaSaver, it, typ); err != nil {
 					Errf("Error: %s", err.Error())
 				}
 			}

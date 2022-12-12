@@ -105,8 +105,12 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 				return nil, err
 			}
 		}
+		keysType := KeyTypeED25519
+		if conf.MastodonCompatible {
+			keysType = KeyTypeRSA
+		}
 		if saver, ok := db.(st.MetadataTyper); ok {
-			if err := AddKeyToPerson(saver)(&app.self); err != nil {
+			if err := AddKeyToPerson(saver, keysType)(&app.self); err != nil {
 				app.errFn("unable to save the instance's self service public key: %s", err)
 			}
 		}

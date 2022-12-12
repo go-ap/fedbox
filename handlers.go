@@ -172,6 +172,16 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 	repo := fb.storage
+
+	keysType := "ED25519"
+	if fb.conf.MastodonCompatible {
+		keysType = "RSA"
+	}
+	var keyGenerator func(act *vocab.Actor) error
+	if metaSaver, ok := repo.(st.MetadataTyper); ok {
+		fb.infFn("setting actor key generator %T", metaSaver)
+		keyGenerator = AddKeyToPerson(metaSaver, keysType)
+	}
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
 		var it vocab.Item
 		fb.infFn("received req %s: %s", r.Method, r.RequestURI)
@@ -210,9 +220,8 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize processor")
 		}
 		processor.SetActor(f.Authenticated)
-		if metaSaver, ok := repo.(st.MetadataTyper); ok {
-			fb.infFn("setting actor key generator %T", metaSaver)
-			processing.WithActorKeyGenerator(AddKeyToPerson(metaSaver))
+		if keyGenerator != nil {
+			processing.WithActorKeyGenerator(keyGenerator)
 		}
 
 		vocab.OnActivity(it, func(a *vocab.Activity) error {

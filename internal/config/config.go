@@ -27,21 +27,22 @@ type BackendConfig struct {
 }
 
 type Options struct {
-	Env          env.Type
-	LogLevel     lw.Level
-	LogOutput    string
-	TimeOut      time.Duration
-	Secure       bool
-	CertPath     string
-	KeyPath      string
-	Host         string
-	Listen       string
-	BaseURL      string
-	Storage      StorageType
-	StoragePath  string
-	StorageCache bool
-	RequestCache bool
-	Profile      bool
+	Env                env.Type
+	LogLevel           lw.Level
+	LogOutput          string
+	TimeOut            time.Duration
+	Secure             bool
+	CertPath           string
+	KeyPath            string
+	Host               string
+	Listen             string
+	BaseURL            string
+	Storage            StorageType
+	StoragePath        string
+	StorageCache       bool
+	RequestCache       bool
+	Profile            bool
+	MastodonCompatible bool
 }
 
 type StorageType string

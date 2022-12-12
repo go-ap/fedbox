@@ -52,12 +52,18 @@ var addActor = &cli.Command{
 			Name:  "type",
 			Usage: fmt.Sprintf("The type of activitypub actor to add"),
 		},
+		&cli.StringFlag{
+			Name:  "key-type",
+			Usage: fmt.Sprintf("Type of keys to generate: %v", []string{fedbox.KeyTypeED25519, fedbox.KeyTypeRSA}),
+			Value: fedbox.KeyTypeED25519,
+		},
 	},
 	Action: addActorAct(&ctl),
 }
 
 func addActorAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		keyType := c.String("keyType")
 		names := c.Args().Slice()
 		if len(names) == 0 {
 			name, err := loadFromStdin("Enter the actor's name")
@@ -99,7 +105,7 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 			}
 			fmt.Printf("Added %q [%s]: %s\n", typ, name, p.GetLink())
 			if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
-				if err := AddKeyToItem(metaSaver, p); err != nil {
+				if err := AddKeyToItem(metaSaver, p, keyType); err != nil {
 					Errf("Error saving metadata for %s: %s", name, err)
 				}
 			}

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	s "github.com/go-ap/fedbox/storage"
@@ -24,6 +25,11 @@ var BootstrapCmd = &cli.Command{
 			Name:  "sql",
 			Usage: "path to the queries for initializing the database",
 			Value: "postgres",
+		},
+		&cli.StringFlag{
+			Name:  "key-type",
+			Usage: fmt.Sprintf("Type of keys to generate: %v", []string{fedbox.KeyTypeED25519, fedbox.KeyTypeRSA}),
+			Value: fedbox.KeyTypeED25519,
 		},
 	},
 	Action: bootstrapAct(&ctl),
@@ -50,6 +56,7 @@ func resetAct(c *Control) cli.ActionFunc {
 
 func bootstrapAct(c *Control) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
+		keyType := ctx.String("keyType")
 		if err := Bootstrap(c.Conf); err != nil {
 			Errf("Error adding service: %s\n", err)
 			return err
@@ -60,7 +67,7 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 			return err
 		}
 		if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
-			if err := AddKeyToItem(metaSaver, &service); err != nil {
+			if err := AddKeyToItem(metaSaver, &service, keyType); err != nil {
 				Errf("Error saving metadata for service: %s", err)
 				return err
 			}
@@ -70,9 +77,9 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 }
 
 type storageConf struct {
-	Storage config.StorageType
-	Path string
-	BaseURL string
+	Storage     config.StorageType
+	Path        string
+	BaseURL     string
 	CacheEnable bool
 }
 

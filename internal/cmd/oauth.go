@@ -10,6 +10,7 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox"
 	apub "github.com/go-ap/fedbox/activitypub"
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
@@ -190,7 +191,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 		return "", err
 	}
 	if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
-		if err := AddKeyToItem(metaSaver, p); err != nil {
+		if err := AddKeyToItem(metaSaver, p, fedbox.KeyTypeRSA); err != nil {
 			Errf("Error saving metadata for application %s: %s", name, err)
 		}
 	}
