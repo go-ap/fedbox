@@ -17,6 +17,6 @@
   "publicKey": {
     "id": "http://127.0.2.1:9999/actors/666#main-key",
     "owner": "http://127.0.2.1:9999/actors/666",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAyw0F0he2pXCvElvpJmotbEiLpB4PkcBsajUU+n/lfBk=\n-----END PUBLIC KEY-----"
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAPYL2Hq1CoUsL/ueckFZeDBbY583zkC8\nayqlts/efis7s0qyBc+zJm7pSnei3Oe7PaMQGBN1I/WuARtMF60B1F0CAwEAAQ==\n-----END PUBLIC KEY-----"
   }
 }

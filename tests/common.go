@@ -263,12 +263,13 @@ var (
 		PrivateKey: edKey,
 	}
 
+	rsaKey                = loadPrivateKeyFromDisk("mocks/keys/rsa256.prv")
 	defaultTestAccountS2S = testAccount{
 		Id:         fmt.Sprintf("http://%s/actors/%d", s2shost, 666),
 		Handle:     "lou",
 		Hash:       "666",
-		PublicKey:  publicKeyFrom(edKey),
-		PrivateKey: edKey,
+		PublicKey:  publicKeyFrom(rsaKey),
+		PrivateKey: rsaKey,
 	}
 
 	extraAccount = testAccount{
