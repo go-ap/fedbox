@@ -27,11 +27,17 @@ tasks:
       make -C images builder
       _push() {
         _storage=${1:-all}
-        make -C images STORAGE="${_storage}" ENV=dev push
-        make -C images STORAGE="${_storage}" ENV=qa push
+        _sha=$(git rev-parse --short HEAD)
+        _branch=$(git branch --points-at=${_sha} | tail -n1)
+        if [ "${_branch}" == "master" ]; then
+            _branch=$(printf "%s-%s" "${_branch}" "${_sha}")
+            make -C images STORAGE="${_storage}" ENV=dev VERSION="${_branch}" push
+        fi
+        make -C images STORAGE="${_storage}" ENV=qa VERSION="${_branch}" push
+
         _tag=$(git describe --long --tags || true)
         if [ -n "${_tag}" ]; then
-          make -C images STORAGE="${_storage}" ENV=prod VERSION="${_tag}" push
+            make -C images STORAGE="${_storage}" ENV=prod VERSION="${_tag}" push
         fi
       }
       _push
