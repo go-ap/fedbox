@@ -249,7 +249,7 @@ var (
 	outboxURL       = OutboxURL(&service)
 	baseURL         = service.Id
 
-	key = loadPrivateKeyFromDisk("mocks/keys/johndoe.prv")
+	edKey = loadPrivateKeyFromDisk("mocks/keys/ed25519.prv")
 
 	meta interface{} = nil
 
@@ -259,16 +259,16 @@ var (
 		Id:         fmt.Sprintf("http://%s/actors/%s", host, testActorHash),
 		Handle:     testActorHandle,
 		Hash:       testActorHash,
-		PublicKey:  publicKeyFrom(key),
-		PrivateKey: key,
+		PublicKey:  publicKeyFrom(edKey),
+		PrivateKey: edKey,
 	}
 
 	defaultTestAccountS2S = testAccount{
 		Id:         fmt.Sprintf("http://%s/actors/%d", s2shost, 666),
 		Handle:     "lou",
 		Hash:       "666",
-		PublicKey:  publicKeyFrom(key),
-		PrivateKey: key,
+		PublicKey:  publicKeyFrom(edKey),
+		PrivateKey: edKey,
 	}
 
 	extraAccount = testAccount{
