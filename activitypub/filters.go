@@ -524,14 +524,18 @@ func allRecipients(it vocab.Item) vocab.ItemCollection {
 		 return nil
 	})
 	vocab.OnIntransitiveActivity(it, func(act *vocab.IntransitiveActivity) error {
-		recipients.Append(act.Actor.GetLink())
+		if act.Actor != nil {
+			recipients.Append(act.Actor.GetLink())
+		}
 		if act.Target != nil {
 			recipients.Append(act.Target)
 		}
 		return nil
 	})
 	vocab.OnActivity(it, func(act *vocab.Activity) error {
-		recipients.Append(act.Object)
+		if act.Object != nil {
+			recipients.Append(act.Object)
+		}
 		return nil
 	})
 	return recipients
