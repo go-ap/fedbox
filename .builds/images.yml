@@ -24,14 +24,14 @@ tasks:
       set --
       cd fedbox || exit
 
-      make -C images builder
+      make -C images cert builder
       _push() {
         _storage=${1:-all}
         _sha=$(git rev-parse --short HEAD)
-        _branch=$(git branch --points-at=${_sha} | tail -n1)
+        _branch=$(git branch --points-at=${_sha} | tail -n1 | tr -d '* ')
         _version=$(printf "%s-%s" "${_branch}" "${_sha}")
         make -C images STORAGE="${_storage}" ENV=dev VERSION="${_version}" push
-        if [ "${_branch}" == "master" ]; then
+        if [ "${_branch}" = "master" ]; then
             make -C images STORAGE="${_storage}" ENV=qa VERSION="${_version}" push
         fi
 
@@ -42,6 +42,7 @@ tasks:
       }
       _push
       _push fs
-      _push badger
-      _push boltdb
-      _push sqlite
+      # I guess I don't need everything while we're in heavy development
+      #_push badger
+      #_push boltdb
+      #_push sqlite

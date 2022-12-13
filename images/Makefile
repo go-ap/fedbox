@@ -1,4 +1,4 @@
-ENV ?= prod
+ENV ?= dev
 FEDBOX_HOSTNAME ?= fedbox
 PORT ?= 4000
 STORAGE ?= all
