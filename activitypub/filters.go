@@ -511,6 +511,32 @@ func (f Filters) Tags() *Filters {
 	return f.Tag
 }
 
+func allRecipients(it vocab.Item) vocab.ItemCollection {
+	if vocab.IsNil(it) || vocab.IsIRI(it) {
+		return nil
+	}
+	recipients := make(vocab.ItemCollection, 0)
+	vocab.OnObject(it, func(ob *vocab.Object) error {
+		recipients.Append(ob.Recipients()...)
+		if ob.AttributedTo != nil {
+			recipients.Append(ob.AttributedTo)
+		}
+		 return nil
+	})
+	vocab.OnIntransitiveActivity(it, func(act *vocab.IntransitiveActivity) error {
+		recipients.Append(act.Actor.GetLink())
+		if act.Target != nil {
+			recipients.Append(act.Target)
+		}
+		return nil
+	})
+	vocab.OnActivity(it, func(act *vocab.Activity) error {
+		recipients.Append(act.Object)
+		return nil
+	})
+	return recipients
+}
+
 func filterObjectNoNameNoType(ob *vocab.Object, ff *Filters) bool {
 	if ff == nil {
 		return true
@@ -519,9 +545,6 @@ func filterObjectNoNameNoType(ob *vocab.Object, ff *Filters) bool {
 		if !filterItem(iris, ob) {
 			return false
 		}
-	}
-	if !filterAudience(ff.Audience(), ob.Recipients(), vocab.ItemCollection{ob.AttributedTo}) {
-		return false
 	}
 	if !filterNaturalLanguageValues(ff.Content(), ob.Content, ob.Summary) {
 		return false
@@ -1026,6 +1049,9 @@ func (f *Filters) ItemsMatch(col ...vocab.Item) bool {
 				return nil
 			})
 		} else if it.IsObject() {
+			if !filterAudience(f.Audience(), allRecipients(it)) {
+				return false
+			}
 			typ := it.GetType()
 			if vocab.IntransitiveActivityTypes.Contains(typ) {
 				loopValid, _ = filterIntransitiveActivity(it, f)
