@@ -259,8 +259,8 @@ var (
 		Id:         fmt.Sprintf("http://%s/actors/%s", host, testActorHash),
 		Handle:     testActorHandle,
 		Hash:       testActorHash,
-		PublicKey:  publicKeyFrom(edKey),
-		PrivateKey: edKey,
+		PublicKey:  publicKeyFrom(rsaKey),
+		PrivateKey: rsaKey,
 	}
 
 	rsaKey                = loadPrivateKeyFromDisk("mocks/keys/rsa256.prv")
@@ -268,8 +268,8 @@ var (
 		Id:         fmt.Sprintf("http://%s/actors/%d", s2shost, 666),
 		Handle:     "lou",
 		Hash:       "666",
-		PublicKey:  publicKeyFrom(rsaKey),
-		PrivateKey: rsaKey,
+		PublicKey:  publicKeyFrom(edKey),
+		PrivateKey: edKey,
 	}
 
 	extraAccount = testAccount{

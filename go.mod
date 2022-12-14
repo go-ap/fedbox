@@ -11,7 +11,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
 	github.com/go-ap/httpsig v0.0.0-20221203064646-3647b4d88fdf
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20221213105630-af30352db7d8
+	github.com/go-ap/processing v0.0.0-20221214021151-7c87dc488d27
 	github.com/go-ap/storage-badger v0.0.0-20221209115412-eb92be4abf9e
 	github.com/go-ap/storage-boltdb v0.0.0-20221209115213-4636e8c8388f
 	github.com/go-ap/storage-fs v0.0.0-20221213012421-daf05f2d8065
