@@ -33,16 +33,17 @@ func init() {
 type LogFn func(string, ...interface{})
 
 type FedBOX struct {
-	R       chi.Router
-	conf    config.Options
-	self    vocab.Service
-	client  client.C
-	storage FullStorage
-	ver     string
-	caches  cache.CanStore
-	OAuth   authService
-	stopFn  func()
-	logger  lw.Logger
+	R            chi.Router
+	conf         config.Options
+	self         vocab.Service
+	client       client.C
+	storage      FullStorage
+	ver          string
+	caches       cache.CanStore
+	OAuth        authService
+	keyGenerator func(act *vocab.Actor) error
+	stopFn       func()
+	logger       lw.Logger
 }
 
 var (
@@ -90,6 +91,16 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 		stopFn:  emptyStopFn,
 		logger:  l,
 		caches:  cache.New(conf.RequestCache),
+	}
+
+	if metaSaver, ok := db.(st.MetadataTyper); ok {
+		keysType := "ED25519"
+		if conf.MastodonCompatible {
+			keysType = "RSA"
+		}
+
+		l.Infof("Setting actor key generator %T[%s]", metaSaver, keysType)
+		app.keyGenerator = AddKeyToPerson(metaSaver, keysType)
 	}
 
 	errors.IncludeBacktrace = conf.LogLevel == lw.TraceLevel
