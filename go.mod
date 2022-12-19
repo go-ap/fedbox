@@ -6,16 +6,16 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20221202111053-2dd31f3348e7
 	git.sr.ht/~mariusor/wrapper v0.0.0-20211204195804-3033a1099e0f
 	github.com/go-ap/activitypub v0.0.0-20221209114049-1ceafda50f9f
-	github.com/go-ap/auth v0.0.0-20221214112901-57be6c5e5ef4
+	github.com/go-ap/auth v0.0.0-20221219094232-af2df30bf349
 	github.com/go-ap/client v0.0.0-20221211133508-e3087682099e
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
 	github.com/go-ap/httpsig v0.0.0-20221203064646-3647b4d88fdf
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20221214021151-7c87dc488d27
-	github.com/go-ap/storage-badger v0.0.0-20221209115412-eb92be4abf9e
-	github.com/go-ap/storage-boltdb v0.0.0-20221209115213-4636e8c8388f
+	github.com/go-ap/storage-badger v0.0.0-20221219095120-572631376b20
+	github.com/go-ap/storage-boltdb v0.0.0-20221219095220-ae1d40758732
 	github.com/go-ap/storage-fs v0.0.0-20221213012421-daf05f2d8065
-	github.com/go-ap/storage-sqlite v0.0.0-20221209115114-91204adeca08
+	github.com/go-ap/storage-sqlite v0.0.0-20221219094952-4a241232e483
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/joho/godotenv v1.4.0
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d
@@ -32,7 +32,7 @@ require (
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
-	github.com/dgraph-io/badger/v3 v3.2103.4 // indirect
+	github.com/dgraph-io/badger/v3 v3.2103.5 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
@@ -68,7 +68,7 @@ require (
 	lukechampine.com/uint128 v1.2.0 // indirect
 	modernc.org/cc/v3 v3.40.0 // indirect
 	modernc.org/ccgo/v3 v3.16.13 // indirect
-	modernc.org/libc v1.21.5 // indirect
+	modernc.org/libc v1.22.2 // indirect
 	modernc.org/mathutil v1.5.0 // indirect
 	modernc.org/memory v1.5.0 // indirect
 	modernc.org/opt v0.1.3 // indirect
