@@ -20,18 +20,10 @@ $ $EDITOR .env
 
 ## Bootstrapping
 
+This step ensures that the storage method we're using gets initialized.
+
 ```sh
 $ ./bin/fedboxctl bootstrap
-
-# add an admin account
-$ ./bin/fedboxctl ap actor add admin
-admin's pw:
-pw again:
-
-# add an OAuth2 client for interacting with the server
-$ ./bin/fedboxctl oauth client add --redirectUri http://example.com/callback
-client's pw:
-pw again:
 ```
 
 ## Containers
