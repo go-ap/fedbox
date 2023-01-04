@@ -202,24 +202,34 @@ func (f *FedBOX) Run(c context.Context) error {
 
 	sockType := ""
 	setters := []w.SetFn{w.Handler(f.R)}
-	dir, _ := filepath.Split(f.conf.Listen)
-	if _, err := os.Stat(dir); err == nil {
-		sockType = "socket"
-		setters = append(setters, w.Socket(f.conf.Listen))
-		defer func() { os.RemoveAll(f.conf.Listen) }()
-	} else {
-		if f.conf.Secure && len(f.conf.CertPath)+len(f.conf.KeyPath) > 0 {
-			sockType = "HTTPS"
-			setters = append(setters, w.HTTPS(f.conf.Listen, f.conf.CertPath, f.conf.KeyPath))
+
+	if f.conf.Secure {
+		if len(f.conf.CertPath)+len(f.conf.KeyPath) > 0 {
+			setters = append(setters, w.WithTLSCert(f.conf.CertPath, f.conf.KeyPath))
 		} else {
-			sockType = "HTTP"
-			setters = append(setters, w.HTTP(f.conf.Listen))
+			f.conf.Secure = false
+		}
+	}
+
+	if f.conf.Listen == "systemd" {
+		sockType = "Systemd"
+		setters = append(setters, w.OnSystemd())
+	} else {
+		dir := filepath.Dir(f.conf.Listen)
+		if _, err := os.Stat(dir); err == nil {
+			sockType = "socket"
+			setters = append(setters, w.OnSocket(f.conf.Listen))
+			defer func() { os.RemoveAll(f.conf.Listen) }()
+		} else {
+			sockType = "TCP"
+			setters = append(setters, w.OnTCP(f.conf.Listen))
 		}
 	}
 	logCtx := lw.Ctx{
 		"URL":      f.conf.BaseURL,
 		"version":  f.ver,
 		"listenOn": f.conf.Listen,
+		"TLS":      f.conf.Secure,
 	}
 	if sockType != "" {
 		logCtx["listenOn"] = f.conf.Listen + "[" + sockType + "]"
