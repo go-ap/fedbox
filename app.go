@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"syscall"
-	"time"
 
 	"git.sr.ht/~mariusor/lw"
 	w "git.sr.ht/~mariusor/wrapper"
@@ -17,7 +16,6 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/env"
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
@@ -70,10 +68,6 @@ var AnonymousAcct = account{
 }
 
 var InternalIRI = vocab.IRI("https://fedbox/")
-
-func Config(e string, to time.Duration) (config.Options, error) {
-	return config.LoadFromEnv(env.Type(e), to)
-}
 
 // New instantiates a new FedBOX instance
 func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX, error) {
@@ -157,10 +151,6 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 
 	app.R.Group(app.Routes())
 
-	if conf.Env.IsDev() || conf.Env.IsTest() {
-		app.R.Mount("/debug", middleware.Profiler())
-	}
-
 	return &app, err
 }
 
@@ -214,16 +204,16 @@ func (f *FedBOX) Run(c context.Context) error {
 	if f.conf.Listen == "systemd" {
 		sockType = "Systemd"
 		setters = append(setters, w.OnSystemd())
-	} else {
+	} else if filepath.IsAbs(f.conf.Listen) {
 		dir := filepath.Dir(f.conf.Listen)
 		if _, err := os.Stat(dir); err == nil {
 			sockType = "socket"
 			setters = append(setters, w.OnSocket(f.conf.Listen))
 			defer func() { os.RemoveAll(f.conf.Listen) }()
-		} else {
-			sockType = "TCP"
-			setters = append(setters, w.OnTCP(f.conf.Listen))
 		}
+	} else {
+		sockType = "TCP"
+		setters = append(setters, w.OnTCP(f.conf.Listen))
 	}
 	logCtx := lw.Ctx{
 		"URL":      f.conf.BaseURL,

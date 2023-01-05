@@ -42,7 +42,7 @@ func (f FedBOX) Routes() func(chi.Router) {
 
 		r.Group(f.OAuthRoutes())
 
-		if f.conf.Env.IsDev() && !f.conf.Secure {
+		if f.conf.Env.IsDev() && f.conf.Env.IsTest() {
 			r.Mount("/debug", middleware.Profiler())
 		}
 
