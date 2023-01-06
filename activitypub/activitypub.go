@@ -47,14 +47,14 @@ func DefaultServiceIRI(baseURL string) vocab.IRI {
 	return vocab.IRI(u.String())
 }
 
-func LoadSelfActor(st processing.ReadStore, selfIRI vocab.IRI) (vocab.Actor, error) {
-	var self vocab.Actor
-	selfCol, err := st.Load(selfIRI)
+func LoadActor(st processing.ReadStore, iri vocab.IRI) (vocab.Actor, error) {
+	var act vocab.Actor
+	selfCol, err := st.Load(iri)
 	err = vocab.OnActor(selfCol, func(actor *vocab.Actor) error {
-		self = *actor
+		act = *actor
 		return nil
 	})
-	return self, err
+	return act, err
 }
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.

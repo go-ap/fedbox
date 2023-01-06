@@ -186,7 +186,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 		},
 		URL: appURL,
 	}
-	app, err := c.AddActor(p, pw)
+	app, err := c.AddActor(p, pw, &self)
 	if err != nil {
 		return "", err
 	}

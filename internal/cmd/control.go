@@ -25,7 +25,7 @@ type Control struct {
 	Conf    config.Options
 	Self    vocab.Actor
 	Storage fedbox.FullStorage
-	Saver   processing.C2SProcessor
+	Saver   processing.P
 }
 
 func New(db fedbox.FullStorage, conf config.Options, l lw.Logger) *Control {
@@ -42,15 +42,12 @@ func New(db fedbox.FullStorage, conf config.Options, l lw.Logger) *Control {
 		processing.WithLocalIRIChecker(st.IsLocalIRI(db)),
 	)
 
-	self, _ := ap.LoadSelfActor(db, ap.DefaultServiceIRI(conf.BaseURL))
-
-	p.SetActor(&self)
-
+	self, _ := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
 	return &Control{
 		Conf:    conf,
 		Self:    self,
 		Storage: db,
-		Saver:   p,
+		Saver:   *p,
 	}
 }
 

@@ -57,6 +57,10 @@ var addActor = &cli.Command{
 			Usage: fmt.Sprintf("Type of keys to generate: %v", []string{fedbox.KeyTypeED25519, fedbox.KeyTypeRSA}),
 			Value: fedbox.KeyTypeED25519,
 		},
+		&cli.StringFlag{
+			Name:  "attributedTo",
+			Usage: fmt.Sprintf("The IRI of the Actor we should use as author"),
+		},
 	},
 	Action: addActorAct(&ctl),
 }
@@ -73,6 +77,15 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 			names = append(names, string(name))
 		}
 
+		authIRI := vocab.IRI(c.String("attributedTo"))
+		if len(authIRI) == 0 {
+			authIRI = vocab.IRI(ctl.Conf.BaseURL)
+		}
+		author, err := ap.LoadActor(ctl.Storage, authIRI)
+		if err != nil {
+			return err
+		}
+
 		var actors = make(vocab.ItemCollection, 0)
 		for _, name := range names {
 			pw, err := loadPwFromStdin(true, "%s's", name)
@@ -83,13 +96,13 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 			if !vocab.ActorTypes.Contains(typ) {
 				typ = vocab.PersonType
 			}
-			self := ap.Self(vocab.IRI(ctl.Conf.BaseURL))
+
 			now := time.Now().UTC()
 			p := &vocab.Person{
 				Type: typ,
 				// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
-				AttributedTo: self.GetLink(),
-				Generator:    self.GetLink(),
+				AttributedTo: author.GetLink(),
+				Generator:    author.GetLink(),
 				Published:    now,
 				Summary: vocab.NaturalLanguageValues{
 					{vocab.NilLangRef, vocab.Content("Generated actor")},
@@ -99,7 +112,7 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 					{vocab.NilLangRef, vocab.Content(name)},
 				},
 			}
-			if p, err = ctl.AddActor(p, pw); err != nil {
+			if p, err = ctl.AddActor(p, pw, &author); err != nil {
 				//Errf("Error adding %s: %s\n", name, err)
 				return err
 			}
@@ -115,7 +128,7 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func wrapObjectInCreate(actor vocab.Item, p vocab.Item) (vocab.Activity, error) {
+func wrapObjectInCreate(p vocab.Item, author vocab.Item) (vocab.Activity, error) {
 	act := vocab.Activity{
 		Type:    vocab.CreateType,
 		To:      vocab.ItemCollection{vocab.PublicNS},
@@ -123,35 +136,42 @@ func wrapObjectInCreate(actor vocab.Item, p vocab.Item) (vocab.Activity, error) 
 		Object:  p,
 	}
 	if act.AttributedTo == nil {
-		act.AttributedTo = actor.GetLink()
+		act.AttributedTo = author.GetLink()
 	}
 	if act.Actor == nil {
-		act.Actor = actor
+		act.Actor = author
 	}
-	if !act.CC.Contains(actor.GetLink()) {
-		act.CC.Append(actor.GetLink())
+	if !act.CC.Contains(author.GetLink()) {
+		act.CC.Append(author.GetLink())
 	}
 	return act, nil
 }
 
-func (c *Control) AddObject(p *vocab.Object) (*vocab.Object, error) {
+func (c *Control) AddObject(p *vocab.Object, author *vocab.Actor) (*vocab.Object, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	self, err := ap.LoadSelfActor(c.Storage, ap.DefaultServiceIRI(c.Conf.BaseURL))
-	if err != nil {
-		return nil, errors.NewNotFound(err, "unable to load current's instance Application actor")
+	if author == nil {
+		self, err := ap.LoadActor(c.Storage, ap.DefaultServiceIRI(c.Conf.BaseURL))
+		if err != nil {
+			return nil, errors.NewNotFound(err, "unable to load current's instance Application actor")
+		}
+		if self.ID == "" {
+			return nil, errors.NotFoundf("unable to load current's instance Application actor")
+		}
+		author = &self
 	}
-	if self.ID == "" {
-		return nil, errors.NotFoundf("unable to load current's instance Application actor")
+	if author.GetID() == "" {
+		return nil, errors.NotFoundf("unable to load current's instance Application actor: %s", c.Conf.BaseURL)
 	}
 
-	outbox := vocab.Outbox.Of(self).GetLink()
+	c.Saver.SetActor(author)
+	outbox := vocab.Outbox.Of(author).GetLink()
 	if vocab.IsNil(outbox) {
-		return nil, errors.Newf("unable to find Actor's outbox: %s", self)
+		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
 	}
 
-	create, err := wrapObjectInCreate(self, p)
+	create, err := wrapObjectInCreate(p, author)
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to wrap Object in Create activity")
 	}
@@ -161,21 +181,33 @@ func (c *Control) AddObject(p *vocab.Object) (*vocab.Object, error) {
 	return p, nil
 }
 
-func (c *Control) AddActor(p *vocab.Person, pw []byte) (*vocab.Person, error) {
+func (c *Control) AddActor(p *vocab.Person, pw []byte, author *vocab.Actor) (*vocab.Person, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	if c.Self.ID == "" {
+	if author == nil {
+		self, err := ap.LoadActor(c.Storage, ap.DefaultServiceIRI(c.Conf.BaseURL))
+		if err != nil {
+			return nil, errors.NewNotFound(err, "unable to load current's instance Application actor")
+		}
+		if self.ID == "" {
+			return nil, errors.NotFoundf("unable to load current's instance Application actor")
+		}
+		author = &self
+	}
+	if author.GetID() == "" {
 		return nil, errors.NotFoundf("unable to load current's instance Application actor: %s", c.Conf.BaseURL)
 	}
 
-	create, err := wrapObjectInCreate(c.Self, p)
+	create, err := wrapObjectInCreate(p, author)
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to wrap Actor in Create activity")
 	}
-	outbox := vocab.Outbox.Of(c.Self)
+
+	c.Saver.SetActor(author)
+	outbox := vocab.Outbox.Of(author)
 	if vocab.IsNil(outbox) {
-		return nil, errors.Newf("unable to find Actor's outbox: %s", c.Self)
+		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
 	}
 	if _, err := c.Saver.ProcessClientActivity(create, outbox.GetLink()); err != nil {
 		return nil, err
@@ -424,6 +456,10 @@ var addObjectCmd = &cli.Command{
 			Name:  "name",
 			Usage: fmt.Sprintf("The name of the activitypub object(s) to create"),
 		},
+		&cli.StringFlag{
+			Name:  "attributedTo",
+			Usage: fmt.Sprintf("The IRI of the Actor we should use as author"),
+		},
 	},
 	Action: addObjectAct(&ctl),
 }
@@ -446,14 +482,22 @@ func addObjectAct(ctl *Control) cli.ActionFunc {
 			}
 		}
 
+		authIRI := vocab.IRI(c.String("attributedTo"))
+		if len(authIRI) == 0 {
+			authIRI = vocab.IRI(ctl.Conf.BaseURL)
+		}
+		author, err := ap.LoadActor(ctl.Storage, authIRI)
+		if err != nil {
+			return err
+		}
+
 		now := time.Now().UTC()
 		for _, nameF := range f.Names() {
 			name := nameF.Str
-			self := ap.Self(vocab.IRI(ctl.Conf.BaseURL))
 			p := &vocab.Object{
 				Type: typ,
 				// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
-				AttributedTo: self.GetLink(),
+				AttributedTo: author.GetLink(),
 				Published:    now,
 				Updated:      now,
 				Name: vocab.NaturalLanguageValues{
@@ -462,7 +506,7 @@ func addObjectAct(ctl *Control) cli.ActionFunc {
 			}
 
 			var err error
-			if p, err = ctl.AddObject(p); err != nil {
+			if p, err = ctl.AddObject(p, &author); err != nil {
 				return errors.Annotatef(err, "Unable to save object")
 			}
 			fmt.Printf("Added %s [%s]: %s\n", typ, name, p.GetLink())

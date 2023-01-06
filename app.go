@@ -100,7 +100,7 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 	errors.IncludeBacktrace = conf.LogLevel == lw.TraceLevel
 
 	selfIRI := ap.DefaultServiceIRI(conf.BaseURL)
-	app.self, _ = ap.LoadSelfActor(db, selfIRI)
+	app.self, _ = ap.LoadActor(db, selfIRI)
 	if app.self.ID != selfIRI {
 		app.infFn("trying to bootstrap the instance's self service")
 		if saver, ok := db.(st.CanBootstrap); ok {
