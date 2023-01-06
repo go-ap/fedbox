@@ -13,7 +13,7 @@ func types(c *cli.Context) ap.CompStrs {
 	if c == nil {
 		return nil
 	}
-	typ := c.StringSlice("type")
+	typ := c.String("type")
 	types := make(ap.CompStrs, 0)
 	for _, t := range typ {
 		tt := vocab.ActivityVocabularyType(t)

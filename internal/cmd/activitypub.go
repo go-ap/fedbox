@@ -155,7 +155,7 @@ func (c *Control) AddObject(p *vocab.Object) (*vocab.Object, error) {
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to wrap Object in Create activity")
 	}
-	if _, err := c.Saver.ProcessClientActivity(create, outbox); err != nil {
+	if _, err = c.Saver.ProcessClientActivity(create, outbox); err != nil {
 		return nil, err
 	}
 	return p, nil
@@ -417,12 +417,18 @@ var addObjectCmd = &cli.Command{
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:        "type",
-			Usage:       fmt.Sprintf("The type of activitypub object to create"),
+			Usage:       fmt.Sprintf("The type of activitypub object(s) to create"),
 			DefaultText: fmt.Sprintf("Valid values: %v", ValidGenericTypes),
+		},
+		&cli.StringSliceFlag{
+			Name:  "name",
+			Usage: fmt.Sprintf("The name of the activitypub object(s) to create"),
 		},
 	},
 	Action: addObjectAct(&ctl),
 }
+
+var validObjects = append(vocab.ObjectTypes, vocab.ObjectType, "")
 
 func addObjectAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
@@ -431,15 +437,19 @@ func addObjectAct(ctl *Control) cli.ActionFunc {
 		if len(f.Type) > 0 {
 			typ = vocab.ActivityVocabularyType(f.Type[0].Str)
 		}
+		if !validObjects.Contains(typ) {
+			return errors.Errorf("This command only supports only object types %v", vocab.ObjectTypes)
+		}
 		if len(f.Name) == 0 {
 			if name, err := loadFromStdin("Enter the %s name", typ); err == nil {
 				f.Name = append(f.Name, ap.StringEquals(string(name)))
 			}
 		}
-		if append(vocab.ObjectTypes, vocab.ObjectType, "").Contains(typ) {
-			name := f.Name[0].Str
+
+		now := time.Now().UTC()
+		for _, nameF := range f.Names() {
+			name := nameF.Str
 			self := ap.Self(vocab.IRI(ctl.Conf.BaseURL))
-			now := time.Now().UTC()
 			p := &vocab.Object{
 				Type: typ,
 				// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
@@ -450,14 +460,15 @@ func addObjectAct(ctl *Control) cli.ActionFunc {
 					{vocab.NilLangRef, vocab.Content(name)},
 				},
 			}
+
 			var err error
 			if p, err = ctl.AddObject(p); err != nil {
 				return errors.Annotatef(err, "Unable to save object")
 			}
 			fmt.Printf("Added %s [%s]: %s\n", typ, name, p.GetLink())
-			return nil
 		}
-		return errors.Errorf("This command only supports only object types %v", vocab.ObjectTypes)
+
+		return nil
 	}
 }
 
