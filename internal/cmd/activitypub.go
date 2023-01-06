@@ -61,6 +61,10 @@ var addActor = &cli.Command{
 			Name:  "attributedTo",
 			Usage: fmt.Sprintf("The IRI of the Actor we should use as author"),
 		},
+		&cli.StringSliceFlag{
+			Name:  "tag",
+			Usage: fmt.Sprintf("The tag(s) to attach to the actor"),
+		},
 	},
 	Action: addActorAct(&ctl),
 }
@@ -85,6 +89,28 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 		if err != nil {
 			return err
 		}
+
+		tags := make(vocab.ItemCollection, 0)
+
+		objectsCollection := ap.ObjectsType.IRI(vocab.IRI(ctl.Conf.BaseURL))
+		allObjects, _ := ctl.Storage.Load(objectsCollection)
+		vocab.OnCollectionIntf(allObjects, func(col vocab.CollectionInterface) error {
+			for _, it := range col.Collection() {
+				vocab.OnObject(it, func(object *vocab.Object) error {
+					for _, tag := range c.StringSlice("tag") {
+						if object.Name.First().Value.String() != tag {
+							continue
+						}
+						if object.AttributedTo.GetLink() != authIRI {
+							continue
+						}
+						tags.Append(object)
+					}
+					return nil
+				})
+			}
+			return nil
+		})
 
 		var actors = make(vocab.ItemCollection, 0)
 		for _, name := range names {
@@ -111,6 +137,9 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 				PreferredUsername: vocab.NaturalLanguageValues{
 					{vocab.NilLangRef, vocab.Content(name)},
 				},
+			}
+			if len(tags) > 0 {
+				p.Tag = tags
 			}
 			if p, err = ctl.AddActor(p, pw, &author); err != nil {
 				//Errf("Error adding %s: %s\n", name, err)
@@ -459,6 +488,10 @@ var addObjectCmd = &cli.Command{
 		&cli.StringFlag{
 			Name:  "attributedTo",
 			Usage: fmt.Sprintf("The IRI of the Actor we should use as author"),
+		},
+		&cli.StringSliceFlag{
+			Name:  "tag",
+			Usage: fmt.Sprintf("The tag(s) to attach to the object"),
 		},
 	},
 	Action: addObjectAct(&ctl),
