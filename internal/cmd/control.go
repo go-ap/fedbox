@@ -41,7 +41,11 @@ func New(db fedbox.FullStorage, conf config.Options, l lw.Logger) *Control {
 		)),
 		processing.WithLocalIRIChecker(st.IsLocalIRI(db)),
 	)
+
 	self, _ := ap.LoadSelfActor(db, ap.DefaultServiceIRI(conf.BaseURL))
+
+	p.SetActor(&self)
+
 	return &Control{
 		Conf:    conf,
 		Self:    self,
