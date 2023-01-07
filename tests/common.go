@@ -786,10 +786,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 	}
 }
 
-var (
-	Verbose bool
-	Silent  bool
-)
+var Verbose bool
 
 func loadAfterPost(test testPair, req *http.Request) bool {
 	return test.res.val.id != "" && test.res.val.id != req.URL.String()
@@ -798,6 +795,9 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 func runTestSuite(t *testing.T, pairs testPairs) {
 	for _, suite := range pairs {
 		for _, options := range suite.configs {
+			if Verbose {
+				options.LogLevel = lw.TraceLevel
+			}
 			go SetupAPP(options).Run(context.TODO())
 		}
 		name := suite.name
