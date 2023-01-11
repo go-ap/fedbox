@@ -6,6 +6,9 @@ import (
 	"bytes"
 	"context"
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/rsa"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -26,8 +29,8 @@ import (
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/httpsig"
 	"github.com/go-ap/jsonld"
+	"github.com/go-fed/httpsig"
 )
 
 // UserAgent value that the client uses when performing requests
@@ -665,9 +668,46 @@ func addOAuth2Auth(r *http.Request, a *testAccount) error {
 }
 
 func addHTTPSigAuth(req *http.Request, acc *testAccount) error {
-	signHdrs := []string{"(request-target)", "host", "date"}
+	signHdrs := []string{httpsig.RequestTarget, "Host", "Date"}
+	bodyBuf := bytes.Buffer{}
+
+	if req.Method == http.MethodPost {
+		signHdrs = append(signHdrs, "Digest")
+
+		if req.Body != nil {
+			if _, err := io.Copy(&bodyBuf, req.Body); err == nil {
+				req.Body = io.NopCloser(&bodyBuf)
+			}
+		}
+	}
+
 	keyId := fmt.Sprintf("%s#main-key", acc.Id)
-	return httpsig.NewSigner(keyId, acc.PrivateKey, keyType(acc.PrivateKey), signHdrs).Sign(req)
+	signatureExpiration := int64(time.Hour.Seconds())
+
+	algos := make([]httpsig.Algorithm, 0)
+	switch acc.PrivateKey.(type) {
+	case *rsa.PrivateKey:
+		algos = append(algos, httpsig.RSA_SHA256, httpsig.RSA_SHA512)
+	case *ecdsa.PrivateKey:
+		algos = append(algos, httpsig.ECDSA_SHA512, httpsig.ECDSA_SHA256)
+	case ed25519.PrivateKey:
+		algos = append(algos, httpsig.ED25519)
+	}
+	var err error
+	for _, alg := range algos {
+		signer, _, err1 := httpsig.NewSigner([]httpsig.Algorithm{alg}, httpsig.DigestSha256, signHdrs, httpsig.Signature, signatureExpiration)
+		if err1 == nil {
+			err2 := signer.SignRequest(acc.PrivateKey, keyId, req, bodyBuf.Bytes())
+			if err2 == nil {
+				return nil
+			} else {
+				err = err2
+			}
+		} else {
+			err = err1
+		}
+	}
+	return err
 }
 
 func signRequest(req *http.Request, acc *testAccount) error {
@@ -678,6 +718,14 @@ func signRequest(req *http.Request, acc *testAccount) error {
 		return addHTTPSigAuth(req, acc)
 	}
 	return addOAuth2Auth(req, acc)
+}
+
+func hostFromUrl(uu string) string {
+	u, err := url.ParseRequestURI(uu)
+	if err != nil {
+		return uu
+	}
+	return u.Host
 }
 
 func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
@@ -720,6 +768,9 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 			var err error
 			if test.req.urlFn != nil {
 				test.req.url = test.req.urlFn()
+			}
+			if test.req.headers.Get("Host") == "" {
+				test.req.headers.Set("Host", hostFromUrl(test.req.url))
 			}
 			isClientRequest := path.Base(test.req.url) == string(vocab.Outbox)
 			ctx := context.Background()

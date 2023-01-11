@@ -23,7 +23,6 @@ import (
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	ls "github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/httpsig"
 	"github.com/go-ap/jsonld"
 	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
@@ -95,17 +94,6 @@ func publicKeyFrom(key crypto.PrivateKey) crypto.PublicKey {
 		return k.PublicKey
 	case ed25519.PrivateKey:
 		return k.Public()
-	}
-	panic(fmt.Sprintf("Unknown private key type[%T] %v", key, key))
-	return nil
-}
-
-func keyType(key crypto.PrivateKey) httpsig.Algorithm {
-	switch key.(type) {
-	case *rsa.PrivateKey:
-		return httpsig.RSASHA256
-	case ed25519.PrivateKey:
-		return httpsig.Ed25519
 	}
 	panic(fmt.Sprintf("Unknown private key type[%T] %v", key, key))
 	return nil
