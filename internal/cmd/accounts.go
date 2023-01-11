@@ -181,15 +181,15 @@ func generateKeys(ctl *Control) cli.ActionFunc {
 		}
 
 		col := make(vocab.ItemCollection, 0)
-		for i := 0; i <= c.Args().Len(); i++ {
+		for i := 0; i < c.Args().Len(); i++ {
 			iri := c.Args().Get(i)
-			act, err := ctl.Storage.Load(vocab.IRI(iri))
+			actors, err := ctl.Storage.Load(vocab.IRI(iri))
 			if err != nil {
 				Errf(err.Error())
 				continue
 			}
-			vocab.OnActor(act, func(ob *vocab.Actor) error {
-				col = append(col, ob)
+			vocab.OnActor(actors, func(act *vocab.Actor) error {
+				col = append(col, act)
 				return nil
 			})
 		}
@@ -207,22 +207,20 @@ func generateKeys(ctl *Control) cli.ActionFunc {
 			if err != nil {
 				return err
 			}
-			vocab.OnObject(actors, func(ob *vocab.Object) error {
-				col = append(col, ob)
+			vocab.OnActor(actors, func(act *vocab.Actor) error {
+				col = append(col, act)
 				return nil
 			})
 		}
 
-		return vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
-			for _, it := range c.Collection() {
-				if !vocab.ActorTypes.Contains(it.GetType()) {
-					continue
-				}
-				if err := AddKeyToItem(metaSaver, it, typ); err != nil {
-					Errf("Error: %s", err.Error())
-				}
+		for _, it := range col {
+			if !vocab.ActorTypes.Contains(it.GetType()) {
+				continue
 			}
-			return nil
-		})
+			if err := AddKeyToItem(metaSaver, it, typ); err != nil {
+				Errf("Error: %s", err.Error())
+			}
+		}
+		return nil
 	}
 }
