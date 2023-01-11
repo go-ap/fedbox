@@ -8,7 +8,7 @@ $ cd fedbox
 ## Compiling
 
 ```sh
-$ make all
+$ make download all
 ```
 
 ## Editing the configuration
