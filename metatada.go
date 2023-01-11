@@ -83,7 +83,7 @@ func publicKeyFrom(prvBytes []byte) pem.Block {
 }
 
 func GenerateRSAKeyPair() (pem.Block, pem.Block) {
-	keyPrv, _ := rsa.GenerateKey(rand.Reader, 256)
+	keyPrv, _ := rsa.GenerateKey(rand.Reader, 2048)
 
 	keyPub := keyPrv.PublicKey
 	pubEnc, err := x509.MarshalPKIXPublicKey(&keyPub)
