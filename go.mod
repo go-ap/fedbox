@@ -6,11 +6,11 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20221202111053-2dd31f3348e7
 	git.sr.ht/~mariusor/wrapper v0.0.0-20230104101555-9bfc303f6588
 	github.com/go-ap/activitypub v0.0.0-20221209114049-1ceafda50f9f
-	github.com/go-ap/auth v0.0.0-20221219114823-c064ca10a042
+	github.com/go-ap/auth v0.0.0-20230119114423-60dd7a31567a
 	github.com/go-ap/client v0.0.0-20221211133508-e3087682099e
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20230111114301-8497900122f0
+	github.com/go-ap/processing v0.0.0-20230119111856-7e7c90a1e8f8
 	github.com/go-ap/storage-badger v0.0.0-20221219095120-572631376b20
 	github.com/go-ap/storage-boltdb v0.0.0-20221219095220-ae1d40758732
 	github.com/go-ap/storage-fs v0.0.0-20221219124530-29fb546e76bd
@@ -35,7 +35,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.5 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
-	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.0.0 // indirect
