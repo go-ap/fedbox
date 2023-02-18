@@ -8,9 +8,8 @@ MAKEFLAGS += --no-builtin-rules
 FEDBOX_HOSTNAME ?= fedbox.git
 STORAGE ?= all
 ENV ?= dev
-VERSION ?= HEAD
 
-LDFLAGS ?=
+LDFLAGS ?= -X main.version=$(VERSION)
 BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)'
 TEST_FLAGS ?= -count=1
 
@@ -29,21 +28,18 @@ TAGS := $(ENV) storage_$(STORAGE)
 
 export CGO_ENABLED=0
 
-ifneq ($(ENV), dev)
-	LDFLAGS += -s -w -extldflags "-static"
-	BUILDFLAGS += -trimpath
+ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
+	BRANCH=$(shell git rev-parse --abbrev-ref HEAD | tr '/' '-')
+	HASH=$(shell git rev-parse --short HEAD)
+	VERSION ?= $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
+endif
+ifeq ($(shell git describe --tags > /dev/null 2>&1 ; echo $$?), 0)
+	VERSION ?= $(shell git describe --tags | tr '/' '-')
 endif
 
-ifeq ($(VERSION), HEAD)
-	ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
-		BRANCH=$(shell git rev-parse --abbrev-ref HEAD | tr '/' '-')
-		HASH=$(shell git rev-parse --short HEAD)
-		VERSION = $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
-	endif
-	ifeq ($(shell git describe --tags > /dev/null 2>&1 ; echo $$?), 0)
-		VERSION = $(shell git describe --tags | tr '/' '-')
-	endif
-	LDFLAGS += -X main.version=$(VERSION)
+ifneq ($(ENV),dev)
+	LDFLAGS += -s -w -extldflags "-static"
+	BUILDFLAGS += -trimpath
 endif
 
 BUILD := $(GO) build $(BUILDFLAGS)
@@ -62,10 +58,10 @@ bin/fedbox: go.mod cmd/fedbox/main.go $(APPSOURCES)
 	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/fedbox/main.go
 
 systemd/fedbox.service: systemd/fedbox.service.in
-	$(M4) -DWORKING_DIR=$(STORAGE_PATH) $< >$@
+	$(M4) $(M4_FLAGS) -DWORKING_DIR=$(STORAGE_PATH) $< >$@
 
 systemd/fedbox.socket: systemd/fedbox.socket.in
-	$(M4) -DLISTEN_HOST=$(LISTEN_HOST) -DLISTEN_PORT=$(LISTEN_PORT) $< >$@
+	$(M4) $(M4_FLAGS) -DLISTEN_HOST=$(LISTEN_HOST) -DLISTEN_PORT=$(LISTEN_PORT) $< >$@
 
 fedboxctl: bin/fedboxctl
 bin/fedboxctl: go.mod cmd/control/main.go $(APPSOURCES)

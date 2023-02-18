@@ -1,3 +1,10 @@
+SHELL := bash
+.ONESHELL:
+.SHELLFLAGS := -eu -o pipefail -c
+.DELETE_ON_ERROR:
+MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --no-builtin-rules
+
 ENV ?= dev
 FEDBOX_HOSTNAME ?= fedbox
 PORT ?= 4000
@@ -11,7 +18,7 @@ RUN_CMD=podman run
 TAG_CMD=podman tag
 PUSH_CMD=podman push
 
-ifneq ($(STORAGE), all)
+ifneq ($(STORAGE),all)
 	TAG=$(ENV)-$(STORAGE)
 endif
 
@@ -34,11 +41,11 @@ build:
 push: build
 	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/go-ap/fedbox:$(TAG)
 	$(PUSH_CMD) quay.io/go-ap/fedbox:$(TAG)
-ifeq ($(TAG), dev)
+ifeq ($(TAG),dev)
 	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/go-ap/fedbox:latest || true
 	$(PUSH_CMD) quay.io/go-ap/fedbox:latest || true
 endif
-ifneq ($(VERSION), )
+ifneq ($(VERSION),)
 	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/go-ap/fedbox:$(VERSION)-$(TAG) || true
 	$(PUSH_CMD) quay.io/go-ap/fedbox:$(VERSION)-$(TAG) || true
 endif
