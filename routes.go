@@ -27,10 +27,22 @@ func (f FedBOX) CollectionRoutes(descend bool) func(chi.Router) {
 	}
 }
 
+func SetCORSHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (f FedBOX) Routes() func(chi.Router) {
 	return func(r chi.Router) {
 		r.Use(middleware.RealIP)
 		r.Use(CleanRequestPath)
+		r.Use(SetCORSHeaders)
 
 		r.Method(http.MethodGet, "/", HandleItem(f))
 		r.Method(http.MethodHead, "/", HandleItem(f))
