@@ -2,11 +2,14 @@
 
 package cmd
 
-import "github.com/go-ap/storage-boltdb"
+import (
+	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/storage-boltdb"
+)
 
 var (
-	bootstrapFn = func(conf storageConf) error {
-		return boltdb.Bootstrap(boltdb.Config{Path: conf.Path}, conf.BaseURL)
+	bootstrapFn = func(conf storageConf, service vocab.Item) error {
+		return boltdb.Bootstrap(boltdb.Config{Path: conf.Path}, service)
 	}
 	cleanFn = func(conf storageConf) error {
 		return boltdb.Clean(boltdb.Config{Path: conf.Path})

@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	vocab "github.com/go-ap/activitypub"
 	sqlite "github.com/go-ap/storage-sqlite"
 )
 
@@ -14,8 +15,8 @@ func conf(opt storageConf) sqlite.Config {
 }
 
 var (
-	bootstrapFn = func(opt storageConf) error {
-		return sqlite.Bootstrap(conf(opt), opt.BaseURL)
+	bootstrapFn = func(opt storageConf, service vocab.Item) error {
+		return sqlite.Bootstrap(conf(opt), service)
 	}
 	cleanFn = func(opt storageConf) error {
 		return sqlite.Clean(conf(opt))

@@ -16,11 +16,11 @@ var (
 	bootstrapFn = func(conf storageConf, service vocab.Item) error {
 		if conf.Storage == config.StorageBoltDB {
 			c := boltdb.Config{Path: conf.Path}
-			return boltdb.Bootstrap(c, conf.BaseURL)
+			return boltdb.Bootstrap(c, service)
 		}
 		if conf.Storage == config.StorageBadger {
 			c := badger.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}
-			return badger.Bootstrap(c, conf.BaseURL)
+			return badger.Bootstrap(c, service)
 		}
 		if conf.Storage == config.StorageFS {
 			c := fs.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}
@@ -28,7 +28,7 @@ var (
 		}
 		if conf.Storage == config.StorageSqlite {
 			c := sqlite.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}
-			return sqlite.Bootstrap(c, conf.BaseURL)
+			return sqlite.Bootstrap(c, service)
 
 		}
 		return errors.NotImplementedf("Invalid storage type %s", conf.Storage)
