@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/storage-badger"
@@ -12,7 +13,7 @@ import (
 )
 
 var (
-	bootstrapFn = func(conf storageConf) error {
+	bootstrapFn = func(conf storageConf, service vocab.Item) error {
 		if conf.Storage == config.StorageBoltDB {
 			c := boltdb.Config{Path: conf.Path}
 			return boltdb.Bootstrap(c, conf.BaseURL)
@@ -23,7 +24,7 @@ var (
 		}
 		if conf.Storage == config.StorageFS {
 			c := fs.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}
-			return fs.Bootstrap(c, conf.BaseURL)
+			return fs.Bootstrap(c, service)
 		}
 		if conf.Storage == config.StorageSqlite {
 			c := sqlite.Config{Path: conf.Path, CacheEnable: conf.CacheEnable}

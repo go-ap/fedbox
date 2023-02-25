@@ -205,7 +205,7 @@ func SetupAPP(options config.Options) *fedbox.FedBOX {
 	if err != nil {
 		panic(fmt.Sprintf("%+v", err))
 	}
-	if err = cmd.Bootstrap(options); err != nil {
+	if err = cmd.Bootstrap(options, ap.Self(ap.DefaultServiceIRI(options.BaseURL))); err != nil {
 		panic(fmt.Sprintf("%+v", err))
 	}
 	a, err := fedbox.New(l, "HEAD", options, db)

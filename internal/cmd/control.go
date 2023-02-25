@@ -23,7 +23,7 @@ import (
 
 type Control struct {
 	Conf    config.Options
-	Self    vocab.Actor
+	Service vocab.Actor
 	Storage fedbox.FullStorage
 	Saver   processing.P
 }
@@ -45,7 +45,7 @@ func New(db fedbox.FullStorage, conf config.Options, l lw.Logger) *Control {
 	self, _ := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
 	return &Control{
 		Conf:    conf,
-		Self:    self,
+		Service: self,
 		Storage: db,
 		Saver:   *p,
 	}

@@ -51,24 +51,24 @@ func resetAct(c *Control) cli.ActionFunc {
 		if err != nil {
 			return err
 		}
-		return Bootstrap(c.Conf)
+		return Bootstrap(c.Conf, c.Service)
 	}
 }
 
 func bootstrapAct(c *Control) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
 		keyType := ctx.String("keyType")
-		if err := Bootstrap(c.Conf); err != nil {
+		if err := Bootstrap(c.Conf, c.Service); err != nil {
 			Errf("Error adding service: %s\n", err)
 			return err
 		}
-		service := ap.Self(ap.DefaultServiceIRI(c.Conf.BaseURL))
-		if _, err := c.Storage.Save(&service); err != nil {
+		c.Service = ap.Self(ap.DefaultServiceIRI(c.Conf.BaseURL))
+		if _, err := c.Storage.Save(&c.Service); err != nil {
 			Errf("Error adding service: %s\n", err)
 			return err
 		}
 		if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
-			if err := AddKeyToItem(metaSaver, &service, keyType); err != nil {
+			if err := AddKeyToItem(metaSaver, &c.Service, keyType); err != nil {
 				Errf("Error saving metadata for service: %s", err)
 				return err
 			}
@@ -88,8 +88,8 @@ func confFn(opt config.Options) storageConf {
 	return storageConf{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache, BaseURL: opt.BaseURL, Storage: opt.Storage}
 }
 
-func Bootstrap(conf config.Options) error {
-	if err := bootstrapFn(confFn(conf)); err != nil {
+func Bootstrap(conf config.Options, service vocab.Item) error {
+	if err := bootstrapFn(confFn(conf), service); err != nil {
 		return errors.Annotatef(err, "Unable to create %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}
 	fmt.Fprintf(os.Stdout, "Successfuly created %s db for storage %s\n", conf.BaseStoragePath(), conf.Storage)
