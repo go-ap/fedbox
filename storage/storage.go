@@ -14,14 +14,9 @@ type PasswordChanger interface {
 	PasswordCheck(vocab.Item, []byte) error
 }
 
-type Metadata struct {
-	Pw         []byte `jsonld:"pw,omitempty"`
-	PrivateKey []byte `jsonld:"key,omitempty"`
-}
-
 type MetadataTyper interface {
-	LoadMetadata(vocab.IRI) (*Metadata, error)
-	SaveMetadata(Metadata, vocab.IRI) error
+	LoadMetadata(vocab.IRI) (*processing.Metadata, error)
+	SaveMetadata(processing.Metadata, vocab.IRI) error
 }
 
 type MimeTypeSaver interface {

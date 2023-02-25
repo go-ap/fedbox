@@ -20,6 +20,7 @@ import (
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	ls "github.com/go-ap/fedbox/storage"
@@ -181,7 +182,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 				panic(fmt.Sprintf("%+v", err))
 			}
 			r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
-			err = metaSaver.SaveMetadata(ls.Metadata{PrivateKey: pem.EncodeToMemory(&r)}, vocab.IRI(defaultTestAccountC2S.Id))
+			err = metaSaver.SaveMetadata(processing.Metadata{PrivateKey: pem.EncodeToMemory(&r)}, vocab.IRI(defaultTestAccountC2S.Id))
 			if err != nil {
 				l.Critf("%s\n", err)
 			}

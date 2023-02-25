@@ -9,6 +9,7 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/processing"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/jsonld"
 	"github.com/urfave/cli/v2"
@@ -60,7 +61,7 @@ func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 			items = append(items, col)
 		}
 
-		allMeta := make(map[vocab.IRI]storage.Metadata, len(items))
+		allMeta := make(map[vocab.IRI]processing.Metadata, len(items))
 		for _, it := range items {
 			if it.GetType() != vocab.PersonType {
 				continue
@@ -125,7 +126,7 @@ func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 				continue
 			}
 
-			metadata := make(map[vocab.IRI]storage.Metadata, 0)
+			metadata := make(map[vocab.IRI]processing.Metadata, 0)
 			err = jsonld.Unmarshal(buf, &metadata)
 			if err != nil {
 				Errf("Error unmarshaling JSON: %s", err)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
