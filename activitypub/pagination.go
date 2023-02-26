@@ -97,7 +97,7 @@ func paginateItems(col vocab.ItemCollection, f Paginator) (vocab.ItemCollection,
 }
 
 func copyFilter(f *filters.Filters, ff *filters.Filters) {
-	//f.baseURL = ff.baseURL
+	f.BaseURL = ff.BaseURL
 	f.Name = ff.Name
 	f.Cont = ff.Cont
 	f.Authenticated = ff.Authenticated

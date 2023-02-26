@@ -9,7 +9,7 @@ require (
 	github.com/go-ap/auth v0.0.0-20230218121359-b0cd747db8a8
 	github.com/go-ap/client v0.0.0-20230218115938-0fe3ee2edd31
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
-	github.com/go-ap/filters v0.0.0-20230225113357-513e37666519
+	github.com/go-ap/filters v0.0.0-20230226125721-3015894d636a
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20230225124541-9edf4a0a08ee
 	github.com/go-ap/storage-badger v0.0.0-20230225141931-2a0f09effa4c
