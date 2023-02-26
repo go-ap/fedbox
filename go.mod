@@ -9,6 +9,7 @@ require (
 	github.com/go-ap/auth v0.0.0-20230218121359-b0cd747db8a8
 	github.com/go-ap/client v0.0.0-20230218115938-0fe3ee2edd31
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
+	github.com/go-ap/filters v0.0.0-20230225113357-513e37666519
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20230225124541-9edf4a0a08ee
 	github.com/go-ap/storage-badger v0.0.0-20230225141931-2a0f09effa4c
@@ -36,7 +37,6 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/filters v0.0.0-20230225113357-513e37666519 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.0.0 // indirect

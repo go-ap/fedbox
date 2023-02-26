@@ -16,12 +16,13 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cache"
 	st "github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 )
 
 type pathTyper struct{}
 
-var validCollections = append(ap.FedBOXCollections, vocab.ActivityPubCollections...)
+var validCollections = append(filters.FedBOXCollections, vocab.ActivityPubCollections...)
 
 func (d pathTyper) Type(r *http.Request) vocab.CollectionPath {
 	col := vocab.Unknown
@@ -65,14 +66,14 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 		if typ == vocab.Unknown {
 			return nil, errors.NotFoundf("%s not found", r.URL.Path)
 		}
-		if !ap.ValidCollection(typ) {
+		if !filters.ValidCollection(typ) {
 			return nil, errors.NotFoundf("collection '%s' not found", typ)
 		}
 
-		f := ap.FromRequest(r, fb.Config().BaseURL)
-		ap.LoadCollectionFilters(f, fb.actorFromRequest(r))
+		f := filters.FromRequest(r, fb.Config().BaseURL)
+		filters.LoadCollectionFilters(f, fb.actorFromRequest(r))
 
-		cacheKey := ap.CacheKey(f)
+		cacheKey := filters.CacheKey(f)
 		it := fb.caches.Get(cacheKey)
 		fromCache := !vocab.IsNil(it)
 
@@ -159,11 +160,11 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 
 		var partOf vocab.IRI
 		if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
-			partOf = ap.ActivitiesType.IRI(base)
+			partOf = filters.ActivitiesType.IRI(base)
 		} else if vocab.ActorTypes.Contains(typ) || typ == vocab.ActorType {
-			partOf = ap.ActorsType.IRI(base)
+			partOf = filters.ActorsType.IRI(base)
 		} else {
-			partOf = ap.ObjectsType.IRI(base)
+			partOf = filters.ObjectsType.IRI(base)
 		}
 		return ap.GenerateID(it, partOf, by)
 	}
@@ -176,8 +177,8 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		var it vocab.Item
 		fb.infFn("received req %s: %s", r.Method, r.RequestURI)
 
-		f := ap.FromRequest(r, fb.Config().BaseURL)
-		ap.LoadCollectionFilters(f, fb.actorFromRequest(r))
+		f := filters.FromRequest(r, fb.Config().BaseURL)
+		filters.LoadCollectionFilters(f, fb.actorFromRequest(r))
 
 		if ok, err := ValidateRequest(r); !ok {
 			fb.errFn("failed request validation: %+s", err)
@@ -245,14 +246,14 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 	return func(r *http.Request) (vocab.Item, error) {
 		repo := fb.storage
-		f := ap.FromRequest(r, fb.Config().BaseURL)
-		if !f.IRI.Equals(fb.self.GetLink(), true) && !ap.ValidCollection(f.Collection) {
+		f := filters.FromRequest(r, fb.Config().BaseURL)
+		if !f.IRI.Equals(fb.self.GetLink(), true) && !filters.ValidCollection(f.Collection) {
 			return nil, errors.NotFoundf("%s not found", r.URL.Path)
 		}
 
-		ap.LoadItemFilters(f, fb.actorFromRequest(r))
+		filters.LoadItemFilters(f, fb.actorFromRequest(r))
 
-		cacheKey := ap.CacheKey(f)
+		cacheKey := filters.CacheKey(f)
 		it := fb.caches.Get(cacheKey)
 		fromCache := !vocab.IsNil(it)
 

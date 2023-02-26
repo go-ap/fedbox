@@ -6,6 +6,7 @@ import (
 	"path"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 	"github.com/pborman/uuid"
 )
@@ -34,7 +35,7 @@ func Self(baseURL vocab.IRI) vocab.Service {
 
 	s.Inbox = vocab.Inbox.IRI(s)
 	s.Outbox = vocab.Outbox.IRI(s)
-	s.Streams = vocab.ItemCollection{ActorsType.IRI(s), ActivitiesType.IRI(s), ObjectsType.IRI(s)}
+	s.Streams = vocab.ItemCollection{filters.ActorsType.IRI(s), filters.ActivitiesType.IRI(s), filters.ObjectsType.IRI(s)}
 	return s
 }
 

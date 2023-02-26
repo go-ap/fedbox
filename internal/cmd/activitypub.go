@@ -14,6 +14,7 @@ import (
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	s "github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 	"github.com/urfave/cli/v2"
 )
@@ -92,7 +93,7 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 
 		tags := make(vocab.ItemCollection, 0)
 
-		objectsCollection := ap.ObjectsType.IRI(vocab.IRI(ctl.Conf.BaseURL))
+		objectsCollection := filters.ObjectsType.IRI(vocab.IRI(ctl.Conf.BaseURL))
 		allObjects, _ := ctl.Storage.Load(objectsCollection)
 		vocab.OnCollectionIntf(allObjects, func(col vocab.CollectionInterface) error {
 			for _, it := range col.Collection() {
@@ -369,9 +370,9 @@ func listObjectsAct(ctl *Control) cli.ActionFunc {
 		var paths vocab.IRIs
 		if c.NArg() == 0 {
 			paths = append(paths,
-				ap.ObjectsType.IRI(vocab.IRI(ctl.Conf.BaseURL)),
-				ap.ActorsType.IRI(vocab.IRI(ctl.Conf.BaseURL)),
-				ap.ActivitiesType.IRI(vocab.IRI(ctl.Conf.BaseURL)),
+				filters.ObjectsType.IRI(vocab.IRI(ctl.Conf.BaseURL)),
+				filters.ActorsType.IRI(vocab.IRI(ctl.Conf.BaseURL)),
+				filters.ActivitiesType.IRI(vocab.IRI(ctl.Conf.BaseURL)),
 			)
 		} else {
 			for _, path := range c.Args().Slice() {
@@ -448,11 +449,11 @@ func (c *Control) List(iris vocab.IRIs, types ...string) (vocab.ItemCollection, 
 	var items vocab.ItemCollection
 	var err error
 	for _, iri := range iris {
-		f, _ := ap.FiltersFromIRI(iri)
+		f, _ := filters.FiltersFromIRI(iri)
 		if len(typeFilter) > 0 {
-			ap.Type(typeFilter...)(f)
+			filters.Type(typeFilter...)(f)
 		}
-		f.MaxItems = ap.MaxItems
+		f.MaxItems = filters.MaxItems
 
 		col, err := c.Storage.Load(f.GetLink())
 
@@ -511,7 +512,7 @@ func addObjectAct(ctl *Control) cli.ActionFunc {
 		}
 		if len(f.Name) == 0 {
 			if name, err := loadFromStdin("Enter the %s name", typ); err == nil {
-				f.Name = append(f.Name, ap.StringEquals(string(name)))
+				f.Name = append(f.Name, filters.StringEquals(string(name)))
 			}
 		}
 
@@ -679,7 +680,7 @@ var exportCmd = &cli.Command{
 	Action: exportPubObjects(&ctl),
 }
 
-func dumpAll(f *ap.Filters) (vocab.ItemCollection, error) {
+func dumpAll(f *filters.Filters) (vocab.ItemCollection, error) {
 	col := make(vocab.ItemCollection, 0)
 	objects, err := ctl.Storage.Load(f.GetLink())
 	if err != nil {
@@ -700,9 +701,9 @@ func exportPubObjects(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		baseURL := vocab.IRI(ctl.Conf.BaseURL)
 		objects := make(vocab.ItemCollection, 0)
-		allCollections := vocab.CollectionPaths{ap.ActivitiesType, ap.ActorsType, ap.ObjectsType}
+		allCollections := vocab.CollectionPaths{filters.ActivitiesType, filters.ActorsType, filters.ObjectsType}
 		for _, c := range allCollections {
-			dump, err := dumpAll(&ap.Filters{
+			dump, err := dumpAll(&filters.Filters{
 				IRI: vocab.IRIf(baseURL, c),
 			})
 			if err != nil {

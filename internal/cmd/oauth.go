@@ -11,8 +11,9 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
-	apub "github.com/go-ap/fedbox/activitypub"
+	ap "github.com/go-ap/fedbox/activitypub"
 	s "github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
 	"github.com/urfave/cli/v2"
@@ -161,7 +162,7 @@ const URISeparator = "\n"
 func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string, error) {
 	var id string
 
-	self := apub.Self(vocab.IRI(ctl.Conf.BaseURL))
+	self := ap.Self(vocab.IRI(ctl.Conf.BaseURL))
 	now := time.Now().UTC()
 	name := vocab.Content("oauth-client-app")
 	var appURL vocab.IRI
@@ -217,7 +218,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string
 }
 
 func (c *Control) DeleteClient(uuid string) error {
-	iri := fmt.Sprintf("%s/%s/%s", c.Conf.BaseURL, apub.ActorsType, uuid)
+	iri := fmt.Sprintf("%s/%s/%s", c.Conf.BaseURL, filters.ActorsType, uuid)
 	err := c.DeleteObjects("Remove OAuth2 Client", nil, iri)
 	if err != nil {
 		return err
@@ -244,7 +245,7 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}
 	if u, err := url.Parse(actorIdentifier); err == nil {
 		f = vocab.IRI(u.String())
 	} else {
-		f = apub.FiltersNew(apub.Name(actorIdentifier), apub.Type(vocab.ActorTypes...))
+		f = filters.FiltersNew(filters.Name(actorIdentifier), filters.Type(vocab.ActorTypes...))
 	}
 	list, err := c.Storage.Load(f.GetLink())
 	if err != nil {

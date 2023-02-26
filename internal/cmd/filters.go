@@ -5,33 +5,33 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
-	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/filters"
 	"github.com/urfave/cli/v2"
 )
 
-func types(c *cli.Context) ap.CompStrs {
+func types(c *cli.Context) filters.CompStrs {
 	if c == nil {
 		return nil
 	}
 	typ := c.String("type")
-	types := make(ap.CompStrs, 0)
+	types := make(filters.CompStrs, 0)
 	for _, t := range typ {
 		tt := vocab.ActivityVocabularyType(t)
 		if vocab.Types.Contains(tt) {
-			types = append(types, ap.StringEquals(string(tt)))
+			types = append(types, filters.StringEquals(string(tt)))
 		}
 	}
 	return types
 }
 
-func names(c *cli.Context) ap.CompStrs {
+func names(c *cli.Context) filters.CompStrs {
 	if c == nil {
 		return nil
 	}
 	name := c.StringSlice("name")
-	names := make(ap.CompStrs, 0)
+	names := make(filters.CompStrs, 0)
 	for _, t := range name {
-		names = append(names, ap.StringEquals(t))
+		names = append(names, filters.StringEquals(t))
 	}
 	return names
 }
@@ -102,11 +102,11 @@ func FilterFlags() []cli.Flag {
 	*/
 }
 
-func LoadFilters(c *cli.Context) (*ap.Filters, error) {
+func LoadFilters(c *cli.Context) (*filters.Filters, error) {
 	if c == nil {
 		return nil, errors.Newf("invalid nil context")
 	}
-	f := new(ap.Filters)
+	f := new(filters.Filters)
 	f.Type = types(c)
 	f.Name = names(c)
 	return f, nil

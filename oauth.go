@@ -13,9 +13,10 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/activitypub"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/assets"
 	st "github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
 	"github.com/mariusor/render"
@@ -112,10 +113,10 @@ func IndieAuthClientActor(author vocab.Item, url *url.URL) *vocab.Actor {
 	return &p
 }
 
-func filters(r *http.Request, baseURL vocab.IRI) *activitypub.Filters {
-	f := activitypub.FromRequest(r, baseURL.String())
+func ffilters(r *http.Request, baseURL vocab.IRI) *filters.Filters {
+	f := filters.FromRequest(r, baseURL.String())
 	f.IRI = f.IRI[:0]
-	f.Collection = activitypub.ActorsType
+	f.Collection = filters.ActorsType
 	return f
 }
 
@@ -146,9 +147,9 @@ func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 	// check for existing user actor
 	var actor vocab.Item
 	if me != "" {
-		f := filters(r, i.baseIRI)
-		f.Type = activitypub.CompStrs{activitypub.StringEquals(string(vocab.PersonType))}
-		f.URL = activitypub.CompStrs{activitypub.StringEquals(me)}
+		f := ffilters(r, i.baseIRI)
+		f.Type = filters.CompStrs{filters.StringEquals(string(vocab.PersonType))}
+		f.URL = filters.CompStrs{filters.StringEquals(me)}
 		actor, err = i.storage.Load(f.GetLink())
 		if err != nil {
 			return nil, err
@@ -159,9 +160,9 @@ func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 	}
 
 	// check for existing application actor
-	f := filters(r, i.baseIRI)
-	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(vocab.ApplicationType))}
-	f.URL = activitypub.CompStrs{activitypub.StringEquals(clientID)}
+	f := ffilters(r, i.baseIRI)
+	f.Type = filters.CompStrs{filters.StringEquals(string(vocab.ApplicationType))}
+	f.URL = filters.CompStrs{filters.StringEquals(clientID)}
 	clientActor, err := i.storage.Load(f.GetLink())
 	if err != nil {
 		return nil, err
@@ -211,11 +212,11 @@ func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 var scopeAnonymousUserCreate = "anonUserCreate"
 
 func (i *authService) loadAccountByID(id string) (*vocab.Actor, error) {
-	f := activitypub.FiltersNew()
+	f := filters.FiltersNew()
 
-	a := activitypub.Self(i.baseIRI)
+	a := ap.Self(i.baseIRI)
 
-	f.IRI = activitypub.ActorsType.IRI(a).AddPath(id)
+	f.IRI = filters.ActorsType.IRI(a).AddPath(id)
 	actors, err := i.storage.Load(f.GetLink())
 	if err != nil {
 		return nil, err
@@ -244,12 +245,12 @@ func (i *authService) loadAccountFromPost(r *http.Request) (*account, error) {
 		"pass":   pw,
 	}).Infof("received")
 
-	a := activitypub.Self(i.baseIRI)
+	a := ap.Self(i.baseIRI)
 
-	f := activitypub.FiltersNew()
-	f.Name = activitypub.CompStrs{activitypub.CompStr{Str: handle}}
-	f.IRI = activitypub.ActorsType.IRI(a)
-	f.Type = activitypub.CompStrs{activitypub.StringEquals(string(vocab.PersonType))}
+	f := filters.FiltersNew()
+	f.Name = filters.CompStrs{filters.CompStr{Str: handle}}
+	f.IRI = filters.ActorsType.IRI(a)
+	f.Type = filters.CompStrs{filters.StringEquals(string(vocab.PersonType))}
 	actors, err := i.storage.Load(f.GetLink())
 	if err != nil {
 		return nil, errUnauthorized
@@ -342,15 +343,15 @@ func (i *authService) Token(w http.ResponseWriter, r *http.Request) {
 
 	acc := &AnonymousAcct
 	if ar := s.HandleAccessRequest(resp, r); ar != nil {
-		actorFilters := activitypub.FiltersNew()
+		actorFilters := filters.FiltersNew()
 		switch ar.Type {
 		case osin.PASSWORD:
 			if u, _ := url.ParseRequestURI(ar.Username); u != nil {
 				// NOTE(marius): here we send the full actor IRI as a username to avoid handler collisions
 				actorFilters.IRI = vocab.IRI(ar.Username)
 			} else {
-				actorFilters.IRI = activitypub.ActorsType.IRI(i.baseIRI)
-				actorFilters.Name = activitypub.CompStrs{activitypub.StringEquals(ar.Username)}
+				actorFilters.IRI = filters.ActorsType.IRI(i.baseIRI)
+				actorFilters.Name = filters.CompStrs{filters.StringEquals(ar.Username)}
 			}
 		case osin.AUTHORIZATION_CODE:
 			if iri, ok := ar.UserData.(string); ok {
@@ -552,7 +553,7 @@ func (i *authService) ShowLogin(w http.ResponseWriter, r *http.Request) {
 	if clientId := r.FormValue("client"); len(clientId) > 0 {
 		app, err := i.loadAccountByID(clientId)
 		if err != nil {
-			errors.HandleError(activitypub.ErrNotFound("client application not found")).ServeHTTP(w, r)
+			errors.HandleError(filters.ErrNotFound("client application not found")).ServeHTTP(w, r)
 			return
 		}
 		if app.Type == vocab.ApplicationType {
@@ -565,7 +566,7 @@ func (i *authService) ShowLogin(w http.ResponseWriter, r *http.Request) {
 
 var (
 	errUnauthorized = errors.Unauthorizedf("Invalid username or password")
-	errNotFound     = activitypub.ErrNotFound("actor not found")
+	errNotFound     = filters.ErrNotFound("actor not found")
 )
 
 // HandleLogin handles POST /login requests
