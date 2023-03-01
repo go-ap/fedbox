@@ -13,7 +13,7 @@ require (
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20230225124541-9edf4a0a08ee
 	github.com/go-ap/storage-badger v0.0.0-20230225141931-2a0f09effa4c
-	github.com/go-ap/storage-boltdb v0.0.0-20230225142759-5b05d15183f5
+	github.com/go-ap/storage-boltdb v0.0.0-20230301085434-8a5dd5e38df1
 	github.com/go-ap/storage-fs v0.0.0-20230225141543-fe714b2469d8
 	github.com/go-ap/storage-sqlite v0.0.0-20230225134934-d2176436a6d5
 	github.com/go-chi/chi/v5 v5.0.7
@@ -46,7 +46,7 @@ require (
 	github.com/google/flatbuffers v23.1.21+incompatible // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/klauspost/compress v1.15.15 // indirect
+	github.com/klauspost/compress v1.16.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-sqlite3 v1.14.16 // indirect
