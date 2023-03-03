@@ -5,17 +5,17 @@ go 1.18
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20221202111053-2dd31f3348e7
 	git.sr.ht/~mariusor/wrapper v0.0.0-20230104101555-9bfc303f6588
-	github.com/go-ap/activitypub v0.0.0-20230218112952-bfb607b04799
-	github.com/go-ap/auth v0.0.0-20230218121359-b0cd747db8a8
-	github.com/go-ap/client v0.0.0-20230218115938-0fe3ee2edd31
+	github.com/go-ap/activitypub v0.0.0-20230301123505-7471bcd90729
+	github.com/go-ap/auth v0.0.0-20230302121817-0332e0b6477a
+	github.com/go-ap/client v0.0.0-20230302104023-08cd159ca918
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
-	github.com/go-ap/filters v0.0.0-20230226125721-3015894d636a
+	github.com/go-ap/filters v0.0.0-20230302122150-af8f54eb973c
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20230225124541-9edf4a0a08ee
-	github.com/go-ap/storage-badger v0.0.0-20230225141931-2a0f09effa4c
-	github.com/go-ap/storage-boltdb v0.0.0-20230301085434-8a5dd5e38df1
-	github.com/go-ap/storage-fs v0.0.0-20230225141543-fe714b2469d8
-	github.com/go-ap/storage-sqlite v0.0.0-20230225134934-d2176436a6d5
+	github.com/go-ap/processing v0.0.0-20230302121732-ed89ba62d187
+	github.com/go-ap/storage-badger v0.0.0-20230302122315-7e9bf328b100
+	github.com/go-ap/storage-boltdb v0.0.0-20230302122338-9138c16def53
+	github.com/go-ap/storage-fs v0.0.0-20230303191641-d4546f20397e
+	github.com/go-ap/storage-sqlite v0.0.0-20230302122258-177655004b50
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.4.0
@@ -35,11 +35,10 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/dgraph-io/badger/v3 v3.2103.5 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
-	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/glog v1.0.0 // indirect
+	github.com/golang/glog v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
