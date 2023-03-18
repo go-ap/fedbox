@@ -4,6 +4,7 @@ package tests
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rsa"
@@ -193,7 +194,7 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 	}
 }
 
-func SetupAPP(options config.Options) *fedbox.FedBOX {
+func RunTestFedBOX(options config.Options, ctx context.Context) error {
 	if options.Storage == "all" {
 		options.Storage = config.StorageFS
 	}
@@ -203,17 +204,17 @@ func SetupAPP(options config.Options) *fedbox.FedBOX {
 	l := lw.Dev(lw.SetLevel(options.LogLevel))
 	db, err := fedbox.Storage(options, l.WithContext(fields))
 	if err != nil {
-		panic(fmt.Sprintf("%+v", err))
+		return err
 	}
 	if err = cmd.Bootstrap(options, ap.Self(ap.DefaultServiceIRI(options.BaseURL))); err != nil {
-		panic(fmt.Sprintf("%+v", err))
+		return err
 	}
 	a, err := fedbox.New(l, "HEAD", options, db)
 	if err != nil {
-		panic(fmt.Sprintf("%+v", err))
+		return err
 	}
 	if options.Storage == config.StorageFS {
 		time.Sleep(100 * time.Millisecond)
 	}
-	return a
+	return a.Run(ctx)
 }
