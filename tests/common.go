@@ -847,11 +847,16 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 
 func runTestSuite(t *testing.T, pairs testPairs) {
 	for _, suite := range pairs {
+		ctx := context.TODO()
 		for _, options := range suite.configs {
 			if Verbose {
 				options.LogLevel = lw.TraceLevel
 			}
-			go SetupAPP(options).Run(context.TODO())
+
+			go func() {
+				err := RunTestFedBOX(options, ctx)
+				t.Errorf("%s", err)
+			}()
 		}
 		name := suite.name
 		t.Run(name, func(t *testing.T) {
