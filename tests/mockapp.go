@@ -21,7 +21,6 @@ import (
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox"
-	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	ls "github.com/go-ap/fedbox/storage"
@@ -141,9 +140,10 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 
 	fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
 	l := lw.Dev(lw.SetLevel(lw.DebugLevel)).WithContext(fields)
+
 	db, err := fedbox.Storage(options, l)
 	if err != nil {
-		panic(fmt.Sprintf("%+v", err))
+		t.Fatalf("%+v", err)
 	}
 	clientCode := path.Base(defaultTestApp.Id)
 
@@ -204,9 +204,6 @@ func RunTestFedBOX(options config.Options, ctx context.Context) error {
 	l := lw.Dev(lw.SetLevel(options.LogLevel))
 	db, err := fedbox.Storage(options, l.WithContext(fields))
 	if err != nil {
-		return err
-	}
-	if err = cmd.Bootstrap(options, ap.Self(ap.DefaultServiceIRI(options.BaseURL))); err != nil {
 		return err
 	}
 	a, err := fedbox.New(l, "HEAD", options, db)
