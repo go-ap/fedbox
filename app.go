@@ -154,11 +154,11 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 	return &app, err
 }
 
-func (f FedBOX) Config() config.Options {
+func (f *FedBOX) Config() config.Options {
 	return f.conf
 }
 
-func (f FedBOX) Storage() processing.Store {
+func (f *FedBOX) Storage() FullStorage {
 	return f.storage
 }
 
@@ -176,7 +176,7 @@ func (f *FedBOX) reload() (err error) {
 	return err
 }
 
-func (f FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
+func (f *FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
 	act, err := f.OAuth.auth.LoadActorFromAuthHeader(r)
 	if err != nil {
 		f.logger.Errorf("unable to load an authorized Actor from request: %+s", err)
@@ -273,13 +273,13 @@ func (f *FedBOX) Run(c context.Context) error {
 	return nil
 }
 
-func (f FedBOX) infFn(s string, p ...any) {
+func (f *FedBOX) infFn(s string, p ...any) {
 	if f.logger != nil {
 		f.logger.Infof(s, p...)
 	}
 }
 
-func (f FedBOX) errFn(s string, p ...any) {
+func (f *FedBOX) errFn(s string, p ...any) {
 	if f.logger != nil {
 		f.logger.Errorf(s, p...)
 	}
