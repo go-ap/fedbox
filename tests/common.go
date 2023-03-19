@@ -87,6 +87,7 @@ type actC2SMock struct {
 type testSuite struct {
 	name    string
 	configs []config.Options
+	apps    map[vocab.IRI]*fedbox.FedBOX
 	mocks   []string
 	tests   []testPair
 }
@@ -847,42 +848,65 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 	return test.res.val.id != "" && test.res.val.id != req.URL.String()
 }
 
-func runTestSuite(t *testing.T, pairs testPairs) {
+func cleanupTestPairs(pairs testPairs, t *testing.T) {
+	if t.Failed() {
+		return
+	}
 	for _, suite := range pairs {
-		ctx := context.TODO()
-		for _, options := range suite.configs {
-			if Verbose {
-				options.LogLevel = lw.TraceLevel
-			}
-
-			if err := cmd.Bootstrap(options, ap.Self(ap.DefaultServiceIRI(options.BaseURL))); err != nil {
-				t.Fatalf("%+v", err)
-			}
-			seedTestData(t, suite.mocks, options)
-
-			go func() {
-				if err := RunTestFedBOX(options, ctx); err != nil {
-					t.Fatalf("%s", err)
-				}
-			}()
-		}
-		time.Sleep(50 * time.Millisecond)
-
-		name := suite.name
-		t.Run(name, func(t *testing.T) {
-			for _, test := range suite.tests {
-				t.Run(test.label(), func(t *testing.T) {
-					for _, options := range suite.configs {
-						seedTestData(t, test.mocks, options)
-					}
-					errOnRequest(t)(test)
-				})
-			}
-		})
 		for _, options := range suite.configs {
 			// NOTE(marius): we removed the deferred app.Stop(),
 			// to avoid race conditions when running multiple FedBOX instances for the federated tests
 			cleanDB(t, options)
 		}
+	}
+}
+
+func runTestSuite(t *testing.T, pairs testPairs) {
+	defer cleanupTestPairs(pairs, t)
+
+	for _, suite := range pairs {
+		ctx := context.TODO()
+		suite.apps = make(map[vocab.IRI]*fedbox.FedBOX)
+		for _, options := range suite.configs {
+			if Verbose {
+				options.LogLevel = lw.TraceLevel
+			}
+
+			self := ap.Self(ap.DefaultServiceIRI(options.BaseURL))
+			if err := cmd.Bootstrap(options, self); err != nil {
+				t.Fatalf("%+v", err)
+				return
+			}
+			fedbox, err := RunTestFedBOX(options)
+			if err != nil {
+				t.Fatalf("%s", err)
+				return
+			}
+			suite.apps[self.ID] = fedbox
+			go fedbox.Run(ctx)
+		}
+
+		name := suite.name
+		t.Run(name, func(t *testing.T) {
+			mocks := suite.mocks
+			for _, test := range suite.tests {
+				t.Run(test.label(), func(t *testing.T) {
+					for _, options := range suite.configs {
+						app := suite.apps[vocab.IRI(options.BaseURL)]
+						fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
+						l := lw.Dev(lw.SetLevel(lw.DebugLevel)).WithContext(fields)
+
+						mocks = append(mocks, test.mocks...)
+						if err := seedTestData(app, l); err != nil {
+							t.Fatalf("%s", err)
+						}
+					}
+					errOnRequest(t)(test)
+					for _, options := range suite.configs {
+						cleanDB(t, options)
+					}
+				})
+			}
+		})
 	}
 }

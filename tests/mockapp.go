@@ -4,7 +4,6 @@ package tests
 
 import (
 	"bytes"
-	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rsa"
@@ -16,7 +15,6 @@ import (
 	"strings"
 	"testing"
 	"text/template"
-	"time"
 
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
@@ -128,59 +126,48 @@ func loadMockFromDisk(file string, model interface{}) vocab.Item {
 	return it
 }
 
-func seedTestData(t *testing.T, testData []string, options config.Options) {
-	if t == nil {
-		panic("invalid test context")
-	}
-	t.Helper()
-
-	if len(testData) == 0 {
-		return
-	}
-
-	fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
-	l := lw.Dev(lw.SetLevel(lw.DebugLevel)).WithContext(fields)
-
-	db, err := fedbox.Storage(options, l)
-	if err != nil {
-		t.Fatalf("%+v", err)
-	}
-	clientCode := path.Base(defaultTestApp.Id)
-
+func saveMocks(testData []string, db fedbox.FullStorage, l lw.Logger, baseIRI vocab.IRI) error {
 	mocks := make(vocab.ItemCollection, 0)
-	o := cmd.New(db, options, l)
-	act := loadMockFromDisk("mocks/c2s/actors/application.json", nil)
-	mocks = append(mocks, act)
-	if clSaver, ok := db.(fedbox.ClientSaver); ok {
-		clSaver.CreateClient(&osin.DefaultClient{
-			Id:          clientCode,
-			Secret:      "hahah",
-			RedirectUri: "http://127.0.0.1:9998/callback",
-			UserData:    nil,
-		})
-	}
-
-	seedMetadataForTestUser := false
 	for _, path := range testData {
 		it := loadMockFromDisk(path, nil)
-		if !it.GetLink().Contains(vocab.IRI(options.BaseURL), false) {
+		if !it.GetLink().Contains(baseIRI, false) {
 			continue
-		}
-		if it.GetLink().String() == defaultTestAccountC2S.Id {
-			seedMetadataForTestUser = true
 		}
 		if !mocks.Contains(it) {
 			mocks = append(mocks, it)
 		}
 	}
-	addMockObjects(db, mocks, t.Errorf)
+	if err := addMockObjects(db, mocks, l.Errorf); err != nil {
+		return err
+	}
+	return nil
+}
 
-	if strings.Contains(defaultTestAccountC2S.Id, options.BaseURL) {
-		if metaSaver, ok := db.(ls.MetadataTyper); seedMetadataForTestUser && ok {
+func seedTestData(app *fedbox.FedBOX, l lw.Logger) error {
+	clientCode := path.Base(defaultTestApp.Id)
+
+	db := app.Storage()
+
+	o := cmd.New(db, app.Config(), l)
+
+	act := loadMockFromDisk("mocks/c2s/actors/application.json", nil)
+	if err := addMockObjects(db, vocab.ItemCollection{act}, l.Errorf); err != nil {
+		return err
+	}
+
+	db.CreateClient(&osin.DefaultClient{
+		Id:          clientCode,
+		Secret:      "hahah",
+		RedirectUri: "http://127.0.0.1:9998/callback",
+		UserData:    nil,
+	})
+
+	if strings.Contains(defaultTestAccountC2S.Id, app.Config().BaseURL) {
+		if metaSaver, ok := db.(ls.MetadataTyper); ok {
 			l.Infof("Seeding metadata for test user: %s", defaultTestAccountC2S.Id)
 			prvEnc, err := x509.MarshalPKCS8PrivateKey(defaultTestAccountC2S.PrivateKey)
 			if err != nil {
-				panic(fmt.Sprintf("%+v", err))
+				return err
 			}
 			r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
 			err = metaSaver.SaveMetadata(processing.Metadata{PrivateKey: pem.EncodeToMemory(&r)}, vocab.IRI(defaultTestAccountC2S.Id))
@@ -192,9 +179,11 @@ func seedTestData(t *testing.T, testData []string, options config.Options) {
 			defaultTestAccountC2S.AuthToken = tok
 		}
 	}
+
+	return nil
 }
 
-func RunTestFedBOX(options config.Options, ctx context.Context) error {
+func RunTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
 	if options.Storage == "all" {
 		options.Storage = config.StorageFS
 	}
@@ -204,14 +193,16 @@ func RunTestFedBOX(options config.Options, ctx context.Context) error {
 	l := lw.Dev(lw.SetLevel(options.LogLevel))
 	db, err := fedbox.Storage(options, l.WithContext(fields))
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	a, err := fedbox.New(l, "HEAD", options, db)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if options.Storage == config.StorageFS {
-		time.Sleep(100 * time.Millisecond)
+	if err := seedTestData(a, l); err != nil {
+		return nil, err
 	}
-	return a.Run(ctx)
+
+	return a, nil
 }
