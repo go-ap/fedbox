@@ -27,6 +27,8 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
 	"github.com/go-ap/fedbox"
+	ap "github.com/go-ap/fedbox/activitypub"
+	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/jsonld"
@@ -853,16 +855,21 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 				options.LogLevel = lw.TraceLevel
 			}
 
+			if err := cmd.Bootstrap(options, ap.Self(ap.DefaultServiceIRI(options.BaseURL))); err != nil {
+				t.Fatalf("%+v", err)
+			}
+			seedTestData(t, suite.mocks, options)
+
 			go func() {
-				err := RunTestFedBOX(options, ctx)
-				t.Errorf("%s", err)
+				if err := RunTestFedBOX(options, ctx); err != nil {
+					t.Fatalf("%s", err)
+				}
 			}()
 		}
+		time.Sleep(50 * time.Millisecond)
+
 		name := suite.name
 		t.Run(name, func(t *testing.T) {
-			for _, options := range suite.configs {
-				seedTestData(t, suite.mocks, options)
-			}
 			for _, test := range suite.tests {
 				t.Run(test.label(), func(t *testing.T) {
 					for _, options := range suite.configs {
