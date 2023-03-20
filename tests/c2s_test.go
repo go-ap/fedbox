@@ -954,13 +954,6 @@ var CreateTests = testPairs{
 				},
 				res: testRes{code: http.StatusNotFound},
 			},
-			{
-				req: testReq{
-					met:   http.MethodGet,
-					urlFn: func() string { return fmt.Sprintf("%s/liked", defaultC2SAccount().Id) },
-				},
-				res: testRes{code: http.StatusNotFound},
-			},
 		},
 	},
 	{

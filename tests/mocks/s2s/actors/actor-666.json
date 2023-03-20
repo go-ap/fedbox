@@ -7,6 +7,7 @@
   "generator": "http://127.0.2.1:9999",
   "inbox": "http://127.0.2.1:9999/actors/666/inbox",
   "outbox": "http://127.0.2.1:9999/actors/666/outbox",
+  "following": "http://127.0.2.1:9999/actors/666/following",
   "preferredUsername": "lou",
   "name": "Loucien Cypher",
   "endpoints": {
