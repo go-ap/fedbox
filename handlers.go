@@ -83,7 +83,7 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 				return nil, err
 			}
 		}
-		if !it.IsCollection() {
+		if vocab.IsNil(it) || !it.IsCollection() {
 			return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
 		}
 
