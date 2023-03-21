@@ -23,6 +23,7 @@ import (
 
 type Control struct {
 	Conf    config.Options
+	Logger  lw.Logger
 	Service vocab.Actor
 	Storage fedbox.FullStorage
 	Saver   processing.P
@@ -36,7 +37,7 @@ func New(db fedbox.FullStorage, conf config.Options, l lw.Logger) *Control {
 		processing.WithStorage(db),
 		processing.WithIDGenerator(fedbox.GenerateID(baseIRI)),
 		processing.WithClient(c.New(
-			c.WithLogger(l),
+			c.WithLogger(l.WithContext(lw.Ctx{"log": "processing"})),
 			c.SkipTLSValidation(!conf.Env.IsProd()),
 		)),
 		processing.WithLocalIRIChecker(st.IsLocalIRI(db)),
@@ -48,6 +49,7 @@ func New(db fedbox.FullStorage, conf config.Options, l lw.Logger) *Control {
 		Service: self,
 		Storage: db,
 		Saver:   *p,
+		Logger:  l,
 	}
 }
 
@@ -55,8 +57,8 @@ var ctl Control
 
 func Before(c *cli.Context) error {
 	fields := lw.Ctx{}
-	if c.Command != nil {
-		fields["cli"] = c.Command.Name
+	if c.Command != nil && c.Command.Name != "" {
+		fields["cli"] = c.Command.FullName()
 	}
 
 	logger := lw.Dev(lw.SetOutput(os.Stderr))

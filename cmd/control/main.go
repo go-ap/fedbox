@@ -51,6 +51,7 @@ func main() {
 		cmd.OAuth2Cmd,
 		cmd.BootstrapCmd,
 		cmd.AccountsCmd,
+		cmd.FixStorageCollectionsCmd,
 	}
 
 	if err := app.Run(os.Args); err != nil {
