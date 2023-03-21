@@ -77,7 +77,6 @@ func tryCreateCollection(storage fedbox.FullStorage, colIRI vocab.IRI) error {
 	}
 
 	if !items.IsCollection() {
-		ctl.Logger.Infof("Try saving %s", items.GetID())
 		if _, err := storage.Save(items); err != nil {
 			ctl.Logger.Errorf("Unable to save object %s: %s", items.GetLink(), err)
 			return err
@@ -92,7 +91,6 @@ func tryCreateCollection(storage fedbox.FullStorage, colIRI vocab.IRI) error {
 		collection.TotalItems = col.Count()
 		for _, it := range col.Collection() {
 			// Try saving objects in collection, which would create the collections if they exist
-			ctl.Logger.Infof("Try saving %s", it.GetID())
 			if _, err := storage.Save(it); err != nil {
 				ctl.Logger.Errorf("Unable to save object %s: %s", it.GetLink(), err)
 			}
