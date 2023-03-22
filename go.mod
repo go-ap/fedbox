@@ -14,7 +14,7 @@ require (
 	github.com/go-ap/processing v0.0.0-20230322094514-ccecbb4ca1e4
 	github.com/go-ap/storage-badger v0.0.0-20230322094709-f82a7a3ed1a9
 	github.com/go-ap/storage-boltdb v0.0.0-20230322094644-9a4dba9cd41e
-	github.com/go-ap/storage-fs v0.0.0-20230320130403-f4ab677ccf7b
+	github.com/go-ap/storage-fs v0.0.0-20230322202137-0e972623522b
 	github.com/go-ap/storage-sqlite v0.0.0-20230322094625-9b6ffd4531a7
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-fed/httpsig v1.1.0
@@ -38,7 +38,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/glog v1.1.0 // indirect
+	github.com/golang/glog v1.1.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -47,7 +47,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-sqlite3 v1.14.16 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect

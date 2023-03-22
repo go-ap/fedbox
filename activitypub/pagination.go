@@ -246,7 +246,6 @@ func PaginateCollection(col vocab.CollectionInterface, f Paginator) (vocab.Colle
 						page.Prev = prevURL
 					}
 					page.OrderedItems, _, _, _ = paginateItems(oc.OrderedItems, f)
-					page.TotalItems = count
 					col = page
 				}
 			}
@@ -263,7 +262,6 @@ func PaginateCollection(col vocab.CollectionInterface, f Paginator) (vocab.Colle
 					if len(prevURL) > 0 {
 						page.Prev = prevURL
 					}
-					page.TotalItems = count
 					page.Items, _, _, _ = paginateItems(c.Items, f)
 					col = page
 				}
