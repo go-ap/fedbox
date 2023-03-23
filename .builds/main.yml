@@ -12,7 +12,6 @@ tasks:
       cd fedbox
       make STORAGE=fs clean all
       make STORAGE=sqlite clean all
-      make STORAGE=badger clean all
       make STORAGE=boltdb clean all
       make STORAGE=all clean all
   - tests: |
@@ -36,7 +35,3 @@ tasks:
       cd fedbox
       make TEST_FLAGS='-race -count=1' CGO_ENABLED=1 STORAGE=boltdb integration
       make FEDBOX_STORAGE=boltdb integration
-  - integration-badger: |
-      cd fedbox
-      make TEST_FLAGS='-count=1' CGO_ENABLED=0 STORAGE=badger integration
-      make FEDBOX_STORAGE=badger integration

@@ -903,9 +903,6 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 					}
 					errOnRequest(t)(test)
 				})
-				//for _, options := range suite.configs {
-				//	cleanDB(t, options)
-				//}
 			}
 		})
 		for _, options := range suite.configs {
