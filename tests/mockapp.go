@@ -53,14 +53,13 @@ func loadMockJson(file string, model interface{}) func() (string, error) {
 	}
 }
 
-func addMockObjects(r processing.Store, obj vocab.ItemCollection, errFn fedbox.LogFn) error {
+func addMockObjects(r processing.Store, obj vocab.ItemCollection) error {
 	var err error
 	for _, it := range obj {
 		if it.GetLink() == "" {
 			continue
 		}
 		if it, err = r.Save(it); err != nil {
-			errFn(err.Error())
 			return err
 		}
 	}
@@ -126,7 +125,9 @@ func loadMockFromDisk(file string, model interface{}) vocab.Item {
 	return it
 }
 
-func saveMocks(testData []string, db fedbox.FullStorage, l lw.Logger, baseIRI vocab.IRI) error {
+func saveMocks(testData []string, app *fedbox.FedBOX, l lw.Logger) error {
+	baseIRI := vocab.IRI(app.Config().BaseURL)
+	db := app.Storage()
 	mocks := make(vocab.ItemCollection, 0)
 	for _, path := range testData {
 		it := loadMockFromDisk(path, nil)
@@ -137,34 +138,14 @@ func saveMocks(testData []string, db fedbox.FullStorage, l lw.Logger, baseIRI vo
 			mocks = append(mocks, it)
 		}
 	}
-	if err := addMockObjects(db, mocks, l.Errorf); err != nil {
+	if err := addMockObjects(db, mocks); err != nil {
 		return err
 	}
-	return nil
-}
-
-func seedTestData(app *fedbox.FedBOX, l lw.Logger) error {
-	clientCode := path.Base(defaultTestApp.Id)
-
-	db := app.Storage()
 
 	o := cmd.New(db, app.Config(), l)
 
-	act := loadMockFromDisk("mocks/c2s/actors/application.json", nil)
-	if err := addMockObjects(db, vocab.ItemCollection{act}, l.Errorf); err != nil {
-		return err
-	}
-
-	db.CreateClient(&osin.DefaultClient{
-		Id:          clientCode,
-		Secret:      "hahah",
-		RedirectUri: "http://127.0.0.1:9998/callback",
-		UserData:    nil,
-	})
-
 	if strings.Contains(defaultTestAccountC2S.Id, app.Config().BaseURL) {
 		if metaSaver, ok := db.(ls.MetadataTyper); ok {
-			l.Infof("Seeding metadata for test user: %s", defaultTestAccountC2S.Id)
 			prvEnc, err := x509.MarshalPKCS8PrivateKey(defaultTestAccountC2S.PrivateKey)
 			if err != nil {
 				return err
@@ -175,12 +156,30 @@ func seedTestData(app *fedbox.FedBOX, l lw.Logger) error {
 				l.Critf("%s\n", err)
 			}
 		}
+		clientCode := path.Base(defaultTestApp.Id)
 		if tok, err := o.GenAuthToken(clientCode, defaultTestAccountC2S.Id, nil); err == nil {
 			defaultTestAccountC2S.AuthToken = tok
 		}
 	}
-
 	return nil
+}
+
+func seedTestData(app *fedbox.FedBOX) error {
+	clientCode := path.Base(defaultTestApp.Id)
+
+	db := app.Storage()
+
+	act := loadMockFromDisk("mocks/c2s/actors/application.json", nil)
+	if err := addMockObjects(db, vocab.ItemCollection{act}); err != nil {
+		return err
+	}
+
+	return db.CreateClient(&osin.DefaultClient{
+		Id:          clientCode,
+		Secret:      "hahah",
+		RedirectUri: "http://127.0.0.1:9998/callback",
+		UserData:    nil,
+	})
 }
 
 func RunTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
@@ -200,7 +199,7 @@ func RunTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := seedTestData(a, l); err != nil {
+	if err := seedTestData(a); err != nil {
 		return nil, err
 	}
 

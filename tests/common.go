@@ -897,16 +897,21 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 						l := lw.Dev(lw.SetLevel(lw.DebugLevel)).WithContext(fields)
 
 						mocks = append(mocks, test.mocks...)
-						if err := seedTestData(app, l); err != nil {
+						if err := saveMocks(mocks, app, l); err != nil {
 							t.Fatalf("%s", err)
 						}
 					}
 					errOnRequest(t)(test)
-					for _, options := range suite.configs {
-						cleanDB(t, options)
-					}
 				})
+				//for _, options := range suite.configs {
+				//	cleanDB(t, options)
+				//}
 			}
 		})
+		for _, options := range suite.configs {
+			// NOTE(marius): we removed the deferred app.Stop(),
+			// to avoid race conditions when running multiple FedBOX instances for the federated tests
+			cleanDB(t, options)
+		}
 	}
 }
