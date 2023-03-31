@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime/debug"
 	"sort"
 	"strings"
@@ -48,7 +49,7 @@ var C2SConfig = config.Options{
 	Listen:      "127.0.0.1:9998",
 	BaseURL:     "http://127.0.0.1:9998/",
 	LogLevel:    lw.NoLevel,
-	StoragePath: storagePath(),
+	StoragePath: filepath.Join(storagePath(), "127.0.0.1:9998"),
 	Storage:     storageType(),
 }
 
@@ -58,7 +59,7 @@ var S2SConfig = config.Options{
 	Listen:      "127.0.2.1:9999",
 	BaseURL:     "http://127.0.2.1:9999/",
 	LogLevel:    lw.NoLevel,
-	StoragePath: storagePath(),
+	StoragePath: filepath.Join(storagePath(), "127.0.2.1:9999"),
 	Storage:     storageType(),
 }
 
