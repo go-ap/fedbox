@@ -5,17 +5,17 @@ go 1.18
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20230317075520-07e173563bf8
 	git.sr.ht/~mariusor/wrapper v0.0.0-20230104101555-9bfc303f6588
-	github.com/go-ap/activitypub v0.0.0-20230331173947-f5b96d9450d4
-	github.com/go-ap/auth v0.0.0-20230323123857-c6b121c09288
-	github.com/go-ap/client v0.0.0-20230323123805-a1114dc5ba4f
+	github.com/go-ap/activitypub v0.0.0-20230509081506-c63baa5ec992
+	github.com/go-ap/auth v0.0.0-20230509081727-89fa37abf2fa
+	github.com/go-ap/client v0.0.0-20230509081643-66f4b336aaef
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
-	github.com/go-ap/filters v0.0.0-20230402103332-be164708444f
+	github.com/go-ap/filters v0.0.0-20230509081808-5c9e638a1c6d
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20230402103201-6798993132ff
-	github.com/go-ap/storage-badger v0.0.0-20230402103732-4c221f45d47f
-	github.com/go-ap/storage-boltdb v0.0.0-20230402103650-20d8805ebd87
-	github.com/go-ap/storage-fs v0.0.0-20230422185132-5acc28e06073
-	github.com/go-ap/storage-sqlite v0.0.0-20230402103503-2dd73f63b153
+	github.com/go-ap/processing v0.0.0-20230509081745-6ee86e9025cc
+	github.com/go-ap/storage-badger v0.0.0-20230509082039-5e42f26330a6
+	github.com/go-ap/storage-boltdb v0.0.0-20230509082016-82d5c953bad9
+	github.com/go-ap/storage-fs v0.0.0-20230509081835-76326a325f7b
+	github.com/go-ap/storage-sqlite v0.0.0-20230509081951-e0101e085d49
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.4.0
@@ -24,8 +24,8 @@ require (
 	github.com/openshift/osin v1.0.1
 	github.com/pborman/uuid v1.2.1
 	github.com/urfave/cli/v2 v2.3.0
-	golang.org/x/crypto v0.8.0
-	golang.org/x/oauth2 v0.7.0
+	golang.org/x/crypto v0.9.0
+	golang.org/x/oauth2 v0.8.0
 )
 
 require (
@@ -58,20 +58,20 @@ require (
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/net v0.9.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
-	golang.org/x/term v0.7.0 // indirect
-	golang.org/x/tools v0.8.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/term v0.8.0 // indirect
+	golang.org/x/tools v0.9.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	lukechampine.com/uint128 v1.3.0 // indirect
 	modernc.org/cc/v3 v3.40.0 // indirect
 	modernc.org/ccgo/v3 v3.16.13 // indirect
-	modernc.org/libc v1.22.4 // indirect
+	modernc.org/libc v1.22.5 // indirect
 	modernc.org/mathutil v1.5.0 // indirect
 	modernc.org/memory v1.5.0 // indirect
 	modernc.org/opt v0.1.3 // indirect
-	modernc.org/sqlite v1.22.0 // indirect
+	modernc.org/sqlite v1.22.1 // indirect
 	modernc.org/strutil v1.1.3 // indirect
 	modernc.org/token v1.1.0 // indirect
 )
