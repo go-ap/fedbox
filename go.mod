@@ -9,13 +9,13 @@ require (
 	github.com/go-ap/auth v0.0.0-20230509081727-89fa37abf2fa
 	github.com/go-ap/client v0.0.0-20230509081643-66f4b336aaef
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
-	github.com/go-ap/filters v0.0.0-20230510120105-5f4550c26b70
+	github.com/go-ap/filters v0.0.0-20230511130320-a7865cf0d9a5
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20230510120006-611973439b4d
-	github.com/go-ap/storage-badger v0.0.0-20230510120204-6b1a67bcfd2d
-	github.com/go-ap/storage-boltdb v0.0.0-20230510120300-dbaa82bbb470
-	github.com/go-ap/storage-fs v0.0.0-20230510120517-9cadf680ab17
-	github.com/go-ap/storage-sqlite v0.0.0-20230510120347-e2d76519a3d2
+	github.com/go-ap/processing v0.0.0-20230511130204-f3596584ee3d
+	github.com/go-ap/storage-badger v0.0.0-20230511130513-b119a085553a
+	github.com/go-ap/storage-boltdb v0.0.0-20230511130456-3acff8ad005a
+	github.com/go-ap/storage-fs v0.0.0-20230511130425-0af92bcc8d8f
+	github.com/go-ap/storage-sqlite v0.0.0-20230511130441-6e5ab4baecf0
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.4.0
