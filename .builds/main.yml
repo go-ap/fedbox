@@ -9,6 +9,7 @@ secrets:
   - 3dcea276-38d6-4a7e-85e5-20cbc903e1ea
 tasks:
   - setup: |
+      test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
       cd fedbox && make download && go mod vendor
   - build: |
       cd fedbox
