@@ -5,6 +5,8 @@ sources:
   - https://github.com/go-ap/fedbox
 environment:
   GO111MODULE: 'on'
+secrets:
+  - 3dcea276-38d6-4a7e-85e5-20cbc903e1ea
 tasks:
   - setup: |
       cd fedbox && make download && go mod vendor
@@ -41,3 +43,11 @@ tasks:
       make TEST_FLAGS='-race -count=1' CGO_ENABLED=1 STORAGE=boltdb integration
       make TEST_FLAGS='-count=1' CGO_ENABLED=0 FEDBOX_STORAGE=boltdb integration
       make TEST_FLAGS='-count=1' CGO_ENABLED=0 STORAGE=boltdb integration
+  - push_to_github: |
+      test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
+      set -a +x
+      ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+
+      cd fedbox
+      git remote add hub git@github.com:go-ap/fedbox
+      git push hub --force --all
