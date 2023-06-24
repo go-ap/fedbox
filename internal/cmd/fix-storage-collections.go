@@ -27,21 +27,37 @@ func newOrderedCollection(id vocab.IRI) *vocab.OrderedCollection {
 	}
 }
 
+func getActorCollections(act vocab.Item) vocab.IRIs {
+	collections := make(vocab.IRIs, 0)
+	for _, col := range vocab.OfActor {
+		if colIRI := col.IRI(act); colIRI != "" {
+			collections = append(collections, colIRI)
+		}
+	}
+	return collections
+}
+
 func fixStorageCollectionsAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		if _, ok := ctl.Storage.(processing.CollectionStore); !ok {
 			return errors.Newf("Invalid storage type %T. Unable to handle collection operations.", ctl.Storage)
 		}
+		initialCollections := make([]vocab.IRI, 0)
+		initialCollections = append(initialCollections, getActorCollections(ctl.Service)...)
 		if ctl.Service.Streams != nil {
 			for _, stream := range ctl.Service.Streams {
 				if _, maybeCol := allCollectionPaths.Split(stream.GetLink()); !allCollectionPaths.Contains(maybeCol) {
 					ctl.Logger.Debugf("Stream doesn't seem to be a collection", stream)
 					return nil
 				}
-				err := tryCreateCollection(ctl.Storage, stream.GetLink())
-				if err != nil {
-					continue
-				}
+				initialCollections = append(initialCollections, stream.GetLink())
+			}
+		}
+
+		for _, col := range initialCollections {
+			err := tryCreateCollection(ctl.Storage, col)
+			if err != nil {
+				continue
 			}
 		}
 		return nil
