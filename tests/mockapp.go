@@ -145,22 +145,32 @@ func saveMocks(testData []string, app *fedbox.FedBOX, l lw.Logger) error {
 	o := cmd.New(db, app.Config(), l)
 
 	if strings.Contains(defaultTestAccountC2S.Id, app.Config().BaseURL) {
-		if metaSaver, ok := db.(ls.MetadataTyper); ok {
-			prvEnc, err := x509.MarshalPKCS8PrivateKey(defaultTestAccountC2S.PrivateKey)
-			if err != nil {
-				return err
-			}
-			r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
-			err = metaSaver.SaveMetadata(processing.Metadata{PrivateKey: pem.EncodeToMemory(&r)}, vocab.IRI(defaultTestAccountC2S.Id))
-			if err != nil {
-				l.Critf("%s\n", err)
-			}
+		if err := saveMetadataForActor(defaultTestAccountC2S, db.(ls.MetadataTyper)); err != nil {
+			l.Critf("%s\n", err)
 		}
 		clientCode := path.Base(defaultTestApp.Id)
 		if tok, err := o.GenAuthToken(clientCode, defaultTestAccountC2S.Id, nil); err == nil {
 			defaultTestAccountC2S.AuthToken = tok
 		}
 	}
+	if strings.Contains(defaultTestAccountS2S.Id, app.Config().BaseURL) {
+		if err := saveMetadataForActor(defaultTestAccountS2S, db.(ls.MetadataTyper)); err != nil {
+			l.Critf("%s\n", err)
+		}
+	}
+	return nil
+}
+
+func saveMetadataForActor(act testAccount, metaSaver ls.MetadataTyper) error {
+	prvEnc, err := x509.MarshalPKCS8PrivateKey(act.PrivateKey)
+	if err != nil {
+		return err
+	}
+	r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
+	err = metaSaver.SaveMetadata(
+		processing.Metadata{PrivateKey: pem.EncodeToMemory(&r)},
+		vocab.IRI(act.Id),
+	)
 	return nil
 }
 

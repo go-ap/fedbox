@@ -256,7 +256,8 @@ var (
 	outboxURL       = OutboxURL(&service)
 	baseURL         = service.Id
 
-	edKey = loadPrivateKeyFromDisk("mocks/keys/ed25519.prv")
+	edKey  = loadPrivateKeyFromDisk("mocks/keys/ed25519.prv")
+	rsaKey = loadPrivateKeyFromDisk("mocks/keys/rsa256.prv")
 
 	meta interface{} = nil
 
@@ -270,7 +271,6 @@ var (
 		PrivateKey: rsaKey,
 	}
 
-	rsaKey                = loadPrivateKeyFromDisk("mocks/keys/rsa256.prv")
 	defaultTestAccountS2S = testAccount{
 		Id:         fmt.Sprintf("http://%s/actors/%d", s2shost, 666),
 		Handle:     "lou",
