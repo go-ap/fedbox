@@ -14,7 +14,7 @@ require (
 	github.com/go-ap/processing v0.0.0-20230626173258-486ad8b78344
 	github.com/go-ap/storage-badger v0.0.0-20230626173538-97dfeb797384
 	github.com/go-ap/storage-boltdb v0.0.0-20230626173521-bba5826e6c44
-	github.com/go-ap/storage-fs v0.0.0-20230626173348-4407bf24b708
+	github.com/go-ap/storage-fs v0.0.0-20230704073349-5130e0810f3e
 	github.com/go-ap/storage-sqlite v0.0.0-20230626173450-c43200202bf7
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-fed/httpsig v1.1.0
@@ -45,7 +45,7 @@ require (
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/klauspost/compress v1.16.6 // indirect
+	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-sqlite3 v1.14.17 // indirect
@@ -68,7 +68,7 @@ require (
 	modernc.org/cc/v3 v3.41.0 // indirect
 	modernc.org/ccgo/v3 v3.16.14 // indirect
 	modernc.org/libc v1.24.1 // indirect
-	modernc.org/mathutil v1.5.0 // indirect
+	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.6.0 // indirect
 	modernc.org/opt v0.1.3 // indirect
 	modernc.org/sqlite v1.23.1 // indirect
