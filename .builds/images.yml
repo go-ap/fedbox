@@ -8,7 +8,7 @@ sources:
   - https://git.sr.ht/~mariusor/fedbox
 tasks:
   - images: |
-      test ${BUILD_SUBMITTER} = "git.sr.ht" || complete-build
+      test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
       set -a +x
       source ~/.buildah.env
 
@@ -32,6 +32,7 @@ tasks:
       _push() {
         _storage=${1:-all}
         make -C images STORAGE="${_storage}" ENV=dev VERSION="${_version}" push
+
         if [ "${_branch}" = "master" ]; then
             make -C images STORAGE="${_storage}" ENV=qa VERSION="${_version}" push
         fi
