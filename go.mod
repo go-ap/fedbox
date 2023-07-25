@@ -14,7 +14,7 @@ require (
 	github.com/go-ap/processing v0.0.0-20230719093825-2cf84c8f55ff
 	github.com/go-ap/storage-badger v0.0.0-20230722082946-c47623136b81
 	github.com/go-ap/storage-boltdb v0.0.0-20230722082831-f7d812c42f5f
-	github.com/go-ap/storage-fs v0.0.0-20230722082624-086d24d7afc6
+	github.com/go-ap/storage-fs v0.0.0-20230725183002-22b8c9d91b9f
 	github.com/go-ap/storage-sqlite v0.0.0-20230722082725-d9eb1b5b215e
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-fed/httpsig v1.1.0
