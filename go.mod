@@ -5,17 +5,17 @@ go 1.18
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20230317075520-07e173563bf8
 	git.sr.ht/~mariusor/wrapper v0.0.0-20230710102058-fc38877da4fe
-	github.com/go-ap/activitypub v0.0.0-20230730144252-88f76b2af358
-	github.com/go-ap/auth v0.0.0-20230730144654-a53c5d5a2c9e
-	github.com/go-ap/client v0.0.0-20230730144342-64d59bd2e88c
+	github.com/go-ap/activitypub v0.0.0-20230807182453-602f717f6ca3
+	github.com/go-ap/auth v0.0.0-20230807182851-3ab0c698cec5
+	github.com/go-ap/client v0.0.0-20230807182802-7a0eddf496da
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea
-	github.com/go-ap/filters v0.0.0-20230806102246-6ed7f9236fa6
+	github.com/go-ap/filters v0.0.0-20230807182924-c71be7fd5d98
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20230730144722-0ae13a5ff5f5
-	github.com/go-ap/storage-badger v0.0.0-20230806102718-39699bb0ee99
-	github.com/go-ap/storage-boltdb v0.0.0-20230806102659-97036b0f4bdf
-	github.com/go-ap/storage-fs v0.0.0-20230806102522-e6ea3448f38b
-	github.com/go-ap/storage-sqlite v0.0.0-20230806102621-12340d6f687d
+	github.com/go-ap/processing v0.0.0-20230807182903-ede2ed5d7744
+	github.com/go-ap/storage-badger v0.0.0-20230807183025-712c233e121f
+	github.com/go-ap/storage-boltdb v0.0.0-20230807183012-1207e173499c
+	github.com/go-ap/storage-fs v0.0.0-20230807182945-583df047aa37
+	github.com/go-ap/storage-sqlite v0.0.0-20230807182959-e4eeef40600b
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.4.0
@@ -61,7 +61,7 @@ require (
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/term v0.11.0 // indirect
-	golang.org/x/tools v0.11.1 // indirect
+	golang.org/x/tools v0.12.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	lukechampine.com/uint128 v1.3.0 // indirect
