@@ -74,11 +74,6 @@ func cleanDB(t *testing.T, opt config.Options) {
 	if err := cmd.Reset(opt); err != nil {
 		t.Error(err)
 	}
-	if fedboxApp != nil {
-		if st, ok := fedboxApp.Storage().(ls.Resetter); ok {
-			st.Reset()
-		}
-	}
 
 	// As we're using ioutil.Tempdir for the storage path, we can remove it fully
 	os.RemoveAll(path.Clean(opt.StoragePath))

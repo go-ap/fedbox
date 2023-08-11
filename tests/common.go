@@ -41,7 +41,6 @@ var UserAgent = "test-go-http-client"
 var HeaderAccept = `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`
 
 var activityCount = 0
-var fedboxApp *fedbox.FedBOX
 
 var C2SConfig = config.Options{
 	Env:         env.TEST,
@@ -307,7 +306,9 @@ type mapFieldAssertFn func(ob map[string]interface{}, key string, testVal interf
 type stringArrFieldAssertFn func(ob []interface{}, testVal []string)
 
 func errorf(t *testing.T) errFn {
+	t.Helper()
 	return func(msg string, args ...interface{}) {
+		t.Helper()
 		msg = fmt.Sprintf("%s\n------- Stack -------\n%s\n", msg, debug.Stack())
 		if args == nil || len(args) == 0 {
 			return
@@ -318,6 +319,7 @@ func errorf(t *testing.T) errFn {
 
 func errIfNotTrue(t *testing.T) assertFn {
 	return func(v bool, msg string, args ...interface{}) {
+		t.Helper()
 		if !v {
 			errorf(t)(msg, args...)
 		}
@@ -346,6 +348,7 @@ func errOnArray(t *testing.T) stringArrFieldAssertFn {
 
 func errOnMapProp(t *testing.T) mapFieldAssertFn {
 	return func(ob map[string]interface{}, key string, tVal interface{}) {
+		t.Helper()
 		t.Run(key, func(t *testing.T) {
 			assertTrue := errIfNotTrue(t)
 			assertMapKey := errOnMapProp(t)
@@ -420,7 +423,9 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 }
 
 func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
+	t.Helper()
 	return func(ob map[string]interface{}, tVal *objectVal) {
+		t.Helper()
 		t.Run(fmt.Sprintf("[%s]%s", tVal.typ, tVal.id), func(t *testing.T) {
 			fail := errorf(t)
 			assertTrue := errIfNotTrue(t)
@@ -661,10 +666,12 @@ func getRequest(t *testing.T, st int) func(iri string, acc *testAccount) map[str
 }
 
 func errNotOKGetRequest(t *testing.T) requestGetAssertFn {
+	t.Helper()
 	return getRequest(t, http.StatusOK)
 }
 
 func errNotGoneGetRequest(t *testing.T) requestGetAssertFn {
+	t.Helper()
 	return getRequest(t, http.StatusGone)
 }
 
@@ -742,6 +749,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 		Timeout: 400 * time.Second,
 	}
 	return func(test testPair) map[string]interface{} {
+		t.Helper()
 		res := make(map[string]interface{})
 		t.Run(test.label(), func(t *testing.T) {
 			assertTrue := errIfNotTrue(t)
@@ -801,26 +809,28 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 				resp.StatusCode, test.res.code, req.Method, req.URL, req.Header, body, resp.Status, resp.Header, b)
 
 			if test.req.met == http.MethodPost {
-				location, ok := resp.Header["Location"]
-				if ok {
+				if resp.StatusCode >= http.StatusFound && resp.StatusCode < http.StatusBadRequest {
+					location, ok := resp.Header["Location"]
 					assertTrue(ok, "Server didn't respond with a Location header even though it responded with a %d status", resp.StatusCode)
-					assertTrue(len(location) == 1, "Server responded with %d Location headers which is not expected", len(location))
-					newObj, err := url.Parse(location[0])
-					newObjURL := newObj.String()
-					assertTrue(err == nil, "Location header holds invalid URL %s", newObjURL)
-					if isClientRequest {
-						assertTrue(strings.Contains(newObjURL, apiURL), "Location header holds invalid URL %s, expected to contain %s", newObjURL, apiURL)
-					}
-					test.act = &objectVal{
-						id: newObjURL,
-					}
-					lastActivity = test.act
-					if test.res.val == nil {
-						test.res.val = &objectVal{}
-					}
-					if test.res.val.id == "" {
-						// this is the location of the Activity not of the created object
-						test.res.val.id = newObjURL
+					if ok {
+						assertTrue(len(location) == 1, "Server responded with %d Location headers which is not expected", len(location))
+						newObj, err := url.Parse(location[0])
+						newObjURL := newObj.String()
+						assertTrue(err == nil, "Location header holds invalid URL %s", newObjURL)
+						if isClientRequest {
+							assertTrue(strings.Contains(newObjURL, apiURL), "Location header holds invalid URL %s, expected to contain %s", newObjURL, apiURL)
+						}
+						test.act = &objectVal{
+							id: newObjURL,
+						}
+						lastActivity = test.act
+						if test.res.val == nil {
+							test.res.val = &objectVal{}
+						}
+						if test.res.val.id == "" {
+							// this is the location of the Activity not of the created object
+							test.res.val.id = newObjURL
+						}
 					}
 				}
 			}
@@ -865,6 +875,7 @@ func cleanupTestPairs(pairs testPairs, t *testing.T) {
 func runTestSuite(t *testing.T, pairs testPairs) {
 	defer cleanupTestPairs(pairs, t)
 
+	t.Helper()
 	for _, suite := range pairs {
 		ctx := context.TODO()
 		suite.apps = make(map[vocab.IRI]*fedbox.FedBOX)
