@@ -95,19 +95,11 @@ func (o Options) BaseStoragePath() string {
 	return basePath
 }
 
-func (o Options) BoltDBOAuth2() string {
-	return fmt.Sprintf("%s/oauth.bdb", o.BaseStoragePath())
-}
-
-func (o Options) BadgerOAuth2(base string) string {
-	return path.Join(path.Dir(base), "oauth", path.Base(base))
-}
-
 func prefKey(k string) string {
-	if Prefix != "" {
-		return fmt.Sprintf("%s_%s", strings.ToUpper(Prefix), k)
+	if Prefix == "" {
+		return k
 	}
-	return k
+	return strings.Join([]string{strings.ToUpper(Prefix), k}, "_")
 }
 
 func Getval(name, def string) string {
@@ -186,11 +178,7 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	conf.CertPath = Getval(KeyCertPath, "")
 
 	conf.Listen = Getval(KeyListen, "")
-	envStorage := Getval(KeyStorage, string(DefaultStorage))
-	if len(DefaultStorage) > 0 {
-		envStorage = string(DefaultStorage)
-	}
-	conf.Storage = StorageType(strings.ToLower(envStorage))
+	conf.Storage = StorageType(strings.ToLower(Getval(KeyStorage, string(DefaultStorage))))
 	conf.StoragePath = Getval(KeyStoragePath, "")
 	if conf.StoragePath == "" {
 		conf.StoragePath = os.TempDir()

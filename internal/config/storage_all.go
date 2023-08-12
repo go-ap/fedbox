@@ -2,4 +2,4 @@
 
 package config
 
-const DefaultStorage = ""
+const DefaultStorage = StorageFS

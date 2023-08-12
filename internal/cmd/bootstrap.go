@@ -1,15 +1,20 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"time"
 
+	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/errors"
+	http "github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/storage"
 	s "github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/processing"
 	"github.com/urfave/cli/v2"
 )
 
@@ -77,29 +82,60 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 	}
 }
 
-type storageConf struct {
-	Storage     config.StorageType
-	Path        string
-	BaseURL     string
-	CacheEnable bool
-}
-
-func confFn(opt config.Options) storageConf {
-	return storageConf{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache, BaseURL: opt.BaseURL, Storage: opt.Storage}
-}
-
 func Bootstrap(conf config.Options, service vocab.Item) error {
-	if err := bootstrapFn(confFn(conf), service); err != nil {
-		return errors.Annotatef(err, "Unable to create %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
+	l := lw.Dev(lw.SetOutput(os.Stderr))
+	if err := storage.BootstrapFn(conf); err != nil {
+		return http.Annotatef(err, "Unable to create %s path for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}
-	fmt.Fprintf(os.Stdout, "Successfuly created %s db for storage %s\n", conf.BaseStoragePath(), conf.Storage)
+	l.Infof("Successfully created %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
+
+	db, err := fedbox.Storage(conf, l)
+	if err != nil {
+		return http.Annotatef(err, "Unable to load FedBOX storage for path %s", conf.StoragePath)
+	}
+	if err = CreateService(db, service); err != nil {
+		return http.Annotatef(err, "Unable to create FedBOX service %s for storage %s", service.GetID(), conf.Storage)
+	}
+	l.Infof("Successfully created FedBOX service %s for storage %s", service.GetID(), conf.Storage)
 	return nil
 }
 
 func Reset(conf config.Options) error {
-	if err := cleanFn(confFn(conf)); err != nil {
-		return errors.Annotatef(err, "Unable to reset %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
+	l := lw.Dev(lw.SetOutput(os.Stderr))
+	if err := storage.CleanFn(conf); err != nil {
+		return http.Annotatef(err, "Unable to reset %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}
-	fmt.Fprintf(os.Stdout, "Successful reset %s db for storage %s\n", conf.BaseStoragePath(), conf.Storage)
+	l.Infof("Successful reset %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
 	return nil
+}
+
+func CreateService(r fedbox.FullStorage, self vocab.Item) (err error) {
+	self, err = r.Save(self)
+	if err != nil {
+		return err
+	}
+
+	col := func(iri vocab.IRI) vocab.CollectionInterface {
+		return &vocab.OrderedCollection{
+			ID:           iri,
+			Type:         vocab.OrderedCollectionType,
+			Published:    time.Now().UTC(),
+			AttributedTo: self,
+			CC:           vocab.ItemCollection{vocab.PublicNS},
+		}
+	}
+
+	rr, ok := r.(processing.CollectionStore)
+	if !ok {
+		return nil
+	}
+	return vocab.OnActor(self, func(service *vocab.Actor) error {
+		var multi error
+		for _, stream := range service.Streams {
+			if _, err := rr.Create(col(stream.GetID())); err != nil {
+				multi = errors.Join(multi, err)
+			}
+		}
+		return multi
+	})
 }

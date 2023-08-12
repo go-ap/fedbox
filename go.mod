@@ -1,6 +1,6 @@
 module github.com/go-ap/fedbox
 
-go 1.18
+go 1.20
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20230317075520-07e173563bf8
@@ -12,10 +12,10 @@ require (
 	github.com/go-ap/filters v0.0.0-20230807182924-c71be7fd5d98
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20230807182903-ede2ed5d7744
-	github.com/go-ap/storage-badger v0.0.0-20230807183025-712c233e121f
-	github.com/go-ap/storage-boltdb v0.0.0-20230807183012-1207e173499c
-	github.com/go-ap/storage-fs v0.0.0-20230807182945-583df047aa37
-	github.com/go-ap/storage-sqlite v0.0.0-20230807182959-e4eeef40600b
+	github.com/go-ap/storage-badger v0.0.0-20230812165031-4be450bdfc48
+	github.com/go-ap/storage-boltdb v0.0.0-20230812164825-f9979e3eabca
+	github.com/go-ap/storage-fs v0.0.0-20230812182928-04dcd30e6517
+	github.com/go-ap/storage-sqlite v0.0.0-20230812170053-0f57e42504b9
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.4.0
@@ -38,7 +38,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/glog v1.1.1 // indirect
+	github.com/golang/glog v1.1.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
