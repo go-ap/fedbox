@@ -105,7 +105,7 @@ func Reset(conf config.Options) error {
 	if err := storage.CleanFn(conf); err != nil {
 		return http.Annotatef(err, "Unable to reset %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}
-	l.Infof("Successful reset %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
+	l.Infof("Successfully reset %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
 	return nil
 }
 
