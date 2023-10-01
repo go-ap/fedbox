@@ -370,7 +370,7 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 
 				i := int64(v)
 				ti := tt.(int64)
-				assertTrue(i == ti, "Invalid %q, %d expected, received %d", key, ti, i)
+				assertTrue(i == ti, "Invalid %v, %v[%d] expected, received %d", key, ob, ti, i)
 			case string, []byte:
 				// the case when the mock test value is a string, but corresponds to an object in the json
 				// so we need to verify the json's object id against our mock value
@@ -889,13 +889,18 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 				t.Fatalf("%+v", err)
 				return
 			}
-			fedbox, err := RunTestFedBOX(options)
+			fb, err := RunTestFedBOX(options)
 			if err != nil {
 				t.Fatalf("%s", err)
 				return
 			}
-			suite.apps[self.ID] = fedbox
-			go fedbox.Run(ctx)
+			suite.apps[self.ID] = fb
+			go func() {
+				err := fb.Run(ctx)
+				if err != nil {
+					t.Errorf("Err: %+v", err)
+				}
+			}()
 		}
 
 		name := suite.name
