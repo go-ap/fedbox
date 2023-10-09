@@ -2,8 +2,6 @@ module github.com/go-ap/fedbox
 
 go 1.21
 
-toolchain go1.21.1
-
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20230317075520-07e173563bf8
 	git.sr.ht/~mariusor/wrapper v0.0.0-20230710102058-fc38877da4fe
@@ -17,7 +15,7 @@ require (
 	github.com/go-ap/storage-badger v0.0.0-20231003112303-40aa83d4d9a0
 	github.com/go-ap/storage-boltdb v0.0.0-20231003112223-ec8fc33df2a8
 	github.com/go-ap/storage-fs v0.0.0-20231003111944-422b7ee953ab
-	github.com/go-ap/storage-sqlite v0.0.0-20231003112146-98be744cf821
+	github.com/go-ap/storage-sqlite v0.0.0-20231009101011-e38daf3eb770
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -25,8 +23,8 @@ require (
 	github.com/mariusor/render v1.5.1-0.20221026090743-ab78c1b3aa95
 	github.com/pborman/uuid v1.2.1
 	github.com/urfave/cli/v2 v2.25.7
-	golang.org/x/crypto v0.13.0
-	golang.org/x/oauth2 v0.12.0
+	golang.org/x/crypto v0.14.0
+	golang.org/x/oauth2 v0.13.0
 )
 
 require (
@@ -59,11 +57,11 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/net v0.15.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
-	golang.org/x/term v0.12.0 // indirect
-	golang.org/x/tools v0.13.0 // indirect
+	golang.org/x/mod v0.13.0 // indirect
+	golang.org/x/net v0.16.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/tools v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	lukechampine.com/uint128 v1.3.0 // indirect
