@@ -6,17 +6,17 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20230317075520-07e173563bf8
 	git.sr.ht/~mariusor/wrapper v0.0.0-20230710102058-fc38877da4fe
 	github.com/go-ap/activitypub v0.0.0-20231003111253-1fba3772399b
-	github.com/go-ap/auth v0.0.0-20231003111620-1a1a791dfd45
-	github.com/go-ap/cache v0.0.0-20231027104420-96befe746f6b
+	github.com/go-ap/auth v0.0.0-20231027185249-2bb622b2cf22
+	github.com/go-ap/cache v0.0.0-20231027104534-41760c05fbc7
 	github.com/go-ap/client v0.0.0-20231003111330-2fea5479914b
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
-	github.com/go-ap/filters v0.0.0-20231003111901-6cdff8a45ebc
+	github.com/go-ap/filters v0.0.0-20231027164309-3a17bd085c06
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20231003111647-d4b4c693db1b
-	github.com/go-ap/storage-badger v0.0.0-20231003112303-40aa83d4d9a0
-	github.com/go-ap/storage-boltdb v0.0.0-20231003112223-ec8fc33df2a8
-	github.com/go-ap/storage-fs v0.0.0-20231003111944-422b7ee953ab
-	github.com/go-ap/storage-sqlite v0.0.0-20231009101011-e38daf3eb770
+	github.com/go-ap/processing v0.0.0-20231027184038-0fb5186333ec
+	github.com/go-ap/storage-badger v0.0.0-20231027184221-f7b99f5536bb
+	github.com/go-ap/storage-boltdb v0.0.0-20231027184233-6bf59ffc3546
+	github.com/go-ap/storage-fs v0.0.0-20231027184111-6beecfaf0226
+	github.com/go-ap/storage-sqlite v0.0.0-20231027184202-fc662a57aa0f
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -42,11 +42,11 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
-	github.com/google/uuid v1.3.1 // indirect
+	github.com/google/uuid v1.4.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/klauspost/compress v1.17.0 // indirect
+	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	github.com/pkg/errors v0.9.1 // indirect
@@ -56,10 +56,10 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	go.etcd.io/bbolt v1.3.7 // indirect
+	go.etcd.io/bbolt v1.3.8 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/mod v0.13.0 // indirect
-	golang.org/x/net v0.16.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
@@ -68,7 +68,7 @@ require (
 	lukechampine.com/uint128 v1.3.0 // indirect
 	modernc.org/cc/v3 v3.41.0 // indirect
 	modernc.org/ccgo/v3 v3.16.15 // indirect
-	modernc.org/libc v1.24.1 // indirect
+	modernc.org/libc v1.28.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
 	modernc.org/opt v0.1.3 // indirect
