@@ -11,10 +11,10 @@ import (
 
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/cache"
 	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/cache"
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
@@ -74,7 +74,7 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 		filters.LoadCollectionFilters(f, fb.actorFromRequest(r))
 
 		cacheKey := filters.CacheKey(f)
-		it := fb.caches.Get(cacheKey)
+		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
 
 		var err error
@@ -110,7 +110,7 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			return nil, err
 		}
 		if !fromCache && toStore.Collection() != nil {
-			fb.caches.Set(cacheKey, toStore)
+			fb.caches.Store(cacheKey, toStore)
 		}
 		for _, it := range col.Collection() {
 			// Remove bcc and bto - probably should be moved to a different place
@@ -254,7 +254,7 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 		filters.LoadItemFilters(f, fb.actorFromRequest(r))
 
 		cacheKey := filters.CacheKey(f)
-		it := fb.caches.Get(cacheKey)
+		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
 
 		iri := reqURL(r, fb.Config().Secure)
@@ -306,7 +306,7 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 		}
 
 		if !fromCache {
-			fb.caches.Set(cacheKey, it)
+			fb.caches.Store(cacheKey, it)
 		}
 
 		if s, ok := it.(vocab.HasRecipients); ok {

@@ -11,10 +11,10 @@ import (
 	w "git.sr.ht/~mariusor/wrapper"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
+	"github.com/go-ap/cache"
 	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/cache"
 	"github.com/go-ap/fedbox/internal/config"
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
@@ -30,6 +30,8 @@ func init() {
 
 type LogFn func(string, ...interface{})
 
+type canStore = cache.CanStore
+
 type FedBOX struct {
 	R            chi.Router
 	conf         config.Options
@@ -37,7 +39,7 @@ type FedBOX struct {
 	client       client.C
 	storage      FullStorage
 	ver          string
-	caches       cache.CanStore
+	caches       canStore
 	OAuth        authService
 	keyGenerator func(act *vocab.Actor) error
 	stopFn       func()
@@ -172,7 +174,7 @@ func (f *FedBOX) Stop() {
 
 func (f *FedBOX) reload() (err error) {
 	f.conf, err = config.LoadFromEnv(f.conf.Env, f.conf.TimeOut)
-	f.caches.Remove()
+	f.caches.Delete()
 	return err
 }
 

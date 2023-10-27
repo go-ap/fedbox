@@ -7,6 +7,7 @@ require (
 	git.sr.ht/~mariusor/wrapper v0.0.0-20230710102058-fc38877da4fe
 	github.com/go-ap/activitypub v0.0.0-20231003111253-1fba3772399b
 	github.com/go-ap/auth v0.0.0-20231003111620-1a1a791dfd45
+	github.com/go-ap/cache v0.0.0-20231027104420-96befe746f6b
 	github.com/go-ap/client v0.0.0-20231003111330-2fea5479914b
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
 	github.com/go-ap/filters v0.0.0-20231003111901-6cdff8a45ebc
