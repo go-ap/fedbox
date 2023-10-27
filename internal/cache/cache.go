@@ -8,11 +8,9 @@ import (
 )
 
 type (
-	iriMap map[vocab.IRI]vocab.Item
-	store  struct {
+	store struct {
 		enabled bool
-		w       sync.RWMutex
-		c       iriMap
+		c       sync.Map
 	}
 	CanStore interface {
 		Set(iri vocab.IRI, it vocab.Item)
@@ -21,48 +19,44 @@ type (
 	}
 )
 
-func New(enabled bool) *store {
-	return &store{enabled: enabled, c: make(iriMap)}
+func New(enabled bool) store {
+	return store{enabled: enabled, c: sync.Map{}}
 }
 
-func (r *store) Get(iri vocab.IRI) vocab.Item {
-	if r == nil || !r.enabled {
+func (r store) Get(iri vocab.IRI) vocab.Item {
+	if !r.enabled {
 		return nil
 	}
-	r.w.RLock()
-	defer r.w.RUnlock()
-	if it, ok := r.c[iri]; ok {
-		return it
+	v, found := r.c.Load(iri)
+	if !found {
+		return nil
 	}
-	return nil
+	it, ok := v.(vocab.Item)
+	if !ok {
+		return nil
+	}
+	return it
 }
 
-func (r *store) Set(iri vocab.IRI, it vocab.Item) {
-	if r == nil || !r.enabled {
+func (r store) Set(iri vocab.IRI, it vocab.Item) {
+	if !r.enabled {
 		return
 	}
-	r.w.Lock()
-	defer r.w.Unlock()
-	if r.c == nil {
-		r.c = make(map[vocab.IRI]vocab.Item)
-	}
-	r.c[iri] = it
+	r.c.Store(iri, it)
 }
 
-func (r *store) Clear() {
-	if r == nil || !r.enabled {
+func (r store) Clear() {
+	if !r.enabled {
 		return
 	}
-}
-
-func (r *store) Remove(iris ...vocab.IRI) bool {
-	if r == nil || !r.enabled {
+	r.c.Range(func(key, _ any) bool {
+		r.c.Delete(key)
 		return true
-	}
-	if len(iris) == 0 {
-		for key := range r.c {
-			delete(r.c, key)
-		}
+	})
+}
+
+func (r store) Remove(iris ...vocab.IRI) bool {
+	if !r.enabled {
 		return true
 	}
 	toInvalidate := vocab.IRIs(iris)
@@ -75,15 +69,8 @@ func (r *store) Remove(iris ...vocab.IRI) bool {
 			toInvalidate = append(toInvalidate, c)
 		}
 	}
-	r.w.Lock()
-	defer r.w.Unlock()
 	for _, iri := range toInvalidate {
-		for key := range r.c {
-			// TODO(marius): I need to play around with this a bit
-			if key.Contains(iri, false) {
-				delete(r.c, key)
-			}
-		}
+		r.c.Delete(iri)
 	}
 	return true
 }

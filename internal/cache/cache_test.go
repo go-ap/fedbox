@@ -2,6 +2,7 @@ package cache
 
 import (
 	"reflect"
+	"sync"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
@@ -33,6 +34,18 @@ func Test_reqCache_get(t *testing.T) {
 	}
 }
 
+type iriItemMap = map[vocab.IRI]vocab.Item
+
+func iriMap(objects ...iriItemMap) sync.Map {
+	s := sync.Map{}
+	for _, entry := range objects {
+		for k, v := range entry {
+			s.Store(k, v)
+		}
+	}
+	return s
+}
+
 func Test_reqCache_remove(t *testing.T) {
 	type args struct {
 		iri vocab.IRI
@@ -48,7 +61,7 @@ func Test_reqCache_remove(t *testing.T) {
 			name: "simple",
 			r: store{
 				enabled: true,
-				c:       iriMap{vocab.IRI("example1"): &vocab.Object{ID: vocab.IRI("example1")}},
+				c:       iriMap(iriItemMap{"example1": &vocab.Object{ID: "example1"}}),
 			},
 			args:      args{vocab.IRI("example1")},
 			want:      true,
@@ -58,7 +71,7 @@ func Test_reqCache_remove(t *testing.T) {
 			name: "same_url",
 			r: store{
 				enabled: true,
-				c:       iriMap{vocab.IRI("http://example.com"): &vocab.Actor{ID: vocab.IRI("http://example.com")}},
+				c:       iriMap(iriItemMap{"http://example.com": &vocab.Actor{ID: "http://example.com"}}),
 			},
 			args:      args{vocab.IRI("http://example.com")},
 			want:      true,
@@ -68,7 +81,7 @@ func Test_reqCache_remove(t *testing.T) {
 			name: "different_urls",
 			r: store{
 				enabled: true,
-				c:       iriMap{vocab.IRI("http://example.com/inbox"): &vocab.Actor{ID: vocab.IRI("http://example.com")}},
+				c:       iriMap(iriItemMap{"http://example.com/inbox": &vocab.Actor{ID: "http://example.com"}}),
 			},
 			args:      args{vocab.IRI("http://example.com")},
 			want:      true,
@@ -78,17 +91,17 @@ func Test_reqCache_remove(t *testing.T) {
 			name: "with_replies",
 			r: store{
 				enabled: true,
-				c: iriMap{
-					vocab.IRI("http://example.com/elefant"): vocab.IRI("http://example.com/elefant"),
-					vocab.IRI("http://example.com/test"): &vocab.Object{
-						ID:      vocab.IRI("http://example.com/test"),
+				c: iriMap(iriItemMap{
+					"http://example.com/elefant": vocab.IRI("http://example.com/elefant"),
+					"http://example.com/test": &vocab.Object{
+						ID:      "http://example.com/test",
 						Replies: vocab.IRI("http://example.com/test/replies"),
 					},
-					vocab.IRI("http://example.com/test/replies"): vocab.ItemCollection{
+					"http://example.com/test/replies": vocab.ItemCollection{
 						vocab.IRI("http://example.com/0"),
 						vocab.IRI("http://example.com/1"),
 					},
-				},
+				}),
 			},
 			args:      args{vocab.IRI("http://example.com/test")},
 			want:      true,
@@ -100,18 +113,12 @@ func Test_reqCache_remove(t *testing.T) {
 			if got := tt.r.Remove(tt.args.iri); got != tt.want {
 				t.Errorf("Remove() = %v, want %v", got, tt.want)
 			}
-			if len(tt.leftovers) != len(tt.r.c) {
-				t.Errorf("Cache length missmatch %d, want %d", len(tt.r.c), len(tt.leftovers))
-			}
 			for _, iri := range tt.leftovers {
-				if tt.r.c[iri] == nil {
+				v, ok := tt.r.c.Load(iri)
+				if v == nil || !ok {
 					t.Errorf("IRI should be in cache, but not found  %s", iri)
-				} else {
-					delete(tt.r.c, iri)
 				}
-			}
-			if len(tt.r.c) > 0 {
-				t.Errorf("IRIs should not be in cache, but still found  %#v", tt.r.c)
+				tt.r.c.Delete(iri)
 			}
 		})
 	}
