@@ -7,7 +7,7 @@ require (
 	git.sr.ht/~mariusor/wrapper v0.0.0-20230710102058-fc38877da4fe
 	github.com/go-ap/activitypub v0.0.0-20231003111253-1fba3772399b
 	github.com/go-ap/auth v0.0.0-20231027185249-2bb622b2cf22
-	github.com/go-ap/cache v0.0.0-20231027104534-41760c05fbc7
+	github.com/go-ap/cache v0.0.0-20231028144217-f2be2836e1be
 	github.com/go-ap/client v0.0.0-20231003111330-2fea5479914b
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
 	github.com/go-ap/filters v0.0.0-20231027164309-3a17bd085c06
@@ -15,8 +15,8 @@ require (
 	github.com/go-ap/processing v0.0.0-20231027184038-0fb5186333ec
 	github.com/go-ap/storage-badger v0.0.0-20231027184221-f7b99f5536bb
 	github.com/go-ap/storage-boltdb v0.0.0-20231027184233-6bf59ffc3546
-	github.com/go-ap/storage-fs v0.0.0-20231027184111-6beecfaf0226
-	github.com/go-ap/storage-sqlite v0.0.0-20231027184202-fc662a57aa0f
+	github.com/go-ap/storage-fs v0.0.0-20231028144402-047a257ebf0b
+	github.com/go-ap/storage-sqlite v0.0.0-20231028144604-b0ed8f1a1edf
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
