@@ -89,16 +89,25 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 
 		c := new(vocab.OrderedCollection)
 		c.Type = vocab.OrderedCollectionType
-		err = vocab.OnCollectionIntf(it, func(items vocab.CollectionInterface) error {
+		if vocab.IsItemCollection(it) {
+			err = vocab.OnItemCollection(it, func(items *vocab.ItemCollection) error {
+				c.TotalItems = items.Count()
+				c.OrderedItems = orderItems(*items)
+				return nil
+			})
+		} else {
+			err = vocab.OnOrderedCollection(it, func(col *vocab.OrderedCollection) error {
+				c = col
+				return nil
+			})
+		}
+		if err != nil {
+			return nil, err
+		}
+		{
 			ff := *f
 			ff.Authenticated = nil
 			c.ID = ff.GetLink()
-			c.OrderedItems = orderItems(items.Collection())
-			c.TotalItems = c.OrderedItems.Count()
-			return nil
-		})
-		if err != nil {
-			return nil, err
 		}
 
 		var toStore vocab.OrderedCollection
@@ -178,7 +187,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		fb.infFn("received req %s: %s", r.Method, r.RequestURI)
 
 		f := filters.FromRequest(r, fb.Config().BaseURL)
-		filters.LoadCollectionFilters(f, fb.actorFromRequest(r))
+		_ = filters.LoadCollectionFilters(f, fb.actorFromRequest(r))
 
 		if ok, err := ValidateRequest(r); !ok {
 			fb.errFn("failed request validation: %+s", err)
@@ -213,7 +222,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			processing.WithActorKeyGenerator(fb.keyGenerator)
 		}
 
-		vocab.OnActivity(it, func(a *vocab.Activity) error {
+		_ = vocab.OnObject(it, func(a *vocab.Object) error {
 			// TODO(marius): this should be handled in the processing package
 			if a.AttributedTo == nil {
 				a.AttributedTo = f.Authenticated
