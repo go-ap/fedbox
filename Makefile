@@ -8,6 +8,7 @@ MAKEFLAGS += --no-builtin-rules
 FEDBOX_HOSTNAME ?= fedbox.git
 STORAGE ?= all
 ENV ?= dev
+PROJECT ?= fedbox
 
 LDFLAGS ?= -X main.version=$(VERSION)
 BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)'
@@ -22,7 +23,6 @@ INSTALL_PREFIX ?= usr/local
 GO ?= go
 APPSOURCES := $(wildcard ./*.go activitypub/*.go internal/*/*.go storage/*/*.go)
 ASSETFILES := $(wildcard templates/*)
-PROJECT_NAME := fedbox
 
 TAGS := $(ENV) storage_$(STORAGE)
 
@@ -79,7 +79,7 @@ test: download
 	$(TEST) $(TEST_FLAGS) -tags "$(TAGS)" $(TEST_TARGET)
 
 coverage: TEST_TARGET := .
-coverage: TEST_FLAGS += -covermode=count -coverprofile $(PROJECT_NAME).coverprofile
+coverage: TEST_FLAGS += -covermode=count -coverprofile $(PROJECT).coverprofile
 coverage: test
 
 integration: download
