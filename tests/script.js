@@ -13,17 +13,17 @@ export const options = {
         'error_rate{errorType:ActivityPubError}': [{threshold: 'rate < 0.1'}],
     },
     scenarios: {
-        regular_browsing: {
+        slam: {
             executor: 'ramping-arrival-rate',
-            exec: 'regularBrowsing',
+            exec: 'slam',
             startRate: 0,
             timeUnit: '30s',
-            preAllocatedVUs: 10,
-            maxVUs: 100,
+            preAllocatedVUs: 20,
+            maxVUs: 80,
             stages: [
-                { target: 14, duration: '30s'},
-                { target: 25, duration: '90s'},
-                { target: 0, duration: '10s'},
+                { target: 30, duration: '30s'},
+                { target: 55, duration: '90s'},
+                { target: 20, duration: '10s'},
             ],
         },
     },
@@ -207,6 +207,6 @@ function runSuite(actors, sleepTime = 0) {
     }
 }
 
-export function regularBrowsing() {
+export function slam() {
     group('actors', runSuite(actors));
 }
