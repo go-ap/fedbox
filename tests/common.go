@@ -370,10 +370,10 @@ func errOnMapProp(t *testing.T) mapFieldAssertFn {
 
 				i := int64(v)
 				ti := tt.(int64)
-				assertTrue(i == ti, "Invalid %v, %v[%d] expected, received %d", key, ob, ti, i)
+				assertTrue(i == ti, "Invalid %q expected %d, received %d, in %+v", key, ti, i, ob)
 			case string, []byte:
 				// the case when the mock test value is a string, but corresponds to an object in the json
-				// so we need to verify the json's object id against our mock value
+				// so, we need to verify the JSON object's ID against our mock value
 				v1, okA := val.(string)
 				v2, okB := val.(map[string]interface{})
 				assertTrue(okA || okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
@@ -607,7 +607,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 				}(tVal.typ)
 				if len(tVal.items) > 0 {
 					val, ok := ob[itemsKey]
-					assertTrue(ok, "Could not load %q property of collection: %#v\n\n%#v\n\n", itemsKey, ob, tVal.items)
+					assertTrue(ok, "Could not load %q property of collection:\n\n %#v\n\n%#v\n\n", itemsKey, ob, tVal)
 					items, ok := val.([]interface{})
 					assertTrue(ok, "Invalid property %q %#v, expected %T", itemsKey, val, items)
 					ti, ok := ob["totalItems"].(float64)
