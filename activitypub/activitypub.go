@@ -64,18 +64,24 @@ func GenerateID(it vocab.Item, partOf vocab.IRI, by vocab.Item) (vocab.ID, error
 	id := partOf.GetLink().AddPath(uuid)
 	typ := it.GetType()
 	if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
-		err := vocab.OnActivity(it, func(a *vocab.Activity) error {
-			rec := append(a.To, append(a.CC, append(a.Bto, a.BCC...)...)...)
-			if !rec.Contains(vocab.PublicNS) {
-				if vocab.IsNil(by) {
-					by = a.Actor
-				}
-				if !vocab.IsNil(by) {
-					// if it's not a public activity, save it to it's actor outbox instead of global activities collection
-					outbox := vocab.Outbox.IRI(by)
-					id = vocab.ID(fmt.Sprintf("%s/%s", outbox, uuid))
-				}
+		err := vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
+			if rec := a.Recipients(); rec.Contains(vocab.PublicNS) {
+				return nil
 			}
+			if vocab.IsNil(by) {
+				by = a.Actor
+			}
+			if !vocab.IsNil(by) {
+				// if "it" is not a public activity, save it to its actor Outbox instead of the global activities collection
+				outbox := vocab.Outbox.IRI(by)
+				id = vocab.ID(fmt.Sprintf("%s/%s", outbox, uuid))
+			}
+			return nil
+		})
+		if err != nil {
+			return id, err
+		}
+		err = vocab.OnObject(it, func(a *vocab.Object) error {
 			a.ID = id
 			return nil
 		})
