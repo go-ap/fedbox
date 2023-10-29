@@ -1,5 +1,7 @@
 **/.builds
 **/.git
 **/.idea
+**/.run
 **/bin
 **/tests
+**/tools
