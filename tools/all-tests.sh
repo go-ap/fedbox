@@ -1,22 +1,17 @@
 #!/bin/bash
 set -e
 
-echo "testing fs"
-make FEDBOX_STORAGE=fs integration
-echo "testing boltdb"
-make FEDBOX_STORAGE=boltdb integration
-echo "testing badger"
-make FEDBOX_STORAGE=badger integration
-echo "testing sqlite"
-make FEDBOX_STORAGE=sqlite integration
+run_tests() {
+  echo "Testing ${1}"
+    make STORAGE=${1} CGO_ENABLED=0 integration
+    make FEDBOX_STORAGE=${1} CGO_ENABLED=0 integration
+    make STORAGE=${1} CGO_ENABLED=1 TEST_FLAGS='-race -count=1' integration
+    make FEDBOX_STORAGE=${1} CGO_ENABLED=1 TEST_FLAGS='-race -count=1' integration
+}
 
-export TEST_FLAGS='-race -count=1'
+run_tests fs
+run_tests sqlite
+run_tests boltdb
+run_tests badger
 
-make CGO_ENABLED=1 STORAGE=fs integration
-make CGO_ENABLED=1 STORAGE=boltdb integration
-make CGO_ENABLED=1 STORAGE=badger integration
-
-unset TEST_FLAGS
-export CGO_ENABLED=0
-make STORAGE=sqlite integration
-
+find tests/.cache/* -type d -print -delete
