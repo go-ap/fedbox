@@ -211,7 +211,11 @@ func (f *FedBOX) Run(c context.Context) error {
 		if _, err := os.Stat(dir); err == nil {
 			sockType = "socket"
 			setters = append(setters, w.OnSocket(f.conf.Listen))
-			defer func() { os.RemoveAll(f.conf.Listen) }()
+			defer func() {
+				if err := os.RemoveAll(f.conf.Listen); err != nil {
+					f.logger.Errorf("Failed cleaning up: %s", err)
+				}
+			}()
 		}
 	} else {
 		sockType = "TCP"

@@ -60,7 +60,11 @@ func run(version string) cli.ActionFunc {
 			if out, err = os.Open(conf.LogOutput); err != nil {
 				return errors.Newf("Unable to output logs to %s: %s", conf.LogOutput, err)
 			}
-			defer out.Close()
+			defer func() {
+				if err := out.Close(); err != nil {
+					fmt.Fprintf(os.Stderr, "Unable to close log output: %s", err)
+				}
+			}()
 		}
 		var l lw.Logger
 		if conf.Env.IsDev() {
