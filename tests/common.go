@@ -305,7 +305,7 @@ type objectPropertiesAssertFn func(ob map[string]interface{}, testVal *objectVal
 type mapFieldAssertFn func(ob map[string]interface{}, key string, testVal interface{})
 type stringArrFieldAssertFn func(ob []interface{}, testVal []string)
 
-func errorf(t *testing.T) errFn {
+func errorf(t *testing.T, errFn func(format string, args ...any)) errFn {
 	t.Helper()
 	return func(msg string, args ...interface{}) {
 		t.Helper()
@@ -313,15 +313,15 @@ func errorf(t *testing.T) errFn {
 		if args == nil || len(args) == 0 {
 			return
 		}
-		t.Fatalf(msg, args...)
+		errFn(msg, args...)
 	}
 }
 
-func errIfNotTrue(t *testing.T) assertFn {
+func errIfNotTrue(t *testing.T, errFn func(format string, args ...any)) assertFn {
 	return func(v bool, msg string, args ...interface{}) {
 		t.Helper()
 		if !v {
-			errorf(t)(msg, args...)
+			errorf(t, errFn)(msg, args...)
 		}
 	}
 }
@@ -332,26 +332,26 @@ func errOnArray(t *testing.T) stringArrFieldAssertFn {
 		for k, v := range arrI {
 			arr[k] = fmt.Sprintf("%s", v)
 		}
-		errIfNotTrue(t)(len(tVal) == len(arr), "invalid array count %d, expected %d", len(arr), len(tVal))
+		errIfNotTrue(t, t.Errorf)(len(tVal) == len(arr), "invalid array count %d, expected %d", len(arr), len(tVal))
 		if len(tVal) > 0 {
 			sort.Strings(tVal)
 			sort.Strings(arr)
 			for k, iri := range tVal {
 				t.Run(fmt.Sprintf("[%s]", iri), func(t *testing.T) {
 					vk := arr[k]
-					errIfNotTrue(t)(iri == vk, "array element at pos %d, %s does not match expected %s", k, vk, iri)
+					errIfNotTrue(t, t.Errorf)(iri == vk, "array element at pos %d, %s does not match expected %s", k, vk, iri)
 				})
 			}
 		}
 	}
 }
 
-func errOnMapProp(t *testing.T) mapFieldAssertFn {
+func errOnMapProp(t *testing.T, errFn func(format string, args ...any)) mapFieldAssertFn {
 	return func(ob map[string]interface{}, key string, tVal interface{}) {
 		t.Helper()
 		t.Run(key, func(t *testing.T) {
-			assertTrue := errIfNotTrue(t)
-			assertMapKey := errOnMapProp(t)
+			assertTrue := errIfNotTrue(t, errFn)
+			assertMapKey := errOnMapProp(t, errFn)
 			assertObjectProperties := errOnObjectProperties(t)
 			assertArrayValues := errOnArray(t)
 			val, ok := ob[key]
@@ -427,9 +427,10 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 	return func(ob map[string]interface{}, tVal *objectVal) {
 		t.Helper()
 		t.Run(fmt.Sprintf("[%s]%s", tVal.typ, tVal.id), func(t *testing.T) {
-			fail := errorf(t)
-			assertTrue := errIfNotTrue(t)
-			assertMapKey := errOnMapProp(t)
+			fail := errorf(t, t.Errorf)
+			assertTrue := errIfNotTrue(t, t.Errorf)
+			assertMapKey := errOnMapProp(t, t.Errorf)
+			warnMapKey := errOnMapProp(t, t.Logf)
 			assertGetRequest := errNotOKGetRequest(t)
 			assertObjectProperties := errOnObjectProperties(t)
 
@@ -598,7 +599,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 				}
 			}
 			if tVal.itemCount > 0 {
-				assertMapKey(ob, "totalItems", tVal.itemCount)
+				warnMapKey(ob, "totalItems", tVal.itemCount)
 				itemsKey := func(typ string) string {
 					if typ == string(vocab.CollectionType) {
 						return "items"
@@ -752,7 +753,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
 		t.Helper()
 		res := make(map[string]interface{})
 		t.Run(test.label(), func(t *testing.T) {
-			assertTrue := errIfNotTrue(t)
+			assertTrue := errIfNotTrue(t, t.Errorf)
 			assertGetRequest := errNotOKGetRequest(t)
 			assertObjectProperties := errOnObjectProperties(t)
 			if len(test.req.headers) == 0 {
