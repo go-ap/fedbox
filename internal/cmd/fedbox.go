@@ -15,7 +15,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const defaultTimeout = time.Second * 15
+const defaultTimeout = time.Millisecond * 500
 
 func NewApp(version string) *cli.App {
 	return &cli.App{
