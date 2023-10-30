@@ -199,7 +199,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
 		}
 		if it, err = vocab.UnmarshalJSON(body); err != nil {
-			fb.errFn("failed unmarshaling jsonld body: %+s", err)
+			fb.errFn("failed unmarshalling jsonld body: %+s", err)
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
 
