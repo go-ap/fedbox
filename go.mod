@@ -5,18 +5,18 @@ go 1.21
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20230317075520-07e173563bf8
 	git.sr.ht/~mariusor/wrapper v0.0.0-20230710102058-fc38877da4fe
-	github.com/go-ap/activitypub v0.0.0-20231029155133-33c979e46cbb
-	github.com/go-ap/auth v0.0.0-20231029155638-b31b321056ae
-	github.com/go-ap/cache v0.0.0-20231029155239-8c539c46e4b6
-	github.com/go-ap/client v0.0.0-20231029155419-dda847baeedb
+	github.com/go-ap/activitypub v0.0.0-20231030184441-9f208f3d7c66
+	github.com/go-ap/auth v0.0.0-20231030184743-e3e71ea3383c
+	github.com/go-ap/cache v0.0.0-20231030184621-cee2d5de7cc1
+	github.com/go-ap/client v0.0.0-20231030184710-9f60a15045f6
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
-	github.com/go-ap/filters v0.0.0-20231029171902-c68bd9d0aff0
+	github.com/go-ap/filters v0.0.0-20231030184642-1952a28b7be5
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20231029172037-ad55c91da590
-	github.com/go-ap/storage-badger v0.0.0-20231029172522-c1044970c863
-	github.com/go-ap/storage-boltdb v0.0.0-20231029172439-daf913db9e99
-	github.com/go-ap/storage-fs v0.0.0-20231029172118-5a708236b337
-	github.com/go-ap/storage-sqlite v0.0.0-20231029172208-10772376b49c
+	github.com/go-ap/processing v0.0.0-20231030184813-9d222f27e203
+	github.com/go-ap/storage-badger v0.0.0-20231030184949-3549134bc77a
+	github.com/go-ap/storage-boltdb v0.0.0-20231030184935-75629ee2f615
+	github.com/go-ap/storage-fs v0.0.0-20231030185027-60db43b2e672
+	github.com/go-ap/storage-sqlite v0.0.0-20231030184919-0b51d4b877fc
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -69,7 +69,7 @@ require (
 	lukechampine.com/uint128 v1.3.0 // indirect
 	modernc.org/cc/v3 v3.41.0 // indirect
 	modernc.org/ccgo/v3 v3.16.15 // indirect
-	modernc.org/libc v1.28.0 // indirect
+	modernc.org/libc v1.29.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
 	modernc.org/opt v0.1.3 // indirect
