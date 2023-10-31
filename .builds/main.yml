@@ -38,6 +38,7 @@ tasks:
       make TEST_FLAGS='-race -count=1' CGO_ENABLED=1 STORAGE=fs integration
       make TEST_FLAGS='-count=1' FEDBOX_STORAGE=fs integration
       make TEST_FLAGS='-count=1' STORAGE=fs integration
+      complete-build
   - integration-sqlite: |
       cd fedbox
       # using sqlite.org package
