@@ -43,7 +43,7 @@ func (d pathTyper) Type(r *http.Request) vocab.CollectionPath {
 	return col
 }
 
-func reqURL(r *http.Request, secure bool) string {
+func reqURL(r http.Request, secure bool) string {
 	scheme := "http"
 	if secure || r.TLS != nil {
 		scheme = "https"
@@ -179,15 +179,24 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 	}
 }
 
+// CacheKey generates a unique vocab.IRI hash based on its authenticated user and other parameters
+func CacheKey(iri vocab.IRI, auth vocab.Actor) vocab.IRI {
+	u, err := iri.URL()
+	if err != nil {
+		return iri
+	}
+	if !auth.ID.Equals(vocab.PublicNS, true) {
+		u.User = url.User(filepath.Base(auth.ID.String()))
+	}
+	return vocab.IRI(u.String())
+}
+
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
 		repo := fb.storage
 		var it vocab.Item
 		fb.infFn("received req %s: %s", r.Method, r.RequestURI)
-
-		f := filters.FromRequest(r, fb.Config().BaseURL)
-		_ = filters.LoadCollectionFilters(f, fb.actorFromRequest(r))
 
 		if ok, err := ValidateRequest(r); !ok {
 			fb.errFn("failed request validation: %+s", err)
@@ -217,21 +226,17 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			fb.errFn("failed initializing the Activity processor: %+s", err)
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize processor")
 		}
-		processor.SetActor(f.Authenticated)
+
+		auth := fb.actorFromRequest(r)
+		processor.SetActor(&auth)
+
 		if fb.keyGenerator != nil {
 			processing.WithActorKeyGenerator(fb.keyGenerator)
 		}
 
-		_ = vocab.OnObject(it, func(a *vocab.Object) error {
-			// TODO(marius): this should be handled in the processing package
-			if a.AttributedTo == nil {
-				a.AttributedTo = f.Authenticated
-			}
-			return nil
-		})
 		if it, err = processor.ProcessActivity(it, receivedIn); err != nil {
 			fb.errFn("failed processing activity: %+s", err)
-			return it, errors.HttpStatus(err), errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), f.Collection)
+			return it, errors.HttpStatus(err), errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), filepath.Base(r.URL.Path))
 		}
 		err = vocab.OnActivity(it, func(act *vocab.Activity) error {
 			return cache.ActivityPurge(fb.caches, act, receivedIn)
@@ -255,42 +260,23 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 	return func(r *http.Request) (vocab.Item, error) {
 		repo := fb.storage
-		f := filters.FromRequest(r, fb.Config().BaseURL)
-		if !f.IRI.Equals(fb.self.GetLink(), true) && !filters.ValidCollection(f.Collection) {
-			return nil, errors.NotFoundf("%s not found", r.URL.Path)
-		}
 
-		filters.LoadItemFilters(f, fb.actorFromRequest(r))
+		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
 
-		cacheKey := filters.CacheKey(f)
+		cacheKey := CacheKey(iri, fb.actorFromRequest(r))
 		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
 
-		iri := reqURL(r, fb.Config().Secure)
-		if len(f.IRI) == 0 {
-			f.IRI = vocab.IRI(iri)
-		}
-
-		where := ""
-		what := ""
-		if u, err := url.ParseRequestURI(iri); err == nil {
-			what = fmt.Sprintf("%s ", u.Path)
-		}
-		if len(f.Collection) > 0 {
-			where = fmt.Sprintf(" in %s", f.Collection)
-			what = fmt.Sprintf("%s ", strings.Replace(what, string(f.Collection), "", 1))
-		}
-
-		f.MaxItems = 1
+		what := r.URL.Path
 
 		var err error
 		if !fromCache {
-			if it, err = repo.Load(f.GetLink()); err != nil {
-				return nil, err
+			if it, err = repo.Load(iri); err != nil {
+				return nil, errors.NotFoundf("%s was not found", what)
 			}
 		}
-		var items vocab.ItemCollection
 		if vocab.IsItemCollection(it) {
+			var items vocab.ItemCollection
 			err = vocab.OnCollectionIntf(it, func(col vocab.CollectionInterface) error {
 				items = col.Collection()
 				return nil
@@ -298,20 +284,18 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			items = vocab.ItemCollection{it}
-		}
 
-		if len(items) == 0 {
-			return nil, errors.NotFoundf("%snot found%s", what, where)
-		}
+			if len(items) == 0 {
+				return nil, errors.NotFoundf("%s not found", what)
+			}
 
-		if len(items) > 1 {
-			return nil, errors.Conflictf("Too many %s found%s", what, where)
-		}
+			if len(items) > 1 {
+				return nil, errors.Conflictf("Too many %s found", what)
+			}
 
-		if it, err = loadItem(items, f, reqURL(r, fb.Config().Secure)); err != nil {
-			return nil, errors.NotFoundf("%snot found", what)
+			if it, err = loadItem(items); err != nil {
+				return nil, errors.NotFoundf("%s not found", what)
+			}
 		}
 
 		if !fromCache {
@@ -326,6 +310,6 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 	}
 }
 
-func loadItem(items vocab.ItemCollection, f ap.Paginator, baseURL string) (vocab.Item, error) {
+func loadItem(items vocab.ItemCollection) (vocab.Item, error) {
 	return items.First(), nil
 }
