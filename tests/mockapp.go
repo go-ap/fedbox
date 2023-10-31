@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"text/template"
@@ -74,9 +75,26 @@ func cleanDB(t *testing.T, opt config.Options) {
 	if err := cmd.Reset(opt); err != nil {
 		t.Error(err)
 	}
+	if t.Failed() {
+		return
+	}
 
-	// As we're using ioutil.Tempdir for the storage path, we can remove it fully
-	os.RemoveAll(path.Clean(opt.StoragePath))
+	tempPath, err := os.Getwd()
+	if err != nil {
+		t.Logf("Unable to get current path: %s", err)
+	}
+
+	tempPath = path.Clean(filepath.Join(tempPath, filepath.Dir(opt.StoragePath)))
+	if !strings.Contains(tempPath, ".cache") {
+		t.Logf("Unable to clean path: %s", tempPath)
+		return
+	}
+	t.Logf("Removing path: %s", tempPath)
+
+	// As we're using t.TempDir for the storage path, we can remove it fully
+	if err := os.RemoveAll(tempPath); err != nil {
+		t.Logf("Unable to remove path: %s: %s", tempPath, err)
+	}
 }
 
 func publicKeyFrom(key crypto.PrivateKey) crypto.PublicKey {
