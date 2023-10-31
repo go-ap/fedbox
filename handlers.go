@@ -48,7 +48,11 @@ func reqURL(r http.Request, secure bool) string {
 	if secure || r.TLS != nil {
 		scheme = "https"
 	}
-	return fmt.Sprintf("%s://%s%s", scheme, r.Host, r.RequestURI)
+	u := *r.URL
+	if len(u.RawQuery) > 0 {
+		u.RawQuery = ""
+	}
+	return fmt.Sprintf("%s://%s%s", scheme, r.Host, u.String())
 }
 
 func orderItems(col vocab.ItemCollection) vocab.ItemCollection {
@@ -63,6 +67,9 @@ func orderItems(col vocab.ItemCollection) vocab.ItemCollection {
 func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 	return func(typ vocab.CollectionPath, r *http.Request) (vocab.CollectionInterface, error) {
 		repo := fb.storage
+
+		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
+
 		if typ == vocab.Unknown {
 			return nil, errors.NotFoundf("%s not found", r.URL.Path)
 		}
@@ -70,64 +77,41 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.NotFoundf("collection '%s' not found", typ)
 		}
 
-		f := filters.FromRequest(r, fb.Config().BaseURL)
-		filters.LoadCollectionFilters(f, fb.actorFromRequest(r))
+		auth := fb.actorFromRequest(r)
 
-		cacheKey := filters.CacheKey(f)
+		cacheKey := CacheKey(iri, auth)
 		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
 
 		var err error
 		if !fromCache {
-			if it, err = repo.Load(f.GetLink()); err != nil {
+			fil := filters.FromURL(*r.URL)
+			if it, err = repo.Load(iri, fil...); err != nil {
 				return nil, err
 			}
 		}
 		if vocab.IsNil(it) || !it.IsCollection() {
-			return nil, errors.NotFoundf("collection '%s' not found", f.Collection)
+			return nil, errors.NotFoundf("%s not found", typ)
 		}
 
-		c := new(vocab.OrderedCollection)
-		c.Type = vocab.OrderedCollectionType
-		if vocab.IsItemCollection(it) {
-			err = vocab.OnItemCollection(it, func(items *vocab.ItemCollection) error {
-				c.TotalItems = items.Count()
-				c.OrderedItems = orderItems(*items)
-				return nil
-			})
-		} else {
-			err = vocab.OnOrderedCollection(it, func(col *vocab.OrderedCollection) error {
-				c = col
-				return nil
-			})
-		}
-		if err != nil {
-			return nil, err
-		}
-		{
-			ff := *f
-			ff.Authenticated = nil
-			c.ID = ff.GetLink()
+		if !fromCache {
+			fb.caches.Store(cacheKey, it)
 		}
 
-		var toStore vocab.OrderedCollection
-		if !fromCache && c.Count() > 0 {
-			toStore = *c
-		}
-		var col vocab.CollectionInterface = c
-		if col, err = ap.PaginateCollection(col, f); err != nil {
-			return nil, err
-		}
-		if !fromCache && toStore.Collection() != nil {
-			fb.caches.Store(cacheKey, toStore)
-		}
-		for _, it := range col.Collection() {
-			// Remove bcc and bto - probably should be moved to a different place
-			// TODO(marius): move this to the go-ap/activtiypub helpers: CleanRecipients(Item)
-			if s, ok := it.(vocab.HasRecipients); ok {
-				s.Clean()
+		it = filters.PaginationFromURL(*r.URL).Run(it)
+
+		var col vocab.CollectionInterface
+		err = vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
+			for _, it := range c.Collection() {
+				// Remove bcc and bto - probably should be moved to a different place
+				// TODO(marius): move this to the go-ap/activtiypub helpers: CleanRecipients(Item)
+				if s, ok := it.(vocab.HasRecipients); ok {
+					s.Clean()
+				}
 			}
-		}
+			col = c
+			return nil
+		})
 		return col, err
 	}
 }
