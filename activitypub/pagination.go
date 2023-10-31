@@ -36,7 +36,7 @@ func getURL(i vocab.IRI, f Paginator) vocab.IRI {
 	return i
 }
 
-const MaxItems = 200
+const MaxItems = 100
 
 func paginateItems(col vocab.ItemCollection, f Paginator) (vocab.ItemCollection, string, string, error) {
 	var prev, next string
