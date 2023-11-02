@@ -1,7 +1,9 @@
 package activitypub
 
 import (
+	"fmt"
 	"math"
+	"net/url"
 	"path"
 	"time"
 
@@ -13,8 +15,8 @@ import (
 
 // KeysetPaginator
 type KeysetPaginator interface {
-	Before() filters.Hash
-	After() filters.Hash
+	Before() string
+	After() string
 	Count() int
 }
 
@@ -47,7 +49,7 @@ func paginateItems(col vocab.ItemCollection, f Paginator) (vocab.ItemCollection,
 		return nil, prev, next, nil
 	}
 	count := f.Count()
-	if count == 0 {
+	if count <= 0 {
 		count = MaxItems
 	}
 
@@ -60,13 +62,13 @@ func paginateItems(col vocab.ItemCollection, f Paginator) (vocab.ItemCollection,
 		if len(ff.Before())+len(ff.After()) > 0 {
 			for i, it := range col {
 				if len(ff.Before()) > 0 {
-					if ff.Before().Matches(it.GetLink()) {
-						start = int(math.Max(0, float64(i-int(count))))
+					if it.GetLink().Contains(vocab.IRI(ff.Before()), true) {
+						start = int(math.Max(0, float64(i-count)))
 					}
 				}
 				if len(ff.After()) > 0 {
-					if ff.After().Matches(it.GetLink()) {
-						start = int(i + 1)
+					if it.GetLink().Contains(vocab.IRI(ff.After()), true) {
+						start = i + 1
 					}
 				}
 			}
@@ -74,13 +76,13 @@ func paginateItems(col vocab.ItemCollection, f Paginator) (vocab.ItemCollection,
 	} else {
 		f.Count()
 		page := int(math.Max(float64(f.Page()), 1.0))
-		start = (page - 1) * int(f.Count())
+		start = (page - 1) * f.Count()
 		if start > int(col.Count()) {
 			start = 0
 		}
 	}
 	stop = int(math.Min(float64(count), float64(len(col)-start)))
-	if stop == 0 {
+	if stop == 0 || start+stop > 0 {
 		stop = len(col)
 	} else {
 		stop = start + stop
@@ -89,53 +91,11 @@ func paginateItems(col vocab.ItemCollection, f Paginator) (vocab.ItemCollection,
 	if start > 0 && start < cnt {
 		prev = path.Base(col[start].GetLink().String())
 	}
-	if stop < cnt {
+	if stop > 0 && stop < cnt {
 		next = path.Base(col[stop-1].GetLink().String())
 	}
 	col = col[start:stop]
 	return col, prev, next, nil
-}
-
-func copyFilter(f *filters.Filters, ff *filters.Filters) {
-	f.BaseURL = ff.BaseURL
-	f.Name = ff.Name
-	f.Cont = ff.Cont
-	f.Authenticated = ff.Authenticated
-	f.To = ff.To
-	f.Author = ff.Author
-	f.Parent = ff.Parent
-	f.IRI = ff.IRI
-	f.Collection = ff.Collection
-	f.URL = ff.URL
-	f.MedTypes = ff.MedTypes
-	f.Aud = ff.Aud
-	f.Key = ff.Key
-	f.ItemKey = ff.ItemKey
-	if ff.Object != nil {
-		if f.Object == nil {
-			f.Object = filters.FiltersNew()
-		}
-		copyFilter(f.Object, ff.Object)
-	}
-	if ff.Actor != nil {
-		if f.Actor == nil {
-			f.Actor = filters.FiltersNew()
-		}
-		copyFilter(f.Actor, ff.Actor)
-	}
-	if ff.Target != nil {
-		if f.Target == nil {
-			f.Target = filters.FiltersNew()
-		}
-		copyFilter(f.Target, ff.Target)
-	}
-	f.Type = ff.Type
-	f.AttrTo = ff.AttrTo
-	f.InReplTo = ff.InReplTo
-	f.OP = ff.OP
-	f.FollowedBy = ff.FollowedBy
-	f.OlderThan = ff.OlderThan
-	f.NewerThan = ff.NewerThan
 }
 
 // PaginateCollection is a function that populates the received collection
@@ -154,8 +114,8 @@ func PaginateCollection(col vocab.CollectionInterface, f Paginator) (vocab.Colle
 	var prev, next string // uuids
 
 	count := col.Count()
-	maxItems := int(f.Count())
-	if maxItems == 0 {
+	maxItems := f.Count()
+	if maxItems <= 0 {
 		maxItems = MaxItems
 	}
 	haveItems = count > 0
@@ -174,13 +134,12 @@ func PaginateCollection(col vocab.CollectionInterface, f Paginator) (vocab.Colle
 		var firstURL vocab.IRI
 
 		if f != nil {
-			fp := filters.FiltersNew()
-			copyFilter(fp, f.(*filters.Filters))
-			fp.MaxItems = maxItems
+			fp := url.Values{}
+			fp.Set("maxItems", fmt.Sprintf("%d", maxItems))
 			if _, ok := f.(KeysetPaginator); !ok {
-				fp.CurPage = 1
+				fp.Set("page", fmt.Sprintf("%d", 1))
 			}
-			firstURL = getURL(baseURL, fp)
+			firstURL = getURL(baseURL, filters.PaginatorValues(fp))
 		}
 		if col.GetType() == vocab.CollectionOfItems {
 			err := vocab.OnItemCollection(col, func(items *vocab.ItemCollection) error {
@@ -207,26 +166,24 @@ func PaginateCollection(col vocab.CollectionInterface, f Paginator) (vocab.Colle
 		}
 		var nextURL, prevURL vocab.IRI
 		if len(next) > 0 {
-			np := filters.FiltersNew()
-			copyFilter(np, f.(*filters.Filters))
-			np.MaxItems = maxItems
+			np := url.Values{}
+			np.Set("maxItems", fmt.Sprintf("%d", maxItems))
 			if _, ok := f.(KeysetPaginator); ok {
-				np.Next = filters.Hash(next)
+				np.Set("after", next)
 			} else {
-				np.CurPage = f.Page() + 1
+				np.Set("page", fmt.Sprintf("%d", f.Page()+1))
 			}
-			nextURL = getURL(baseURL, np)
+			nextURL = getURL(baseURL, filters.PaginatorValues(np))
 		}
 		if len(prev) > 0 {
-			pp := filters.FiltersNew()
-			copyFilter(pp, f.(*filters.Filters))
-			pp.MaxItems = maxItems
+			pp := url.Values{}
+			pp.Set("maxItems", fmt.Sprintf("%d", maxItems))
 			if _, ok := f.(KeysetPaginator); ok {
-				pp.Prev = filters.Hash(prev)
+				pp.Set("before", prev)
 			} else {
-				pp.CurPage = f.Page() + 1
+				pp.Set("page", fmt.Sprintf("%d", f.Page()+1))
 			}
-			prevURL = getURL(baseURL, pp)
+			prevURL = getURL(baseURL, filters.PaginatorValues(pp))
 		}
 
 		if f.Count() > 0 {

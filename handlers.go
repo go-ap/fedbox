@@ -79,7 +79,7 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 
 		auth := fb.actorFromRequest(r)
 
-		cacheKey := CacheKey(iri, auth)
+		cacheKey := CacheKey(*r.URL, auth)
 		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
 
@@ -99,9 +99,11 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 		}
 
 		it = filters.PaginationFromURL(*r.URL).Run(it)
-
 		var col vocab.CollectionInterface
 		err = vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
+			if c, err = ap.PaginateCollection(c, filters.PaginatorValues(r.URL.Query())); err != nil {
+				return err
+			}
 			for _, it := range c.Collection() {
 				// Remove bcc and bto - probably should be moved to a different place
 				// TODO(marius): move this to the go-ap/activtiypub helpers: CleanRecipients(Item)
@@ -109,6 +111,14 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 					s.Clean()
 				}
 			}
+			vocab.OnObject(c, func(ob *vocab.Object) error {
+				scheme := "http"
+				if fb.conf.Secure {
+					scheme = "https"
+				}
+				ob.ID = vocab.ID(fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.RequestURI()))
+				return nil
+			})
 			col = c
 			return nil
 		})
@@ -164,11 +174,7 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 }
 
 // CacheKey generates a unique vocab.IRI hash based on its authenticated user and other parameters
-func CacheKey(iri vocab.IRI, auth vocab.Actor) vocab.IRI {
-	u, err := iri.URL()
-	if err != nil {
-		return iri
-	}
+func CacheKey(u url.URL, auth vocab.Actor) vocab.IRI {
 	if !auth.ID.Equals(vocab.PublicNS, true) {
 		u.User = url.User(filepath.Base(auth.ID.String()))
 	}
@@ -247,7 +253,7 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 
 		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
 
-		cacheKey := CacheKey(iri, fb.actorFromRequest(r))
+		cacheKey := CacheKey(*r.URL, fb.actorFromRequest(r))
 		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
 

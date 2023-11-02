@@ -496,7 +496,7 @@ var ActivitiesCollectionTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/activities?object.inReplyTo=%%21-", apiURL),
+						id:        fmt.Sprintf("%s/activities?object.inReplyTo=!-", apiURL),
 						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},
@@ -735,7 +735,7 @@ var ObjectsCollectionTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?iri=%%21-", apiURL),
+						id:        fmt.Sprintf("%s/objects?iri=!-", apiURL),
 						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 4,
 					},
@@ -749,7 +749,7 @@ var ObjectsCollectionTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?iri=%%21", apiURL),
+						id:        fmt.Sprintf("%s/objects?iri=!", apiURL),
 						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 4,
 					},
@@ -764,7 +764,7 @@ var ObjectsCollectionTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?inReplyTo=%%21-", apiURL),
+						id:        fmt.Sprintf("%s/objects?inReplyTo=!-", apiURL),
 						typ:       string(vocab.OrderedCollectionType),
 						itemCount: 1,
 					},

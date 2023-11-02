@@ -10,13 +10,13 @@ require (
 	github.com/go-ap/cache v0.0.0-20231030184621-cee2d5de7cc1
 	github.com/go-ap/client v0.0.0-20231030184710-9f60a15045f6
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
-	github.com/go-ap/filters v0.0.0-20231031181623-f947c75704c7
+	github.com/go-ap/filters v0.0.0-20231102185723-70a77957ec4e
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20231031181732-4319277d9b5b
-	github.com/go-ap/storage-badger v0.0.0-20231031182231-1e7d7a880c3d
-	github.com/go-ap/storage-boltdb v0.0.0-20231031182211-1d9210fcb5de
-	github.com/go-ap/storage-fs v0.0.0-20231031182106-e411b00f1e46
-	github.com/go-ap/storage-sqlite v0.0.0-20231031182154-656877bc5dd7
+	github.com/go-ap/storage-badger v0.0.0-20231102192209-2afa054b53ac
+	github.com/go-ap/storage-boltdb v0.0.0-20231102192149-01e9799fb6b5
+	github.com/go-ap/storage-fs v0.0.0-20231102192030-a1c045af2745
+	github.com/go-ap/storage-sqlite v0.0.0-20231102192134-a7899a02f204
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -73,7 +73,7 @@ require (
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
 	modernc.org/opt v0.1.3 // indirect
-	modernc.org/sqlite v1.26.0 // indirect
+	modernc.org/sqlite v1.27.0 // indirect
 	modernc.org/strutil v1.2.0 // indirect
 	modernc.org/token v1.1.0 // indirect
 )
