@@ -10,12 +10,12 @@ require (
 	github.com/go-ap/cache v0.0.0-20231030184621-cee2d5de7cc1
 	github.com/go-ap/client v0.0.0-20231030184710-9f60a15045f6
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
-	github.com/go-ap/filters v0.0.0-20231102185723-70a77957ec4e
+	github.com/go-ap/filters v0.0.0-20231102213105-234353a7aa30
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20231031181732-4319277d9b5b
 	github.com/go-ap/storage-badger v0.0.0-20231102192209-2afa054b53ac
 	github.com/go-ap/storage-boltdb v0.0.0-20231102192149-01e9799fb6b5
-	github.com/go-ap/storage-fs v0.0.0-20231102192030-a1c045af2745
+	github.com/go-ap/storage-fs v0.0.0-20231102213220-51dcabe359bc
 	github.com/go-ap/storage-sqlite v0.0.0-20231102192134-a7899a02f204
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-fed/httpsig v1.1.0
