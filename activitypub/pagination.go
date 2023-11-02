@@ -139,7 +139,7 @@ func PaginateCollection(col vocab.CollectionInterface, f Paginator) (vocab.Colle
 			if _, ok := f.(KeysetPaginator); !ok {
 				fp.Set("page", fmt.Sprintf("%d", 1))
 			}
-			firstURL = getURL(baseURL, filters.PaginatorValues(fp))
+			firstURL = getURL(baseURL, filters.Paginator(fp))
 		}
 		if col.GetType() == vocab.CollectionOfItems {
 			err := vocab.OnItemCollection(col, func(items *vocab.ItemCollection) error {
@@ -173,7 +173,7 @@ func PaginateCollection(col vocab.CollectionInterface, f Paginator) (vocab.Colle
 			} else {
 				np.Set("page", fmt.Sprintf("%d", f.Page()+1))
 			}
-			nextURL = getURL(baseURL, filters.PaginatorValues(np))
+			nextURL = getURL(baseURL, filters.Paginator(np))
 		}
 		if len(prev) > 0 {
 			pp := url.Values{}
@@ -183,7 +183,7 @@ func PaginateCollection(col vocab.CollectionInterface, f Paginator) (vocab.Colle
 			} else {
 				pp.Set("page", fmt.Sprintf("%d", f.Page()+1))
 			}
-			prevURL = getURL(baseURL, filters.PaginatorValues(pp))
+			prevURL = getURL(baseURL, filters.Paginator(pp))
 		}
 
 		if f.Count() > 0 {
