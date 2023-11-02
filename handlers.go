@@ -98,7 +98,11 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			fb.caches.Store(cacheKey, it)
 		}
 
-		it = filters.PaginationFromURL(*r.URL).Run(it)
+		pag := filters.PaginationFromURL(*r.URL)
+		if len(pag) == 0 {
+			pag = append(pag, filters.WithMaxCount(ap.MaxItems))
+		}
+		it = pag.Run(it)
 		var col vocab.CollectionInterface
 		err = vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
 			if c, err = ap.PaginateCollection(c, filters.Paginator(r.URL.Query())); err != nil {
