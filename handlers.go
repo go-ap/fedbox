@@ -105,7 +105,7 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 		it = pag.Run(it)
 		var col vocab.CollectionInterface
 		err = vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
-			if c, err = ap.PaginateCollection(c, filters.Paginator(r.URL.Query())); err != nil {
+			if c, err = ap.PaginateCollection(c, filters.PaginatorValues(r.URL.Query())); err != nil {
 				return err
 			}
 			for _, it := range c.Collection() {
