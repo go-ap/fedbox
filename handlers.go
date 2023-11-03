@@ -1,12 +1,10 @@
 package fedbox
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"git.sr.ht/~mariusor/lw"
@@ -48,28 +46,29 @@ func reqURL(r http.Request, secure bool) string {
 	if secure || r.TLS != nil {
 		scheme = "https"
 	}
-	u := *r.URL
-	if len(u.RawQuery) > 0 {
-		u.RawQuery = ""
+	u := url.URL{
+		Scheme:   scheme,
+		Host:     r.Host,
+		Path:     r.URL.Path,
+		RawPath:  r.URL.RawPath,
+		RawQuery: r.URL.RawQuery,
 	}
-	return fmt.Sprintf("%s://%s%s", scheme, r.Host, u.String())
+	u.Scheme = scheme
+	u.Host = r.Host
+	return u.String()
 }
 
-func orderItems(col vocab.ItemCollection) vocab.ItemCollection {
-	sort.SliceStable(col, func(i, j int) bool {
-		return vocab.ItemOrderTimestamp(col[i], col[j])
-	})
-	return col
+func setRequestID(fb FedBOX, r http.Request) func(ob *vocab.Object) error {
+	return func(ob *vocab.Object) error {
+		ob.ID = vocab.ID(reqURL(r, fb.conf.Secure))
+		return nil
+	}
 }
 
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 	return func(typ vocab.CollectionPath, r *http.Request) (vocab.CollectionInterface, error) {
-		repo := fb.storage
-
-		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
-
 		if typ == vocab.Unknown {
 			return nil, errors.NotFoundf("%s not found", r.URL.Path)
 		}
@@ -77,9 +76,11 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.NotFoundf("collection '%s' not found", typ)
 		}
 
-		auth := fb.actorFromRequest(r)
+		repo := fb.storage
 
-		cacheKey := CacheKey(*r.URL, auth)
+		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
+		cacheKey := CacheKey(fb, *r)
+
 		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
 
@@ -94,6 +95,9 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.NotFoundf("%s not found", typ)
 		}
 
+		// NOTE(marius) setting the ID to the request URL instead of relying on what we loaded from storage
+		vocab.OnObject(it, setRequestID(fb, *r))
+
 		if !fromCache {
 			fb.caches.Store(cacheKey, it)
 		}
@@ -103,11 +107,9 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			pag = append(pag, filters.WithMaxCount(ap.MaxItems))
 		}
 		it = pag.Run(it)
+
 		var col vocab.CollectionInterface
 		err = vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
-			if c, err = ap.PaginateCollection(c, filters.PaginatorValues(r.URL.Query())); err != nil {
-				return err
-			}
 			for _, it := range c.Collection() {
 				// Remove bcc and bto - probably should be moved to a different place
 				// TODO(marius): move this to the go-ap/activtiypub helpers: CleanRecipients(Item)
@@ -115,14 +117,6 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 					s.Clean()
 				}
 			}
-			vocab.OnObject(c, func(ob *vocab.Object) error {
-				scheme := "http"
-				if fb.conf.Secure {
-					scheme = "https"
-				}
-				ob.ID = vocab.ID(fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.RequestURI()))
-				return nil
-			})
 			col = c
 			return nil
 		})
@@ -178,11 +172,13 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 }
 
 // CacheKey generates a unique vocab.IRI hash based on its authenticated user and other parameters
-func CacheKey(u url.URL, auth vocab.Actor) vocab.IRI {
-	if !auth.ID.Equals(vocab.PublicNS, true) {
+func CacheKey(fb FedBOX, r http.Request) vocab.IRI {
+	u := r.URL
+	if auth := fb.actorFromRequest(&r); !auth.ID.Equals(vocab.PublicNS, true) {
 		u.User = url.User(filepath.Base(auth.ID.String()))
 	}
-	return vocab.IRI(u.String())
+	r.URL = u
+	return vocab.IRI(reqURL(r, fb.conf.Secure))
 }
 
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
@@ -257,7 +253,8 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 
 		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
 
-		cacheKey := CacheKey(*r.URL, fb.actorFromRequest(r))
+		cacheKey := CacheKey(fb, *r)
+
 		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
 
@@ -270,25 +267,19 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 			}
 		}
 		if vocab.IsItemCollection(it) {
-			var items vocab.ItemCollection
 			err = vocab.OnCollectionIntf(it, func(col vocab.CollectionInterface) error {
-				items = col.Collection()
+				if col.Count() == 0 {
+					return errors.NotFoundf("%s not found", what)
+				}
+
+				if col.Count() > 1 {
+					return errors.Conflictf("Too many %s found", what)
+				}
+				it = col.Collection().First()
 				return nil
 			})
 			if err != nil {
 				return nil, err
-			}
-
-			if len(items) == 0 {
-				return nil, errors.NotFoundf("%s not found", what)
-			}
-
-			if len(items) > 1 {
-				return nil, errors.Conflictf("Too many %s found", what)
-			}
-
-			if it, err = loadItem(items); err != nil {
-				return nil, errors.NotFoundf("%s not found", what)
 			}
 		}
 
@@ -302,8 +293,4 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 		}
 		return it, nil
 	}
-}
-
-func loadItem(items vocab.ItemCollection) (vocab.Item, error) {
-	return items.First(), nil
 }
