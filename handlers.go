@@ -58,13 +58,6 @@ func reqURL(r http.Request, secure bool) string {
 	return u.String()
 }
 
-func setRequestID(fb FedBOX, r http.Request) func(ob *vocab.Object) error {
-	return func(ob *vocab.Object) error {
-		ob.ID = vocab.ID(reqURL(r, fb.conf.Secure))
-		return nil
-	}
-}
-
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
@@ -86,7 +79,9 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 
 		var err error
 		if !fromCache {
-			fil := filters.FromURL(*r.URL)
+			fil := filters.Checks{filters.Authorized(fb.actorFromRequest(r).ID)}
+			fil = append(fil, filters.FromValues(r.URL.Query())...)
+
 			if it, err = repo.Load(iri, fil...); err != nil {
 				return nil, err
 			}
@@ -95,18 +90,9 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.NotFoundf("%s not found", typ)
 		}
 
-		// NOTE(marius) setting the ID to the request URL instead of relying on what we loaded from storage
-		vocab.OnObject(it, setRequestID(fb, *r))
-
 		if !fromCache {
 			fb.caches.Store(cacheKey, it)
 		}
-
-		pag := filters.PaginationFromURL(*r.URL)
-		if len(pag) == 0 {
-			pag = append(pag, filters.WithMaxCount(ap.MaxItems))
-		}
-		it = pag.Run(it)
 
 		var col vocab.CollectionInterface
 		err = vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
@@ -262,7 +248,9 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 
 		var err error
 		if !fromCache {
-			if it, err = repo.Load(iri); err != nil {
+			var f filters.Check
+			f = filters.Authorized(fb.actorFromRequest(r).ID)
+			if it, err = repo.Load(iri, f); err != nil {
 				return nil, errors.NotFoundf("%s was not found", what)
 			}
 		}

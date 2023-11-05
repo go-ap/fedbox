@@ -5,16 +5,16 @@ go 1.21
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20230317075520-07e173563bf8
 	git.sr.ht/~mariusor/wrapper v0.0.0-20230710102058-fc38877da4fe
-	github.com/go-ap/activitypub v0.0.0-20231030184441-9f208f3d7c66
-	github.com/go-ap/auth v0.0.0-20231030184743-e3e71ea3383c
-	github.com/go-ap/cache v0.0.0-20231030184621-cee2d5de7cc1
-	github.com/go-ap/client v0.0.0-20231030184710-9f60a15045f6
+	github.com/go-ap/activitypub v0.0.0-20231105151936-af32623a589b
+	github.com/go-ap/auth v0.0.0-20231105153055-8c9ee2664d45
+	github.com/go-ap/cache v0.0.0-20231105152008-59d105ac1717
+	github.com/go-ap/client v0.0.0-20231105152939-03833203c71e
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
-	github.com/go-ap/filters v0.0.0-20231103210231-984efe274c53
+	github.com/go-ap/filters v0.0.0-20231105181855-543773650d92
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20231031181732-4319277d9b5b
-	github.com/go-ap/storage-badger v0.0.0-20231103210631-07195ccee3e7
-	github.com/go-ap/storage-boltdb v0.0.0-20231103210544-13f0303b332c
+	github.com/go-ap/processing v0.0.0-20231105153146-7305b4bd20d9
+	github.com/go-ap/storage-badger v0.0.0-20231105182445-dd1c7f2f0296
+	github.com/go-ap/storage-boltdb v0.0.0-20231105182416-76f4a148798f
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -27,8 +27,8 @@ require (
 )
 
 require (
-	github.com/go-ap/storage-fs v0.0.0-20231103210352-0d5893d9be17 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20231103210514-ae81125a82d3 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20231105182850-8579bcd9cbaa // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20231105182223-179dde85cb0a // indirect
 )
 
 require (
@@ -50,7 +50,7 @@ require (
 	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-sqlite3 v1.14.17 // indirect
+	github.com/mattn/go-sqlite3 v1.14.18 // indirect
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
@@ -61,18 +61,18 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.etcd.io/bbolt v1.3.8 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/mod v0.13.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/term v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	lukechampine.com/uint128 v1.3.0 // indirect
 	modernc.org/cc/v3 v3.41.0 // indirect
 	modernc.org/ccgo/v3 v3.16.15 // indirect
-	modernc.org/libc v1.29.0 // indirect
+	modernc.org/libc v1.30.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
 	modernc.org/opt v0.1.3 // indirect
