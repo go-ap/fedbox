@@ -1,4 +1,5 @@
 {
   "id": "http://127.0.0.1:9998/objects/t1",
-  "name": "#mod"
+  "name": "#mod",
+  "to": ["https://www.w3.org/ns/activitystreams#Public"]
 }
