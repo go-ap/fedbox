@@ -6,7 +6,8 @@ const errors = new Rate('error_rate');
 
 export const options = {
     thresholds: {
-        'error_rate': [{threshold: 'rate < 0.1', abortOnFail: true, delayAbortEval: '1s'}],
+        'http_req_duration': ['p(95)<200'],
+        'error_rate': [{threshold: 'rate < 0.01', abortOnFail: true, delayAbortEval: '1s'}],
         'error_rate{errorType:responseStatusError}': [{threshold: 'rate < 0.1'}],
         'error_rate{errorType:contentTypeError}': [{threshold: 'rate < 0.1'}],
         'error_rate{errorType:bodySizeError}': [{threshold: 'rate < 0.1'}],
@@ -18,11 +19,10 @@ export const options = {
             exec: 'slam',
             startRate: 0,
             timeUnit: '30s',
-            preAllocatedVUs: 20,
-            maxVUs: 80,
+            preAllocatedVUs: 100,
+            maxVUs: 100,
             stages: [
-                { target: 30, duration: '30s'},
-                { target: 55, duration: '90s'},
+                { target: 200, duration: '120s'},
                 { target: 20, duration: '10s'},
             ],
         },
