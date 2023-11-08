@@ -38,6 +38,12 @@ tasks:
       make TEST_FLAGS='-race -count=1' CGO_ENABLED=1 STORAGE=fs integration
       make TEST_FLAGS='-count=1' FEDBOX_STORAGE=fs integration
       make TEST_FLAGS='-count=1' STORAGE=fs integration
+  - integration-boltdb: |
+      cd fedbox
+      make TEST_FLAGS='-race -count=1' CGO_ENABLED=1 FEDBOX_STORAGE=boltdb integration
+      make TEST_FLAGS='-race -count=1' CGO_ENABLED=1 STORAGE=boltdb integration
+      make TEST_FLAGS='-count=1' CGO_ENABLED=0 FEDBOX_STORAGE=boltdb integration
+      make TEST_FLAGS='-count=1' CGO_ENABLED=0 STORAGE=boltdb integration
       complete-build
   - integration-sqlite: |
       cd fedbox
@@ -47,9 +53,3 @@ tasks:
       # using mattn/go-sqlite3 package
       make TEST_FLAGS='-count=1 -race' CGO_ENABLED=1 FEDBOX_STORAGE=sqlite integration
       make TEST_FLAGS='-count=1 -race' CGO_ENABLED=1 STORAGE=sqlite integration
-  - integration-boltdb: |
-      cd fedbox
-      make TEST_FLAGS='-race -count=1' CGO_ENABLED=1 FEDBOX_STORAGE=boltdb integration
-      make TEST_FLAGS='-race -count=1' CGO_ENABLED=1 STORAGE=boltdb integration
-      make TEST_FLAGS='-count=1' CGO_ENABLED=0 FEDBOX_STORAGE=boltdb integration
-      make TEST_FLAGS='-count=1' CGO_ENABLED=0 STORAGE=boltdb integration

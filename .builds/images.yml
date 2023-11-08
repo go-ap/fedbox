@@ -44,8 +44,8 @@ tasks:
       }
       #_push
       _push fs
-      complete-build
-      # I guess I don't need everything while we're in heavy development
-      _push badger
       _push boltdb
+      # I guess I don't need everything while we're in heavy development
+      complete-build
+      _push badger
       _push sqlite

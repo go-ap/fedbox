@@ -14,8 +14,8 @@ require (
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20231107131550-c149686af441
 	github.com/go-ap/storage-badger v0.0.0-20231107131712-a5f1a5907d6d
-	github.com/go-ap/storage-boltdb v0.0.0-20231107131659-d4a6fa35355e
-	github.com/go-ap/storage-fs v0.0.0-20231107131621-37137c1a4fde
+	github.com/go-ap/storage-boltdb v0.0.0-20231108163246-bc55fba8ca8e
+	github.com/go-ap/storage-fs v0.0.0-20231108095401-be384a26508d
 	github.com/go-ap/storage-sqlite v0.0.0-20231107131641-aa56f929fab6
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-fed/httpsig v1.1.0
