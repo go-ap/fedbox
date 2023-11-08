@@ -120,7 +120,7 @@ func CreateService(r fedbox.FullStorage, self vocab.Item) (err error) {
 			ID:           iri,
 			Type:         vocab.OrderedCollectionType,
 			Published:    time.Now().UTC(),
-			AttributedTo: self,
+			AttributedTo: self.GetLink(),
 			CC:           vocab.ItemCollection{vocab.PublicNS},
 		}
 	}
