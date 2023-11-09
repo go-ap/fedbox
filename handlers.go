@@ -187,6 +187,9 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			fb.errFn("failed unmarshalling jsonld body: %+s", err)
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
+		if vocab.IsNil(it) {
+			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
+		}
 
 		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
 		baseIRI := vocab.IRI(fb.Config().BaseURL)
