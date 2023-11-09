@@ -206,8 +206,12 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize processor")
 		}
 
+		// NOTE(marius): this probably leaks the actor in requests we don't want it in
+		// The solution is to move the auth and client objects into the request scope,
+		// instead of storing them on the top level FedBOX object.
 		auth := fb.actorFromRequest(r)
 		processor.SetActor(&auth)
+		fb.client.SignFn(s2sSignFn(auth, fb.storage, fb.logger))
 
 		if fb.keyGenerator != nil {
 			processing.WithActorKeyGenerator(fb.keyGenerator)

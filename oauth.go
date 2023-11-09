@@ -35,6 +35,7 @@ type FullStorage interface {
 	ClientLister
 	osin.Storage
 	processing.Store
+	processing.KeyLoader
 	st.PasswordChanger
 }
 

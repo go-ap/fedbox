@@ -6,25 +6,25 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20230317075520-07e173563bf8
 	git.sr.ht/~mariusor/wrapper v0.0.0-20230710102058-fc38877da4fe
 	github.com/go-ap/activitypub v0.0.0-20231105151936-af32623a589b
-	github.com/go-ap/auth v0.0.0-20231107131459-781df4c41c82
+	github.com/go-ap/auth v0.0.0-20231109092853-20145afe5380
 	github.com/go-ap/cache v0.0.0-20231105152008-59d105ac1717
 	github.com/go-ap/client v0.0.0-20231105152939-03833203c71e
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
 	github.com/go-ap/filters v0.0.0-20231107130326-22dda75c2686
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20231107131550-c149686af441
-	github.com/go-ap/storage-badger v0.0.0-20231107131712-a5f1a5907d6d
-	github.com/go-ap/storage-boltdb v0.0.0-20231108163246-bc55fba8ca8e
-	github.com/go-ap/storage-fs v0.0.0-20231108095401-be384a26508d
-	github.com/go-ap/storage-sqlite v0.0.0-20231107131641-aa56f929fab6
+	github.com/go-ap/processing v0.0.0-20231109093041-be9a48bc4b8b
+	github.com/go-ap/storage-badger v0.0.0-20231109094712-0b8debc5bb10
+	github.com/go-ap/storage-boltdb v0.0.0-20231109094154-b67cff7be9ac
+	github.com/go-ap/storage-fs v0.0.0-20231109093139-1126bbfd0f52
+	github.com/go-ap/storage-sqlite v0.0.0-20231109094337-319a4f372998
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/mariusor/render v1.5.1-0.20221026090743-ab78c1b3aa95
 	github.com/pborman/uuid v1.2.1
 	github.com/urfave/cli/v2 v2.25.7
-	golang.org/x/crypto v0.14.0
-	golang.org/x/oauth2 v0.13.0
+	golang.org/x/crypto v0.15.0
+	golang.org/x/oauth2 v0.14.0
 )
 
 require github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
@@ -60,17 +60,17 @@ require (
 	go.etcd.io/bbolt v1.3.8 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/term v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.14.0 // indirect
+	golang.org/x/tools v0.15.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	lukechampine.com/uint128 v1.3.0 // indirect
 	modernc.org/cc/v3 v3.41.0 // indirect
 	modernc.org/ccgo/v3 v3.16.15 // indirect
-	modernc.org/libc v1.30.0 // indirect
+	modernc.org/libc v1.31.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
 	modernc.org/opt v0.1.3 // indirect
