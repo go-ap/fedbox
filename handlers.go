@@ -181,7 +181,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		body, err := io.ReadAll(r.Body)
 		if err != nil || len(body) == 0 {
 			fb.errFn("failed loading body: %+s", err)
-			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to read request body")
+			return it, http.StatusBadRequest, errors.NewNotValid(err, "unable to read request body")
 		}
 		if it, err = vocab.UnmarshalJSON(body); err != nil {
 			fb.errFn("failed unmarshalling jsonld body: %+s", err)
@@ -209,7 +209,11 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		// NOTE(marius): this probably leaks the actor in requests we don't want it in
 		// The solution is to move the auth and client objects into the request scope,
 		// instead of storing them on the top level FedBOX object.
-		fb.client.SignFn(s2sSignFn(fb.self, fb.storage, fb.logger))
+		signActorID := fb.self.ID
+		if maybeActorID, col := vocab.Split(receivedIn); filters.ValidCollection(col) {
+			signActorID = maybeActorID
+		}
+		fb.client.SignFn(s2sSignFn(signActorID, fb.storage, fb.logger))
 		auth := fb.actorFromRequest(r)
 		processor.SetActor(&auth)
 

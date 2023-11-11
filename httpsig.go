@@ -63,8 +63,8 @@ func newSigner(pubKey crypto.PrivateKey, headers []string, l lw.Logger) (signer,
 	return s, nil
 }
 
-func s2sSignFn(a vocab.Actor, keyLoader processing.KeyLoader, l lw.Logger) func(r *http.Request) error {
-	key, err := keyLoader.LoadKey(a.ID)
+func s2sSignFn(actorID vocab.IRI, keyLoader processing.KeyLoader, l lw.Logger) func(r *http.Request) error {
+	key, err := keyLoader.LoadKey(actorID)
 	if err != nil {
 		return func(r *http.Request) error {
 			return err
@@ -83,7 +83,7 @@ func s2sSignFn(a vocab.Actor, keyLoader processing.KeyLoader, l lw.Logger) func(
 		// NOTE(marius): this is needed to accommodate for the FedBOX service user which usually resides
 		// at the root of a domain, and it might miss a valid path. This trips the parsing of keys with id
 		// of form https://example.com#main-key
-		u, _ := a.ID.URL()
+		u, _ := actorID.URL()
 		if u.Path == "" {
 			u.Path = "/"
 		}
