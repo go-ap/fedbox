@@ -209,9 +209,9 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		// NOTE(marius): this probably leaks the actor in requests we don't want it in
 		// The solution is to move the auth and client objects into the request scope,
 		// instead of storing them on the top level FedBOX object.
+		fb.client.SignFn(s2sSignFn(fb.self, fb.storage, fb.logger))
 		auth := fb.actorFromRequest(r)
 		processor.SetActor(&auth)
-		fb.client.SignFn(s2sSignFn(auth, fb.storage, fb.logger))
 
 		if fb.keyGenerator != nil {
 			processing.WithActorKeyGenerator(fb.keyGenerator)
