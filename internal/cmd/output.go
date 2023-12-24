@@ -9,7 +9,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 )
 
-func bytef(s string, p ...interface{}) []byte {
+func bytef(s string, p ...any) []byte {
 	return []byte(fmt.Sprintf(s, p...))
 }
 
@@ -138,7 +138,7 @@ func outJSON(where io.Writer) func(it vocab.Item) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(where , "%s", out)
+		fmt.Fprintf(where, "%s", out)
 		return nil
 	}
 }

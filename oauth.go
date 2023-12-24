@@ -405,7 +405,7 @@ func (i *authService) Token(w http.ResponseWriter, r *http.Request) {
 	redirectOrOutput(resp, w, r)
 }
 
-func annotatedRsError(status int, old error, msg string, args ...interface{}) error {
+func annotatedRsError(status int, old error, msg string, args ...any) error {
 	var err error
 	switch status {
 	case http.StatusForbidden:
@@ -735,7 +735,7 @@ func (i *authService) loadActorFromOauth2Session(w http.ResponseWriter, r *http.
 	return actor
 }
 
-func assertToBytes(in interface{}) ([]byte, error) {
+func assertToBytes(in any) ([]byte, error) {
 	var ok bool
 	var data string
 	if in == nil {

@@ -37,7 +37,7 @@ func jsonldMarshal(i vocab.Item) string {
 	return string(j)
 }
 
-func loadMockJson(file string, model interface{}) func() (string, error) {
+func loadMockJson(file string, model any) func() (string, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return func() (string, error) { return "", err }
@@ -126,7 +126,7 @@ func loadPrivateKeyFromDisk(file string) crypto.PrivateKey {
 	return prvKey
 }
 
-func loadMockFromDisk(file string, model interface{}) vocab.Item {
+func loadMockFromDisk(file string, model any) vocab.Item {
 	json, err := loadMockJson(file, model)()
 	if err != nil {
 		panic(fmt.Sprintf("%+v", err))

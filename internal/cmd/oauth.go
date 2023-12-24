@@ -231,7 +231,7 @@ func (c *Control) ListClients() ([]osin.Client, error) {
 	return c.Storage.ListClients()
 }
 
-func (c *Control) GenAuthToken(clientID, actorIdentifier string, dat interface{}) (string, error) {
+func (c *Control) GenAuthToken(clientID, actorIdentifier string, _ any) (string, error) {
 	if u, err := url.Parse(clientID); err == nil {
 		clientID = path.Base(u.Path)
 	}

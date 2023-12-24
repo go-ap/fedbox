@@ -258,7 +258,7 @@ var (
 	edKey  = loadPrivateKeyFromDisk("mocks/keys/ed25519.prv")
 	rsaKey = loadPrivateKeyFromDisk("mocks/keys/rsa256.prv")
 
-	meta interface{} = nil
+	meta any = nil
 
 	service = testAccount{Id: apiURL}
 
@@ -298,16 +298,16 @@ var (
 	lastActivity = &objectVal{}
 )
 
-type assertFn func(v bool, msg string, args ...interface{})
-type errFn func(format string, args ...interface{})
-type requestGetAssertFn func(iri string, acc *testAccount) map[string]interface{}
-type objectPropertiesAssertFn func(ob map[string]interface{}, testVal *objectVal)
-type mapFieldAssertFn func(ob map[string]interface{}, key string, testVal interface{})
-type stringArrFieldAssertFn func(ob []interface{}, testVal []string)
+type assertFn func(v bool, msg string, args ...any)
+type errFn func(format string, args ...any)
+type requestGetAssertFn func(iri string, acc *testAccount) map[string]any
+type objectPropertiesAssertFn func(ob map[string]any, testVal *objectVal)
+type mapFieldAssertFn func(ob map[string]any, key string, testVal any)
+type stringArrFieldAssertFn func(ob []any, testVal []string)
 
 func errorf(t *testing.T, errFn func(format string, args ...any)) errFn {
 	t.Helper()
-	return func(msg string, args ...interface{}) {
+	return func(msg string, args ...any) {
 		t.Helper()
 		msg = fmt.Sprintf("%s\n------- Stack -------\n%s\n", msg, debug.Stack())
 		if args == nil || len(args) == 0 {
@@ -318,7 +318,7 @@ func errorf(t *testing.T, errFn func(format string, args ...any)) errFn {
 }
 
 func errIfNotTrue(t *testing.T, errFn func(format string, args ...any)) assertFn {
-	return func(v bool, msg string, args ...interface{}) {
+	return func(v bool, msg string, args ...any) {
 		t.Helper()
 		if !v {
 			errorf(t, errFn)(msg, args...)
@@ -327,7 +327,7 @@ func errIfNotTrue(t *testing.T, errFn func(format string, args ...any)) assertFn
 }
 
 func errOnArray(t *testing.T) stringArrFieldAssertFn {
-	return func(arrI []interface{}, tVal []string) {
+	return func(arrI []any, tVal []string) {
 		arr := make([]string, len(arrI))
 		for k, v := range arrI {
 			arr[k] = fmt.Sprintf("%s", v)
@@ -347,7 +347,7 @@ func errOnArray(t *testing.T) stringArrFieldAssertFn {
 }
 
 func errOnMapProp(t *testing.T, errFn func(format string, args ...any)) mapFieldAssertFn {
-	return func(ob map[string]interface{}, key string, tVal interface{}) {
+	return func(ob map[string]any, key string, tVal any) {
 		t.Helper()
 		t.Run(key, func(t *testing.T) {
 			assertTrue := errIfNotTrue(t, errFn)
@@ -375,7 +375,7 @@ func errOnMapProp(t *testing.T, errFn func(format string, args ...any)) mapField
 				// the case when the mock test value is a string, but corresponds to an object in the json
 				// so, we need to verify the JSON object's ID against our mock value
 				v1, okA := val.(string)
-				v2, okB := val.(map[string]interface{})
+				v2, okB := val.(map[string]any)
 				assertTrue(okA || okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
 				if okA {
 					assertTrue(v1 == tt, "Invalid %q, %q expected, received %q", key, tt, v1)
@@ -388,7 +388,7 @@ func errOnMapProp(t *testing.T, errFn func(format string, args ...any)) mapField
 				// and check the subsequent properties
 				if tt != nil {
 					v1, okA := val.(string)
-					v2, okB := val.(map[string]interface{})
+					v2, okB := val.(map[string]any)
 					assertTrue(okA || okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
 					if okA {
 						if tt.id == "" {
@@ -402,16 +402,16 @@ func errOnMapProp(t *testing.T, errFn func(format string, args ...any)) mapField
 					}
 				}
 			case []string:
-				v1, okA := val.([]interface{})
+				v1, okA := val.([]any)
 				v2, okB := tVal.([]string)
 				assertTrue(okA || okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
 				assertArrayValues(v1, v2)
 			case []*objectVal:
-				v1, okA := val.([]interface{})
+				v1, okA := val.([]any)
 				v2, okB := tVal.([]*objectVal)
 				assertTrue(okA && okB, "Unable to convert %#v to %T or %T types, Received %#v:(%T)", val, v1, v2, val, val)
 				for i, intf := range v1 {
-					ob, ok := intf.(map[string]interface{})
+					ob, ok := intf.(map[string]any)
 					assertTrue(ok, "Unable to convert %s prop with value %#v to %T", key, intf, ob)
 					assertObjectProperties(ob, v2[i])
 				}
@@ -424,7 +424,7 @@ func errOnMapProp(t *testing.T, errFn func(format string, args ...any)) mapField
 
 func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 	t.Helper()
-	return func(ob map[string]interface{}, tVal *objectVal) {
+	return func(ob map[string]any, tVal *objectVal) {
 		t.Helper()
 		t.Run(fmt.Sprintf("[%s]%s", tVal.typ, tVal.id), func(t *testing.T) {
 			fail := errorf(t, t.Errorf)
@@ -499,7 +499,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			if tVal.act != nil {
 				assertMapKey(ob, "actor", tVal.act)
 				if tVal.act.typ != "" && len(tVal.act.id) > 0 {
-					var dAct map[string]interface{}
+					var dAct map[string]any
 					if tVal.act.typ == "Tombstone" {
 						dAct = errNotGoneGetRequest(t)(tVal.act.id, nil)
 					} else {
@@ -511,7 +511,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			if tVal.obj != nil {
 				assertMapKey(ob, "object", tVal.obj)
 				if tVal.obj.typ != "" && len(tVal.obj.id) > 0 {
-					var dOb map[string]interface{}
+					var dOb map[string]any
 					if tVal.obj.typ == "Tombstone" {
 						dOb = errNotGoneGetRequest(t)(tVal.obj.id, nil)
 					} else {
@@ -523,7 +523,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			if tVal.audience != nil {
 				assertMapKey(ob, "audience", tVal.audience)
 				audOb, _ := ob["audience"]
-				aud, ok := audOb.([]interface{})
+				aud, ok := audOb.([]any)
 				assertTrue(ok, "received audience is not a []string, received %T", aud)
 				errOnArray(t)(aud, tVal.audience)
 			}
@@ -609,7 +609,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 				if len(tVal.items) > 0 {
 					val, ok := ob[itemsKey]
 					assertTrue(ok, "Could not load %q property of collection:\n\n %#v\n\n%#v\n\n", itemsKey, ob, tVal)
-					items, ok := val.([]interface{})
+					items, ok := val.([]any)
 					assertTrue(ok, "Invalid property %q %#v, expected %T", itemsKey, val, items)
 					ti, ok := ob["totalItems"].(float64)
 					assertTrue(ok, "Invalid property %q %#v, expected %T", "totalItems", val, items)
@@ -622,7 +622,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 						iri := fmt.Sprintf("%s%s/%s", apiURL, url.Path, k)
 						for _, it := range items {
 							switch act := it.(type) {
-							case map[string]interface{}:
+							case map[string]any:
 								assertTrue(ok, "Unable to convert %#v to %T type, Received %#v:(%T)", it, act, it, it)
 								itId, ok := act["id"]
 								assertTrue(ok, "Could not load %q property of item: %#v", "id", act)
@@ -653,8 +653,8 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 	}
 }
 
-func getRequest(t *testing.T, st int) func(iri string, acc *testAccount) map[string]interface{} {
-	return func(iri string, acc *testAccount) map[string]interface{} {
+func getRequest(t *testing.T, st int) func(iri string, acc *testAccount) map[string]any {
+	return func(iri string, acc *testAccount) map[string]any {
 		if iri == "" {
 			return nil
 		}
@@ -742,16 +742,16 @@ func hostFromUrl(uu string) string {
 	return u.Host
 }
 
-func errOnRequest(t *testing.T) func(testPair) map[string]interface{} {
+func errOnRequest(t *testing.T) func(testPair) map[string]any {
 	c := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 		Timeout: 400 * time.Second,
 	}
-	return func(test testPair) map[string]interface{} {
+	return func(test testPair) map[string]any {
 		t.Helper()
-		res := make(map[string]interface{})
+		res := make(map[string]any)
 		t.Run(test.label(), func(t *testing.T) {
 			assertTrue := errIfNotTrue(t, t.Errorf)
 			assertGetRequest := errNotOKGetRequest(t)

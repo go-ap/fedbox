@@ -28,7 +28,7 @@ func init() {
 	processing.Typer = pathTyper{}
 }
 
-type LogFn func(string, ...interface{})
+type LogFn func(string, ...any)
 
 type canStore = cache.CanStore
 
@@ -47,20 +47,20 @@ type FedBOX struct {
 }
 
 var (
-	emptyFieldsLogFn = func(lw.Ctx, string, ...interface{}) {}
-	emptyLogFn       = func(string, ...interface{}) {}
+	emptyFieldsLogFn = func(lw.Ctx, string, ...any) {}
+	emptyLogFn       = func(string, ...any) {}
 	emptyStopFn      = func() {}
-	InfoLogFn        = func(l lw.Logger) func(lw.Ctx, string, ...interface{}) {
+	InfoLogFn        = func(l lw.Logger) func(lw.Ctx, string, ...any) {
 		if l == nil {
 			return emptyFieldsLogFn
 		}
-		return func(f lw.Ctx, s string, p ...interface{}) { l.WithContext(f).Infof(s, p...) }
+		return func(f lw.Ctx, s string, p ...any) { l.WithContext(f).Infof(s, p...) }
 	}
-	ErrLogFn = func(l lw.Logger) func(lw.Ctx, string, ...interface{}) {
+	ErrLogFn = func(l lw.Logger) func(lw.Ctx, string, ...any) {
 		if l == nil {
 			return emptyFieldsLogFn
 		}
-		return func(f lw.Ctx, s string, p ...interface{}) { l.WithContext(f).Errorf(s, p...) }
+		return func(f lw.Ctx, s string, p ...any) { l.WithContext(f).Errorf(s, p...) }
 	}
 )
 

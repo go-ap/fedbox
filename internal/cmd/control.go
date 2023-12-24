@@ -121,7 +121,7 @@ func setup(c *cli.Context, l lw.Logger) (*Control, error) {
 	return New(db, conf, l), nil
 }
 
-func loadPwFromStdin(confirm bool, s string, params ...interface{}) ([]byte, error) {
+func loadPwFromStdin(confirm bool, s string, params ...any) ([]byte, error) {
 	fmt.Printf(s+" pw: ", params...)
 	pw1, _ := terminal.ReadPassword(0)
 	fmt.Println()
@@ -136,13 +136,13 @@ func loadPwFromStdin(confirm bool, s string, params ...interface{}) ([]byte, err
 	return pw1, nil
 }
 
-func loadFromStdin(s string, params ...interface{}) ([]byte, error) {
+func loadFromStdin(s string, params ...any) ([]byte, error) {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Printf(s+": ", params...)
 	input, _ := reader.ReadBytes('\n')
 	return input[:len(input)-1], nil
 }
 
-func Errf(s string, par ...interface{}) {
+func Errf(s string, par ...any) {
 	fmt.Fprintf(os.Stderr, s+"\n", par...)
 }
