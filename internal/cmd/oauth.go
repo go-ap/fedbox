@@ -159,33 +159,33 @@ func tokenAct(c *Control) cli.ActionFunc {
 
 const URISeparator = "\n"
 
-func (c *Control) AddClient(pw []byte, redirect []string, u interface{}) (string, error) {
+func (c *Control) AddClient(pw []byte, redirect []string, u any) (string, error) {
 	var id string
 
 	self := ap.Self(vocab.IRI(ctl.Conf.BaseURL))
 	now := time.Now().UTC()
-	name := vocab.Content("oauth-client-app")
-	var appURL vocab.IRI
+	name := "oauth-client-app"
+	urls := make(vocab.ItemCollection, 0)
+
 	for i, redirectUrl := range redirect {
 		if u, err := url.ParseRequestURI(redirectUrl); err == nil {
 			u.Path = path.Clean(u.Path)
-			name = vocab.Content(u.Host)
-			redirect[i] = u.String()
-			if appURL == "" {
-				appURL = vocab.IRI(u.String())
-			}
+			name = u.Host
+			curURL := u.String()
+			redirect[i] = curURL
+
+			u.Path = ""
+			_ = urls.Append(vocab.IRI(u.String()), vocab.IRI(curURL))
 		}
 	}
-	p := &vocab.Person{
-		Type:         vocab.ApplicationType,
-		AttributedTo: self.GetLink(),
-		Generator:    self.GetLink(),
-		Published:    now,
-		Updated:      now,
-		PreferredUsername: vocab.NaturalLanguageValues{
-			{vocab.NilLangRef, name},
-		},
-		URL: appURL,
+	p := &vocab.Application{
+		Type:              vocab.ApplicationType,
+		AttributedTo:      self.GetLink(),
+		Generator:         self.GetLink(),
+		Published:         now,
+		Updated:           now,
+		PreferredUsername: vocab.DefaultNaturalLanguageValue(name),
+		URL:               urls,
 	}
 	app, err := c.AddActor(p, pw, &self)
 	if err != nil {

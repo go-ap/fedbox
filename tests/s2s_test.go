@@ -11,7 +11,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 )
 
-func CreateS2SObject(actor *testAccount, object interface{}) actS2SMock {
+func CreateS2SObject(actor *testAccount, object any) actS2SMock {
 	id := "http://" + s2shost + "/" + path.Join("activities", fmt.Sprintf("%d", activityCount))
 	var objectId string
 	switch ob := object.(type) {
