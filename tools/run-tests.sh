@@ -23,4 +23,4 @@ else
     run_tests "${1}"
 fi
 
-find tests/.cache/* -type d -exec rm -rf {} +
+find tests/.cache/ -type d -exec rm -rf {} +
