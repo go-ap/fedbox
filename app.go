@@ -240,6 +240,7 @@ func (f *FedBOX) Run(c context.Context) error {
 			logger.Errorf(err.Error())
 		}
 	}
+	defer f.stopFn()
 
 	exit := w.RegisterSignalHandlers(w.SignalHandlers{
 		syscall.SIGHUP: func(_ chan int) {
@@ -265,13 +266,7 @@ func (f *FedBOX) Run(c context.Context) error {
 			logger.Errorf(err.Error())
 			return err
 		}
-		var err error
-		// Doesn't block if no connections, but will otherwise wait until the timeout deadline.
-		go func(e error) {
-			logger.Errorf(err.Error())
-			f.stopFn()
-		}(err)
-		return err
+		return nil
 	})
 	if exit == 0 {
 		logger.Infof("Shutting down")
