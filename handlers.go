@@ -97,11 +97,8 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 		var col vocab.CollectionInterface
 		err = vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
 			for _, it := range c.Collection() {
-				// Remove bcc and bto - probably should be moved to a different place
-				// TODO(marius): move this to the go-ap/activtiypub helpers: CleanRecipients(Item)
-				if s, ok := it.(vocab.HasRecipients); ok {
-					s.Clean()
-				}
+				// Remove bcc and bto
+				vocab.CleanRecipients(it)
 			}
 			col = c
 			return nil
@@ -286,10 +283,7 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 			fb.caches.Store(cacheKey, it)
 		}
 
-		if s, ok := it.(vocab.HasRecipients); ok {
-			// Remove bcc and bto - probably should be moved to a different place
-			s.Clean()
-		}
-		return it, nil
+		// Remove bcc and bto
+		return vocab.CleanRecipients(it), nil
 	}
 }
