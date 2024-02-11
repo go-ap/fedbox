@@ -15,12 +15,13 @@ run_tests() {
 }
 
 if [[ "${1}" = "" ]]; then
-    run_tests fs
-    run_tests sqlite
-    run_tests boltdb
-    run_tests badger
+    _tests=(fs sqlite boltdb badger)
 else
-    run_tests "${1}"
+    _tests=${@}
 fi
 
-find tests/.cache/ -type d -exec rm -rf {} +
+for _test in ${_tests[@]} ; do
+    run_tests "${_test}"
+done
+
+find ./tests/.cache -type d -exec rm -rf {} +
