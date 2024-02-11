@@ -21,16 +21,15 @@ fi
 echo "Building image ${_image_name} for host=${_hostname} env:${_environment} storage:${_storage} version:${_version} port:${_listen_port}"
 
 buildah run "${_builder}" make ENV="${_environment}" STORAGE="${_storage}" VERSION="${_version}" all
-buildah run "${_builder}" make -C images fedbox.pem
+buildah run "${_builder}" make -C images "${_hostname}.pem"
 
 _image=$(buildah from gcr.io/distroless/static:latest)
 
 buildah config --env ENV="${_environment}" "${_image}"
-#buildah config --env STORAGE_PATH=/storage "${_image}
 buildah config --env HOSTNAME="${_hostname}" "${_image}"
 buildah config --env LISTEN=:"${_listen_port}" "${_image}"
-buildah config --env KEY_PATH=/etc/ssl/certs/fedbox.key "${_image}"
-buildah config --env CERT_PATH=/etc/ssl/certs/fedbox.crt "${_image}"
+buildah config --env KEY_PATH=/etc/ssl/certs/${_hostname}.key "${_image}"
+buildah config --env CERT_PATH=/etc/ssl/certs/${_hostname}.crt "${_image}"
 buildah config --env HTTPS=true "${_image}"
 buildah config --env STORAGE="${_storage}" "${_image}"
 
@@ -40,9 +39,9 @@ buildah config --volume /storage "${_image}"
 buildah config --volume /.env "${_image}"
 
 buildah copy --from "${_builder}" "${_image}" /go/src/app/bin/* /bin/
-buildah copy --from "${_builder}" "${_image}" /go/src/app/images/fedbox.key /etc/ssl/certs/
-buildah copy --from "${_builder}" "${_image}" /go/src/app/images/fedbox.crt /etc/ssl/certs/
-buildah copy --from "${_builder}" "${_image}" /go/src/app/images/fedbox.pem /etc/ssl/certs/
+buildah copy --from "${_builder}" "${_image}" /go/src/app/images/*.key /etc/ssl/certs/
+buildah copy --from "${_builder}" "${_image}" /go/src/app/images/*.crt /etc/ssl/certs/
+buildah copy --from "${_builder}" "${_image}" /go/src/app/images/*.pem /etc/ssl/certs/
 
 buildah config --entrypoint '["/bin/fedbox"]' "${_image}"
 
