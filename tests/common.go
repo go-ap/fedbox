@@ -799,8 +799,11 @@ func errOnRequest(t *testing.T) func(testPair) map[string]any {
 			}
 			resp, err := c.Do(req)
 
-			assertTrue(resp != nil, "Error: request failed: response is nil")
 			assertTrue(err == nil, "Error: request failed: %s", err)
+			assertTrue(resp != nil, "Error: request failed: response is nil")
+			if resp == nil {
+				return
+			}
 
 			b, err = io.ReadAll(resp.Body)
 			assertTrue(err == nil, "Error: invalid HTTP body! Read %d bytes %s", len(b), b)
