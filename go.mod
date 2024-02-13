@@ -12,11 +12,11 @@ require (
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7
 	github.com/go-ap/filters v0.0.0-20240211125015-2de118fbc889
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20240211125256-7af62c2fbb07
-	github.com/go-ap/storage-badger v0.0.0-20240211125442-ee9f27b742d1
-	github.com/go-ap/storage-boltdb v0.0.0-20240211125425-9a799fc1b5d6
-	github.com/go-ap/storage-fs v0.0.0-20240211125336-36ecf4f16ab0
-	github.com/go-ap/storage-sqlite v0.0.0-20240211125357-0f86ee5852a9
+	github.com/go-ap/processing v0.0.0-20240213082751-856796c34181
+	github.com/go-ap/storage-badger v0.0.0-20240213083012-a833ff27ccb6
+	github.com/go-ap/storage-boltdb v0.0.0-20240213083028-23a12483788f
+	github.com/go-ap/storage-fs v0.0.0-20240213082822-39deada454d7
+	github.com/go-ap/storage-sqlite v0.0.0-20240213082950-e99e178657cf
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -25,13 +25,6 @@ require (
 	github.com/urfave/cli/v2 v2.25.7
 	golang.org/x/crypto v0.19.0
 	golang.org/x/oauth2 v0.17.0
-)
-
-require (
-	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
-	github.com/ncruces/go-strftime v0.1.9 // indirect
-	modernc.org/gc/v3 v3.0.0-20240107210532-573471604cb6 // indirect
 )
 
 require (
@@ -49,10 +42,13 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/klauspost/compress v1.17.6 // indirect
+	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
+	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
@@ -69,6 +65,7 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
+	modernc.org/gc/v3 v3.0.0-20240107210532-573471604cb6 // indirect
 	modernc.org/libc v1.41.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
