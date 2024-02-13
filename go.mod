@@ -16,7 +16,7 @@ require (
 	github.com/go-ap/storage-badger v0.0.0-20240213102137-f698df6f25ac
 	github.com/go-ap/storage-boltdb v0.0.0-20240213102123-3288ed171918
 	github.com/go-ap/storage-fs v0.0.0-20240213102017-c0335bc921ac
-	github.com/go-ap/storage-sqlite v0.0.0-20240213102107-18d9d8990063
+	github.com/go-ap/storage-sqlite v0.0.0-20240213165016-592a6794e9af
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -69,7 +69,7 @@ require (
 	modernc.org/libc v1.41.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
-	modernc.org/sqlite v1.29.0-rc2 // indirect
+	modernc.org/sqlite v1.29.0 // indirect
 	modernc.org/strutil v1.2.0 // indirect
 	modernc.org/token v1.1.0 // indirect
 )
