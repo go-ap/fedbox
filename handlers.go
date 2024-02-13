@@ -188,21 +188,6 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
 
-		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
-		baseIRI := vocab.IRI(fb.Config().BaseURL)
-		processor, err := processing.New(
-			processing.WithIRI(baseIRI, InternalIRI),
-			processing.WithClient(&fb.client),
-			processing.WithStorage(repo),
-			processing.WithLogger(l),
-			processing.WithIDGenerator(GenerateID(baseIRI)),
-			processing.WithLocalIRIChecker(st.IsLocalIRI(repo)),
-		)
-		if err != nil {
-			fb.errFn("failed initializing the Activity processor: %+s", err)
-			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize processor")
-		}
-
 		// NOTE(marius): this probably leaks the actor in requests we don't want it in
 		// The solution is to move the auth and client objects into the request scope,
 		// instead of storing them on the top level FedBOX object.
@@ -212,7 +197,22 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		}
 		fb.client.SignFn(s2sSignFn(signActorID, fb.storage, fb.logger))
 		auth := fb.actorFromRequest(r)
-		processor.SetActor(&auth)
+
+		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
+		baseIRI := vocab.IRI(fb.Config().BaseURL)
+		processor, err := processing.New(
+			processing.WithIRI(baseIRI, InternalIRI),
+			processing.WithClient(&fb.client),
+			processing.WithStorage(repo),
+			processing.WithLogger(l),
+			processing.WithIDGenerator(GenerateID(baseIRI)),
+			processing.WithLocalIRIChecker(st.IsLocalIRI(repo)),
+			processing.WithAuthorizedActor(&auth),
+		)
+		if err != nil {
+			fb.errFn("failed initializing the Activity processor: %+s", err)
+			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize processor")
+		}
 
 		if fb.keyGenerator != nil {
 			processing.WithActorKeyGenerator(fb.keyGenerator)

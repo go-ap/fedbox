@@ -9,14 +9,11 @@ import (
 
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
-	c "github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	st "github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/processing"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -26,29 +23,14 @@ type Control struct {
 	Logger  lw.Logger
 	Service vocab.Actor
 	Storage fedbox.FullStorage
-	Saver   processing.P
 }
 
 func New(db fedbox.FullStorage, conf config.Options, l lw.Logger) *Control {
-	baseIRI := vocab.IRI(conf.BaseURL)
-
-	p, _ := processing.New(
-		processing.WithIRI(baseIRI),
-		processing.WithStorage(db),
-		processing.WithIDGenerator(fedbox.GenerateID(baseIRI)),
-		processing.WithClient(c.New(
-			c.WithLogger(l.WithContext(lw.Ctx{"log": "processing"})),
-			c.SkipTLSValidation(!conf.Env.IsProd()),
-		)),
-		processing.WithLocalIRIChecker(st.IsLocalIRI(db)),
-	)
-
 	self, _ := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
 	return &Control{
 		Conf:    conf,
 		Service: self,
 		Storage: db,
-		Saver:   *p,
 		Logger:  l,
 	}
 }

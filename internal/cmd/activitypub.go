@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
+	c "github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -195,7 +197,7 @@ func (c *Control) AddObject(p *vocab.Object, author *vocab.Actor) (*vocab.Object
 		return nil, errors.NotFoundf("unable to load current's instance Application actor: %s", c.Conf.BaseURL)
 	}
 
-	c.Saver.SetActor(author)
+	ap := saver(c, author)
 	outbox := vocab.Outbox.Of(author).GetLink()
 	if vocab.IsNil(outbox) {
 		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
@@ -205,10 +207,28 @@ func (c *Control) AddObject(p *vocab.Object, author *vocab.Actor) (*vocab.Object
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to wrap Object in Create activity")
 	}
-	if _, err = c.Saver.ProcessClientActivity(create, outbox); err != nil {
+	if _, err = ap.ProcessClientActivity(create, outbox); err != nil {
 		return nil, err
 	}
 	return p, nil
+}
+
+func saver(ctl *Control, author *vocab.Actor) *processing.P {
+	baseIRI := vocab.IRI(ctl.Conf.BaseURL)
+	db := ctl.Storage
+	l := ctl.Logger
+	p, _ := processing.New(
+		processing.WithIRI(baseIRI),
+		processing.WithStorage(db),
+		processing.WithIDGenerator(fedbox.GenerateID(baseIRI)),
+		processing.WithClient(c.New(
+			c.WithLogger(l.WithContext(lw.Ctx{"log": "processing"})),
+			c.SkipTLSValidation(!ctl.Conf.Env.IsProd()),
+		)),
+		processing.WithLocalIRIChecker(s.IsLocalIRI(db)),
+		processing.WithAuthorizedActor(author),
+	)
+	return p
 }
 
 func (c *Control) AddActor(p *vocab.Person, pw []byte, author *vocab.Actor) (*vocab.Person, error) {
@@ -234,12 +254,13 @@ func (c *Control) AddActor(p *vocab.Person, pw []byte, author *vocab.Actor) (*vo
 		return nil, errors.Annotatef(err, "unable to wrap Actor in Create activity")
 	}
 
-	c.Saver.SetActor(author)
 	outbox := vocab.Outbox.Of(author)
 	if vocab.IsNil(outbox) {
 		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
 	}
-	if _, err := c.Saver.ProcessClientActivity(create, outbox.GetLink()); err != nil {
+
+	ap := saver(c, author)
+	if _, err := ap.ProcessClientActivity(create, outbox.GetLink()); err != nil {
 		return nil, err
 	}
 
@@ -328,7 +349,8 @@ func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string
 	}
 	d.Object = delItems
 
-	if _, err := c.Saver.ProcessClientActivity(d, vocab.Outbox.Of(d.Actor).GetLink()); err != nil {
+	ap := saver(c, &self)
+	if _, err := ap.ProcessClientActivity(d, vocab.Outbox.Of(d.Actor).GetLink()); err != nil {
 		return err
 	}
 
