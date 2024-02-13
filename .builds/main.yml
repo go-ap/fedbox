@@ -38,7 +38,10 @@ tasks:
   - integration-boltdb: |
       cd fedbox
       ./tools/run-tests.sh boltdb
-      complete-build
   - integration-sqlite: |
       cd fedbox
       ./tools/run-tests.sh sqlite
+      complete-build
+  - integration-badger: |
+      cd fedbox
+      ./tools/run-tests.sh badger
