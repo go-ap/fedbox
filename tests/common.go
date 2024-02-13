@@ -900,13 +900,13 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 			}
 			suite.apps[self.ID] = fb
 			go func() {
-				err := fb.Run(ctx)
-				if err != nil {
+				if err := fb.Run(ctx); err != nil {
 					t.Errorf("Err: %+v", err)
 				}
 			}()
 		}
 
+		time.Sleep(100 * time.Millisecond)
 		name := suite.name
 		t.Run(name, func(t *testing.T) {
 			mocks := suite.mocks
