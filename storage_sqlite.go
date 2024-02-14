@@ -12,7 +12,7 @@ import (
 func Storage(c config.Options, l lw.Logger) (FullStorage, error) {
 	path := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": path})
-	l.Debugf("Initializing sqlite storage")
+	l.Debugf("Using sqlite storage")
 	db, err := sqlite.New(sqlite.Config{
 		Path:        path,
 		CacheEnable: c.StorageCache,

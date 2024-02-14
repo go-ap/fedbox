@@ -11,7 +11,7 @@ import (
 func Storage(c config.Options, l lw.Logger) (FullStorage, error) {
 	path := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": path})
-	l.Debugf("Initializing boltdb storage")
+	l.Debugf("Using boltdb storage")
 	db, err := boltdb.New(boltdb.Config{
 		Path:  path,
 		LogFn: l.Debugf,

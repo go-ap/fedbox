@@ -11,7 +11,7 @@ import (
 func Storage(c config.Options, l lw.Logger) (FullStorage, error) {
 	p := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": p})
-	l.Debugf("Initializing fs storage")
+	l.Debugf("Using fs storage")
 	db, err := fs.New(fs.Config{
 		Path:        p,
 		CacheEnable: c.StorageCache,

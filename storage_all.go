@@ -15,7 +15,7 @@ import (
 func getBadgerStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 	path := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": path})
-	l.Debugf("Initializing badger storage")
+	l.Debugf("Using badger storage")
 	conf := badger.Config{
 		Path:  path,
 		LogFn: l.Debugf,
@@ -31,7 +31,7 @@ func getBadgerStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 func getBoltStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 	path := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": path})
-	l.Debugf("Initializing boltdb storage")
+	l.Debugf("Using boltdb storage")
 	db, err := boltdb.New(boltdb.Config{
 		Path:  path,
 		LogFn: l.Debugf,
@@ -46,7 +46,7 @@ func getBoltStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 func getFsStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 	p := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": p})
-	l.Debugf("Initializing fs storage")
+	l.Debugf("Using fs storage")
 	db, err := fs.New(fs.Config{
 		Path:        p,
 		CacheEnable: c.StorageCache,
@@ -62,7 +62,7 @@ func getFsStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 func getSqliteStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 	path := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": path})
-	l.Debugf("Initializing sqlite storage")
+	l.Debugf("Using sqlite storage")
 	db, err := sqlite.New(sqlite.Config{
 		Path:        path,
 		CacheEnable: c.StorageCache,
