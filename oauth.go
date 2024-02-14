@@ -358,8 +358,7 @@ func ByURL(urls ...vocab.IRI) url.Values {
 	return q
 }
 
-func SearchActorsIRI(baseIRI vocab.IRI, searchParams ...url.Values) vocab.IRI {
-	actorSearchIRI := filters.ActorsType.IRI(baseIRI)
+func IRIWithFilters(iri vocab.IRI, searchParams ...url.Values) vocab.IRI {
 	q := make(url.Values)
 	for _, params := range searchParams {
 		for k, vals := range params {
@@ -369,11 +368,15 @@ func SearchActorsIRI(baseIRI vocab.IRI, searchParams ...url.Values) vocab.IRI {
 			q[k] = append(q[k], vals...)
 		}
 	}
-	if s, err := actorSearchIRI.URL(); err == nil {
+	if s, err := iri.URL(); err == nil {
 		s.RawQuery = q.Encode()
-		actorSearchIRI = vocab.IRI(s.String())
+		iri = vocab.IRI(s.String())
 	}
-	return actorSearchIRI
+	return iri
+}
+
+func SearchActorsIRI(baseIRI vocab.IRI, searchParams ...url.Values) vocab.IRI {
+	return IRIWithFilters(filters.ActorsType.IRI(baseIRI), searchParams...)
 }
 
 func (i *authService) Token(w http.ResponseWriter, r *http.Request) {

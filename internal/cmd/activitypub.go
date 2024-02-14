@@ -470,15 +470,12 @@ func (c *Control) List(iris vocab.IRIs, types ...string) (vocab.ItemCollection, 
 	}
 	var items vocab.ItemCollection
 	var err error
+
 	for _, iri := range iris {
-		f, _ := filters.FiltersFromIRI(iri)
-		if len(typeFilter) > 0 {
-			filters.Type(typeFilter...)(f)
-		}
-		f.MaxItems = filters.MaxItems
+		ff, _ := filters.FromIRI(iri)
+		ff = append(ff, filters.HasType(typeFilter...))
 
-		col, err := c.Storage.Load(f.GetLink())
-
+		col, err := c.Storage.Load(fedbox.IRIWithFilters(iri, fedbox.ByType(typeFilter...)), ff...)
 		if err != nil {
 			return items, err
 		}

@@ -14,7 +14,6 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/filters"
-	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
 	"github.com/urfave/cli/v2"
 )
@@ -241,11 +240,11 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, _ any) (string,
 	}
 
 	now := time.Now().UTC()
-	var f processing.Filterable
+	var f vocab.IRI
 	if u, err := url.Parse(actorIdentifier); err == nil {
 		f = vocab.IRI(u.String())
 	} else {
-		f = filters.FiltersNew(filters.Name(actorIdentifier), filters.Type(vocab.ActorTypes...))
+		f = fedbox.SearchActorsIRI(c.Service.ID, fedbox.ByName(actorIdentifier), fedbox.ByType(vocab.ActorTypes...))
 	}
 	list, err := c.Storage.Load(f.GetLink())
 	if err != nil {
