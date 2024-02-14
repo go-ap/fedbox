@@ -24,4 +24,4 @@ for _test in ${_tests[@]} ; do
     run_tests "${_test}"
 done
 
-find ./tests/.cache -type d -exec rm -rf {} +
+find ./tests/.cache/ -mindepth 1 -type d -exec rm -rf {} +
