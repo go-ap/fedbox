@@ -13,7 +13,6 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/assets"
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/filters"
@@ -114,13 +113,6 @@ func IndieAuthClientActor(author vocab.Item, url *url.URL) *vocab.Actor {
 	return &p
 }
 
-func ffilters(r *http.Request, baseURL vocab.IRI) *filters.Filters {
-	f := filters.FromRequest(r, baseURL.String())
-	f.IRI = f.IRI[:0]
-	f.Collection = filters.ActorsType
-	return f
-}
-
 func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 	r.ParseForm()
 	clientID, err := url.QueryUnescape(r.FormValue(clientIdKey))
@@ -139,6 +131,7 @@ func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	// load the 'me' value of the actor that wants to authenticate
 	me, err := url.QueryUnescape(r.FormValue(meKey))
 	if err != nil {
@@ -148,10 +141,8 @@ func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 	// check for existing user actor
 	var actor vocab.Item
 	if me != "" {
-		f := ffilters(r, i.baseIRI)
-		f.Type = filters.CompStrs{filters.StringEquals(string(vocab.PersonType))}
-		f.URL = filters.CompStrs{filters.StringEquals(me)}
-		actor, err = i.storage.Load(f.GetLink())
+		iri := SearchActorsIRI(i.baseIRI, ByType(vocab.PersonType), ByURL(vocab.IRI(me)))
+		actor, err = i.storage.Load(iri)
 		if err != nil {
 			return nil, err
 		}
@@ -159,12 +150,9 @@ func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 			return nil, errors.NotFoundf("unknown actor")
 		}
 	}
-
 	// check for existing application actor
-	f := ffilters(r, i.baseIRI)
-	f.Type = filters.CompStrs{filters.StringEquals(string(vocab.ApplicationType))}
-	f.URL = filters.CompStrs{filters.StringEquals(clientID)}
-	clientActor, err := i.storage.Load(f.GetLink())
+	iri := SearchActorsIRI(i.baseIRI, ByType(vocab.ApplicationType), ByURL(vocab.IRI(clientID)))
+	clientActor, err := i.storage.Load(iri, filters.SameURL(vocab.IRI(clientID)), filters.HasType(vocab.ApplicationType))
 	if err != nil {
 		return nil, err
 	}
@@ -212,18 +200,22 @@ func (i authService) ValidateClient(r *http.Request) (*vocab.Actor, error) {
 
 var scopeAnonymousUserCreate = "anonUserCreate"
 
-func (i *authService) loadAccountByID(id string) (*vocab.Actor, error) {
-	f := filters.FiltersNew()
-
-	a := ap.Self(i.baseIRI)
-
-	f.IRI = filters.ActorsType.IRI(a).AddPath(id)
-	actors, err := i.storage.Load(f.GetLink())
+func (i *authService) actorId(id string) vocab.IRI {
+	return filters.ActorsType.IRI(i.baseIRI).AddPath(id)
+}
+func (i *authService) loadAccountByID(iri vocab.IRI) (*vocab.Actor, error) {
+	actors, err := i.storage.Load(iri)
 	if err != nil {
 		return nil, err
 	}
 	if actors == nil {
 		return nil, errNotFound
+	}
+	if actors.IsCollection() {
+		vocab.OnCollectionIntf(actors, func(col vocab.CollectionInterface) error {
+			actors = col.Collection()
+			return nil
+		})
 	}
 
 	var actor *vocab.Actor
@@ -246,15 +238,18 @@ func (i *authService) loadAccountFromPost(r *http.Request) (*account, error) {
 		"pass":   pw,
 	}).Infof("received")
 
-	a := ap.Self(i.baseIRI)
+	//a := ap.Self(i.baseIRI)
 
-	f := filters.FiltersNew()
-	f.Name = filters.CompStrs{filters.CompStr{Str: handle}}
-	f.IRI = filters.ActorsType.IRI(a)
-	f.Type = filters.CompStrs{filters.StringEquals(string(vocab.PersonType))}
-	actors, err := i.storage.Load(f.GetLink())
+	searchIRI := SearchActorsIRI(i.baseIRI, ByName(handle), ByType(vocab.PersonType))
+	actors, err := i.storage.Load(searchIRI, filters.NameIs(handle), filters.HasType(vocab.PersonType))
 	if err != nil {
 		return nil, errUnauthorized
+	}
+	if actors.IsCollection() {
+		vocab.OnCollectionIntf(actors, func(col vocab.CollectionInterface) error {
+			actors = col.Collection()
+			return nil
+		})
 	}
 
 	var act *account
@@ -337,6 +332,50 @@ func checkPw(it vocab.Item, pw []byte, pwLoader st.PasswordChanger) (*account, e
 	return acc, err
 }
 
+func ByName(names ...string) url.Values {
+	q := make(url.Values)
+	q["name"] = names
+	return q
+}
+
+func ByType(types ...vocab.ActivityVocabularyType) url.Values {
+	q := make(url.Values)
+	tt := make([]string, len(types))
+	for i, t := range types {
+		tt[i] = string(t)
+	}
+	q["type"] = tt
+	return q
+}
+
+func ByURL(urls ...vocab.IRI) url.Values {
+	q := make(url.Values)
+	uu := make([]string, len(urls))
+	for i, u := range urls {
+		uu[i] = u.String()
+	}
+	q["url"] = uu
+	return q
+}
+
+func SearchActorsIRI(baseIRI vocab.IRI, searchParams ...url.Values) vocab.IRI {
+	actorSearchIRI := filters.ActorsType.IRI(baseIRI)
+	q := make(url.Values)
+	for _, params := range searchParams {
+		for k, vals := range params {
+			if _, ok := q[k]; !ok {
+				q[k] = make([]string, 0)
+			}
+			q[k] = append(q[k], vals...)
+		}
+	}
+	if s, err := actorSearchIRI.URL(); err == nil {
+		s.RawQuery = q.Encode()
+		actorSearchIRI = vocab.IRI(s.String())
+	}
+	return actorSearchIRI
+}
+
 func (i *authService) Token(w http.ResponseWriter, r *http.Request) {
 	s := i.auth
 	resp := s.NewResponse()
@@ -344,22 +383,21 @@ func (i *authService) Token(w http.ResponseWriter, r *http.Request) {
 
 	acc := &AnonymousAcct
 	if ar := s.HandleAccessRequest(resp, r); ar != nil {
-		actorFilters := filters.FiltersNew()
+		var actorSearchIRI vocab.IRI
 		switch ar.Type {
 		case osin.PASSWORD:
 			if u, _ := url.ParseRequestURI(ar.Username); u != nil {
 				// NOTE(marius): here we send the full actor IRI as a username to avoid handler collisions
-				actorFilters.IRI = vocab.IRI(ar.Username)
+				actorSearchIRI = vocab.IRI(ar.Username)
 			} else {
-				actorFilters.IRI = filters.ActorsType.IRI(i.baseIRI)
-				actorFilters.Name = filters.CompStrs{filters.StringEquals(ar.Username)}
+				actorSearchIRI = SearchActorsIRI(i.baseIRI, ByName(ar.Username))
 			}
 		case osin.AUTHORIZATION_CODE:
 			if iri, ok := ar.UserData.(string); ok {
-				actorFilters.IRI = vocab.IRI(iri)
+				actorSearchIRI = vocab.IRI(iri)
 			}
 		}
-		actor, err := i.storage.Load(actorFilters.GetLink())
+		actor, err := i.storage.Load(actorSearchIRI)
 		if err != nil {
 			i.logger.Errorf("%s", errUnauthorized)
 			errors.HandleError(errUnauthorized).ServeHTTP(w, r)
@@ -536,7 +574,7 @@ func (i *authService) ShowLogin(w http.ResponseWriter, r *http.Request) {
 	m := login{title: tit}
 
 	if id := chi.URLParam(r, "id"); id != "" {
-		actor, err := i.loadAccountByID(id)
+		actor, err := i.loadAccountByID(i.actorId(id))
 		if err != nil {
 			errors.HandleError(err).ServeHTTP(w, r)
 			return
@@ -552,9 +590,9 @@ func (i *authService) ShowLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if clientId := r.FormValue("client"); len(clientId) > 0 {
-		app, err := i.loadAccountByID(clientId)
+		app, err := i.loadAccountByID(i.actorId(clientId))
 		if err != nil {
-			errors.HandleError(filters.ErrNotFound("client application not found")).ServeHTTP(w, r)
+			errors.HandleError(errors.NotFoundf("client application not found")).ServeHTTP(w, r)
 			return
 		}
 		if app.Type == vocab.ApplicationType {
@@ -567,7 +605,7 @@ func (i *authService) ShowLogin(w http.ResponseWriter, r *http.Request) {
 
 var (
 	errUnauthorized = errors.Unauthorizedf("Invalid username or password")
-	errNotFound     = filters.ErrNotFound("actor not found")
+	errNotFound     = errors.NotFoundf("actor not found")
 )
 
 // HandleLogin handles POST /login requests
@@ -633,7 +671,7 @@ func (i *authService) ShowChangePw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if id := chi.URLParam(r, "id"); id != "" {
-		act, err := i.loadAccountByID(id)
+		act, err := i.loadAccountByID(i.actorId(id))
 		if err != nil {
 			errors.HandleError(err).ServeHTTP(w, r)
 			return

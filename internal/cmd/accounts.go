@@ -9,7 +9,6 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/filters"
 	"github.com/go-ap/jsonld"
 	"github.com/go-ap/processing"
 	"github.com/urfave/cli/v2"
@@ -38,12 +37,8 @@ func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 			return errors.Newf("")
 		}
 
-		baseIRI := filters.ActorsType.IRI(vocab.IRI(ctl.Conf.BaseURL))
-		f := filters.FiltersNew(
-			filters.IRI(baseIRI),
-			filters.Type(vocab.PersonType),
-		)
-		col, err := ctl.Storage.Load(f.GetLink())
+		iri := fedbox.SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), fedbox.ByType(vocab.PersonType))
+		col, err := ctl.Storage.Load(iri)
 		if err != nil {
 			return err
 		}
@@ -196,15 +191,10 @@ func generateKeys(ctl *Control) cli.ActionFunc {
 		}
 
 		if c.Args().Len() == 0 {
-			baseIRI := filters.ActorsType.IRI(vocab.IRI(ctl.Conf.BaseURL))
-			filterFns := []filters.FilterFn{
-				filters.IRI(baseIRI),
-				filters.Type(vocab.PersonType),
-			}
-			f := filters.FiltersNew(filterFns...)
 			// TODO(marius): we should improve this with filtering based on public key existing in the actor,
 			//  and with batching.
-			actors, err := ctl.Storage.Load(f.GetLink())
+			iri := fedbox.SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), fedbox.ByType(vocab.PersonType))
+			actors, err := ctl.Storage.Load(iri)
 			if err != nil {
 				return err
 			}
