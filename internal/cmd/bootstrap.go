@@ -63,12 +63,8 @@ func resetAct(c *Control) cli.ActionFunc {
 func bootstrapAct(c *Control) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
 		keyType := ctx.String("keyType")
-		if err := Bootstrap(c.Conf, c.Service); err != nil {
-			Errf("Error adding service: %s\n", err)
-			return err
-		}
 		c.Service = ap.Self(ap.DefaultServiceIRI(c.Conf.BaseURL))
-		if _, err := c.Storage.Save(&c.Service); err != nil {
+		if err := Bootstrap(c.Conf, c.Service); err != nil {
 			Errf("Error adding service: %s\n", err)
 			return err
 		}
@@ -110,9 +106,18 @@ func Reset(conf config.Options) error {
 }
 
 func CreateService(r fedbox.FullStorage, self vocab.Item) (err error) {
+	_ = vocab.OnActor(self, func(service *vocab.Actor) error {
+		service.Published = time.Now().UTC()
+		return nil
+	})
 	self, err = r.Save(self)
 	if err != nil {
 		return err
+	}
+
+	rr, ok := r.(processing.CollectionStore)
+	if !ok {
+		return nil
 	}
 
 	col := func(iri vocab.IRI) vocab.CollectionInterface {
@@ -123,11 +128,6 @@ func CreateService(r fedbox.FullStorage, self vocab.Item) (err error) {
 			AttributedTo: self.GetLink(),
 			CC:           vocab.ItemCollection{vocab.PublicNS},
 		}
-	}
-
-	rr, ok := r.(processing.CollectionStore)
-	if !ok {
-		return nil
 	}
 	return vocab.OnActor(self, func(service *vocab.Actor) error {
 		var multi error
