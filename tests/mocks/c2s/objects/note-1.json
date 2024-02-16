@@ -8,6 +8,9 @@
   "mediaType": "text/html",
   "url": "https://example.com/1",
   "to": ["https://www.w3.org/ns/activitystreams#Public"],
+  "replies": "http://127.0.0.1:9998/objects/1/replies",
+  "likes": "http://127.0.0.1:9998/objects/1/likes",
+  "shares": "http://127.0.0.1:9998/objects/1/shares",
   "source": {
     "content": "Hello\n\n`world`!",
     "mediaType": "text/markdown"

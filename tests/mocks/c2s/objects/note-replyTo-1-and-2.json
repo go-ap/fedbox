@@ -14,6 +14,9 @@
   "to": [
     "https://www.w3.org/ns/activitystreams#Public"
   ],
+  "replies": "http://127.0.0.1:9998/objects/5/replies",
+  "likes": "http://127.0.0.1:9998/objects/5/likes",
+  "shares": "http://127.0.0.1:9998/objects/5/shares",
   "source": {
     "content": "A second reply.",
     "mediaType": "text/markdown"

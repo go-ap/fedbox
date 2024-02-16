@@ -6,6 +6,8 @@
   "to": [ "https://www.w3.org/ns/activitystreams#Public" ],
   "cc": [ "http://127.0.0.1:9998/actors/2/followers" ],
   "shares": "http://127.0.0.1:9998/objects/2/shares",
+  "replies": "http://127.0.0.1:9998/objects/2/replies",
+  "likes": "http://127.0.0.1:9998/objects/2/likes",
   "accuracy": 0.4,
   "altitude": 0,
   "latitude": -49.3454,

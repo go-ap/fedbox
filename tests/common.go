@@ -611,9 +611,8 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 					assertTrue(ok, "Could not load %q property of collection:\n\n %#v\n\n%#v\n\n", itemsKey, ob, tVal)
 					items, ok := val.([]any)
 					assertTrue(ok, "Invalid property %q %#v, expected %T", itemsKey, val, items)
-					ti, ok := ob["totalItems"].(float64)
 					assertTrue(ok, "Invalid property %q %#v, expected %T", "totalItems", val, items)
-					assertTrue(len(items) == int(ti),
+					assertTrue(len(items) == int(tVal.itemCount),
 						"Invalid item count for collection %q %d, expected %d", itemsKey, len(items), tVal.itemCount,
 					)
 				foundItem:
