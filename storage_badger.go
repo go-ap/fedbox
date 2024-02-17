@@ -9,6 +9,7 @@ import (
 )
 
 func Storage(c config.Options, l lw.Logger) (FullStorage, error) {
+	c.Storage = config.DefaultStorage
 	path := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": path})
 	l.Debugf("Using badger storage")

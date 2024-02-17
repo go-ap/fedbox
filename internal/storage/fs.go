@@ -8,6 +8,7 @@ import (
 )
 
 func conf(opt config.Options) fs.Config {
+	opt.Storage = config.DefaultStorage
 	return fs.Config{
 		Path:        opt.BaseStoragePath(),
 		CacheEnable: opt.StorageCache,

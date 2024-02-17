@@ -8,6 +8,7 @@ import (
 )
 
 func conf(opt config.Options) boltdb.Config {
+	opt.Storage = config.DefaultStorage
 	return boltdb.Config{Path: opt.BaseStoragePath()}
 }
 
