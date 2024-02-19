@@ -216,13 +216,13 @@ func (c *Control) AddObject(p *vocab.Object, author *vocab.Actor) (*vocab.Object
 func saver(ctl *Control, author *vocab.Actor) processing.P {
 	baseIRI := vocab.IRI(ctl.Conf.BaseURL)
 	db := ctl.Storage
-	l := ctl.Logger
+	l := ctl.Logger.WithContext(lw.Ctx{"log": "processing"})
 	p := processing.New(
 		processing.WithIRI(baseIRI),
 		processing.WithStorage(db),
 		processing.WithIDGenerator(fedbox.GenerateID(baseIRI)),
 		processing.WithClient(c.New(
-			c.WithLogger(l.WithContext(lw.Ctx{"log": "processing"})),
+			c.WithLogger(l),
 			c.SkipTLSValidation(!ctl.Conf.Env.IsProd()),
 		)),
 		processing.WithLocalIRIChecker(s.IsLocalIRI(db)),
