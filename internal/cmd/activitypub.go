@@ -226,6 +226,7 @@ func saver(ctl *Control, author *vocab.Actor) processing.P {
 			c.SkipTLSValidation(!ctl.Conf.Env.IsProd()),
 		)),
 		processing.WithLocalIRIChecker(s.IsLocalIRI(db)),
+		processing.WithLogger(l),
 		processing.WithAuthorizedActor(author),
 	)
 	return p
@@ -593,27 +594,12 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 		files := c.Args().Slice()
 
 		for _, name := range files {
-			f, err := os.Open(name)
-			if err != nil {
-				if os.IsNotExist(err) {
-					Errf("Invalid path %s", name)
-				} else {
-					Errf("Error %s", err)
-				}
-			}
-
-			source, err := f.Stat()
+			buf, err := os.ReadFile(name)
 			if err != nil {
 				Errf("Error %s", err)
 				continue
 			}
-			buf := make([]byte, source.Size())
-			size, err := f.Read(buf)
-			if err != nil {
-				Errf("Error %s", err)
-				continue
-			}
-			if size == 0 {
+			if len(buf) == 0 {
 				Errf("Empty file %s", name)
 				continue
 			}
@@ -641,8 +627,19 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 					var err error
 					if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
 						vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
-							actor := vocab.Actor{ID: a.Actor.GetLink()}
-							ap := saver(ctl, &actor)
+							if a == nil {
+								Errf("invalid activity, is nil: %s", it.GetLink())
+								return nil
+							}
+							if a.Actor == nil {
+								Errf("invalid activity, actor is nil: %s", it.GetLink())
+								return nil
+							}
+							actor, err := vocab.ToActor(a.Actor)
+							if err != nil {
+								actor = &vocab.Actor{ID: a.Actor.GetLink()}
+							}
+							ap := saver(ctl, actor)
 							it, err = ap.ProcessClientActivity(it, vocab.Outbox.Of(a.Actor).GetLink())
 							return err
 						})
