@@ -200,7 +200,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 
 		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
 		baseIRI := vocab.IRI(fb.Config().BaseURL)
-		processor, err := processing.New(
+		processor := processing.New(
 			processing.WithIRI(baseIRI, InternalIRI),
 			processing.WithClient(&fb.client),
 			processing.WithStorage(repo),

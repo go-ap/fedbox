@@ -213,11 +213,11 @@ func (c *Control) AddObject(p *vocab.Object, author *vocab.Actor) (*vocab.Object
 	return p, nil
 }
 
-func saver(ctl *Control, author *vocab.Actor) *processing.P {
+func saver(ctl *Control, author *vocab.Actor) processing.P {
 	baseIRI := vocab.IRI(ctl.Conf.BaseURL)
 	db := ctl.Storage
 	l := ctl.Logger
-	p, _ := processing.New(
+	p := processing.New(
 		processing.WithIRI(baseIRI),
 		processing.WithStorage(db),
 		processing.WithIDGenerator(fedbox.GenerateID(baseIRI)),
@@ -592,15 +592,6 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 		toReplace := c.String("base")
 		files := c.Args().Slice()
 
-		processor, err := processing.New(
-			processing.WithIRI(vocab.IRI(baseIRI), fedbox.InternalIRI),
-			processing.WithStorage(ctl.Storage),
-			processing.WithLocalIRIChecker(s.IsLocalIRI(ctl.Storage)),
-		)
-		if err != nil {
-			Errf("Error initializing ActivityPub processor: %s", err)
-			return err
-		}
 		for _, name := range files {
 			f, err := os.Open(name)
 			if err != nil {
@@ -611,12 +602,12 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 				}
 			}
 
-			s, err := f.Stat()
+			source, err := f.Stat()
 			if err != nil {
 				Errf("Error %s", err)
 				continue
 			}
-			buf := make([]byte, s.Size())
+			buf := make([]byte, source.Size())
 			size, err := f.Read(buf)
 			if err != nil {
 				Errf("Error %s", err)
@@ -649,20 +640,10 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 
 					var err error
 					if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
-						err = vocab.OnActivity(it, func(a *vocab.Activity) error {
-							if a == nil {
-								Errf("invalid nil activity: %s", it.GetLink())
-								return nil
-							}
-							if a.Actor == nil {
-								Errf("invalid activity, actor is nil: %s", it.GetLink())
-								return nil
-							}
-							if a.Object == nil {
-								Errf("invalid activity, object is nil: %s", it.GetLink())
-								return nil
-							}
-							_, err := processor.ProcessClientActivity(a, vocab.Outbox.Of(a.Actor).GetLink())
+						vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
+							actor := vocab.Actor{ID: a.Actor.GetLink()}
+							ap := saver(ctl, &actor)
+							it, err = ap.ProcessClientActivity(it, vocab.Outbox.Of(a.Actor).GetLink())
 							return err
 						})
 					} else {
