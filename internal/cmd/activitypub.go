@@ -84,13 +84,13 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 			names = append(names, string(name))
 		}
 
-		authIRI := vocab.IRI(c.String("attributedTo"))
-		if len(authIRI) == 0 {
-			authIRI = vocab.IRI(ctl.Conf.BaseURL)
-		}
-		author, err := ap.LoadActor(ctl.Storage, authIRI)
-		if err != nil {
-			return err
+		author := ap.Self(vocab.IRI(ctl.Conf.BaseURL))
+		if authIRI := vocab.IRI(c.String("attributedTo")); len(authIRI) > 0 {
+			act, err := ap.LoadActor(ctl.Storage, authIRI)
+			if err != nil {
+				return err
+			}
+			author = act
 		}
 
 		tags := make(vocab.ItemCollection, 0)
@@ -104,7 +104,7 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 						if object.Name.First().Value.String() != tag {
 							continue
 						}
-						if object.AttributedTo.GetLink() != authIRI {
+						if object.AttributedTo.GetLink() != author.GetLink() {
 							continue
 						}
 						tags.Append(object)
