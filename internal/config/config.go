@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -76,11 +77,24 @@ const (
 
 const defaultDirPerm = os.ModeDir | os.ModePerm | 0700
 
-func (o Options) BaseStoragePath() string {
-	if !filepath.IsAbs(o.StoragePath) {
-		o.StoragePath, _ = filepath.Abs(o.StoragePath)
+func replacePlaceholders(p string, o Options) string {
+	if len(p) == 0 {
+		return p
 	}
-	basePath := path.Clean(path.Join(o.StoragePath, string(o.Storage), string(o.Env)))
+	if p[0] == '~' {
+		p = os.Getenv("HOME") + p[1:]
+	}
+	if !filepath.IsAbs(p) {
+		p, _ = filepath.Abs(p)
+	}
+	p = strings.ReplaceAll(p, "%env%", string(o.Env))
+	p = strings.ReplaceAll(p, "%storage%", string(o.Storage))
+	p = strings.ReplaceAll(p, "%host%", url.PathEscape(o.Host))
+	return path.Clean(p)
+}
+
+func (o Options) BaseStoragePath() string {
+	basePath := replacePlaceholders(o.StoragePath, o)
 	fi, err := os.Stat(basePath)
 	if err != nil && os.IsNotExist(err) {
 		err = os.MkdirAll(basePath, defaultDirPerm)
