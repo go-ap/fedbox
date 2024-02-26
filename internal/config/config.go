@@ -77,7 +77,7 @@ const (
 
 const defaultDirPerm = os.ModeDir | os.ModePerm | 0700
 
-func replacePlaceholders(p string, o Options) string {
+func normalizeStoragePath(p string, o Options) string {
 	if len(p) == 0 {
 		return p
 	}
@@ -94,7 +94,7 @@ func replacePlaceholders(p string, o Options) string {
 }
 
 func (o Options) BaseStoragePath() string {
-	basePath := replacePlaceholders(o.StoragePath, o)
+	basePath := normalizeStoragePath(o.StoragePath, o)
 	fi, err := os.Stat(basePath)
 	if err != nil && os.IsNotExist(err) {
 		err = os.MkdirAll(basePath, defaultDirPerm)

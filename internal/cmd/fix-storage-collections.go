@@ -3,7 +3,7 @@ package cmd
 import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox"
+	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 	"github.com/urfave/cli/v2"
@@ -65,7 +65,7 @@ func fixStorageCollectionsAct(ctl *Control) cli.ActionFunc {
 	}
 }
 
-func tryCreateAllObjectsCollections(actor vocab.Item, storage fedbox.FullStorage) error {
+func tryCreateAllObjectsCollections(actor vocab.Item, storage st.FullStorage) error {
 	if actor == nil {
 		return nil
 	}
@@ -114,7 +114,7 @@ func tryCreateAllObjectsCollections(actor vocab.Item, storage fedbox.FullStorage
 	return nil
 }
 
-func tryCreateActorCollections(actor vocab.Item, storage fedbox.FullStorage) error {
+func tryCreateActorCollections(actor vocab.Item, storage st.FullStorage) error {
 	initialCollections := make([]vocab.IRI, 0)
 	initialCollections = append(initialCollections, getActorCollections(actor)...)
 	err := vocab.OnActor(actor, func(actor *vocab.Actor) error {
@@ -143,7 +143,7 @@ func tryCreateActorCollections(actor vocab.Item, storage fedbox.FullStorage) err
 	return nil
 }
 
-func tryCreateCollection(storage fedbox.FullStorage, colIRI vocab.IRI) error {
+func tryCreateCollection(storage st.FullStorage, colIRI vocab.IRI) error {
 	var collection *vocab.OrderedCollection
 	items, err := ctl.Storage.Load(colIRI.GetLink())
 	if err != nil {

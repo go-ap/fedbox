@@ -20,12 +20,12 @@ require (
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
-	github.com/mariusor/render v1.5.1-0.20221026090743-ab78c1b3aa95
 	github.com/pborman/uuid v1.2.1
 	github.com/urfave/cli/v2 v2.25.7
 	golang.org/x/crypto v0.19.0
-	golang.org/x/oauth2 v0.17.0
 )
+
+require golang.org/x/oauth2 v0.17.0 // indirect
 
 require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect

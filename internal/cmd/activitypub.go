@@ -476,7 +476,7 @@ func (c *Control) List(iris vocab.IRIs, types ...string) (vocab.ItemCollection, 
 		ff, _ := filters.FromIRI(iri)
 		ff = append(ff, filters.HasType(typeFilter...))
 
-		col, err := c.Storage.Load(fedbox.IRIWithFilters(iri, fedbox.ByType(typeFilter...)), ff...)
+		col, err := c.Storage.Load(IRIWithFilters(iri, ByType(typeFilter...)), ff...)
 		if err != nil {
 			return items, err
 		}

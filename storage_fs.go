@@ -5,10 +5,11 @@ package fedbox
 import (
 	"git.sr.ht/~mariusor/lw"
 	"github.com/go-ap/fedbox/internal/config"
+	st "github.com/go-ap/fedbox/storage"
 	fs "github.com/go-ap/storage-fs"
 )
 
-func Storage(c config.Options, l lw.Logger) (FullStorage, error) {
+func Storage(c config.Options, l lw.Logger) (st.FullStorage, error) {
 	c.Storage = config.DefaultStorage
 	p := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": p})

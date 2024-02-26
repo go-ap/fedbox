@@ -244,7 +244,7 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, _ any) (string,
 	if u, err := url.Parse(actorIdentifier); err == nil {
 		f = vocab.IRI(u.String())
 	} else {
-		f = fedbox.SearchActorsIRI(c.Service.ID, fedbox.ByName(actorIdentifier), fedbox.ByType(vocab.ActorTypes...))
+		f = SearchActorsIRI(c.Service.ID, ByName(actorIdentifier), ByType(vocab.ActorTypes...))
 	}
 	list, err := c.Storage.Load(f.GetLink())
 	if err != nil {
@@ -321,4 +321,59 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, _ any) (string,
 	}
 
 	return ad.AccessToken, nil
+}
+
+func ByName(names ...string) url.Values {
+	q := make(url.Values)
+	q["name"] = names
+	return q
+}
+
+func ByType(types ...vocab.ActivityVocabularyType) url.Values {
+	q := make(url.Values)
+	tt := make([]string, len(types))
+	for i, t := range types {
+		tt[i] = string(t)
+	}
+	q["type"] = tt
+	return q
+}
+
+func ByURL(urls ...vocab.IRI) url.Values {
+	q := make(url.Values)
+	uu := make([]string, len(urls))
+	for i, u := range urls {
+		uu[i] = u.String()
+	}
+	q["url"] = uu
+	return q
+}
+
+func IRIWithFilters(iri vocab.IRI, searchParams ...url.Values) vocab.IRI {
+	q := make(url.Values)
+	for _, params := range searchParams {
+		for k, vals := range params {
+			if _, ok := q[k]; !ok {
+				q[k] = make([]string, 0)
+			}
+			q[k] = append(q[k], vals...)
+		}
+	}
+	if s, err := iri.URL(); err == nil {
+		s.RawQuery = q.Encode()
+		iri = vocab.IRI(s.String())
+	}
+	return iri
+}
+
+func SearchActorsIRI(baseIRI vocab.IRI, searchParams ...url.Values) vocab.IRI {
+	return IRIWithFilters(filters.ActorsType.IRI(baseIRI), searchParams...)
+}
+
+func name(act *vocab.Actor) string {
+	n := act.Name.First().String()
+	if act.PreferredUsername != nil {
+		n = act.PreferredUsername.First().String()
+	}
+	return n
 }

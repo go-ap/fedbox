@@ -6,13 +6,14 @@ import (
 	"git.sr.ht/~mariusor/lw"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/config"
+	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/storage-badger"
 	"github.com/go-ap/storage-boltdb"
 	"github.com/go-ap/storage-fs"
 	"github.com/go-ap/storage-sqlite"
 )
 
-func getBadgerStorage(c config.Options, l lw.Logger) (FullStorage, error) {
+func getBadgerStorage(c config.Options, l lw.Logger) (st.FullStorage, error) {
 	path := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": path})
 	l.Debugf("Using badger storage")
@@ -28,7 +29,7 @@ func getBadgerStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 	return db, nil
 }
 
-func getBoltStorage(c config.Options, l lw.Logger) (FullStorage, error) {
+func getBoltStorage(c config.Options, l lw.Logger) (st.FullStorage, error) {
 	path := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": path})
 	l.Debugf("Using boltdb storage")
@@ -43,7 +44,7 @@ func getBoltStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 	return db, nil
 }
 
-func getFsStorage(c config.Options, l lw.Logger) (FullStorage, error) {
+func getFsStorage(c config.Options, l lw.Logger) (st.FullStorage, error) {
 	p := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": p})
 	l.Debugf("Using fs storage")
@@ -59,7 +60,7 @@ func getFsStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 	return db, nil
 }
 
-func getSqliteStorage(c config.Options, l lw.Logger) (FullStorage, error) {
+func getSqliteStorage(c config.Options, l lw.Logger) (st.FullStorage, error) {
 	path := c.BaseStoragePath()
 	l = l.WithContext(lw.Ctx{"path": path})
 	l.Debugf("Using sqlite storage")
@@ -76,7 +77,7 @@ func getSqliteStorage(c config.Options, l lw.Logger) (FullStorage, error) {
 	return db, nil
 }
 
-func Storage(c config.Options, l lw.Logger) (FullStorage, error) {
+func Storage(c config.Options, l lw.Logger) (st.FullStorage, error) {
 	switch c.Storage {
 	case config.StorageBoltDB:
 		return getBoltStorage(c, l)

@@ -34,13 +34,13 @@ type canStore = cache.CanStore
 
 type FedBOX struct {
 	R            chi.Router
+	auth         *auth.Server
 	conf         config.Options
 	self         vocab.Service
 	client       client.C
-	storage      FullStorage
+	storage      st.FullStorage
 	ver          string
 	caches       canStore
-	OAuth        authService
 	keyGenerator func(act *vocab.Actor) error
 	stopFn       func()
 	logger       lw.Logger
@@ -64,15 +64,10 @@ var (
 	}
 )
 
-var AnonymousAcct = account{
-	username: "anonymous",
-	actor:    &auth.AnonymousActor,
-}
-
 var InternalIRI = vocab.IRI("https://fedbox/")
 
 // New instantiates a new FedBOX instance
-func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX, error) {
+func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 	if db == nil {
 		return nil, errors.Newf("invalid storage")
 	}
@@ -139,18 +134,10 @@ func New(l lw.Logger, ver string, conf config.Options, db FullStorage) (*FedBOX,
 		return nil, err
 	}
 
+	app.auth = as
+
 	app.R.Use(middleware.RequestID)
 	app.R.Use(lw.Middlewares(l)...)
-
-	baseIRI := app.self.GetLink()
-	app.OAuth = authService{
-		baseIRI: baseIRI,
-		auth:    *as,
-		genID:   GenerateID(baseIRI),
-		storage: app.storage,
-		logger:  l.WithContext(lw.Ctx{"log": "auth-service"}),
-	}
-
 	app.R.Group(app.Routes())
 
 	return &app, err
@@ -160,7 +147,7 @@ func (f *FedBOX) Config() config.Options {
 	return f.conf
 }
 
-func (f *FedBOX) Storage() FullStorage {
+func (f *FedBOX) Storage() st.FullStorage {
 	return f.storage
 }
 
@@ -179,7 +166,7 @@ func (f *FedBOX) reload() (err error) {
 }
 
 func (f *FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
-	act, err := f.OAuth.auth.LoadActorFromAuthHeader(r)
+	act, err := f.auth.LoadActorFromAuthHeader(r)
 	if err != nil {
 		f.logger.Errorf("unable to load an authorized Actor from request: %+s", err)
 	}

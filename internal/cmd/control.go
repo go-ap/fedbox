@@ -14,6 +14,7 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
+	st "github.com/go-ap/fedbox/storage"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -22,10 +23,10 @@ type Control struct {
 	Conf    config.Options
 	Logger  lw.Logger
 	Service vocab.Actor
-	Storage fedbox.FullStorage
+	Storage st.FullStorage
 }
 
-func New(db fedbox.FullStorage, conf config.Options, l lw.Logger) *Control {
+func New(db st.FullStorage, conf config.Options, l lw.Logger) *Control {
 	self, _ := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
 	return &Control{
 		Conf:    conf,

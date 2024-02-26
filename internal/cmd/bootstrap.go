@@ -105,7 +105,7 @@ func Reset(conf config.Options) error {
 	return nil
 }
 
-func CreateService(r fedbox.FullStorage, self vocab.Item) (err error) {
+func CreateService(r s.FullStorage, self vocab.Item) (err error) {
 	_ = vocab.OnActor(self, func(service *vocab.Actor) error {
 		service.Published = time.Now().UTC()
 		return nil

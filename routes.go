@@ -16,7 +16,6 @@ func (f FedBOX) CollectionRoutes(descend bool) func(chi.Router) {
 			r.Method(http.MethodPost, "/", HandleActivity(f))
 
 			r.Route("/{id}", func(r chi.Router) {
-				r.Group(f.OAuthRoutes())
 				r.Method(http.MethodGet, "/", HandleItem(f))
 				r.Method(http.MethodHead, "/", HandleItem(f))
 				if descend {
@@ -52,8 +51,6 @@ func (f FedBOX) Routes() func(chi.Router) {
 		//   Eg: "/{collection:(activities|objects|actors|moderators|ignored|blocked|flagged)}"
 		r.Route("/{collection}", f.CollectionRoutes(true))
 
-		r.Group(f.OAuthRoutes())
-
 		if f.conf.Env.IsDev() {
 			r.Mount("/debug", middleware.Profiler())
 		}
@@ -61,25 +58,5 @@ func (f FedBOX) Routes() func(chi.Router) {
 		r.Handle("/favicon.ico", errors.NotFound)
 		r.NotFound(errors.NotFound.ServeHTTP)
 		r.MethodNotAllowed(errors.HandleError(errors.MethodNotAllowedf("method not allowed")).ServeHTTP)
-	}
-}
-
-func (f *FedBOX) OAuthRoutes() func(router chi.Router) {
-	h := f.OAuth
-	return func(r chi.Router) {
-		r.Route("/oauth", func(r chi.Router) {
-			// Authorization code endpoint
-			r.Get("/authorize", h.Authorize)
-			r.Post("/authorize", h.Authorize)
-			// Access token endpoint
-			r.Post("/token", h.Token)
-
-			r.Group(func(r chi.Router) {
-				r.Get("/login", h.ShowLogin)
-				r.Post("/login", h.HandleLogin)
-				r.Get("/pw", h.ShowChangePw)
-				r.Post("/pw", h.HandleChangePw)
-			})
-		})
 	}
 }

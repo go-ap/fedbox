@@ -37,7 +37,7 @@ func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 			return errors.Newf("")
 		}
 
-		iri := fedbox.SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), fedbox.ByType(vocab.PersonType))
+		iri := SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), ByType(vocab.PersonType))
 		col, err := ctl.Storage.Load(iri)
 		if err != nil {
 			return err
@@ -193,7 +193,7 @@ func generateKeys(ctl *Control) cli.ActionFunc {
 		if c.Args().Len() == 0 {
 			// TODO(marius): we should improve this with filtering based on public key existing in the actor,
 			//  and with batching.
-			iri := fedbox.SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), fedbox.ByType(vocab.PersonType))
+			iri := SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), ByType(vocab.PersonType))
 			actors, err := ctl.Storage.Load(iri)
 			if err != nil {
 				return err
