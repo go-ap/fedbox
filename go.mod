@@ -13,16 +13,16 @@ require (
 	github.com/go-ap/filters v0.0.0-20240219215202-3bb92c250e29
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20240219170415-0288cef1f678
-	github.com/go-ap/storage-badger v0.0.0-20240219170539-9f0954a8ddb8
+	github.com/go-ap/storage-badger v0.0.0-20240223173413-d2c8148143bf
 	github.com/go-ap/storage-boltdb v0.0.0-20240219170525-6f5869e1b32c
-	github.com/go-ap/storage-fs v0.0.0-20240219170454-7d4640188c3d
+	github.com/go-ap/storage-fs v0.0.0-20240228080909-4ed6853fd0c1
 	github.com/go-ap/storage-sqlite v0.0.0-20240221132658-4964f2848b8d
-	github.com/go-chi/chi/v5 v5.0.11
+	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pborman/uuid v1.2.1
 	github.com/urfave/cli/v2 v2.25.7
-	golang.org/x/crypto v0.19.0
+	golang.org/x/crypto v0.20.0
 )
 
 require golang.org/x/oauth2 v0.17.0 // indirect
