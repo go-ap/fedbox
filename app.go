@@ -39,7 +39,7 @@ type FedBOX struct {
 	self         vocab.Service
 	client       client.C
 	storage      st.FullStorage
-	ver          string
+	version      string
 	caches       canStore
 	keyGenerator func(act *vocab.Actor) error
 	stopFn       func()
@@ -75,7 +75,7 @@ func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedB
 		return nil, errors.Newf("invalid empty BaseURL config")
 	}
 	app := FedBOX{
-		ver:     ver,
+		version: ver,
 		conf:    conf,
 		R:       chi.NewRouter(),
 		storage: db,
@@ -210,7 +210,7 @@ func (f *FedBOX) Run(c context.Context) error {
 	}
 	logCtx := lw.Ctx{
 		"URL":      f.conf.BaseURL,
-		"version":  f.ver,
+		"version":  f.version,
 		"listenOn": f.conf.Listen,
 		"TLS":      f.conf.Secure,
 	}
