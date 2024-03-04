@@ -11,6 +11,7 @@ import (
 
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/auth"
 	c "github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
@@ -144,7 +145,7 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 			if len(tags) > 0 {
 				p.Tag = tags
 			}
-			if p, err = ctl.AddActor(p, pw, &author); err != nil {
+			if p, err = ctl.AddActor(p, pw, author); err != nil {
 				//Errf("Error adding %s: %s\n", name, err)
 				return err
 			}
@@ -179,11 +180,11 @@ func wrapObjectInCreate(p vocab.Item, author vocab.Item) (vocab.Activity, error)
 	return act, nil
 }
 
-func (c *Control) AddObject(p *vocab.Object, author *vocab.Actor) (*vocab.Object, error) {
+func (c *Control) AddObject(p *vocab.Object, author vocab.Actor) (*vocab.Object, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	if author == nil {
+	if author.GetLink().Equals(auth.AnonymousActor.GetLink(), false) {
 		self, err := ap.LoadActor(c.Storage, ap.DefaultServiceIRI(c.Conf.BaseURL))
 		if err != nil {
 			return nil, errors.NewNotFound(err, "unable to load current's instance Application actor")
@@ -191,13 +192,13 @@ func (c *Control) AddObject(p *vocab.Object, author *vocab.Actor) (*vocab.Object
 		if self.ID == "" {
 			return nil, errors.NotFoundf("unable to load current's instance Application actor")
 		}
-		author = &self
+		author = self
 	}
 	if author.GetID() == "" {
 		return nil, errors.NotFoundf("unable to load current's instance Application actor: %s", c.Conf.BaseURL)
 	}
 
-	ap := saver(c, author)
+	ap := saver(c)
 	outbox := vocab.Outbox.Of(author).GetLink()
 	if vocab.IsNil(outbox) {
 		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
@@ -207,13 +208,13 @@ func (c *Control) AddObject(p *vocab.Object, author *vocab.Actor) (*vocab.Object
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to wrap Object in Create activity")
 	}
-	if _, err = ap.ProcessClientActivity(create, outbox); err != nil {
+	if _, err = ap.ProcessClientActivity(create, author, outbox); err != nil {
 		return nil, err
 	}
 	return p, nil
 }
 
-func saver(ctl *Control, author *vocab.Actor) processing.P {
+func saver(ctl *Control) processing.P {
 	baseIRI := vocab.IRI(ctl.Conf.BaseURL)
 	db := ctl.Storage
 	l := ctl.Logger.WithContext(lw.Ctx{"log": "processing"})
@@ -227,16 +228,15 @@ func saver(ctl *Control, author *vocab.Actor) processing.P {
 		)),
 		processing.WithLocalIRIChecker(s.IsLocalIRI(db)),
 		processing.WithLogger(l),
-		processing.WithAuthorizedActor(author),
 	)
 	return p
 }
 
-func (c *Control) AddActor(p *vocab.Person, pw []byte, author *vocab.Actor) (*vocab.Person, error) {
+func (c *Control) AddActor(p *vocab.Person, pw []byte, author vocab.Actor) (*vocab.Person, error) {
 	if c.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	if author == nil {
+	if author.GetLink().Equals(auth.AnonymousActor.GetLink(), false) {
 		self, err := ap.LoadActor(c.Storage, ap.DefaultServiceIRI(c.Conf.BaseURL))
 		if err != nil {
 			return nil, errors.NewNotFound(err, "unable to load current's instance Application actor")
@@ -244,7 +244,7 @@ func (c *Control) AddActor(p *vocab.Person, pw []byte, author *vocab.Actor) (*vo
 		if self.ID == "" {
 			return nil, errors.NotFoundf("unable to load current's instance Application actor")
 		}
-		author = &self
+		author = self
 	}
 	if author.GetID() == "" {
 		return nil, errors.NotFoundf("unable to load current's instance Application actor: %s", c.Conf.BaseURL)
@@ -260,8 +260,8 @@ func (c *Control) AddActor(p *vocab.Person, pw []byte, author *vocab.Actor) (*vo
 		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
 	}
 
-	ap := saver(c, author)
-	if _, err := ap.ProcessClientActivity(create, outbox.GetLink()); err != nil {
+	ap := saver(c)
+	if _, err := ap.ProcessClientActivity(create, author, outbox.GetLink()); err != nil {
 		return nil, err
 	}
 
@@ -350,8 +350,8 @@ func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string
 	}
 	d.Object = delItems
 
-	ap := saver(c, &self)
-	if _, err := ap.ProcessClientActivity(d, vocab.Outbox.Of(d.Actor).GetLink()); err != nil {
+	ap := saver(c)
+	if _, err := ap.ProcessClientActivity(d, self, vocab.Outbox.Of(d.Actor).GetLink()); err != nil {
 		return err
 	}
 
@@ -480,14 +480,12 @@ func (c *Control) List(iris vocab.IRIs, types ...string) (vocab.ItemCollection, 
 		if err != nil {
 			return items, err
 		}
-		if col.IsCollection() {
-			err = vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
-				items = append(items, c.Collection()...)
-				return nil
-			})
-		} else {
-			items = append(items, col)
-		}
+		vocab.OnItem(col, func(it vocab.Item) error {
+			if !vocab.IsNil(it) {
+				items = append(items, it)
+			}
+			return nil
+		})
 	}
 	return items, err
 }
@@ -560,7 +558,7 @@ func addObjectAct(ctl *Control) cli.ActionFunc {
 			}
 
 			var err error
-			if p, err = ctl.AddObject(p, &author); err != nil {
+			if p, err = ctl.AddObject(p, author); err != nil {
 				return errors.Annotatef(err, "Unable to save object")
 			}
 			fmt.Printf("Added %s [%s]: %s\n", typ, name, p.GetLink())
@@ -639,8 +637,8 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 							if err != nil {
 								actor = &vocab.Actor{ID: a.Actor.GetLink()}
 							}
-							ap := saver(ctl, actor)
-							it, err = ap.ProcessClientActivity(it, vocab.Outbox.Of(a.Actor).GetLink())
+							ap := saver(ctl)
+							it, err = ap.ProcessClientActivity(it, *actor, vocab.Outbox.Of(a.Actor).GetLink())
 							return err
 						})
 					} else {

@@ -186,7 +186,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u any) (string, error)
 		PreferredUsername: vocab.DefaultNaturalLanguageValue(name),
 		URL:               urls,
 	}
-	app, err := c.AddActor(p, pw, &self)
+	app, err := c.AddActor(p, pw, self)
 	if err != nil {
 		return "", err
 	}

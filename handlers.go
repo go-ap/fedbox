@@ -207,7 +207,6 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			processing.WithLogger(l),
 			processing.WithIDGenerator(GenerateID(baseIRI)),
 			processing.WithLocalIRIChecker(st.IsLocalIRI(repo)),
-			processing.WithAuthorizedActor(&auth),
 		)
 		if err != nil {
 			fb.errFn("failed initializing the Activity processor: %+s", err)
@@ -218,9 +217,9 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			processing.WithActorKeyGenerator(fb.keyGenerator)
 		}
 
-		if it, err = processor.ProcessActivity(it, receivedIn); err != nil {
+		if it, err = processor.ProcessActivity(it, auth, receivedIn); err != nil {
 			fb.errFn("failed processing activity: %+s", err)
-			return it, errors.HttpStatus(err), errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), filepath.Base(r.URL.Path))
+			return it, errors.HttpStatus(err), errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), receivedIn)
 		}
 		err = vocab.OnActivity(it, func(act *vocab.Activity) error {
 			return cache.ActivityPurge(fb.caches, act, receivedIn)
