@@ -196,9 +196,9 @@ func (c *Control) AddClient(pw []byte, redirect []string, u any) (string, error)
 		}
 	}
 
-	id = path.Base(string(app.GetID()))
 	// TODO(marius): allow for updates of the application actor with incoming parameters for Icon, Summary, samd.
 
+	id = app.GetID().String()
 	if id == "" {
 		return "", errors.Newf("invalid actor saved, id is null")
 	}
@@ -216,14 +216,17 @@ func (c *Control) AddClient(pw []byte, redirect []string, u any) (string, error)
 	return id, c.Storage.CreateClient(&d)
 }
 
-func (c *Control) DeleteClient(uuid string) error {
-	iri := fmt.Sprintf("%s/%s/%s", c.Conf.BaseURL, filters.ActorsType, uuid)
-	err := c.DeleteObjects("Remove OAuth2 Client", nil, iri)
+func (c *Control) DeleteClient(id string) error {
+	iri := vocab.IRI(id)
+	if _, err := iri.URL(); err != nil {
+		iri = vocab.IRI(fmt.Sprintf("%s/%s/%s", c.Conf.BaseURL, filters.ActorsType, id))
+	}
+	err := c.DeleteObjects("Remove OAuth2 Client", nil, iri.String())
 	if err != nil {
 		return err
 	}
 
-	return c.Storage.RemoveClient(uuid)
+	return c.Storage.RemoveClient(iri.String())
 }
 
 func (c *Control) ListClients() ([]osin.Client, error) {
@@ -231,10 +234,11 @@ func (c *Control) ListClients() ([]osin.Client, error) {
 }
 
 func (c *Control) GenAuthToken(clientID, actorIdentifier string, _ any) (string, error) {
-	if u, err := url.Parse(clientID); err == nil {
-		clientID = path.Base(u.Path)
+	iri := vocab.IRI(clientID)
+	if _, err := iri.URL(); err != nil {
+		iri = vocab.IRI(fmt.Sprintf("%s/%s/%s", c.Conf.BaseURL, filters.ActorsType, clientID))
 	}
-	cl, err := c.Storage.GetClient(clientID)
+	cl, err := c.Storage.GetClient(iri.String())
 	if err != nil {
 		return "", err
 	}

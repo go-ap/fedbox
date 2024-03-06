@@ -15,17 +15,17 @@ require (
 	github.com/go-ap/processing v0.0.0-20240304123656-97b0484ccb3c
 	github.com/go-ap/storage-badger v0.0.0-20240304123926-275fc0ea4ca2
 	github.com/go-ap/storage-boltdb v0.0.0-20240304124003-e0d0d6e9144d
-	github.com/go-ap/storage-fs v0.0.0-20240228080909-4ed6853fd0c1
+	github.com/go-ap/storage-fs v0.0.0-20240306162152-bb51eb8faa00
 	github.com/go-ap/storage-sqlite v0.0.0-20240304123757-6185a0f9b06d
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pborman/uuid v1.2.1
 	github.com/urfave/cli/v2 v2.25.7
-	golang.org/x/crypto v0.20.0
+	golang.org/x/crypto v0.21.0
 )
 
-require golang.org/x/oauth2 v0.17.0 // indirect
+require golang.org/x/oauth2 v0.18.0 // indirect
 
 require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
@@ -38,7 +38,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -59,12 +59,12 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.etcd.io/bbolt v1.3.9 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
-	golang.org/x/term v0.17.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/protobuf v1.32.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	modernc.org/gc/v3 v3.0.0-20240304020402-f0dba7c97c2b // indirect
 	modernc.org/libc v1.41.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
