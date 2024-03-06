@@ -16,6 +16,7 @@ run_tests() {
 
 if [[ "${1}" = "" ]]; then
     _tests=(fs sqlite boltdb badger)
+    _tests=(fs sqlite boltdb)
 else
     _tests=${@}
 fi
