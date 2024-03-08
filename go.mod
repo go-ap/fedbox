@@ -6,16 +6,16 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20230317075520-07e173563bf8
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240210113306-c862d947a747
 	github.com/go-ap/activitypub v0.0.0-20240304122919-ef7a45e2d04a
-	github.com/go-ap/auth v0.0.0-20240304123639-d43a7aff57c6
+	github.com/go-ap/auth v0.0.0-20240308123624-7ee9416b31f5
 	github.com/go-ap/cache v0.0.0-20240304123124-5d953b368fbf
 	github.com/go-ap/client v0.0.0-20240211124832-961fcce8d438
 	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0
-	github.com/go-ap/filters v0.0.0-20240304123324-2c49f9d9a5e3
+	github.com/go-ap/filters v0.0.0-20240308123440-369d4a67f42d
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20240304123656-97b0484ccb3c
-	github.com/go-ap/storage-badger v0.0.0-20240304123926-275fc0ea4ca2
-	github.com/go-ap/storage-boltdb v0.0.0-20240304124003-e0d0d6e9144d
-	github.com/go-ap/storage-fs v0.0.0-20240306162152-bb51eb8faa00
+	github.com/go-ap/processing v0.0.0-20240308123728-8c00bd3dda9d
+	github.com/go-ap/storage-badger v0.0.0-20240308123938-9b86f6b8f4e0
+	github.com/go-ap/storage-boltdb v0.0.0-20240308123909-4c1a5aaa68af
+	github.com/go-ap/storage-fs v0.0.0-20240308123852-86fd24d9809d
 	github.com/go-ap/storage-sqlite v0.0.0-20240304123757-6185a0f9b06d
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-fed/httpsig v1.1.0
@@ -40,7 +40,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/flatbuffers v23.5.26+incompatible // indirect
+	github.com/google/flatbuffers v24.3.7+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
@@ -66,10 +66,10 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	modernc.org/gc/v3 v3.0.0-20240304020402-f0dba7c97c2b // indirect
-	modernc.org/libc v1.41.0 // indirect
+	modernc.org/libc v1.43.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
-	modernc.org/sqlite v1.29.2 // indirect
+	modernc.org/sqlite v1.29.3 // indirect
 	modernc.org/strutil v1.2.0 // indirect
 	modernc.org/token v1.1.0 // indirect
 )
