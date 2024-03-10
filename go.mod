@@ -3,7 +3,7 @@ module github.com/go-ap/fedbox
 go 1.21
 
 require (
-	git.sr.ht/~mariusor/lw v0.0.0-20240310122945-41195752a26e
+	git.sr.ht/~mariusor/lw v0.0.0-20240310135138-67bdb0a4f8db
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240210113306-c862d947a747
 	github.com/go-ap/activitypub v0.0.0-20240304122919-ef7a45e2d04a
 	github.com/go-ap/auth v0.0.0-20240308130517-d7c860ed754f
