@@ -3,6 +3,7 @@ package fedbox
 import (
 	"net/http"
 
+	"git.sr.ht/~mariusor/lw"
 	"github.com/go-ap/errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -39,6 +40,8 @@ func SetCORSHeaders(next http.Handler) http.Handler {
 
 func (f FedBOX) Routes() func(chi.Router) {
 	return func(r chi.Router) {
+		r.Use(lw.Middlewares(f.logger)...)
+		r.Use(middleware.RequestID)
 		r.Use(middleware.RealIP)
 		r.Use(CleanRequestPath)
 		r.Use(SetCORSHeaders)

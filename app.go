@@ -19,7 +19,6 @@ import (
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/openshift/osin"
 )
 
@@ -136,8 +135,6 @@ func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedB
 
 	app.auth = as
 
-	app.R.Use(middleware.RequestID)
-	app.R.Use(lw.Middlewares(l)...)
 	app.R.Group(app.Routes())
 
 	return &app, err
