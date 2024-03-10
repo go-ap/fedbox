@@ -9,6 +9,32 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+func (f FedBOX) Routes() func(chi.Router) {
+	return func(r chi.Router) {
+		r.Use(middleware.RequestID)
+		r.Use(middleware.RealIP)
+		r.Use(CleanRequestPath)
+		r.Use(SetCORSHeaders)
+		r.Use(lw.Middlewares(f.logger)...)
+
+		r.Method(http.MethodGet, "/", HandleItem(f))
+		r.Method(http.MethodHead, "/", HandleItem(f))
+		// TODO(marius): we can separate here the FedBOX specific collections from the ActivityPub spec ones
+		//   using some regular expressions
+		//   Eg: "/{collection:(inbox|outbox|followed)}"
+		//   Eg: "/{collection:(activities|objects|actors|moderators|ignored|blocked|flagged)}"
+		r.Route("/{collection}", f.CollectionRoutes(true))
+
+		if f.conf.Env.IsDev() {
+			r.Mount("/debug", middleware.Profiler())
+		}
+
+		r.Handle("/favicon.ico", errors.NotFound)
+		r.NotFound(errors.NotFound.ServeHTTP)
+		r.MethodNotAllowed(errors.HandleError(errors.MethodNotAllowedf("method not allowed")).ServeHTTP)
+	}
+}
+
 func (f FedBOX) CollectionRoutes(descend bool) func(chi.Router) {
 	return func(r chi.Router) {
 		r.Group(func(r chi.Router) {
@@ -36,30 +62,4 @@ func SetCORSHeaders(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
-}
-
-func (f FedBOX) Routes() func(chi.Router) {
-	return func(r chi.Router) {
-		r.Use(lw.Middlewares(f.logger)...)
-		r.Use(middleware.RequestID)
-		r.Use(middleware.RealIP)
-		r.Use(CleanRequestPath)
-		r.Use(SetCORSHeaders)
-
-		r.Method(http.MethodGet, "/", HandleItem(f))
-		r.Method(http.MethodHead, "/", HandleItem(f))
-		// TODO(marius): we can separate here the FedBOX specific collections from the ActivityPub spec ones
-		//   using some regular expressions
-		//   Eg: "/{collection:(inbox|outbox|followed)}"
-		//   Eg: "/{collection:(activities|objects|actors|moderators|ignored|blocked|flagged)}"
-		r.Route("/{collection}", f.CollectionRoutes(true))
-
-		if f.conf.Env.IsDev() {
-			r.Mount("/debug", middleware.Profiler())
-		}
-
-		r.Handle("/favicon.ico", errors.NotFound)
-		r.NotFound(errors.NotFound.ServeHTTP)
-		r.MethodNotAllowed(errors.HandleError(errors.MethodNotAllowedf("method not allowed")).ServeHTTP)
-	}
 }

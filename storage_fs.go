@@ -17,8 +17,7 @@ func Storage(c config.Options, l lw.Logger) (st.FullStorage, error) {
 	db, err := fs.New(fs.Config{
 		Path:        p,
 		CacheEnable: c.StorageCache,
-		LogFn:       l.Debugf,
-		ErrFn:       l.Warnf,
+		Logger:      l,
 	})
 	if err != nil {
 		return nil, err
