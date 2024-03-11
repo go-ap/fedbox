@@ -3,6 +3,11 @@
 _ctl=./bin/fedboxctl
 _env=${1}
 
+if ! expect -v &> /dev/null ; then
+    echo "Unable to find 'expect' command, which is required"
+    exit 1
+fi
+
 _ENV_FILE="./.env"
 if [[ ! -f ${_ENV_FILE} ]]; then
     _ENV_FILE="./.env.${_env}"
@@ -30,8 +35,6 @@ if [[ -z "${OAUTH2_CALLBACK_URL}" ]]; then
     exit 1
 fi
 
-
-
 _FULL_PATH="${STORAGE_PATH}/${ENV}/${FEDBOX_HOSTNAME}"
 if [[ -d "${_FULL_PATH}" ]]; then
     echo "skipping bootstrapping ${_FULL_PATH}"
@@ -47,7 +50,7 @@ if [[ ${_HAVE_OAUTH2_CLIENT} -ge 1 && "z${_HAVE_OAUTH2_SECRET}" == "z${OAUTH2_SE
     echo "skipping adding OAuth2 client"
 else
     # add oauth2 client for Brutalinks
-    echo OAUTH2_KEY=$(./tools/clientadd.sh "${OAUTH2_SECRET}" "${OAUTH2_CALLBACK_URL}" | grep Client | tail -1 | awk '{print $3}')
+    echo OAUTH2_APP=$(./tools/clientadd.sh "${OAUTH2_SECRET}" "${OAUTH2_CALLBACK_URL}" | grep Client | tail -1 | awk '{print $3}')
     echo OAUTH2_SECRET="${OAUTH2_SECRET}"
 fi
 
