@@ -203,15 +203,15 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	disableCache, _ := strconv.ParseBool(Getval(KeyCacheDisable, "false"))
 	conf.StorageCache = !disableCache
 	conf.RequestCache = !disableCache
-	if disableStorageCache, err := strconv.ParseBool(Getval(KeyStorageCacheDisable, "")); err == nil {
-		conf.StorageCache = !disableStorageCache
-	}
-	if disableRequestCache, err := strconv.ParseBool(Getval(KeyRequestCacheDisable, "")); err == nil {
-		conf.RequestCache = !disableRequestCache
-	}
-	if disableMastodonCompatibility, err := strconv.ParseBool(Getval(KeyMastodonCompatibilityDisable, "")); err == nil {
-		conf.MastodonCompatible = !disableMastodonCompatibility
-	}
+
+	disableStorageCache, _ := strconv.ParseBool(Getval(KeyStorageCacheDisable, "false"))
+	conf.StorageCache = !disableStorageCache
+
+	disableRequestCache, _ := strconv.ParseBool(Getval(KeyRequestCacheDisable, "false"))
+	conf.RequestCache = !disableRequestCache
+
+	disableMastodonCompatibility, _ := strconv.ParseBool(Getval(KeyMastodonCompatibilityDisable, "false"))
+	conf.MastodonCompatible = !disableMastodonCompatibility
 
 	return conf, nil
 }
