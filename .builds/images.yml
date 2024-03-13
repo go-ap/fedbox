@@ -4,6 +4,7 @@ secrets:
 packages:
   - podman
   - buildah
+  - passt
 sources:
   - https://git.sr.ht/~mariusor/fedbox
 tasks:
@@ -44,8 +45,8 @@ tasks:
       }
       #_push
       _push fs
+      _push sqlite
       _push boltdb
       # I guess I don't need everything while we're in heavy development
       complete-build
       _push badger
-      _push sqlite
