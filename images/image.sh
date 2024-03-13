@@ -12,8 +12,7 @@ _image_name=${1:-fedbox:"${_environment}-${_storage}"}
 _build_name=${2:-localhost/fedbox/builder}
 
 _builder=$(buildah from "${_build_name}":latest)
-
-if [[ -z ${_builder} ]]; then
+if [[ -z "${_builder}" ]]; then
     echo "Unable to find builder image: ${_build_name}"
     exit 1
 fi
