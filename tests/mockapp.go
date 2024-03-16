@@ -161,8 +161,10 @@ func saveMocks(testData []string, app *fedbox.FedBOX, l lw.Logger) error {
 		if err := saveMetadataForActor(defaultTestAccountC2S, db.(ls.MetadataTyper)); err != nil {
 			l.Critf("%s\n", err)
 		}
-		clientCode := path.Base(defaultTestApp.Id)
-		if tok, err := o.GenAuthToken(clientCode, defaultTestAccountC2S.Id, nil); err == nil {
+		tok, err := o.GenAuthToken(defaultTestApp.Id, defaultTestAccountC2S.Id, nil)
+		if err != nil {
+			l.Errorf("%+s\n", err)
+		} else {
 			defaultTestAccountC2S.AuthToken = tok
 		}
 	}

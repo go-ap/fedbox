@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -234,11 +235,10 @@ func (c *Control) ListClients() ([]osin.Client, error) {
 }
 
 func (c *Control) GenAuthToken(clientID, actorIdentifier string, _ any) (string, error) {
-	iri := vocab.IRI(clientID)
-	if _, err := iri.URL(); err != nil {
-		iri = vocab.IRI(fmt.Sprintf("%s/%s/%s", c.Conf.BaseURL, filters.ActorsType, clientID))
+	if u, err := vocab.IRI(clientID).URL(); err == nil {
+		clientID = filepath.Base(u.Path)
 	}
-	cl, err := c.Storage.GetClient(iri.String())
+	cl, err := c.Storage.GetClient(clientID)
 	if err != nil {
 		return "", err
 	}

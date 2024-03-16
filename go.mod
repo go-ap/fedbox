@@ -5,18 +5,18 @@ go 1.21
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20240313142800-531789c76b6d
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240210113306-c862d947a747
-	github.com/go-ap/activitypub v0.0.0-20240311125533-442f6c0264c8
-	github.com/go-ap/auth v0.0.0-20240311130028-2680448e1e9a
-	github.com/go-ap/cache v0.0.0-20240311125810-7987c7d219f1
-	github.com/go-ap/client v0.0.0-20240311125901-a74d64acf456
+	github.com/go-ap/activitypub v0.0.0-20240316125321-b61fd6a83225
+	github.com/go-ap/auth v0.0.0-20240316125637-8a6b6a4d02b3
+	github.com/go-ap/cache v0.0.0-20240316125445-3a1ff1ae4942
+	github.com/go-ap/client v0.0.0-20240316125535-27e8db2c2547
 	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0
-	github.com/go-ap/filters v0.0.0-20240311125828-f87c4ad6e6ad
+	github.com/go-ap/filters v0.0.0-20240316125508-d5134f486493
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20240311130100-7babfbaac752
-	github.com/go-ap/storage-badger v0.0.0-20240311130614-d4fc65db7876
-	github.com/go-ap/storage-boltdb v0.0.0-20240311130549-0c061e904433
-	github.com/go-ap/storage-fs v0.0.0-20240311130152-c903773d6ec8
-	github.com/go-ap/storage-sqlite v0.0.0-20240311130531-6d7d44200a04
+	github.com/go-ap/processing v0.0.0-20240316125704-2730f8d595ea
+	github.com/go-ap/storage-badger v0.0.0-20240316130601-470289cac4bc
+	github.com/go-ap/storage-boltdb v0.0.0-20240316130336-f657d3096597
+	github.com/go-ap/storage-fs v0.0.0-20240316163513-0dd8e7374f20
+	github.com/go-ap/storage-sqlite v0.0.0-20240316130302-47ee8ae6eb94
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -66,7 +66,7 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	modernc.org/gc/v3 v3.0.0-20240304020402-f0dba7c97c2b // indirect
-	modernc.org/libc v1.44.1 // indirect
+	modernc.org/libc v1.45.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
 	modernc.org/sqlite v1.29.5 // indirect
