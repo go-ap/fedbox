@@ -8,7 +8,19 @@ $ cd fedbox
 ## Compiling
 
 ```sh
-$ make download all
+$ make all
+```
+
+Compiling for a specific storage backend:
+
+```shell
+$ make STORAGE=sqlite all
+```
+
+Compiling for the production environment:
+
+```shell
+$ make ENV=prod all
 ```
 
 ## Editing the configuration
@@ -25,6 +37,9 @@ This step ensures that the storage method we're using gets initialized.
 ```sh
 $ ./bin/fedboxctl bootstrap
 ```
+
+For a more advanced example, the [`tools/bootstrap.sh`](../tools/bootstrap.sh) script has a more elaborate use case to
+automate bootstrapping a project together with adding an Actor and an OAuth2 client.
 
 ## Containers
 
