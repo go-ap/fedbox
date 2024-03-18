@@ -43,4 +43,4 @@ automate bootstrapping a project together with adding an Actor and an OAuth2 cli
 
 ## Containers
 
-See the [containers](./containers.md) document for details about podman for running the server.
+See the [containers](../images/README.md) document for details about how to build podman/docker images or use the ready made ones.
