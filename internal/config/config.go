@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -91,7 +90,7 @@ func normalizeStoragePath(p string, o Options) string {
 	p = strings.ReplaceAll(p, "%env%", string(o.Env))
 	p = strings.ReplaceAll(p, "%storage%", string(o.Storage))
 	p = strings.ReplaceAll(p, "%host%", url.PathEscape(o.Host))
-	return path.Clean(p)
+	return filepath.Clean(p)
 }
 
 func (o Options) BaseStoragePath() string {
@@ -198,7 +197,7 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	if conf.StoragePath == "" {
 		conf.StoragePath = os.TempDir()
 	}
-	conf.StoragePath = path.Clean(conf.StoragePath)
+	conf.StoragePath = filepath.Clean(conf.StoragePath)
 
 	disableCache, _ := strconv.ParseBool(Getval(KeyCacheDisable, "false"))
 	conf.StorageCache = !disableCache
