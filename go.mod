@@ -1,6 +1,6 @@
 module github.com/go-ap/fedbox
 
-go 1.21
+go 1.22
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052
