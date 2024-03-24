@@ -68,16 +68,21 @@ const (
 	KeyStorageCacheDisable          = "DISABLE_STORAGE_CACHE"
 	KeyRequestCacheDisable          = "DISABLE_REQUEST_CACHE"
 	KeyMastodonCompatibilityDisable = "DISABLE_MASTODON_COMPATIBILITY"
-	StorageBoltDB                   = StorageType("boltdb")
-	StorageFS                       = StorageType("fs")
-	StorageBadger                   = StorageType("badger")
-	StoragePostgres                 = StorageType("postgres")
-	StorageSqlite                   = StorageType("sqlite")
+
+	varEnv     = "%env%"
+	varStorage = "%storage%"
+	varHost    = "%host%"
+
+	StorageBoltDB   = StorageType("boltdb")
+	StorageFS       = StorageType("fs")
+	StorageBadger   = StorageType("badger")
+	StoragePostgres = StorageType("postgres")
+	StorageSqlite   = StorageType("sqlite")
 )
 
 const defaultDirPerm = os.ModeDir | os.ModePerm | 0700
 
-func normalizeStoragePath(p string, o Options) string {
+func normalizeConfigPath(p string, o Options) string {
 	if len(p) == 0 {
 		return p
 	}
@@ -87,14 +92,14 @@ func normalizeStoragePath(p string, o Options) string {
 	if !filepath.IsAbs(p) {
 		p, _ = filepath.Abs(p)
 	}
-	p = strings.ReplaceAll(p, "%env%", string(o.Env))
-	p = strings.ReplaceAll(p, "%storage%", string(o.Storage))
-	p = strings.ReplaceAll(p, "%host%", url.PathEscape(o.Host))
+	p = strings.ReplaceAll(p, varEnv, string(o.Env))
+	p = strings.ReplaceAll(p, varStorage, string(o.Storage))
+	p = strings.ReplaceAll(p, varHost, url.PathEscape(o.Host))
 	return filepath.Clean(p)
 }
 
 func (o Options) BaseStoragePath() string {
-	basePath := normalizeStoragePath(o.StoragePath, o)
+	basePath := normalizeConfigPath(o.StoragePath, o)
 	fi, err := os.Stat(basePath)
 	if err != nil && os.IsNotExist(err) {
 		err = os.MkdirAll(basePath, defaultDirPerm)
@@ -188,8 +193,6 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	} else {
 		conf.BaseURL = fmt.Sprintf("http://%s", conf.Host)
 	}
-	conf.KeyPath = Getval(KeyKeyPath, "")
-	conf.CertPath = Getval(KeyCertPath, "")
 
 	conf.Listen = Getval(KeyListen, "")
 	conf.Storage = StorageType(strings.ToLower(Getval(KeyStorage, string(DefaultStorage))))
@@ -211,6 +214,9 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 
 	disableMastodonCompatibility, _ := strconv.ParseBool(Getval(KeyMastodonCompatibilityDisable, "false"))
 	conf.MastodonCompatible = !disableMastodonCompatibility
+
+	conf.KeyPath = normalizeConfigPath(Getval(KeyKeyPath, ""), conf)
+	conf.CertPath = normalizeConfigPath(Getval(KeyCertPath, ""), conf)
 
 	return conf, nil
 }
