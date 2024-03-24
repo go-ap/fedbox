@@ -9,5 +9,6 @@ bin/*
 *.key
 *.coverprofile
 *.bdb
+*.tar.*
 .cache
 internal/assets/assets.gen.go
