@@ -5,18 +5,18 @@ go 1.22
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240210113306-c862d947a747
-	github.com/go-ap/activitypub v0.0.0-20240324143732-70ec96f244e6
-	github.com/go-ap/auth v0.0.0-20240325125343-d291d5baa343
+	github.com/go-ap/activitypub v0.0.0-20240327073638-93645bda3b18
+	github.com/go-ap/auth v0.0.0-20240327112829-04ba1a560f0d
 	github.com/go-ap/cache v0.0.0-20240324143953-1247d54db1bc
-	github.com/go-ap/client v0.0.0-20240324144035-f314cf467c26
+	github.com/go-ap/client v0.0.0-20240327112549-6abf62c47e46
 	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0
-	github.com/go-ap/filters v0.0.0-20240325123954-6b5f402749f3
+	github.com/go-ap/filters v0.0.0-20240327112758-fed2d84c1345
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20240325125404-cc52c350c92e
-	github.com/go-ap/storage-badger v0.0.0-20240325125641-c2089280d97a
-	github.com/go-ap/storage-boltdb v0.0.0-20240325125554-de1db3783bcc
-	github.com/go-ap/storage-fs v0.0.0-20240325125440-e3646c8723a1
-	github.com/go-ap/storage-sqlite v0.0.0-20240325125524-3a3303e7851a
+	github.com/go-ap/processing v0.0.0-20240327112907-5742cbc7dcd2
+	github.com/go-ap/storage-badger v0.0.0-20240327113114-d1fd2862ddfe
+	github.com/go-ap/storage-boltdb v0.0.0-20240327113032-0bbc5a0973a1
+	github.com/go-ap/storage-fs v0.0.0-20240327112929-fcd9700f133e
+	github.com/go-ap/storage-sqlite v0.0.0-20240327113013-723bfea3a8ae
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -26,7 +26,7 @@ require (
 )
 
 require (
-	git.sr.ht/~mariusor/secret v0.0.0-20240324085018-dc1510f1b862 // indirect
+	git.sr.ht/~mariusor/mask v0.0.0-20240327084502-ef2a9438457e // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
 )
 
@@ -43,7 +43,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/flatbuffers v24.3.7+incompatible // indirect
+	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
@@ -69,7 +69,7 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	modernc.org/gc/v3 v3.0.0-20240304020402-f0dba7c97c2b // indirect
-	modernc.org/libc v1.47.0 // indirect
+	modernc.org/libc v1.48.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
 	modernc.org/sqlite v1.29.5 // indirect
