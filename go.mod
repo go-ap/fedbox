@@ -6,7 +6,7 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240210113306-c862d947a747
 	github.com/go-ap/activitypub v0.0.0-20240327073638-93645bda3b18
-	github.com/go-ap/auth v0.0.0-20240327112829-04ba1a560f0d
+	github.com/go-ap/auth v0.0.0-20240327200816-eff6f47e8ace
 	github.com/go-ap/cache v0.0.0-20240324143953-1247d54db1bc
 	github.com/go-ap/client v0.0.0-20240327112549-6abf62c47e46
 	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0
@@ -69,7 +69,7 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	modernc.org/gc/v3 v3.0.0-20240304020402-f0dba7c97c2b // indirect
-	modernc.org/libc v1.48.0 // indirect
+	modernc.org/libc v1.49.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
 	modernc.org/sqlite v1.29.5 // indirect
