@@ -12,11 +12,11 @@ require (
 	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0
 	github.com/go-ap/filters v0.0.0-20240408093433-6a48bb3dd711
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20240408093907-72bd6bb840b4
-	github.com/go-ap/storage-badger v0.0.0-20240401135851-11d962c32b52
-	github.com/go-ap/storage-boltdb v0.0.0-20240408095017-242f6a00f38e
+	github.com/go-ap/processing v0.0.0-20240408154734-b62555dbaf98
+	github.com/go-ap/storage-badger v0.0.0-20240408155053-4b98c0bd6b3d
+	github.com/go-ap/storage-boltdb v0.0.0-20240408155023-44d05a4f8f55
 	github.com/go-ap/storage-fs v0.0.0-20240408094148-b3bc562af831
-	github.com/go-ap/storage-sqlite v0.0.0-20240408094950-793155588873
+	github.com/go-ap/storage-sqlite v0.0.0-20240408155002-b9609c5c7d14
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -67,7 +67,7 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	modernc.org/gc/v3 v3.0.0-20240304020402-f0dba7c97c2b // indirect
-	modernc.org/libc v1.49.2 // indirect
+	modernc.org/libc v1.49.3 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
 	modernc.org/sqlite v1.29.5 // indirect
