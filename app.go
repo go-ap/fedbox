@@ -227,31 +227,25 @@ func (f *FedBOX) Run(c context.Context) error {
 	defer f.stopFn()
 
 	exit := w.RegisterSignalHandlers(w.SignalHandlers{
-		syscall.SIGHUP: func(_ chan int) {
+		syscall.SIGHUP: func(_ chan<- int) {
 			logger.Infof("SIGHUP received, reloading configuration")
 			if err := f.reload(); err != nil {
 				logger.Errorf("Failed: %+s", err.Error())
 			}
 		},
-		syscall.SIGINT: func(exit chan int) {
+		syscall.SIGINT: func(exit chan<- int) {
 			logger.Infof("SIGINT received, stopping")
 			exit <- 0
 		},
-		syscall.SIGTERM: func(exit chan int) {
+		syscall.SIGTERM: func(exit chan<- int) {
 			logger.Infof("SIGITERM received, force stopping")
 			exit <- 0
 		},
-		syscall.SIGQUIT: func(exit chan int) {
+		syscall.SIGQUIT: func(exit chan<- int) {
 			logger.Infof("SIGQUIT received, force stopping with core-dump")
 			exit <- 0
 		},
-	}).Exec(func() error {
-		if err := srvRun(); err != nil {
-			logger.Errorf(err.Error())
-			return err
-		}
-		return nil
-	})
+	}).Exec(ctx, srvRun)
 	if exit == 0 {
 		logger.Infof("Shutting down")
 	}
