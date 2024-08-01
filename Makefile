@@ -45,44 +45,49 @@ endif
 BUILD := $(GO) build $(BUILDFLAGS)
 TEST := $(GO) test $(BUILDFLAGS)
 
-.PHONY: all run clean test coverage integration install download
+.PHONY: all run clean test coverage integration install download help
 
-all: fedbox fedboxctl
+.DEFAULT_GOAL := help
 
-download:
+help: ## Help target that shows this message.
+	@sed -rn 's/^([^:]+):.*[ ]##[ ](.+)/\1:\2/p' $(MAKEFILE_LIST) | column -ts: -l2
+
+all: fedbox fedboxctl ##
+
+download: ## Downloads dependencies and tidies the go.mod file.
 	$(GO) mod download all
 	$(GO) mod tidy
 
-fedbox: bin/fedbox
+fedbox: bin/fedbox ## Builds the main FedBOX service binary.
 bin/fedbox: go.mod cmd/fedbox/main.go $(APPSOURCES)
 	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/fedbox/main.go
 
-systemd/fedbox.service: systemd/fedbox.service.in
+systemd/fedbox.service: systemd/fedbox.service.in ## Creates a systemd service file for the FedBOX service.
 	$(M4) $(M4_FLAGS) -DWORKING_DIR=$(STORAGE_PATH) $< >$@
 
-systemd/fedbox.socket: systemd/fedbox.socket.in
+systemd/fedbox.socket: systemd/fedbox.socket.in ## Creates a socket systemd unit file to accompany the service file.
 	$(M4) $(M4_FLAGS) -DLISTEN_HOST=$(LISTEN_HOST) -DLISTEN_PORT=$(LISTEN_PORT) $< >$@
 
-fedboxctl: bin/fedboxctl
+fedboxctl: bin/fedboxctl ## Builds the control binary for the FedBOX service.
 bin/fedboxctl: go.mod cmd/control/main.go $(APPSOURCES)
 	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/control/main.go
 
-run: fedbox
+run: fedbox ## Runs the FedBOX binary.
 	@./bin/fedbox
 
-clean:
+clean: ## Cleanup the build workspace.
 	-$(RM) bin/*
 	$(MAKE) -C tests $@
 
 test: TEST_TARGET := . ./{activitypub,storage,internal}/...
-test: download
+test: download ## Run unit tests for the service.
 	$(TEST) $(TEST_FLAGS) -tags "$(TAGS)" $(TEST_TARGET)
 
 coverage: TEST_TARGET := .
 coverage: TEST_FLAGS += -covermode=count -coverprofile $(PROJECT).coverprofile
-coverage: test
+coverage: test ## Run unit tests for the service with coverage.
 
-integration: download
+integration: download ## Run integration tests for the service.
 	$(MAKE) -C tests $@
 
 $(FEDBOX_HOSTNAME).key $(FEDBOX_HOSTNAME).crt:
@@ -91,9 +96,9 @@ $(FEDBOX_HOSTNAME).key $(FEDBOX_HOSTNAME).crt:
 $(FEDBOX_HOSTNAME).pem: $(FEDBOX_HOSTNAME).key $(FEDBOX_HOSTNAME).crt
 	cat $(FEDBOX_HOSTNAME).key $(FEDBOX_HOSTNAME).crt > $(FEDBOX_HOSTNAME).pem
 
-cert: $(FEDBOX_HOSTNAME).key
+cert: $(FEDBOX_HOSTNAME).key ## Create a certificate.
 
-install: ./bin/fedbox systemd/fedbox.service systemd/fedbox.socket $(FEDBOX_HOSTNAME).crt $(FEDBOX_HOSTNAME).key
+install: ./bin/fedbox systemd/fedbox.service systemd/fedbox.socket $(FEDBOX_HOSTNAME).crt $(FEDBOX_HOSTNAME).key ## Install the application.
 	useradd -m -s /bin/false -u 2000 fedbox
 	install bin/fedbox $(DESTDIR)$(INSTALL_PREFIX)/bin
 	install -m 644 -o fedbox systemd/fedbox.service $(DESTDIR)/etc/systemd/system
