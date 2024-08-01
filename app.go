@@ -124,9 +124,9 @@ func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedB
 
 	as, err := auth.New(
 		auth.WithURL(conf.BaseURL),
+		auth.WithLogger(l.WithContext(lw.Ctx{"log": "osin"})),
 		auth.WithStorage(app.storage),
 		auth.WithClient(&app.client),
-		auth.WithLogger(l.WithContext(lw.Ctx{"log": "osin"})),
 	)
 	if err != nil {
 		l.Warnf(err.Error())

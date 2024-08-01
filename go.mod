@@ -6,17 +6,17 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240519120935-f877e4d97def
 	github.com/go-ap/activitypub v0.0.0-20240408091739-ba76b44c2594
-	github.com/go-ap/auth v0.0.0-20240711151403-05c8f24b3bbe
+	github.com/go-ap/auth v0.0.0-20240801112629-eb3107c4bf2e
 	github.com/go-ap/cache v0.0.0-20240408093337-846e6272444d
-	github.com/go-ap/client v0.0.0-20240710145250-eec2de3441ed
+	github.com/go-ap/client v0.0.0-20240801112518-4c25c5a0156a
 	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0
-	github.com/go-ap/filters v0.0.0-20240504174315-e65fd9aa38c4
+	github.com/go-ap/filters v0.0.0-20240801112128-c16e26a892c4
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20240711151444-52671176887c
-	github.com/go-ap/storage-badger v0.0.0-20240711151836-f90c012ebd12
-	github.com/go-ap/storage-boltdb v0.0.0-20240711151746-77edf4192d2f
-	github.com/go-ap/storage-fs v0.0.0-20240711151543-26125218f0df
-	github.com/go-ap/storage-sqlite v0.0.0-20240711151659-d36f6bcb0871
+	github.com/go-ap/processing v0.0.0-20240801112744-d675141d6f34
+	github.com/go-ap/storage-badger v0.0.0-20240801114622-4d730a7aea87
+	github.com/go-ap/storage-boltdb v0.0.0-20240801113939-df8a5e5ae661
+	github.com/go-ap/storage-fs v0.0.0-20240801113231-98abc970971a
+	github.com/go-ap/storage-sqlite v0.0.0-20240801113731-cf940719cd9d
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -67,11 +67,11 @@ require (
 	golang.org/x/term v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
-	modernc.org/gc/v3 v3.0.0-20240304020402-f0dba7c97c2b // indirect
-	modernc.org/libc v1.54.4 // indirect
+	modernc.org/gc/v3 v3.0.0-20240801135723-a856999a2e4a // indirect
+	modernc.org/libc v1.55.7 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
-	modernc.org/sqlite v1.30.1 // indirect
+	modernc.org/sqlite v1.31.1 // indirect
 	modernc.org/strutil v1.2.0 // indirect
 	modernc.org/token v1.1.0 // indirect
 )

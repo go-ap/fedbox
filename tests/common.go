@@ -930,5 +930,6 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 			// to avoid race conditions when running multiple FedBOX instances for the federated tests
 			cleanDB(t, options)
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
