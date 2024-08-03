@@ -6,9 +6,9 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240519120935-f877e4d97def
 	github.com/go-ap/activitypub v0.0.0-20240408091739-ba76b44c2594
-	github.com/go-ap/auth v0.0.0-20240803120634-74fe1bcc062c
+	github.com/go-ap/auth v0.0.0-20240803164334-84c5e7cf500d
 	github.com/go-ap/cache v0.0.0-20240408093337-846e6272444d
-	github.com/go-ap/client v0.0.0-20240801112518-4c25c5a0156a
+	github.com/go-ap/client v0.0.0-20240803164250-72674fd63382
 	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0
 	github.com/go-ap/filters v0.0.0-20240801112128-c16e26a892c4
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
@@ -26,7 +26,7 @@ require (
 )
 
 require (
-	git.sr.ht/~mariusor/cache v0.0.0-20240710145102-0547ec402138 // indirect
+	git.sr.ht/~mariusor/cache v0.0.0-20240803161421-766939937a58 // indirect
 	git.sr.ht/~mariusor/mask v0.0.0-20240327084502-ef2a9438457e // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
 )
@@ -68,7 +68,7 @@ require (
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	modernc.org/gc/v3 v3.0.0-20240801135723-a856999a2e4a // indirect
-	modernc.org/libc v1.55.8 // indirect
+	modernc.org/libc v1.56.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
 	modernc.org/sqlite v1.31.1 // indirect
