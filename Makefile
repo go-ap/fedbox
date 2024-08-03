@@ -54,7 +54,9 @@ help: ## Help target that shows this message.
 
 all: fedbox fedboxctl ##
 
-download: ## Downloads dependencies and tidies the go.mod file.
+download: go.sum ## Downloads dependencies and tidies the go.mod file.
+
+go.sum: go.mod
 	$(GO) mod download all
 	$(GO) mod tidy
 
