@@ -45,23 +45,7 @@ type FedBOX struct {
 	logger       lw.Logger
 }
 
-var (
-	emptyFieldsLogFn = func(lw.Ctx, string, ...any) {}
-	emptyLogFn       = func(string, ...any) {}
-	emptyStopFn      = func() {}
-	InfoLogFn        = func(l lw.Logger) func(lw.Ctx, string, ...any) {
-		if l == nil {
-			return emptyFieldsLogFn
-		}
-		return func(f lw.Ctx, s string, p ...any) { l.WithContext(f).Infof(s, p...) }
-	}
-	ErrLogFn = func(l lw.Logger) func(lw.Ctx, string, ...any) {
-		if l == nil {
-			return emptyFieldsLogFn
-		}
-		return func(f lw.Ctx, s string, p ...any) { l.WithContext(f).Errorf(s, p...) }
-	}
-)
+var emptyStopFn = func() {}
 
 var InternalIRI = vocab.IRI("https://fedbox/")
 

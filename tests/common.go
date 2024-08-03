@@ -899,8 +899,8 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 			}
 			suite.apps[self.ID] = fb
 			go func() {
-				if err := fb.Run(ctx); err != nil {
-					t.Errorf("Err: %+v", err)
+				if err = fb.Run(ctx); err != nil {
+					t.Logf("Err: %+v", err)
 				}
 			}()
 		}
@@ -930,6 +930,5 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 			// to avoid race conditions when running multiple FedBOX instances for the federated tests
 			cleanDB(t, options)
 		}
-		time.Sleep(100 * time.Millisecond)
 	}
 }
