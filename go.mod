@@ -12,16 +12,16 @@ require (
 	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0
 	github.com/go-ap/filters v0.0.0-20240801112128-c16e26a892c4
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20240801112744-d675141d6f34
+	github.com/go-ap/processing v0.0.0-20240803123347-9d6c8c8868f2
 	github.com/go-ap/storage-badger v0.0.0-20240801114622-4d730a7aea87
-	github.com/go-ap/storage-boltdb v0.0.0-20240801113939-df8a5e5ae661
-	github.com/go-ap/storage-fs v0.0.0-20240801113231-98abc970971a
-	github.com/go-ap/storage-sqlite v0.0.0-20240801113731-cf940719cd9d
+	github.com/go-ap/storage-boltdb v0.0.0-20240803123915-a133721967e9
+	github.com/go-ap/storage-fs v0.0.0-20240803123436-43fd4521ee5a
+	github.com/go-ap/storage-sqlite v0.0.0-20240803123516-e64a31bf814d
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pborman/uuid v1.2.1
-	github.com/urfave/cli/v2 v2.25.7
+	github.com/urfave/cli/v2 v2.27.3
 	golang.org/x/crypto v0.25.0
 )
 
@@ -34,7 +34,7 @@ require (
 require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/dgraph-io/badger/v4 v4.2.0 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -59,7 +59,7 @@ require (
 	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
-	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.etcd.io/bbolt v1.3.10 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
