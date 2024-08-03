@@ -147,7 +147,7 @@ func (f *FedBOX) reload() (err error) {
 }
 
 func (f *FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
-	act, err := f.auth.LoadActorFromAuthHeader(r)
+	act, err := f.auth.LoadActorFromRequest(r)
 	if err != nil {
 		f.logger.Errorf("unable to load an authorized Actor from request: %+s", err)
 	}
