@@ -6,17 +6,17 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240519120935-f877e4d97def
 	github.com/go-ap/activitypub v0.0.0-20240408091739-ba76b44c2594
-	github.com/go-ap/auth v0.0.0-20240824111317-72d519a78fb0
+	github.com/go-ap/auth v0.0.0-20240903151613-d09769aa5626
 	github.com/go-ap/cache v0.0.0-20240408093337-846e6272444d
-	github.com/go-ap/client v0.0.0-20240824110742-64c78d4d5184
+	github.com/go-ap/client v0.0.0-20240903140120-3e6ae9fe585e
 	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0
 	github.com/go-ap/filters v0.0.0-20240801112128-c16e26a892c4
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20240824111810-01df4a083428
-	github.com/go-ap/storage-badger v0.0.0-20240824112627-6ed2ca4be810
-	github.com/go-ap/storage-boltdb v0.0.0-20240824112721-5d2956c46dff
-	github.com/go-ap/storage-fs v0.0.0-20240824112014-3c8ff6a6734e
-	github.com/go-ap/storage-sqlite v0.0.0-20240824112517-90f1ae2a3ebe
+	github.com/go-ap/processing v0.0.0-20240903151626-7bdcf6662c6c
+	github.com/go-ap/storage-badger v0.0.0-20240903152625-a58c4891356e
+	github.com/go-ap/storage-boltdb v0.0.0-20240903152606-8614a56502cc
+	github.com/go-ap/storage-fs v0.0.0-20240903152209-934e0ad92032
+	github.com/go-ap/storage-sqlite v0.0.0-20240903152434-bc57fa12413d
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -26,14 +26,14 @@ require (
 )
 
 require (
-	git.sr.ht/~mariusor/cache v0.0.0-20240818143455-23879a9e497a // indirect
+	git.sr.ht/~mariusor/cache v0.0.0-20240903134141-d363d4059c36 // indirect
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/mask v0.0.0-20240327084502-ef2a9438457e // indirect
 	git.sr.ht/~mariusor/ssm v0.0.0-20240811085540-34f24cac52b7 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
-	github.com/dgraph-io/badger/v4 v4.2.0 // indirect
-	github.com/dgraph-io/ristretto v0.1.1 // indirect
+	github.com/dgraph-io/badger/v4 v4.3.0 // indirect
+	github.com/dgraph-io/ristretto v0.1.2-0.20240116140435-c67e07994f91 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.2 // indirect
@@ -52,7 +52,7 @@ require (
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/rs/xid v1.5.0 // indirect
+	github.com/rs/xid v1.6.0 // indirect
 	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
@@ -66,7 +66,7 @@ require (
 	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	modernc.org/gc/v3 v3.0.0-20240801135723-a856999a2e4a // indirect
-	modernc.org/libc v1.59.9 // indirect
+	modernc.org/libc v1.60.1 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
 	modernc.org/sqlite v1.32.0 // indirect
