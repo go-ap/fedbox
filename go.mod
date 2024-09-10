@@ -5,18 +5,18 @@ go 1.22
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20240906100438-00d2184b2120
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240519120935-f877e4d97def
-	github.com/go-ap/activitypub v0.0.0-20240408091739-ba76b44c2594
-	github.com/go-ap/auth v0.0.0-20240907184828-77cd5c05bacb
-	github.com/go-ap/cache v0.0.0-20240408093337-846e6272444d
-	github.com/go-ap/client v0.0.0-20240903140120-3e6ae9fe585e
-	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0
-	github.com/go-ap/filters v0.0.0-20240801112128-c16e26a892c4
+	github.com/go-ap/activitypub v0.0.0-20240910141749-b4b8c8aa484c
+	github.com/go-ap/auth v0.0.0-20240910142041-20f261bcfd11
+	github.com/go-ap/cache v0.0.0-20240910141827-94f8ac1a9133
+	github.com/go-ap/client v0.0.0-20240910141951-13a4f3c4fd53
+	github.com/go-ap/errors v0.0.0-20240910140019-1e9d33cc1568
+	github.com/go-ap/filters v0.0.0-20240910141936-c8f68cdf2bc9
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20240903151626-7bdcf6662c6c
-	github.com/go-ap/storage-badger v0.0.0-20240903152625-a58c4891356e
-	github.com/go-ap/storage-boltdb v0.0.0-20240903152606-8614a56502cc
-	github.com/go-ap/storage-fs v0.0.0-20240903152209-934e0ad92032
-	github.com/go-ap/storage-sqlite v0.0.0-20240903152434-bc57fa12413d
+	github.com/go-ap/processing v0.0.0-20240910142055-2a65b64b92b6
+	github.com/go-ap/storage-badger v0.0.0-20240910142401-c6cc5cbc27e2
+	github.com/go-ap/storage-boltdb v0.0.0-20240910142336-30df885e5eec
+	github.com/go-ap/storage-fs v0.0.0-20240910142224-88000e9b561c
+	github.com/go-ap/storage-sqlite v0.0.0-20240910142242-2a67d5c7911c
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
