@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#set -x
+set -e
 
 _workdir=${1:-../}
 _image_name=${2:-fedbox/builder}

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#set -x
+set -e
 
 _environment=${ENV:-dev}
 _hostname=${HOSTNAME:-fedbox}
