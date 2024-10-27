@@ -33,7 +33,6 @@ type canStore = cache.CanStore
 
 type FedBOX struct {
 	R            chi.Router
-	auth         *auth.Server
 	conf         config.Options
 	self         vocab.Service
 	client       client.C
@@ -106,22 +105,9 @@ func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedB
 		client.SkipTLSValidation(!conf.Env.IsProd()),
 	)
 
-	as, err := auth.New(
-		auth.WithURL(conf.BaseURL),
-		auth.WithLogger(l.WithContext(lw.Ctx{"log": "osin"})),
-		auth.WithStorage(app.storage),
-		auth.WithClient(&app.client),
-	)
-	if err != nil {
-		l.Warnf(err.Error())
-		return nil, err
-	}
-
-	app.auth = as
-
 	app.R.Group(app.Routes())
 
-	return &app, err
+	return &app, nil
 }
 
 func (f *FedBOX) Config() config.Options {
@@ -147,7 +133,14 @@ func (f *FedBOX) reload() (err error) {
 }
 
 func (f *FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
-	act, err := f.auth.LoadActorFromRequest(r)
+	// NOTE(marius): if the storage is nil, we can still use the remote client in the load function
+	isLocalFn := func(iri vocab.IRI) bool {
+		return iri.Contains(vocab.IRI(f.conf.BaseURL), true)
+	}
+	ar := auth.ClientResolver(&f.client, auth.SolverWithLogger(f.logger),
+		auth.SolverWithStorage(f.storage), auth.SolverWithLocalIRIFn(isLocalFn))
+	act, err := ar.LoadActorFromRequest(r)
+
 	if err != nil {
 		f.logger.Errorf("unable to load an authorized Actor from request: %+s", err)
 	}
