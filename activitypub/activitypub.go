@@ -11,7 +11,10 @@ import (
 	"github.com/pborman/uuid"
 )
 
-const developer = vocab.IRI("https://github.com/mariusor")
+const (
+	developerURL = vocab.IRI("https://github.com/mariusor")
+	projectURL   = vocab.IRI("https://github.com/go-ap/fedbox")
+)
 
 func Self(baseURL vocab.IRI) vocab.Service {
 	url, _ := baseURL.URL()
@@ -20,11 +23,12 @@ func Self(baseURL vocab.IRI) vocab.Service {
 	s := vocab.Service{
 		ID:           baseURL,
 		Type:         vocab.ServiceType,
-		Name:         vocab.NaturalLanguageValues{{Ref: vocab.NilLangRef, Value: vocab.Content("self")}},
-		AttributedTo: developer,
+		Name:         vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef("self")),
+		Context:      projectURL,
+		AttributedTo: developerURL,
 		Audience:     vocab.ItemCollection{vocab.PublicNS},
 		Content:      nil, //vocab.NaturalLanguageValues{{Ref: vocab.NilLangRef, Value: ""}},
-		Summary:      vocab.NaturalLanguageValues{{Ref: vocab.NilLangRef, Value: vocab.Content("Generic ActivityPub service")}},
+		Summary:      vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef("Generic ActivityPub service")),
 		Tag:          nil,
 		URL:          baseURL,
 		Endpoints: &vocab.Endpoints{
@@ -35,7 +39,11 @@ func Self(baseURL vocab.IRI) vocab.Service {
 
 	s.Inbox = vocab.Inbox.IRI(s)
 	s.Outbox = vocab.Outbox.IRI(s)
-	s.Streams = vocab.ItemCollection{filters.ActorsType.IRI(s), filters.ActivitiesType.IRI(s), filters.ObjectsType.IRI(s)}
+	s.Streams = vocab.ItemCollection{
+		filters.ActorsType.IRI(s),
+		filters.ActivitiesType.IRI(s),
+		filters.ObjectsType.IRI(s),
+	}
 	return s
 }
 
