@@ -18,6 +18,7 @@ func Storage(c config.Options, l lw.Logger) (st.FullStorage, error) {
 		Path:        p,
 		CacheEnable: c.StorageCache,
 		Logger:      l,
+		UseIndex:    true,
 	})
 	if err != nil {
 		return nil, err

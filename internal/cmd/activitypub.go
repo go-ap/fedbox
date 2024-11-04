@@ -34,6 +34,7 @@ var PubCmd = &cli.Command{
 		delObjectsCmd,
 		moveObjectsCmd,
 		copyObjectsCmd,
+		indexCmd,
 		exportCmd,
 		importCmd,
 	},
@@ -871,4 +872,36 @@ func (c *Control) CopyObjects(to vocab.IRI, from ...vocab.Item) error {
 		return nil
 	}
 	return c.operateOnObjects(copyFn, to, from...)
+}
+
+var indexCmd = &cli.Command{
+	Name:    "index",
+	Aliases: []string{"reindex"},
+	Usage:   "Reindex current storage ActivityPub objects",
+	Action:  indexPubObjects(&ctl),
+}
+
+type reindexer interface {
+	Reindex() error
+}
+
+func indexPubObjects(ctl *Control) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		start := time.Now()
+
+		indexer, ok := ctl.Storage.(reindexer)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "Current storage engine %T does not support reindexing", ctl.Storage)
+			return errors.Newf("unsupported storage engine")
+		}
+		if err := indexer.Reindex(); err != nil {
+			fmt.Fprintf(os.Stderr, "Indexing failed: %s", err)
+			return err
+		}
+
+		tot := time.Now().Sub(start)
+		fmt.Printf("Ellapsed time:          %s\n", tot)
+
+		return nil
+	}
 }
