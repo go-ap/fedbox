@@ -31,6 +31,10 @@ func main() {
 			Usage: fmt.Sprintf("The environment to use. Possible values: %q", []env.Type{env.DEV, env.QA, env.PROD}),
 			Value: string(env.DEV),
 		},
+		&cli.BoolFlag{
+			Name:  "verbose",
+			Usage: fmt.Sprintf("Increase verbosity level from the default associated with the environment settings."),
+		},
 		&cli.StringFlag{
 			Name:  "type",
 			Usage: fmt.Sprintf("Type of the backend to use. Possible values: %q", []config.StorageType{config.StorageBoltDB, config.StorageBadger, config.StorageFS}),

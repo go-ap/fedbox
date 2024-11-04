@@ -47,7 +47,11 @@ func Before(c *cli.Context) error {
 		fields["cli"] = c.Command.FullName()
 	}
 
-	logger := lw.Prod(lw.SetLevel(lw.InfoLevel), lw.SetOutput(os.Stderr))
+	logLevel := lw.InfoLevel
+	if c.Bool("verbose") {
+		logLevel = lw.DebugLevel
+	}
+	logger := lw.Dev(lw.SetLevel(logLevel), lw.SetOutput(os.Stdout))
 	ct, err := setup(c, logger.WithContext(fields))
 	if err != nil {
 		// Ensure we don't print the default help message, which is not useful here
