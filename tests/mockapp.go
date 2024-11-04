@@ -155,7 +155,7 @@ func saveMocks(testData []string, app *fedbox.FedBOX, l lw.Logger) error {
 		return err
 	}
 
-	o := cmd.New(db, app.Config(), l)
+	o, _ := cmd.New(db, app.Config(), l)
 
 	if strings.Contains(defaultTestAccountC2S.Id, app.Config().BaseURL) {
 		if err := saveMetadataForActor(defaultTestAccountC2S, db.(ls.MetadataTyper)); err != nil {

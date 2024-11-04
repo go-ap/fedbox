@@ -81,8 +81,8 @@ func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedB
 	selfIRI := ap.DefaultServiceIRI(conf.BaseURL)
 	app.self, _ = ap.LoadActor(db, selfIRI)
 	if app.self.ID != selfIRI {
-		app.infFn("trying to bootstrap the instance's self service")
 		if saver, ok := db.(st.CanBootstrap); ok {
+			app.infFn("trying to bootstrap the instance's self service")
 			app.self = ap.Self(selfIRI)
 			if err := saver.CreateService(app.self); err != nil {
 				app.errFn("unable to save the instance's self service: %s", err)

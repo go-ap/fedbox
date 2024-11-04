@@ -6,6 +6,7 @@ import (
 	"path"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 	"github.com/pborman/uuid"
@@ -58,7 +59,12 @@ func DefaultServiceIRI(baseURL string) vocab.IRI {
 
 func LoadActor(st processing.ReadStore, iri vocab.IRI) (vocab.Actor, error) {
 	var act vocab.Actor
+
 	selfCol, err := st.Load(iri)
+	if err != nil {
+		return act, errors.Annotatef(err, "invalid service IRI %s", iri)
+	}
+
 	err = vocab.OnActor(selfCol, func(actor *vocab.Actor) error {
 		act = *actor
 		return nil

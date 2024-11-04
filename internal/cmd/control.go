@@ -26,14 +26,17 @@ type Control struct {
 	Storage st.FullStorage
 }
 
-func New(db st.FullStorage, conf config.Options, l lw.Logger) *Control {
-	self, _ := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
+func New(db st.FullStorage, conf config.Options, l lw.Logger) (*Control, error) {
+	self, err := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
+	if err != nil {
+		return nil, err
+	}
 	return &Control{
 		Conf:    conf,
 		Service: self,
 		Storage: db,
 		Logger:  l,
-	}
+	}, nil
 }
 
 var ctl Control
@@ -101,7 +104,7 @@ func setup(c *cli.Context, l lw.Logger) (*Control, error) {
 	if err != nil {
 		return nil, err
 	}
-	return New(db, conf, l), nil
+	return New(db, conf, l)
 }
 
 func loadPwFromStdin(confirm bool, s string, params ...any) ([]byte, error) {
