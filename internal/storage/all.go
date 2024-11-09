@@ -26,7 +26,7 @@ func BootstrapFn(opt config.Options) error {
 		return badger.Bootstrap(c)
 	}
 	if opt.Storage == config.StorageFS {
-		c := fs.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache}
+		c := fs.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache, UseIndex: opt.UseIndex}
 		return fs.Bootstrap(c)
 	}
 	if opt.Storage == config.StorageSqlite {
@@ -46,7 +46,7 @@ func CleanFn(opt config.Options) error {
 		return badger.Clean(c)
 	}
 	if opt.Storage == config.StorageFS {
-		conf := fs.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache}
+		conf := fs.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache, UseIndex: opt.UseIndex}
 		return fs.Clean(conf)
 	}
 	if opt.Storage == config.StorageSqlite {
@@ -67,7 +67,7 @@ func CreateService(opt config.Options, self vocab.Item) (err error) {
 		r, err = badger.New(c)
 	}
 	if opt.Storage == config.StorageFS {
-		c := fs.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache}
+		c := fs.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache, UseIndex: opt.UseIndex}
 		r, err = fs.New(c)
 	}
 	if opt.Storage == config.StorageSqlite {

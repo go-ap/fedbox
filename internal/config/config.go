@@ -41,6 +41,7 @@ type Options struct {
 	StoragePath        string
 	StorageCache       bool
 	RequestCache       bool
+	UseIndex           bool
 	Profile            bool
 	MastodonCompatible bool
 }
@@ -67,6 +68,7 @@ const (
 	KeyCacheDisable                 = "DISABLE_CACHE"
 	KeyStorageCacheDisable          = "DISABLE_STORAGE_CACHE"
 	KeyRequestCacheDisable          = "DISABLE_REQUEST_CACHE"
+	KeyStorageIndexDisable          = "DISABLE_STORAGE_INDEX"
 	KeyMastodonCompatibilityDisable = "DISABLE_MASTODON_COMPATIBILITY"
 
 	varEnv     = "%env%"
@@ -214,6 +216,11 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	if v := Getval(KeyRequestCacheDisable, ""); v != "" {
 		disableRequestCache, _ := strconv.ParseBool(v)
 		conf.RequestCache = !disableRequestCache
+	}
+
+	if v := Getval(KeyStorageIndexDisable, "false"); v != "" {
+		disableStorageIndex, _ := strconv.ParseBool(v)
+		conf.UseIndex = !disableStorageIndex
 	}
 
 	disableMastodonCompatibility, _ := strconv.ParseBool(Getval(KeyMastodonCompatibilityDisable, "false"))

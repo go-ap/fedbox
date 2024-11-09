@@ -12,6 +12,7 @@ func conf(opt config.Options) fs.Config {
 	return fs.Config{
 		Path:        opt.BaseStoragePath(),
 		CacheEnable: opt.StorageCache,
+		UseIndex:    opt.UseIndex,
 	}
 }
 

@@ -9,9 +9,11 @@ run_tests() {
     _storage=${1}
     echo -e "Testing ${GREEN}${_storage}${NC} with CGO ${YELLOW}Disabled${NC}"
     make        STORAGE="${_storage}" CGO_ENABLED=0 TEST_FLAGS='-count=1 -cover' integration
+    echo -e "Testing ${GREEN}all_${_storage}${NC} and CGO ${YELLOW}Disabled${NC}"
     make FEDBOX_STORAGE="${_storage}" CGO_ENABLED=0 TEST_FLAGS='-count=1 -cover' integration
     echo -e "Testing ${GREEN}${_storage}${NC} with CGO ${YELLOW}Enabled${NC}"
     make        STORAGE="${_storage}" CGO_ENABLED=1 TEST_FLAGS='-race -count=1' integration
+    echo -e "Testing ${GREEN}all_${_storage}${NC} with CGO ${YELLOW}Enabled${NC}"
     make FEDBOX_STORAGE="${_storage}" CGO_ENABLED=1 TEST_FLAGS='-race -count=1' integration
     echo ""
 }

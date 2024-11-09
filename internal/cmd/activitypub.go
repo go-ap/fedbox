@@ -891,11 +891,11 @@ func indexPubObjects(ctl *Control) cli.ActionFunc {
 
 		indexer, ok := ctl.Storage.(reindexer)
 		if !ok {
-			fmt.Fprintf(os.Stderr, "Current storage engine %T does not support reindexing", ctl.Storage)
+			_, _ = fmt.Fprintf(os.Stderr, "Current storage engine %T does not support reindexing\n", ctl.Storage)
 			return errors.Newf("unsupported storage engine")
 		}
 		if err := indexer.Reindex(); err != nil {
-			fmt.Fprintf(os.Stderr, "Indexing failed: %s", err)
+			_, _ = fmt.Fprintf(os.Stderr, "Indexing failed: %s", err)
 			return err
 		}
 

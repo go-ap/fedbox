@@ -5,24 +5,33 @@ go 1.23
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20240906100438-00d2184b2120
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240519120935-f877e4d97def
-	github.com/go-ap/activitypub v0.0.0-20241101101514-bc5248bb8442
-	github.com/go-ap/auth v0.0.0-20241101104139-ec7211972d40
-	github.com/go-ap/cache v0.0.0-20241101102908-c27eb5027385
-	github.com/go-ap/client v0.0.0-20241101103023-9c19dcb624b3
+	github.com/go-ap/activitypub v0.0.0-20241104140659-be99a725f9d5
+	github.com/go-ap/auth v0.0.0-20241109090352-07aba0c0e318
+	github.com/go-ap/cache v0.0.0-20241104141048-912618952f30
+	github.com/go-ap/client v0.0.0-20241104140838-929b90e84e8a
 	github.com/go-ap/errors v0.0.0-20240910140019-1e9d33cc1568
-	github.com/go-ap/filters v0.0.0-20241101102957-043fbc95e1f8
+	github.com/go-ap/filters v0.0.0-20241109085752-e9794c634f69
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20241101110251-5248de081767
-	github.com/go-ap/storage-badger v0.0.0-20241027122515-b747a8f79c11
-	github.com/go-ap/storage-boltdb v0.0.0-20241101110914-f9d3c486c495
-	github.com/go-ap/storage-fs v0.0.0-20241101110810-fc47e8b0855f
-	github.com/go-ap/storage-sqlite v0.0.0-20241101110839-fc318bc472d1
+	github.com/go-ap/processing v0.0.0-20241109090447-d09d3e143043
+	github.com/go-ap/storage-badger v0.0.0-20241109090612-dd8bd56089cc
+	github.com/go-ap/storage-boltdb v0.0.0-20241109090649-89bcb4af45d2
+	github.com/go-ap/storage-fs v0.0.0-20241109090526-8a6ddd79a38a
+	github.com/go-ap/storage-sqlite v0.0.0-20241109090544-5e9feb142385
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pborman/uuid v1.2.1
 	github.com/urfave/cli/v2 v2.27.5
-	golang.org/x/crypto v0.28.0
+	golang.org/x/crypto v0.29.0
+)
+
+require (
+	github.com/RoaringBitmap/roaring v1.9.4 // indirect
+	github.com/bits-and-blooms/bitset v1.15.0 // indirect
+	github.com/jdkato/prose v1.2.1 // indirect
+	github.com/mschoch/smat v0.2.0 // indirect
+	github.com/spaolacci/murmur3 v1.1.0 // indirect
+	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 )
 
 require (
@@ -57,12 +66,12 @@ require (
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.etcd.io/bbolt v1.3.11 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
-	golang.org/x/net v0.30.0 // indirect
-	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
-	golang.org/x/term v0.25.0 // indirect
-	golang.org/x/text v0.19.0 // indirect
+	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
+	golang.org/x/net v0.31.0 // indirect
+	golang.org/x/oauth2 v0.24.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/term v0.26.0 // indirect
+	golang.org/x/text v0.20.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	modernc.org/gc/v3 v3.0.0-20241004144649-1aea3fae8852 // indirect
 	modernc.org/libc v1.61.0 // indirect

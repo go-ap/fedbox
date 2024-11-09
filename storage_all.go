@@ -52,7 +52,7 @@ func getFsStorage(c config.Options, l lw.Logger) (st.FullStorage, error) {
 		Path:        p,
 		CacheEnable: c.StorageCache,
 		Logger:      l,
-		UseIndex:    true,
+		UseIndex:    c.UseIndex,
 	})
 	if err != nil {
 		return nil, err
