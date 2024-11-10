@@ -71,6 +71,21 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 
 		repo := fb.storage
 
+		// NOTE(marius): this is the main collection page, let's redirect to its first page.
+		//
+		// This would avoid clients having to parse the first page twice when
+		// iterating through a collection:
+		// * once the main collection page (which doesn't have a Next property, but just First)
+		// * the second as the first page of the collection (which has a link to the Next page)
+		q := r.URL.Query()
+		if filters.PaginatorValues(q).Count() < 0 {
+			for k, vv := range filters.FirstPage() {
+				q[k] = vv
+			}
+			r.URL.RawQuery = q.Encode()
+			return nil, errors.SeeOther(r.URL.String())
+		}
+
 		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
 		cacheKey := CacheKey(fb, *r)
 

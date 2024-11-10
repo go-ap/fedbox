@@ -5,19 +5,10 @@ package tests
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
 )
-
-func ActorsURL() string {
-	return ServiceActorsURL(&service)
-}
-
-func ObjectsURL() string {
-	return ServiceObjectsURL(&service)
-}
 
 func CreateC2SObject(actor *testAccount, object vocab.Item) actC2SMock {
 	return actC2SMock{
@@ -43,8 +34,8 @@ var ActorsCollectionTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        ActorsURL(),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 2,
 						items: map[string]*objectVal{
 							"e869bdca-dd5e-4de7-9c5d-37845eccc6a1": {
@@ -79,13 +70,13 @@ var ActorsCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.PersonType),
+					url: CollectionURL(ActorsURL(), typeOf(vocab.PersonType)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.PersonType),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), typeOf(vocab.PersonType), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 						items: map[string]*objectVal{
 							"e869bdca-dd5e-4de7-9c5d-37845eccc6a1": {
@@ -120,13 +111,13 @@ var ActorsCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.GroupType),
+					url: CollectionURL(ActorsURL(), typeOf(vocab.GroupType)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.GroupType),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), typeOf(vocab.GroupType), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 0,
 					},
 				},
@@ -143,13 +134,13 @@ var ActorsCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.ApplicationType),
+					url: CollectionURL(ActorsURL(), typeOf(vocab.ApplicationType)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.ApplicationType),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), typeOf(vocab.ApplicationType), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -191,8 +182,8 @@ var ActorsCollectionTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        ActorsURL(),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 21,
 					},
 				},
@@ -200,13 +191,13 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.ApplicationType),
+					url: CollectionURL(ActorsURL(), typeOf(vocab.ApplicationType)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.ApplicationType),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), typeOf(vocab.ApplicationType), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 6,
 					},
 				},
@@ -214,13 +205,13 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.GroupType),
+					url: CollectionURL(ActorsURL(), typeOf(vocab.GroupType)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.GroupType),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), typeOf(vocab.GroupType), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 5,
 					},
 				},
@@ -228,13 +219,13 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.PersonType),
+					url: CollectionURL(ActorsURL(), typeOf(vocab.PersonType)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s", ActorsURL(), vocab.PersonType),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), typeOf(vocab.PersonType), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 10,
 					},
 				},
@@ -242,13 +233,13 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?type=%s&type=%s", ActorsURL(), vocab.PersonType, vocab.GroupType),
+					url: CollectionURL(ActorsURL(), typeOf(vocab.PersonType, vocab.GroupType)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?type=%s&type=%s", ActorsURL(), vocab.PersonType, vocab.GroupType),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), typeOf(vocab.PersonType, vocab.GroupType), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 15,
 					},
 				},
@@ -256,13 +247,13 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?name=%s", ActorsURL(), "element_a"),
+					url: CollectionURL(ActorsURL(), nameOf("element_a")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?name=%s", ActorsURL(), "element_a"),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), nameOf("element_a"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -270,13 +261,13 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?name=~%s", ActorsURL(), "element"),
+					url: CollectionURL(ActorsURL(), nameOf("element")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?name=~%s", ActorsURL(), "element"),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), nameOf("element"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 9,
 					},
 				},
@@ -284,13 +275,13 @@ var ActorsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s?name=%s&name=%s", ActorsURL(), "element_a", "element_b"),
+					url: CollectionURL(ActorsURL(), nameOf("element_a", "element_b")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s?name=%s&name=%s", ActorsURL(), "element_a", "element_b"),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), nameOf("element_a", "element_b"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 2,
 					},
 				},
@@ -313,8 +304,8 @@ var ActorsCollectionTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        ActorsURL(),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActorsURL(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 2,
 						items: map[string]*objectVal{
 							"2": {
@@ -340,8 +331,8 @@ var ActorsCollectionTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        ObjectsURL(),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 						items: map[string]*objectVal{
 							"t1": {
@@ -370,11 +361,12 @@ var ActivitiesCollectionTests = testPairs{
 				name: "empty-activities-collection",
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/activities", apiURL),
+					url: CollectionURL(ActivitiesURL()),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
+						id:        CollectionURL(ActivitiesURL(), firstPage()),
 						itemCount: 0,
 					},
 				},
@@ -396,11 +388,12 @@ var ActivitiesCollectionTests = testPairs{
 				mocks: []string{},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/activities", apiURL),
+					url: CollectionURL(ActivitiesURL()),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
+						id:        CollectionURL(ActivitiesURL(), firstPage()),
 						itemCount: 1,
 					},
 				},
@@ -409,11 +402,12 @@ var ActivitiesCollectionTests = testPairs{
 				name: "Filter by actor IRI",
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/activities?actor.iri=http://127.0.0.1:9998/actors/2", apiURL),
+					url: CollectionURL(ActivitiesURL(), actorIRI("http://127.0.0.1:9998/actors/2")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
+						id:        CollectionURL(ActivitiesURL(), actorIRI("http://127.0.0.1:9998/actors/2"), firstPage()),
 						itemCount: 1,
 					},
 				},
@@ -422,11 +416,12 @@ var ActivitiesCollectionTests = testPairs{
 				name: "Filter by fuzzy search on actor IRI",
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/activities?actor.iri=~/actors/2", apiURL),
+					url: CollectionURL(ActivitiesURL(), actorIRI("~/actors/2")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
+						id:        CollectionURL(ActivitiesURL(), actorIRI("~/actors/2"), firstPage()),
 						itemCount: 1,
 					},
 				},
@@ -435,11 +430,12 @@ var ActivitiesCollectionTests = testPairs{
 				name: "Filter by empty actor IRI",
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/activities?actor.iri=", apiURL),
+					url: CollectionURL(ActivitiesURL(), actorIRI("")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
+						id:        CollectionURL(ActivitiesURL(), actorIRI(""), firstPage()),
 						itemCount: 0,
 					},
 				},
@@ -448,11 +444,12 @@ var ActivitiesCollectionTests = testPairs{
 				name: "Filter by object IRI",
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/activities?object.iri=http://127.0.0.1:9998/objects/1", apiURL),
+					url: CollectionURL(ActivitiesURL(), objectIRI("http://127.0.0.1:9998/objects/1")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
+						id:        CollectionURL(ActivitiesURL(), objectIRI("http://127.0.0.1:9998/objects/1"), firstPage()),
 						itemCount: 1,
 					},
 				},
@@ -461,11 +458,12 @@ var ActivitiesCollectionTests = testPairs{
 				name: "Filter by fuzzy search on object IRI",
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/activities?object.iri=~/objects/1", apiURL),
+					url: CollectionURL(ActivitiesURL(), objectIRI("~/objects/1")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
+						id:        CollectionURL(ActivitiesURL(), objectIRI("~/objects/1"), firstPage()),
 						itemCount: 1,
 					},
 				},
@@ -474,11 +472,12 @@ var ActivitiesCollectionTests = testPairs{
 				name: "Filter by empty object IRI",
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/activities?object.iri=", apiURL),
+					url: CollectionURL(ActivitiesURL(), objectIRI("")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
+						id:        CollectionURL(ActivitiesURL(), objectIRI(""), firstPage()),
 						itemCount: 0,
 					},
 				},
@@ -491,13 +490,13 @@ var ActivitiesCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/activities?object.inReplyTo=!-", apiURL),
+					url: CollectionURL(ActivitiesURL(), inReplyTo("!-")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/activities?object.inReplyTo=!-", apiURL),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActivitiesURL(), inReplyTo("!-"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -510,13 +509,13 @@ var ActivitiesCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/activities?object.inReplyTo=-", apiURL),
+					url: CollectionURL(ActivitiesURL(), inReplyTo("-")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/activities?object.inReplyTo=-", apiURL),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActivitiesURL(), inReplyTo("-"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -537,12 +536,13 @@ var ObjectsCollectionTests = testPairs{
 				},
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects", apiURL),
+					url: ObjectsURL(),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 0,
 					},
 				},
@@ -567,8 +567,8 @@ var ObjectsCollectionTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects", apiURL),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 4,
 					},
 				},
@@ -576,13 +576,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.TombstoneType),
+					url: CollectionURL(ObjectsURL(), typeOf(vocab.TombstoneType)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.TombstoneType),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), typeOf(vocab.TombstoneType), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -590,13 +590,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.PlaceType),
+					url: CollectionURL(ObjectsURL(), typeOf(vocab.PlaceType)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.PlaceType),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), typeOf(vocab.PlaceType), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -604,13 +604,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.NoteType),
+					url: CollectionURL(ObjectsURL(), typeOf(vocab.NoteType)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.NoteType),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), typeOf(vocab.NoteType), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -618,13 +618,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.PageType),
+					url: CollectionURL(ObjectsURL(), typeOf(vocab.PageType)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?type=%s", apiURL, vocab.PageType),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), typeOf(vocab.PageType), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -632,13 +632,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?type=%s&type=%s", apiURL, vocab.PageType, vocab.PlaceType),
+					url: CollectionURL(ObjectsURL(), typeOf(vocab.PageType, vocab.PlaceType)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?type=%s&type=%s", apiURL, vocab.PageType, vocab.PlaceType),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), typeOf(vocab.PageType, vocab.PlaceType), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 2,
 					},
 				},
@@ -646,13 +646,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?name=%s", apiURL, url.QueryEscape("You are here")),
+					url: CollectionURL(ObjectsURL(), nameOf("You are here")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?name=%s", apiURL, url.QueryEscape("You are here")),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), nameOf("You are here"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -660,13 +660,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?name=~%s", apiURL, url.QueryEscape("You are")),
+					url: CollectionURL(ObjectsURL(), nameOf("~You are")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?name=~%s", apiURL, url.QueryEscape("You are")),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), nameOf("~You are"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -674,13 +674,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?name=~%s&name=~%s", apiURL, "You", "Humble"),
+					url: CollectionURL(ObjectsURL(), nameOf("~You", "~Humble")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?name=~%s&name=~%s", apiURL, "You", "Humble"),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), nameOf("~You", "~Humble"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 2,
 					},
 				},
@@ -688,13 +688,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?url=%s", apiURL, url.QueryEscape("https://github.com/mariusor/mpris-scrobbler")),
+					url: CollectionURL(ObjectsURL(), urlOf("https://github.com/mariusor/mpris-scrobbler")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?url=%s", apiURL, url.QueryEscape("https://github.com/mariusor/mpris-scrobbler")),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), urlOf("https://github.com/mariusor/mpris-scrobbler"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -702,13 +702,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?attributedTo=%s", apiURL, url.QueryEscape("http://127.0.0.1:9998/actors/2")),
+					url: CollectionURL(ObjectsURL(), attrTo("http://127.0.0.1:9998/actors/2")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?attributedTo=%s", apiURL, url.QueryEscape("http://127.0.0.1:9998/actors/2")),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), attrTo("http://127.0.0.1:9998/actors/2"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 3,
 					},
 				},
@@ -716,13 +716,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?inReplyTo=%s", apiURL, url.QueryEscape("http://127.0.0.1:9998/objects/1")),
+					url: CollectionURL(ObjectsURL(), inReplyTo("http://127.0.0.1:9998/objects/1")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?inReplyTo=%s", apiURL, url.QueryEscape("http://127.0.0.1:9998/objects/1")),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), inReplyTo("http://127.0.0.1:9998/objects/1"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 0,
 					},
 				},
@@ -730,13 +730,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?iri=!-", apiURL),
+					url: CollectionURL(ObjectsURL(), iri("!-")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?iri=!-", apiURL),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), iri("!-"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 4,
 					},
 				},
@@ -744,13 +744,13 @@ var ObjectsCollectionTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?iri=!", apiURL),
+					url: CollectionURL(ObjectsURL(), iri("!"+apiURL)),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?iri=!", apiURL),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), iri("!"+apiURL), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 4,
 					},
 				},
@@ -759,13 +759,13 @@ var ObjectsCollectionTests = testPairs{
 				name: "Filter by inReplyTo different than nil",
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?inReplyTo=!-", apiURL),
+					url: CollectionURL(ObjectsURL(), inReplyTo("!-")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?inReplyTo=!-", apiURL),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), inReplyTo("!-"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -774,13 +774,13 @@ var ObjectsCollectionTests = testPairs{
 				name: "Filter by inReplyTo be nil",
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects?inReplyTo=-", apiURL),
+					url: CollectionURL(ObjectsURL(), inReplyTo("-")),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects?inReplyTo=-", apiURL),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), inReplyTo("-"), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 3,
 					},
 				},
@@ -892,8 +892,8 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        OutboxURL(defaultC2SAccount())(),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(OutboxURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -901,13 +901,13 @@ var CreateTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/activities", apiURL),
+					url: ActivitiesURL(),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/activities", apiURL),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActivitiesURL(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -915,27 +915,13 @@ var CreateTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects", apiURL),
+					url: CollectionURL(ObjectsURL()),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/objects", apiURL),
-						typ:       string(vocab.OrderedCollectionType),
-						itemCount: 1,
-					},
-				},
-			},
-			{
-				req: testReq{
-					met: http.MethodGet,
-					url: fmt.Sprintf("%s/inbox", apiURL),
-				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        fmt.Sprintf("%s/inbox", apiURL),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ObjectsURL(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -943,14 +929,28 @@ var CreateTests = testPairs{
 			{
 				req: testReq{
 					met:   http.MethodGet,
-					urlFn: func() string { return fmt.Sprintf("%s/following", defaultC2SAccount().Id) },
+					urlFn: InboxURL(defaultC2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        CollectionURL(InboxURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: FollowingURL(defaultC2SAccount()),
 				},
 				res: testRes{code: http.StatusNotFound},
 			},
 			{
 				req: testReq{
 					met:   http.MethodGet,
-					urlFn: func() string { return fmt.Sprintf("%s/followers", defaultC2SAccount().Id) },
+					urlFn: FollowersURL(defaultC2SAccount()),
 				},
 				res: testRes{code: http.StatusNotFound},
 			},
@@ -1025,7 +1025,7 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(vocab.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -1071,7 +1071,7 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(vocab.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -1084,7 +1084,7 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(vocab.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 0,
 					},
 				},
@@ -1118,7 +1118,7 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(vocab.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 2,
 					},
 				},
@@ -1131,7 +1131,7 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(vocab.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -1144,7 +1144,7 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(vocab.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 0,
 					},
 				},
@@ -1178,7 +1178,7 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(vocab.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 3,
 					},
 				},
@@ -1191,7 +1191,7 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(vocab.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 2,
 					},
 				},
@@ -1204,7 +1204,7 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(vocab.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -1217,7 +1217,7 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(vocab.OrderedCollectionType),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 0,
 					},
 				},
@@ -1344,8 +1344,8 @@ var LikeTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        OutboxURL(defaultC2SAccount())(),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(OutboxURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -1353,41 +1353,13 @@ var LikeTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: fmt.Sprintf("%s/activities", apiURL),
+					url: ActivitiesURL(),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        fmt.Sprintf("%s/activities", apiURL),
-						typ:       string(vocab.OrderedCollectionType),
-						itemCount: 1,
-					},
-				},
-			},
-			{
-				req: testReq{
-					met: http.MethodGet,
-					url: fmt.Sprintf("%s/inbox", apiURL),
-				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        fmt.Sprintf("%s/inbox", apiURL),
-						typ:       string(vocab.OrderedCollectionType),
-						itemCount: 1,
-					},
-				},
-			},
-			{
-				req: testReq{
-					met: http.MethodGet,
-					url: fmt.Sprintf("%s/liked", defaultC2SAccount().Id),
-				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        fmt.Sprintf("%s/liked", defaultC2SAccount().Id),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(ActivitiesURL(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -1395,14 +1367,42 @@ var LikeTests = testPairs{
 			{
 				req: testReq{
 					met:   http.MethodGet,
-					urlFn: func() string { return fmt.Sprintf("%s/following", defaultC2SAccount().Id) },
+					urlFn: InboxURL(defaultC2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        CollectionURL(InboxURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: LikedURL(defaultC2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        CollectionURL(LikedURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: FollowingURL(defaultC2SAccount()),
 				},
 				res: testRes{code: http.StatusNotFound},
 			},
 			{
 				req: testReq{
 					met:   http.MethodGet,
-					urlFn: func() string { return fmt.Sprintf("%s/followers", defaultC2SAccount().Id) },
+					urlFn: FollowersURL(defaultC2SAccount()),
 				},
 				res: testRes{code: http.StatusNotFound},
 			},
@@ -1450,8 +1450,8 @@ var FollowTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        OutboxURL(defaultC2SAccount())(),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(OutboxURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -1459,7 +1459,7 @@ var FollowTests = testPairs{
 			{
 				req: testReq{
 					met:   http.MethodGet,
-					urlFn: func() string { return fmt.Sprintf("%s/following", defaultC2SAccount().Id) },
+					urlFn: FollowingURL(defaultC2SAccount()),
 				},
 				res: testRes{code: http.StatusNotFound},
 			},
@@ -1471,8 +1471,8 @@ var FollowTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        InboxURL(&extraAccount)(),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(InboxURL(&extraAccount)(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -1522,8 +1522,8 @@ var BlockTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        OutboxURL(defaultC2SAccount())(),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(OutboxURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
 				},
@@ -1537,8 +1537,8 @@ var BlockTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        InboxURL(&extraAccount)(),
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(InboxURL(&extraAccount)(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 0,
 					},
 				},

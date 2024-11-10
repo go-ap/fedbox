@@ -187,7 +187,8 @@ var S2SReceiveTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						typ:       string(vocab.OrderedCollectionType),
+						id:        CollectionURL(FollowingURL(defaultS2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 						items:     map[string]*objectVal{},
 					},

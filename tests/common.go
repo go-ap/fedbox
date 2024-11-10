@@ -32,6 +32,7 @@ import (
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
+	"github.com/go-ap/filters"
 	"github.com/go-ap/jsonld"
 	"github.com/go-fed/httpsig"
 )
@@ -193,42 +194,130 @@ func defaultS2SAccount() *testAccount {
 	return &defaultTestAccountS2S
 }
 
+func Objects(iri vocab.IRI) vocab.IRI {
+	return filters.ObjectsType.IRI(iri)
+}
+
+func Activities(iri vocab.IRI) vocab.IRI {
+	return filters.ActivitiesType.IRI(iri)
+}
+
+func Actors(iri vocab.IRI) vocab.IRI {
+	return filters.ActorsType.IRI(iri)
+}
+
+func ObjectsURL() string {
+	return Objects(vocab.IRI(service.Id)).String()
+}
+
+func ActorsURL() string {
+	return Actors(vocab.IRI(service.Id)).String()
+}
+
+func ActivitiesURL() string {
+	return Activities(vocab.IRI(service.Id)).String()
+}
+
+func firstPage() url.Values {
+	return url.Values(filters.FirstPage())
+}
 func InboxURL(account *testAccount) func() string {
 	return func() string {
-		return fmt.Sprintf("%s/inbox", account.Id)
+		return string(vocab.Inbox.IRI(vocab.IRI(account.Id)))
+	}
+}
+
+func LikedURL(account *testAccount) func() string {
+	return func() string {
+		return string(vocab.Liked.IRI(vocab.IRI(account.Id)))
 	}
 }
 
 func FollowersURL(account *testAccount) func() string {
 	return func() string {
-		return fmt.Sprintf("%s/followers", account.Id)
+		return string(vocab.Followers.IRI(vocab.IRI(account.Id)))
 	}
 }
 
 func FollowingURL(account *testAccount) func() string {
 	return func() string {
-		return fmt.Sprintf("%s/following", account.Id)
+		return string(vocab.Following.IRI(vocab.IRI(account.Id)))
 	}
 }
 
 func OutboxURL(account *testAccount) func() string {
 	return func() string {
-		return fmt.Sprintf("%s/outbox", account.Id)
+		return string(vocab.Outbox.IRI(vocab.IRI(account.Id)))
 	}
-}
-
-func ServiceObjectsURL(service *testAccount) string {
-	return fmt.Sprintf("%s/objects", service.Id)
-}
-
-func ServiceActorsURL(service *testAccount) string {
-	return fmt.Sprintf("%s/actors", service.Id)
 }
 
 func RepliesURL(ob vocab.Item) func() string {
 	return func() string {
 		return fmt.Sprintf("%s/replies", ob.GetID())
 	}
+}
+
+func qv(k string, ss ...string) url.Values {
+	q := url.Values{k: make([]string, 0)}
+	needsEscape := !strings.Contains(strings.ToLower(k), "iri")
+	for _, s := range ss {
+		if needsEscape {
+			s = url.QueryEscape(s)
+		}
+		q[k] = append(q[k], s)
+	}
+	return q
+}
+
+func objectIRI(ss ...string) url.Values {
+	return qv("object.iri", ss...)
+}
+
+func actorIRI(ss ...string) url.Values {
+	return qv("actor.iri", ss...)
+}
+
+func nameOf(ss ...string) url.Values {
+	return qv("name", ss...)
+}
+
+func attrTo(ss ...string) url.Values {
+	return qv("attributedTo", ss...)
+}
+
+func iri(ss ...string) url.Values {
+	return qv("iri", ss...)
+}
+
+func inReplyTo(ss ...string) url.Values {
+	return qv("inReplyTo", ss...)
+}
+
+func urlOf(ss ...string) url.Values {
+	return qv("url", ss...)
+}
+
+func typeOf(tt ...vocab.ActivityVocabularyType) url.Values {
+	ss := make([]string, 0)
+	for _, t := range tt {
+		ss = append(ss, string(t))
+	}
+	return qv("type", ss...)
+}
+
+func CollectionURL(orig string, qq ...url.Values) string {
+	u, _ := url.Parse(orig)
+	q := u.Query()
+	for _, qi := range qq {
+		for k, vv := range qi {
+			if _, ok := q[k]; !ok {
+				q[k] = make([]string, 0)
+			}
+			q[k] = append(q[k], vv...)
+		}
+	}
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
 const (
@@ -249,6 +338,7 @@ const (
 
 var (
 	apiURL = "http://127.0.0.1:9998"
+	apiIRI = vocab.IRI(apiURL)
 
 	authCallbackURL = fmt.Sprintf("%s/auth/local/callback", apiURL)
 	inboxURL        = InboxURL(&service)
