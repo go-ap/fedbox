@@ -6,17 +6,17 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20240906100438-00d2184b2120
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240519120935-f877e4d97def
 	github.com/go-ap/activitypub v0.0.0-20241104140659-be99a725f9d5
-	github.com/go-ap/auth v0.0.0-20241110174555-854bbc386708
+	github.com/go-ap/auth v0.0.0-20241113114417-bf9d92281588
 	github.com/go-ap/cache v0.0.0-20241104141048-912618952f30
 	github.com/go-ap/client v0.0.0-20241104140838-929b90e84e8a
 	github.com/go-ap/errors v0.0.0-20240910140019-1e9d33cc1568
-	github.com/go-ap/filters v0.0.0-20241110174345-2802456d0c02
+	github.com/go-ap/filters v0.0.0-20241113114250-f8877ed7ec0e
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20241110174821-a01379c6c51b
-	github.com/go-ap/storage-badger v0.0.0-20241110174930-30adcfad7ba7
-	github.com/go-ap/storage-boltdb v0.0.0-20241110174900-31f1059e2bcd
+	github.com/go-ap/processing v0.0.0-20241113114521-c5fe64952ff0
+	github.com/go-ap/storage-badger v0.0.0-20241113114728-c8869ee06c9d
+	github.com/go-ap/storage-boltdb v0.0.0-20241113114655-264b228c0758
 	github.com/go-ap/storage-fs v0.0.0-20241110174856-cf4295473c6e
-	github.com/go-ap/storage-sqlite v0.0.0-20241110174917-7f83012765f5
+	github.com/go-ap/storage-sqlite v0.0.0-20241113114640-568e89ae3d87
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -28,6 +28,7 @@ require (
 require (
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
 	github.com/bits-and-blooms/bitset v1.15.0 // indirect
+	github.com/dgraph-io/ristretto/v2 v2.0.0 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
@@ -41,7 +42,7 @@ require (
 	git.sr.ht/~mariusor/ssm v0.0.0-20240811085540-34f24cac52b7 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
-	github.com/dgraph-io/badger/v4 v4.3.1 // indirect
+	github.com/dgraph-io/badger/v4 v4.4.0 // indirect
 	github.com/dgraph-io/ristretto v1.0.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
