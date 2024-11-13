@@ -653,10 +653,10 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 				return nil
 			})
 			tot := time.Now().Sub(start)
-			fmt.Printf("Ellapsed time:          %s\n", tot)
+			fmt.Printf("Elapsed time:          %s\n", tot)
 			if count > 0 {
 				perIt := time.Duration(int64(tot) / int64(count))
-				fmt.Printf("Ellapsed time per item: %s\n", perIt)
+				fmt.Printf("Elapsed time per item: %s\n", perIt)
 			}
 		}
 		return nil
@@ -900,7 +900,7 @@ func indexPubObjects(ctl *Control) cli.ActionFunc {
 		}
 
 		tot := time.Now().Sub(start)
-		fmt.Printf("Ellapsed time:          %s\n", tot)
+		fmt.Printf("Elapsed time:          %s\n", tot)
 
 		return nil
 	}
