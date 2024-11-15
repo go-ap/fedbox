@@ -416,15 +416,7 @@ func listObjectsAct(ctl *Control) cli.ActionFunc {
 			return err
 		}
 		sort.Slice(all, func(i, j int) bool {
-			ob1, err := vocab.ToObject(all[i])
-			if err != nil {
-				return false
-			}
-			ob2, err := vocab.ToObject(all[j])
-			if err != nil {
-				return true
-			}
-			return ob1.Published.Sub(ob2.Published) < 0
+			return vocab.ItemOrderTimestamp(all[i], all[j])
 		})
 		printItem(all, c.String("output"))
 		return nil
@@ -708,15 +700,7 @@ func exportPubObjects(ctl *Control) cli.ActionFunc {
 			objects = append(objects, dump...)
 		}
 		sort.Slice(objects, func(i, j int) bool {
-			o1, err1 := vocab.ToObject(objects[i])
-			if err1 != nil {
-				return false
-			}
-			o2, err2 := vocab.ToObject(objects[j])
-			if err2 != nil {
-				return false
-			}
-			return o1.Published.Sub(o2.Published) < 0
+			return vocab.ItemOrderTimestamp(objects[i], objects[j])
 		})
 		where := os.Stdout
 		if c.String("path") != "" {
