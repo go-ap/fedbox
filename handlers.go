@@ -234,14 +234,14 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 
 		if it, err = processor.ProcessActivity(it, auth, receivedIn); err != nil {
 			fb.errFn("failed processing activity: %+s", err)
-			return it, errors.HttpStatus(err), errors.Annotatef(err, "Can't save activity %s to %s", it.GetType(), receivedIn)
+			return it, errors.HttpStatus(err), errors.Annotatef(err, "Unable to save activity %s to %s", it.GetType(), receivedIn)
 		}
-		err = vocab.OnActivity(it, func(act *vocab.Activity) error {
-			return cache.ActivityPurge(fb.caches, act, receivedIn)
+		_ = vocab.OnActivity(it, func(act *vocab.Activity) error {
+			if err := cache.ActivityPurge(fb.caches, act, receivedIn); err != nil {
+				fb.errFn("unable to purge cache: %+s", err)
+			}
+			return nil
 		})
-		if err != nil {
-			fb.errFn("unable to purge cache: %+s", err)
-		}
 
 		status := http.StatusCreated
 		if it.GetType() == vocab.DeleteType {
