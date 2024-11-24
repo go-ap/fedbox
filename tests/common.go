@@ -19,6 +19,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -1005,8 +1006,9 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 						app := suite.apps[vocab.IRI(options.BaseURL)]
 						fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
 						l := lw.Dev(lw.SetLevel(lw.DebugLevel)).WithContext(fields)
-
 						mocks = append(mocks, test.mocks...)
+						sort.Strings(mocks)
+						mocks = slices.Compact(mocks)
 						if err := saveMocks(mocks, app, l); err != nil {
 							t.Fatalf("%s", err)
 						}

@@ -1,0 +1,136 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    "https://w3id.org/security/data-integrity/v1",
+    "https://w3id.org/security/multikey/v1",
+    {
+      "IdentityProof": "toot:IdentityProof",
+      "PropertyValue": "schema:PropertyValue",
+      "VerifiableIdentityStatement": "mitra:VerifiableIdentityStatement",
+      "featured": "toot:featured",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "mitra": "http://jsonld.mitra.social#",
+      "schema": "http://schema.org/",
+      "subject": "mitra:subject",
+      "subscribers": "mitra:subscribers",
+      "toot": "http://joinmastodon.org/ns#",
+      "value": "schema:value"
+    }
+  ],
+  "id": "http://127.0.2.1:9999/actors/mitraUser",
+  "type": "Person",
+  "name": "mitraUser",
+  "bcc": ["https://www.w3.org/ns/activitystreams#Public"],
+  "preferredUsername": "mitraUser",
+  "inbox": "http://127.0.2.1:9999/actors/mitraUser/inbox",
+  "outbox": "http://127.0.2.1:9999/actors/mitraUser/outbox",
+  "followers": "http://127.0.2.1:9999/actors/mitraUser/followers",
+  "following": "http://127.0.2.1:9999/actors/mitraUser/following",
+  "subscribers": "http://127.0.2.1:9999/actors/mitraUser/subscribers",
+  "featured": "http://127.0.2.1:9999/actors/mitraUser/collections/featured",
+  "assertionMethod": [
+    {
+      "id": "http://127.0.2.1:9999/actors/mitraUser#main-key",
+      "type": "Multikey",
+      "controller": "http://127.0.2.1:9999/actors/mitraUser",
+      "publicKeyMultibase": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "http://127.0.2.1:9999/actors/mitraUser#ed25519-key",
+      "type": "Multikey",
+      "controller": "http://127.0.2.1:9999/actors/mitraUser",
+      "publicKeyMultibase": "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+    }
+  ],
+  "authentication": [
+    {
+      "id": "http://127.0.2.1:9999/actors/mitraUser#main-key",
+      "type": "Multikey",
+      "controller": "http://127.0.2.1:9999/actors/mitraUser",
+      "publicKeyMultibase": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+    },
+    {
+      "id": "http://127.0.2.1:9999/actors/mitraUser#ed25519-key",
+      "type": "Multikey",
+      "controller": "http://127.0.2.1:9999/actors/mitraUser",
+      "publicKeyMultibase": "999999999999999999999999999999999999999999999999"
+    }
+  ],
+  "publicKey": {
+    "id": "http://127.0.2.1:9999/actors/mitraUser#main-key",
+    "owner": "http://127.0.2.1:9999/actors/mitraUser",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAPYL2Hq1CoUsL/ueckFZeDBbY583zkC8ayqlts/efis7s0qyBc+zJm7pSnei3Oe7PaMQGBN1I/WuARtMF60B1F0CAwEAAQ==\n-----END PUBLIC KEY-----"
+  },
+  "icon": {
+    "type": "Image",
+    "url": "http://127.0.2.1:9999/media/6555555555555555555555555aa49156a499ac30fd1e402f79e7e164adb36e2c.png",
+    "mediaType": "image/png"
+  },
+  "summary": "User of ActivityPub-based micro-blogging and content subscription platform <a href=\"https://codeberg.org/mitraUser/mitra\">Mitra</a>.",
+  "alsoKnownAs": [],
+  "attachment": [
+    {
+      "alsoKnownAs": "http://127.0.2.1:9999/actors/mitraUser",
+      "proof": {
+        "created": "2022-10-19T01:59:13.666995181Z",
+        "proofPurpose": "assertionMethod",
+        "proofValue": "KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK",
+        "type": "MitraJcsEip191Signature2022",
+        "verificationMethod": "did:pkh:eip155:1:0xdddddddddddddddddddddddddddddddddddddddd"
+      },
+      "subject": "did:pkh:eip155:1:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "type": "VerifiableIdentityStatement"
+    },
+    {
+      "alsoKnownAs": "http://127.0.2.1:9999/actors/mitraUser",
+      "proof": {
+        "created": "2021-12-01:55:06.044135547Z",
+        "cryptosuite": "jcs-eddsa-2022",
+        "proofPurpose": "assertionMethod",
+        "proofValue": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "type": "DataIntegrityProof",
+        "verificationMethod": "did:key:999999999999999999999999999999999999999999999999"
+      },
+      "subject": "did:key:z6MkrJ4F3pUkVE28caQ1LNhUmMHakZsx3GLg2eY666Dv9111",
+      "type": "VerifiableIdentityStatement"
+    },
+    {
+      "href": "http://127.0.2.1:9999/actors/mitraUser/proposals/monero:33333333333333333333333333333333",
+      "mediaType": "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+      "name": "MoneroSubscription",
+      "rel": [
+        "payment",
+        "https://w3id.org/valueflows/Proposal"
+      ],
+      "type": "Link"
+    },
+    {
+      "name": "Code",
+      "type": "PropertyValue",
+      "value": "<a href=\"https://codeberg.org/mitraUser/\">https://codeberg.org/mitraUser/</a>"
+    },
+    {
+      "name": "$XMR",
+      "type": "PropertyValue",
+      "value": "88888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888"
+    },
+    {
+      "name": "XMR subscription",
+      "type": "PropertyValue",
+      "value": "<a href=\"http://127.0.2.1:9999/@mitraUser/subscription\">http://127.0.2.1:9999/@mitraUser/subscription</a>"
+    },
+    {
+      "name": "PGP",
+      "type": "PropertyValue",
+      "value": "6666 6666 6666 6666 6666  6666 6666 6666 6666 25F0"
+    },
+    {
+      "name": "Matrix (backup)",
+      "type": "PropertyValue",
+      "value": "@mitraUser:matrix.irc"
+    }
+  ],
+  "manuallyApprovesFollowers": false,
+  "url": "http://127.0.2.1:9999/actors/mitraUser"
+}
