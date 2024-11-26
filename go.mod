@@ -27,7 +27,7 @@ require (
 
 require (
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
-	github.com/bits-and-blooms/bitset v1.16.0 // indirect
+	github.com/bits-and-blooms/bitset v1.17.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.0.0 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
@@ -43,7 +43,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/dgraph-io/badger/v4 v4.4.0 // indirect
-	github.com/dgraph-io/ristretto v1.0.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect

@@ -6,9 +6,13 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"path/filepath"
 	"testing"
 
+	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/env"
 )
 
 func CreateS2SObject(actor *testAccount, object any) actS2SMock {
@@ -196,6 +200,51 @@ var S2SReceiveTests = testPairs{
 			},
 		},
 	},
+	{
+		name: "Follow",
+		configs: []config.Options{
+			C2SConfig,
+			{
+				Env:         env.TEST,
+				Host:        "127.0.2.1:9999",
+				Listen:      "127.0.2.1:9999",
+				BaseURL:     "http://127.0.2.1:9999/",
+				LogLevel:    lw.NoLevel,
+				StoragePath: filepath.Join(storagePath(), "127.0.2.1:9999"),
+				Storage:     storageType(),
+			},
+		},
+		tests: []testPair{
+			{
+				mocks: []string{
+					"mocks/c2s/actors/service.json",
+					"mocks/c2s/actors/actor-johndoe.json",
+					"mocks/c2s/actors/application.json",
+					"mocks/s2s/actors/mitra-user.json",
+					"mocks/s2s/activities/follow-mitra.json",
+				},
+				req: testReq{
+					met:     http.MethodPost,
+					account: mitraUser(),
+					urlFn:   InboxURL(defaultC2SAccount()),
+					bodyFn:  loadMockJson("mocks/s2s/activities/follow-mitra.json", nil),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+				},
+			},
+		},
+	},
+}
+
+func mitraUser() *testAccount {
+	m := testAccount{
+		Id:         fmt.Sprintf("http://%s/actors/mitraUser", s2shost),
+		Handle:     "mitraUser",
+		PublicKey:  publicKeyFrom(rsaKey),
+		PrivateKey: rsaKey,
+	}
+	return &m
 }
 
 func Test_S2SReceiveRequests(t *testing.T) {

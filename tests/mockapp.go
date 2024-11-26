@@ -48,9 +48,9 @@ func loadMockJson(file string, model any) func() (string, error) {
 		Funcs(template.FuncMap{"json": jsonldMarshal}).Parse(string(data)))
 
 	return func() (string, error) {
-		bytes := bytes.Buffer{}
-		err := t.Execute(&bytes, model)
-		return bytes.String(), err
+		raw := bytes.Buffer{}
+		err = t.Execute(&raw, model)
+		return raw.String(), err
 	}
 }
 
@@ -91,8 +91,8 @@ func cleanDB(t *testing.T, opt config.Options) {
 	}
 	t.Logf("Removing path: %s", tempPath)
 
-	// As we're using t.TempDir for the storage path, we can remove it fully
-	if err := os.RemoveAll(tempPath); err != nil {
+	//As we're using t.TempDir for the storage path, we can remove it fully
+	if err = os.RemoveAll(tempPath); err != nil {
 		t.Logf("Unable to remove path: %s: %s", tempPath, err)
 	}
 }
@@ -139,11 +139,16 @@ func loadMockFromDisk(file string, model any) vocab.Item {
 }
 
 func saveMocks(testData []string, app *fedbox.FedBOX, l lw.Logger) error {
+	if len(testData) == 0 {
+		return nil
+	}
+
 	baseIRI := vocab.IRI(app.Config().BaseURL)
 	db := app.Storage()
+
 	mocks := make(vocab.ItemCollection, 0)
-	for _, path := range testData {
-		it := loadMockFromDisk(path, nil)
+	for _, mock := range testData {
+		it := loadMockFromDisk(mock, nil)
 		if !it.GetLink().Contains(baseIRI, false) {
 			continue
 		}
@@ -214,7 +219,7 @@ func RunTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
 
 	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
 
-	l := lw.Dev(lw.SetLevel(options.LogLevel))
+	l := lw.Dev(lw.SetLevel(options.LogLevel), lw.SetOutput(os.Stdout))
 	db, err := fedbox.Storage(options, l.WithContext(fields))
 	if err != nil {
 		return nil, err

@@ -19,7 +19,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime/debug"
-	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -996,23 +995,21 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 			}()
 		}
 
-		time.Sleep(100 * time.Millisecond)
 		name := suite.name
 		t.Run(name, func(t *testing.T) {
-			mocks := suite.mocks
 			for _, test := range suite.tests {
 				t.Run(test.label(), func(t *testing.T) {
 					for _, options := range suite.configs {
 						app := suite.apps[vocab.IRI(options.BaseURL)]
 						fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
 						l := lw.Dev(lw.SetLevel(lw.DebugLevel)).WithContext(fields)
-						mocks = append(mocks, test.mocks...)
-						sort.Strings(mocks)
-						mocks = slices.Compact(mocks)
+
+						mocks := append(suite.mocks, test.mocks...)
 						if err := saveMocks(mocks, app, l); err != nil {
 							t.Fatalf("%s", err)
 						}
 					}
+
 					errOnRequest(t)(test)
 				})
 			}
