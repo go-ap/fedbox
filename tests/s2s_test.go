@@ -220,6 +220,7 @@ var S2SReceiveTests = testPairs{
 					"mocks/c2s/actors/service.json",
 					"mocks/c2s/actors/actor-johndoe.json",
 					"mocks/c2s/actors/application.json",
+					// mitra user and follow
 					"mocks/s2s/actors/mitra-user.json",
 					"mocks/s2s/activities/follow-mitra.json",
 				},

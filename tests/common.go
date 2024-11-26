@@ -969,36 +969,42 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 	defer cleanupTestPairs(pairs, t)
 
 	t.Helper()
-	for _, suite := range pairs {
-		ctx := context.TODO()
-		suite.apps = make(map[vocab.IRI]*fedbox.FedBOX)
-		for _, options := range suite.configs {
-			if Verbose {
-				options.LogLevel = lw.TraceLevel
-			}
 
-			self := ap.Self(ap.DefaultServiceIRI(options.BaseURL))
-			if err := cmd.Bootstrap(options, self); err != nil {
-				t.Fatalf("%+v", err)
-				return
-			}
-			fb, err := RunTestFedBOX(options)
-			if err != nil {
-				t.Fatalf("%s", err)
-				return
-			}
-			suite.apps[self.ID] = fb
-			go func() {
-				if err = fb.Run(ctx); err != nil {
-					t.Logf("Err: %+v", err)
+	for _, suite := range pairs {
+		ctx, stopFn := context.WithCancel(context.TODO())
+		runInstances := func() {
+			suite.apps = make(map[vocab.IRI]*fedbox.FedBOX)
+			for _, options := range suite.configs {
+				if Verbose {
+					options.LogLevel = lw.TraceLevel
 				}
-			}()
+
+				self := ap.Self(ap.DefaultServiceIRI(options.BaseURL))
+				if err := cmd.Bootstrap(options, self); err != nil {
+					t.Fatalf("%+v", err)
+					return
+				}
+				fb, err := getTestFedBOX(options)
+				if err != nil {
+					t.Fatalf("%s", err)
+					return
+				}
+				suite.apps[self.ID] = fb
+				go func() {
+					if err = fb.Run(ctx); err != nil {
+						t.Logf("Err: %+v", err)
+					}
+				}()
+			}
 		}
 
 		name := suite.name
 		t.Run(name, func(t *testing.T) {
 			for _, test := range suite.tests {
 				t.Run(test.label(), func(t *testing.T) {
+
+					runInstances()
+
 					for _, options := range suite.configs {
 						app := suite.apps[vocab.IRI(options.BaseURL)]
 						fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
@@ -1011,6 +1017,7 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 					}
 
 					errOnRequest(t)(test)
+					stopFn()
 				})
 			}
 		})

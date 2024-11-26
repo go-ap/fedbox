@@ -212,7 +212,7 @@ func seedTestData(app *fedbox.FedBOX) error {
 	})
 }
 
-func RunTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
+func getTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
 	if options.Storage == "all" {
 		options.Storage = config.StorageFS
 	}
