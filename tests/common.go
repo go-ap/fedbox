@@ -999,11 +999,11 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 		}
 
 		name := suite.name
+		runInstances()
+
 		t.Run(name, func(t *testing.T) {
 			for _, test := range suite.tests {
 				t.Run(test.label(), func(t *testing.T) {
-
-					runInstances()
 
 					for _, options := range suite.configs {
 						app := suite.apps[vocab.IRI(options.BaseURL)]
@@ -1017,14 +1017,17 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 					}
 
 					errOnRequest(t)(test)
-					stopFn()
 				})
 			}
 		})
+
+		stopFn()
+
 		for _, options := range suite.configs {
 			// NOTE(marius): we removed the deferred app.Stop(),
 			// to avoid race conditions when running multiple FedBOX instances for the federated tests
 			cleanDB(t, options)
 		}
+		time.Sleep(time.Millisecond)
 	}
 }
