@@ -120,10 +120,12 @@ func (f *FedBOX) Storage() st.FullStorage {
 
 // Stop
 func (f *FedBOX) Stop() {
-	if st, ok := f.storage.(osin.Storage); ok {
-		st.Close()
+	if r, ok := f.storage.(osin.Storage); ok {
+		r.Close()
 	}
-	f.stopFn()
+	if f.stopFn != nil {
+		f.stopFn()
+	}
 }
 
 func (f *FedBOX) reload() (err error) {

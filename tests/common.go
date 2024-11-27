@@ -984,24 +984,27 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 					t.Fatalf("%+v", err)
 					return
 				}
-				fb, err := getTestFedBOX(options)
-				if err != nil {
-					t.Fatalf("%s", err)
-					return
-				}
-				suite.apps[self.ID] = fb
-				go func() {
-					if err = fb.Run(ctx); err != nil {
-						t.Logf("Err: %+v", err)
+				if suite.apps[self.ID] == nil {
+					fb, err := getTestFedBOX(options)
+					if err != nil {
+						t.Fatalf("%s", err)
+						return
 					}
-				}()
+					suite.apps[self.ID] = fb
+					go func() {
+						if err = fb.Run(ctx); err != nil {
+							t.Logf("Err: %+v", err)
+						}
+					}()
+				}
 			}
 		}
 
 		name := suite.name
-		runInstances()
 
 		t.Run(name, func(t *testing.T) {
+			runInstances()
+
 			for _, test := range suite.tests {
 				t.Run(test.label(), func(t *testing.T) {
 
@@ -1019,15 +1022,17 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 					errOnRequest(t)(test)
 				})
 			}
-		})
 
-		stopFn()
+			for _, app := range suite.apps {
+				app.Stop()
+				stopFn()
+			}
+		})
 
 		for _, options := range suite.configs {
 			// NOTE(marius): we removed the deferred app.Stop(),
 			// to avoid race conditions when running multiple FedBOX instances for the federated tests
 			cleanDB(t, options)
 		}
-		time.Sleep(time.Millisecond)
 	}
 }
