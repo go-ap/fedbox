@@ -972,7 +972,11 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 
 	for _, suite := range pairs {
 		ctx, stopFn := context.WithCancel(context.TODO())
-		runInstances := func() {
+
+		name := suite.name
+
+		t.Run(name, func(t *testing.T) {
+
 			suite.apps = make(map[vocab.IRI]*fedbox.FedBOX)
 			for _, options := range suite.configs {
 				if Verbose {
@@ -993,18 +997,11 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 					suite.apps[self.ID] = fb
 					go func() {
 						if err = fb.Run(ctx); err != nil {
-							t.Logf("Err: %+v", err)
+							t.Log(err.Error())
 						}
 					}()
 				}
 			}
-		}
-
-		name := suite.name
-
-		t.Run(name, func(t *testing.T) {
-			runInstances()
-
 			for _, test := range suite.tests {
 				for _, options := range suite.configs {
 					app := suite.apps[vocab.IRI(options.BaseURL)]
@@ -1023,9 +1020,9 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 				})
 			}
 
-			for _, app := range suite.apps {
-				app.Stop(ctx)
-			}
+			//for _, app := range suite.apps {
+			//	app.Stop(ctx)
+			//}
 			stopFn()
 		})
 

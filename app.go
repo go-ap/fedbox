@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sync"
 	"syscall"
 
 	"git.sr.ht/~mariusor/lw"
@@ -33,19 +32,24 @@ type LogFn func(string, ...any)
 type canStore = cache.CanStore
 
 type FedBOX struct {
-	R            chi.Router
-	conf         config.Options
-	self         vocab.Service
-	client       client.C
-	storage      st.FullStorage
-	version      string
-	caches       canStore
+	R       chi.Router
+	conf    config.Options
+	self    vocab.Service
+	client  client.C
+	storage st.FullStorage
+	version string
+	caches  canStore
+	logger  lw.Logger
+
 	keyGenerator func(act *vocab.Actor) error
-	stopFn       func(ctx context.Context)
-	logger       lw.Logger
+
+	startFn func(ctx context.Context) error
+	stopFn  func(ctx context.Context) error
 }
 
-var emptyStopFn = func(_ context.Context) {}
+var emptyStopFn = func(_ context.Context) error {
+	return nil
+}
 
 var InternalIRI = vocab.IRI("https://fedbox/")
 
@@ -108,6 +112,40 @@ func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedB
 
 	app.R.Group(app.Routes())
 
+	sockType := ""
+	setters := []w.SetFn{w.Handler(app.R)}
+
+	if app.conf.Secure {
+		if len(app.conf.CertPath)+len(app.conf.KeyPath) > 0 {
+			setters = append(setters, w.WithTLSCert(app.conf.CertPath, app.conf.KeyPath))
+		} else {
+			app.conf.Secure = false
+		}
+	}
+
+	if app.conf.Listen == "systemd" {
+		sockType = "Systemd"
+		setters = append(setters, w.OnSystemd())
+	} else if filepath.IsAbs(app.conf.Listen) {
+		dir := filepath.Dir(app.conf.Listen)
+		if _, err := os.Stat(dir); err == nil {
+			sockType = "socket"
+			setters = append(setters, w.OnSocket(app.conf.Listen))
+			defer func() {
+				if err := os.RemoveAll(app.conf.Listen); err != nil {
+					app.logger.Errorf("Failed cleaning up: %s", err)
+				}
+			}()
+		}
+	} else {
+		sockType = "TCP"
+		setters = append(setters, w.OnTCP(app.conf.Listen))
+	}
+
+	// Get start/stop functions for the http server
+	app.startFn, app.stopFn = w.HttpServer(setters...)
+	app.conf.Listen += "[" + sockType + "]"
+
 	return &app, nil
 }
 
@@ -124,9 +162,8 @@ func (f *FedBOX) Stop(ctx context.Context) {
 	if r, ok := f.storage.(osin.Storage); ok {
 		r.Close()
 	}
-	sync.OnceFunc(func() {
-		f.stopFn(ctx)
-	})
+
+	_ = f.stopFn(ctx)
 }
 
 func (f *FedBOX) reload() (err error) {
@@ -156,55 +193,14 @@ func (f *FedBOX) Run(c context.Context) error {
 	ctx, cancelFn := context.WithTimeout(c, f.conf.TimeOut)
 	defer cancelFn()
 
-	sockType := ""
-	setters := []w.SetFn{w.Handler(f.R)}
-
-	if f.conf.Secure {
-		if len(f.conf.CertPath)+len(f.conf.KeyPath) > 0 {
-			setters = append(setters, w.WithTLSCert(f.conf.CertPath, f.conf.KeyPath))
-		} else {
-			f.conf.Secure = false
-		}
-	}
-
-	if f.conf.Listen == "systemd" {
-		sockType = "Systemd"
-		setters = append(setters, w.OnSystemd())
-	} else if filepath.IsAbs(f.conf.Listen) {
-		dir := filepath.Dir(f.conf.Listen)
-		if _, err := os.Stat(dir); err == nil {
-			sockType = "socket"
-			setters = append(setters, w.OnSocket(f.conf.Listen))
-			defer func() {
-				if err := os.RemoveAll(f.conf.Listen); err != nil {
-					f.logger.Errorf("Failed cleaning up: %s", err)
-				}
-			}()
-		}
-	} else {
-		sockType = "TCP"
-		setters = append(setters, w.OnTCP(f.conf.Listen))
-	}
 	logCtx := lw.Ctx{
 		"URL":      f.conf.BaseURL,
 		"version":  f.version,
 		"listenOn": f.conf.Listen,
 		"TLS":      f.conf.Secure,
 	}
-	if sockType != "" {
-		logCtx["listenOn"] = f.conf.Listen + "[" + sockType + "]"
-	}
 
-	// Get start/stop functions for the http server
-	srvRun, srvStop := w.HttpServer(setters...)
 	logger := f.logger.WithContext(logCtx)
-	logger.Infof("Started")
-	f.stopFn = func(ctx context.Context) {
-		if err := srvStop(ctx); err != nil {
-			logger.Errorf(err.Error())
-		}
-	}
-	defer f.stopFn(ctx)
 
 	err := w.RegisterSignalHandlers(w.SignalHandlers{
 		syscall.SIGHUP: func(_ chan<- error) {
@@ -226,10 +222,11 @@ func (f *FedBOX) Run(c context.Context) error {
 			cancelFn()
 			exit <- nil
 		},
-	}).Exec(ctx, srvRun)
+	}).Exec(ctx, f.startFn)
 	if err == nil {
 		logger.Infof("Shutting down")
 	}
+	logger.Infof("Started")
 	return err
 }
 
