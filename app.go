@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"syscall"
 
 	"git.sr.ht/~mariusor/lw"
@@ -123,7 +124,9 @@ func (f *FedBOX) Stop(ctx context.Context) {
 	if r, ok := f.storage.(osin.Storage); ok {
 		r.Close()
 	}
-	//f.stopFn(ctx)
+	sync.OnceFunc(func() {
+		f.stopFn(ctx)
+	})
 }
 
 func (f *FedBOX) reload() (err error) {
