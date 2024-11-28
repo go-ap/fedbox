@@ -40,11 +40,11 @@ type FedBOX struct {
 	version      string
 	caches       canStore
 	keyGenerator func(act *vocab.Actor) error
-	stopFn       func()
+	stopFn       func(ctx context.Context)
 	logger       lw.Logger
 }
 
-var emptyStopFn = func() {}
+var emptyStopFn = func(_ context.Context) {}
 
 var InternalIRI = vocab.IRI("https://fedbox/")
 
@@ -119,13 +119,11 @@ func (f *FedBOX) Storage() st.FullStorage {
 }
 
 // Stop
-func (f *FedBOX) Stop() {
+func (f *FedBOX) Stop(ctx context.Context) {
 	if r, ok := f.storage.(osin.Storage); ok {
 		r.Close()
 	}
-	if f.stopFn != nil {
-		f.stopFn()
-	}
+	//f.stopFn(ctx)
 }
 
 func (f *FedBOX) reload() (err error) {
@@ -198,12 +196,12 @@ func (f *FedBOX) Run(c context.Context) error {
 	srvRun, srvStop := w.HttpServer(setters...)
 	logger := f.logger.WithContext(logCtx)
 	logger.Infof("Started")
-	f.stopFn = func() {
+	f.stopFn = func(ctx context.Context) {
 		if err := srvStop(ctx); err != nil {
 			logger.Errorf(err.Error())
 		}
 	}
-	defer f.stopFn()
+	defer f.stopFn(ctx)
 
 	err := w.RegisterSignalHandlers(w.SignalHandlers{
 		syscall.SIGHUP: func(_ chan<- error) {

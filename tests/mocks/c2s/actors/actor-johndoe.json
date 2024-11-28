@@ -3,9 +3,7 @@
   "id": "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
   "type": "Person",
   "attributedTo": "http://127.0.0.1:9998",
-  "audience": [
-    "https://www.w3.org/ns/activitystreams#Public"
-  ],
+  "audience": ["https://www.w3.org/ns/activitystreams#Public"],
   "content": "Generated actor",
   "generator": "http://127.0.0.1:9998",
   "published": "2019-08-11T13:14:47.726030449+02:00",

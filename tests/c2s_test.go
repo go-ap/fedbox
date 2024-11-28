@@ -21,12 +21,12 @@ var ActorsCollectionTests = testPairs{
 	{
 		name:    "ActorsCollection",
 		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
-				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
-				},
 				req: testReq{
 					met: http.MethodGet,
 					url: ActorsURL(),
@@ -62,12 +62,12 @@ var ActorsCollectionTests = testPairs{
 	{
 		name:    "ActorsCollectionTypePerson",
 		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
-				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
-				},
 				req: testReq{
 					met: http.MethodGet,
 					url: CollectionURL(ActorsURL(), typeOf(vocab.PersonType)),
@@ -103,12 +103,12 @@ var ActorsCollectionTests = testPairs{
 	{
 		name:    "ActorsCollectionTypeGroup",
 		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
-				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
-				},
 				req: testReq{
 					met: http.MethodGet,
 					url: CollectionURL(ActorsURL(), typeOf(vocab.GroupType)),
@@ -127,6 +127,10 @@ var ActorsCollectionTests = testPairs{
 	{
 		name:    "ActorsCollectionTypeApplication",
 		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
 				mocks: []string{
@@ -152,6 +156,7 @@ var ActorsCollectionTests = testPairs{
 		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
 			"mocks/c2s/actors/actor-admin.json",
 			"mocks/c2s/actors/actor-element_a.json",
 			"mocks/c2s/actors/actor-element_b.json",
@@ -292,6 +297,8 @@ var ActorsCollectionTests = testPairs{
 		name:    "Actor with tag",
 		configs: c2sConfigs,
 		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
 			"mocks/c2s/actors/actor-element_a.json",
 			"mocks/c2s/objects/tag-mod.json",
 		},
@@ -306,7 +313,7 @@ var ActorsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActorsURL(), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 2,
+						itemCount: 3,
 						items: map[string]*objectVal{
 							"2": {
 								id:  "http://127.0.0.1:9998/actors/2",
@@ -378,6 +385,7 @@ var ActivitiesCollectionTests = testPairs{
 		configs: c2sConfigs,
 		mocks: []string{
 			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
 			"mocks/c2s/actors/actor-element_a.json",
 			"mocks/c2s/objects/note-1.json",
 			"mocks/c2s/activities/create-1.json",
@@ -528,12 +536,12 @@ var ObjectsCollectionTests = testPairs{
 	{
 		name:    "ObjectsCollection",
 		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
-				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
-				},
 				req: testReq{
 					met: http.MethodGet,
 					url: ObjectsURL(),
@@ -553,6 +561,8 @@ var ObjectsCollectionTests = testPairs{
 		name:    "A lot of objects",
 		configs: c2sConfigs,
 		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
 			"mocks/c2s/objects/note-1.json",
 			"mocks/c2s/objects/page-2.json",
 			"mocks/c2s/objects/tombstone-3.json",
@@ -793,11 +803,12 @@ var SingleItemLoadTests = testPairs{
 	{
 		name:    "SelfService",
 		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
-				mocks: []string{
-					"mocks/c2s/actors/service.json",
-				},
 				req: testReq{
 					met: http.MethodGet,
 					url: fmt.Sprintf("%s", apiURL),
@@ -823,11 +834,13 @@ var CreateTests = testPairs{
 	{
 		name:    "CreateActor",
 		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
 					"mocks/c2s/actors/application.json",
 				},
 				req: testReq{
@@ -857,12 +870,12 @@ var CreateTests = testPairs{
 	{
 		name:    "CreateArticle",
 		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
-				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
-				},
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
@@ -959,11 +972,13 @@ var CreateTests = testPairs{
 	{
 		name:    "CreateActorAnonymously",
 		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
 					"mocks/c2s/actors/application.json",
 				},
 				req: testReq{
@@ -982,11 +997,13 @@ var CreateTests = testPairs{
 		// recipients belonging to other federated services
 		name:    "CreateNoteWithFederatedRecipient",
 		configs: s2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
 					"mocks/c2s/actors/application.json",
 					// s2s entities that need to exist
 					"mocks/s2s/actors/actor-666.json",
@@ -1230,11 +1247,13 @@ var UpdateTests = testPairs{
 	{
 		name:    "UpdateActor",
 		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
 				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
 					"mocks/c2s/actors/application.json",
 				},
 				req: testReq{
@@ -1274,12 +1293,12 @@ var DeleteTests = testPairs{
 	{
 		name:    "DeleteActor",
 		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
 		tests: []testPair{
 			{
-				mocks: []string{
-					"mocks/c2s/actors/service.json",
-					"mocks/c2s/actors/actor-johndoe.json",
-				},
 				req: testReq{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),

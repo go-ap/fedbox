@@ -138,13 +138,12 @@ func loadMockFromDisk(file string, model any) vocab.Item {
 	return it
 }
 
-func saveMocks(testData []string, app *fedbox.FedBOX, l lw.Logger) error {
+func saveMocks(testData []string, config config.Options, db ls.FullStorage, l lw.Logger) error {
 	if len(testData) == 0 {
 		return nil
 	}
 
-	baseIRI := vocab.IRI(app.Config().BaseURL)
-	db := app.Storage()
+	baseIRI := vocab.IRI(config.BaseURL)
 
 	mocks := make(vocab.ItemCollection, 0)
 	for _, mock := range testData {
@@ -160,22 +159,21 @@ func saveMocks(testData []string, app *fedbox.FedBOX, l lw.Logger) error {
 		return err
 	}
 
-	o, _ := cmd.New(db, app.Config(), l)
+	o, _ := cmd.New(db, config, l)
 
-	if strings.Contains(defaultTestAccountC2S.Id, app.Config().BaseURL) {
+	if strings.Contains(defaultTestAccountC2S.Id, config.BaseURL) {
 		if err := saveMetadataForActor(defaultTestAccountC2S, db.(ls.MetadataTyper)); err != nil {
-			l.Critf("%s\n", err)
+			return err
 		}
 		tok, err := o.GenAuthToken(defaultTestApp.Id, defaultTestAccountC2S.Id, nil)
 		if err != nil {
-			l.Errorf("%+s\n", err)
-		} else {
-			defaultTestAccountC2S.AuthToken = tok
+			return err
 		}
+		defaultTestAccountC2S.AuthToken = tok
 	}
-	if strings.Contains(defaultTestAccountS2S.Id, app.Config().BaseURL) {
+	if strings.Contains(defaultTestAccountS2S.Id, config.BaseURL) {
 		if err := saveMetadataForActor(defaultTestAccountS2S, db.(ls.MetadataTyper)); err != nil {
-			l.Critf("%s\n", err)
+			return err
 		}
 	}
 	return nil

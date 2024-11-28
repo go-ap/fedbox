@@ -1006,27 +1006,24 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 			runInstances()
 
 			for _, test := range suite.tests {
-				t.Run(test.label(), func(t *testing.T) {
+				for _, options := range suite.configs {
+					app := suite.apps[vocab.IRI(options.BaseURL)]
 
-					for _, options := range suite.configs {
-						app := suite.apps[vocab.IRI(options.BaseURL)]
-						fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
-						l := lw.Dev(lw.SetLevel(lw.DebugLevel)).WithContext(fields)
+					fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
+					l := lw.Dev(lw.SetLevel(lw.DebugLevel)).WithContext(fields)
 
-						mocks := append(suite.mocks, test.mocks...)
-						if err := saveMocks(mocks, app, l); err != nil {
-							t.Fatalf("%s", err)
-						}
+					mocks := append(suite.mocks, test.mocks...)
+					if err := saveMocks(mocks, app.Config(), app.Storage(), l); err != nil {
+						t.Fatalf("%s", err)
 					}
+				}
 
+				t.Run(test.label(), func(t *testing.T) {
 					errOnRequest(t)(test)
 				})
 			}
 
-			for _, app := range suite.apps {
-				app.Stop()
-				stopFn()
-			}
+			stopFn()
 		})
 
 		for _, options := range suite.configs {
