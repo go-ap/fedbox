@@ -82,6 +82,9 @@ func run(version string) cli.ActionFunc {
 			return err
 		}
 
-		return a.Run(context.Background())
+		ctx, cancelFn := context.WithTimeout(context.Background(), a.Config().TimeOut)
+		defer cancelFn()
+
+		return a.Run(ctx)
 	}
 }

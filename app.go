@@ -47,7 +47,7 @@ type FedBOX struct {
 	stopFn  func(ctx context.Context) error
 }
 
-var emptyStopFn = func(_ context.Context) error {
+var emptyCtxtFn = func(_ context.Context) error {
 	return nil
 }
 
@@ -66,9 +66,11 @@ func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedB
 		conf:    conf,
 		R:       chi.NewRouter(),
 		storage: db,
-		stopFn:  emptyStopFn,
 		logger:  l,
 		caches:  cache.New(conf.RequestCache),
+
+		startFn: emptyCtxtFn,
+		stopFn:  emptyCtxtFn,
 	}
 
 	if metaSaver, ok := db.(st.MetadataTyper); ok {
@@ -188,11 +190,7 @@ func (f *FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
 }
 
 // Run is the wrapper for starting the web-server and handling signals
-func (f *FedBOX) Run(c context.Context) error {
-	// Create a deadline to wait for.
-	ctx, cancelFn := context.WithTimeout(c, f.conf.TimeOut)
-	defer cancelFn()
-
+func (f *FedBOX) Run(ctx context.Context) error {
 	logCtx := lw.Ctx{
 		"URL":      f.conf.BaseURL,
 		"version":  f.version,
@@ -202,6 +200,7 @@ func (f *FedBOX) Run(c context.Context) error {
 
 	logger := f.logger.WithContext(logCtx)
 
+	logger.Infof("Starting")
 	err := w.RegisterSignalHandlers(w.SignalHandlers{
 		syscall.SIGHUP: func(_ chan<- error) {
 			logger.Infof("SIGHUP received, reloading configuration")
@@ -219,14 +218,13 @@ func (f *FedBOX) Run(c context.Context) error {
 		},
 		syscall.SIGQUIT: func(exit chan<- error) {
 			logger.Infof("SIGQUIT received, force stopping with core-dump")
-			cancelFn()
+			f.Stop(ctx)
 			exit <- nil
 		},
 	}).Exec(ctx, f.startFn)
 	if err == nil {
 		logger.Infof("Shutting down")
 	}
-	logger.Infof("Started")
 	return err
 }
 

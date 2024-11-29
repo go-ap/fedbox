@@ -971,11 +971,11 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 	t.Helper()
 
 	for _, suite := range pairs {
-		ctx, stopFn := context.WithCancel(context.TODO())
 
 		name := suite.name
 
 		t.Run(name, func(t *testing.T) {
+			ctx, stopFn := context.WithCancel(context.TODO())
 
 			suite.apps = make(map[vocab.IRI]*fedbox.FedBOX)
 			for _, options := range suite.configs {
