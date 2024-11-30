@@ -66,7 +66,7 @@ func Before(c *cli.Context) error {
 
 func setup(c *cli.Context, l lw.Logger) (*Control, error) {
 	environ := env.Type(c.String("env"))
-	conf, err := config.LoadFromEnv(environ, time.Second)
+	conf, err := config.Load(environ, time.Second)
 	if err != nil {
 		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}

@@ -48,7 +48,7 @@ func run(version string) cli.ActionFunc {
 		w := c.Duration("wait")
 		e := c.String("env")
 
-		conf, err := config.LoadFromEnv(env.Type(e), w)
+		conf, err := config.Load(env.Type(e), w)
 		conf.Profile = c.Bool("profile")
 		conf.Secure = conf.Secure && !conf.Profile
 

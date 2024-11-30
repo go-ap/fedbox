@@ -134,8 +134,7 @@ func Getval(name, def string) string {
 	return val
 }
 
-func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
-	conf := Options{}
+func Load(e env.Type, timeOut time.Duration) (Options, error) {
 	if !env.ValidType(e) {
 		e = env.Type(Getval(KeyENV, ""))
 	}
@@ -156,9 +155,18 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 		appendIfFile(e)
 	}
 	for _, f := range configs {
-		godotenv.Load(f)
+		_ = godotenv.Load(f)
 	}
 
+	opts := LoadFromEnv()
+	opts.Env = e
+	opts.TimeOut = timeOut
+
+	return opts, nil
+}
+
+func LoadFromEnv() Options {
+	conf := Options{}
 	lvl := Getval(KeyLogLevel, "")
 	switch strings.ToLower(lvl) {
 	case "none":
@@ -178,14 +186,11 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	}
 	conf.LogOutput = Getval(KeyLogOutput, "")
 
-	if !env.ValidType(e) {
-		e = env.Type(Getval(KeyENV, "dev"))
-	}
-	conf.Env = e
+	conf.Env = env.Type(Getval(KeyENV, "dev"))
 	if conf.Host == "" {
 		conf.Host = Getval(KeyHostname, conf.Host)
 	}
-	conf.TimeOut = timeOut
+	conf.TimeOut = 0
 	if to, _ := time.ParseDuration(Getval(KeyTimeOut, "")); to > 0 {
 		conf.TimeOut = to
 	}
@@ -229,5 +234,5 @@ func LoadFromEnv(e env.Type, timeOut time.Duration) (Options, error) {
 	conf.KeyPath = normalizeConfigPath(Getval(KeyKeyPath, ""), conf)
 	conf.CertPath = normalizeConfigPath(Getval(KeyCertPath, ""), conf)
 
-	return conf, nil
+	return conf
 }

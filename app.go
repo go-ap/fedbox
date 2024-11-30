@@ -169,7 +169,7 @@ func (f *FedBOX) Stop(ctx context.Context) {
 }
 
 func (f *FedBOX) reload() (err error) {
-	f.conf, err = config.LoadFromEnv(f.conf.Env, f.conf.TimeOut)
+	f.conf, err = config.Load(f.conf.Env, f.conf.TimeOut)
 	f.caches.Delete()
 	return err
 }
