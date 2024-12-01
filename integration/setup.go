@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -20,6 +21,51 @@ import (
 
 type fedboxContainer struct {
 	containers.Container
+}
+
+type cntrs map[string]*fedboxContainer
+
+var defaultFedBOXImage = "localhost/fedbox/app:dev"
+
+func initMocks(ctx context.Context, suites ...string) (cntrs, error) {
+	m := make(cntrs)
+
+	for _, name := range suites {
+		storage := filepath.Join(".", "mocks", name)
+		env := filepath.Join(storage, ".env")
+
+		c, err := Run(ctx, defaultFedBOXImage, WithEnvFile(env), WithStorage(storage))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize container %s: %w", name, err)
+		}
+		//i, err := c.Inspect(ctx)
+		//if err != nil {
+		//	return nil, fmt.Errorf("unable to inspect container %s: %w", name, err)
+		//}
+		m[name] = c
+	}
+
+	return m, nil
+}
+
+func (m cntrs) cleanup(t *testing.T) {
+	for _, mm := range m {
+		containers.CleanupContainer(t, mm.Container)
+	}
+}
+
+func (m cntrs) Req(ctx context.Context, met, u string, body io.Reader) (*http.Request, error) {
+	uu, err := url.Parse(u)
+	if err != nil {
+		return nil, fmt.Errorf("received invalid url: %w", err)
+	}
+
+	fc, ok := m[uu.Host]
+	if !ok {
+		return nil, fmt.Errorf("no matching mock instance for the url: %s", u)
+	}
+
+	return fc.Req(ctx, met, u, body)
 }
 
 func (fc *fedboxContainer) Req(ctx context.Context, met, u string, body io.Reader) (*http.Request, error) {
@@ -157,7 +203,7 @@ func WithStorage(storage string) containers.CustomizeRequestOption {
 		}
 		cf := containers.ContainerFile{
 			HostFilePath:      path,
-			ContainerFilePath: filepath.Join("/storage", strings.ReplaceAll(path, storage, "")),
+			ContainerFilePath: filepath.Join("/storage", strings.ReplaceAll(path, "mocks", "")),
 			FileMode:          0o755,
 		}
 		files = append(files, cf)
