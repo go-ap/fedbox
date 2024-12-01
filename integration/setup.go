@@ -2,7 +2,11 @@ package integration
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"io/fs"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,11 +20,40 @@ import (
 
 type fedboxContainer struct {
 	containers.Container
-	ServiceURL string
+}
+
+func (fc *fedboxContainer) Req(ctx context.Context, met, u string, body io.Reader) (*http.Request, error) {
+	uu, err := url.Parse(u)
+	if err != nil {
+		return nil, fmt.Errorf("received invalid url: %w", err)
+	}
+	//in, _ := fc.Inspect(ctx)
+
+	host, err := fc.Endpoint(ctx, "https")
+	if err != nil {
+		return nil, fmt.Errorf("unable to compose container end-point: %w", err)
+	}
+	uh, err := url.Parse(host)
+	if err != nil {
+		return nil, fmt.Errorf("invalid container url: %w", err)
+	}
+
+	origHost := uu.Host
+	uu.Host = uh.Host
+
+	u = uu.String()
+
+	r, err := http.NewRequestWithContext(ctx, met, u, body)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create request: %w", err)
+	}
+	r.Host = origHost
+
+	return r, nil
 }
 
 // Run creates an instance of the FedBOX container type
-func Run(ctx context.Context, image string, opts ...containers.ContainerCustomizer) (containers.Container, error) {
+func Run(ctx context.Context, image string, opts ...containers.ContainerCustomizer) (*fedboxContainer, error) {
 	req := containers.ContainerRequest{
 		Image: image,
 		LogConsumerCfg: &containers.LogConsumerConfig{
@@ -44,13 +77,14 @@ func Run(ctx context.Context, image string, opts ...containers.ContainerCustomiz
 
 	fc, err := containers.GenericContainer(ctx, rreq)
 	if err != nil {
-		return fc, err
+		return nil, err
 	}
+	f := fedboxContainer{Container: fc}
 
-	if err = fc.Start(ctx); err != nil {
-		return fc, err
+	if err = f.Start(ctx); err != nil {
+		return &f, err
 	}
-	return fc, nil
+	return &f, nil
 }
 
 var envKeys = []string{

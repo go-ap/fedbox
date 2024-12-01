@@ -2,14 +2,19 @@ package integration
 
 import (
 	"context"
-	"github.com/go-ap/client"
-	containers "github.com/testcontainers/testcontainers-go"
+	"crypto/tls"
 	"net/http"
 	"path/filepath"
 	"testing"
+
+	containers "github.com/testcontainers/testcontainers-go"
 )
 
 var defaultFedBOXImage = "localhost/fedbox/app:dev"
+
+var httpClient = http.Client{
+	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+}
 
 func Test_Fetch(t *testing.T) {
 	storage := filepath.Join(".", "mocks", "c2s")
@@ -21,18 +26,15 @@ func Test_Fetch(t *testing.T) {
 	}
 	defer containers.CleanupContainer(t, fc)
 
-	host, err := fc.Endpoint(ctx, "https")
+	req, err := fc.Req(ctx, http.MethodGet, "https://fedbox", nil)
 	if err != nil {
-		t.Fatalf("error: %s", err)
+		t.Fatalf("unable to get container request: %s", err)
 	}
-
-	cl := client.New(client.SkipTLSValidation(true))
-
-	r, err := cl.Get(host)
+	r, err := httpClient.Do(req)
 	if err != nil {
 		t.Fatalf("Err received: %s", err)
 	}
-	//time.Sleep(time.Minute)
+
 	if r.StatusCode != http.StatusOK {
 		t.Errorf("Invalid status received %d, expected %d", r.StatusCode, http.StatusOK)
 	}
