@@ -17,9 +17,11 @@ import (
 
 const defaultTimeout = time.Millisecond * 500
 
+const AppName = "fedbox"
+
 func NewApp(version string) *cli.App {
 	return &cli.App{
-		Name:    "fedbox",
+		Name:    AppName,
 		Usage:   "fedbox instance server",
 		Version: version,
 		Flags: []cli.Flag{
@@ -51,6 +53,7 @@ func run(version string) cli.ActionFunc {
 		conf, err := config.Load(env.Type(e), w)
 		conf.Profile = c.Bool("profile")
 		conf.Secure = conf.Secure && !conf.Profile
+		conf.AppName = c.App.Name
 
 		if err != nil {
 			return err
