@@ -14,18 +14,18 @@ import (
 
 const (
 	developerURL = vocab.IRI("https://github.com/mariusor")
-	projectURL   = vocab.IRI("https://github.com/go-ap/fedbox")
+	ProjectURL   = vocab.IRI("https://github.com/go-ap/fedbox")
 )
 
 func Self(baseURL vocab.IRI) vocab.Service {
-	url, _ := baseURL.URL()
-	oauth := *url
+	u, _ := baseURL.URL()
+	oauth := *u
 	oauth.Path = path.Join(oauth.Path, "oauth/")
 	s := vocab.Service{
 		ID:           baseURL,
 		Type:         vocab.ServiceType,
 		Name:         vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef("self")),
-		Context:      projectURL,
+		Context:      ProjectURL,
 		AttributedTo: developerURL,
 		Audience:     vocab.ItemCollection{vocab.PublicNS},
 		Content:      nil, //vocab.NaturalLanguageValues{{Ref: vocab.NilLangRef, Value: ""}},
@@ -74,8 +74,8 @@ func LoadActor(st processing.ReadStore, iri vocab.IRI) (vocab.Actor, error) {
 
 // GenerateID generates an unique identifier for the it ActivityPub Object.
 func GenerateID(it vocab.Item, partOf vocab.IRI, by vocab.Item) (vocab.ID, error) {
-	uuid := uuid.New()
-	id := partOf.GetLink().AddPath(uuid)
+	uid := uuid.New()
+	id := partOf.GetLink().AddPath(uid)
 	typ := it.GetType()
 	if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
 		err := vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
@@ -88,7 +88,7 @@ func GenerateID(it vocab.Item, partOf vocab.IRI, by vocab.Item) (vocab.ID, error
 			if !vocab.IsNil(by) {
 				// if "it" is not a public activity, save it to its actor Outbox instead of the global activities collection
 				outbox := vocab.Outbox.IRI(by)
-				id = vocab.ID(fmt.Sprintf("%s/%s", outbox, uuid))
+				id = vocab.ID(fmt.Sprintf("%s/%s", outbox, uid))
 			}
 			return nil
 		})

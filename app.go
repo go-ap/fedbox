@@ -2,11 +2,13 @@ package fedbox
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"syscall"
 
+	cache2 "git.sr.ht/~mariusor/cache"
 	"git.sr.ht/~mariusor/lw"
 	w "git.sr.ht/~mariusor/wrapper"
 	vocab "github.com/go-ap/activitypub"
@@ -107,9 +109,19 @@ func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedB
 		}
 	}
 
+	cachePath, err := os.UserCacheDir()
+	if err != nil {
+		cachePath = os.TempDir()
+	}
+	client.UserAgent = fmt.Sprintf("%s/%s (+%s)", conf.BaseURL, ver, ap.ProjectURL)
+	baseClient := &http.Client{
+		Transport: cache2.Private(nil, cache2.FS(filepath.Join(cachePath, conf.AppName))),
+	}
 	app.client = *client.New(
 		client.WithLogger(l.WithContext(lw.Ctx{"log": "client"})),
 		client.SkipTLSValidation(!conf.Env.IsProd()),
+		client.WithHTTPClient(baseClient),
+		client.SetDefaultHTTPClient(),
 	)
 
 	app.R.Group(app.Routes())

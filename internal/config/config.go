@@ -27,6 +27,7 @@ type BackendConfig struct {
 }
 
 type Options struct {
+	AppName            string
 	Env                env.Type
 	LogLevel           lw.Level
 	LogOutput          string
@@ -110,6 +111,9 @@ func (o Options) BaseStoragePath() string {
 		panic(err)
 	}
 	fi, err = os.Stat(basePath)
+	if err != nil {
+		panic(err)
+	}
 	if !fi.IsDir() {
 		panic(errors.NotValidf("path %s is invalid for storage", basePath))
 	}
@@ -159,6 +163,7 @@ func Load(e env.Type, timeOut time.Duration) (Options, error) {
 	}
 
 	opts := LoadFromEnv()
+	opts.AppName = strings.Trim(Prefix, "_")
 	opts.Env = e
 	opts.TimeOut = timeOut
 
