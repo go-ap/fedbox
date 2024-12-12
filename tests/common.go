@@ -16,7 +16,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime/debug"
 	"sort"
@@ -105,14 +104,13 @@ type testAccount struct {
 }
 
 type testReq struct {
-	met      string
-	url      string
-	urlFn    func() string
-	headers  http.Header
-	account  *testAccount
-	clientID string
-	bodyFn   func() (string, error)
-	body     string
+	met     string
+	url     string
+	urlFn   func() string
+	headers http.Header
+	account *testAccount
+	bodyFn  func() (string, error)
+	body    string
 }
 
 func (t testPair) label() string {
@@ -321,13 +319,10 @@ func CollectionURL(orig string, qq ...url.Values) string {
 }
 
 const (
-	serviceHash = "d3ab037c-0f15-4c09-b635-3d6e201c11aa"
-
 	testAppHash = "23767f95-8ea0-40ba-a6ef-b67284e1cdb1"
 
 	testActorHash   = "e869bdca-dd5e-4de7-9c5d-37845eccc6a1"
 	testActorHandle = "johndoe"
-	testActorPem    = ""
 
 	extraActorHash   = "58e877c7-067f-4842-960b-3896d76aa4ed"
 	extraActorHandle = "extra"
@@ -338,17 +333,9 @@ const (
 
 var (
 	apiURL = "http://127.0.0.1:9998"
-	apiIRI = vocab.IRI(apiURL)
-
-	authCallbackURL = fmt.Sprintf("%s/auth/local/callback", apiURL)
-	inboxURL        = InboxURL(&service)
-	outboxURL       = OutboxURL(&service)
-	baseURL         = service.Id
 
 	edKey  = loadPrivateKeyFromDisk("mocks/keys/ed25519.prv")
 	rsaKey = loadPrivateKeyFromDisk("mocks/keys/rsa256.prv")
-
-	meta any = nil
 
 	service = testAccount{Id: apiURL}
 
@@ -378,14 +365,6 @@ var (
 		Id:   fmt.Sprintf("http://%s/actors/%s", host, testAppHash),
 		Hash: testAppHash,
 	}
-
-	selfAccount = testAccount{
-		Id:     fmt.Sprintf("http://%s/", host),
-		Hash:   serviceHash,
-		Handle: "self",
-	}
-
-	lastActivity = &objectVal{}
 )
 
 type assertFn func(v bool, msg string, args ...any)
@@ -707,8 +686,8 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 					)
 				foundItem:
 					for k, testIt := range tVal.items {
-						url, _ := url.Parse(tVal.id)
-						iri := fmt.Sprintf("%s%s/%s", apiURL, url.Path, k)
+						u, _ := url.Parse(tVal.id)
+						iri := fmt.Sprintf("%s%s/%s", apiURL, u.Path, k)
 						for _, it := range items {
 							switch act := it.(type) {
 							case map[string]any:
@@ -817,7 +796,7 @@ func signRequest(req *http.Request, acc *testAccount) error {
 	date, _ := time.Parse(time.RFC3339, "2019-01-23T01:23:45Z")
 	req.Header.Set("Date", date.UTC().Format(http.TimeFormat))
 
-	if path.Base(req.URL.Path) == "inbox" {
+	if filepath.Base(req.URL.Path) == "inbox" {
 		return addHTTPSigAuth(req, acc)
 	}
 	return addOAuth2Auth(req, acc)
@@ -846,7 +825,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]any {
 			assertGetRequest := errNotOKGetRequest(t)
 			assertObjectProperties := errOnObjectProperties(t)
 			if len(test.req.headers) == 0 {
-				test.req.headers = make(http.Header, 0)
+				test.req.headers = make(http.Header)
 				test.req.headers.Set("User-Agent", UserAgent)
 
 				test.req.headers.Set("Cache-Control", "no-cache")
@@ -876,7 +855,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]any {
 			if test.req.headers.Get("Host") == "" {
 				test.req.headers.Set("Host", hostFromUrl(test.req.url))
 			}
-			isClientRequest := path.Base(test.req.url) == string(vocab.Outbox)
+			isClientRequest := filepath.Base(test.req.url) == string(vocab.Outbox)
 			ctx := context.Background()
 			req, err := http.NewRequestWithContext(ctx, test.req.met, test.req.url, bytes.NewReader(body))
 			assertTrue(err == nil, "Error: unable to create request: %s", err)
@@ -916,7 +895,6 @@ func errOnRequest(t *testing.T) func(testPair) map[string]any {
 						test.act = &objectVal{
 							id: newObjURL,
 						}
-						lastActivity = test.act
 						if test.res.val == nil {
 							test.res.val = &objectVal{}
 						}
