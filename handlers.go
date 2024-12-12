@@ -105,19 +105,28 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.NotFoundf("%s not found", typ)
 		}
 
-		if !fromCache {
-			fb.caches.Store(cacheKey, it)
-		}
-
 		var col vocab.CollectionInterface
 		err = vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
-			for _, it := range c.Collection() {
-				// Remove bcc and bto
-				vocab.CleanRecipients(it)
-			}
 			col = c
 			return nil
 		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, ob := range col.Collection() {
+			// Remove bcc and bto
+			vocab.CleanRecipients(ob)
+		}
+
+		if !fromCache {
+			fb.caches.Store(cacheKey, col)
+		} else {
+			// NOTE(marius): signal the [processing.CollectionHandlerFn]
+			// that the collection was loaded from cache.
+			err = processing.NotModified
+		}
+
 		return col, err
 	}
 }
@@ -295,9 +304,13 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 
 		if !fromCache {
 			fb.caches.Store(cacheKey, it)
+		} else {
+			// NOTE(marius): signal the [processing.CollectionHandlerFn]
+			// that the collection was loaded from cache.
+			err = processing.NotModified
 		}
 
 		// Remove bcc and bto
-		return vocab.CleanRecipients(it), nil
+		return vocab.CleanRecipients(it), err
 	}
 }
