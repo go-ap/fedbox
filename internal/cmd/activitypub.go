@@ -610,14 +610,14 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 			}
 			start := time.Now()
 			count := 0
-			vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
+			_ = vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
 				for _, it := range c.Collection() {
 					typ := it.GetType()
 					fmt.Printf("Saving %s\n", it.GetID())
 
 					var err error
 					if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
-						vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
+						_ = vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
 							if a == nil {
 								Errf("invalid activity, is nil: %s", it.GetLink())
 								return nil

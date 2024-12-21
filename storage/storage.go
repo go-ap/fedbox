@@ -22,6 +22,7 @@ type clientLister interface {
 }
 
 type FullStorage interface {
+	Open() error
 	clientSaver
 	clientLister
 	processing.Store

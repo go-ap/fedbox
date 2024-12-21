@@ -930,21 +930,23 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 	return test.res.val.id != "" && test.res.val.id != req.URL.String()
 }
 
-func cleanupTestPairs(pairs testPairs, t *testing.T) {
-	if t.Failed() {
-		return
-	}
-	for _, suite := range pairs {
-		for _, options := range suite.configs {
-			// NOTE(marius): we removed the deferred app.Stop(),
-			// to avoid race conditions when running multiple FedBOX instances for the federated tests
-			cleanDB(t, options)
+func cleanupTestPairs(pairs testPairs, t *testing.T) func() {
+	return func() {
+		if t.Failed() {
+			return
+		}
+		for _, suite := range pairs {
+			for _, options := range suite.configs {
+				// NOTE(marius): we removed the deferred app.Stop(),
+				// to avoid race conditions when running multiple FedBOX instances for the federated tests
+				cleanDB(t, options)
+			}
 		}
 	}
 }
 
 func runTestSuite(t *testing.T, pairs testPairs) {
-	defer cleanupTestPairs(pairs, t)
+	t.Cleanup(cleanupTestPairs(pairs, t))
 
 	t.Helper()
 

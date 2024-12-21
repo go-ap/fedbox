@@ -69,8 +69,6 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.NotFoundf("collection '%s' not found", typ)
 		}
 
-		repo := fb.storage
-
 		// NOTE(marius): this is the main collection page, let's redirect to its first page.
 		//
 		// This would avoid clients having to parse the first page twice when
@@ -97,6 +95,7 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			fil := filters.Checks{filters.Authorized(fb.actorFromRequest(r).ID)}
 			fil = append(fil, filters.FromValues(r.URL.Query())...)
 
+			repo := fb.storage
 			if it, err = repo.Load(iri, fil...); err != nil {
 				return nil, err
 			}
@@ -191,7 +190,6 @@ func CacheKey(fb FedBOX, r http.Request) vocab.IRI {
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
-		repo := fb.storage
 		var it vocab.Item
 		fb.infFn("received req %s: %s", r.Method, r.RequestURI)
 
@@ -222,6 +220,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		fb.client.SignFn(s2sSignFn(signActorID, fb.storage, fb.logger))
 		auth := fb.actorFromRequest(r)
 
+		repo := fb.storage
 		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
 		baseIRI := vocab.IRI(fb.Config().BaseURL)
 		processor := processing.New(
@@ -266,8 +265,6 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 // that returns a single ActivityPub object
 func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 	return func(r *http.Request) (vocab.Item, error) {
-		repo := fb.storage
-
 		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
 
 		cacheKey := CacheKey(fb, *r)
@@ -277,14 +274,16 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 
 		what := r.URL.Path
 
-		var err error
 		if !fromCache {
+			repo := fb.storage
+			var err error
 			var f filters.Check
 			f = filters.Authorized(fb.actorFromRequest(r).ID)
 			if it, err = repo.Load(iri, f); err != nil {
 				return nil, errors.NotFoundf("%s was not found", what)
 			}
 		}
+		var err error
 		if vocab.IsItemCollection(it) {
 			err = vocab.OnCollectionIntf(it, func(col vocab.CollectionInterface) error {
 				if col.Count() == 0 {

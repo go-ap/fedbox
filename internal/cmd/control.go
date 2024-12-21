@@ -31,6 +31,7 @@ func New(db st.FullStorage, conf config.Options, l lw.Logger) (*Control, error) 
 	if err != nil {
 		return nil, err
 	}
+
 	return &Control{
 		Conf:    conf,
 		Service: self,
