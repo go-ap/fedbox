@@ -29,7 +29,7 @@ type Control struct {
 func New(db st.FullStorage, conf config.Options, l lw.Logger) (*Control, error) {
 	self, err := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
 	if err != nil {
-		return nil, err
+		l.Warnf("unable to load actor: %s", err)
 	}
 
 	return &Control{
@@ -52,7 +52,7 @@ func Before(c *cli.Context) error {
 	if c.Bool("verbose") {
 		logLevel = lw.DebugLevel
 	}
-	logger := lw.Dev(lw.SetLevel(logLevel), lw.SetOutput(os.Stdout))
+	logger := lw.Dev(lw.SetLevel(logLevel))
 	ct, err := setup(c, logger.WithContext(fields))
 	if err != nil {
 		// Ensure we don't print the default help message, which is not useful here

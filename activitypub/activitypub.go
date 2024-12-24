@@ -72,7 +72,7 @@ func LoadActor(st processing.ReadStore, iri vocab.IRI) (vocab.Actor, error) {
 	return act, err
 }
 
-// GenerateID generates an unique identifier for the it ActivityPub Object.
+// GenerateID generates a unique identifier for the 'it' [vocab.Item].
 func GenerateID(it vocab.Item, partOf vocab.IRI, by vocab.Item) (vocab.ID, error) {
 	uid := uuid.New()
 	id := partOf.GetLink().AddPath(uid)

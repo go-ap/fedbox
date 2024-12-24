@@ -13,8 +13,6 @@ STORAGE_PATH ?= $(shell realpath .cache)
 STORAGE_OBJECTS = $(STORAGE_PATH)/objects
 TAG ?= $(ENV)
 
-BUILD_CMD=buildah bud
-RUN_CMD=podman run
 TAG_CMD=podman tag
 PUSH_CMD=podman push
 
@@ -22,7 +20,7 @@ ifneq ($(STORAGE),all)
 	TAG=$(ENV)-$(STORAGE)
 endif
 
-.PHONY: clean build builder run push cert
+.PHONY: clean build builder push cert
 
 $(FEDBOX_HOSTNAME).pem:
 	./gen-certs.sh $(FEDBOX_HOSTNAME)
