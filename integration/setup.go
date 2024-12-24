@@ -2,7 +2,9 @@ package integration
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/docker/docker/pkg/stdcopy"
 	"io"
 	"io/fs"
 	"net/http"
@@ -31,7 +33,7 @@ func initMocks(ctx context.Context, suites ...string) (cntrs, error) {
 	m := make(cntrs)
 
 	for _, name := range suites {
-		storage := filepath.Join(".", "mocks", name)
+		storage := filepath.Join(".", "mocks")
 		env := filepath.Join(storage, ".env")
 
 		c, err := Run(ctx, defaultFedBOXImage, WithEnvFile(env), WithStorage(storage))
@@ -106,7 +108,7 @@ func Run(ctx context.Context, image string, opts ...containers.ContainerCustomiz
 			Opts:      []containers.LogProductionOption{containers.WithLogProductionTimeout(10 * time.Second)},
 			Consumers: []containers.LogConsumer{new(containers.StdoutLogConsumer)},
 		},
-		WaitingFor: wait.ForLog("Started").WithStartupTimeout(2 * time.Second),
+		WaitingFor: wait.ForLog("Starting").WithStartupTimeout(500 * time.Millisecond),
 	}
 
 	rreq := containers.GenericContainerRequest{
@@ -130,7 +132,26 @@ func Run(ctx context.Context, image string, opts ...containers.ContainerCustomiz
 	if err = f.Start(ctx); err != nil {
 		return &f, err
 	}
-	return &f, nil
+
+	initializers := [][]string{
+		{"fedboxctl", "--env", "dev", "bootstrap"},
+		{"fedboxctl", "--env", "dev", "pub", "import", "/storage/import.json"},
+	}
+	eerrs := make([]error, 0)
+	for _, cmd := range initializers {
+		st, out, err := f.Exec(ctx, cmd)
+		if err != nil {
+			eerrs = append(eerrs, err)
+		}
+		if st != 0 {
+			// command didn't return success.
+		}
+
+		if _, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out); err != nil {
+			eerrs = append(eerrs, err)
+		}
+	}
+	return &f, errors.Join(eerrs...)
 }
 
 var envKeys = []string{

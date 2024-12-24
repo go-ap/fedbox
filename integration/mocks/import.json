@@ -1,0 +1,50 @@
+[
+  {
+    "id": "https://fedbox/objects/0",
+    "name": "#sysop",
+    "attributedTo": "https://fedbox",
+    "to": ["https://www.w3.org/ns/activitystreams#Public"]
+  },
+  {
+    "@context": "https://www.w3.org/ns/activitystreams",
+    "id": "https://fedbox/actors/1",
+    "type": "Person",
+    "attributedTo": "https://fedbox",
+    "audience": ["https://www.w3.org/ns/activitystreams#Public"],
+    "generator": "https://fedbox",
+    "url": "https://fedbox/actors/1",
+    "inbox": "https://fedbox/actors/1/inbox",
+    "outbox": "https://fedbox/actors/1/outbox",
+    "preferredUsername": "admin",
+    "tag": [
+      {
+        "id": "https://fedbox/objects/0",
+        "name": "#sysop",
+        "attributedTo": "https://fedbox",
+        "to": ["https://www.w3.org/ns/activitystreams#Public"]
+      }
+    ],
+    "endpoints": {
+      "oauthAuthorizationEndpoint": "https://fedbox/actors/1/oauth/authorize",
+      "oauthTokenEndpoint": "https://fedbox/actors/1/oauth/token",
+      "sharedInbox": "https://fedbox/inbox"
+    }
+  },
+  {
+    "@context": "https://www.w3.org/ns/activitystreams",
+    "id": "https://fedbox/objects/1",
+    "type": "Note",
+    "attributedTo": "https://fedbox/actors/1",
+    "content": "<p>Hello</p><code>FedBOX</code>!</p>\n",
+    "mediaType": "text/html",
+    "published": "2019-09-27T14:26:43.235793852Z",
+    "updated": "2019-09-27T14:26:43.235793852Z",
+    "to": [
+      "https://www.w3.org/ns/activitystreams#Public"
+    ],
+    "source": {
+      "content": "Hello `FedBOX`!",
+      "mediaType": "text/markdown"
+    }
+  }
+]
