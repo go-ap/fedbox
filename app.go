@@ -191,8 +191,16 @@ func (f *FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
 	isLocalFn := func(iri vocab.IRI) bool {
 		return iri.Contains(vocab.IRI(f.conf.BaseURL), true)
 	}
-	ar := auth.ClientResolver(&f.client, auth.SolverWithLogger(f.logger),
-		auth.SolverWithStorage(f.storage), auth.SolverWithLocalIRIFn(isLocalFn))
+
+	var logFn auth.LoggerFn = func(ctx lw.Ctx, msg string, p ...interface{}) {
+		f.logger.WithContext(ctx).Debugf(msg, p...)
+	}
+
+	ar := auth.ClientResolver(&f.client,
+		auth.SolverWithLogger(logFn),
+		auth.SolverWithStorage(f.storage),
+		auth.SolverWithLocalIRIFn(isLocalFn),
+	)
 	act, err := ar.LoadActorFromRequest(r)
 
 	if err != nil {
