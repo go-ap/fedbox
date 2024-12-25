@@ -29,22 +29,31 @@ type cntrs map[string]*fedboxContainer
 
 var defaultFedBOXImage = "localhost/fedbox/app:dev"
 
-func initMocks(ctx context.Context, suites ...string) (cntrs, error) {
+type suite struct {
+	name    string
+	storage string
+}
+
+func initMocks(ctx context.Context, suites ...suite) (cntrs, error) {
 	m := make(cntrs)
 
-	for _, name := range suites {
+	for _, s := range suites {
 		storage := filepath.Join(".", "mocks")
 		env := filepath.Join(storage, ".env")
 
-		c, err := Run(ctx, defaultFedBOXImage, WithEnvFile(env), WithStorage(storage))
+		img := defaultFedBOXImage
+		if s.storage != "" {
+			img += "-" + s.storage
+		}
+		c, err := Run(ctx, img, WithEnvFile(env), WithStorage(storage))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize container %s: %w", name, err)
+			return nil, fmt.Errorf("unable to initialize container %s: %w", s.name, err)
 		}
 		//i, err := c.Inspect(ctx)
 		//if err != nil {
 		//	return nil, fmt.Errorf("unable to inspect container %s: %w", name, err)
 		//}
-		m[name] = c
+		m[s.name] = c
 	}
 
 	return m, nil

@@ -46,7 +46,7 @@ func Test_Fetch(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	mocks, err := initMocks(ctx, "fedbox")
+	mocks, err := initMocks(ctx, suite{name: "fedbox"})
 	if err != nil {
 		t.Fatalf("unable to initialize containers: %s", err)
 	}
