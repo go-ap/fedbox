@@ -39,9 +39,7 @@
     "mediaType": "text/html",
     "published": "2019-09-27T14:26:43.235793852Z",
     "updated": "2019-09-27T14:26:43.235793852Z",
-    "to": [
-      "https://www.w3.org/ns/activitystreams#Public"
-    ],
+    "to": ["https://www.w3.org/ns/activitystreams#Public"],
     "source": {
       "content": "Hello `FedBOX`!",
       "mediaType": "text/markdown"
