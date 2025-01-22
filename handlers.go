@@ -225,7 +225,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		baseIRI := vocab.IRI(fb.Config().BaseURL)
 		processor := processing.New(
 			processing.WithIRI(baseIRI, InternalIRI),
-			processing.WithClient(&fb.client),
+			processing.WithClient(fb.client),
 			processing.WithStorage(repo),
 			processing.WithLogger(l),
 			processing.WithIDGenerator(GenerateID(baseIRI)),

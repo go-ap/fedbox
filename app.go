@@ -37,7 +37,7 @@ type FedBOX struct {
 	R       chi.Router
 	conf    config.Options
 	self    vocab.Service
-	client  client.C
+	client  *client.C
 	storage st.FullStorage
 	version string
 	caches  canStore
@@ -115,12 +115,12 @@ func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedB
 	}
 	client.UserAgent = fmt.Sprintf("%s/%s (+%s)", conf.BaseURL, ver, ap.ProjectURL)
 	baseClient := &http.Client{
-		Transport: cache2.Private(nil, cache2.FS(filepath.Join(cachePath, conf.AppName))),
+		Transport: cache2.Private(&http.Transport{}, cache2.FS(filepath.Join(cachePath, conf.AppName))),
 	}
-	app.client = *client.New(
+	app.client = client.New(
 		client.WithLogger(l.WithContext(lw.Ctx{"log": "client"})),
-		client.SkipTLSValidation(!conf.Env.IsProd()),
 		client.WithHTTPClient(baseClient),
+		client.SkipTLSValidation(!conf.Env.IsProd()),
 		client.SetDefaultHTTPClient(),
 	)
 
@@ -196,7 +196,7 @@ func (f *FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
 		f.logger.WithContext(ctx).Debugf(msg, p...)
 	}
 
-	ar := auth.ClientResolver(&f.client,
+	ar := auth.ClientResolver(f.client,
 		auth.SolverWithLogger(logFn),
 		auth.SolverWithStorage(f.storage),
 		auth.SolverWithLocalIRIFn(isLocalFn),
