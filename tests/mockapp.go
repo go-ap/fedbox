@@ -160,7 +160,6 @@ func saveMocks(testData []string, config config.Options, db ls.FullStorage, l lw
 	}
 
 	o, _ := cmd.New(db, config, l)
-
 	if strings.Contains(defaultTestAccountC2S.Id, config.BaseURL) {
 		if err := saveMetadataForActor(defaultTestAccountC2S, db.(ls.MetadataTyper)); err != nil {
 			return err
@@ -214,6 +213,8 @@ func getTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
 	if options.Storage == "all" {
 		options.Storage = config.StorageFS
 	}
+	options.AppName = "fedbox/integration-tests"
+	options.Version = "HEAD"
 
 	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
 
@@ -223,7 +224,7 @@ func getTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
 		return nil, err
 	}
 
-	a, err := fedbox.New(l, "HEAD", options, db)
+	a, err := fedbox.New(l, options, db)
 	if err != nil {
 		return nil, err
 	}

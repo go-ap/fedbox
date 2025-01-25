@@ -54,6 +54,7 @@ func run(version string) cli.ActionFunc {
 		conf.Profile = c.Bool("profile")
 		conf.Secure = conf.Secure && !conf.Profile
 		conf.AppName = c.App.Name
+		conf.Version = version
 
 		if err != nil {
 			return err
@@ -79,7 +80,7 @@ func run(version string) cli.ActionFunc {
 		if err != nil {
 			l.Errorf("Unable to initialize storage backend: %s", err)
 		}
-		a, err := fedbox.New(l.WithContext(lw.Ctx{"log": "fedbox"}), version, conf, db)
+		a, err := fedbox.New(l.WithContext(lw.Ctx{"log": "fedbox"}), conf, db)
 		if err != nil {
 			l.Errorf("Unable to initialize: %s", err)
 			return err

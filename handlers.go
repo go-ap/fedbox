@@ -1,6 +1,7 @@
 package fedbox
 
 import (
+	"crypto"
 	"io"
 	"net/http"
 	"net/url"
@@ -11,6 +12,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/cache"
 	"github.com/go-ap/client"
+	"github.com/go-ap/client/s2s"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	st "github.com/go-ap/fedbox/storage"
@@ -187,6 +189,10 @@ func CacheKey(fb FedBOX, r http.Request) vocab.IRI {
 	return vocab.IRI(reqURL(r, fb.conf.Secure))
 }
 
+type keyStorage interface {
+	LoadKey(vocab.IRI) (crypto.PrivateKey, error)
+}
+
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
@@ -217,15 +223,25 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		if maybeActorID, col := vocab.Split(receivedIn); filters.ValidCollection(col) {
 			signActorID = maybeActorID
 		}
-		fb.client.SignFn(s2sSignFn(signActorID, fb.storage, fb.logger))
-		auth := fb.actorFromRequest(r)
+
+		var tr http.RoundTripper = &http.Transport{}
+		if keyStore, ok := fb.storage.(keyStorage); ok {
+			if prv, _ := keyStore.LoadKey(signActorID); prv != nil {
+				s2sT := s2s.S2SWrapTransport(http.DefaultTransport, &fb.self, prv)
+				tr = &s2sT
+			}
+		}
+
+		apCl := Client(tr, fb.conf, fb.logger)
+		auth := fb.actorFromRequestWithClient(r, apCl)
 
 		repo := fb.storage
 		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
+
 		baseIRI := vocab.IRI(fb.Config().BaseURL)
 		processor := processing.New(
 			processing.WithIRI(baseIRI, InternalIRI),
-			processing.WithClient(fb.client),
+			processing.WithClient(apCl),
 			processing.WithStorage(repo),
 			processing.WithLogger(l),
 			processing.WithIDGenerator(GenerateID(baseIRI)),

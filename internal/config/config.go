@@ -28,6 +28,7 @@ type BackendConfig struct {
 
 type Options struct {
 	AppName            string
+	Version            string
 	Env                env.Type
 	LogLevel           lw.Level
 	LogOutput          string

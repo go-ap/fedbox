@@ -37,9 +37,7 @@ type FedBOX struct {
 	R       chi.Router
 	conf    config.Options
 	self    vocab.Service
-	client  *client.C
 	storage st.FullStorage
-	version string
 	caches  canStore
 	logger  lw.Logger
 
@@ -55,8 +53,31 @@ var emptyCtxtFn = func(_ context.Context) error {
 
 var InternalIRI = vocab.IRI("https://fedbox/")
 
+func Client(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
+	cachePath, err := os.UserCacheDir()
+	if err != nil {
+		cachePath = os.TempDir()
+	}
+
+	if tr == nil {
+		tr = &http.Transport{}
+	}
+
+	client.UserAgent = fmt.Sprintf("%s/%s (+%s)", conf.BaseURL, conf.Version, ap.ProjectURL)
+	baseClient := &http.Client{
+		Transport: cache2.Private(tr, cache2.FS(filepath.Join(cachePath, conf.AppName))),
+	}
+
+	return client.New(
+		client.WithLogger(l.WithContext(lw.Ctx{"log": "client"})),
+		client.WithHTTPClient(baseClient),
+		client.SkipTLSValidation(!conf.Env.IsProd()),
+		client.SetDefaultHTTPClient(),
+	)
+}
+
 // New instantiates a new FedBOX instance
-func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedBOX, error) {
+func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 	if db == nil {
 		return nil, errors.Newf("invalid storage")
 	}
@@ -64,7 +85,6 @@ func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedB
 		return nil, errors.Newf("invalid empty BaseURL config")
 	}
 	app := FedBOX{
-		version: ver,
 		conf:    conf,
 		R:       chi.NewRouter(),
 		storage: db,
@@ -108,21 +128,6 @@ func New(l lw.Logger, ver string, conf config.Options, db st.FullStorage) (*FedB
 			}
 		}
 	}
-
-	cachePath, err := os.UserCacheDir()
-	if err != nil {
-		cachePath = os.TempDir()
-	}
-	client.UserAgent = fmt.Sprintf("%s/%s (+%s)", conf.BaseURL, ver, ap.ProjectURL)
-	baseClient := &http.Client{
-		Transport: cache2.Private(&http.Transport{}, cache2.FS(filepath.Join(cachePath, conf.AppName))),
-	}
-	app.client = client.New(
-		client.WithLogger(l.WithContext(lw.Ctx{"log": "client"})),
-		client.WithHTTPClient(baseClient),
-		client.SkipTLSValidation(!conf.Env.IsProd()),
-		client.SetDefaultHTTPClient(),
-	)
 
 	app.R.Group(app.Routes())
 
@@ -186,7 +191,7 @@ func (f *FedBOX) reload() (err error) {
 	return err
 }
 
-func (f *FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
+func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C) vocab.Actor {
 	// NOTE(marius): if the storage is nil, we can still use the remote client in the load function
 	isLocalFn := func(iri vocab.IRI) bool {
 		return iri.Contains(vocab.IRI(f.conf.BaseURL), true)
@@ -196,24 +201,29 @@ func (f *FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
 		f.logger.WithContext(ctx).Debugf(msg, p...)
 	}
 
-	ar := auth.ClientResolver(f.client,
+	ar := auth.ClientResolver(cl,
 		auth.SolverWithLogger(logFn),
 		auth.SolverWithStorage(f.storage),
 		auth.SolverWithLocalIRIFn(isLocalFn),
 	)
-	act, err := ar.LoadActorFromRequest(r)
 
+	act, err := ar.LoadActorFromRequest(r)
 	if err != nil {
 		f.logger.Errorf("unable to load an authorized Actor from request: %+s", err)
 	}
 	return act
 }
 
+func (f *FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
+	cl := Client(&http.Transport{}, f.conf, f.logger)
+	return f.actorFromRequestWithClient(r, cl)
+}
+
 // Run is the wrapper for starting the web-server and handling signals
 func (f *FedBOX) Run(ctx context.Context) error {
 	logCtx := lw.Ctx{
 		"URL":      f.conf.BaseURL,
-		"version":  f.version,
+		"version":  f.conf.Version,
 		"listenOn": f.conf.Listen,
 		"TLS":      f.conf.Secure,
 	}

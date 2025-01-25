@@ -184,7 +184,7 @@ func generateKeys(ctl *Control) cli.ActionFunc {
 				Errf(err.Error())
 				continue
 			}
-			vocab.OnActor(actors, func(act *vocab.Actor) error {
+			_ = vocab.OnActor(actors, func(act *vocab.Actor) error {
 				col = append(col, act)
 				return nil
 			})
@@ -198,7 +198,7 @@ func generateKeys(ctl *Control) cli.ActionFunc {
 			if err != nil {
 				return err
 			}
-			vocab.OnActor(actors, func(act *vocab.Actor) error {
+			_ = vocab.OnActor(actors, func(act *vocab.Actor) error {
 				col = append(col, act)
 				return nil
 			})
