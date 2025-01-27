@@ -86,15 +86,16 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.SeeOther(r.URL.String())
 		}
 
+		authorized := fb.actorFromRequest(r)
 		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
-		cacheKey := CacheKey(fb, *r)
+		cacheKey := CacheKey(fb, authorized, *r)
 
 		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
 
 		var err error
 		if !fromCache {
-			fil := filters.Checks{filters.Authorized(fb.actorFromRequest(r).ID)}
+			fil := filters.Checks{filters.Authorized(authorized.ID)}
 			fil = append(fil, filters.FromValues(r.URL.Query())...)
 
 			repo := fb.storage
@@ -180,9 +181,9 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 }
 
 // CacheKey generates a unique vocab.IRI hash based on its authenticated user and other parameters
-func CacheKey(fb FedBOX, r http.Request) vocab.IRI {
+func CacheKey(fb FedBOX, auth vocab.Actor, r http.Request) vocab.IRI {
 	u := r.URL
-	if auth := fb.actorFromRequest(&r); !auth.ID.Equals(vocab.PublicNS, true) {
+	if !auth.ID.Equals(vocab.PublicNS, true) {
 		u.User = url.User(filepath.Base(auth.ID.String()))
 	}
 	r.URL = u
@@ -283,7 +284,8 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 	return func(r *http.Request) (vocab.Item, error) {
 		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
 
-		cacheKey := CacheKey(fb, *r)
+		authorized := fb.actorFromRequest(r)
+		cacheKey := CacheKey(fb, authorized, *r)
 
 		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
@@ -294,7 +296,7 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 			repo := fb.storage
 			var err error
 			var f filters.Check
-			f = filters.Authorized(fb.actorFromRequest(r).ID)
+			f = filters.Authorized(authorized.ID)
 			if it, err = repo.Load(iri, f); err != nil {
 				return nil, errors.NotFoundf("%s was not found", what)
 			}

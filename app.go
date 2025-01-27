@@ -63,12 +63,13 @@ func Client(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
 		tr = &http.Transport{}
 	}
 
-	client.UserAgent = fmt.Sprintf("%s/%s (+%s)", conf.BaseURL, conf.Version, ap.ProjectURL)
 	baseClient := &http.Client{
 		Transport: cache2.Private(tr, cache2.FS(filepath.Join(cachePath, conf.AppName))),
 	}
 
+	ua := fmt.Sprintf("%s/%s (+%s)", conf.BaseURL, conf.Version, ap.ProjectURL)
 	return client.New(
+		client.WithUserAgent(ua),
 		client.WithLogger(l.WithContext(lw.Ctx{"log": "client"})),
 		client.WithHTTPClient(baseClient),
 		client.SkipTLSValidation(!conf.Env.IsProd()),
