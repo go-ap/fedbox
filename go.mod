@@ -15,7 +15,7 @@ require (
 	github.com/go-ap/processing v0.0.0-20250128143943-aba5b2e775bc
 	github.com/go-ap/storage-badger v0.0.0-20250127153612-8b6fd29ecf73
 	github.com/go-ap/storage-boltdb v0.0.0-20250128144132-e90cd500451e
-	github.com/go-ap/storage-fs v0.0.0-20250128144056-9050d6107ea0
+	github.com/go-ap/storage-fs v0.0.0-20250128172528-d5e58d36bd77
 	github.com/go-ap/storage-sqlite v0.0.0-20250128144112-8691f8bd6b29
 	github.com/go-chi/chi/v5 v5.2.0
 	github.com/go-fed/httpsig v1.1.0
@@ -64,7 +64,7 @@ require (
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.etcd.io/bbolt v1.3.11 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8 // indirect
+	golang.org/x/exp v0.0.0-20250128144449-3edf0e91c1ae // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/oauth2 v0.25.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
