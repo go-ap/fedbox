@@ -57,10 +57,10 @@ func DefaultServiceIRI(baseURL string) vocab.IRI {
 	return vocab.IRI(u.String())
 }
 
-func LoadActor(st processing.ReadStore, iri vocab.IRI) (vocab.Actor, error) {
+func LoadActor(st processing.ReadStore, iri vocab.IRI, ff ...filters.Check) (vocab.Actor, error) {
 	var act vocab.Actor
 
-	selfCol, err := st.Load(iri)
+	selfCol, err := st.Load(iri, ff...)
 	if err != nil {
 		return act, errors.Annotatef(err, "invalid service IRI %s", iri)
 	}

@@ -493,7 +493,7 @@ var addObjectCmd = &cli.Command{
 			Usage:       fmt.Sprintf("The type of activitypub object(s) to create"),
 			DefaultText: fmt.Sprintf("Valid values: %v", ValidGenericTypes),
 		},
-		&cli.StringSliceFlag{
+		&cli.StringFlag{
 			Name:  "name",
 			Usage: fmt.Sprintf("The name of the activitypub object(s) to create"),
 		},
@@ -513,49 +513,56 @@ var validObjects = append(vocab.ObjectTypes, vocab.ObjectType, "")
 
 func addObjectAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		f, _ := LoadFilters(c)
-		typ := vocab.ActivityVocabularyType("")
-		if len(f.Type) > 0 {
-			typ = vocab.ActivityVocabularyType(f.Type[0].Str)
+		f := make(filters.Checks, 0)
+
+		incType := c.String("type")
+		if !validObjects.Contains(vocab.ActivityVocabularyType(incType)) {
+			return errors.Errorf("This command only supports only object of types %v", vocab.ObjectTypes)
+		} else {
+			incType = string(vocab.NoteType)
 		}
-		if !validObjects.Contains(typ) {
-			return errors.Errorf("This command only supports only object types %v", vocab.ObjectTypes)
+		prop := "title"
+		if vocab.ActorTypes.Contains(vocab.ActivityVocabularyType(incType)) {
+			prop = "name"
 		}
-		if len(f.Name) == 0 {
-			if name, err := loadFromStdin("Enter the %s name", typ); err == nil {
-				f.Name = append(f.Name, filters.StringEquals(string(name)))
+
+		if typ := types(incType); typ != nil {
+			f = append(f, typ)
+		}
+
+		incName := c.String("name")
+		if len(incName) == 0 {
+			if n, err := loadFromStdin("Enter the %s's %s", incType, prop); err == nil {
+				incName = string(n)
 			}
+		}
+		if n := names(incName); n != nil {
+			f = append(f, n)
 		}
 
 		authIRI := vocab.IRI(c.String("attributedTo"))
 		if len(authIRI) == 0 {
 			authIRI = vocab.IRI(ctl.Conf.BaseURL)
 		}
-		author, err := ap.LoadActor(ctl.Storage, authIRI)
+		author, err := ap.LoadActor(ctl.Storage, authIRI, f...)
 		if err != nil {
 			return err
 		}
 
 		now := time.Now().UTC()
-		for _, nameF := range f.Names() {
-			name := nameF.Str
-			p := &vocab.Object{
-				Type: typ,
-				// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
-				AttributedTo: author.GetLink(),
-				Published:    now,
-				Updated:      now,
-				Name: vocab.NaturalLanguageValues{
-					{vocab.NilLangRef, vocab.Content(name)},
-				},
-			}
-
-			var err error
-			if p, err = ctl.AddObject(p, author); err != nil {
-				return errors.Annotatef(err, "Unable to save object")
-			}
-			fmt.Printf("Added %s [%s]: %s\n", typ, name, p.GetLink())
+		p := &vocab.Object{
+			Type: vocab.ActivityVocabularyType(incType),
+			// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
+			AttributedTo: author.GetLink(),
+			CC:           vocab.ItemCollection{vocab.PublicNS},
+			Published:    now,
+			Name:         vocab.DefaultNaturalLanguageValue(incName),
 		}
+
+		if p, err = ctl.AddObject(p, author); err != nil {
+			return errors.Annotatef(err, "Unable to save object")
+		}
+		fmt.Printf("Added %s [%s]: %s\n", incType, incName, p.GetLink())
 
 		return nil
 	}
@@ -668,14 +675,14 @@ var exportCmd = &cli.Command{
 	Action: exportPubObjects(&ctl),
 }
 
-func dumpAll(f *filters.Filters) (vocab.ItemCollection, error) {
+func dumpAll(iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection, error) {
 	col := make(vocab.ItemCollection, 0)
-	objects, err := ctl.Storage.Load(f.GetLink())
+	objects, err := ctl.Storage.Load(iri, f...)
 	if err != nil {
 		return col, err
 	}
 	if objects.IsCollection() {
-		vocab.OnCollectionIntf(objects, func(c vocab.CollectionInterface) error {
+		_ = vocab.OnCollectionIntf(objects, func(c vocab.CollectionInterface) error {
 			col = append(col, c.Collection()...)
 			return nil
 		})
@@ -690,10 +697,8 @@ func exportPubObjects(ctl *Control) cli.ActionFunc {
 		baseURL := vocab.IRI(ctl.Conf.BaseURL)
 		objects := make(vocab.ItemCollection, 0)
 		allCollections := vocab.CollectionPaths{filters.ActivitiesType, filters.ActorsType, filters.ObjectsType}
-		for _, c := range allCollections {
-			dump, err := dumpAll(&filters.Filters{
-				IRI: vocab.IRIf(baseURL, c),
-			})
+		for _, col := range allCollections {
+			dump, err := dumpAll(vocab.IRIf(baseURL, col))
 			if err != nil {
 				return err
 			}
@@ -731,7 +736,7 @@ func showObjectAct(ctl *Control) cli.ActionFunc {
 		}
 
 		for _, ob := range objects {
-			printItem(ob, c.String("output"))
+			_ = printItem(ob, c.String("output"))
 		}
 		return nil
 	}
