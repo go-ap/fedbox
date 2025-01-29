@@ -126,6 +126,7 @@ func CreateService(r s.FullStorage, self vocab.Item) (err error) {
 			Type:         vocab.OrderedCollectionType,
 			Published:    time.Now().UTC(),
 			AttributedTo: self.GetLink(),
+			CC:           vocab.ItemCollection{vocab.PublicNS},
 		}
 	}
 	return vocab.OnActor(self, func(service *vocab.Actor) error {

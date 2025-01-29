@@ -27,6 +27,7 @@ type FullStorage interface {
 	clientLister
 	processing.Store
 	processing.KeyLoader
+	MetadataTyper
 	PasswordChanger
 	osin.Storage
 }

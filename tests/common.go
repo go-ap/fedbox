@@ -74,13 +74,13 @@ var s2sConfigs = []config.Options{
 type actS2SMock struct {
 	Id       string
 	Type     string
-	ActorId  string
-	ObjectId string
+	ActorID  string
+	ObjectID string
 }
 
 type actC2SMock struct {
 	Type    string
-	ActorId string
+	ActorID string
 	Object  vocab.Item
 }
 
@@ -95,7 +95,7 @@ type testSuite struct {
 type testPairs []testSuite
 
 type testAccount struct {
-	Id         string `json:"id"`
+	ID         string `json:"id"`
 	Handle     string `json:"handle"`
 	Hash       string `json:"hash"`
 	PublicKey  crypto.PublicKey
@@ -205,15 +205,15 @@ func Actors(iri vocab.IRI) vocab.IRI {
 }
 
 func ObjectsURL() string {
-	return Objects(vocab.IRI(service.Id)).String()
+	return Objects(vocab.IRI(service.ID)).String()
 }
 
 func ActorsURL() string {
-	return Actors(vocab.IRI(service.Id)).String()
+	return Actors(vocab.IRI(service.ID)).String()
 }
 
 func ActivitiesURL() string {
-	return Activities(vocab.IRI(service.Id)).String()
+	return Activities(vocab.IRI(service.ID)).String()
 }
 
 func firstPage() url.Values {
@@ -221,31 +221,31 @@ func firstPage() url.Values {
 }
 func InboxURL(account *testAccount) func() string {
 	return func() string {
-		return string(vocab.Inbox.IRI(vocab.IRI(account.Id)))
+		return string(vocab.Inbox.IRI(vocab.IRI(account.ID)))
 	}
 }
 
 func LikedURL(account *testAccount) func() string {
 	return func() string {
-		return string(vocab.Liked.IRI(vocab.IRI(account.Id)))
+		return string(vocab.Liked.IRI(vocab.IRI(account.ID)))
 	}
 }
 
 func FollowersURL(account *testAccount) func() string {
 	return func() string {
-		return string(vocab.Followers.IRI(vocab.IRI(account.Id)))
+		return string(vocab.Followers.IRI(vocab.IRI(account.ID)))
 	}
 }
 
 func FollowingURL(account *testAccount) func() string {
 	return func() string {
-		return string(vocab.Following.IRI(vocab.IRI(account.Id)))
+		return string(vocab.Following.IRI(vocab.IRI(account.ID)))
 	}
 }
 
 func OutboxURL(account *testAccount) func() string {
 	return func() string {
-		return string(vocab.Outbox.IRI(vocab.IRI(account.Id)))
+		return string(vocab.Outbox.IRI(vocab.IRI(account.ID)))
 	}
 }
 
@@ -337,10 +337,10 @@ var (
 	edKey  = loadPrivateKeyFromDisk("mocks/keys/ed25519.prv")
 	rsaKey = loadPrivateKeyFromDisk("mocks/keys/rsa256.prv")
 
-	service = testAccount{Id: apiURL}
+	service = testAccount{ID: apiURL}
 
 	defaultTestAccountC2S = testAccount{
-		Id:         fmt.Sprintf("http://%s/actors/%s", host, testActorHash),
+		ID:         fmt.Sprintf("http://%s/actors/%s", host, testActorHash),
 		Handle:     testActorHandle,
 		Hash:       testActorHash,
 		PublicKey:  publicKeyFrom(rsaKey),
@@ -348,7 +348,7 @@ var (
 	}
 
 	defaultTestAccountS2S = testAccount{
-		Id:         fmt.Sprintf("http://%s/actors/%d", s2shost, 666),
+		ID:         fmt.Sprintf("http://%s/actors/%d", s2shost, 666),
 		Handle:     "lou",
 		Hash:       "666",
 		PublicKey:  publicKeyFrom(edKey),
@@ -356,13 +356,13 @@ var (
 	}
 
 	extraAccount = testAccount{
-		Id:     fmt.Sprintf("http://%s/actors/%s", host, extraActorHash),
+		ID:     fmt.Sprintf("http://%s/actors/%s", host, extraActorHash),
 		Handle: extraActorHandle,
 		Hash:   extraActorHash,
 	}
 
 	defaultTestApp = testAccount{
-		Id:   fmt.Sprintf("http://%s/actors/%s", host, testAppHash),
+		ID:   fmt.Sprintf("http://%s/actors/%s", host, testAppHash),
 		Hash: testAppHash,
 	}
 )
@@ -763,7 +763,7 @@ func addHTTPSigAuth(req *http.Request, acc *testAccount) error {
 		}
 	}
 
-	keyId := fmt.Sprintf("%s#main-key", acc.Id)
+	keyId := fmt.Sprintf("%s#main-key", acc.ID)
 	signatureExpiration := int64(time.Hour.Seconds())
 
 	algos := make([]httpsig.Algorithm, 0)
@@ -796,10 +796,13 @@ func signRequest(req *http.Request, acc *testAccount) error {
 	date, _ := time.Parse(time.RFC3339, "2019-01-23T01:23:45Z")
 	req.Header.Set("Date", date.UTC().Format(http.TimeFormat))
 
-	if filepath.Base(req.URL.Path) == "inbox" {
+	if filepath.Base(req.URL.Path) == "outbox" && acc.AuthToken != "" {
+		return addOAuth2Auth(req, acc)
+	}
+	if acc.PrivateKey != nil {
 		return addHTTPSigAuth(req, acc)
 	}
-	return addOAuth2Auth(req, acc)
+	return nil
 }
 
 func hostFromUrl(uu string) string {
@@ -862,7 +865,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]any {
 
 			req.Header = test.req.headers
 			if test.req.account != nil {
-				err := signRequest(req, test.req.account)
+				err = signRequest(req, test.req.account)
 				assertTrue(err == nil, "Error: unable to sign request: %s", err)
 			}
 			resp, err := c.Do(req)

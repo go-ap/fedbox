@@ -12,7 +12,7 @@ import (
 
 func CreateC2SObject(actor *testAccount, object vocab.Item) actC2SMock {
 	return actC2SMock{
-		ActorId: actor.Id,
+		ActorID: actor.ID,
 		Object:  object,
 	}
 }
@@ -543,8 +543,9 @@ var ObjectsCollectionTests = testPairs{
 		tests: []testPair{
 			{
 				req: testReq{
-					met: http.MethodGet,
-					url: ObjectsURL(),
+					account: &service,
+					met:     http.MethodGet,
+					url:     ObjectsURL(),
 				},
 				res: testRes{
 					code: http.StatusOK,
@@ -571,8 +572,9 @@ var ObjectsCollectionTests = testPairs{
 		tests: []testPair{
 			{
 				req: testReq{
-					met: http.MethodGet,
-					url: fmt.Sprintf("%s/objects", apiURL),
+					account: &service,
+					met:     http.MethodGet,
+					url:     fmt.Sprintf("%s/objects", apiURL),
 				},
 				res: testRes{
 					code: http.StatusOK,
@@ -1022,7 +1024,7 @@ var CreateTests = testPairs{
 					val: &objectVal{
 						typ: string(vocab.CreateType),
 						act: &objectVal{
-							id:                defaultC2SAccount().Id,
+							id:                defaultC2SAccount().ID,
 							typ:               string(vocab.PersonType),
 							preferredUsername: "johndoe",
 							name:              "Johnathan Doe",
@@ -1267,16 +1269,16 @@ var UpdateTests = testPairs{
 					val: &objectVal{
 						typ: string(vocab.UpdateType),
 						act: &objectVal{
-							id:  defaultC2SAccount().Id,
+							id:  defaultC2SAccount().ID,
 							typ: string(vocab.PersonType),
 						},
 						obj: &objectVal{
-							id:                defaultC2SAccount().Id,
+							id:                defaultC2SAccount().ID,
 							name:              "Jane Doe",
 							preferredUsername: "jennyjane",
 							typ:               string(vocab.PersonType),
 							inbox: &objectVal{
-								id: fmt.Sprintf("%s/inbox", defaultC2SAccount().Id),
+								id: fmt.Sprintf("%s/inbox", defaultC2SAccount().ID),
 							},
 							outbox: &objectVal{
 								id: OutboxURL(defaultC2SAccount())(),
@@ -1303,18 +1305,18 @@ var DeleteTests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/c2s/activities/activity.json", actS2SMock{Type: "Delete", ActorId: defaultC2SAccount().Id, ObjectId: defaultC2SAccount().Id}),
+					bodyFn:  loadMockJson("mocks/c2s/activities/activity.json", actS2SMock{Type: "Delete", ActorID: defaultC2SAccount().ID, ObjectID: defaultC2SAccount().ID}),
 				},
 				res: testRes{
 					code: http.StatusGone,
 					val: &objectVal{
 						typ: string(vocab.DeleteType),
 						act: &objectVal{
-							id:  defaultC2SAccount().Id,
+							id:  defaultC2SAccount().ID,
 							typ: string(vocab.TombstoneType),
 						},
 						obj: &objectVal{
-							id:  defaultC2SAccount().Id,
+							id:  defaultC2SAccount().ID,
 							typ: string(vocab.TombstoneType),
 						},
 					},
@@ -1339,7 +1341,7 @@ var LikeTests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/c2s/activities/activity.json", &actS2SMock{Type: "Like", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/objects/41e7ec45-ff92-473a-b79d-974bf30a0aba"}),
+					bodyFn:  loadMockJson("mocks/c2s/activities/activity.json", &actS2SMock{Type: "Like", ActorID: defaultC2SAccount().ID, ObjectID: "http://127.0.0.1:9998/objects/41e7ec45-ff92-473a-b79d-974bf30a0aba"}),
 				},
 				res: testRes{
 					code: http.StatusCreated,
@@ -1444,7 +1446,7 @@ var FollowTests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/c2s/activities/activity.json", &actS2SMock{Type: "Follow", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
+					bodyFn:  loadMockJson("mocks/c2s/activities/activity.json", &actS2SMock{Type: "Follow", ActorID: defaultC2SAccount().ID, ObjectID: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
 				},
 				res: testRes{
 					code: http.StatusCreated,
@@ -1515,7 +1517,7 @@ var BlockTests = testPairs{
 					met:     http.MethodPost,
 					account: defaultC2SAccount(),
 					urlFn:   OutboxURL(defaultC2SAccount()),
-					bodyFn:  loadMockJson("mocks/c2s/activities/activity-private.json", &actS2SMock{Type: "Block", ActorId: defaultC2SAccount().Id, ObjectId: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
+					bodyFn:  loadMockJson("mocks/c2s/activities/activity-private.json", &actS2SMock{Type: "Block", ActorID: defaultC2SAccount().ID, ObjectID: "http://127.0.0.1:9998/actors/58e877c7-067f-4842-960b-3896d76aa4ed"}),
 				},
 				res: testRes{
 					code: http.StatusCreated,
@@ -1583,7 +1585,7 @@ var QuestionTests = testPairs{
 					bodyFn: loadMockJson(
 						"mocks/c2s/activities/question.json",
 						&actS2SMock{
-							ActorId: defaultC2SAccount().Id,
+							ActorID: defaultC2SAccount().ID,
 						},
 					),
 				},
@@ -1617,7 +1619,7 @@ var QuestionTests = testPairs{
 					bodyFn: loadMockJson(
 						"mocks/c2s/activities/question-with-oneOf.json",
 						&actS2SMock{
-							ActorId: defaultC2SAccount().Id,
+							ActorID: defaultC2SAccount().ID,
 						},
 					),
 				},
@@ -1655,7 +1657,7 @@ var QuestionTests = testPairs{
 					bodyFn: loadMockJson(
 						"mocks/c2s/activities/question-with-anyOf.json",
 						&actS2SMock{
-							ActorId: defaultC2SAccount().Id,
+							ActorID: defaultC2SAccount().ID,
 						},
 					),
 				},

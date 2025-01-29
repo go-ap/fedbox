@@ -18,14 +18,14 @@ func CreateS2SObject(actor *testAccount, object any) actS2SMock {
 	case string:
 		objectId = ob
 	case *testAccount:
-		objectId = ob.Id
+		objectId = ob.ID
 	case vocab.Item:
 		objectId = string(ob.GetID())
 	}
 	return actS2SMock{
 		Id:       id,
-		ActorId:  actor.Id,
-		ObjectId: objectId,
+		ActorID:  actor.ID,
+		ObjectID: objectId,
 	}
 }
 
@@ -65,12 +65,12 @@ var S2SReceiveTests = testPairs{
 					val: &objectVal{
 						typ: string(vocab.CreateType),
 						act: &objectVal{
-							id:                defaultS2SAccount().Id,
+							id:                defaultS2SAccount().ID,
 							typ:               string(vocab.PersonType),
 							preferredUsername: "lou",
 						},
 						obj: &objectVal{
-							id:                defaultS2SAccount().Id,
+							id:                defaultS2SAccount().ID,
 							typ:               string(vocab.PersonType),
 							preferredUsername: "lou",
 							name:              "Loucien Cypher",
@@ -108,7 +108,7 @@ var S2SReceiveTests = testPairs{
 					val: &objectVal{
 						typ: string(vocab.CreateType),
 						act: &objectVal{
-							id:                defaultS2SAccount().Id,
+							id:                defaultS2SAccount().ID,
 							typ:               string(vocab.PersonType),
 							preferredUsername: "lou",
 							name:              "Loucien Cypher",
@@ -151,19 +151,19 @@ var S2SReceiveTests = testPairs{
 					val: &objectVal{
 						typ: string(vocab.AcceptType),
 						act: &objectVal{
-							id:                defaultC2SAccount().Id,
+							id:                defaultC2SAccount().ID,
 							typ:               string(vocab.PersonType),
 							preferredUsername: defaultC2SAccount().Handle,
 						},
 						obj: &objectVal{
-							id:  generatedAccept.ObjectId,
+							id:  generatedAccept.ObjectID,
 							typ: string(vocab.FollowType),
 							obj: &objectVal{
-								id:  defaultC2SAccount().Id,
+								id:  defaultC2SAccount().ID,
 								typ: string(vocab.PersonType),
 							},
 							act: &objectVal{
-								id: defaultS2SAccount().Id,
+								id: defaultS2SAccount().ID,
 							},
 						},
 					},

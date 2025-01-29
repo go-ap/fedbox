@@ -54,11 +54,21 @@ func loadMockJson(file string, model any) func() (string, error) {
 	}
 }
 
-func addMockObjects(r processing.Store, obj vocab.ItemCollection) error {
+func addMockObjects(r ls.FullStorage, obj vocab.ItemCollection) error {
 	var err error
 	for _, it := range obj {
 		if it.GetLink() == "" {
 			continue
+		}
+		if it.GetLink().Equals(vocab.IRI(service.ID), false) {
+			self, _ := vocab.ToActor(it)
+			if err = fedbox.AddKeyToPerson(r, fedbox.KeyTypeRSA)(self); err != nil {
+				return err
+			}
+			if self.ID.Equals(vocab.IRI(service.ID), false) {
+				service.PublicKey = self.PublicKey
+				service.PrivateKey, _ = r.LoadKey(vocab.IRI(service.ID))
+			}
 		}
 		if it, err = r.Save(it); err != nil {
 			return err
@@ -160,17 +170,17 @@ func saveMocks(testData []string, config config.Options, db ls.FullStorage, l lw
 	}
 
 	o, _ := cmd.New(db, config, l)
-	if strings.Contains(defaultTestAccountC2S.Id, config.BaseURL) {
+	if strings.Contains(defaultTestAccountC2S.ID, config.BaseURL) {
 		if err := saveMetadataForActor(defaultTestAccountC2S, db.(ls.MetadataTyper)); err != nil {
 			return err
 		}
-		tok, err := o.GenAuthToken(defaultTestApp.Id, defaultTestAccountC2S.Id, nil)
+		tok, err := o.GenAuthToken(defaultTestApp.ID, defaultTestAccountC2S.ID, nil)
 		if err != nil {
 			return err
 		}
 		defaultTestAccountC2S.AuthToken = tok
 	}
-	if strings.Contains(defaultTestAccountS2S.Id, config.BaseURL) {
+	if strings.Contains(defaultTestAccountS2S.ID, config.BaseURL) {
 		if err := saveMetadataForActor(defaultTestAccountS2S, db.(ls.MetadataTyper)); err != nil {
 			return err
 		}
@@ -186,13 +196,13 @@ func saveMetadataForActor(act testAccount, metaSaver ls.MetadataTyper) error {
 	r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
 	err = metaSaver.SaveMetadata(
 		processing.Metadata{PrivateKey: pem.EncodeToMemory(&r)},
-		vocab.IRI(act.Id),
+		vocab.IRI(act.ID),
 	)
 	return nil
 }
 
 func seedTestData(app *fedbox.FedBOX) error {
-	clientCode := path.Base(defaultTestApp.Id)
+	clientCode := path.Base(defaultTestApp.ID)
 
 	db := app.Storage()
 
@@ -215,6 +225,7 @@ func getTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
 	}
 	options.AppName = "fedbox/integration-tests"
 	options.Version = "HEAD"
+	options.MastodonCompatible = true
 
 	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
 

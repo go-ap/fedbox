@@ -1,6 +1,6 @@
 {
   "type": "Create",
-  "actor": "{{ .Id }}",
+  "actor": "{{ .ID }}",
   "object": {
     "type": "Person",
     "published": "2019-05-10T22:16:40Z",

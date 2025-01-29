@@ -1,5 +1,5 @@
 {
   "type": "{{ .Type }}",
-  "actor": "{{ .ActorId }}",
-  "object": "{{ .ObjectId }}"
+  "actor": "{{ .ActorID }}",
+  "object": "{{ .ObjectID }}"
 }
