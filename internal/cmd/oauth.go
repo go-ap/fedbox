@@ -123,8 +123,9 @@ var tokenAdd = &cli.Command{
 			Usage: "The client to use for generating the token",
 		},
 		&cli.StringFlag{
-			Name:  "actor",
-			Usage: "The actor identifier we want to generate the authorization for (ID)",
+			Name:     "actor",
+			Required: true,
+			Usage:    "The actor identifier we want to generate the authorization for (ID)",
 		},
 	},
 	Action: tokenAct(&ctl),
@@ -140,12 +141,12 @@ var OAuth2Cmd = &cli.Command{
 }
 
 func tokenAct(c *Control) cli.ActionFunc {
-	return func(c *cli.Context) error {
-		clientID := c.String("client")
+	return func(ctx *cli.Context) error {
+		clientID := ctx.String("client")
 		if clientID == "" {
-			return errors.Newf("Need to provide the client id")
+			clientID = string(c.Service.GetLink())
 		}
-		actor := c.String("actor")
+		actor := ctx.String("actor")
 		if clientID == "" {
 			return errors.Newf("Need to provide the actor identifier (ID)")
 		}

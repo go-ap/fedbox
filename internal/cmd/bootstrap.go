@@ -15,6 +15,7 @@ import (
 	"github.com/go-ap/fedbox/internal/storage"
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
+	"github.com/openshift/osin"
 	"github.com/urfave/cli/v2"
 )
 
@@ -114,6 +115,9 @@ func CreateService(r s.FullStorage, self vocab.Item) (err error) {
 	if err != nil {
 		return err
 	}
+
+	c := osin.DefaultClient{Id: string(self.GetLink())}
+	_ = r.CreateClient(&c)
 
 	rr, ok := r.(processing.CollectionStore)
 	if !ok {
