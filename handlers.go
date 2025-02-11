@@ -194,6 +194,37 @@ type keyStorage interface {
 	LoadKey(vocab.IRI) (crypto.PrivateKey, error)
 }
 
+func (fb *FedBOX) LoadLocalActorWithKey(receivedIn vocab.IRI) (*vocab.Actor, crypto.PrivateKey, error) {
+	signActorID := fb.self.ID
+
+	var signActor *vocab.Actor = &fb.self
+	if maybeActorID, col := vocab.Split(receivedIn); filters.ValidCollection(col) {
+		signActorID = maybeActorID
+	}
+
+	it, err := fb.storage.Load(signActorID)
+	if err != nil {
+		return signActor, nil, err
+	}
+	act, err := vocab.ToActor(it)
+	if err != nil {
+		return signActor, nil, err
+	}
+	signActor = act
+
+	keyStore, ok := fb.storage.(keyStorage)
+	if !ok {
+		return signActor, nil, nil
+	}
+
+	prv, err := keyStore.LoadKey(signActorID)
+	if err != nil {
+		return signActor, prv, err
+	}
+
+	return signActor, prv, nil
+}
+
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
@@ -217,27 +248,24 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
 
+		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
+
 		// NOTE(marius): this probably leaks the actor in requests we don't want it in
 		// The solution is to move the auth and client objects into the request scope,
 		// instead of storing them on the top level FedBOX object.
-		signActorID := fb.self.ID
-		if maybeActorID, col := vocab.Split(receivedIn); filters.ValidCollection(col) {
-			signActorID = maybeActorID
-		}
-
 		var tr http.RoundTripper = &http.Transport{}
-		if keyStore, ok := fb.storage.(keyStorage); ok {
-			if prv, _ := keyStore.LoadKey(signActorID); prv != nil {
-				s2sT := s2s.S2SWrapTransport(http.DefaultTransport, &fb.self, prv)
-				tr = &s2sT
-			}
+		signActor, prv, err := fb.LoadLocalActorWithKey(receivedIn)
+		if err != nil {
+			fb.errFn("unable to sign request: %+s", err)
+		} else {
+			s2sT := s2s.S2SWrapTransport(&http.Transport{}, signActor, prv)
+			tr = &s2sT
 		}
 
 		apCl := Client(tr, fb.conf, fb.logger)
 		auth := fb.actorFromRequestWithClient(r, apCl)
 
 		repo := fb.storage
-		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
 
 		baseIRI := vocab.IRI(fb.Config().BaseURL)
 		processor := processing.New(
