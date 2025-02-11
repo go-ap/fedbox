@@ -499,7 +499,7 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			fail := errorf(t, t.Errorf)
 			assertTrue := errIfNotTrue(t, t.Errorf)
 			assertMapKey := errOnMapProp(t, t.Errorf)
-			warnMapKey := errOnMapProp(t, t.Logf)
+			warnMapKey := errOnMapProp(t, t.Errorf)
 			assertGetRequest := errNotOKGetRequest(t)
 			assertObjectProperties := errOnObjectProperties(t)
 
@@ -681,8 +681,8 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 					items, ok := val.([]any)
 					assertTrue(ok, "Invalid property %q %#v, expected %T", itemsKey, val, items)
 					assertTrue(ok, "Invalid property %q %#v, expected %T", "totalItems", val, items)
-					assertTrue(len(items) == int(tVal.itemCount),
-						"Invalid item count for collection %q %d, expected %d", itemsKey, len(items), tVal.itemCount,
+					assertTrue(len(items) == len(tVal.items),
+						"Invalid item count for collection %q %d, expected %d", itemsKey, len(items), len(tVal.items),
 					)
 				foundItem:
 					for k, testIt := range tVal.items {
@@ -796,7 +796,8 @@ func signRequest(req *http.Request, acc *testAccount) error {
 	date, _ := time.Parse(time.RFC3339, "2019-01-23T01:23:45Z")
 	req.Header.Set("Date", date.UTC().Format(http.TimeFormat))
 
-	if filepath.Base(req.URL.Path) == "outbox" && acc.AuthToken != "" {
+	au, _ := url.ParseRequestURI(acc.ID)
+	if au.Host == req.URL.Host && acc.AuthToken != "" {
 		return addOAuth2Auth(req, acc)
 	}
 	if acc.PrivateKey != nil {

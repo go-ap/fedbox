@@ -174,15 +174,18 @@ func saveMocks(testData []string, config config.Options, db ls.FullStorage, l lw
 		if err := saveMetadataForActor(defaultTestAccountC2S, db.(ls.MetadataTyper)); err != nil {
 			return err
 		}
-		tok, err := o.GenAuthToken(defaultTestApp.ID, defaultTestAccountC2S.ID, nil)
-		if err != nil {
-			return err
+
+		if tok, err := o.GenAuthToken(defaultTestApp.ID, defaultTestAccountC2S.ID, nil); err == nil {
+			defaultTestAccountC2S.AuthToken = tok
 		}
-		defaultTestAccountC2S.AuthToken = tok
 	}
 	if strings.Contains(defaultTestAccountS2S.ID, config.BaseURL) {
 		if err := saveMetadataForActor(defaultTestAccountS2S, db.(ls.MetadataTyper)); err != nil {
 			return err
+		}
+
+		if tok, err := o.GenAuthToken(defaultTestApp.ID, defaultTestAccountS2S.ID, nil); err == nil {
+			defaultTestAccountS2S.AuthToken = tok
 		}
 	}
 	return nil

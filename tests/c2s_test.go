@@ -53,6 +53,16 @@ var ActorsCollectionTests = testPairs{
 								preferredUsername: "johndoe",
 								name:              "Johnathan Doe",
 							},
+							"23767f95-8ea0-40ba-a6ef-b67284e1cdb1": {
+								id:      "http://127.0.0.1:9998/actors/23767f95-8ea0-40ba-a6ef-b67284e1cdb1",
+								typ:     string(vocab.ApplicationType),
+								summary: "Generated actor",
+								url:     "http://127.0.0.1:9998/callback",
+								inbox: &objectVal{
+									id: "http://127.0.0.1:9998/actors/23767f95-8ea0-40ba-a6ef-b67284e1cdb1/inbox",
+								},
+								preferredUsername: "oauth-client-app-23767f95-8ea0-40ba-a6ef-b67284e1cdb1",
+							},
 						},
 					},
 				},
@@ -77,7 +87,7 @@ var ActorsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActorsURL(), typeOf(vocab.PersonType), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 2,
 						items: map[string]*objectVal{
 							"e869bdca-dd5e-4de7-9c5d-37845eccc6a1": {
 								id:      "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
@@ -145,7 +155,7 @@ var ActorsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActorsURL(), typeOf(vocab.ApplicationType), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 2,
 					},
 				},
 			},
@@ -189,7 +199,7 @@ var ActorsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActorsURL(), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 21,
+						itemCount: 22,
 					},
 				},
 			},
@@ -203,7 +213,7 @@ var ActorsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActorsURL(), typeOf(vocab.ApplicationType), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 6,
+						itemCount: 22,
 					},
 				},
 			},
@@ -217,7 +227,7 @@ var ActorsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActorsURL(), typeOf(vocab.GroupType), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 5,
+						itemCount: 22,
 					},
 				},
 			},
@@ -231,7 +241,7 @@ var ActorsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActorsURL(), typeOf(vocab.PersonType), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 10,
+						itemCount: 22,
 					},
 				},
 			},
@@ -245,7 +255,7 @@ var ActorsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActorsURL(), typeOf(vocab.PersonType, vocab.GroupType), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 15,
+						itemCount: 22,
 					},
 				},
 			},
@@ -259,7 +269,7 @@ var ActorsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActorsURL(), nameOf("element_a"), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 22,
 					},
 				},
 			},
@@ -273,7 +283,7 @@ var ActorsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActorsURL(), nameOf("element"), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 9,
+						itemCount: 22,
 					},
 				},
 			},
@@ -287,7 +297,7 @@ var ActorsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActorsURL(), nameOf("element_a", "element_b"), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 2,
+						itemCount: 22,
 					},
 				},
 			},
@@ -315,6 +325,31 @@ var ActorsCollectionTests = testPairs{
 						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 3,
 						items: map[string]*objectVal{
+							"e869bdca-dd5e-4de7-9c5d-37845eccc6a1": {
+								id:      "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
+								typ:     string(vocab.PersonType),
+								summary: "Generated actor",
+								content: "Generated actor",
+								url:     "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
+								inbox: &objectVal{
+									id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/inbox",
+								},
+								outbox: &objectVal{
+									id: "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1/outbox",
+								},
+								preferredUsername: "johndoe",
+								name:              "Johnathan Doe",
+							},
+							"23767f95-8ea0-40ba-a6ef-b67284e1cdb1": {
+								id:      "http://127.0.0.1:9998/actors/23767f95-8ea0-40ba-a6ef-b67284e1cdb1",
+								typ:     string(vocab.ApplicationType),
+								summary: "Generated actor",
+								url:     "http://127.0.0.1:9998/callback",
+								inbox: &objectVal{
+									id: "http://127.0.0.1:9998/actors/23767f95-8ea0-40ba-a6ef-b67284e1cdb1/inbox",
+								},
+								preferredUsername: "oauth-client-app-23767f95-8ea0-40ba-a6ef-b67284e1cdb1",
+							},
 							"2": {
 								id:  "http://127.0.0.1:9998/actors/2",
 								typ: string(vocab.PersonType),
@@ -505,7 +540,7 @@ var ActivitiesCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActivitiesURL(), inReplyTo("!-"), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 2,
 					},
 				},
 			},
@@ -524,7 +559,7 @@ var ActivitiesCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ActivitiesURL(), inReplyTo("-"), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 2,
 					},
 				},
 			},
@@ -595,7 +630,7 @@ var ObjectsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ObjectsURL(), typeOf(vocab.TombstoneType), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 4,
 					},
 				},
 			},
@@ -609,7 +644,7 @@ var ObjectsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ObjectsURL(), typeOf(vocab.PlaceType), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 4,
 					},
 				},
 			},
@@ -623,7 +658,7 @@ var ObjectsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ObjectsURL(), typeOf(vocab.NoteType), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 4,
 					},
 				},
 			},
@@ -637,7 +672,7 @@ var ObjectsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ObjectsURL(), typeOf(vocab.PageType), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 4,
 					},
 				},
 			},
@@ -651,7 +686,7 @@ var ObjectsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ObjectsURL(), typeOf(vocab.PageType, vocab.PlaceType), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 2,
+						itemCount: 4,
 					},
 				},
 			},
@@ -665,7 +700,7 @@ var ObjectsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ObjectsURL(), nameOf("You are here"), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 4,
 					},
 				},
 			},
@@ -679,7 +714,7 @@ var ObjectsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ObjectsURL(), nameOf("~You are"), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 4,
 					},
 				},
 			},
@@ -693,7 +728,7 @@ var ObjectsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ObjectsURL(), nameOf("~You", "~Humble"), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 2,
+						itemCount: 4,
 					},
 				},
 			},
@@ -707,7 +742,7 @@ var ObjectsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ObjectsURL(), urlOf("https://github.com/mariusor/mpris-scrobbler"), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 4,
 					},
 				},
 			},
@@ -721,7 +756,7 @@ var ObjectsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ObjectsURL(), attrTo("http://127.0.0.1:9998/actors/2"), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 3,
+						itemCount: 4,
 					},
 				},
 			},
@@ -778,7 +813,7 @@ var ObjectsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ObjectsURL(), inReplyTo("!-"), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 4,
 					},
 				},
 			},
@@ -793,7 +828,7 @@ var ObjectsCollectionTests = testPairs{
 					val: &objectVal{
 						id:        CollectionURL(ObjectsURL(), inReplyTo("-"), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 3,
+						itemCount: 4,
 					},
 				},
 			},
@@ -901,8 +936,9 @@ var CreateTests = testPairs{
 			},
 			{
 				req: testReq{
-					met:   http.MethodGet,
-					urlFn: OutboxURL(defaultC2SAccount()),
+					met:     http.MethodGet,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusOK,
@@ -943,15 +979,16 @@ var CreateTests = testPairs{
 			},
 			{
 				req: testReq{
-					met:   http.MethodGet,
-					urlFn: InboxURL(defaultC2SAccount()),
+					met:     http.MethodGet,
+					account: defaultS2SAccount(),
+					urlFn:   InboxURL(defaultC2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        CollectionURL(InboxURL(defaultC2SAccount())(), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 0,
 					},
 				},
 			},
@@ -1387,15 +1424,16 @@ var LikeTests = testPairs{
 			},
 			{
 				req: testReq{
-					met:   http.MethodGet,
-					urlFn: InboxURL(defaultC2SAccount()),
+					met:     http.MethodGet,
+					account: defaultC2SAccount(),
+					urlFn:   InboxURL(defaultC2SAccount()),
 				},
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        CollectionURL(InboxURL(defaultC2SAccount())(), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						itemCount: 0,
 					},
 				},
 			},
