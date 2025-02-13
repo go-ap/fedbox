@@ -8,8 +8,10 @@ import (
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
+	"embed"
 	"encoding/pem"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -37,8 +39,11 @@ func jsonldMarshal(i vocab.Item) string {
 	return string(j)
 }
 
+//go:embed mocks
+var mocks embed.FS
+
 func loadMockJson(file string, model any) func() (string, error) {
-	data, err := os.ReadFile(file)
+	data, err := fs.ReadFile(mocks, file)
 	if err != nil {
 		return func() (string, error) { return "", err }
 	}
@@ -121,7 +126,7 @@ func publicKeyFrom(key crypto.PrivateKey) crypto.PublicKey {
 }
 
 func loadPrivateKeyFromDisk(file string) crypto.PrivateKey {
-	data, err := os.ReadFile(file)
+	data, err := fs.ReadFile(mocks, file)
 	if err != nil {
 		panic(fmt.Sprintf("%+v", err))
 	}
@@ -139,7 +144,8 @@ func loadPrivateKeyFromDisk(file string) crypto.PrivateKey {
 func loadMockFromDisk(file string, model any) vocab.Item {
 	json, err := loadMockJson(file, model)()
 	if err != nil {
-		panic(fmt.Sprintf("%+v", err))
+		w, _ := os.Getwd()
+		panic(fmt.Sprintf(" in path %s: %+v", w, err))
 	}
 	it, err := vocab.UnmarshalJSON([]byte(json))
 	if err != nil {

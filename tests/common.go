@@ -1004,9 +1004,10 @@ func runTestSuite(t *testing.T, pairs testPairs) {
 				})
 			}
 
-			//for _, app := range suite.apps {
-			//	app.Stop(ctx)
-			//}
+			for _, app := range suite.apps {
+				app.Stop(ctx)
+				_ = cmd.Reset(app.Config())
+			}
 			stopFn()
 		})
 
