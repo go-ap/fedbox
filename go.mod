@@ -12,11 +12,11 @@ require (
 	github.com/go-ap/errors v0.0.0-20250124135319-3da8adefd4a9
 	github.com/go-ap/filters v0.0.0-20250212093317-ca1dc66cad4e
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20250212153235-c5fd7320cb7d
-	github.com/go-ap/storage-badger v0.0.0-20250212153535-690d99923094
-	github.com/go-ap/storage-boltdb v0.0.0-20250212153451-2ccae69326ac
-	github.com/go-ap/storage-fs v0.0.0-20250212153326-13e8b35254de
-	github.com/go-ap/storage-sqlite v0.0.0-20250212153357-c95f191f4b65
+	github.com/go-ap/processing v0.0.0-20250213180558-1e137ed3181f
+	github.com/go-ap/storage-badger v0.0.0-20250213142710-dd5d0bb370ba
+	github.com/go-ap/storage-boltdb v0.0.0-20250213180940-5940aab9991c
+	github.com/go-ap/storage-fs v0.0.0-20250213181428-c5d1e927a06e
+	github.com/go-ap/storage-sqlite v0.0.0-20250213142655-1b261ba93df4
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -73,7 +73,7 @@ require (
 	modernc.org/libc v1.61.13 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.8.2 // indirect
-	modernc.org/sqlite v1.34.5 // indirect
+	modernc.org/sqlite v1.35.0 // indirect
 )
 
 replace go.opencensus.io => github.com/census-instrumentation/opencensus-go v0.23.0

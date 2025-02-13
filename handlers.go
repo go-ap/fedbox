@@ -227,6 +227,10 @@ func (fb *FedBOX) LoadLocalActorWithKey(receivedIn vocab.IRI) (*vocab.Actor, cry
 
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
+	if fb.keyGenerator != nil {
+		processing.WithActorKeyGenerator(fb.keyGenerator)
+	}
+
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
 		var it vocab.Item
 		fb.infFn("received req %s: %s", r.Method, r.RequestURI)
@@ -269,6 +273,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 
 		baseIRI := vocab.IRI(fb.Config().BaseURL)
 		processor := processing.New(
+			processing.Async,
 			processing.WithIRI(baseIRI, InternalIRI),
 			processing.WithClient(apCl),
 			processing.WithStorage(repo),
@@ -279,10 +284,6 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		if err != nil {
 			fb.errFn("failed initializing the Activity processor: %+s", err)
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize processor")
-		}
-
-		if fb.keyGenerator != nil {
-			processing.WithActorKeyGenerator(fb.keyGenerator)
 		}
 
 		if it, err = processor.ProcessActivity(it, auth, receivedIn); err != nil {

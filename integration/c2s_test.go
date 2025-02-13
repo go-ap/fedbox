@@ -60,7 +60,7 @@ func Test_Fetch(t *testing.T) {
 			req, err := mocks.Req(ctx, http.MethodGet, test.arg.String(), nil)
 			r, err := httpClient.Do(req)
 			if err != nil {
-				t.Fatalf("Err received: %s", err)
+				t.Fatalf("Err received: %+v", err)
 			}
 
 			if r.StatusCode != test.wanted.status {
