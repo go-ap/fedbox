@@ -272,8 +272,8 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		repo := fb.storage
 
 		baseIRI := vocab.IRI(fb.Config().BaseURL)
-		processor := processing.New(
-			processing.Async,
+		initFns := make([]processing.OptionFn, 0)
+		initFns = append(initFns,
 			processing.WithIRI(baseIRI, InternalIRI),
 			processing.WithClient(apCl),
 			processing.WithStorage(repo),
@@ -281,6 +281,10 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 			processing.WithIDGenerator(GenerateID(baseIRI)),
 			processing.WithLocalIRIChecker(st.IsLocalIRI(repo)),
 		)
+		if !fb.Config().Env.IsTest() {
+			initFns = append(initFns, processing.Async)
+		}
+		processor := processing.New(initFns...)
 		if err != nil {
 			fb.errFn("failed initializing the Activity processor: %+s", err)
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize processor")

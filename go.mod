@@ -16,7 +16,7 @@ require (
 	github.com/go-ap/storage-badger v0.0.0-20250213142710-dd5d0bb370ba
 	github.com/go-ap/storage-boltdb v0.0.0-20250213180940-5940aab9991c
 	github.com/go-ap/storage-fs v0.0.0-20250213181428-c5d1e927a06e
-	github.com/go-ap/storage-sqlite v0.0.0-20250213142655-1b261ba93df4
+	github.com/go-ap/storage-sqlite v0.0.0-20250214121431-dc1af43b702a
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
