@@ -12,7 +12,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20250124135319-3da8adefd4a9
 	github.com/go-ap/filters v0.0.0-20250215161313-df9d6de7ad5a
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20250215161436-3008852313bd
+	github.com/go-ap/processing v0.0.0-20250215163048-bb965f7592b5
 	github.com/go-ap/storage-badger v0.0.0-20250215154103-5df1fc230edf
 	github.com/go-ap/storage-boltdb v0.0.0-20250215161725-ae9d294b0125
 	github.com/go-ap/storage-fs v0.0.0-20250215161651-b9d27f82cecf
