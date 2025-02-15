@@ -10,8 +10,8 @@ import (
 	"fmt"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/processing"
 	"github.com/go-ap/fedbox/storage"
 	"golang.org/x/crypto/ed25519"
 )
@@ -33,7 +33,7 @@ func AddKeyToPerson(metaSaver storage.MetadataTyper, typ string) func(act *vocab
 
 		m, _ := metaSaver.LoadMetadata(act.ID)
 		if m == nil {
-			m = new(processing.Metadata)
+			m = new(auth.Metadata)
 		}
 		var pubB, prvB pem.Block
 		if m.PrivateKey == nil || overwriteKeys {

@@ -2,6 +2,7 @@ package storage
 
 import (
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
 )
@@ -42,8 +43,8 @@ type PasswordChanger interface {
 }
 
 type MetadataTyper interface {
-	LoadMetadata(vocab.IRI) (*processing.Metadata, error)
-	SaveMetadata(processing.Metadata, vocab.IRI) error
+	LoadMetadata(vocab.IRI) (*auth.Metadata, error)
+	SaveMetadata(auth.Metadata, vocab.IRI) error
 }
 
 type MimeTypeSaver interface {

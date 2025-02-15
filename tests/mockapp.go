@@ -21,12 +21,12 @@ import (
 
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	ls "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/jsonld"
-	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
 	"golang.org/x/crypto/ed25519"
 )
@@ -204,7 +204,7 @@ func saveMetadataForActor(act testAccount, metaSaver ls.MetadataTyper) error {
 	}
 	r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
 	err = metaSaver.SaveMetadata(
-		processing.Metadata{PrivateKey: pem.EncodeToMemory(&r)},
+		auth.Metadata{PrivateKey: pem.EncodeToMemory(&r)},
 		vocab.IRI(act.ID),
 	)
 	return nil

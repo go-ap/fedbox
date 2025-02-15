@@ -6,6 +6,7 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/storage"
@@ -56,7 +57,7 @@ func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 			items = append(items, col)
 		}
 
-		allMeta := make(map[vocab.IRI]processing.Metadata, len(items))
+		allMeta := make(map[vocab.IRI]auth.Metadata, len(items))
 		for _, it := range items {
 			if it.GetType() != vocab.PersonType {
 				continue
@@ -121,7 +122,7 @@ func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 				continue
 			}
 
-			metadata := make(map[vocab.IRI]processing.Metadata, 0)
+			metadata := make(map[vocab.IRI]auth.Metadata, 0)
 			err = jsonld.Unmarshal(buf, &metadata)
 			if err != nil {
 				Errf("Error unmarshaling JSON: %s", err)
@@ -130,7 +131,11 @@ func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 			start := time.Now()
 			count := 0
 			for iri, m := range metadata {
-				metaLoader.SaveMetadata(m, iri)
+				if err = metaLoader.SaveMetadata(m, iri); err != nil {
+					_, _ = fmt.Fprintf(os.Stderr, "unable to save metadata for %s: %s", iri, err)
+					continue
+				}
+				count++
 			}
 
 			tot := time.Now().Sub(start)
