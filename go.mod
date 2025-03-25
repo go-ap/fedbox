@@ -1,9 +1,9 @@
 module github.com/go-ap/fedbox
 
-go 1.23
+go 1.23.0
 
 require (
-	git.sr.ht/~mariusor/lw v0.0.0-20250114195945-ba9c7bcca3c1
+	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240519120935-f877e4d97def
 	github.com/go-ap/activitypub v0.0.0-20250212090640-aeb6499ba581
 	github.com/go-ap/auth v0.0.0-20250313174208-1fe284554dd0
@@ -13,10 +13,10 @@ require (
 	github.com/go-ap/filters v0.0.0-20250313173721-b110d9e58d05
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-ap/processing v0.0.0-20250313174258-2dd5917737c7
-	github.com/go-ap/storage-badger v0.0.0-20250313175233-9ad170e9cf2a
-	github.com/go-ap/storage-boltdb v0.0.0-20250313174945-67cd4e1d5c53
-	github.com/go-ap/storage-fs v0.0.0-20250313174700-78ec714bfac0
-	github.com/go-ap/storage-sqlite v0.0.0-20250313175102-597dca60aaa4
+	github.com/go-ap/storage-badger v0.0.0-20250316082054-7dcb4ce39cb8
+	github.com/go-ap/storage-boltdb v0.0.0-20250316081713-8148e7dff577
+	github.com/go-ap/storage-fs v0.0.0-20250316081605-72cfeefed2ec
+	github.com/go-ap/storage-sqlite v0.0.0-20250316081816-d42dff209d2e
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -53,7 +53,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rs/xid v1.6.0 // indirect
-	github.com/rs/zerolog v1.33.0 // indirect
+	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
@@ -69,12 +69,12 @@ require (
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 	modernc.org/libc v1.61.13 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
-	modernc.org/memory v1.8.2 // indirect
-	modernc.org/sqlite v1.36.0 // indirect
+	modernc.org/memory v1.9.1 // indirect
+	modernc.org/sqlite v1.36.2 // indirect
 )
 
 replace go.opencensus.io => github.com/census-instrumentation/opencensus-go v0.23.0
