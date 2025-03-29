@@ -199,7 +199,7 @@ func (c *Control) AddObject(p *vocab.Object, author vocab.Actor) (*vocab.Object,
 		return nil, errors.NotFoundf("unable to load current's instance Application actor: %s", c.Conf.BaseURL)
 	}
 
-	ap := saver(c)
+	processor := saver(c)
 	outbox := vocab.Outbox.Of(author).GetLink()
 	if vocab.IsNil(outbox) {
 		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
@@ -209,7 +209,7 @@ func (c *Control) AddObject(p *vocab.Object, author vocab.Actor) (*vocab.Object,
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to wrap Object in Create activity")
 	}
-	if _, err = ap.ProcessClientActivity(create, author, outbox); err != nil {
+	if _, err = processor.ProcessClientActivity(create, author, outbox); err != nil {
 		return nil, err
 	}
 	return p, nil

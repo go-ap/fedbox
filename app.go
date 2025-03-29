@@ -215,11 +215,6 @@ func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C) vocab
 	return act
 }
 
-func (f *FedBOX) actorFromRequest(r *http.Request) vocab.Actor {
-	cl := Client(&http.Transport{}, f.conf, f.logger)
-	return f.actorFromRequestWithClient(r, cl)
-}
-
 // Run is the wrapper for starting the web-server and handling signals
 func (f *FedBOX) Run(ctx context.Context) error {
 	logCtx := lw.Ctx{

@@ -6,17 +6,17 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/wrapper v0.0.0-20240519120935-f877e4d97def
 	github.com/go-ap/activitypub v0.0.0-20250212090640-aeb6499ba581
-	github.com/go-ap/auth v0.0.0-20250313174208-1fe284554dd0
+	github.com/go-ap/auth v0.0.0-20250329152007-c2d58d59fecd
 	github.com/go-ap/cache v0.0.0-20250212092834-8063df8eb5ff
-	github.com/go-ap/client v0.0.0-20250313174107-ecce11584a74
+	github.com/go-ap/client v0.0.0-20250329151908-0ddd35fff4fb
 	github.com/go-ap/errors v0.0.0-20250124135319-3da8adefd4a9
-	github.com/go-ap/filters v0.0.0-20250313173721-b110d9e58d05
+	github.com/go-ap/filters v0.0.0-20250327124545-0df3f4a5cc88
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20250313174258-2dd5917737c7
-	github.com/go-ap/storage-badger v0.0.0-20250316082054-7dcb4ce39cb8
-	github.com/go-ap/storage-boltdb v0.0.0-20250316081713-8148e7dff577
-	github.com/go-ap/storage-fs v0.0.0-20250316081605-72cfeefed2ec
-	github.com/go-ap/storage-sqlite v0.0.0-20250316081816-d42dff209d2e
+	github.com/go-ap/processing v0.0.0-20250329152025-0f003fa4f47a
+	github.com/go-ap/storage-badger v0.0.0-20250329152129-c7eea927a9a7
+	github.com/go-ap/storage-boltdb v0.0.0-20250329152100-4e1ad898ecac
+	github.com/go-ap/storage-fs v0.0.0-20250329152047-7498a4db2134
+	github.com/go-ap/storage-sqlite v0.0.0-20250329152115-13802e49ed71
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -64,17 +64,17 @@ require (
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	modernc.org/libc v1.61.13 // indirect
+	modernc.org/libc v1.62.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.9.1 // indirect
-	modernc.org/sqlite v1.36.2 // indirect
+	modernc.org/sqlite v1.36.3 // indirect
 )
 
 replace go.opencensus.io => github.com/census-instrumentation/opencensus-go v0.23.0

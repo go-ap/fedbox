@@ -60,6 +60,24 @@ func reqURL(r http.Request, secure bool) string {
 	return u.String()
 }
 
+func fedboxClient(fb FedBOX) *client.C {
+	return actorClient(fb, fb.self.ID)
+}
+
+func actorClient(fb FedBOX, iri vocab.IRI) *client.C {
+	var tr http.RoundTripper = &http.Transport{}
+	if !vocab.PublicNS.Equals(iri, true) {
+		signActor, prv, err := fb.LoadLocalActorWithKey(iri)
+		if err != nil {
+			fb.errFn("unable to sign request: %+s", err)
+		} else if prv != nil && signActor != nil {
+			tr = s2s.New(s2s.WithActor(signActor, prv), s2s.WithLogger(fb.logger.WithContext(lw.Ctx{"log": "HTTP-Sig"})))
+		}
+	}
+
+	return Client(tr, fb.conf, fb.logger)
+}
+
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
@@ -86,7 +104,7 @@ func HandleCollection(fb FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.SeeOther(r.URL.String())
 		}
 
-		authorized := fb.actorFromRequest(r)
+		authorized := fb.actorFromRequestWithClient(r, fedboxClient(fb))
 		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
 		cacheKey := CacheKey(fb, authorized, *r)
 
@@ -194,15 +212,15 @@ type keyStorage interface {
 	LoadKey(vocab.IRI) (crypto.PrivateKey, error)
 }
 
-func (fb *FedBOX) LoadLocalActorWithKey(receivedIn vocab.IRI) (*vocab.Actor, crypto.PrivateKey, error) {
-	signActorID := fb.self.ID
+func (f *FedBOX) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto.PrivateKey, error) {
+	signActorID := f.self.ID
 
-	var signActor *vocab.Actor = &fb.self
-	if maybeActorID, col := vocab.Split(receivedIn); filters.ValidCollection(col) {
+	var signActor *vocab.Actor = &f.self
+	if maybeActorID, col := vocab.Split(actorIRI); filters.ValidCollection(col) {
 		signActorID = maybeActorID
 	}
 
-	it, err := fb.storage.Load(signActorID)
+	it, err := f.storage.Load(signActorID)
 	if err != nil {
 		return signActor, nil, err
 	}
@@ -212,7 +230,7 @@ func (fb *FedBOX) LoadLocalActorWithKey(receivedIn vocab.IRI) (*vocab.Actor, cry
 	}
 	signActor = act
 
-	keyStore, ok := fb.storage.(keyStorage)
+	keyStore, ok := f.storage.(keyStorage)
 	if !ok {
 		return signActor, nil, nil
 	}
@@ -233,7 +251,6 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
 		var it vocab.Item
-		fb.infFn("received req %s: %s", r.Method, r.RequestURI)
 
 		if ok, err := ValidateRequest(r); !ok {
 			fb.errFn("failed request validation: %+s", err)
@@ -254,20 +271,11 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 
 		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
 
-		// NOTE(marius): this probably leaks the actor in requests we don't want it in
-		// The solution is to move the auth and client objects into the request scope,
-		// instead of storing them on the top level FedBOX object.
-		var tr http.RoundTripper = &http.Transport{}
-		signActor, prv, err := fb.LoadLocalActorWithKey(receivedIn)
-		if err != nil {
-			fb.errFn("unable to sign request: %+s", err)
-		} else {
-			s2sT := s2s.S2SWrapTransport(&http.Transport{}, signActor, prv)
-			tr = &s2sT
+		auth := fb.actorFromRequestWithClient(r, actorClient(fb, vocab.PublicNS))
+		if auth.ID.Equals(vocab.PublicNS, true) {
+			fb.errFn("invalid Anonymous actor request: %s", receivedIn)
+			return it, http.StatusUnauthorized, errors.Unauthorizedf("authorized Actor is invalid")
 		}
-
-		apCl := Client(tr, fb.conf, fb.logger)
-		auth := fb.actorFromRequestWithClient(r, apCl)
 
 		repo := fb.storage
 
@@ -275,7 +283,7 @@ func HandleActivity(fb FedBOX) processing.ActivityHandlerFn {
 		initFns := make([]processing.OptionFn, 0)
 		initFns = append(initFns,
 			processing.WithIRI(baseIRI, InternalIRI),
-			processing.WithClient(apCl),
+			processing.WithClient(actorClient(fb, receivedIn)),
 			processing.WithStorage(repo),
 			processing.WithLogger(l),
 			processing.WithIDGenerator(GenerateID(baseIRI)),
@@ -317,7 +325,7 @@ func HandleItem(fb FedBOX) processing.ItemHandlerFn {
 	return func(r *http.Request) (vocab.Item, error) {
 		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
 
-		authorized := fb.actorFromRequest(r)
+		authorized := fb.actorFromRequestWithClient(r, actorClient(fb, vocab.PublicNS))
 		cacheKey := CacheKey(fb, authorized, *r)
 
 		it := fb.caches.Load(cacheKey)
