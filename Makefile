@@ -14,7 +14,8 @@ LDFLAGS ?= -X main.version=$(VERSION)
 BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)'
 TEST_FLAGS ?= -count=1
 
-M4 = /usr/bin/m4
+UPX = upx
+M4 = m4
 M4_FLAGS =
 
 DESTDIR ?= /
@@ -63,6 +64,16 @@ go.sum: go.mod
 fedbox: bin/fedbox ## Builds the main FedBOX service binary.
 bin/fedbox: go.mod cmd/fedbox/main.go $(APPSOURCES)
 	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/fedbox/main.go
+ifneq ($(ENV),dev)
+	$(UPX) -q --mono --no-progress --best $@ || true
+endif
+
+fedboxctl: bin/fedboxctl ## Builds the control binary for the FedBOX service.
+bin/fedboxctl: go.mod cmd/control/main.go $(APPSOURCES)
+	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/control/main.go
+ifneq ($(ENV),dev)
+	$(UPX) -q --mono --no-progress --best $@ || true
+endif
 
 systemd/fedbox.service: systemd/fedbox.service.in ## Creates a systemd service file for the FedBOX service.
 	$(M4) $(M4_FLAGS) -DWORKING_DIR=$(STORAGE_PATH) $< >$@
@@ -70,9 +81,6 @@ systemd/fedbox.service: systemd/fedbox.service.in ## Creates a systemd service f
 systemd/fedbox.socket: systemd/fedbox.socket.in ## Creates a socket systemd unit file to accompany the service file.
 	$(M4) $(M4_FLAGS) -DLISTEN_HOST=$(LISTEN_HOST) -DLISTEN_PORT=$(LISTEN_PORT) $< >$@
 
-fedboxctl: bin/fedboxctl ## Builds the control binary for the FedBOX service.
-bin/fedboxctl: go.mod cmd/control/main.go $(APPSOURCES)
-	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/control/main.go
 
 run: fedbox ## Runs the FedBOX binary.
 	@./bin/fedbox
