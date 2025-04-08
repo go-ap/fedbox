@@ -34,6 +34,7 @@ import (
 	"github.com/go-ap/filters"
 	"github.com/go-ap/jsonld"
 	"github.com/go-fed/httpsig"
+	"github.com/openshift/osin"
 )
 
 // UserAgent value that the client uses when performing requests
@@ -335,7 +336,7 @@ var (
 	apiURL = "http://127.0.0.1:9998"
 
 	edKey  = loadPrivateKeyFromDisk("mocks/keys/ed25519.prv")
-	rsaKey = loadPrivateKeyFromDisk("mocks/keys/rsa256.prv")
+	rsaKey = loadPrivateKeyFromDisk("mocks/keys/rsa2048.prv")
 
 	service = testAccount{ID: apiURL}
 
@@ -364,6 +365,13 @@ var (
 	defaultTestApp = testAccount{
 		ID:   fmt.Sprintf("http://%s/actors/%s", host, testAppHash),
 		Hash: testAppHash,
+	}
+
+	mockClient = &osin.DefaultClient{
+		Id:          filepath.Base(defaultTestApp.ID),
+		Secret:      "hahah",
+		RedirectUri: "http://127.0.0.1:9998/callback",
+		UserData:    nil,
 	}
 )
 

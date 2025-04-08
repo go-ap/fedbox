@@ -23,6 +23,6 @@
   "publicKey": {
     "id": "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1#main-key",
     "owner": "http://127.0.0.1:9998/actors/e869bdca-dd5e-4de7-9c5d-37845eccc6a1",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAPYL2Hq1CoUsL/ueckFZeDBbY583zkC8ayqlts/efis7s0qyBc+zJm7pSnei3Oe7PaMQGBN1I/WuARtMF60B1F0CAwEAAQ==\n-----END PUBLIC KEY-----"
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApkL3B0AX7Xr7p0+tdWskfKh48pk2vE5eAbhZ+jznwoEFr4RaXwPhbbAsUoLacEf4iwcfODTCmKpwoedTmd01IWgITtf5oLfzAHkhnV0QbCeJT/craH2drDeQzJGecgdu8o4JbxYwSZ33Lff0QS1qVAIKiMmeRKJz/i8qyMky9uyWvFRRMAQZWDv8EAPLyAT99PpxXYZLr7uTXwerOvnkJeLLj0XNjYx9nAQOig3zP9D5sghYVSjHkWuS87Sbc1OzYcE1PY+OHnuYRPpR1WXH880WiEaK4v1kFoCl62UCR96hmQFHvAc0eTC2EDV4nnM5uLbF8/p0gMy9mPYfTnfJEwIDAQAB\n-----END PUBLIC KEY-----"
   }
 }

@@ -27,7 +27,6 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	ls "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/jsonld"
-	"github.com/openshift/osin"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -203,16 +202,13 @@ func saveMetadataForActor(act testAccount, metaSaver ls.MetadataTyper) error {
 		return err
 	}
 	r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
-	err = metaSaver.SaveMetadata(
+	return metaSaver.SaveMetadata(
 		auth.Metadata{PrivateKey: pem.EncodeToMemory(&r)},
 		vocab.IRI(act.ID),
 	)
-	return nil
 }
 
 func seedTestData(app *fedbox.FedBOX) error {
-	clientCode := path.Base(defaultTestApp.ID)
-
 	db := app.Storage()
 
 	act := loadMockFromDisk("mocks/c2s/actors/application.json", nil)
@@ -220,12 +216,7 @@ func seedTestData(app *fedbox.FedBOX) error {
 		return err
 	}
 
-	return db.CreateClient(&osin.DefaultClient{
-		Id:          clientCode,
-		Secret:      "hahah",
-		RedirectUri: "http://127.0.0.1:9998/callback",
-		UserData:    nil,
-	})
+	return db.CreateClient(mockClient)
 }
 
 func getTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
