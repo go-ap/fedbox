@@ -210,7 +210,7 @@ func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C) vocab
 
 	act, err := ar.LoadActorFromRequest(r)
 	if err != nil {
-		f.logger.Errorf("unable to load an authorized Actor from request: %+s", err)
+		f.logger.WithContext(lw.Ctx{"err": err.Error()}).Errorf("unable to load an authorized Actor from request")
 	}
 	return act
 }
