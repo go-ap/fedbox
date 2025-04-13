@@ -3,17 +3,18 @@ package integration
 import (
 	"context"
 	"fmt"
-	"github.com/containers/storage/pkg/idtools"
 	"os"
 	"path/filepath"
 	"strconv"
 
 	"github.com/containers/buildah"
 	"github.com/containers/buildah/define"
+	"github.com/containers/common/libnetwork/netavark"
 	"github.com/containers/common/pkg/config"
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/storage"
-	//"github.com/containers/storage/pkg/unshare"
+	"github.com/containers/storage/pkg/idtools"
+	"github.com/containers/storage/pkg/unshare"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 )
@@ -29,9 +30,11 @@ const (
 
 var basePath = filepath.Join(os.TempDir(), "fedbox-test")
 
-func buildImage(ctx context.Context) (string, error) {
+func buildImage(ctx context.Context, verbose bool) (string, error) {
 	logrus.SetOutput(os.Stderr)
-	logrus.SetLevel(logrus.DebugLevel)
+	if verbose {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true})
 
 	logger := logrus.New()
@@ -57,7 +60,7 @@ func buildImage(ctx context.Context) (string, error) {
 	//buildStoreOptions.GraphRoot = filepath.Join(basePath, "graph")
 	//buildStoreOptions.RootlessStoragePath = filepath.Join(basePath, "rootless")
 	//buildStoreOptions.GraphDriverName = "vfs"
-	//buildStoreOptions.GraphDriverName = "overlay2"
+	buildStoreOptions.GraphDriverName = "overlay2"
 	//buildStoreOptions.DisableVolatile = true
 	//buildStoreOptions.TransientStore = true
 	buildStoreOptions.UIDMap = []idtools.IDMap{
@@ -74,17 +77,17 @@ func buildImage(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	//_ = os.Setenv(unshare.UsernsEnvName, "done")
-	//netOpts := netavark.InitConfig{
-	//	Config: &config.Config{},
-	//	//NetworkConfigDir: filepath.Join(basePath, "net", "config"),
-	//	//NetworkRunDir:    filepath.Join(basePath, "net", "run"),
-	//	NetavarkBinary: "true",
-	//}
-	//net, err := netavark.NewNetworkInterface(&netOpts)
-	//if err != nil {
-	//	return "", err
-	//}
+	_ = os.Setenv(unshare.UsernsEnvName, "done")
+	netOpts := netavark.InitConfig{
+		Config: &config.Config{},
+		//	//NetworkConfigDir: filepath.Join(basePath, "net", "config"),
+		//	//NetworkRunDir:    filepath.Join(basePath, "net", "run"),
+		NetavarkBinary: "true",
+	}
+	net, err := netavark.NewNetworkInterface(&netOpts)
+	if err != nil {
+		return "", err
+	}
 
 	//commonBuildOpts := buildah.CommonBuildOptions{}
 	defaultEnv := []string{}
@@ -111,7 +114,7 @@ func buildImage(ctx context.Context) (string, error) {
 		Isolation:        buildah.IsolationOCIRootless,
 		NamespaceOptions: namespaces,
 		//ConfigureNetwork:      0,
-		//NetworkInterface: net,
+		NetworkInterface: net,
 		//IDMappingOptions: &define.IDMappingOptions{
 		//	AutoUserNs: true,
 		//	AutoUserNsOpts: types.AutoUserNsOptions{

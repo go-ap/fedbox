@@ -1,6 +1,6 @@
-module integration
+module github.com/go-ap/fedbox/integration
 
-go 1.23
+go 1.24.0
 
 require (
 	github.com/containers/buildah v1.37.6

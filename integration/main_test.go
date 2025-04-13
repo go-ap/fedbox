@@ -17,12 +17,12 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	if Build {
-		name, err := buildImage(context.Background())
+		name, err := buildImage(context.Background(), Verbose)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error building: %s", err)
+			_, _ = fmt.Fprintf(os.Stderr, "error building: %s", err)
 			os.Exit(-1)
 		}
-		fmt.Fprintf(os.Stdout, "built image: %s", name)
+		_, _ = fmt.Fprintf(os.Stdout, "built image: %s", name)
 	}
 
 	if st := m.Run(); st != 0 {

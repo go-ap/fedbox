@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/docker/docker/pkg/stdcopy"
 	"io"
 	"io/fs"
 	"net/http"
@@ -16,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/joho/godotenv"
 	containers "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -27,32 +27,42 @@ type fedboxContainer struct {
 
 type cntrs map[string]*fedboxContainer
 
-var defaultFedBOXImage = "localhost/fedbox/app:dev"
+var defaultFedBOXImageName = "localhost/fedbox/app:dev"
 
 type suite struct {
 	name    string
 	storage string
 }
 
-func initMocks(ctx context.Context, suites ...suite) (cntrs, error) {
+type testLogger func(s string, args ...any)
+
+func (t testLogger) Printf(s string, args ...any) {
+	t(s, args...)
+}
+
+func (t testLogger) Accept(l containers.Log) {
+	t(string(l.Content))
+}
+
+func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error) {
 	m := make(cntrs)
 
 	for _, s := range suites {
 		storage := filepath.Join(".", "mocks")
 		env := filepath.Join(storage, ".env")
 
-		img := defaultFedBOXImage
+		img := defaultFedBOXImageName
 		if s.storage != "" {
 			img += "-" + s.storage
 		}
-		c, err := Run(ctx, img, WithEnvFile(env), WithStorage(storage))
+		c, err := Run(ctx, t, img, WithEnvFile(env), WithStorage(storage))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize container %s: %w", s.name, err)
 		}
-		//i, err := c.Inspect(ctx)
-		//if err != nil {
-		//	return nil, fmt.Errorf("unable to inspect container %s: %w", name, err)
-		//}
+		_, err = c.Inspect(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("unable to inspect container %s: %w", c.Container, err)
+		}
 		m[s.name] = c
 	}
 
@@ -61,7 +71,7 @@ func initMocks(ctx context.Context, suites ...suite) (cntrs, error) {
 
 func (m cntrs) cleanup(t *testing.T) {
 	for _, mm := range m {
-		containers.CleanupContainer(t, mm.Container)
+		containers.CleanupContainer(t, mm)
 	}
 }
 
@@ -84,7 +94,6 @@ func (fc *fedboxContainer) Req(ctx context.Context, met, u string, body io.Reade
 	if err != nil {
 		return nil, fmt.Errorf("received invalid url: %w", err)
 	}
-	//in, _ := fc.Inspect(ctx)
 
 	host, err := fc.Endpoint(ctx, "https")
 	if err != nil {
@@ -110,12 +119,14 @@ func (fc *fedboxContainer) Req(ctx context.Context, met, u string, body io.Reade
 }
 
 // Run creates an instance of the FedBOX container type
-func Run(ctx context.Context, image string, opts ...containers.ContainerCustomizer) (*fedboxContainer, error) {
+func Run(ctx context.Context, t testing.TB, image string, opts ...containers.ContainerCustomizer) (*fedboxContainer, error) {
+
+	logger := testLogger(t.Logf)
 	req := containers.ContainerRequest{
 		Image: image,
 		LogConsumerCfg: &containers.LogConsumerConfig{
 			Opts:      []containers.LogProductionOption{containers.WithLogProductionTimeout(10 * time.Second)},
-			Consumers: []containers.LogConsumer{new(containers.StdoutLogConsumer)},
+			Consumers: []containers.LogConsumer{logger},
 		},
 		WaitingFor: wait.ForLog("Starting").WithStartupTimeout(500 * time.Millisecond),
 	}
@@ -126,6 +137,7 @@ func Run(ctx context.Context, image string, opts ...containers.ContainerCustomiz
 		Started:          true,
 	}
 
+	opts = append(opts, WithLogger(logger))
 	for _, opt := range opts {
 		if err := opt.Customize(&rreq); err != nil {
 			return nil, err
@@ -146,21 +158,23 @@ func Run(ctx context.Context, image string, opts ...containers.ContainerCustomiz
 		{"fedboxctl", "--env", "dev", "bootstrap"},
 		{"fedboxctl", "--env", "dev", "pub", "import", "/storage/import.json"},
 	}
-	eerrs := make([]error, 0)
+	errs := make([]error, 0)
 	for _, cmd := range initializers {
 		st, out, err := f.Exec(ctx, cmd)
 		if err != nil {
-			eerrs = append(eerrs, err)
+			errs = append(errs, err)
 		}
 		if st != 0 {
 			// command didn't return success.
+			errs = append(errs, fmt.Errorf("command failed"))
 		}
 
 		if _, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out); err != nil {
-			eerrs = append(eerrs, err)
+			errs = append(errs, err)
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
-	return &f, errors.Join(eerrs...)
+	return &f, errors.Join(errs...)
 }
 
 var envKeys = []string{
@@ -199,6 +213,13 @@ func parseListen(s string) (string, int) {
 		host = pieces[0]
 	}
 	return host, port
+}
+
+func WithLogger(logFn containers.Logging) containers.CustomizeRequestOption {
+	return func(req *containers.GenericContainerRequest) error {
+		req.Logger = logFn
+		return nil
+	}
 }
 
 func WithEnvFile(configFile string) containers.CustomizeRequestOption {

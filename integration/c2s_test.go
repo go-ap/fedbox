@@ -46,7 +46,7 @@ func Test_Fetch(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	mocks, err := initMocks(ctx, suite{name: "fedbox"})
+	mocks, err := initMocks(ctx, t, suite{name: "fedbox"})
 	if err != nil {
 		t.Fatalf("unable to initialize containers: %s", err)
 	}
@@ -57,7 +57,7 @@ func Test_Fetch(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			req, err := mocks.Req(ctx, http.MethodGet, test.arg.String(), nil)
+			req, err := mocks.Req(ctx, http.MethodGet, string(test.arg), nil)
 			r, err := httpClient.Do(req)
 			if err != nil {
 				t.Fatalf("Err received: %+v", err)
