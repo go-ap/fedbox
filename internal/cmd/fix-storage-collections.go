@@ -57,6 +57,11 @@ func fixStorageCollectionsAct(ctl *Control) cli.ActionFunc {
 		if _, ok := ctl.Storage.(processing.CollectionStore); !ok {
 			return errors.Newf("Invalid storage type %T. Unable to handle collection operations.", ctl.Storage)
 		}
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		if err := tryCreateActorCollections(ctl.Service, ctl.Storage); err != nil {
 			return err
 		}

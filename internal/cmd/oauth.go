@@ -36,8 +36,13 @@ var ls = &cli.Command{
 	Action:  lsAct(&ctl),
 }
 
-func lsAct(c *Control) cli.ActionFunc {
+func lsAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		clients, err := ctl.ListClients()
 		if err != nil {
 			return err
@@ -57,8 +62,13 @@ var del = &cli.Command{
 	Action:    delAct(&ctl),
 }
 
-func delAct(c *Control) cli.ActionFunc {
+func delAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		for i := 0; i <= c.Args().Len(); i++ {
 			id := c.Args().Get(i)
 			if id == "" {
@@ -89,8 +99,13 @@ var addClient = &cli.Command{
 	Action: addAct(&ctl),
 }
 
-func addAct(c *Control) cli.ActionFunc {
+func addAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		redirectURIs := c.StringSlice("redirectUri")
 		if len(redirectURIs) < 1 {
 			return errors.Newf("Need to provide at least a redirect URI for the client")
@@ -206,7 +221,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u any) (string, error)
 	}
 
 	// TODO(marius): add a local Client struct that implements Client and ClientSecretMatcher interfaces with bcrypt support
-	//   It could even be a struct composite from an activitypub.Application + secret and callback properties
+	//   It could even be a struct composite from an vocab.Application + secret and callback properties
 	userData, _ := json.Marshal(u)
 	d := osin.DefaultClient{
 		Id:          id,

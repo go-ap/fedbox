@@ -39,10 +39,8 @@ var BootstrapCmd = &cli.Command{
 			Value: fedbox.KeyTypeED25519,
 		},
 	},
-	Action: bootstrapAct(&ctl),
-	Subcommands: []*cli.Command{
-		reset,
-	},
+	Action:      bootstrapAct(&ctl),
+	Subcommands: []*cli.Command{reset},
 }
 
 var reset = &cli.Command{
@@ -51,26 +49,36 @@ var reset = &cli.Command{
 	Action: resetAct(&ctl),
 }
 
-func resetAct(c *Control) cli.ActionFunc {
+func resetAct(ctl *Control) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
-		err := Reset(c.Conf)
+		if err := ctl.Storage.Open(); err != nil {
+			return http.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
+		err := Reset(ctl.Conf)
 		if err != nil {
 			return err
 		}
-		return Bootstrap(c.Conf, c.Service)
+		return Bootstrap(ctl.Conf, ctl.Service)
 	}
 }
 
-func bootstrapAct(c *Control) cli.ActionFunc {
+func bootstrapAct(ctl *Control) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return http.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		keyType := ctx.String("keyType")
-		c.Service = ap.Self(ap.DefaultServiceIRI(c.Conf.BaseURL))
-		if err := Bootstrap(c.Conf, c.Service); err != nil {
+		ctl.Service = ap.Self(ap.DefaultServiceIRI(ctl.Conf.BaseURL))
+		if err := Bootstrap(ctl.Conf, ctl.Service); err != nil {
 			Errf("Error adding service: %s\n", err)
 			return err
 		}
 		if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
-			if err := AddKeyToItem(metaSaver, &c.Service, keyType); err != nil {
+			if err := AddKeyToItem(metaSaver, &ctl.Service, keyType); err != nil {
 				Errf("Error saving metadata for service: %s", err)
 				return err
 			}
@@ -80,7 +88,7 @@ func bootstrapAct(c *Control) cli.ActionFunc {
 }
 
 func Bootstrap(conf config.Options, service vocab.Item) error {
-	l := lw.Dev(lw.SetOutput(os.Stderr))
+	l := lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(os.Stdout))
 	if err := storage.BootstrapFn(conf); err != nil {
 		return http.Annotatef(err, "Unable to create %s path for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}
@@ -88,8 +96,13 @@ func Bootstrap(conf config.Options, service vocab.Item) error {
 
 	db, err := fedbox.Storage(conf, l)
 	if err != nil {
-		return http.Annotatef(err, "Unable to load FedBOX storage for path %s", conf.StoragePath)
+		return http.Annotatef(err, "Unable to initialize FedBOX storage for path %s", conf.StoragePath)
 	}
+	if err := db.Open(); err != nil {
+		return http.Annotatef(err, "Unable to open FedBOX storage for path %s", conf.StoragePath)
+	}
+	defer db.Close()
+
 	if err = CreateService(db, service); err != nil {
 		return http.Annotatef(err, "Unable to create FedBOX service %s for storage %s", service.GetID(), conf.Storage)
 	}
@@ -98,7 +111,7 @@ func Bootstrap(conf config.Options, service vocab.Item) error {
 }
 
 func Reset(conf config.Options) error {
-	l := lw.Dev(lw.SetOutput(os.Stderr))
+	l := lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(os.Stdout))
 	if err := storage.CleanFn(conf); err != nil {
 		return http.Annotatef(err, "Unable to reset %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}

@@ -106,6 +106,7 @@ func cleanDB(t *testing.T, opt config.Options) {
 	t.Logf("Removing path: %s", tempPath)
 
 	//As we're using t.TempDir for the storage path, we can remove it fully
+	t.Logf("Removing path: %s", tempPath)
 	if err = os.RemoveAll(tempPath); err != nil {
 		t.Logf("Unable to remove path: %s: %s", tempPath, err)
 	}
@@ -159,18 +160,17 @@ func saveMocks(testData []string, config config.Options, db ls.FullStorage, l lw
 	}
 
 	baseIRI := vocab.IRI(config.BaseURL)
-
-	mocks := make(vocab.ItemCollection, 0)
+	m := make(vocab.ItemCollection, 0)
 	for _, mock := range testData {
 		it := loadMockFromDisk(mock, nil)
 		if !it.GetLink().Contains(baseIRI, false) {
 			continue
 		}
-		if !mocks.Contains(it) {
-			mocks = append(mocks, it)
+		if !m.Contains(it) {
+			m = append(m, it)
 		}
 	}
-	if err := addMockObjects(db, mocks); err != nil {
+	if err := addMockObjects(db, m); err != nil {
 		return err
 	}
 
@@ -229,7 +229,7 @@ func getTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
 
 	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
 
-	l := lw.Dev(lw.SetLevel(options.LogLevel), lw.SetOutput(os.Stdout))
+	l := lw.Prod(lw.SetLevel(options.LogLevel), lw.SetOutput(os.Stdout))
 	db, err := fedbox.Storage(options, l.WithContext(fields))
 	if err != nil {
 		return nil, err
@@ -239,7 +239,8 @@ func getTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := seedTestData(a); err != nil {
+
+	if err = seedTestData(a); err != nil {
 		return nil, err
 	}
 

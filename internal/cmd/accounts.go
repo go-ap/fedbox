@@ -33,6 +33,11 @@ var exportAccountsMetadataCmd = &cli.Command{
 
 func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		metaLoader, ok := ctl.Storage.(storage.MetadataTyper)
 		if !ok {
 			return errors.Newf("")
@@ -90,6 +95,11 @@ var importAccountsMetadataCmd = &cli.Command{
 
 func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		files := c.Args().Slice()
 		metaLoader, ok := ctl.Storage.(storage.MetadataTyper)
 		if !ok {
@@ -179,6 +189,11 @@ func AddKeyToItem(metaSaver storage.MetadataTyper, it vocab.Item, typ string) er
 
 func generateKeys(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		typ := c.String("key-type")
 		metaSaver, ok := ctl.Storage.(storage.MetadataTyper)
 		if !ok {

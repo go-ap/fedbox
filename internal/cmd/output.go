@@ -14,14 +14,14 @@ func bytef(s string, p ...any) []byte {
 }
 
 func outObject(o *vocab.Object, b io.Writer) error {
-	b.Write(bytef("[%s] %s // %s", o.Type, o.ID, o.Published.Format("02 Jan 2006 15:04:05")))
+	_, _ = b.Write(bytef("[%s] %s // %s", o.Type, o.ID, o.Published.Format("02 Jan 2006 15:04:05")))
 	if len(o.Name) > 0 {
 		for _, s := range o.Name {
 			ss := strings.Trim(s.Value.String(), "\n\r\t ")
 			if s.Ref != vocab.NilLangRef {
-				b.Write(bytef("\n\tName[%s]: %s", s.Ref, ss))
+				_, _ = b.Write(bytef("\n\tName[%s]: %s", s.Ref, ss))
 			}
-			b.Write(bytef("\n\tName: %s", ss))
+			_, _ = b.Write(bytef("\n\tName: %s", ss))
 		}
 	}
 	if o.Summary != nil {
@@ -32,9 +32,9 @@ func outObject(o *vocab.Object, b io.Writer) error {
 				if len(cont) > 72 {
 					cont = cont[:72]
 				}
-				b.Write(bytef("\n\tSummary[%s]: %s", cont, ss))
+				_, _ = b.Write(bytef("\n\tSummary[%s]: %s", cont, ss))
 			}
-			b.Write(bytef("\n\tSummary: %s", ss))
+			_, _ = b.Write(bytef("\n\tSummary: %s", ss))
 		}
 	}
 	if o.Content != nil {
@@ -45,9 +45,9 @@ func outObject(o *vocab.Object, b io.Writer) error {
 				if len(cont) > 72 {
 					cont = cont[:72]
 				}
-				b.Write(bytef("\n\tContent[%s]: %s", cont, cc))
+				_, _ = b.Write(bytef("\n\tContent[%s]: %s", cont, cc))
 			}
-			b.Write(bytef("\n\tContent: %s", cc))
+			_, _ = b.Write(bytef("\n\tContent: %s", cc))
 		}
 	}
 	return nil
@@ -127,7 +127,7 @@ func outText(where io.Writer) func(it vocab.Item) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(where, "%s", b.Bytes())
+		_, _ = fmt.Fprintf(where, "%s", b.Bytes())
 		return nil
 	}
 }
@@ -138,7 +138,7 @@ func outJSON(where io.Writer) func(it vocab.Item) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(where, "%s", out)
+		_, _ = fmt.Fprintf(where, "%s", out)
 		return nil
 	}
 }

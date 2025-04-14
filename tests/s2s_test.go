@@ -199,5 +199,5 @@ var S2SReceiveTests = testPairs{
 }
 
 func Test_S2SReceiveRequests(t *testing.T) {
-	runTestSuite(t, S2SReceiveTests)
+	runTestSuites(t, S2SReceiveTests)
 }

@@ -11,13 +11,13 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var version = "HEAD"
+var Version = "HEAD"
 
 func main() {
 	app := cli.App{}
 	app.Name = "fedboxctl"
 	app.Usage = "helper utility to manage a FedBOX instance"
-	if build, ok := debug.ReadBuildInfo(); ok && version == "HEAD" {
+	if build, ok := debug.ReadBuildInfo(); ok && Version == "HEAD" {
 		app.Version = build.Main.Version
 	}
 	app.Before = cmd.Before

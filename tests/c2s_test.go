@@ -1721,45 +1721,45 @@ var QuestionTests = testPairs{
 }
 
 func Test_SingleItemLoad(t *testing.T) {
-	runTestSuite(t, SingleItemLoadTests)
+	runTestSuites(t, SingleItemLoadTests)
 }
 
 func Test_ObjectsCollections(t *testing.T) {
-	runTestSuite(t, ObjectsCollectionTests)
+	runTestSuites(t, ObjectsCollectionTests)
 }
 
 func Test_ActivitiesCollection(t *testing.T) {
-	runTestSuite(t, ActivitiesCollectionTests)
+	runTestSuites(t, ActivitiesCollectionTests)
 }
 
 func Test_ActorsCollection(t *testing.T) {
-	runTestSuite(t, ActorsCollectionTests)
+	runTestSuites(t, ActorsCollectionTests)
 }
 
 func Test_C2S_CreateRequests(t *testing.T) {
-	runTestSuite(t, CreateTests)
+	runTestSuites(t, CreateTests)
 }
 
 func Test_C2S_UpdateRequests(t *testing.T) {
-	runTestSuite(t, UpdateTests)
+	runTestSuites(t, UpdateTests)
 }
 
 func Test_C2S_DeleteRequests(t *testing.T) {
-	runTestSuite(t, DeleteTests)
+	runTestSuites(t, DeleteTests)
 }
 
 func Test_C2S_LikeRequests(t *testing.T) {
-	runTestSuite(t, LikeTests)
+	runTestSuites(t, LikeTests)
 }
 
 func Test_C2S_FollowRequests(t *testing.T) {
-	runTestSuite(t, FollowTests)
+	runTestSuites(t, FollowTests)
 }
 
 func Test_C2S_BlockRequests(t *testing.T) {
-	runTestSuite(t, BlockTests)
+	runTestSuites(t, BlockTests)
 }
 
 func Test_C2S_QuestionRequests(t *testing.T) {
-	runTestSuite(t, QuestionTests)
+	runTestSuites(t, QuestionTests)
 }

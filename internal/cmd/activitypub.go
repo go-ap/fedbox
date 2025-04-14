@@ -76,6 +76,11 @@ var addActor = &cli.Command{
 
 func addActorAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		keyType := c.String("keyType")
 		names := c.Args().Slice()
 		if len(names) == 0 {
@@ -99,9 +104,9 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 
 		objectsCollection := filters.ObjectsType.IRI(vocab.IRI(ctl.Conf.BaseURL))
 		allObjects, _ := ctl.Storage.Load(objectsCollection)
-		vocab.OnCollectionIntf(allObjects, func(col vocab.CollectionInterface) error {
+		_ = vocab.OnCollectionIntf(allObjects, func(col vocab.CollectionInterface) error {
 			for _, it := range col.Collection() {
-				vocab.OnObject(it, func(object *vocab.Object) error {
+				_ = vocab.OnObject(it, func(object *vocab.Object) error {
 					for _, tag := range c.StringSlice("tag") {
 						if object.Name.First().Value.String() != tag {
 							continue
@@ -109,7 +114,7 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 						if object.AttributedTo.GetLink() != author.GetLink() {
 							continue
 						}
-						tags.Append(object)
+						_ = tags.Append(object)
 					}
 					return nil
 				})
@@ -293,6 +298,11 @@ var delObjectsCmd = &cli.Command{
 
 func delObjectsAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		return ctl.DeleteObjects(c.String("reason"), c.StringSlice("inReplyTo"), c.Args().Slice()...)
 	}
 }
@@ -356,7 +366,7 @@ func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...string
 		return err
 	}
 
-	printItem(d, "text")
+	_ = printItem(d, "text")
 	return nil
 }
 
@@ -389,6 +399,11 @@ func printItem(it vocab.Item, outType string) error {
 
 func listObjectsAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		typeFl := c.StringSlice("type")
 
 		var paths vocab.IRIs
@@ -473,7 +488,7 @@ func (c *Control) List(iris vocab.IRIs, types ...string) (vocab.ItemCollection, 
 		if err != nil {
 			return items, err
 		}
-		vocab.OnItem(col, func(it vocab.Item) error {
+		_ = vocab.OnItem(col, func(it vocab.Item) error {
 			if !vocab.IsNil(it) {
 				items = append(items, it)
 			}
@@ -513,6 +528,11 @@ var validObjects = append(vocab.ObjectTypes, vocab.ObjectType, "")
 
 func addObjectAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		f := make(filters.Checks, 0)
 
 		incType := c.String("type")
@@ -587,6 +607,11 @@ var importCmd = &cli.Command{
 
 func importPubObjects(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		baseIRI := ctl.Conf.BaseURL
 		toReplace := c.String("base")
 		files := c.Args().Slice()
@@ -637,8 +662,8 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 							if err != nil {
 								actor = &vocab.Actor{ID: a.Actor.GetLink()}
 							}
-							ap := saver(ctl)
-							it, err = ap.ProcessClientActivity(it, *actor, vocab.Outbox.Of(a.Actor).GetLink())
+							activityPub := saver(ctl)
+							it, err = activityPub.ProcessClientActivity(it, *actor, vocab.Outbox.Of(a.Actor).GetLink())
 							return err
 						})
 					} else {
@@ -694,6 +719,11 @@ func dumpAll(iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection, error) {
 
 func exportPubObjects(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		baseURL := vocab.IRI(ctl.Conf.BaseURL)
 		objects := make(vocab.ItemCollection, 0)
 		allCollections := vocab.CollectionPaths{filters.ActivitiesType, filters.ActorsType, filters.ObjectsType}
@@ -703,6 +733,9 @@ func exportPubObjects(ctl *Control) cli.ActionFunc {
 				return err
 			}
 			objects = append(objects, dump...)
+		}
+		if len(objects) == 0 {
+			return errors.Errorf("No objects to export")
 		}
 		sort.Slice(objects, func(i, j int) bool {
 			return vocab.ItemOrderTimestamp(objects[i], objects[j])
@@ -721,6 +754,11 @@ func exportPubObjects(ctl *Control) cli.ActionFunc {
 
 func showObjectAct(ctl *Control) cli.ActionFunc {
 	return func(c *cli.Context) error {
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		objects := make(vocab.ItemCollection, 0)
 		if c.Args().Len() == 0 {
 			return errors.Errorf("No IRIs passed")
@@ -800,6 +838,11 @@ func movePubObjects(ctl *Control) cli.ActionFunc {
 		if c.NArg() < 2 {
 			return errors.Errorf("Need a source IRI and a destination collection IRI")
 		}
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		source := vocab.IRI(c.Args().Get(0))
 		destination := vocab.IRI(c.Args().Get(1))
 		return ctl.MoveObjects(source, destination)
@@ -837,6 +880,11 @@ func copyPubObjects(ctl *Control) cli.ActionFunc {
 		if c.NArg() < 2 {
 			return errors.Errorf("Need a source IRI and a destination collection IRI")
 		}
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		argSl := c.Args().Slice()
 		var source vocab.ItemCollection
 		for _, arg := range argSl[:c.NArg()-1] {
@@ -883,6 +931,11 @@ func indexPubObjects(ctl *Control) cli.ActionFunc {
 			_, _ = fmt.Fprintf(os.Stderr, "Current storage engine %T does not support reindexing\n", ctl.Storage)
 			return errors.Newf("unsupported storage engine")
 		}
+		if err := ctl.Storage.Open(); err != nil {
+			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+		}
+		defer ctl.Storage.Close()
+
 		if err := indexer.Reindex(); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Indexing failed: %s", err)
 			return err

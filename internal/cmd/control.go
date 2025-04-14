@@ -44,15 +44,12 @@ var ctl Control
 
 func Before(c *cli.Context) error {
 	fields := lw.Ctx{}
-	if c.Command != nil && c.Command.Name != "" {
-		fields["cli"] = c.Command.FullName()
-	}
 
 	logLevel := lw.InfoLevel
 	if c.Bool("verbose") {
 		logLevel = lw.DebugLevel
 	}
-	logger := lw.Dev(lw.SetLevel(logLevel))
+	logger := lw.Prod(lw.SetLevel(logLevel), lw.SetOutput(os.Stdout))
 	ct, err := setup(c, logger.WithContext(fields))
 	if err != nil {
 		// Ensure we don't print the default help message, which is not useful here
@@ -109,6 +106,11 @@ func setup(c *cli.Context, l lw.Logger) (*Control, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err = db.Open(); err != nil {
+		return nil, errors.Annotatef(err, "Unable to open FedBOX storage for path %s", conf.StoragePath)
+	}
+	defer db.Close()
+
 	return New(db, conf, l)
 }
 
@@ -135,5 +137,5 @@ func loadFromStdin(s string, params ...any) ([]byte, error) {
 }
 
 func Errf(s string, par ...any) {
-	fmt.Fprintf(os.Stderr, s+"\n", par...)
+	_, _ = fmt.Fprintf(os.Stderr, s+"\n", par...)
 }

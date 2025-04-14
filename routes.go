@@ -9,7 +9,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func (f FedBOX) Routes() func(chi.Router) {
+func (f *FedBOX) Routes() func(chi.Router) {
 	return func(r chi.Router) {
 		r.Use(middleware.RequestID)
 		r.Use(middleware.RealIP)
@@ -35,7 +35,7 @@ func (f FedBOX) Routes() func(chi.Router) {
 	}
 }
 
-func (f FedBOX) CollectionRoutes(descend bool) func(chi.Router) {
+func (f *FedBOX) CollectionRoutes(descend bool) func(chi.Router) {
 	return func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Method(http.MethodGet, "/", HandleCollection(f))

@@ -66,7 +66,7 @@ func run(version string) cli.ActionFunc {
 			}
 			defer func() {
 				if err := out.Close(); err != nil {
-					fmt.Fprintf(os.Stderr, "Unable to close log output: %s", err)
+					_, _ = fmt.Fprintf(os.Stderr, "Unable to close log output: %s", err)
 				}
 			}()
 		}
@@ -77,9 +77,7 @@ func run(version string) cli.ActionFunc {
 			l = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
 		}
 		db, err := fedbox.Storage(conf, l.WithContext(lw.Ctx{"log": "storage"}))
-		if err != nil {
-			l.Errorf("Unable to initialize storage backend: %s", err)
-		}
+
 		a, err := fedbox.New(l.WithContext(lw.Ctx{"log": "fedbox"}), conf, db)
 		if err != nil {
 			l.Errorf("Unable to initialize: %s", err)

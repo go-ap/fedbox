@@ -21,7 +21,6 @@ import (
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
-	"github.com/openshift/osin"
 )
 
 func init() {
@@ -82,9 +81,13 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 	if db == nil {
 		return nil, errors.Newf("invalid storage")
 	}
+	if err := db.Open(); err != nil {
+		return nil, errors.Annotatef(err, "unable to open storage: %s", conf.StoragePath)
+	}
 	if conf.BaseURL == "" {
 		return nil, errors.Newf("invalid empty BaseURL config")
 	}
+
 	app := FedBOX{
 		conf:    conf,
 		R:       chi.NewRouter(),
@@ -108,26 +111,9 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 
 	errors.IncludeBacktrace = conf.LogLevel == lw.TraceLevel
 
-	selfIRI := ap.DefaultServiceIRI(conf.BaseURL)
-	app.self, _ = ap.LoadActor(db, selfIRI)
-	if app.self.ID != selfIRI {
-		if saver, ok := db.(st.CanBootstrap); ok {
-			app.infFn("trying to bootstrap the instance's self service")
-			app.self = ap.Self(selfIRI)
-			if err := saver.CreateService(app.self); err != nil {
-				app.errFn("unable to save the instance's self service: %s", err)
-				return nil, err
-			}
-		}
-		keysType := KeyTypeED25519
-		if conf.MastodonCompatible {
-			keysType = KeyTypeRSA
-		}
-		if saver, ok := db.(st.MetadataTyper); ok {
-			if err := AddKeyToPerson(saver, keysType)(&app.self); err != nil {
-				app.errFn("unable to save the instance's self service public key: %s", err)
-			}
-		}
+	if err := app.setupService(); err != nil {
+		app.errFn("unable to save the instance's self service: %s", err)
+		return nil, err
 	}
 
 	app.R.Group(app.Routes())
@@ -169,6 +155,37 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 	return &app, nil
 }
 
+func (f *FedBOX) setupService() error {
+	db := f.storage
+
+	conf := f.conf
+
+	selfIRI := ap.DefaultServiceIRI(conf.BaseURL)
+	var err error
+
+	f.self, err = ap.LoadActor(db, selfIRI)
+	if err != nil && errors.IsNotFound(err) {
+		if saver, ok := db.(st.CanBootstrap); ok {
+			f.infFn("trying to bootstrap the instance's self service")
+			f.self = ap.Self(selfIRI)
+			// FIXME(marius): this looks suspiciously like it doesn't exist
+			if err := saver.CreateService(f.self); err != nil {
+				return err
+			}
+		}
+		keysType := KeyTypeED25519
+		if conf.MastodonCompatible {
+			keysType = KeyTypeRSA
+		}
+		if saver, ok := db.(st.MetadataTyper); ok {
+			if err := AddKeyToPerson(saver, keysType)(&f.self); err != nil {
+				f.errFn("unable to save the instance's self service public key: %s", err)
+			}
+		}
+	}
+	return nil
+}
+
 func (f *FedBOX) Config() config.Options {
 	return f.conf
 }
@@ -179,10 +196,7 @@ func (f *FedBOX) Storage() st.FullStorage {
 
 // Stop
 func (f *FedBOX) Stop(ctx context.Context) {
-	if r, ok := f.storage.(osin.Storage); ok {
-		r.Close()
-	}
-
+	f.storage.Close()
 	_ = f.stopFn(ctx)
 }
 
