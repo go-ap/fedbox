@@ -16,6 +16,15 @@ TAG ?= $(ENV)
 TAG_CMD=podman tag
 PUSH_CMD=podman push
 
+ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
+	BRANCH=$(shell git rev-parse --abbrev-ref HEAD | tr '/' '-')
+	HASH=$(shell git rev-parse --short HEAD)
+	VERSION ?= $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
+endif
+ifeq ($(shell git describe --tags > /dev/null 2>&1 ; echo $$?), 0)
+	VERSION ?= $(shell git describe --tags | tr '/' '-')
+endif
+
 ifneq ($(STORAGE),all)
 	TAG=$(ENV)-$(STORAGE)
 endif
