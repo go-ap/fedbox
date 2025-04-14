@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	cache2 "git.sr.ht/~mariusor/cache"
 	"git.sr.ht/~mariusor/lw"
@@ -21,6 +22,7 @@ import (
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
+	"github.com/openshift/osin"
 )
 
 func init() {
@@ -165,22 +167,18 @@ func (f *FedBOX) setupService() error {
 
 	f.self, err = ap.LoadActor(db, selfIRI)
 	if err != nil && errors.IsNotFound(err) {
-		if saver, ok := db.(st.CanBootstrap); ok {
-			f.infFn("trying to bootstrap the instance's self service")
-			f.self = ap.Self(selfIRI)
-			// FIXME(marius): this looks suspiciously like it doesn't exist
-			if err := saver.CreateService(f.self); err != nil {
-				return err
-			}
+		f.infFn("No service actor found, creating one: %s", selfIRI)
+		self := ap.Self(selfIRI)
+		if err = CreateService(db, self); err != nil {
+			return err
 		}
+		f.self = self
 		keysType := KeyTypeED25519
 		if conf.MastodonCompatible {
 			keysType = KeyTypeRSA
 		}
-		if saver, ok := db.(st.MetadataTyper); ok {
-			if err := AddKeyToPerson(saver, keysType)(&f.self); err != nil {
-				f.errFn("unable to save the instance's self service public key: %s", err)
-			}
+		if err = AddKeyToItem(db, &f.self, keysType); err != nil {
+			f.errFn("Unable to save the instance's self service public key: %s", err)
 		}
 	}
 	return nil
@@ -278,4 +276,42 @@ func (f *FedBOX) errFn(s string, p ...any) {
 	if f.logger != nil {
 		f.logger.Errorf(s, p...)
 	}
+}
+
+func CreateService(r st.FullStorage, self vocab.Item) (err error) {
+	_ = vocab.OnActor(self, func(service *vocab.Actor) error {
+		service.Published = time.Now().UTC()
+		return nil
+	})
+	self, err = r.Save(self)
+	if err != nil {
+		return err
+	}
+
+	c := osin.DefaultClient{Id: string(self.GetLink())}
+	_ = r.CreateClient(&c)
+
+	rr, ok := r.(processing.CollectionStore)
+	if !ok {
+		return nil
+	}
+
+	col := func(iri vocab.IRI) vocab.CollectionInterface {
+		return &vocab.OrderedCollection{
+			ID:           iri,
+			Type:         vocab.OrderedCollectionType,
+			Published:    time.Now().UTC(),
+			AttributedTo: self.GetLink(),
+			CC:           vocab.ItemCollection{vocab.PublicNS},
+		}
+	}
+	return vocab.OnActor(self, func(service *vocab.Actor) error {
+		var multi error
+		for _, stream := range service.Streams {
+			if _, err := rr.Create(col(stream.GetID())); err != nil {
+				multi = errors.Join(multi, err)
+			}
+		}
+		return multi
+	})
 }

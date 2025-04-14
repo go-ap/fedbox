@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
@@ -14,8 +12,6 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/storage"
 	s "github.com/go-ap/fedbox/storage"
-	"github.com/go-ap/processing"
-	"github.com/openshift/osin"
 	"github.com/urfave/cli/v2"
 )
 
@@ -120,39 +116,5 @@ func Reset(conf config.Options) error {
 }
 
 func CreateService(r s.FullStorage, self vocab.Item) (err error) {
-	_ = vocab.OnActor(self, func(service *vocab.Actor) error {
-		service.Published = time.Now().UTC()
-		return nil
-	})
-	self, err = r.Save(self)
-	if err != nil {
-		return err
-	}
-
-	c := osin.DefaultClient{Id: string(self.GetLink())}
-	_ = r.CreateClient(&c)
-
-	rr, ok := r.(processing.CollectionStore)
-	if !ok {
-		return nil
-	}
-
-	col := func(iri vocab.IRI) vocab.CollectionInterface {
-		return &vocab.OrderedCollection{
-			ID:           iri,
-			Type:         vocab.OrderedCollectionType,
-			Published:    time.Now().UTC(),
-			AttributedTo: self.GetLink(),
-			CC:           vocab.ItemCollection{vocab.PublicNS},
-		}
-	}
-	return vocab.OnActor(self, func(service *vocab.Actor) error {
-		var multi error
-		for _, stream := range service.Streams {
-			if _, err := rr.Create(col(stream.GetID())); err != nil {
-				multi = errors.Join(multi, err)
-			}
-		}
-		return multi
-	})
+	return fedbox.CreateService(r, self)
 }

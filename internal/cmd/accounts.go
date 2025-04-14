@@ -11,7 +11,6 @@ import (
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/jsonld"
-	"github.com/go-ap/processing"
 	"github.com/urfave/cli/v2"
 )
 
@@ -174,17 +173,7 @@ var generateKeysCmd = &cli.Command{
 }
 
 func AddKeyToItem(metaSaver storage.MetadataTyper, it vocab.Item, typ string) error {
-	if err := vocab.OnActor(it, fedbox.AddKeyToPerson(metaSaver, typ)); err != nil {
-		return errors.Annotatef(err, "failed to process actor: %s", it.GetID())
-	}
-	st, ok := metaSaver.(processing.Store)
-	if !ok {
-		return errors.Newf("invalid item store, failed to save actor: %s", it.GetID())
-	}
-	if _, err := st.Save(it); err != nil {
-		return errors.Annotatef(err, "failed to save actor: %s", it.GetID())
-	}
-	return nil
+	return fedbox.AddKeyToItem(metaSaver, it, typ)
 }
 
 func generateKeys(ctl *Control) cli.ActionFunc {
