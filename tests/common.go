@@ -979,11 +979,6 @@ func runTestSuite(t *testing.T, suite testSuite) {
 					return
 				}
 				suite.apps[self.ID] = fb
-				go func(ctx context.Context) {
-					// NOTE(marius): we don't care about the error, since reporting it would trigger a race condition.
-					// Sigh.
-					_ = fb.Run(ctx)
-				}(ctx)
 			}
 		}
 
@@ -997,6 +992,9 @@ func runTestSuite(t *testing.T, suite testSuite) {
 				if err := saveMocks(m, app.Config(), app.Storage(), l); err != nil {
 					t.Fatalf("%s", err)
 				}
+				go func(ctx context.Context) {
+					_ = app.Run(ctx)
+				}(ctx)
 			}
 
 			t.Run(test.label(), func(t *testing.T) {
@@ -1007,8 +1005,8 @@ func runTestSuite(t *testing.T, suite testSuite) {
 		for _, app := range suite.apps {
 			// NOTE(marius): we removed the deferred app.Stop(),
 			// to avoid race conditions when running multiple FedBOX instances for the federated tests
-			cleanDB(t, app.Config())
 			app.Stop(ctx)
+			cleanDB(t, app.Config())
 		}
 		stopFn()
 	})
