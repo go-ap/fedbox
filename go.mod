@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
-	git.sr.ht/~mariusor/wrapper v0.0.0-20240519120935-f877e4d97def
+	git.sr.ht/~mariusor/wrapper v0.0.0-20250414202025-7af98c35299c
 	github.com/go-ap/activitypub v0.0.0-20250409143848-7113328b1f3d
 	github.com/go-ap/auth v0.0.0-20250409144154-5b90f4f02389
 	github.com/go-ap/cache v0.0.0-20250409143941-46ead8c57c50
