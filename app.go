@@ -235,6 +235,8 @@ func (f *FedBOX) Run(ctx context.Context) error {
 		"listenOn": f.conf.Listen,
 		"TLS":      f.conf.Secure,
 	}
+	ctx, cancelFn := context.WithTimeout(context.Background(), f.Config().TimeOut)
+	defer f.Stop(ctx)
 
 	logger := f.logger.WithContext(logCtx)
 
@@ -248,15 +250,17 @@ func (f *FedBOX) Run(ctx context.Context) error {
 		},
 		syscall.SIGINT: func(exit chan<- error) {
 			logger.Infof("SIGINT received, stopping")
+			cancelFn()
 			exit <- nil
 		},
 		syscall.SIGTERM: func(exit chan<- error) {
-			logger.Infof("SIGITERM received, force stopping")
+			logger.Infof("SIGTERM received, force stopping")
+			cancelFn()
 			exit <- nil
 		},
 		syscall.SIGQUIT: func(exit chan<- error) {
 			logger.Infof("SIGQUIT received, force stopping with core-dump")
-			f.Stop(ctx)
+			cancelFn()
 			exit <- nil
 		},
 	}).Exec(ctx, f.startFn)
