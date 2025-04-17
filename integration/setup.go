@@ -18,6 +18,7 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/joho/godotenv"
 	containers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -215,7 +216,7 @@ func parseListen(s string) (string, int) {
 	return host, port
 }
 
-func WithLogger(logFn containers.Logging) containers.CustomizeRequestOption {
+func WithLogger(logFn log.Logger) containers.CustomizeRequestOption {
 	return func(req *containers.GenericContainerRequest) error {
 		req.Logger = logFn
 		return nil

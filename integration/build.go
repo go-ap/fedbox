@@ -9,13 +9,13 @@ import (
 
 	"github.com/containers/buildah"
 	"github.com/containers/buildah/define"
-	"github.com/containers/common/libnetwork/netavark"
 	"github.com/containers/common/pkg/config"
+	stt "github.com/containers/image/v5/storage"
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/storage"
 	"github.com/containers/storage/pkg/idtools"
 	"github.com/containers/storage/pkg/unshare"
-	"github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/containers/storage/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -37,9 +37,61 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 	}
 	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true})
 
-	logger := logrus.New()
+	//logger := logrus.New()
 
 	buildah.InitReexec()
+
+	buildStoreOptions, err := storage.DefaultStoreOptions()
+	if err != nil {
+		return "", err
+	}
+
+	buildStoreOptions.RunRoot = filepath.Join(basePath, "root")
+	buildStoreOptions.GraphRoot = filepath.Join(basePath, "graph")
+	buildStoreOptions.RootlessStoragePath = filepath.Join(basePath, "rootless")
+	//buildStoreOptions.GraphDriverName = "vfs"
+	//buildStoreOptions.GraphDriverName = "aufs"
+	buildStoreOptions.GraphDriverName = "overlay"
+	buildStoreOptions.GraphDriverOptions = []string{
+		"skip_mount_home=true",
+		//"ignore_chown_errors=true",
+		//"use_composefs=true", // error building: composefs is not supported in user namespaces
+	}
+	//buildStoreOptions.DisableVolatile = true
+	//buildStoreOptions.TransientStore = true
+	buildStoreOptions.UIDMap = stt.Transport.DefaultUIDMap()
+	buildStoreOptions.GIDMap = stt.Transport.DefaultGIDMap()
+
+	store, err := storage.GetStore(buildStoreOptions)
+	if err != nil {
+		return "", err
+	}
+
+	_ = os.Setenv(unshare.UsernsEnvName, "done")
+	//netOpts := netavark.InitConfig{
+	//	Config:           &config.Config{},
+	//	NetworkConfigDir: filepath.Join(basePath, "net", "config"),
+	//	NetworkRunDir:    filepath.Join(basePath, "net", "run"),
+	//	NetavarkBinary:   "true",
+	//}
+	//net, err := netavark.NewNetworkInterface(&netOpts)
+	//if err != nil {
+	//	return "", err
+	//}
+	//
+	commonBuildOpts := buildah.CommonBuildOptions{}
+	//defaultEnv := []string{}
+
+	// NOTE(marius): this fails with a mounting error.
+	// The internet seems to suggest we need to force a user namespace creation when running rootless,
+	// but I don't know how to do this programmatically, and they don't give any clues:
+	// https://github.com/containers/buildah/issues/5744
+	// https://github.com/containers/buildah/issues/3948
+	//namespaces, err := buildah.DefaultNamespaceOptions()
+	//if err != nil {
+	//	return "", err
+	//}
+	//namespaces.AddOrReplace(define.NamespaceOption{Name: string(specs.MountNamespace), Host: true})
 
 	conf, err := config.Default()
 	if err != nil {
@@ -52,87 +104,36 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 		return "", err
 	}
 
-	buildStoreOptions, err := storage.DefaultStoreOptions()
-	if err != nil {
-		return "", err
-	}
-	//buildStoreOptions.RunRoot = filepath.Join(basePath, "root")
-	//buildStoreOptions.GraphRoot = filepath.Join(basePath, "graph")
-	//buildStoreOptions.RootlessStoragePath = filepath.Join(basePath, "rootless")
-	//buildStoreOptions.GraphDriverName = "vfs"
-	buildStoreOptions.GraphDriverName = "overlay2"
-	//buildStoreOptions.DisableVolatile = true
-	//buildStoreOptions.TransientStore = true
-	buildStoreOptions.UIDMap = []idtools.IDMap{
-		{ContainerID: 0, HostID: 1000, Size: 1},
-		{ContainerID: 1, HostID: 10000, Size: 65536},
-	}
-	buildStoreOptions.GIDMap = []idtools.IDMap{
-		{ContainerID: 0, HostID: 1000, Size: 1},
-		{ContainerID: 1, HostID: 10000, Size: 65536},
-	}
-
-	store, err := storage.GetStore(buildStoreOptions)
-	if err != nil {
-		return "", err
-	}
-
-	_ = os.Setenv(unshare.UsernsEnvName, "done")
-	netOpts := netavark.InitConfig{
-		Config: &config.Config{},
-		//	//NetworkConfigDir: filepath.Join(basePath, "net", "config"),
-		//	//NetworkRunDir:    filepath.Join(basePath, "net", "run"),
-		NetavarkBinary: "true",
-	}
-	net, err := netavark.NewNetworkInterface(&netOpts)
-	if err != nil {
-		return "", err
-	}
-
-	//commonBuildOpts := buildah.CommonBuildOptions{}
-	defaultEnv := []string{}
-
-	// NOTE(marius): this fails with a mounting error.
-	// The internet seems to suggest we need to force a user namespace creation when running rootless,
-	// but I don't know how to do this programmatically, and they don't give any clues:
-	// https://github.com/containers/buildah/issues/5744
-	// https://github.com/containers/buildah/issues/3948
-	namespaces, err := buildah.DefaultNamespaceOptions()
-	if err != nil {
-		return "", err
-	}
-	namespaces.AddOrReplace(define.NamespaceOption{Name: string(specs.MountNamespace), Host: true})
-
 	buildOpts := buildah.BuilderOptions{
 		Args:         nil,
 		FromImage:    baseImage,
 		Capabilities: capabilities,
 		Container:    containerName,
-		Logger:       logger,
-		Mount:        true,
-		//ReportWriter: os.Stderr,
-		Isolation:        buildah.IsolationOCIRootless,
-		NamespaceOptions: namespaces,
+		//Logger:       logger,
+		//Mount:            true,
+		ReportWriter: os.Stderr,
+		Isolation:    buildah.IsolationOCIRootless,
+		//NamespaceOptions: namespaces,
 		//ConfigureNetwork:      0,
-		NetworkInterface: net,
-		//IDMappingOptions: &define.IDMappingOptions{
-		//	AutoUserNs: true,
-		//	AutoUserNsOpts: types.AutoUserNsOptions{
-		//		Size:        4096,
-		//		InitialSize: 1024,
-		//		AdditionalUIDMappings: []idtools.IDMap{
-		//			{ContainerID: 10000, HostID: 1, Size: 4096},
-		//		},
-		//		AdditionalGIDMappings: []idtools.IDMap{
-		//			{ContainerID: 10000, HostID: 1, Size: 4096},
-		//		},
-		//	},
-		//},
-		//CommonBuildOpts: &commonBuildOpts,
+		//NetworkInterface: net,
+		IDMappingOptions: &define.IDMappingOptions{
+			AutoUserNs: true,
+			AutoUserNsOpts: types.AutoUserNsOptions{
+				Size:        4096,
+				InitialSize: 1024,
+				AdditionalUIDMappings: []idtools.IDMap{
+					{ContainerID: 10000, HostID: 1, Size: 4096},
+				},
+				AdditionalGIDMappings: []idtools.IDMap{
+					{ContainerID: 10000, HostID: 1, Size: 4096},
+				},
+			},
+		},
+		CommonBuildOpts: &commonBuildOpts,
 		//Format:                "",
 		//Devices:               nil,
 		//DeviceSpecs:           nil,
-		DefaultEnv: defaultEnv,
+		//DefaultEnv: defaultEnv,
 	}
 	builder, err := buildah.NewBuilder(ctx, store, buildOpts)
 	if err != nil {
