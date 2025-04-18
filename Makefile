@@ -9,6 +9,7 @@ FEDBOX_HOSTNAME ?= fedbox.git
 STORAGE ?= all
 ENV ?= dev
 PROJECT ?= fedbox
+VERSION ?= HEAD
 
 LDFLAGS ?= -X main.version=$(VERSION)
 BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)'
@@ -32,10 +33,10 @@ export CGO_ENABLED=0
 ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
 	BRANCH=$(shell git rev-parse --abbrev-ref HEAD | tr '/' '-')
 	HASH=$(shell git rev-parse --short HEAD)
-	VERSION ?= $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
+	VERSION = $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
 endif
 ifeq ($(shell git describe --tags > /dev/null 2>&1 ; echo $$?), 0)
-	VERSION ?= $(shell git describe --tags | tr '/' '-')
+	VERSION = $(shell git describe --tags | tr '/' '-')
 endif
 
 ifneq ($(ENV),dev)

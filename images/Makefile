@@ -12,6 +12,8 @@ STORAGE ?= all
 STORAGE_PATH ?= $(shell realpath .cache)
 STORAGE_OBJECTS = $(STORAGE_PATH)/objects
 TAG ?= $(ENV)
+VERSION ?= HEAD
+
 
 TAG_CMD=podman tag
 PUSH_CMD=podman push
@@ -19,10 +21,10 @@ PUSH_CMD=podman push
 ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
 	BRANCH=$(shell git rev-parse --abbrev-ref HEAD | tr '/' '-')
 	HASH=$(shell git rev-parse --short HEAD)
-	VERSION ?= $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
+	VERSION = $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
 endif
 ifeq ($(shell git describe --tags > /dev/null 2>&1 ; echo $$?), 0)
-	VERSION ?= $(shell git describe --tags | tr '/' '-')
+	VERSION = $(shell git describe --tags | tr '/' '-')
 endif
 
 ifneq ($(STORAGE),all)
@@ -52,7 +54,7 @@ ifeq ($(TAG),dev)
 	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/go-ap/fedbox:latest || true
 	$(PUSH_CMD) quay.io/go-ap/fedbox:latest || true
 endif
-ifneq ($(VERSION),)
+ifneq ($(VERSION),HEAD)
 	$(TAG_CMD) $(FEDBOX_HOSTNAME)/app:$(TAG) quay.io/go-ap/fedbox:$(VERSION)-$(TAG) || true
 	$(PUSH_CMD) quay.io/go-ap/fedbox:$(VERSION)-$(TAG) || true
 endif
