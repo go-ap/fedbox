@@ -195,7 +195,12 @@ func (f *FedBOX) Storage() st.FullStorage {
 // Stop
 func (f *FedBOX) Stop(ctx context.Context) {
 	f.storage.Close()
-	_ = f.stopFn(ctx)
+
+	if err := f.stopFn(ctx); err != nil {
+		f.logger.Errorf("Error: %+v", err)
+	} else {
+		f.logger.Infof("Stopped")
+	}
 }
 
 func (f *FedBOX) reload() (err error) {
@@ -235,7 +240,7 @@ func (f *FedBOX) Run(ctx context.Context) error {
 		"listenOn": f.conf.Listen,
 		"TLS":      f.conf.Secure,
 	}
-	ctx, cancelFn := context.WithTimeout(context.Background(), f.Config().TimeOut)
+	ctx, cancelFn := context.WithCancel(ctx)
 	defer f.Stop(ctx)
 
 	logger := f.logger.WithContext(logCtx)
@@ -250,12 +255,10 @@ func (f *FedBOX) Run(ctx context.Context) error {
 		},
 		syscall.SIGINT: func(exit chan<- error) {
 			logger.Infof("SIGINT received, stopping")
-			cancelFn()
 			exit <- nil
 		},
 		syscall.SIGTERM: func(exit chan<- error) {
 			logger.Infof("SIGTERM received, force stopping")
-			cancelFn()
 			exit <- nil
 		},
 		syscall.SIGQUIT: func(exit chan<- error) {

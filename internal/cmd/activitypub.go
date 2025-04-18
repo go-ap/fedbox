@@ -673,6 +673,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 						Errf("Unable to save %s %s: %s", it.GetType(), it.GetID(), err)
 						continue
 					}
+					count++
 				}
 				return nil
 			})
@@ -683,6 +684,7 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 				fmt.Printf("Elapsed time per item: %s\n", perIt)
 			}
 		}
+		fmt.Printf("Import done!\n")
 		return nil
 	}
 }
