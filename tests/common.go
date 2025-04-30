@@ -1002,13 +1002,15 @@ func runTestSuite(t *testing.T, suite testSuite) {
 			})
 		}
 
-		for _, app := range suite.apps {
-			// NOTE(marius): we removed the deferred app.Stop(),
-			// to avoid race conditions when running multiple FedBOX instances for the federated tests
-			app.Stop(ctx)
-			cleanDB(t, app.Config())
-		}
-		stopFn()
+		t.Cleanup(func() {
+			for _, app := range suite.apps {
+				// NOTE(marius): we removed the deferred app.Stop(),
+				// to avoid race conditions when running multiple FedBOX instances for the federated tests
+				_ = app.Stop(ctx)
+				cleanDB(t, app.Config())
+			}
+			stopFn()
+		})
 	})
 }
 
