@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"syscall"
 	"time"
 
@@ -139,11 +140,6 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 		if _, err := os.Stat(dir); err == nil {
 			sockType = "socket"
 			setters = append(setters, w.OnSocket(app.conf.Listen))
-			defer func() {
-				if err := os.RemoveAll(app.conf.Listen); err != nil {
-					app.logger.Errorf("Failed cleaning up: %s", err)
-				}
-			}()
 		}
 	} else {
 		sockType = "TCP"
@@ -193,15 +189,25 @@ func (f *FedBOX) Storage() st.FullStorage {
 }
 
 // Stop
-func (f *FedBOX) Stop(ctx context.Context) {
+func (f *FedBOX) Stop(ctx context.Context) error {
+	var cancelFn func()
+
+	ctx, cancelFn = context.WithTimeout(ctx, f.conf.TimeOut)
+	defer cancelFn()
+
 	f.storage.Close()
+
 	_ = os.RemoveAll(f.conf.PidPath())
+	if filepath.IsAbs(f.conf.Listen) {
+		if _, err := os.Stat(f.conf.Listen); err == nil {
+			_ = os.RemoveAll(f.conf.Listen)
+		}
+	}
 
 	if err := f.stopFn(ctx); err != nil {
 		f.logger.Errorf("Error: %+v", err)
-	} else {
-		f.logger.Infof("Stopped")
 	}
+	return nil
 }
 
 func (f *FedBOX) reload() (err error) {
@@ -241,10 +247,12 @@ func (f *FedBOX) Run(ctx context.Context) error {
 		"listenOn": f.conf.Listen,
 		"TLS":      f.conf.Secure,
 	}
-	ctx, cancelFn := context.WithCancel(ctx)
-	defer f.Stop(ctx)
-	logger := f.logger.WithContext(logCtx)
+	var cancelFn func()
 
+	ctx, cancelFn = context.WithCancel(ctx)
+	defer cancelFn()
+
+	logger := f.logger.WithContext(logCtx)
 	logger.Infof("Starting")
 	if err := f.conf.WritePid(); err != nil {
 		logger.Warnf("Unable to write pid file: %s", err)
@@ -269,20 +277,23 @@ func (f *FedBOX) Run(ctx context.Context) error {
 		},
 		syscall.SIGINT: func(exit chan<- error) {
 			logger.Debugf("SIGINT received, interrupted")
-			exit <- nil
+			exit <- f.Stop(ctx)
 		},
 		syscall.SIGTERM: func(exit chan<- error) {
 			logger.Debugf("SIGTERM received, stopping with cleanup")
-			exit <- nil
+			exit <- f.Stop(ctx)
 		},
 		syscall.SIGQUIT: func(exit chan<- error) {
 			logger.Debugf("SIGQUIT received, force stopping with core-dump")
-			cancelFn()
+			//_ = pprof.Lookup("heap").WriteTo(os.Stderr, 1)
+			_ = pprof.Lookup("goroutine").WriteTo(os.Stderr, 1)
+			_ = pprof.Lookup("block").WriteTo(os.Stderr, 1)
+			//_ = pprof.Lookup("threadcreate").WriteTo(os.Stderr, 1)
 			exit <- nil
 		},
 	}).Exec(ctx, f.startFn)
 	if err == nil {
-		logger.Infof("Shutting down")
+		logger.Infof("Stopped")
 	}
 	return err
 }
