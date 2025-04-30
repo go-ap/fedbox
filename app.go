@@ -132,6 +132,9 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 		}
 	}
 
+	// NOTE(marius): we now set-up a default socket listener
+	_ = os.RemoveAll(app.conf.DefaultSocketPath())
+	setters = append(setters, w.OnSocket(app.conf.DefaultSocketPath()))
 	if app.conf.Listen == "systemd" {
 		sockType = "Systemd"
 		setters = append(setters, w.OnSystemd())
@@ -198,6 +201,7 @@ func (f *FedBOX) Stop(ctx context.Context) error {
 	f.storage.Close()
 
 	_ = os.RemoveAll(f.conf.PidPath())
+	_ = os.RemoveAll(f.conf.DefaultSocketPath())
 	if filepath.IsAbs(f.conf.Listen) {
 		if _, err := os.Stat(f.conf.Listen); err == nil {
 			_ = os.RemoveAll(f.conf.Listen)
