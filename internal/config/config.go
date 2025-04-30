@@ -249,12 +249,20 @@ func LoadFromEnv() Options {
 	return conf
 }
 
-func (o Options) PidPath() string {
+func (o Options) RuntimePath() string {
 	path := BaseRuntimeDir
 	if runtimeDir := os.Getenv(RUNTIME_DIR); runtimeDir != "" {
 		path = runtimeDir
 	}
-	return filepath.Join(path, o.AppName+".pid")
+	return path
+}
+
+func (o Options) DefaultSocketPath() string {
+	return filepath.Join(o.RuntimePath(), o.AppName+".sock")
+}
+
+func (o Options) PidPath() string {
+	return filepath.Join(o.RuntimePath(), o.AppName+".pid")
 }
 
 func (o Options) WritePid() error {
