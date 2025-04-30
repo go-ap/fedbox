@@ -191,6 +191,16 @@ func (f *FedBOX) Storage() st.FullStorage {
 	return f.storage
 }
 
+func (f *FedBOX) Pause() error {
+	if f.conf.MaintenanceMode {
+		// restart everything
+		f.storage.Close()
+	} else {
+		return f.storage.Open()
+	}
+	return nil
+}
+
 // Stop
 func (f *FedBOX) Stop(ctx context.Context) error {
 	var cancelFn func()
@@ -272,12 +282,21 @@ func (f *FedBOX) Run(ctx context.Context) error {
 		},
 		syscall.SIGUSR1: func(_ chan<- error) {
 			inMaintenanceMode := f.conf.MaintenanceMode
+
+			f.conf.MaintenanceMode = !inMaintenanceMode
+
+			var err error
+			logFn := logger.Debugf
+
 			op := "to"
 			if inMaintenanceMode {
 				op = "out of"
 			}
-			logger.Debugf("SIGUSR1 received, switching %s maintenance mode", op)
-			f.conf.MaintenanceMode = !inMaintenanceMode
+
+			if err = f.Pause(); err != nil {
+				logFn = logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf
+			}
+			logFn("SIGUSR1 received, switching %s maintenance mode", op)
 		},
 		syscall.SIGINT: func(exit chan<- error) {
 			logger.Debugf("SIGINT received, interrupted")
