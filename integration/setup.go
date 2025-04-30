@@ -121,31 +121,29 @@ func (fc *fedboxContainer) Req(ctx context.Context, met, u string, body io.Reade
 
 // Run creates an instance of the FedBOX container type
 func Run(ctx context.Context, t testing.TB, image string, opts ...containers.ContainerCustomizer) (*fedboxContainer, error) {
-
 	logger := testLogger(t.Logf)
-	req := containers.ContainerRequest{
-		Image: image,
-		LogConsumerCfg: &containers.LogConsumerConfig{
-			Opts:      []containers.LogProductionOption{containers.WithLogProductionTimeout(10 * time.Second)},
-			Consumers: []containers.LogConsumer{logger},
-		},
-		WaitingFor: wait.ForLog("Starting").WithStartupTimeout(500 * time.Millisecond),
-	}
 
-	rreq := containers.GenericContainerRequest{
-		ContainerRequest: req,
-		ProviderType:     containers.ProviderPodman,
-		Started:          true,
+	gcr := containers.GenericContainerRequest{
+		ContainerRequest: containers.ContainerRequest{
+			Image: image,
+			LogConsumerCfg: &containers.LogConsumerConfig{
+				Opts:      []containers.LogProductionOption{containers.WithLogProductionTimeout(5 * time.Second)},
+				Consumers: []containers.LogConsumer{logger},
+			},
+			WaitingFor: wait.ForLog("Starting").WithStartupTimeout(time.Second),
+		},
+		ProviderType: containers.ProviderPodman,
+		Started:      true,
 	}
 
 	opts = append(opts, WithLogger(logger))
 	for _, opt := range opts {
-		if err := opt.Customize(&rreq); err != nil {
+		if err := opt.Customize(&gcr); err != nil {
 			return nil, err
 		}
 	}
 
-	fc, err := containers.GenericContainer(ctx, rreq)
+	fc, err := containers.GenericContainer(ctx, gcr)
 	if err != nil {
 		return nil, err
 	}

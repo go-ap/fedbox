@@ -107,7 +107,7 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 			keysType = "RSA"
 		}
 
-		l.Infof("Setting actor key generator %T[%s]", metaSaver, keysType)
+		l.Debugf("Setting actor key generator %T[%s]", metaSaver, keysType)
 		app.keyGenerator = AddKeyToPerson(metaSaver, keysType)
 	}
 
@@ -195,6 +195,7 @@ func (f *FedBOX) Storage() st.FullStorage {
 // Stop
 func (f *FedBOX) Stop(ctx context.Context) {
 	f.storage.Close()
+	_ = os.RemoveAll(f.conf.PidPath())
 
 	if err := f.stopFn(ctx); err != nil {
 		f.logger.Errorf("Error: %+v", err)
@@ -242,27 +243,40 @@ func (f *FedBOX) Run(ctx context.Context) error {
 	}
 	ctx, cancelFn := context.WithCancel(ctx)
 	defer f.Stop(ctx)
-
 	logger := f.logger.WithContext(logCtx)
 
 	logger.Infof("Starting")
+	if err := f.conf.WritePid(); err != nil {
+		logger.Warnf("Unable to write pid file: %s", err)
+		logger.Warnf("Some CLI commands relying on it will not work")
+	}
+
 	err := w.RegisterSignalHandlers(w.SignalHandlers{
 		syscall.SIGHUP: func(_ chan<- error) {
-			logger.Infof("SIGHUP received, reloading configuration")
+			logger.Debugf("SIGHUP received, reloading configuration")
 			if err := f.reload(); err != nil {
 				logger.Errorf("Failed: %+s", err.Error())
 			}
 		},
+		syscall.SIGUSR1: func(_ chan<- error) {
+			inMaintenanceMode := f.conf.MaintenanceMode
+			op := "to"
+			if inMaintenanceMode {
+				op = "out of"
+			}
+			logger.Debugf("SIGUSR1 received, switching %s maintenance mode", op)
+			f.conf.MaintenanceMode = !inMaintenanceMode
+		},
 		syscall.SIGINT: func(exit chan<- error) {
-			logger.Infof("SIGINT received, stopping")
+			logger.Debugf("SIGINT received, interrupted")
 			exit <- nil
 		},
 		syscall.SIGTERM: func(exit chan<- error) {
-			logger.Infof("SIGTERM received, force stopping")
+			logger.Debugf("SIGTERM received, stopping with cleanup")
 			exit <- nil
 		},
 		syscall.SIGQUIT: func(exit chan<- error) {
-			logger.Infof("SIGQUIT received, force stopping with core-dump")
+			logger.Debugf("SIGQUIT received, force stopping with core-dump")
 			cancelFn()
 			exit <- nil
 		},

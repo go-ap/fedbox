@@ -678,10 +678,10 @@ func importPubObjects(ctl *Control) cli.ActionFunc {
 				return nil
 			})
 			tot := time.Now().Sub(start)
-			fmt.Printf("Elapsed time:          %s\n", tot)
+			fmt.Printf("Elapsed time:          %4s\n", tot)
 			if count > 0 {
 				perIt := time.Duration(int64(tot) / int64(count))
-				fmt.Printf("Elapsed time per item: %s\n", perIt)
+				fmt.Printf("Elapsed time per item: %4s\n", perIt)
 			}
 		}
 		fmt.Printf("Import done!\n")

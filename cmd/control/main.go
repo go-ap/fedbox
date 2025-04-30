@@ -56,6 +56,7 @@ func main() {
 		cmd.BootstrapCmd,
 		cmd.AccountsCmd,
 		cmd.FixStorageCollectionsCmd,
+		cmd.Reload, cmd.Maintenance, cmd.Stop,
 	}
 
 	if err := app.Run(os.Args); err != nil {

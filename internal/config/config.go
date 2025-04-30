@@ -15,7 +15,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var Prefix = "fedbox"
+var (
+	Prefix         = "fedbox"
+	BaseRuntimeDir = "/run"
+)
 
 type BackendConfig struct {
 	Enabled bool
@@ -46,11 +49,14 @@ type Options struct {
 	UseIndex           bool
 	Profile            bool
 	MastodonCompatible bool
+	MaintenanceMode    bool
 }
 
 type StorageType string
 
 const (
+	RUNTIME_DIR = "XDG_RUNTIME_DIR"
+
 	KeyENV                          = "ENV"
 	KeyTimeOut                      = "TIME_OUT"
 	KeyLogLevel                     = "LOG_LEVEL"
@@ -241,4 +247,33 @@ func LoadFromEnv() Options {
 	conf.CertPath = normalizeConfigPath(Getval(KeyCertPath, ""), conf)
 
 	return conf
+}
+
+func (o Options) PidPath() string {
+	path := BaseRuntimeDir
+	if runtimeDir := os.Getenv(RUNTIME_DIR); runtimeDir != "" {
+		path = runtimeDir
+	}
+	return filepath.Join(path, o.AppName+".pid")
+}
+
+func (o Options) WritePid() error {
+	pid := os.Getpid()
+	raw := make([]byte, 0)
+	raw = strconv.AppendUint(raw, uint64(pid), 10)
+
+	return os.WriteFile(o.PidPath(), raw, 0600)
+}
+
+func (o Options) ReadPid() (int, error) {
+	raw, err := os.ReadFile(o.PidPath())
+	if err != nil {
+		return -1, err
+	}
+
+	pid, err := strconv.ParseUint(string(raw), 10, 32)
+	if err != nil {
+		return -1, err
+	}
+	return int(pid), nil
 }
