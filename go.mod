@@ -4,19 +4,19 @@ go 1.24.0
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
-	git.sr.ht/~mariusor/wrapper v0.0.0-20250430151340-33daafc0fb95
-	github.com/go-ap/activitypub v0.0.0-20250409143848-7113328b1f3d
-	github.com/go-ap/auth v0.0.0-20250409144154-5b90f4f02389
-	github.com/go-ap/cache v0.0.0-20250409143941-46ead8c57c50
-	github.com/go-ap/client v0.0.0-20250409144111-73642f11a3cf
-	github.com/go-ap/errors v0.0.0-20250409143711-5686c11ae650
-	github.com/go-ap/filters v0.0.0-20250409144015-c6cbbadeefe4
+	git.sr.ht/~mariusor/wrapper v0.0.0-20250430152520-7a4ab04a1d52
+	github.com/go-ap/activitypub v0.0.0-20250501090939-71edba4a7137
+	github.com/go-ap/auth v0.0.0-20250501100000-44e4c972966d
+	github.com/go-ap/cache v0.0.0-20250501092828-99a2a24bfbfe
+	github.com/go-ap/client v0.0.0-20250501095918-06f2cb86c4ed
+	github.com/go-ap/errors v0.0.0-20250501090840-cd50c6a0a4e6
+	github.com/go-ap/filters v0.0.0-20250501095843-df5e7d7967ec
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20250418152303-08b041c449db
-	github.com/go-ap/storage-badger v0.0.0-20250414181734-3201de95c26d
-	github.com/go-ap/storage-boltdb v0.0.0-20250414181714-e3ec894bf3d4
-	github.com/go-ap/storage-fs v0.0.0-20250418065925-56b92d352b12
-	github.com/go-ap/storage-sqlite v0.0.0-20250414135807-41bb13366a08
+	github.com/go-ap/processing v0.0.0-20250501100017-1c18aa906d83
+	github.com/go-ap/storage-badger v0.0.0-20250501105406-3055ec30ab46
+	github.com/go-ap/storage-boltdb v0.0.0-20250501105425-c7365fe2d544
+	github.com/go-ap/storage-fs v0.0.0-20250501100158-449c1f8c5871
+	github.com/go-ap/storage-sqlite v0.0.0-20250501105321-b44f177c5730
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -70,7 +70,7 @@ require (
 	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	modernc.org/libc v1.64.1 // indirect
+	modernc.org/libc v1.65.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.10.0 // indirect
 	modernc.org/sqlite v1.37.0 // indirect

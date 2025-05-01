@@ -13,6 +13,7 @@ func (f *FedBOX) Routes() func(chi.Router) {
 	return func(r chi.Router) {
 		r.Use(middleware.RequestID)
 		r.Use(middleware.RealIP)
+		r.Use(OutOfOrderMw(f))
 		r.Use(CleanRequestPath)
 		r.Use(SetCORSHeaders)
 		r.Use(lw.Middlewares(f.logger)...)
