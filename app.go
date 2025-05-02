@@ -133,8 +133,10 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 	}
 
 	// NOTE(marius): we now set-up a default socket listener
-	_ = os.RemoveAll(app.conf.DefaultSocketPath())
-	setters = append(setters, w.OnSocket(app.conf.DefaultSocketPath()))
+	if !app.conf.Env.IsTest() {
+		_ = os.RemoveAll(app.conf.DefaultSocketPath())
+		setters = append(setters, w.OnSocket(app.conf.DefaultSocketPath()))
+	}
 	if app.conf.Listen == "systemd" {
 		sockType = "Systemd"
 		setters = append(setters, w.OnSystemd())
