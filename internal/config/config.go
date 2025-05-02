@@ -258,11 +258,21 @@ func (o Options) RuntimePath() string {
 }
 
 func (o Options) DefaultSocketPath() string {
-	return filepath.Join(o.RuntimePath(), o.AppName+".sock")
+	name := o.pathInstanceName()
+	return filepath.Join(o.RuntimePath(), name+".sock")
+}
+
+func (o Options) pathInstanceName() string {
+	name := o.AppName
+	if o.Host != "" {
+		name += "-" + o.Host
+	}
+	return name
 }
 
 func (o Options) PidPath() string {
-	return filepath.Join(o.RuntimePath(), o.AppName+".pid")
+	name := o.pathInstanceName()
+	return filepath.Join(o.RuntimePath(), name+".pid")
 }
 
 func (o Options) WritePid() error {
@@ -270,7 +280,12 @@ func (o Options) WritePid() error {
 	raw := make([]byte, 0)
 	raw = strconv.AppendUint(raw, uint64(pid), 10)
 
-	return os.WriteFile(o.PidPath(), raw, 0600)
+	pidPath := o.PidPath()
+	if err := os.MkdirAll(filepath.Dir(pidPath), 0o700); err != nil {
+		return err
+	}
+
+	return os.WriteFile(pidPath, raw, 0o600)
 }
 
 func (o Options) ReadPid() (int, error) {

@@ -958,6 +958,8 @@ func cleanupTestPairs(pairs testPairs, t *testing.T) func() {
 
 func runTestSuite(t *testing.T, suite testSuite) {
 	t.Helper()
+	_ = os.Setenv(config.RUNTIME_DIR, t.TempDir())
+
 	t.Run(suite.name, func(t *testing.T) {
 		ctx, stopFn := context.WithCancel(context.TODO())
 
