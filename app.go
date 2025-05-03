@@ -208,9 +208,13 @@ func (f *FedBOX) Stop(ctx context.Context) error {
 	var cancelFn func()
 
 	ctx, cancelFn = context.WithTimeout(ctx, f.conf.TimeOut)
-	defer cancelFn()
-
-	f.storage.Close()
+	defer func() {
+		cancelFn()
+		defer f.storage.Close()
+	}()
+	if err := f.stopFn(ctx); err != nil {
+		f.logger.Errorf("Error: %+v", err)
+	}
 
 	_ = os.RemoveAll(f.conf.PidPath())
 	_ = os.RemoveAll(f.conf.DefaultSocketPath())
@@ -220,9 +224,6 @@ func (f *FedBOX) Stop(ctx context.Context) error {
 		}
 	}
 
-	if err := f.stopFn(ctx); err != nil {
-		f.logger.Errorf("Error: %+v", err)
-	}
 	return nil
 }
 

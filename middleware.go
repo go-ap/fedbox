@@ -29,9 +29,19 @@ func CleanRequestPath(next http.Handler) http.Handler {
 func OutOfOrderMw(f *FedBOX) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if f.conf.MaintenanceMode {
-				errors.HandleError(errors.ServiceUnavailablef("temporarily out of order")).ServeHTTP(w, r)
-				return
+			select {
+			case <-r.Context().Done():
+				err := r.Context().Err()
+				if err == nil {
+					err = errors.ServiceUnavailablef("server is shutting down")
+				} else {
+					err = errors.NewServiceUnavailable(err, "server is shutting down")
+				}
+				next = errors.HandleError(err)
+			default:
+				if f.conf.MaintenanceMode {
+					next = errors.HandleError(errors.ServiceUnavailablef("temporarily out of order"))
+				}
 			}
 			next.ServeHTTP(w, r)
 		})
