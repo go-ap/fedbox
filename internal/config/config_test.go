@@ -27,17 +27,17 @@ const (
 func TestLoadFromEnv(t *testing.T) {
 	{
 		t.Skipf("we're no longer loading SQL db config env variables")
-		os.Setenv(KeyDBHost, dbHost)
-		os.Setenv(KeyDBPort, fmt.Sprintf("%d", dbPort))
-		os.Setenv(KeyDBName, dbName)
-		os.Setenv(KeyDBUser, dbUser)
-		os.Setenv(KeyDBPw, dbPw)
+		_ = os.Setenv(KeyDBHost, dbHost)
+		_ = os.Setenv(KeyDBPort, fmt.Sprintf("%d", dbPort))
+		_ = os.Setenv(KeyDBName, dbName)
+		_ = os.Setenv(KeyDBUser, dbUser)
+		_ = os.Setenv(KeyDBPw, dbPw)
 
-		os.Setenv(KeyHostname, hostname)
-		os.Setenv(KeyLogLevel, logLvl)
-		os.Setenv(KeyHTTPS, fmt.Sprintf("%t", secure))
-		os.Setenv(KeyListen, listen)
-		os.Setenv(KeyStorage, pgSQL)
+		_ = os.Setenv(KeyHostname, hostname)
+		_ = os.Setenv(KeyLogLevel, logLvl)
+		_ = os.Setenv(KeyHTTPS, fmt.Sprintf("%t", secure))
+		_ = os.Setenv(KeyListen, listen)
+		_ = os.Setenv(KeyStorage, pgSQL)
 
 		var baseURL = fmt.Sprintf("https://%s", hostname)
 		c, err := Load(env.TEST, time.Second)

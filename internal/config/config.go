@@ -50,6 +50,7 @@ type Options struct {
 	Profile            bool
 	MastodonCompatible bool
 	MaintenanceMode    bool
+	ShuttingDown       bool
 }
 
 type StorageType string

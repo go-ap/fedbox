@@ -79,6 +79,8 @@ func Client(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
 	)
 }
 
+const defaultGraceWait = 200 * time.Millisecond
+
 // New instantiates a new FedBOX instance
 func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 	if db == nil {
@@ -122,7 +124,7 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 	app.R.Group(app.Routes())
 
 	sockType := ""
-	setters := []w.SetFn{w.Handler(app.R)}
+	setters := []w.SetFn{w.Handler(app.R), w.WriteWait(app.conf.TimeOut)}
 
 	if app.conf.Secure {
 		if len(app.conf.CertPath)+len(app.conf.KeyPath) > 0 {
@@ -135,7 +137,7 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 	// NOTE(marius): we now set-up a default socket listener
 	if !app.conf.Env.IsTest() {
 		_ = os.RemoveAll(app.conf.DefaultSocketPath())
-		setters = append(setters, w.OnSocket(app.conf.DefaultSocketPath()))
+		setters = append(setters, w.OnSocket(app.conf.DefaultSocketPath()), w.GracefulWait(app.conf.TimeOut+defaultGraceWait))
 	}
 	if app.conf.Listen == "systemd" {
 		sockType = "Systemd"
@@ -205,13 +207,10 @@ func (f *FedBOX) Pause() error {
 
 // Stop
 func (f *FedBOX) Stop(ctx context.Context) error {
-	var cancelFn func()
+	f.conf.ShuttingDown = true
 
-	ctx, cancelFn = context.WithTimeout(ctx, f.conf.TimeOut)
-	defer func() {
-		cancelFn()
-		defer f.storage.Close()
-	}()
+	f.storage.Close()
+
 	if err := f.stopFn(ctx); err != nil {
 		f.logger.Errorf("Error: %+v", err)
 	}
