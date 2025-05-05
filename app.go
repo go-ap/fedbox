@@ -79,7 +79,7 @@ func Client(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
 	)
 }
 
-const defaultGraceWait = 200 * time.Millisecond
+const defaultGraceWait = 1500 * time.Millisecond
 
 // New instantiates a new FedBOX instance
 func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
@@ -137,7 +137,7 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 	// NOTE(marius): we now set-up a default socket listener
 	if !app.conf.Env.IsTest() {
 		_ = os.RemoveAll(app.conf.DefaultSocketPath())
-		setters = append(setters, w.OnSocket(app.conf.DefaultSocketPath()), w.GracefulWait(app.conf.TimeOut+defaultGraceWait))
+		setters = append(setters, w.OnSocket(app.conf.DefaultSocketPath()), w.GracefulWait(defaultGraceWait))
 	}
 	if app.conf.Listen == "systemd" {
 		sockType = "Systemd"
