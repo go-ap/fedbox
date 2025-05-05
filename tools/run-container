@@ -32,4 +32,4 @@ _port=$(grep LISTEN ${_env} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
 
 CMD=$(command -v podman || which docker)
 
-$CMD run --pull=always --network=host --name=${_name} --replace -v ${_env}:/.env -v ${_storage}:/storage --env-file=${_env} ${_what}
+$CMD run --pull=newer --network=host --name=${_name} --replace -v ${_env}:/.env -v ${_storage}:/storage --env-file=${_env} ${_what}
