@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"git.sr.ht/~mariusor/lw"
 	"github.com/go-ap/errors"
@@ -15,11 +14,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const (
-	defaultTimeout = time.Second
-
-	AppName = "FedBOX"
-)
+const AppName = "FedBOX"
 
 func NewApp(version string) *cli.App {
 	return &cli.App{
@@ -30,12 +25,11 @@ func NewApp(version string) *cli.App {
 			&cli.DurationFlag{
 				Name:  "wait",
 				Usage: "the duration for which the server gracefully wait for existing connections to finish",
-				Value: defaultTimeout,
 			},
 			&cli.StringFlag{
 				Name:  "env",
 				Usage: fmt.Sprintf("the environment to use. Possible values: %q, %q, %q", env.DEV, env.QA, env.PROD),
-				Value: "",
+				Value: string(env.DEV),
 			},
 			&cli.BoolFlag{
 				Name:   "profile",
