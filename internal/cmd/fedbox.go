@@ -15,15 +15,17 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const defaultTimeout = time.Millisecond * 500
+const (
+	defaultTimeout = time.Second
 
-const AppName = "fedbox"
+	AppName = "FedBOX"
+)
 
 func NewApp(version string) *cli.App {
 	return &cli.App{
-		Name:    AppName,
-		Usage:   "fedbox instance server",
-		Version: version,
+		Name:        AppName,
+		Description: AppName + " instance server",
+		Version:     version,
 		Flags: []cli.Flag{
 			&cli.DurationFlag{
 				Name:  "wait",
