@@ -21,15 +21,17 @@ if [ ! -d ${_storage} ]; then
     exit 1
 fi
 
-_env=$(find ${_storage} -iname ".env*" | tail -n1)
-echo $_env
-if [ ! -f ${_env} ]; then
+_env_file=$(find ${_storage} -iname ".env*" | tail -n1)
+if [ ! -f ${_env_file} ]; then
     echo "env file is not accessible in path ${_storage}"
     exit 1
 fi
-_name=$(grep HOSTNAME ${_env} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
-_port=$(grep LISTEN ${_env} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
+_name=$(grep HOSTNAME ${_env_file} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
+_port=$(grep LISTEN ${_env_file} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
+_env=$(grep ENV ${_env_file} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
+
+echo ${_env}
 
 CMD=$(command -v podman || which docker)
 
-$CMD run --pull=newer --network=host --name=${_name} --replace -v ${_env}:/.env -v ${_storage}:/storage --env-file=${_env} ${_what}
+$CMD run --pull=newer --network=host --name=${_name} --replace -v ${_env_file}:/.env -v ${_storage}:/storage --env-file=${_env_file} ${_what} fedbox -env ${_env}
