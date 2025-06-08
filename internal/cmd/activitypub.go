@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	"git.sr.ht/~mariusor/lw"
@@ -75,7 +76,16 @@ var addActor = &cli.Command{
 }
 
 func addActorAct(ctl *Control) cli.ActionFunc {
+	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
 	return func(c *cli.Context) error {
+		if err := pauseFn(c); err != nil {
+			return errors.Annotatef(err, "Unable to pause server")
+		}
+		defer func() {
+			if err := pauseFn(c); err != nil {
+				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
+			}
+		}()
 		if err := ctl.Storage.Open(); err != nil {
 			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
 		}
@@ -398,7 +408,16 @@ func printItem(it vocab.Item, outType string) error {
 }
 
 func listObjectsAct(ctl *Control) cli.ActionFunc {
+	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
 	return func(c *cli.Context) error {
+		if err := pauseFn(c); err != nil {
+			return errors.Annotatef(err, "Unable to pause server")
+		}
+		defer func() {
+			if err := pauseFn(c); err != nil {
+				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
+			}
+		}()
 		if err := ctl.Storage.Open(); err != nil {
 			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
 		}
@@ -527,7 +546,16 @@ var addObjectCmd = &cli.Command{
 var validObjects = append(vocab.ObjectTypes, vocab.ObjectType, "")
 
 func addObjectAct(ctl *Control) cli.ActionFunc {
+	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
 	return func(c *cli.Context) error {
+		if err := pauseFn(c); err != nil {
+			return errors.Annotatef(err, "Unable to pause server")
+		}
+		defer func() {
+			if err := pauseFn(c); err != nil {
+				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
+			}
+		}()
 		if err := ctl.Storage.Open(); err != nil {
 			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
 		}
@@ -755,7 +783,16 @@ func exportPubObjects(ctl *Control) cli.ActionFunc {
 }
 
 func showObjectAct(ctl *Control) cli.ActionFunc {
+	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
 	return func(c *cli.Context) error {
+		if err := pauseFn(c); err != nil {
+			return errors.Annotatef(err, "Unable to pause server")
+		}
+		defer func() {
+			if err := pauseFn(c); err != nil {
+				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
+			}
+		}()
 		if err := ctl.Storage.Open(); err != nil {
 			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
 		}

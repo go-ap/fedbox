@@ -29,7 +29,6 @@ func NewApp(version string) *cli.App {
 			&cli.StringFlag{
 				Name:  "env",
 				Usage: fmt.Sprintf("the environment to use. Possible values: %q, %q, %q", env.DEV, env.QA, env.PROD),
-				Value: string(env.DEV),
 			},
 			&cli.BoolFlag{
 				Name:   "profile",
@@ -74,7 +73,7 @@ func run(version string) cli.ActionFunc {
 		}
 		db, err := fedbox.Storage(conf, l.WithContext(lw.Ctx{"log": "storage"}))
 
-		a, err := fedbox.New(l.WithContext(lw.Ctx{"log": "fedbox"}), conf, db)
+		a, err := fedbox.New(l.WithContext(lw.Ctx{"log": "fedbox", "env": e}), conf, db)
 		if err != nil {
 			l.Errorf("Unable to initialize: %s", err)
 			return err

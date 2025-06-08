@@ -7,8 +7,10 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
+	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
@@ -37,7 +39,16 @@ var ls = &cli.Command{
 }
 
 func lsAct(ctl *Control) cli.ActionFunc {
+	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
 	return func(c *cli.Context) error {
+		if err := pauseFn(c); err != nil {
+			return errors.Annotatef(err, "Unable to pause server")
+		}
+		defer func() {
+			if err := pauseFn(c); err != nil {
+				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
+			}
+		}()
 		if err := ctl.Storage.Open(); err != nil {
 			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
 		}
@@ -63,7 +74,16 @@ var del = &cli.Command{
 }
 
 func delAct(ctl *Control) cli.ActionFunc {
+	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
 	return func(c *cli.Context) error {
+		if err := pauseFn(c); err != nil {
+			return errors.Annotatef(err, "Unable to pause server")
+		}
+		defer func() {
+			if err := pauseFn(c); err != nil {
+				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
+			}
+		}()
 		if err := ctl.Storage.Open(); err != nil {
 			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
 		}
@@ -100,7 +120,16 @@ var addClient = &cli.Command{
 }
 
 func addAct(ctl *Control) cli.ActionFunc {
+	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
 	return func(c *cli.Context) error {
+		if err := pauseFn(c); err != nil {
+			return errors.Annotatef(err, "Unable to pause server")
+		}
+		defer func() {
+			if err := pauseFn(c); err != nil {
+				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
+			}
+		}()
 		if err := ctl.Storage.Open(); err != nil {
 			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
 		}

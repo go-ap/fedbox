@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"syscall"
 
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
@@ -61,13 +62,22 @@ func resetAct(ctl *Control) cli.ActionFunc {
 }
 
 func bootstrapAct(ctl *Control) cli.ActionFunc {
-	return func(ctx *cli.Context) error {
+	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
+	return func(c *cli.Context) error {
+		if err := pauseFn(c); err != nil {
+			return http.Annotatef(err, "Unable to pause server")
+		}
+		defer func() {
+			if err := pauseFn(c); err != nil {
+				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
+			}
+		}()
 		if err := ctl.Storage.Open(); err != nil {
 			return http.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
 		}
 		defer ctl.Storage.Close()
 
-		keyType := ctx.String("keyType")
+		keyType := c.String("keyType")
 		ctl.Service = ap.Self(ap.DefaultServiceIRI(ctl.Conf.BaseURL))
 		if err := Bootstrap(ctl.Conf, ctl.Service); err != nil {
 			Errf("Error adding service: %s\n", err)

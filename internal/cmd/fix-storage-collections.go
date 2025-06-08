@@ -1,13 +1,16 @@
 package cmd
 
 import (
+	"syscall"
+	"time"
+
+	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 	"github.com/urfave/cli/v2"
-	"time"
 )
 
 var FixStorageCollectionsCmd = &cli.Command{
@@ -53,7 +56,16 @@ func getActorCollections(act vocab.Item) vocab.IRIs {
 }
 
 func fixStorageCollectionsAct(ctl *Control) cli.ActionFunc {
+	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
 	return func(c *cli.Context) error {
+		if err := pauseFn(c); err != nil {
+			return errors.Annotatef(err, "Unable to pause server")
+		}
+		defer func() {
+			if err := pauseFn(c); err != nil {
+				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
+			}
+		}()
 		if _, ok := ctl.Storage.(processing.CollectionStore); !ok {
 			return errors.Newf("Invalid storage type %T. Unable to handle collection operations.", ctl.Storage)
 		}
