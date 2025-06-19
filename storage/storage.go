@@ -2,7 +2,6 @@ package storage
 
 import (
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
 )
@@ -28,7 +27,7 @@ type FullStorage interface {
 	clientLister
 	processing.Store
 	processing.KeyLoader
-	MetadataTyper
+	MetadataStorage
 	PasswordChanger
 	osin.Storage
 }
@@ -42,9 +41,9 @@ type PasswordChanger interface {
 	PasswordCheck(vocab.Item, []byte) error
 }
 
-type MetadataTyper interface {
-	LoadMetadata(vocab.IRI) (*auth.Metadata, error)
-	SaveMetadata(auth.Metadata, vocab.IRI) error
+type MetadataStorage interface {
+	LoadMetadata(vocab.IRI, any) error
+	SaveMetadata(vocab.IRI, any) error
 }
 
 type MimeTypeSaver interface {

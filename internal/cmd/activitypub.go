@@ -166,7 +166,7 @@ func addActorAct(ctl *Control) cli.ActionFunc {
 				return err
 			}
 			fmt.Printf("Added %q [%s]: %s\n", typ, name, p.GetLink())
-			if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
+			if metaSaver, ok := ctl.Storage.(s.MetadataStorage); ok {
 				if err := AddKeyToItem(metaSaver, p, keyType); err != nil {
 					Errf("Error saving metadata for %s: %s", name, err)
 				}

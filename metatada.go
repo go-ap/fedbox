@@ -23,7 +23,7 @@ const (
 	KeyTypeRSA     = "RSA"
 )
 
-func AddKeyToItem(metaSaver storage.MetadataTyper, it vocab.Item, typ string) error {
+func AddKeyToItem(metaSaver storage.MetadataStorage, it vocab.Item, typ string) error {
 	if err := vocab.OnActor(it, AddKeyToPerson(metaSaver, typ)); err != nil {
 		return errors.Annotatef(err, "failed to process actor: %s", it.GetID())
 	}
@@ -37,7 +37,7 @@ func AddKeyToItem(metaSaver storage.MetadataTyper, it vocab.Item, typ string) er
 	return nil
 }
 
-func AddKeyToPerson(metaSaver storage.MetadataTyper, typ string) func(act *vocab.Actor) error {
+func AddKeyToPerson(metaSaver storage.MetadataStorage, typ string) func(act *vocab.Actor) error {
 	// TODO(marius): add a way to pass if we should overwrite the keys
 	//  for now we'll assume that if we're calling this, we want to do it
 	overwriteKeys := true
@@ -46,10 +46,8 @@ func AddKeyToPerson(metaSaver storage.MetadataTyper, typ string) func(act *vocab
 			return nil
 		}
 
-		m, _ := metaSaver.LoadMetadata(act.ID)
-		if m == nil {
-			m = new(auth.Metadata)
-		}
+		m := new(auth.Metadata)
+		_ = metaSaver.LoadMetadata(act.ID, m)
 		var pubB, prvB pem.Block
 		if m.PrivateKey == nil || overwriteKeys {
 			if typ == KeyTypeED25519 {
@@ -58,7 +56,7 @@ func AddKeyToPerson(metaSaver storage.MetadataTyper, typ string) func(act *vocab
 				pubB, prvB = GenerateRSAKeyPair()
 			}
 			m.PrivateKey = pem.EncodeToMemory(&prvB)
-			if err := metaSaver.SaveMetadata(*m, act.ID); err != nil {
+			if err := metaSaver.SaveMetadata(act.ID, m); err != nil {
 				return errors.Annotatef(err, "failed saving metadata for actor: %s", act.ID)
 			}
 		} else {

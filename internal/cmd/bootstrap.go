@@ -83,7 +83,7 @@ func bootstrapAct(ctl *Control) cli.ActionFunc {
 			Errf("Error adding service: %s\n", err)
 			return err
 		}
-		if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
+		if metaSaver, ok := ctl.Storage.(s.MetadataStorage); ok {
 			if err := AddKeyToItem(metaSaver, &ctl.Service, keyType); err != nil {
 				Errf("Error saving metadata for service: %s", err)
 				return err

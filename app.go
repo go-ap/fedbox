@@ -103,7 +103,7 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 		stopFn:  emptyCtxtFn,
 	}
 
-	if metaSaver, ok := db.(st.MetadataTyper); ok {
+	if metaSaver, ok := db.(st.MetadataStorage); ok {
 		keysType := "ED25519"
 		if conf.MastodonCompatible {
 			keysType = "RSA"

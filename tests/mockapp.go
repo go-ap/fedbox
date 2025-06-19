@@ -176,7 +176,7 @@ func saveMocks(testData []string, config config.Options, db ls.FullStorage, l lw
 
 	o, _ := cmd.New(db, config, l)
 	if strings.Contains(defaultTestAccountC2S.ID, config.BaseURL) {
-		if err := saveMetadataForActor(defaultTestAccountC2S, db.(ls.MetadataTyper)); err != nil {
+		if err := saveMetadataForActor(defaultTestAccountC2S, db.(ls.MetadataStorage)); err != nil {
 			return err
 		}
 
@@ -185,7 +185,7 @@ func saveMocks(testData []string, config config.Options, db ls.FullStorage, l lw
 		}
 	}
 	if strings.Contains(defaultTestAccountS2S.ID, config.BaseURL) {
-		if err := saveMetadataForActor(defaultTestAccountS2S, db.(ls.MetadataTyper)); err != nil {
+		if err := saveMetadataForActor(defaultTestAccountS2S, db.(ls.MetadataStorage)); err != nil {
 			return err
 		}
 
@@ -196,15 +196,15 @@ func saveMocks(testData []string, config config.Options, db ls.FullStorage, l lw
 	return nil
 }
 
-func saveMetadataForActor(act testAccount, metaSaver ls.MetadataTyper) error {
+func saveMetadataForActor(act testAccount, metaSaver ls.MetadataStorage) error {
 	prvEnc, err := x509.MarshalPKCS8PrivateKey(act.PrivateKey)
 	if err != nil {
 		return err
 	}
 	r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
 	return metaSaver.SaveMetadata(
-		auth.Metadata{PrivateKey: pem.EncodeToMemory(&r)},
 		vocab.IRI(act.ID),
+		auth.Metadata{PrivateKey: pem.EncodeToMemory(&r)},
 	)
 }
 

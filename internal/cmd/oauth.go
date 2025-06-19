@@ -236,7 +236,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u any) (string, error)
 	if err != nil {
 		return "", err
 	}
-	if metaSaver, ok := ctl.Storage.(s.MetadataTyper); ok {
+	if metaSaver, ok := ctl.Storage.(s.MetadataStorage); ok {
 		if err := AddKeyToItem(metaSaver, p, fedbox.KeyTypeRSA); err != nil {
 			Errf("Error saving metadata for application %s: %s", name, err)
 		}

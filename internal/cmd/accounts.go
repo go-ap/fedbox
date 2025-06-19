@@ -37,7 +37,7 @@ func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 		}
 		defer ctl.Storage.Close()
 
-		metaLoader, ok := ctl.Storage.(storage.MetadataTyper)
+		metaLoader, ok := ctl.Storage.(storage.MetadataStorage)
 		if !ok {
 			return errors.Newf("")
 		}
@@ -66,8 +66,8 @@ func exportAccountsMetadata(ctl *Control) cli.ActionFunc {
 			if it.GetType() != vocab.PersonType {
 				continue
 			}
-			m, err := metaLoader.LoadMetadata(it.GetLink())
-			if err != nil {
+			m := new(auth.Metadata)
+			if err = metaLoader.LoadMetadata(it.GetLink(), m); err != nil {
 				//Errf("Error loading metadata for %s: %s", it.GetLink(), err)
 				continue
 			}
@@ -100,7 +100,7 @@ func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 		defer ctl.Storage.Close()
 
 		files := c.Args().Slice()
-		metaLoader, ok := ctl.Storage.(storage.MetadataTyper)
+		metaLoader, ok := ctl.Storage.(storage.MetadataStorage)
 		if !ok {
 			return errors.Newf("")
 		}
@@ -140,7 +140,7 @@ func importAccountsMetadata(ctl *Control) cli.ActionFunc {
 			start := time.Now()
 			count := 0
 			for iri, m := range metadata {
-				if err = metaLoader.SaveMetadata(m, iri); err != nil {
+				if err = metaLoader.SaveMetadata(iri, m); err != nil {
 					_, _ = fmt.Fprintf(os.Stderr, "unable to save metadata for %s: %s", iri, err)
 					continue
 				}
@@ -172,7 +172,7 @@ var generateKeysCmd = &cli.Command{
 	Action:    generateKeys(&ctl),
 }
 
-func AddKeyToItem(metaSaver storage.MetadataTyper, it vocab.Item, typ string) error {
+func AddKeyToItem(metaSaver storage.MetadataStorage, it vocab.Item, typ string) error {
 	return fedbox.AddKeyToItem(metaSaver, it, typ)
 }
 
@@ -184,7 +184,7 @@ func generateKeys(ctl *Control) cli.ActionFunc {
 		defer ctl.Storage.Close()
 
 		typ := c.String("key-type")
-		metaSaver, ok := ctl.Storage.(storage.MetadataTyper)
+		metaSaver, ok := ctl.Storage.(storage.MetadataStorage)
 		if !ok {
 			return errors.Newf("storage doesn't support saving key")
 		}
