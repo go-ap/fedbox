@@ -6,23 +6,23 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/wrapper v0.0.0-20250504120759-5fa47ac25e08
 	github.com/go-ap/activitypub v0.0.0-20250707121747-61ebb8da72cd
-	github.com/go-ap/auth v0.0.0-20250707124621-3f46deb012d3
+	github.com/go-ap/auth v0.0.0-20250717161414-4083ec815987
 	github.com/go-ap/cache v0.0.0-20250707121823-a03eabe94686
-	github.com/go-ap/client v0.0.0-20250707122259-92a40571f969
+	github.com/go-ap/client v0.0.0-20250717160919-acf5deb29e69
 	github.com/go-ap/errors v0.0.0-20250527110557-c8db454e53fd
 	github.com/go-ap/filters v0.0.0-20250707122225-29d0a210d866
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20250707124712-d19f79e2349a
-	github.com/go-ap/storage-badger v0.0.0-20250707124931-af8a1c0d43ab
-	github.com/go-ap/storage-boltdb v0.0.0-20250707124858-f7b018253eb1
-	github.com/go-ap/storage-fs v0.0.0-20250707124729-eb08c778b5d7
-	github.com/go-ap/storage-sqlite v0.0.0-20250707124832-75c239e4903f
+	github.com/go-ap/processing v0.0.0-20250717161520-a74acbade1cc
+	github.com/go-ap/storage-badger v0.0.0-20250717164726-04f158844b0a
+	github.com/go-ap/storage-boltdb v0.0.0-20250717162052-7d670033f511
+	github.com/go-ap/storage-fs v0.0.0-20250717161717-c7f887139295
+	github.com/go-ap/storage-sqlite v0.0.0-20250717161847-bb81491dea0f
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pborman/uuid v1.2.1
 	github.com/urfave/cli/v2 v2.27.5
-	golang.org/x/crypto v0.39.0
+	golang.org/x/crypto v0.40.0
 )
 
 require (
@@ -34,7 +34,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.22.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
-	github.com/dgraph-io/badger/v4 v4.7.0 // indirect
+	github.com/dgraph-io/badger/v4 v4.8.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -62,15 +62,15 @@ require (
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
-	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
-	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/exp v0.0.0-20250711185948-6ae5c78190dc // indirect
+	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/term v0.32.0 // indirect
-	golang.org/x/text v0.26.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/term v0.33.0 // indirect
+	golang.org/x/text v0.27.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	modernc.org/libc v1.66.2 // indirect
+	modernc.org/libc v1.66.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.38.0 // indirect
