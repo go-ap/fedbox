@@ -12,11 +12,11 @@ require (
 	github.com/go-ap/errors v0.0.0-20250527110557-c8db454e53fd
 	github.com/go-ap/filters v0.0.0-20250707122225-29d0a210d866
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20250717161520-a74acbade1cc
+	github.com/go-ap/processing v0.0.0-20250803122953-209b3a8208df
 	github.com/go-ap/storage-badger v0.0.0-20250717164726-04f158844b0a
 	github.com/go-ap/storage-boltdb v0.0.0-20250717162052-7d670033f511
 	github.com/go-ap/storage-fs v0.0.0-20250717161717-c7f887139295
-	github.com/go-ap/storage-sqlite v0.0.0-20250717161847-bb81491dea0f
+	github.com/go-ap/storage-sqlite v0.0.0-20250803125004-be1c4d563ff4
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -46,7 +46,7 @@ require (
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-sqlite3 v1.14.28 // indirect
+	github.com/mattn/go-sqlite3 v1.14.30 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
@@ -70,10 +70,10 @@ require (
 	golang.org/x/text v0.27.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	modernc.org/libc v1.66.3 // indirect
+	modernc.org/libc v1.66.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.38.0 // indirect
+	modernc.org/sqlite v1.38.2 // indirect
 )
 
 replace go.opencensus.io => github.com/census-instrumentation/opencensus-go v0.23.0
