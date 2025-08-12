@@ -997,7 +997,14 @@ var CreateTests = testPairs{
 					met:   http.MethodGet,
 					urlFn: FollowingURL(defaultC2SAccount()),
 				},
-				res: testRes{code: http.StatusNotFound},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        CollectionURL(FollowingURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
+						itemCount: 0,
+					},
+				},
 			},
 			{
 				req: testReq{
@@ -1456,7 +1463,14 @@ var LikeTests = testPairs{
 					met:   http.MethodGet,
 					urlFn: FollowingURL(defaultC2SAccount()),
 				},
-				res: testRes{code: http.StatusNotFound},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        CollectionURL(FollowingURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
+						itemCount: 0,
+					},
+				},
 			},
 			{
 				req: testReq{
@@ -1520,7 +1534,14 @@ var FollowTests = testPairs{
 					met:   http.MethodGet,
 					urlFn: FollowingURL(defaultC2SAccount()),
 				},
-				res: testRes{code: http.StatusNotFound},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        CollectionURL(FollowingURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
+						itemCount: 0,
+					},
+				},
 			},
 			{
 				req: testReq{

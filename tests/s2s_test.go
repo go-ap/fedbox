@@ -56,7 +56,7 @@ var S2SReceiveTests = testPairs{
 					account: defaultS2SAccount(),
 					urlFn:   InboxURL(defaultC2SAccount()),
 					bodyFn: loadMockJson(
-						"mocks/s2s/create-object.json",
+						"mocks/s2s/activities/create-object.json",
 						CreateS2SObject(defaultS2SAccount(), defaultS2SAccount()),
 					),
 				},
@@ -99,7 +99,7 @@ var S2SReceiveTests = testPairs{
 					account: defaultS2SAccount(),
 					urlFn:   InboxURL(defaultC2SAccount()),
 					bodyFn: loadMockJson(
-						"mocks/s2s/create-object.json",
+						"mocks/s2s/activities/create-object.json",
 						CreateS2SObject(defaultS2SAccount(), loadMockFromDisk("mocks/s2s/objects/note-1.json", nil)),
 					),
 				},
@@ -142,7 +142,7 @@ var S2SReceiveTests = testPairs{
 					account: defaultC2SAccount(),
 					urlFn:   InboxURL(defaultS2SAccount()),
 					bodyFn: loadMockJson(
-						"mocks/s2s/accept-follow.json",
+						"mocks/s2s/activities/accept-follow.json",
 						generatedAccept,
 					),
 				},
@@ -198,6 +198,208 @@ var S2SReceiveTests = testPairs{
 	},
 }
 
+var followID = fmt.Sprintf("http://%s/follow/1", host)
+var UndoTests = testPairs{
+	{
+		name:    "Follow Actor then Undo",
+		configs: s2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+			"mocks/c2s/actors/actor-extra.json",
+			// S2S objects need to be present
+			"mocks/s2s/actors/actor-666.json",
+		},
+		tests: []testPair{
+			{
+				name: "Follow Actor",
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn: loadMockJson(
+						"mocks/c2s/activities/activity.json",
+						&actS2SMock{
+							Id:       followID,
+							Type:     "Follow",
+							ActorID:  defaultC2SAccount().ID,
+							ObjectID: defaultS2SAccount().ID,
+						},
+					),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						id:  followID,
+						typ: string(vocab.FollowType),
+						act: &objectVal{
+							id:                defaultC2SAccount().ID,
+							typ:               string(vocab.PersonType),
+							preferredUsername: "johndoe",
+						},
+						obj: &objectVal{
+							id:                defaultS2SAccount().ID,
+							typ:               string(vocab.PersonType),
+							preferredUsername: "lou",
+						},
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: OutboxURL(defaultC2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        CollectionURL(OutboxURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: FollowingURL(defaultC2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        CollectionURL(FollowingURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
+						itemCount: 0,
+					},
+				},
+			},
+			{
+				name: "Test Follow exists in outbox",
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: OutboxURL(defaultC2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        CollectionURL(OutboxURL(&defaultTestAccountC2S)(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
+						itemCount: 1,
+						items: map[string]*objectVal{
+							followID: {
+								id:  followID,
+								typ: "Follow",
+							},
+						},
+					},
+				},
+			},
+			{
+				name: "Test Follow exists in inbox",
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: InboxURL(defaultS2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        CollectionURL(InboxURL(defaultS2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
+						itemCount: 1,
+						items: map[string]*objectVal{
+							followID: {
+								id:  followID,
+								typ: "Follow",
+							},
+						},
+					},
+				},
+			},
+			{
+				// S2S Accept Follow
+				name: "Accept the Follow",
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultS2SAccount(),
+					urlFn:   OutboxURL(defaultS2SAccount()),
+					bodyFn: loadMockJson(
+						"mocks/c2s/activities/activity.json",
+						&actS2SMock{
+							Type:     "Accept",
+							ActorID:  defaultS2SAccount().ID,
+							ObjectID: followID,
+						},
+					),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(vocab.AcceptType),
+						act: &objectVal{
+							typ: string(vocab.FollowType),
+						},
+					},
+				},
+			},
+			{
+				name: "Test Follower exists",
+				req: testReq{
+					met:   http.MethodGet,
+					urlFn: FollowersURL(defaultS2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        CollectionURL(FollowersURL(defaultS2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
+						itemCount: 1,
+						items: map[string]*objectVal{
+							defaultC2SAccount().ID: {
+								id: defaultC2SAccount().ID,
+							},
+						},
+					},
+				},
+			},
+			{
+				// Undo the follow
+				name: "Undo the Follow",
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn: loadMockJson(
+						"mocks/c2s/activities/activity.json",
+						&actS2SMock{
+							Type:     "Undo",
+							ActorID:  defaultC2SAccount().ID,
+							ObjectID: followID,
+						},
+					),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(vocab.FollowType),
+						act: &objectVal{
+							typ:               string(vocab.PersonType),
+							preferredUsername: "johndoe",
+						},
+						obj: &objectVal{
+							typ:               string(vocab.PersonType),
+							preferredUsername: "lou",
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
 func Test_S2SReceiveRequests(t *testing.T) {
 	runTestSuites(t, S2SReceiveTests)
+}
+
+func Test_S2S_UndoRequests(t *testing.T) {
+	runTestSuites(t, UndoTests)
 }

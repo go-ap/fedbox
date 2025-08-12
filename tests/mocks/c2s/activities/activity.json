@@ -1,4 +1,5 @@
 {
+  {{ with .Id }}"id": "{{ . }}",{{ end }}
   "type": "{{ .Type }}",
   "actor": "{{ .ActorID }}",
   "to": ["https://www.w3.org/ns/activitystreams#Public", "http://127.0.0.1:9998"],

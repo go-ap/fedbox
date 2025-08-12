@@ -432,6 +432,7 @@ func errOnMapProp(t *testing.T, errFn func(format string, args ...any)) mapField
 			assertObjectProperties := errOnObjectProperties(t)
 			assertArrayValues := errOnArray(t)
 			val, ok := ob[key]
+			assertTrue(ob != nil, "nil object received %v", ob)
 			assertTrue(ok, "Could not load %q property of item: %#v", key, ob)
 
 			switch tt := tVal.(type) {
@@ -693,8 +694,11 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 					)
 				foundItem:
 					for k, testIt := range tVal.items {
-						u, _ := url.Parse(tVal.id)
-						iri := fmt.Sprintf("%s%s/%s", apiURL, u.Path, k)
+						iri := testIt.id
+						if iri == "" {
+							u, _ := url.Parse(tVal.id)
+							iri = fmt.Sprintf("%s%s/%s", apiURL, u.Path, k)
+						}
 						for _, it := range items {
 							switch act := it.(type) {
 							case map[string]any:
