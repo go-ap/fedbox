@@ -7,7 +7,7 @@ _image_name=${2:-fedbox/builder}
 
 _context=$(realpath "${_workdir}")
 
-_builder=$(buildah from docker.io/library/golang:1.24-alpine)
+_builder=$(buildah from docker.io/library/golang:1.25-alpine)
 
 buildah run "${_builder}" /sbin/apk update
 buildah run "${_builder}" /sbin/apk add make bash openssl upx

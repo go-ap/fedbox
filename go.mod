@@ -1,23 +1,23 @@
 module github.com/go-ap/fedbox
 
-go 1.24.0
+go 1.25
 
 require (
 	git.sr.ht/~mariusor/cache v0.0.0-20250616110250-18a60a6f9473
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/wrapper v0.0.0-20250504120759-5fa47ac25e08
 	github.com/go-ap/activitypub v0.0.0-20250810115208-cb73b20a1742
-	github.com/go-ap/auth v0.0.0-20250810115438-39f5a0c2803b
+	github.com/go-ap/auth v0.0.0-20250817095740-f19b763d2723
 	github.com/go-ap/cache v0.0.0-20250810115305-0742a12ab1a1
 	github.com/go-ap/client v0.0.0-20250810115406-535063f251fa
 	github.com/go-ap/errors v0.0.0-20250527110557-c8db454e53fd
 	github.com/go-ap/filters v0.0.0-20250810115343-b996bd3d3865
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20250813093018-cc572da55f7a
+	github.com/go-ap/processing v0.0.0-20250815144424-c60889835717
 	github.com/go-ap/storage-badger v0.0.0-20250810120212-b99839d35d91
 	github.com/go-ap/storage-boltdb v0.0.0-20250813092247-192e973e2a6c
-	github.com/go-ap/storage-fs v0.0.0-20250812195404-46df5d98aec3
-	github.com/go-ap/storage-sqlite v0.0.0-20250813105446-154ffc5ee772
+	github.com/go-ap/storage-fs v0.0.0-20250817093002-ce04c8087791
+	github.com/go-ap/storage-sqlite v0.0.0-20250817100034-6c80714577a3
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -46,7 +46,7 @@ require (
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-sqlite3 v1.14.31 // indirect
+	github.com/mattn/go-sqlite3 v1.14.32 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
@@ -62,7 +62,7 @@ require (
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
-	golang.org/x/exp v0.0.0-20250811191247-51f88131bc50 // indirect
+	golang.org/x/exp v0.0.0-20250813145105-42675adae3e6 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
