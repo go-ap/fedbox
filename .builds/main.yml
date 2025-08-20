@@ -4,7 +4,7 @@ packages:
 sources:
   - https://github.com/go-ap/fedbox
 environment:
-  GO111MODULE: 'on'
+  GOTOOLCHAIN: go1.25.0
 secrets:
   - 3dcea276-38d6-4a7e-85e5-20cbc903e1ea
 tasks:
