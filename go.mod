@@ -13,10 +13,10 @@ require (
 	github.com/go-ap/errors v0.0.0-20250527110557-c8db454e53fd
 	github.com/go-ap/filters v0.0.0-20250810115343-b996bd3d3865
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20250815144424-c60889835717
+	github.com/go-ap/processing v0.0.0-20250819123906-31d8fe7abc23
 	github.com/go-ap/storage-badger v0.0.0-20250810120212-b99839d35d91
 	github.com/go-ap/storage-boltdb v0.0.0-20250813092247-192e973e2a6c
-	github.com/go-ap/storage-fs v0.0.0-20250817093002-ce04c8087791
+	github.com/go-ap/storage-fs v0.0.0-20250818111942-46c35ac43472
 	github.com/go-ap/storage-sqlite v0.0.0-20250817100034-6c80714577a3
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -35,7 +35,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/dgraph-io/badger/v4 v4.8.0 // indirect
-	github.com/dgraph-io/ristretto/v2 v2.2.0 // indirect
+	github.com/dgraph-io/ristretto/v2 v2.3.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -57,18 +57,18 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
-	go.etcd.io/bbolt v1.4.2 // indirect
+	go.etcd.io/bbolt v1.4.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
-	golang.org/x/exp v0.0.0-20250813145105-42675adae3e6 // indirect
+	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/term v0.34.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
-	google.golang.org/protobuf v1.36.7 // indirect
+	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 	modernc.org/libc v1.66.7 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
