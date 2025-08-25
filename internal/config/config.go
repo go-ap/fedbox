@@ -17,7 +17,7 @@ import (
 
 var (
 	Prefix         = "fedbox"
-	BaseRuntimeDir = "/run"
+	BaseRuntimeDir = "/var/run"
 )
 
 type BackendConfig struct {
@@ -56,7 +56,7 @@ type Options struct {
 type StorageType string
 
 const (
-	RUNTIME_DIR = "XDG_RUNTIME_DIR"
+	XdgRuntimeDir = "XDG_RUNTIME_DIR"
 
 	KeyENV                          = "ENV"
 	KeyTimeOut                      = "TIME_OUT"
@@ -252,7 +252,7 @@ func LoadFromEnv() Options {
 
 func (o Options) RuntimePath() string {
 	path := BaseRuntimeDir
-	if runtimeDir := os.Getenv(RUNTIME_DIR); runtimeDir != "" {
+	if runtimeDir := os.Getenv(XdgRuntimeDir); runtimeDir != "" {
 		path = runtimeDir
 	}
 	return path
@@ -272,8 +272,8 @@ func (o Options) pathInstanceName() string {
 }
 
 func (o Options) PidPath() string {
-	name := o.pathInstanceName()
-	return filepath.Join(o.RuntimePath(), name+".pid")
+	name := o.AppName
+	return strings.ToLower(filepath.Join(o.RuntimePath(), name+".pid"))
 }
 
 func (o Options) WritePid() error {
