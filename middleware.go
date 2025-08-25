@@ -34,12 +34,13 @@ var (
 func OutOfOrderMw(f *FedBOX) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			maybeOoOHandler := next
 			if f.conf.ShuttingDown {
-				next = errors.HandleError(errShuttingDown)
+				maybeOoOHandler = errors.HandleError(errShuttingDown)
 			} else if f.conf.MaintenanceMode {
-				next = errors.HandleError(errOutOfOrder)
+				maybeOoOHandler = errors.HandleError(errOutOfOrder)
 			}
-			next.ServeHTTP(w, r)
+			maybeOoOHandler.ServeHTTP(w, r)
 		})
 	}
 }
