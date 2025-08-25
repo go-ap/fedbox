@@ -259,21 +259,24 @@ func (o Options) RuntimePath() string {
 }
 
 func (o Options) DefaultSocketPath() string {
-	name := o.pathInstanceName()
+	name := strings.ToLower(o.pathInstanceName())
 	return filepath.Join(o.RuntimePath(), name+".sock")
 }
 
 func (o Options) pathInstanceName() string {
 	name := o.AppName
 	if o.Host != "" {
-		name += "-" + o.Host
+		host := strings.Replace(o.Host, "https://", "", 1)
+		host = strings.Replace(host, "http://", "", 1)
+		host = strings.Replace(host, ".", "-", -1)
+		name += "-" + host
 	}
 	return name
 }
 
 func (o Options) PidPath() string {
-	name := o.AppName
-	return strings.ToLower(filepath.Join(o.RuntimePath(), name+".pid"))
+	name := strings.ToLower(o.pathInstanceName())
+	return filepath.Join(o.RuntimePath(), name+".pid")
 }
 
 func (o Options) WritePid() error {
