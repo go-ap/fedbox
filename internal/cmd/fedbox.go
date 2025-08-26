@@ -5,80 +5,68 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"git.sr.ht/~mariusor/lw"
+	"github.com/alecthomas/kong"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	"github.com/urfave/cli/v2"
 )
 
 const AppName = "FedBOX"
 
-func NewApp(version string) *cli.App {
-	return &cli.App{
-		Name:        AppName,
-		Description: AppName + " instance server",
-		Version:     version,
-		Flags: []cli.Flag{
-			&cli.DurationFlag{
-				Name:  "wait",
-				Usage: "the duration for which the server gracefully wait for existing connections to finish",
-			},
-			&cli.StringFlag{
-				Name:  "env",
-				Usage: fmt.Sprintf("the environment to use. Possible values: %q, %q, %q", env.DEV, env.QA, env.PROD),
-			},
-			&cli.BoolFlag{
-				Name:   "profile",
-				Hidden: true,
-				Value:  false,
-			},
-		},
-		Action: run(version),
-	}
+type RunContext struct {
+	Verbose bool
+	Version string
 }
 
-func run(version string) cli.ActionFunc {
-	return func(c *cli.Context) error {
-		w := c.Duration("wait")
-		e := c.String("env")
+var FedBOXRun = Run{}
 
-		conf, err := config.Load(env.Type(e), w)
-		conf.Profile = c.Bool("profile")
-		conf.Secure = conf.Secure && !conf.Profile
-		conf.AppName = c.App.Name
-		conf.Version = version
+type Run struct {
+	Wait    time.Duration    `help:"The duration for which the server waits for existing connections to finish" default:"${defaultWaitDuration}"`
+	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`
+	Profile bool             `hidden:""`
+	Version kong.VersionFlag `short:"v"`
+}
 
-		if err != nil {
-			return err
-		}
-		var out io.WriteCloser
-		if conf.LogOutput != "" {
-			if out, err = os.Open(conf.LogOutput); err != nil {
-				return errors.Newf("Unable to output logs to %s: %s", conf.LogOutput, err)
-			}
-			defer func() {
-				if err := out.Close(); err != nil {
-					_, _ = fmt.Fprintf(os.Stderr, "Unable to close log output: %s", err)
-				}
-			}()
-		}
-		var l lw.Logger
-		if conf.Env.IsDev() {
-			l = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
-		} else {
-			l = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
-		}
-		db, err := fedbox.Storage(conf, l.WithContext(lw.Ctx{"log": "storage"}))
+func (r Run) Run(c RunContext) error {
+	w := r.Wait
+	e := r.Env
 
-		a, err := fedbox.New(l.WithContext(lw.Ctx{"log": "fedbox", "env": e}), conf, db)
-		if err != nil {
-			l.Errorf("Unable to initialize: %s", err)
-			return err
-		}
-
-		return a.Run(context.Background())
+	conf, err := config.Load(e, w)
+	if err != nil {
+		return err
 	}
+	conf.Profile = r.Profile
+	conf.Secure = conf.Secure && !conf.Profile
+	conf.Version = c.Version
+
+	var out io.WriteCloser
+	if conf.LogOutput != "" {
+		if out, err = os.Open(conf.LogOutput); err != nil {
+			return errors.Newf("Unable to output logs to %s: %s", conf.LogOutput, err)
+		}
+		defer func() {
+			if err := out.Close(); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "Unable to close log output: %s", err)
+			}
+		}()
+	}
+	var l lw.Logger
+	if conf.Env.IsDev() {
+		l = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+	} else {
+		l = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+	}
+	db, err := fedbox.Storage(conf, l.WithContext(lw.Ctx{"log": "storage"}))
+
+	a, err := fedbox.New(l.WithContext(lw.Ctx{"log": "fedbox", "env": e}), conf, db)
+	if err != nil {
+		l.Errorf("Unable to initialize: %s", err)
+		return err
+	}
+
+	return a.Run(context.Background())
 }

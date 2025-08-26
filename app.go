@@ -300,7 +300,7 @@ func (f *FedBOX) Run(ctx context.Context) error {
 			logFn("SIGUSR1 received, switching %s maintenance mode", op)
 		},
 		syscall.SIGINT: func(exit chan<- error) {
-			logger.Debugf("SIGINT received, interrupted")
+			logger.WithContext(lw.Ctx{"wait": f.conf.TimeOut}).Debugf("SIGINT received, interrupted")
 			exit <- f.Stop(ctx)
 		},
 		syscall.SIGTERM: func(exit chan<- error) {

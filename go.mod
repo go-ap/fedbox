@@ -31,6 +31,7 @@ require (
 	git.sr.ht/~mariusor/mask v0.0.0-20250114195353-98705a6977b7 // indirect
 	git.sr.ht/~mariusor/ssm v0.0.0-20250617180832-c3c0db41a98e // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
+	github.com/alecthomas/kong v1.12.1 // indirect
 	github.com/bits-and-blooms/bitset v1.24.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
