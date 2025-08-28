@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
 	"git.sr.ht/~mariusor/lw"
+	"github.com/alecthomas/kong"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
@@ -15,7 +17,6 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	st "github.com/go-ap/fedbox/storage"
-	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -24,6 +25,45 @@ type Control struct {
 	Logger  lw.Logger
 	Service vocab.Actor
 	Storage st.FullStorage
+}
+
+type Storage struct {
+	Type config.StorageType `help:"Type of the backend to use. Possible values: ${storageTypes}"`
+
+	Bootstrap      struct{}       `cmd:""`
+	FixCollections FixCollections `cmd:"" help:"Fix storage collections."`
+}
+
+type CTL struct {
+	ctl *Control
+
+	Url     url.URL          `help:"The URL used by the application."`
+	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`
+	Verbose int              `counter:"v" help:"Increase verbosity level from the default associated with the environment settings."`
+	Path    string           `path:"" help:"The path for the storage folder or socket" default:"."`
+	Version kong.VersionFlag `short:"V"`
+
+	// Commands
+	Pub         Pub         `cmd:"" name:"pub" alt:"ap" help:"ActivityPub management helper"`
+	OAuth2      OAuth2      `cmd:"" name:"oauth2"`
+	Storage     Storage     `cmd:""`
+	Accounts    Accounts    `cmd:"" help:"Accounts helper."`
+	Maintenance Maintenance `cmd:"" help:"Toggle maintenance mode for the main FedBOX server."`
+	Reload      Reload      `cmd:"" help:"Reload the main FedBOX server configuration"`
+	Stop        Stop        `cmd:"" help:"Stops the main FedBOX server configuration"`
+}
+
+func InitControl(c *CTL) *Control {
+	opt := config.Options{
+		Env:         c.Env,
+		LogLevel:    lw.InfoLevel,
+		AppName:     AppName,
+		StoragePath: c.Path,
+	}
+	if c.Verbose > 1 {
+		opt.LogLevel = lw.DebugLevel
+	}
+	return initControl(opt, lw.Prod(lw.SetOutput(os.Stderr), lw.SetLevel(opt.LogLevel)))
 }
 
 func New(db st.FullStorage, conf config.Options, l lw.Logger) (*Control, error) {
@@ -42,76 +82,50 @@ func New(db st.FullStorage, conf config.Options, l lw.Logger) (*Control, error) 
 
 var ctl Control
 
-func Before(c *cli.Context) error {
-	fields := lw.Ctx{}
-
-	logLevel := lw.InfoLevel
-	if c.Bool("verbose") {
-		logLevel = lw.DebugLevel
-	}
-	logger := lw.Prod(lw.SetLevel(logLevel), lw.SetOutput(os.Stdout))
-	ct, err := setup(c, logger.WithContext(fields))
-	if err != nil {
+func initControl(options config.Options, logger lw.Logger) *Control {
+	ct := Control{}
+	if err := setup(&ct, options, logger); err != nil {
 		// Ensure we don't print the default help message, which is not useful here
-		c.App.CustomAppHelpTemplate = "Failed"
+		//c.App.CustomAppHelpTemplate = "Failed"
 		logger.WithContext(lw.Ctx{"err": err}).Errorf("Error")
-		return err
+		return nil
 	}
-	ctl = *ct
-
-	return nil
+	return &ct
 }
 
-func setup(c *cli.Context, l lw.Logger) (*Control, error) {
-	environ := env.Type(c.String("env"))
+func setup(ct *Control, options config.Options, l lw.Logger) error {
+	environ := options.Env
+	path := options.StoragePath
+	typ := options.Storage
 	conf, err := config.Load(environ, time.Second)
 	if err != nil {
 		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}
-	path := c.String("path")
 	if path != "." {
 		conf.StoragePath = path
 	}
-	typ := c.String("type")
 	if typ != "" {
-		conf.Storage = config.StorageType(typ)
-	}
-	if conf.Storage == config.StoragePostgres {
-		host := c.String("host")
-		if host == "" {
-			host = "localhost"
-		}
-		port := c.Int64("port")
-		if port == 0 {
-			host = path
-		}
-		user := c.String("user")
-		if user == "" {
-			user = "fedbox"
-		}
-		pw, err := loadPwFromStdin(true, "%s@%s's", user, host)
-		if err != nil {
-			return nil, err
-		}
-		_ = config.BackendConfig{
-			Enabled: false,
-			Host:    host,
-			Port:    port,
-			User:    user,
-			Pw:      string(pw),
-			Name:    user,
-		}
+		conf.Storage = typ
 	}
 	db, err := fedbox.Storage(conf, l)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err = db.Open(); err != nil {
-		return nil, errors.Annotatef(err, "Unable to open FedBOX storage for path %s", conf.StoragePath)
+		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", conf.StoragePath)
 	}
 	defer db.Close()
 
-	return New(db, conf, l)
+	self, err := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
+	if err != nil {
+		l.Warnf("unable to load actor: %s", err)
+	}
+
+	ct.Conf = conf
+	ct.Service = self
+	ct.Storage = db
+	ct.Logger = l
+	return nil
 }
 
 func loadPwFromStdin(confirm bool, s string, params ...any) ([]byte, error) {

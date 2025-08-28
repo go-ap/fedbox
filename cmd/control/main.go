@@ -5,62 +5,39 @@ import (
 	"os"
 	"runtime/debug"
 
+	"github.com/alecthomas/kong"
+	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	"github.com/urfave/cli/v2"
 )
 
-var Version = "HEAD"
+var version = "HEAD"
 
 func main() {
-	app := cli.App{}
-	app.Name = "fedboxctl"
-	app.Usage = "helper utility to manage a FedBOX instance"
-	if build, ok := debug.ReadBuildInfo(); ok && Version == "HEAD" {
-		app.Version = build.Main.Version
-	}
-	app.Before = cmd.Before
-	app.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:  "url",
-			Usage: "The url used by the application",
-		},
-		&cli.StringFlag{
-			Name:  "env",
-			Usage: fmt.Sprintf("The environment to use. Possible values: %q", []env.Type{env.DEV, env.QA, env.PROD}),
-			Value: string(env.DEV),
-		},
-		&cli.BoolFlag{
-			Name:  "verbose",
-			Usage: fmt.Sprintf("Increase verbosity level from the default associated with the environment settings."),
-		},
-		&cli.StringFlag{
-			Name:  "type",
-			Usage: fmt.Sprintf("Type of the backend to use. Possible values: %q", []config.StorageType{config.StorageBoltDB, config.StorageBadger, config.StorageFS}),
-		},
-		&cli.StringFlag{
-			Name:  "path",
-			Value: ".",
-			Usage: fmt.Sprintf("The path for the storage folder or socket"),
-		},
-		&cli.StringFlag{
-			Name:  "user",
-			Value: "fedbox",
-			Usage: "The postgres database user",
-		},
-	}
-	app.Commands = []*cli.Command{
-		cmd.PubCmd,
-		cmd.OAuth2Cmd,
-		cmd.BootstrapCmd,
-		cmd.AccountsCmd,
-		cmd.FixStorageCollectionsCmd,
-		cmd.Reload, cmd.Maintenance, cmd.Stop,
+	if build, ok := debug.ReadBuildInfo(); ok && version == "HEAD" && build.Main.Version != "(devel)" && build.Main.Version != "" {
+		version = build.Main.Version
 	}
 
-	if err := app.Run(os.Args); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
+	CTLRun := new(cmd.CTL)
+	ctx := kong.Parse(
+		CTLRun,
+		kong.Name("fedboxctl"),
+		kong.Description("helper utility to manage ${name} instances."),
+		kong.Vars{
+			"version":            version,
+			"name":               cmd.AppName,
+			"defaultEnv":         string(env.DEV),
+			"envTypes":           fmt.Sprintf("%s, %s, %s, %s", env.TEST, env.DEV, env.QA, env.PROD),
+			"keyTypes":           fmt.Sprintf("%s, %s", fedbox.KeyTypeED25519, fedbox.KeyTypeRSA),
+			"storageTypes":       fmt.Sprintf("%s, %s, %s, %s", config.StorageFS, config.StorageSqlite, config.StorageBoltDB, config.StorageBadger),
+			"defaultKeyType":     fedbox.KeyTypeRSA,
+			"defaultObjectTypes": fmt.Sprintf("%v", cmd.ValidGenericTypes),
+		},
+	)
+
+	if err := ctx.Run(cmd.InitControl(CTLRun)); err != nil {
+		cmd.Errf(err.Error())
 		os.Exit(1)
 	}
 }

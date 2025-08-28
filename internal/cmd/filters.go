@@ -5,10 +5,10 @@ import (
 	"github.com/go-ap/filters"
 )
 
-func types(incoming ...string) filters.Check {
+func types(incoming ...vocab.ActivityVocabularyType) filters.Check {
 	validTypes := make(vocab.ActivityVocabularyTypes, 0, len(incoming))
 	for _, t := range incoming {
-		if tt := vocab.ActivityVocabularyType(t); vocab.Types.Contains(tt) {
+		if tt := t; vocab.Types.Contains(tt) {
 			validTypes = append(validTypes)
 		}
 	}

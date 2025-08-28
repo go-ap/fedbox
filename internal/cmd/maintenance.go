@@ -3,32 +3,32 @@ package cmd
 import (
 	"syscall"
 
-	"github.com/urfave/cli/v2"
+	"github.com/go-ap/errors"
 )
 
-var Maintenance = &cli.Command{
-	Name:   "maintenance",
-	Usage:  "Toggle maintenance mode for the main FedBOX server",
-	Action: sendSignalToServerAct(&ctl, syscall.SIGUSR1),
+type Maintenance struct{}
+
+func (m Maintenance) Run(ctl *Control) error {
+	return sendSignalToServer(ctl, syscall.SIGUSR1)()
 }
 
-var Reload = &cli.Command{
-	Name:   "reload",
-	Usage:  "Reload the main FedBOX server configuration",
-	Action: sendSignalToServerAct(&ctl, syscall.SIGHUP),
+type Reload struct{}
+
+func (m Reload) Run(ctl *Control) error {
+	return sendSignalToServer(ctl, syscall.SIGHUP)()
 }
 
-var Stop = &cli.Command{
-	Name:   "stop",
-	Usage:  "Stops the main FedBOX server configuration",
-	Action: sendSignalToServerAct(&ctl, syscall.SIGTERM),
+type Stop struct{}
+
+func (m Stop) Run(ctl *Control) error {
+	return sendSignalToServer(ctl, syscall.SIGTERM)()
 }
 
-func sendSignalToServerAct(ctl *Control, sig syscall.Signal) cli.ActionFunc {
-	return func(c *cli.Context) error {
+func sendSignalToServer(ctl *Control, sig syscall.Signal) func() error {
+	return func() error {
 		pid, err := ctl.Conf.ReadPid()
 		if err != nil {
-			return err
+			return errors.Annotatef(err, "unable to read pid file")
 		}
 		return syscall.Kill(pid, sig)
 	}

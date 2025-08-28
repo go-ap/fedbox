@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
 	"syscall"
 
 	"git.sr.ht/~mariusor/lw"
@@ -13,88 +11,60 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/storage"
 	s "github.com/go-ap/fedbox/storage"
-	"github.com/urfave/cli/v2"
 )
 
-var BootstrapCmd = &cli.Command{
-	Name:  "bootstrap",
-	Usage: "Bootstrap a new postgres or bolt database helper",
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:  "root",
-			Usage: "root account of postgres server (default: postgres)",
-			Value: "postgres",
-		},
-		&cli.StringFlag{
-			Name:  "sql",
-			Usage: "path to the queries for initializing the database",
-			Value: "postgres",
-		},
-		&cli.StringFlag{
-			Name:  "key-type",
-			Usage: fmt.Sprintf("Type of keys to generate: %v", []string{fedbox.KeyTypeED25519, fedbox.KeyTypeRSA}),
-			Value: fedbox.KeyTypeED25519,
-		},
-	},
-	Action:      bootstrapAct(&ctl),
-	Subcommands: []*cli.Command{reset},
+type ResetCmd struct{}
+
+func (b ResetCmd) Run(ctl *Control) error {
+	if err := ctl.Storage.Open(); err != nil {
+		return http.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+	}
+	defer ctl.Storage.Close()
+
+	err := reset(ctl.Conf, ctl.Logger)
+	if err != nil {
+		return err
+	}
+	return bootstrap(ctl.Conf, ctl.Service, ctl.Logger)
 }
 
-var reset = &cli.Command{
-	Name:   "reset",
-	Usage:  "reset an existing database",
-	Action: resetAct(&ctl),
+type BootstrapCmd struct {
+	KeyType string `help:"Type of keys to generate: ${keyTypes}" enum:"${keyTypes}" default:"${defaultKeyType}"`
+
+	Reset ResetCmd `cmd:"" help:"Reset an existing storage."`
 }
 
-func resetAct(ctl *Control) cli.ActionFunc {
-	return func(ctx *cli.Context) error {
-		if err := ctl.Storage.Open(); err != nil {
-			return http.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-		}
-		defer ctl.Storage.Close()
+func (b BootstrapCmd) Run(ctl *Control) error {
+	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
+	_ = pauseFn()
+	defer func() {
+		_ = pauseFn()
+	}()
+	if err := ctl.Storage.Open(); err != nil {
+		return http.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+	}
+	defer ctl.Storage.Close()
 
-		err := Reset(ctl.Conf)
-		if err != nil {
+	keyType := b.KeyType
+	ctl.Service = ap.Self(ap.DefaultServiceIRI(ctl.Conf.BaseURL))
+	if err := bootstrap(ctl.Conf, ctl.Service, ctl.Logger); err != nil {
+		Errf("Error adding service: %s\n", err)
+		return err
+	}
+	if metaSaver, ok := ctl.Storage.(s.MetadataStorage); ok {
+		if err := AddKeyToItem(metaSaver, &ctl.Service, keyType); err != nil {
+			Errf("Error saving metadata for service: %s", err)
 			return err
 		}
-		return Bootstrap(ctl.Conf, ctl.Service)
 	}
+	return nil
 }
 
-func bootstrapAct(ctl *Control) cli.ActionFunc {
-	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
-	return func(c *cli.Context) error {
-		if err := pauseFn(c); err != nil {
-			return http.Annotatef(err, "Unable to pause server")
-		}
-		defer func() {
-			if err := pauseFn(c); err != nil {
-				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
-			}
-		}()
-		if err := ctl.Storage.Open(); err != nil {
-			return http.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-		}
-		defer ctl.Storage.Close()
-
-		keyType := c.String("keyType")
-		ctl.Service = ap.Self(ap.DefaultServiceIRI(ctl.Conf.BaseURL))
-		if err := Bootstrap(ctl.Conf, ctl.Service); err != nil {
-			Errf("Error adding service: %s\n", err)
-			return err
-		}
-		if metaSaver, ok := ctl.Storage.(s.MetadataStorage); ok {
-			if err := AddKeyToItem(metaSaver, &ctl.Service, keyType); err != nil {
-				Errf("Error saving metadata for service: %s", err)
-				return err
-			}
-		}
-		return nil
-	}
+func BootstrapService(conf config.Options, service vocab.Item, l lw.Logger) error {
+	return bootstrap(conf, service, l)
 }
 
-func Bootstrap(conf config.Options, service vocab.Item) error {
-	l := lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(os.Stdout))
+func bootstrap(conf config.Options, service vocab.Item, l lw.Logger) error {
 	if err := storage.BootstrapFn(conf); err != nil {
 		return http.Annotatef(err, "Unable to create %s path for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}
@@ -116,8 +86,11 @@ func Bootstrap(conf config.Options, service vocab.Item) error {
 	return nil
 }
 
-func Reset(conf config.Options) error {
-	l := lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(os.Stdout))
+func ResetService(conf config.Options, l lw.Logger) error {
+	return reset(conf, l)
+}
+
+func reset(conf config.Options, l lw.Logger) error {
 	if err := storage.CleanFn(conf); err != nil {
 		return http.Annotatef(err, "Unable to reset %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
 	}

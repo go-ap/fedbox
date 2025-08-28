@@ -4,20 +4,12 @@ import (
 	"syscall"
 	"time"
 
-	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
-	"github.com/urfave/cli/v2"
 )
-
-var FixStorageCollectionsCmd = &cli.Command{
-	Name:   "fix-storage",
-	Usage:  "Fix storage collections helper",
-	Action: fixStorageCollectionsAct(&ctl),
-}
 
 var allCollectionPaths = append(filters.FedBOXCollections, vocab.ActivityPubCollections...)
 var streamCollections = vocab.CollectionPaths{
@@ -55,31 +47,26 @@ func getActorCollections(act vocab.Item) vocab.IRIs {
 	return collections
 }
 
-func fixStorageCollectionsAct(ctl *Control) cli.ActionFunc {
-	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
-	return func(c *cli.Context) error {
-		if err := pauseFn(c); err != nil {
-			return errors.Annotatef(err, "Unable to pause server")
-		}
-		defer func() {
-			if err := pauseFn(c); err != nil {
-				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
-			}
-		}()
-		if _, ok := ctl.Storage.(processing.CollectionStore); !ok {
-			return errors.Newf("Invalid storage type %T. Unable to handle collection operations.", ctl.Storage)
-		}
-		if err := ctl.Storage.Open(); err != nil {
-			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-		}
-		defer ctl.Storage.Close()
+type FixCollections struct{}
 
-		if err := tryCreateActorCollections(ctl.Service, ctl.Storage); err != nil {
-			return err
-		}
-		// NOTE(marius): this assumes that storage contains the actors, activities, objects streams collections
-		return tryCreateAllObjectsCollections(ctl.Service, ctl.Storage)
+func (f FixCollections) Run(ctl *Control) error {
+	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
+	_ = pauseFn()
+	defer func() { _ = pauseFn() }()
+
+	if _, ok := ctl.Storage.(processing.CollectionStore); !ok {
+		return errors.Newf("Invalid storage type %T. Unable to handle collection operations.", ctl.Storage)
 	}
+	if err := ctl.Storage.Open(); err != nil {
+		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+	}
+	defer ctl.Storage.Close()
+
+	if err := tryCreateActorCollections(ctl.Service, ctl.Storage); err != nil {
+		return err
+	}
+	// NOTE(marius): this assumes that storage contains the actors, activities, objects streams collections
+	return tryCreateAllObjectsCollections(ctl.Service, ctl.Storage)
 }
 
 func tryCreateAllObjectsCollections(actor vocab.Item, storage st.FullStorage) error {
@@ -103,7 +90,7 @@ func tryCreateAllObjectsCollections(actor vocab.Item, storage st.FullStorage) er
 				ctl.Logger.Debugf("Unable to load collection %s: %s", iri, err)
 				continue
 			}
-			vocab.OnCollectionIntf(items, func(col vocab.CollectionInterface) error {
+			_ = vocab.OnCollectionIntf(items, func(col vocab.CollectionInterface) error {
 				for _, it := range col.Collection() {
 					if vocab.ActorTypes.Contains(it.GetType()) {
 						allCollections = append(allCollections, getActorCollections(it)...)
@@ -199,7 +186,7 @@ func tryCreateCollection(storage st.FullStorage, colIRI vocab.IRI) error {
 		ctl.Logger.Errorf("Saved object is not a valid OrderedCollection, but %s: %s", items.GetType(), err)
 		return err
 	}
-	vocab.OnCollectionIntf(items, func(col vocab.CollectionInterface) error {
+	_ = vocab.OnCollectionIntf(items, func(col vocab.CollectionInterface) error {
 		collection.TotalItems = col.Count()
 		for _, it := range col.Collection() {
 			// Try saving objects in collection, which would create the collections if they exist

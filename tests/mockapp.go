@@ -81,12 +81,12 @@ func addMockObjects(r ls.FullStorage, obj vocab.ItemCollection) error {
 	return nil
 }
 
-func cleanDB(t *testing.T, opt config.Options) {
+func cleanDB(t *testing.T, opt config.Options, l lw.Logger) {
 	if opt.Storage == "all" {
 		opt.Storage = config.StorageFS
 	}
 	t.Logf("resetting %q db: %s", opt.Storage, opt.StoragePath)
-	if err := cmd.Reset(opt); err != nil {
+	if err := cmd.ResetService(opt, l); err != nil {
 		t.Error(err)
 	}
 	if t.Failed() {
@@ -219,7 +219,7 @@ func seedTestData(app *fedbox.FedBOX) error {
 	return db.CreateClient(mockClient)
 }
 
-func getTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
+func getTestFedBOX(options config.Options, l lw.Logger) (*fedbox.FedBOX, error) {
 	if options.Storage == "all" {
 		options.Storage = config.StorageFS
 	}
@@ -229,7 +229,6 @@ func getTestFedBOX(options config.Options) (*fedbox.FedBOX, error) {
 
 	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
 
-	l := lw.Prod(lw.SetLevel(options.LogLevel), lw.SetOutput(os.Stdout))
 	db, err := fedbox.Storage(options, l.WithContext(fields))
 	if err != nil {
 		return nil, err

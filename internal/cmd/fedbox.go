@@ -28,10 +28,10 @@ type Run struct {
 	Wait    time.Duration    `help:"The duration for which the server waits for existing connections to finish" default:"${defaultWaitDuration}"`
 	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`
 	Profile bool             `hidden:""`
-	Version kong.VersionFlag `short:"v"`
+	Version kong.VersionFlag `short:"V"`
 }
 
-func (r Run) Run(c RunContext) error {
+func (r Run) Run(c *RunContext) error {
 	w := r.Wait
 	e := r.Env
 

@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
@@ -18,188 +17,121 @@ import (
 	s "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/filters"
 	"github.com/openshift/osin"
-	"github.com/urfave/cli/v2"
 )
 
-var client = &cli.Command{
-	Name:  "client",
-	Usage: "OAuth2 client application management",
-	Subcommands: []*cli.Command{
-		addClient,
-		del,
-		ls,
-	},
+type Client struct {
+	Add AddClient `cmd:"" help:"Adds an OAuth2 client."`
+	Del DelClient `cmd:"" help:"Removes an existing OAuth2 client."`
+	Ls  LsClient  `cmd:"" help:"Lists existing OAuth2 clients."`
 }
 
-var ls = &cli.Command{
-	Name:    "ls",
-	Aliases: []string{"list"},
-	Usage:   "Lists existing OAuth2 clients",
-	Action:  lsAct(&ctl),
+type OAuth2 struct {
+	Client Client `cmd:"" help:"OAuth2 client application management."`
+	Token  Token  `cmd:"" help:"OAuth2 authorization token management."`
 }
 
-func lsAct(ctl *Control) cli.ActionFunc {
-	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
-	return func(c *cli.Context) error {
-		if err := pauseFn(c); err != nil {
-			return errors.Annotatef(err, "Unable to pause server")
-		}
-		defer func() {
-			if err := pauseFn(c); err != nil {
-				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
-			}
-		}()
-		if err := ctl.Storage.Open(); err != nil {
-			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-		}
-		defer ctl.Storage.Close()
+type LsClient struct{}
 
-		clients, err := ctl.ListClients()
-		if err != nil {
-			return err
-		}
-		for i, client := range clients {
-			fmt.Printf("%d %s - %s\n", i, client.GetId(), strings.ReplaceAll(client.GetRedirectUri(), "\n", " :: "))
-		}
-		return nil
+func (l LsClient) Run(ctl *Control) error {
+	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
+	_ = pauseFn()
+	defer func() { _ = pauseFn() }()
+
+	if err := ctl.Storage.Open(); err != nil {
+		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
 	}
-}
+	defer ctl.Storage.Close()
 
-var del = &cli.Command{
-	Name:      "del",
-	Aliases:   []string{"delete", "remove", "rm"},
-	Usage:     "Removes an existing OAuth2 client",
-	ArgsUsage: "APPLICATION_UUID...",
-	Action:    delAct(&ctl),
-}
-
-func delAct(ctl *Control) cli.ActionFunc {
-	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
-	return func(c *cli.Context) error {
-		if err := pauseFn(c); err != nil {
-			return errors.Annotatef(err, "Unable to pause server")
-		}
-		defer func() {
-			if err := pauseFn(c); err != nil {
-				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
-			}
-		}()
-		if err := ctl.Storage.Open(); err != nil {
-			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-		}
-		defer ctl.Storage.Close()
-
-		for i := 0; i <= c.Args().Len(); i++ {
-			id := c.Args().Get(i)
-			if id == "" {
-				continue
-			}
-			err := ctl.DeleteClient(id)
-			if err != nil {
-				Errf("Error deleting %s: %s\n", id, err)
-				continue
-			}
-			fmt.Printf("Deleted: %s\n", id)
-		}
-		return nil
-	}
-}
-
-var addClient = &cli.Command{
-	Name:    "add",
-	Aliases: []string{"new"},
-	Usage:   "Adds an OAuth2 client",
-	Flags: []cli.Flag{
-		&cli.StringSliceFlag{
-			Name:  "redirectUri",
-			Value: nil,
-			Usage: "The redirect URIs for current application",
-		},
-	},
-	Action: addAct(&ctl),
-}
-
-func addAct(ctl *Control) cli.ActionFunc {
-	pauseFn := sendSignalToServerAct(ctl, syscall.SIGUSR1)
-	return func(c *cli.Context) error {
-		if err := pauseFn(c); err != nil {
-			return errors.Annotatef(err, "Unable to pause server")
-		}
-		defer func() {
-			if err := pauseFn(c); err != nil {
-				ctl.Logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf("Unable to pause server")
-			}
-		}()
-		if err := ctl.Storage.Open(); err != nil {
-			return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-		}
-		defer ctl.Storage.Close()
-
-		redirectURIs := c.StringSlice("redirectUri")
-		if len(redirectURIs) < 1 {
-			return errors.Newf("Need to provide at least a redirect URI for the client")
-		}
-		pw, err := loadPwFromStdin(true, "client's")
-		if err != nil {
-			return err
-		}
-		id, err := ctl.AddClient(pw, redirectURIs, nil)
-		if err == nil {
-			fmt.Printf("Client ID: %s\n", id)
-		}
+	clients, err := ctl.ListClients()
+	if err != nil {
 		return err
 	}
+	for i, client := range clients {
+		fmt.Printf("%d %s - %s\n", i, client.GetId(), strings.ReplaceAll(client.GetRedirectUri(), "\n", " :: "))
+	}
+	return nil
 }
 
-var token = &cli.Command{
-	Name:        "token",
-	Usage:       "OAuth2 authorization token management",
-	Subcommands: []*cli.Command{tokenAdd},
+type DelClient struct {
+	Client []string `arg:"" help:"Removes an existing OAuth2 client"`
 }
 
-var tokenAdd = &cli.Command{
-	Name:    "add",
-	Aliases: []string{"new", "get"},
-	Usage:   "Adds an OAuth2 token",
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:  "client",
-			Usage: "The client to use for generating the token",
-		},
-		&cli.StringFlag{
-			Name:     "actor",
-			Required: true,
-			Usage:    "The actor identifier we want to generate the authorization for (ID)",
-		},
-	},
-	Action: tokenAct(&ctl),
-}
+func (d DelClient) Run(ctl *Control) error {
+	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
+	_ = pauseFn()
+	defer func() { _ = pauseFn() }()
 
-var OAuth2Cmd = &cli.Command{
-	Name:  "oauth",
-	Usage: "OAuth2 client and access token helper",
-	Subcommands: []*cli.Command{
-		client,
-		token,
-	},
-}
+	if err := ctl.Storage.Open(); err != nil {
+		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+	}
+	defer ctl.Storage.Close()
 
-func tokenAct(c *Control) cli.ActionFunc {
-	return func(ctx *cli.Context) error {
-		clientID := ctx.String("client")
-		if clientID == "" {
-			clientID = string(c.Service.GetLink())
+	for _, id := range d.Client {
+		if id == "" {
+			continue
 		}
-		actor := ctx.String("actor")
-		if clientID == "" {
-			return errors.Newf("Need to provide the actor identifier (ID)")
+		err := ctl.DeleteClient(id)
+		if err != nil {
+			Errf("Error deleting %s: %s\n", id, err)
+			continue
 		}
-		tok, err := ctl.GenAuthToken(clientID, actor, nil)
-		if err == nil {
-			fmt.Printf("Authorization: Bearer %s\n", tok)
-		}
+		fmt.Printf("Deleted: %s\n", id)
+	}
+	return nil
+}
+
+type AddClient struct {
+	RedirectURIs []string `name:"redirect-ur-is" help:"The redirect URIs for current application"`
+}
+
+func (a AddClient) Run(ctl *Control) error {
+	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
+	_ = pauseFn()
+	defer func() { _ = pauseFn() }()
+
+	if err := ctl.Storage.Open(); err != nil {
+		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
+	}
+	defer ctl.Storage.Close()
+
+	redirectURIs := a.RedirectURIs
+	if len(redirectURIs) < 1 {
+		return errors.Newf("Need to provide at least a redirect URI for the client")
+	}
+	pw, err := loadPwFromStdin(true, "client's")
+	if err != nil {
 		return err
 	}
+	id, err := ctl.AddClient(pw, redirectURIs, nil)
+	if err == nil {
+		fmt.Printf("Client ID: %s\n", id)
+	}
+	return err
+}
+
+type Token struct {
+	Add AddToken `cmd:"" help:"Adds an OAuth2 token"`
+}
+
+type AddToken struct {
+	Client string `help:"The client to use for generating the token"`
+	Actor  string `arg:"" help:"The actor identifier we want to generate the authorization for (ID)"`
+}
+
+func (a AddToken) Run(ctl *Control) error {
+	clientID := a.Client
+	if clientID == "" {
+		clientID = string(ctl.Service.GetLink())
+	}
+	actor := a.Actor
+	if clientID == "" {
+		return errors.Newf("Need to provide the actor identifier (ID)")
+	}
+	tok, err := ctl.GenAuthToken(clientID, actor, nil)
+	if err == nil {
+		fmt.Printf("Authorization: Bearer %s\n", tok)
+	}
+	return err
 }
 
 const URISeparator = "\n"
@@ -267,7 +199,7 @@ func (c *Control) DeleteClient(id string) error {
 	if _, err := iri.URL(); err != nil {
 		iri = vocab.IRI(fmt.Sprintf("%s/%s/%s", c.Conf.BaseURL, filters.ActorsType, id))
 	}
-	err := c.DeleteObjects("Remove OAuth2 Client", nil, iri.String())
+	err := c.DeleteObjects("Remove OAuth2 Client", nil, iri)
 	if err != nil {
 		return err
 	}

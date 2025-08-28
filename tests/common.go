@@ -952,9 +952,10 @@ func cleanupTestPairs(pairs testPairs, t *testing.T) func() {
 		}
 		for _, suite := range pairs {
 			for _, options := range suite.configs {
+				l := lw.Prod(lw.SetOutput(t.Output()), lw.SetLevel(options.LogLevel))
 				// NOTE(marius): we removed the deferred app.Stop(),
 				// to avoid race conditions when running multiple FedBOX instances for the federated tests
-				cleanDB(t, options)
+				cleanDB(t, options, l)
 			}
 		}
 	}
@@ -971,14 +972,15 @@ func runTestSuite(t *testing.T, suite testSuite) {
 			if Verbose {
 				options.LogLevel = lw.WarnLevel
 			}
+			l := lw.Prod(lw.SetLevel(options.LogLevel), lw.SetOutput(t.Output()))
 
 			self := ap.Self(ap.DefaultServiceIRI(options.BaseURL))
-			if err := cmd.Bootstrap(options, self); err != nil {
+			if err := cmd.BootstrapService(options, self, l); err != nil {
 				t.Fatalf("%+v", err)
 				return
 			}
 			if suite.apps[self.ID] == nil {
-				fb, err := getTestFedBOX(options)
+				fb, err := getTestFedBOX(options, l)
 				if err != nil {
 					t.Fatalf("%s", err)
 					return
@@ -991,7 +993,7 @@ func runTestSuite(t *testing.T, suite testSuite) {
 			for _, app := range suite.apps {
 				options := app.Config()
 				fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
-				l := lw.Prod().WithContext(fields)
+				l := lw.Prod(lw.SetLevel(options.LogLevel), lw.SetOutput(t.Output())).WithContext(fields)
 
 				m := append(suite.mocks, test.mocks...)
 				if err := saveMocks(m, app.Config(), app.Storage(), l); err != nil {
@@ -1012,7 +1014,7 @@ func runTestSuite(t *testing.T, suite testSuite) {
 				// NOTE(marius): we removed the deferred app.Stop(),
 				// to avoid race conditions when running multiple FedBOX instances for the federated tests
 				_ = app.Stop(ctx)
-				cleanDB(t, app.Config())
+				cleanDB(t, app.Config(), lw.Prod(lw.SetOutput(t.Output()), lw.SetLevel(app.Config().LogLevel)))
 			}
 			stopFn()
 		})

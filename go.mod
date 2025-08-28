@@ -6,6 +6,7 @@ require (
 	git.sr.ht/~mariusor/cache v0.0.0-20250616110250-18a60a6f9473
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/wrapper v0.0.0-20250504120759-5fa47ac25e08
+	github.com/alecthomas/kong v1.12.1
 	github.com/go-ap/activitypub v0.0.0-20250810115208-cb73b20a1742
 	github.com/go-ap/auth v0.0.0-20250817095740-f19b763d2723
 	github.com/go-ap/cache v0.0.0-20250810115305-0742a12ab1a1
@@ -22,7 +23,6 @@ require (
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pborman/uuid v1.2.1
-	github.com/urfave/cli/v2 v2.27.5
 	golang.org/x/crypto v0.41.0
 )
 
@@ -31,10 +31,8 @@ require (
 	git.sr.ht/~mariusor/mask v0.0.0-20250114195353-98705a6977b7 // indirect
 	git.sr.ht/~mariusor/ssm v0.0.0-20250617180832-c3c0db41a98e // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
-	github.com/alecthomas/kong v1.12.1 // indirect
 	github.com/bits-and-blooms/bitset v1.24.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/dgraph-io/badger/v4 v4.8.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.3.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -54,10 +52,8 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/rs/zerolog v1.34.0 // indirect
-	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
-	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.etcd.io/bbolt v1.4.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
