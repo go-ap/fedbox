@@ -53,10 +53,14 @@ func BootstrapService(conf config.Options, service vocab.Item, l lw.Logger) erro
 }
 
 func bootstrap(conf config.Options, service vocab.Item, l lw.Logger) error {
-	if err := storage.BootstrapFn(conf); err != nil {
-		return http.Annotatef(err, "Unable to create %s path for storage %s", conf.BaseStoragePath(), conf.Storage)
+	path, err := conf.BaseStoragePath()
+	if err != nil {
+		return err
 	}
-	l.Infof("Successfully created %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
+	if err = storage.BootstrapFn(conf); err != nil {
+		return http.Annotatef(err, "Unable to create %s path for storage %s", path, conf.Storage)
+	}
+	l.Infof("Successfully created %s db for storage %s", path, conf.Storage)
 
 	db, err := fedbox.Storage(conf, l)
 	if err != nil {
@@ -79,10 +83,14 @@ func ResetService(conf config.Options, l lw.Logger) error {
 }
 
 func reset(conf config.Options, l lw.Logger) error {
-	if err := storage.CleanFn(conf); err != nil {
-		return http.Annotatef(err, "Unable to reset %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
+	path, err := conf.BaseStoragePath()
+	if err != nil {
+		return err
 	}
-	l.Infof("Successfully reset %s db for storage %s", conf.BaseStoragePath(), conf.Storage)
+	if err = storage.CleanFn(conf); err != nil {
+		return http.Annotatef(err, "Unable to reset %s db for storage %s", path, conf.Storage)
+	}
+	l.Infof("Successfully reset %s db for storage %s", path, conf.Storage)
 	return nil
 }
 

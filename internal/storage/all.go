@@ -17,61 +17,73 @@ import (
 )
 
 func BootstrapFn(opt config.Options) error {
+	path, err := opt.BaseStoragePath()
+	if err != nil {
+		return err
+	}
 	if opt.Storage == config.StorageBoltDB {
-		c := boltdb.Config{Path: opt.BaseStoragePath()}
+		c := boltdb.Config{Path: path}
 		return boltdb.Bootstrap(c)
 	}
 	if opt.Storage == config.StorageBadger {
-		c := badger.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache}
+		c := badger.Config{Path: path, CacheEnable: opt.StorageCache}
 		return badger.Bootstrap(c)
 	}
 	if opt.Storage == config.StorageFS {
-		c := fs.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache, UseIndex: opt.UseIndex}
+		c := fs.Config{Path: path, CacheEnable: opt.StorageCache, UseIndex: opt.UseIndex}
 		return fs.Bootstrap(c)
 	}
 	if opt.Storage == config.StorageSqlite {
-		c := sqlite.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache}
+		c := sqlite.Config{Path: path, CacheEnable: opt.StorageCache}
 		return sqlite.Bootstrap(c)
 	}
 	return http.NotImplementedf("Invalid storage type %s", opt.Storage)
 }
 
 func CleanFn(opt config.Options) error {
+	path, err := opt.BaseStoragePath()
+	if err != nil {
+		return err
+	}
 	if opt.Storage == config.StorageBoltDB {
-		c := boltdb.Config{Path: opt.BaseStoragePath()}
+		c := boltdb.Config{Path: path}
 		return boltdb.Clean(c)
 	}
 	if opt.Storage == config.StorageBadger {
-		c := badger.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache}
+		c := badger.Config{Path: path, CacheEnable: opt.StorageCache}
 		return badger.Clean(c)
 	}
 	if opt.Storage == config.StorageFS {
-		conf := fs.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache, UseIndex: opt.UseIndex}
+		conf := fs.Config{Path: path, CacheEnable: opt.StorageCache, UseIndex: opt.UseIndex}
 		return fs.Clean(conf)
 	}
 	if opt.Storage == config.StorageSqlite {
-		c := sqlite.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache}
+		c := sqlite.Config{Path: path, CacheEnable: opt.StorageCache}
 		return sqlite.Clean(c)
 	}
 	return http.NotImplementedf("Invalid storage type %s", opt.Storage)
 }
 
 func CreateService(opt config.Options, self vocab.Item) (err error) {
+	path, err := opt.BaseStoragePath()
+	if err != nil {
+		return err
+	}
 	var r processing.WriteStore
 	if opt.Storage == config.StorageBoltDB {
-		c := boltdb.Config{Path: opt.BaseStoragePath()}
+		c := boltdb.Config{Path: path}
 		r, err = boltdb.New(c)
 	}
 	if opt.Storage == config.StorageBadger {
-		c := badger.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache}
+		c := badger.Config{Path: path, CacheEnable: opt.StorageCache}
 		r, err = badger.New(c)
 	}
 	if opt.Storage == config.StorageFS {
-		c := fs.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache, UseIndex: opt.UseIndex}
+		c := fs.Config{Path: path, CacheEnable: opt.StorageCache, UseIndex: opt.UseIndex}
 		r, err = fs.New(c)
 	}
 	if opt.Storage == config.StorageSqlite {
-		c := sqlite.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache}
+		c := sqlite.Config{Path: path, CacheEnable: opt.StorageCache}
 		r, err = sqlite.New(c)
 	}
 	if err != nil {

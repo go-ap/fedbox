@@ -109,23 +109,23 @@ func normalizeConfigPath(p string, o Options) string {
 	return filepath.Clean(p)
 }
 
-func (o Options) BaseStoragePath() string {
+func (o Options) BaseStoragePath() (string, error) {
 	basePath := normalizeConfigPath(o.StoragePath, o)
 	fi, err := os.Stat(basePath)
 	if err != nil && os.IsNotExist(err) {
 		err = os.MkdirAll(basePath, defaultDirPerm)
 	}
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	fi, err = os.Stat(basePath)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	if !fi.IsDir() {
 		panic(errors.NotValidf("path %s is invalid for storage", basePath))
 	}
-	return basePath
+	return basePath, nil
 }
 
 func prefKey(k string) string {

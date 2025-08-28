@@ -9,7 +9,8 @@ import (
 
 func conf(opt config.Options) badger.Config {
 	opt.Storage = config.DefaultStorage
-	return badger.Config{Path: opt.BaseStoragePath(), CacheEnable: opt.StorageCache}
+	path, _ := opt.BaseStoragePath()
+	return badger.Config{Path: path, CacheEnable: opt.StorageCache}
 }
 
 func BootstrapFn(opt config.Options) error {

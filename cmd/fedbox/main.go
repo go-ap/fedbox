@@ -30,7 +30,7 @@ func main() {
 			"defaultWaitDuration": defaultWaitDuration.String(),
 			"envTypes":            fmt.Sprintf("%s, %s, %s, %s", env.TEST, env.DEV, env.QA, env.PROD),
 		},
-		kong.Bind(cmd.RunContext{Version: version}),
+		kong.Bind(&cmd.Control{}),
 	)
 	if err := ctx.Run(); err != nil {
 		cmd.Errf(err.Error())

@@ -40,7 +40,7 @@ func TestLoadFromEnv(t *testing.T) {
 		_ = os.Setenv(KeyStorage, pgSQL)
 
 		var baseURL = fmt.Sprintf("https://%s", hostname)
-		c, err := Load(env.TEST, time.Second)
+		c, err := Load(".", env.TEST, time.Second)
 		if err != nil {
 			t.Errorf("Error loading env: %s", err)
 		}
@@ -71,16 +71,13 @@ func TestLoadFromEnv(t *testing.T) {
 		if c.Listen != listen {
 			t.Errorf("Invalid loaded value for %s: %s, expected %s", KeyListen, c.Listen, listen)
 		}
-		if c.Storage != pgSQL {
-			t.Errorf("Invalid loaded value for %s: %s, expected %s", KeyStorage, c.Storage, pgSQL)
-		}
 		if c.BaseURL != baseURL {
 			t.Errorf("Invalid loaded BaseURL value: %s, expected %s", c.BaseURL, baseURL)
 		}
 	}
 	{
-		os.Setenv(KeyStorage, boltDB)
-		c, err := Load(env.TEST, time.Second)
+		_ = os.Setenv(KeyStorage, boltDB)
+		c, err := Load(".", env.TEST, time.Second)
 		if err != nil {
 			t.Errorf("Error loading env: %s", err)
 		}

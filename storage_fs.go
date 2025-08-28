@@ -11,7 +11,10 @@ import (
 
 func Storage(c config.Options, l lw.Logger) (st.FullStorage, error) {
 	c.Storage = config.DefaultStorage
-	p := c.BaseStoragePath()
+	p, err := c.BaseStoragePath()
+	if err != nil {
+		return nil, err
+	}
 	l = l.WithContext(lw.Ctx{"path": p})
 	l.Debugf("Using fs storage")
 	db, err := fs.New(fs.Config{

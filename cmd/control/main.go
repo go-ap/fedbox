@@ -40,7 +40,7 @@ func main() {
 
 	ctl, err := cmd.InitControl(CTLRun)
 	if err != nil {
-		cmd.Errf(errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath).Error())
+		cmd.Errf(errors.Annotatef(err, "Unable to open FedBOX storage for path %q", CTLRun.Path).Error())
 		os.Exit(1)
 	}
 	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
@@ -58,6 +58,7 @@ func main() {
 		os.Exit(1)
 	}
 }
+
 func sendSignalToServer(ctl *cmd.Control, sig syscall.Signal) func() error {
 	return func() error {
 		return ctl.SendSignal(sig)

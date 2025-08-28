@@ -31,7 +31,7 @@ type Run struct {
 	Version kong.VersionFlag `short:"V"`
 }
 
-func (r Run) Run(c *RunContext) error {
+func (r Run) Run(c *Control) error {
 	w := r.Wait
 	e := r.Env
 
@@ -41,7 +41,6 @@ func (r Run) Run(c *RunContext) error {
 	}
 	conf.Profile = r.Profile
 	conf.Secure = conf.Secure && !conf.Profile
-	conf.Version = c.Version
 
 	var out io.WriteCloser
 	if conf.LogOutput != "" {

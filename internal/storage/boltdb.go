@@ -9,7 +9,8 @@ import (
 
 func conf(opt config.Options) boltdb.Config {
 	opt.Storage = config.DefaultStorage
-	return boltdb.Config{Path: opt.BaseStoragePath()}
+	path, _ := opt.BaseStoragePath()
+	return boltdb.Config{Path: path}
 }
 
 func BootstrapFn(opt config.Options) error {

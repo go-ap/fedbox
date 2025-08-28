@@ -227,7 +227,11 @@ func getTestFedBOX(options config.Options, l lw.Logger) (*fedbox.FedBOX, error) 
 	options.Version = "HEAD"
 	options.MastodonCompatible = true
 
-	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": options.BaseStoragePath()}
+	basePath, err := options.BaseStoragePath()
+	if err != nil {
+		return nil, err
+	}
+	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": basePath}
 
 	db, err := fedbox.Storage(options, l.WithContext(fields))
 	if err != nil {

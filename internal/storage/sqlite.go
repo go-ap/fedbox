@@ -9,8 +9,9 @@ import (
 
 func conf(opt config.Options) sqlite.Config {
 	opt.Storage = config.DefaultStorage
+	path, _ := opt.BaseStoragePath()
 	return sqlite.Config{
-		Path:        opt.BaseStoragePath(),
+		Path:        path,
 		CacheEnable: opt.StorageCache,
 	}
 }
