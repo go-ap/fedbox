@@ -30,7 +30,8 @@ type Control struct {
 type Storage struct {
 	Type config.StorageType `help:"Type of the backend to use. Possible values: ${storageTypes}"`
 
-	Bootstrap      struct{}       `cmd:""`
+	Bootstrap      BootstrapCmd   `cmd:""`
+	Reset          ResetCmd       `cmd:"" help:"Reset an existing storage."`
 	FixCollections FixCollections `cmd:"" help:"Fix storage collections."`
 }
 

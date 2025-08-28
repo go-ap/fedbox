@@ -28,8 +28,6 @@ func (b ResetCmd) Run(ctl *Control) error {
 
 type BootstrapCmd struct {
 	KeyType string `help:"Type of keys to generate: ${keyTypes}" enum:"${keyTypes}" default:"${defaultKeyType}"`
-
-	Reset ResetCmd `cmd:"" help:"Reset an existing storage."`
 }
 
 func (b BootstrapCmd) Run(ctl *Control) error {

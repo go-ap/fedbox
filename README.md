@@ -14,7 +14,7 @@ The current iteration can persist data to [BoltDB](https://go.etcd.io/bbolt), [B
 
 ### Support for C2S ActivityPub:
 
- * Support for content management actitivies: `Create`, `Update`, `Delete`.
+ * Support for content management activities: `Create`, `Update`, `Delete`.
  * `Follow`, `Accept`, `Reject` with actors as objects.
  * Appreciation activities: `Like`, `Dislike`.
  * Reaction activities: `Block` on actors, `Flag` on objects.

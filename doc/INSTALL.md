@@ -35,7 +35,7 @@ $ $EDITOR .env
 This step ensures that the storage method we're using gets initialized.
 
 ```sh
-$ ./bin/fedboxctl bootstrap
+$ ./bin/fedboxctl storage bootstrap
 ```
 
 For a more advanced example, the [`tools/bootstrap.sh`](../tools/bootstrap.sh) script has a more elaborate use case to
