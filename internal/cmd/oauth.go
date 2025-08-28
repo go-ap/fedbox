@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
@@ -33,15 +32,6 @@ type OAuth2 struct {
 type LsClient struct{}
 
 func (l LsClient) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	clients, err := ctl.ListClients()
 	if err != nil {
 		return err
@@ -57,15 +47,6 @@ type DelClient struct {
 }
 
 func (d DelClient) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	for _, id := range d.Client {
 		if id == "" {
 			continue
@@ -85,15 +66,6 @@ type AddClient struct {
 }
 
 func (a AddClient) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	redirectURIs := a.RedirectURIs
 	if len(redirectURIs) < 1 {
 		return errors.Newf("Need to provide at least a redirect URI for the client")
@@ -139,7 +111,7 @@ const URISeparator = "\n"
 func (c *Control) AddClient(pw []byte, redirect []string, u any) (string, error) {
 	var id string
 
-	self := ap.Self(vocab.IRI(ctl.Conf.BaseURL))
+	self := ap.Self(vocab.IRI(c.Conf.BaseURL))
 	now := time.Now().UTC()
 	name := "oauth-client-app"
 	urls := make(vocab.ItemCollection, 0)
@@ -168,7 +140,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u any) (string, error)
 	if err != nil {
 		return "", err
 	}
-	if metaSaver, ok := ctl.Storage.(s.MetadataStorage); ok {
+	if metaSaver, ok := c.Storage.(s.MetadataStorage); ok {
 		if err := AddKeyToItem(metaSaver, p, fedbox.KeyTypeRSA); err != nil {
 			Errf("Error saving metadata for application %s: %s", name, err)
 		}

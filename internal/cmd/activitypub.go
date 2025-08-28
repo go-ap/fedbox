@@ -8,7 +8,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"syscall"
 	"time"
 
 	"git.sr.ht/~mariusor/lw"
@@ -32,15 +31,6 @@ type AddActorCmd struct {
 }
 
 func (a AddActorCmd) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	keyType := a.KeyType
 	if len(a.Names) == 0 {
 		name, err := loadFromStdin("Enter the actor's name")
@@ -259,15 +249,6 @@ type DeleteCmd struct {
 }
 
 func (d DeleteCmd) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	return ctl.DeleteObjects(d.Reason, d.InReplyTo, d.IRIs...)
 }
 
@@ -345,15 +326,6 @@ func printItem(it vocab.Item, outType string) error {
 }
 
 func (l ListCmd) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	typeFl := l.Type
 
 	var paths vocab.IRIs
@@ -456,15 +428,6 @@ type AddCmd struct {
 var validObjects = append(vocab.ObjectTypes, vocab.ObjectType, "")
 
 func (a AddCmd) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	f := make(filters.Checks, 0)
 
 	incType := a.Type
@@ -525,15 +488,6 @@ type ImportCmd struct {
 }
 
 func (i ImportCmd) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	baseIRI := ctl.Conf.BaseURL
 	toReplace := i.Base
 
@@ -613,7 +567,7 @@ type ExportCmd struct {
 	File string `help:"The path where to output the items, if absent it will be printed to stdout."`
 }
 
-func dumpAll(iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection, error) {
+func dumpAll(ctl *Control, iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection, error) {
 	col := make(vocab.ItemCollection, 0)
 	objects, err := ctl.Storage.Load(iri, f...)
 	if err != nil {
@@ -631,20 +585,11 @@ func dumpAll(iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection, error) {
 }
 
 func (e ExportCmd) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	baseURL := vocab.IRI(ctl.Conf.BaseURL)
 	objects := make(vocab.ItemCollection, 0)
 	allCollections := vocab.CollectionPaths{filters.ActivitiesType, filters.ActorsType, filters.ObjectsType}
 	for _, col := range allCollections {
-		dump, err := dumpAll(vocab.IRIf(baseURL, col))
+		dump, err := dumpAll(ctl, vocab.IRIf(baseURL, col))
 		if err != nil {
 			return err
 		}
@@ -673,15 +618,6 @@ type InfoCmd struct {
 }
 
 func (l InfoCmd) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	objects := make(vocab.ItemCollection, 0)
 	if len(l.IRIs) == 0 {
 		return errors.Errorf("No IRIs passed")
@@ -738,15 +674,6 @@ type MoveCmd struct {
 }
 
 func (m MoveCmd) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	return ctl.MoveObjects(m.To, m.IRIs...)
 }
 
@@ -775,15 +702,6 @@ type CopyCmd struct {
 }
 
 func (c CopyCmd) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	return ctl.CopyObjects(c.To, c.IRIs...)
 }
 
@@ -810,10 +728,6 @@ type reindexer interface {
 }
 
 func (i IndexCmd) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
 	start := time.Now()
 
 	indexer, ok := ctl.Storage.(reindexer)
@@ -821,10 +735,6 @@ func (i IndexCmd) Run(ctl *Control) error {
 		_, _ = fmt.Fprintf(os.Stderr, "Current storage engine %T does not support reindexing\n", ctl.Storage)
 		return errors.Newf("unsupported storage engine")
 	}
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
 
 	if err := indexer.Reindex(); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Indexing failed: %s", err)

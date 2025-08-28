@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"syscall"
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
@@ -23,15 +22,6 @@ type Accounts struct {
 type Export struct{}
 
 func (e Export) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	metaLoader, ok := ctl.Storage.(storage.MetadataStorage)
 	if !ok {
 		return errors.Newf("")
@@ -85,15 +75,6 @@ type Import struct {
 }
 
 func (i Import) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	metaLoader, ok := ctl.Storage.(storage.MetadataStorage)
 	if !ok {
 		return errors.Newf("")
@@ -111,11 +92,11 @@ func (i Import) Run(ctl *Control) error {
 			continue
 		}
 		if size == 0 {
-			Errf("Empty file %s", name)
+			Errf("Empty file %s", f.Name())
 			continue
 		}
 
-		metadata := make(map[vocab.IRI]auth.Metadata, 0)
+		metadata := make(map[vocab.IRI]auth.Metadata)
 		err = jsonld.Unmarshal(buf, &metadata)
 		if err != nil {
 			Errf("Error unmarshaling JSON: %s", err)
@@ -147,15 +128,6 @@ type GenKeys struct {
 }
 
 func (g GenKeys) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	typ := g.Type
 	metaSaver, ok := ctl.Storage.(storage.MetadataStorage)
 	if !ok {

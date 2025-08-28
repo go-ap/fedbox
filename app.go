@@ -226,7 +226,7 @@ func (f *FedBOX) Stop(ctx context.Context) error {
 }
 
 func (f *FedBOX) reload() (err error) {
-	f.conf, err = config.Load(f.conf.Env, f.conf.TimeOut)
+	f.conf, err = config.Load(".", f.conf.Env, f.conf.TimeOut)
 	f.caches.Delete()
 	return err
 }

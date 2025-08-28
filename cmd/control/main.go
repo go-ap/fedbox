@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"syscall"
 
 	"github.com/alecthomas/kong"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
@@ -36,8 +38,28 @@ func main() {
 		},
 	)
 
-	if err := ctx.Run(cmd.InitControl(CTLRun)); err != nil {
+	ctl, err := cmd.InitControl(CTLRun)
+	if err != nil {
+		cmd.Errf(errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath).Error())
+		os.Exit(1)
+	}
+	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
+	_ = pauseFn()
+	defer func() { _ = pauseFn() }()
+
+	if err = ctl.Storage.Open(); err != nil {
+		cmd.Errf(errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath).Error())
+		os.Exit(1)
+	}
+	defer ctl.Storage.Close()
+
+	if err := ctx.Run(ctl); err != nil {
 		cmd.Errf(err.Error())
 		os.Exit(1)
+	}
+}
+func sendSignalToServer(ctl *cmd.Control, sig syscall.Signal) func() error {
+	return func() error {
+		return ctl.SendSignal(sig)
 	}
 }

@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"syscall"
-
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	http "github.com/go-ap/errors"
@@ -35,16 +33,6 @@ type BootstrapCmd struct {
 }
 
 func (b BootstrapCmd) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() {
-		_ = pauseFn()
-	}()
-	if err := ctl.Storage.Open(); err != nil {
-		return http.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	keyType := b.KeyType
 	ctl.Service = ap.Self(ap.DefaultServiceIRI(ctl.Conf.BaseURL))
 	if err := bootstrap(ctl.Conf, ctl.Service, ctl.Logger); err != nil {

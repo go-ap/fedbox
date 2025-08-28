@@ -39,7 +39,7 @@ type Options struct {
 	Secure             bool
 	CertPath           string
 	KeyPath            string
-	Host               string
+	Hostname           string
 	Listen             string
 	BaseURL            string
 	Storage            StorageType
@@ -105,7 +105,7 @@ func normalizeConfigPath(p string, o Options) string {
 	}
 	p = strings.ReplaceAll(p, varEnv, string(o.Env))
 	p = strings.ReplaceAll(p, varStorage, string(o.Storage))
-	p = strings.ReplaceAll(p, varHost, url.PathEscape(o.Host))
+	p = strings.ReplaceAll(p, varHost, url.PathEscape(o.Hostname))
 	return filepath.Clean(p)
 }
 
@@ -146,28 +146,29 @@ func Getval(name, def string) string {
 	return val
 }
 
-func Load(e env.Type, timeOut time.Duration) (Options, error) {
+func Load(path string, e env.Type, timeOut time.Duration) (Options, error) {
 	if !env.ValidType(e) {
 		e = env.Type(Getval(KeyENV, ""))
 	}
 	configs := []string{
 		".env",
 	}
-	appendIfFile := func(typ env.Type) {
+	appendIfFile := func(path string, typ env.Type) {
 		envFile := fmt.Sprintf(".env.%s", typ)
-		if _, err := os.Stat(envFile); err == nil {
+		if _, err := os.Stat(filepath.Join(path, envFile)); err == nil {
 			configs = append(configs, envFile)
 		}
 	}
 	if !env.ValidType(e) {
 		for _, typ := range env.Types {
-			appendIfFile(typ)
+			appendIfFile(path, typ)
 		}
 	} else {
-		appendIfFile(e)
+		appendIfFile(path, e)
 	}
-	for _, f := range configs {
-		_ = godotenv.Load(f)
+	err := godotenv.Load(configs...)
+	if err != nil {
+		return Options{}, err
 	}
 
 	opts := LoadFromEnv()
@@ -200,8 +201,8 @@ func LoadFromEnv() Options {
 	conf.LogOutput = Getval(KeyLogOutput, "")
 
 	conf.Env = env.Type(Getval(KeyENV, "dev"))
-	if conf.Host == "" {
-		conf.Host = Getval(KeyHostname, conf.Host)
+	if conf.Hostname == "" {
+		conf.Hostname = Getval(KeyHostname, conf.Hostname)
 	}
 	conf.TimeOut = 0
 	if to, _ := time.ParseDuration(Getval(KeyTimeOut, "")); to > 0 {
@@ -209,9 +210,9 @@ func LoadFromEnv() Options {
 	}
 	conf.Secure, _ = strconv.ParseBool(Getval(KeyHTTPS, "false"))
 	if conf.Secure {
-		conf.BaseURL = fmt.Sprintf("https://%s", conf.Host)
+		conf.BaseURL = fmt.Sprintf("https://%s", conf.Hostname)
 	} else {
-		conf.BaseURL = fmt.Sprintf("http://%s", conf.Host)
+		conf.BaseURL = fmt.Sprintf("http://%s", conf.Hostname)
 	}
 
 	conf.Listen = Getval(KeyListen, "")
@@ -265,8 +266,8 @@ func (o Options) DefaultSocketPath() string {
 
 func (o Options) pathInstanceName() string {
 	name := o.AppName
-	if o.Host != "" {
-		host := strings.Replace(o.Host, "https://", "", 1)
+	if o.Hostname != "" {
+		host := strings.Replace(o.Hostname, "https://", "", 1)
 		host = strings.Replace(host, "http://", "", 1)
 		host = strings.Replace(host, ".", "-", -1)
 		name += "-" + host

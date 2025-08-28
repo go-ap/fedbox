@@ -1,12 +1,10 @@
 package cmd
 
 import (
-	"syscall"
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
-	st "github.com/go-ap/fedbox/storage"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 )
@@ -18,7 +16,7 @@ var streamCollections = vocab.CollectionPaths{
 	filters.ObjectsType,
 }
 
-func newOrderedCollection(id vocab.IRI) *vocab.OrderedCollection {
+func newOrderedCollection(ctl *Control, id vocab.IRI) *vocab.OrderedCollection {
 	return &vocab.OrderedCollection{
 		ID:        id,
 		Type:      vocab.OrderedCollectionType,
@@ -50,30 +48,21 @@ func getActorCollections(act vocab.Item) vocab.IRIs {
 type FixCollections struct{}
 
 func (f FixCollections) Run(ctl *Control) error {
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
-
 	if _, ok := ctl.Storage.(processing.CollectionStore); !ok {
 		return errors.Newf("Invalid storage type %T. Unable to handle collection operations.", ctl.Storage)
 	}
-	if err := ctl.Storage.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
 
-	if err := tryCreateActorCollections(ctl.Service, ctl.Storage); err != nil {
+	if err := tryCreateActorCollections(ctl, ctl.Service); err != nil {
 		return err
 	}
 	// NOTE(marius): this assumes that storage contains the actors, activities, objects streams collections
-	return tryCreateAllObjectsCollections(ctl.Service, ctl.Storage)
+	return tryCreateAllObjectsCollections(ctl, ctl.Service)
 }
 
-func tryCreateAllObjectsCollections(actor vocab.Item, storage st.FullStorage) error {
+func tryCreateAllObjectsCollections(ctl *Control, actor vocab.Item) error {
 	if actor == nil {
 		return nil
 	}
-
 	allCollections := make(vocab.IRIs, 0)
 	err := vocab.OnActor(actor, func(actor *vocab.Actor) error {
 		if actor.Streams == nil {
@@ -110,7 +99,7 @@ func tryCreateAllObjectsCollections(actor vocab.Item, storage st.FullStorage) er
 		return err
 	}
 	for _, col := range allCollections {
-		if err := tryCreateCollection(storage, col); err != nil {
+		if err := tryCreateCollection(ctl, col); err != nil {
 			ctl.Logger.Warnf("Error when trying to create collection: %+s", err)
 			continue
 		}
@@ -118,7 +107,7 @@ func tryCreateAllObjectsCollections(actor vocab.Item, storage st.FullStorage) er
 	return nil
 }
 
-func tryCreateActorCollections(actor vocab.Item, storage st.FullStorage) error {
+func tryCreateActorCollections(ctl *Control, actor vocab.Item) error {
 	initialCollections := make([]vocab.IRI, 0)
 	initialCollections = append(initialCollections, getActorCollections(actor)...)
 	err := vocab.OnActor(actor, func(actor *vocab.Actor) error {
@@ -138,7 +127,7 @@ func tryCreateActorCollections(actor vocab.Item, storage st.FullStorage) error {
 		return err
 	}
 	for _, col := range initialCollections {
-		err := tryCreateCollection(storage, col)
+		err := tryCreateCollection(ctl, col)
 		if err != nil {
 			ctl.Logger.Warnf("Error when trying to create collection: %+s", err)
 			continue
@@ -147,7 +136,8 @@ func tryCreateActorCollections(actor vocab.Item, storage st.FullStorage) error {
 	return nil
 }
 
-func tryCreateCollection(storage st.FullStorage, colIRI vocab.IRI) error {
+func tryCreateCollection(ctl *Control, colIRI vocab.IRI) error {
+	storage := ctl.Storage
 	var collection *vocab.OrderedCollection
 	items, err := ctl.Storage.Load(colIRI.GetLink())
 	if err != nil {
@@ -159,7 +149,7 @@ func tryCreateCollection(storage st.FullStorage, colIRI vocab.IRI) error {
 		if !ok {
 			return errors.Newf("Invalid storage type %T. Unable to handle collection operations.", storage)
 		}
-		it, err := colSaver.Create(newOrderedCollection(colIRI.GetLink()))
+		it, err := colSaver.Create(newOrderedCollection(ctl, colIRI.GetLink()))
 		if err != nil {
 			ctl.Logger.Errorf("Unable to create collection %s: %s", colIRI, err)
 			return err

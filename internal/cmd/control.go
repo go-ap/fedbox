@@ -40,7 +40,7 @@ type CTL struct {
 	Url     url.URL          `help:"The URL used by the application."`
 	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`
 	Verbose int              `counter:"v" help:"Increase verbosity level from the default associated with the environment settings."`
-	Path    string           `path:"" help:"The path for the storage folder or socket" default:"."`
+	Path    string           `path:"" help:"The path for the storage folder or socket" default:"." env:"STORAGE_PATH"`
 	Version kong.VersionFlag `short:"V"`
 
 	// Commands
@@ -53,17 +53,26 @@ type CTL struct {
 	Stop        Stop        `cmd:"" help:"Stops the main FedBOX server configuration"`
 }
 
-func InitControl(c *CTL) *Control {
+func InitControl(c *CTL) (*Control, error) {
 	opt := config.Options{
 		Env:         c.Env,
 		LogLevel:    lw.InfoLevel,
 		AppName:     AppName,
 		StoragePath: c.Path,
+		Hostname:    c.Url.Host,
+		Secure:      c.Url.Scheme == "https",
+		BaseURL:     c.Url.String(),
 	}
 	if c.Verbose > 1 {
 		opt.LogLevel = lw.DebugLevel
 	}
-	return initControl(opt, lw.Prod(lw.SetOutput(os.Stderr), lw.SetLevel(opt.LogLevel)))
+
+	logger := lw.Prod(lw.SetOutput(os.Stderr), lw.SetLevel(opt.LogLevel))
+	ct := Control{}
+	if err := setup(&ct, opt, logger); err != nil {
+		return nil, err
+	}
+	return &ct, nil
 }
 
 func New(db st.FullStorage, conf config.Options, l lw.Logger) (*Control, error) {
@@ -80,24 +89,11 @@ func New(db st.FullStorage, conf config.Options, l lw.Logger) (*Control, error) 
 	}, nil
 }
 
-var ctl Control
-
-func initControl(options config.Options, logger lw.Logger) *Control {
-	ct := Control{}
-	if err := setup(&ct, options, logger); err != nil {
-		// Ensure we don't print the default help message, which is not useful here
-		//c.App.CustomAppHelpTemplate = "Failed"
-		logger.WithContext(lw.Ctx{"err": err}).Errorf("Error")
-		return nil
-	}
-	return &ct
-}
-
 func setup(ct *Control, options config.Options, l lw.Logger) error {
 	environ := options.Env
 	path := options.StoragePath
 	typ := options.Storage
-	conf, err := config.Load(environ, time.Second)
+	conf, err := config.Load(path, environ, time.Second)
 	if err != nil {
 		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}

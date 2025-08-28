@@ -62,8 +62,8 @@ func TestLoadFromEnv(t *testing.T) {
 			t.Errorf("Invalid loaded value for %s: %s, expected %s", KeyDBPw, db.Pw, dbPw)
 		}
 
-		if c.Host != hostname {
-			t.Errorf("Invalid loaded value for %s: %s, expected %s", KeyHostname, c.Host, hostname)
+		if c.Hostname != hostname {
+			t.Errorf("Invalid loaded value for %s: %s, expected %s", KeyHostname, c.Hostname, hostname)
 		}
 		if c.Secure != secure {
 			t.Errorf("Invalid loaded value for %s: %t, expected %t", KeyHTTPS, c.Secure, secure)

@@ -35,7 +35,7 @@ func (r Run) Run(c *RunContext) error {
 	w := r.Wait
 	e := r.Env
 
-	conf, err := config.Load(e, w)
+	conf, err := config.Load(".", e, w)
 	if err != nil {
 		return err
 	}
