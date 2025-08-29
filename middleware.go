@@ -35,9 +35,9 @@ func OutOfOrderMw(f *FedBOX) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			maybeOoOHandler := next
-			if f.conf.ShuttingDown {
+			if f.shuttingDown {
 				maybeOoOHandler = errors.HandleError(errShuttingDown)
-			} else if f.conf.MaintenanceMode {
+			} else if f.maintenanceMode {
 				maybeOoOHandler = errors.HandleError(errOutOfOrder)
 			}
 			maybeOoOHandler.ServeHTTP(w, r)

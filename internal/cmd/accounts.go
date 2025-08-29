@@ -123,7 +123,7 @@ func (i Import) Run(ctl *Control) error {
 }
 
 type GenKeys struct {
-	Type string      `help:"Type of keys to generate." enum:"${keyTypes}" default:"${defaultKeyType}"`
+	Type string      `help:"Type of keys to generate." name:"key-type" enum:"${keyTypes}" default:"${defaultKeyType}"`
 	IRIs []vocab.IRI `arg:"" name:"iris" help:"Actors for which to generate the keys."`
 }
 

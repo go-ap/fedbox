@@ -49,7 +49,6 @@ type Options struct {
 	UseIndex           bool
 	Profile            bool
 	MastodonCompatible bool
-	MaintenanceMode    bool
 	ShuttingDown       bool
 }
 
@@ -187,7 +186,6 @@ func Load(path string, e env.Type, timeOut time.Duration) (Options, error) {
 	}
 
 	opts := LoadFromEnv()
-	opts.AppName = strings.Trim(Prefix, "_")
 	opts.Env = e
 	opts.TimeOut = timeOut
 

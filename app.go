@@ -43,6 +43,9 @@ type FedBOX struct {
 	caches  canStore
 	logger  lw.Logger
 
+	maintenanceMode bool
+	shuttingDown    bool
+
 	keyGenerator func(act *vocab.Actor) error
 
 	startFn func(ctx context.Context) error
@@ -195,7 +198,7 @@ func (f *FedBOX) Storage() st.FullStorage {
 }
 
 func (f *FedBOX) Pause() error {
-	if f.conf.MaintenanceMode {
+	if f.maintenanceMode {
 		// restart everything
 		f.storage.Close()
 	} else {
@@ -206,7 +209,7 @@ func (f *FedBOX) Pause() error {
 
 // Stop
 func (f *FedBOX) Stop(ctx context.Context) error {
-	f.conf.ShuttingDown = true
+	f.shuttingDown = true
 
 	f.storage.Close()
 
@@ -282,9 +285,9 @@ func (f *FedBOX) Run(ctx context.Context) error {
 			}
 		},
 		syscall.SIGUSR1: func(_ chan<- error) {
-			inMaintenanceMode := f.conf.MaintenanceMode
+			inMaintenanceMode := f.maintenanceMode
 
-			f.conf.MaintenanceMode = !inMaintenanceMode
+			f.maintenanceMode = !inMaintenanceMode
 
 			var err error
 			logFn := logger.Debugf

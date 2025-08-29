@@ -43,9 +43,13 @@ func main() {
 		cmd.Errf(errors.Annotatef(err, "Unable to open FedBOX storage for path %q", CTLRun.Path).Error())
 		os.Exit(1)
 	}
-	pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
-	_ = pauseFn()
-	defer func() { _ = pauseFn() }()
+	switch ctx.Command() {
+	case "maintenance", "stop", "reload":
+	default:
+		pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
+		_ = pauseFn()
+		defer func() { _ = pauseFn() }()
+	}
 
 	if err = ctl.Storage.Open(); err != nil {
 		cmd.Errf(errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath).Error())
