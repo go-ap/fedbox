@@ -1,12 +1,16 @@
 package fedbox
 
 import (
+	"bytes"
 	"crypto"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
@@ -243,6 +247,19 @@ func (f *FedBOX) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto
 	return signActor, prv, nil
 }
 
+func logRequest(o FedBOX, h http.Header, body []byte) {
+	if !o.maintenanceMode {
+		return
+	}
+	path, _ := o.conf.BaseStoragePath()
+	fn := fmt.Sprintf("%s/%s.req", path, time.Now().UTC().Format(time.RFC3339))
+	all := bytes.Buffer{}
+	_ = h.Write(&all)
+	all.Write([]byte{'\n', '\n'})
+	all.Write(body)
+	_ = os.WriteFile(fn, all.Bytes(), 0660)
+}
+
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 	if fb.keyGenerator != nil {
@@ -261,6 +278,8 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 			fb.errFn("failed loading body: %+s", err)
 			return it, http.StatusBadRequest, errors.NewNotValid(err, "unable to read request body")
 		}
+		defer logRequest(*fb, r.Header, body)
+
 		if it, err = vocab.UnmarshalJSON(body); err != nil {
 			fb.errFn("failed unmarshalling jsonld body: %+s", err)
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
@@ -298,9 +317,10 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize processor")
 		}
 
+		typ := it.GetType()
 		if it, err = processor.ProcessActivity(it, auth, receivedIn); err != nil {
 			fb.errFn("failed processing activity: %+s", err)
-			return it, errors.HttpStatus(err), errors.Annotatef(err, "Unable to save activity %s to %s", it.GetType(), receivedIn)
+			return it, errors.HttpStatus(err), errors.Annotatef(err, "Unable to save activity %s to %s", typ, receivedIn)
 		}
 		_ = vocab.OnActivity(it, func(act *vocab.Activity) error {
 			if err := cache.ActivityPurge(fb.caches, act, receivedIn); err != nil {
