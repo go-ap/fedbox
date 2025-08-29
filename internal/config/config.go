@@ -110,22 +110,22 @@ func normalizeConfigPath(p string, o Options) string {
 }
 
 func (o Options) BaseStoragePath() (string, error) {
-	basePath := normalizeConfigPath(o.StoragePath, o)
-	fi, err := os.Stat(basePath)
+	o.StoragePath = normalizeConfigPath(o.StoragePath, o)
+	fi, err := os.Stat(o.StoragePath)
 	if err != nil && os.IsNotExist(err) {
-		err = os.MkdirAll(basePath, defaultDirPerm)
+		err = os.MkdirAll(o.StoragePath, defaultDirPerm)
 	}
 	if err != nil {
 		return "", err
 	}
-	fi, err = os.Stat(basePath)
+	fi, err = os.Stat(o.StoragePath)
 	if err != nil {
 		return "", err
 	}
 	if !fi.IsDir() {
-		panic(errors.NotValidf("path %s is invalid for storage", basePath))
+		return "", errors.NotValidf("path %s is invalid for storage", o.StoragePath)
 	}
-	return basePath, nil
+	return o.StoragePath, nil
 }
 
 func prefKey(k string) string {
@@ -146,28 +146,43 @@ func Getval(name, def string) string {
 	return val
 }
 
+func findConfigs(path string, e env.Type) []string {
+	configs := make([]string, 0)
+	appendIfFile := func(root *os.Root, typ env.Type) {
+		envFiles := []string{".env", fmt.Sprintf(".env.%s", typ)}
+		for _, envFile := range envFiles {
+			if _, err := root.Stat(envFile); err == nil {
+				configs = append(configs, filepath.Join(root.Name(), envFile))
+			}
+		}
+	}
+	loadPath := func(path string, e env.Type) error {
+		root, err := os.OpenRoot(normalizeConfigPath(path, Options{Env: e}))
+		if err != nil {
+			return err
+		}
+		if !env.ValidType(e) {
+			for _, typ := range env.Types {
+				appendIfFile(root, typ)
+			}
+		} else {
+			appendIfFile(root, e)
+		}
+		return nil
+	}
+	if err := loadPath(path, e); err != nil {
+		_ = loadPath(".", e)
+	}
+	return configs
+}
+
 func Load(path string, e env.Type, timeOut time.Duration) (Options, error) {
 	if !env.ValidType(e) {
 		e = env.Type(Getval(KeyENV, ""))
 	}
-	configs := []string{
-		".env",
-	}
-	appendIfFile := func(path string, typ env.Type) {
-		envFile := fmt.Sprintf(".env.%s", typ)
-		if _, err := os.Stat(filepath.Join(path, envFile)); err == nil {
-			configs = append(configs, envFile)
-		}
-	}
-	if !env.ValidType(e) {
-		for _, typ := range env.Types {
-			appendIfFile(path, typ)
-		}
-	} else {
-		appendIfFile(path, e)
-	}
-	err := godotenv.Load(configs...)
-	if err != nil {
+
+	configs := findConfigs(path, e)
+	if err := godotenv.Overload(configs...); err != nil {
 		return Options{}, err
 	}
 

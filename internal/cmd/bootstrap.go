@@ -46,7 +46,7 @@ func (b BootstrapCmd) Run(ctl *Control) error {
 	return nil
 }
 
-func BootstrapService(conf config.Options, service vocab.Item, l lw.Logger) error {
+func BootstrapStorage(conf config.Options, service vocab.Item, l lw.Logger) error {
 	return bootstrap(conf, service, l)
 }
 
@@ -76,7 +76,7 @@ func bootstrap(conf config.Options, service vocab.Item, l lw.Logger) error {
 	return nil
 }
 
-func ResetService(conf config.Options, l lw.Logger) error {
+func ResetStorage(conf config.Options, l lw.Logger) error {
 	return reset(conf, l)
 }
 

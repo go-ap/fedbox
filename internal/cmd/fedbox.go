@@ -17,30 +17,25 @@ import (
 
 const AppName = "FedBOX"
 
-type RunContext struct {
-	Verbose bool
-	Version string
-}
-
-var FedBOXRun = Run{}
-
 type Run struct {
 	Wait    time.Duration    `help:"The duration for which the server waits for existing connections to finish" default:"${defaultWaitDuration}"`
 	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`
+	Path    string           `path:"" help:"The path for the storage folder." default:"." env:"STORAGE_PATH"`
 	Profile bool             `hidden:""`
 	Version kong.VersionFlag `short:"V"`
 }
 
-func (r Run) Run(c *Control) error {
+func (r Run) Run(version string) error {
 	w := r.Wait
 	e := r.Env
 
-	conf, err := config.Load(".", e, w)
+	conf, err := config.Load(r.Path, e, w)
 	if err != nil {
 		return err
 	}
 	conf.Profile = r.Profile
 	conf.Secure = conf.Secure && !conf.Profile
+	conf.Version = version
 
 	var out io.WriteCloser
 	if conf.LogOutput != "" {
@@ -60,6 +55,10 @@ func (r Run) Run(c *Control) error {
 		l = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
 	}
 	db, err := fedbox.Storage(conf, l.WithContext(lw.Ctx{"log": "storage"}))
+	if err != nil {
+		l.Errorf("Unable to open storage: %s", err)
+		return err
+	}
 
 	a, err := fedbox.New(l.WithContext(lw.Ctx{"log": "fedbox", "env": e}), conf, db)
 	if err != nil {

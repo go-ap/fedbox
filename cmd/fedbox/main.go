@@ -20,8 +20,10 @@ func main() {
 		version = build.Main.Version
 	}
 
+	fedbox := cmd.Run{}
+
 	ctx := kong.Parse(
-		&cmd.FedBOXRun,
+		&fedbox,
 		kong.Name(cmd.AppName),
 		kong.Description(fmt.Sprintf("%s instance server version %s", cmd.AppName, version)),
 		kong.Vars{
@@ -30,9 +32,9 @@ func main() {
 			"defaultWaitDuration": defaultWaitDuration.String(),
 			"envTypes":            fmt.Sprintf("%s, %s, %s, %s", env.TEST, env.DEV, env.QA, env.PROD),
 		},
-		kong.Bind(&cmd.Control{}),
+		kong.Bind(version),
 	)
-	if err := ctx.Run(); err != nil {
+	if err := ctx.Run(version); err != nil {
 		cmd.Errf(err.Error())
 		os.Exit(1)
 	}

@@ -8,16 +8,16 @@ if ! expect -v &> /dev/null ; then
     exit 1
 fi
 
-_ENV_FILE="./.env"
+_ENV_FILE="./.env.${_env}"
 if [[ ! -f ${_ENV_FILE} ]]; then
-    _ENV_FILE="./.env.${_env}"
+_ENV_FILE="./.env"
 fi
 if [ ! -f "${_ENV_FILE}" ]; then
     echo "Invalid configuration file ${_ENV_FILE}"
     exit 1
 fi
 
-source ${_ENV_FILE}
+. ${_ENV_FILE}
 
 if [[ -z "${FEDBOX_HOSTNAME}" ]]; then
     FEDBOX_HOSTNAME=${HOSTNAME}
@@ -40,7 +40,7 @@ if [[ -d "${_FULL_PATH}" ]]; then
     echo "skipping bootstrapping ${_FULL_PATH}"
 else
     # create storage
-    ${_ctl} bootstrap
+    ${_ctl} storage bootstrap
 fi
 
 _HAVE_OAUTH2_SECRET=$(grep OAUTH2_SECRET "${_ENV_FILE}" | cut -d'=' -f2 | tail -n1)

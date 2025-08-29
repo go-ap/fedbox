@@ -86,7 +86,7 @@ func cleanDB(t *testing.T, opt config.Options, l lw.Logger) {
 		opt.Storage = config.StorageFS
 	}
 	t.Logf("resetting %q db: %s", opt.Storage, opt.StoragePath)
-	if err := cmd.ResetService(opt, l); err != nil {
+	if err := cmd.ResetStorage(opt, l); err != nil {
 		t.Error(err)
 	}
 	if t.Failed() {

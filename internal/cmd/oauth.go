@@ -19,12 +19,12 @@ import (
 )
 
 type Client struct {
-	Add AddClient `cmd:"" help:"Adds an OAuth2 client."`
-	Del DelClient `cmd:"" help:"Removes an existing OAuth2 client."`
-	Ls  LsClient  `cmd:"" help:"Lists existing OAuth2 clients."`
+	Add  AddClient `cmd:"" help:"Adds an OAuth2 client."`
+	Del  DelClient `cmd:"" help:"Removes an existing OAuth2 client."`
+	List LsClient  `cmd:"" help:"Lists existing OAuth2 clients."`
 }
 
-type OAuth2 struct {
+type OAuth struct {
 	Client Client `cmd:"" help:"OAuth2 client application management."`
 	Token  Token  `cmd:"" help:"OAuth2 authorization token management."`
 }

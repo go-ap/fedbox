@@ -975,7 +975,7 @@ func runTestSuite(t *testing.T, suite testSuite) {
 			l := lw.Prod(lw.SetLevel(options.LogLevel), lw.SetOutput(t.Output()))
 
 			self := ap.Self(ap.DefaultServiceIRI(options.BaseURL))
-			if err := cmd.BootstrapService(options, self, l); err != nil {
+			if err := cmd.BootstrapStorage(options, self, l); err != nil {
 				t.Fatalf("%+v", err)
 				return
 			}

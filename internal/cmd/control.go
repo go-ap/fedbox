@@ -46,7 +46,7 @@ type CTL struct {
 
 	// Commands
 	Pub         Pub         `cmd:"" name:"pub" alt:"ap" help:"ActivityPub management helper"`
-	OAuth2      OAuth2      `cmd:"" name:"oauth2"`
+	OAuth       OAuth       `cmd:"" name:"oauth"`
 	Storage     Storage     `cmd:""`
 	Accounts    Accounts    `cmd:"" help:"Accounts helper."`
 	Maintenance Maintenance `cmd:"" help:"Toggle maintenance mode for the main FedBOX server."`
@@ -54,7 +54,7 @@ type CTL struct {
 	Stop        Stop        `cmd:"" help:"Stops the main FedBOX server configuration"`
 }
 
-func InitControl(c *CTL) (*Control, error) {
+func InitControl(c *CTL, version string) (*Control, error) {
 	opt := config.Options{
 		Env:         c.Env,
 		LogLevel:    lw.InfoLevel,
@@ -63,6 +63,7 @@ func InitControl(c *CTL) (*Control, error) {
 		Hostname:    c.Url.Host,
 		Secure:      c.Url.Scheme == "https",
 		BaseURL:     c.Url.String(),
+		Version:     version,
 	}
 	if c.Verbose > 1 {
 		opt.LogLevel = lw.DebugLevel

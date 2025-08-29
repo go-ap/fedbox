@@ -38,7 +38,7 @@ func main() {
 		},
 	)
 
-	ctl, err := cmd.InitControl(CTLRun)
+	ctl, err := cmd.InitControl(CTLRun, version)
 	if err != nil {
 		cmd.Errf(errors.Annotatef(err, "Unable to open FedBOX storage for path %q", CTLRun.Path).Error())
 		os.Exit(1)
