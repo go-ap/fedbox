@@ -7,19 +7,19 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/wrapper v0.0.0-20250504120759-5fa47ac25e08
 	github.com/alecthomas/kong v1.12.1
-	github.com/go-ap/activitypub v0.0.0-20250810115208-cb73b20a1742
-	github.com/go-ap/auth v0.0.0-20250817095740-f19b763d2723
-	github.com/go-ap/cache v0.0.0-20250810115305-0742a12ab1a1
-	github.com/go-ap/client v0.0.0-20250810115406-535063f251fa
+	github.com/go-ap/activitypub v0.0.0-20250831121713-4e61cc722305
+	github.com/go-ap/auth v0.0.0-20250831121928-807af59f5b30
+	github.com/go-ap/cache v0.0.0-20250831121752-c44fafe4041e
+	github.com/go-ap/client v0.0.0-20250831121842-86170bce4a07
 	github.com/go-ap/errors v0.0.0-20250527110557-c8db454e53fd
-	github.com/go-ap/filters v0.0.0-20250810115343-b996bd3d3865
+	github.com/go-ap/filters v0.0.0-20250831121811-28474286712c
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20250819123906-31d8fe7abc23
+	github.com/go-ap/processing v0.0.0-20250831122016-84ed74580a15
 	github.com/go-ap/storage-badger v0.0.0-20250810120212-b99839d35d91
-	github.com/go-ap/storage-boltdb v0.0.0-20250813092247-192e973e2a6c
-	github.com/go-ap/storage-fs v0.0.0-20250818111942-46c35ac43472
-	github.com/go-ap/storage-sqlite v0.0.0-20250817100034-6c80714577a3
-	github.com/go-chi/chi/v5 v5.2.2
+	github.com/go-ap/storage-boltdb v0.0.0-20250831122120-14cbe6eb1218
+	github.com/go-ap/storage-fs v0.0.0-20250831122044-423ca5eb7297
+	github.com/go-ap/storage-sqlite v0.0.0-20250831122101-2a6663c85a1b
+	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pborman/uuid v1.2.1
@@ -67,7 +67,7 @@ require (
 	golang.org/x/text v0.28.0 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	modernc.org/libc v1.66.7 // indirect
+	modernc.org/libc v1.66.8 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.38.2 // indirect
