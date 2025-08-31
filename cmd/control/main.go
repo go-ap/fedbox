@@ -16,7 +16,16 @@ import (
 
 var version = "HEAD"
 
+const (
+	Success int = iota
+	Error
+)
+
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	if build, ok := debug.ReadBuildInfo(); ok && version == "HEAD" && build.Main.Version != "(devel)" && build.Main.Version != "" {
 		version = build.Main.Version
 	}
@@ -41,26 +50,30 @@ func main() {
 	ctl, err := cmd.InitControl(CTLRun, version)
 	if err != nil {
 		cmd.Errf(errors.Annotatef(err, "Unable to open FedBOX storage for path %q", CTLRun.Path).Error())
-		os.Exit(1)
+		return Error
 	}
+
 	switch ctx.Command() {
 	case "maintenance", "stop", "reload":
+		// NOTE(marius): these don't interact with the storage, and additionally,
+		// they involve sending their own signals, so we skip pausing.
 	default:
 		pauseFn := sendSignalToServer(ctl, syscall.SIGUSR1)
 		_ = pauseFn()
 		defer func() { _ = pauseFn() }()
+
+		if err = ctl.Storage.Open(); err != nil {
+			cmd.Errf(errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath).Error())
+			return Error
+		}
+		defer ctl.Storage.Close()
 	}
 
-	if err = ctl.Storage.Open(); err != nil {
-		cmd.Errf(errors.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath).Error())
-		os.Exit(1)
+	if err = ctx.Run(ctl); err != nil {
+		cmd.Errf("Error: %s", err.Error())
+		return Error
 	}
-	defer ctl.Storage.Close()
-
-	if err := ctx.Run(ctl); err != nil {
-		cmd.Errf(err.Error())
-		os.Exit(1)
-	}
+	return Success
 }
 
 func sendSignalToServer(ctl *cmd.Control, sig syscall.Signal) func() error {
