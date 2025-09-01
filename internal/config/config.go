@@ -181,15 +181,33 @@ func Load(path string, e env.Type, timeOut time.Duration) (Options, error) {
 	}
 
 	configs := findConfigs(path, e)
-	if err := godotenv.Overload(configs...); err != nil {
-		return Options{}, err
+	if len(configs) > 0 {
+		if err := godotenv.Overload(configs...); err != nil {
+			return Options{}, err
+		}
 	}
 
 	opts := LoadFromEnv()
 	opts.Env = e
 	opts.TimeOut = timeOut
 
-	return opts, nil
+	return opts, validateOptions(opts)
+}
+
+func validateOptions(opts Options) error {
+	if opts.Env == "" {
+		return errors.Errorf("invalid environment")
+	}
+	if opts.Storage == "" {
+		return errors.Errorf("invalid storage")
+	}
+	if opts.StoragePath == "" {
+		return errors.Errorf("invalid storage path")
+	}
+	if opts.Listen == "" {
+		return errors.Errorf("invalid listen socket")
+	}
+	return nil
 }
 
 func LoadFromEnv() Options {
