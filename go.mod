@@ -8,17 +8,17 @@ require (
 	git.sr.ht/~mariusor/wrapper v0.0.0-20250504120759-5fa47ac25e08
 	github.com/alecthomas/kong v1.12.1
 	github.com/go-ap/activitypub v0.0.0-20250831121713-4e61cc722305
-	github.com/go-ap/auth v0.0.0-20250831121928-807af59f5b30
+	github.com/go-ap/auth v0.0.0-20250901111642-9c28c88fa5d6
 	github.com/go-ap/cache v0.0.0-20250831121752-c44fafe4041e
 	github.com/go-ap/client v0.0.0-20250831121842-86170bce4a07
 	github.com/go-ap/errors v0.0.0-20250527110557-c8db454e53fd
-	github.com/go-ap/filters v0.0.0-20250831121811-28474286712c
+	github.com/go-ap/filters v0.0.0-20250901111556-f5075cc1c0c4
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-ap/processing v0.0.0-20250831122016-84ed74580a15
-	github.com/go-ap/storage-badger v0.0.0-20250810120212-b99839d35d91
-	github.com/go-ap/storage-boltdb v0.0.0-20250831122120-14cbe6eb1218
-	github.com/go-ap/storage-fs v0.0.0-20250831122044-423ca5eb7297
-	github.com/go-ap/storage-sqlite v0.0.0-20250831122101-2a6663c85a1b
+	github.com/go-ap/processing v0.0.0-20250901111706-507a03f35612
+	github.com/go-ap/storage-badger v0.0.0-20250901111811-a400be0e97b6
+	github.com/go-ap/storage-boltdb v0.0.0-20250901111751-376f1767448b
+	github.com/go-ap/storage-fs v0.0.0-20250901111719-3b081b65d37e
+	github.com/go-ap/storage-sqlite v0.0.0-20250901111732-9b9b3c4e587f
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-fed/httpsig v1.1.0
 	github.com/joho/godotenv v1.5.1
@@ -56,9 +56,9 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.etcd.io/bbolt v1.4.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/otel v1.37.0 // indirect
-	go.opentelemetry.io/otel/metric v1.37.0 // indirect
-	go.opentelemetry.io/otel/trace v1.37.0 // indirect
+	go.opentelemetry.io/otel v1.38.0 // indirect
+	go.opentelemetry.io/otel/metric v1.38.0 // indirect
+	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
