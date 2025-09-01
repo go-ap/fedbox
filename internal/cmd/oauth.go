@@ -108,7 +108,7 @@ func (a AddToken) Run(ctl *Control) error {
 
 const URISeparator = "\n"
 
-func (c *Control) AddClient(pw []byte, redirect []string, u any) (string, error) {
+func (c *Control) AddClient(pw []byte, redirectUris []string, u any) (string, error) {
 	var id string
 
 	self := ap.Self(vocab.IRI(c.Conf.BaseURL))
@@ -116,12 +116,12 @@ func (c *Control) AddClient(pw []byte, redirect []string, u any) (string, error)
 	name := "oauth-client-app"
 	urls := make(vocab.ItemCollection, 0)
 
-	for i, redirectUrl := range redirect {
-		if u, err := url.ParseRequestURI(redirectUrl); err == nil {
+	for i, redirectUri := range redirectUris {
+		if u, err := url.ParseRequestURI(redirectUri); err == nil {
 			u.Path = path.Clean(u.Path)
 			name = u.Host
 			curURL := u.String()
-			redirect[i] = curURL
+			redirectUris[i] = curURL
 
 			u.Path = ""
 			_ = urls.Append(vocab.IRI(u.String()), vocab.IRI(curURL))
@@ -130,9 +130,9 @@ func (c *Control) AddClient(pw []byte, redirect []string, u any) (string, error)
 	p := &vocab.Application{
 		Type:              vocab.ApplicationType,
 		AttributedTo:      self.GetLink(),
+		Audience:          vocab.ItemCollection{vocab.PublicNS},
 		Generator:         self.GetLink(),
 		Published:         now,
-		Updated:           now,
 		PreferredUsername: vocab.DefaultNaturalLanguageValue(name),
 		URL:               urls,
 	}
@@ -159,7 +159,7 @@ func (c *Control) AddClient(pw []byte, redirect []string, u any) (string, error)
 	d := osin.DefaultClient{
 		Id:          id,
 		Secret:      string(pw),
-		RedirectUri: strings.Join(redirect, URISeparator),
+		RedirectUri: strings.Join(redirectUris, URISeparator),
 		UserData:    userData,
 	}
 
