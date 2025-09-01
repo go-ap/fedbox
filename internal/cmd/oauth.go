@@ -62,7 +62,7 @@ func (d DelClient) Run(ctl *Control) error {
 }
 
 type AddClient struct {
-	RedirectURIs []string `name:"redirect-ur-is" help:"The redirect URIs for current application"`
+	RedirectURIs []string `name:"redirect-uri" help:"The redirect URIs for current application"`
 }
 
 func (a AddClient) Run(ctl *Control) error {

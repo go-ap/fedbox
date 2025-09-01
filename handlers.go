@@ -248,6 +248,7 @@ func (f *FedBOX) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto
 }
 
 func logRequest(o FedBOX, h http.Header, body []byte) {
+	// TODO(marius): use a different flag for enabling request debugging
 	if !o.maintenanceMode {
 		return
 	}

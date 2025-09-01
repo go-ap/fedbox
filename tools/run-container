@@ -2,9 +2,11 @@
 
 _path=${1}
 _what=${2}
+shift; shift;
 
 #set -ex
-#set -e
+set -e
+
 if [ -z "${_path}" ]; then
     echo "you must pass the path where to run the container"
     exit 1
@@ -15,23 +17,28 @@ if [ -z "${_what}" ]; then
     exit 1
 fi
 
+_app=$(basename ${_what} | cut -d':' -f1)
+
 _storage=$(realpath ${_path})
 if [ ! -d ${_storage} ]; then
     echo "Storage path is not accessible ${_storage}"
     exit 1
 fi
 
-_env_file=$(find ${_storage} -iname ".env*" | tail -n1)
-if [ ! -f ${_env_file} ]; then
+_env=$(find ${_storage} -iname ".env*" | tail -n1)
+echo $_env
+if [ ! -f ${_env} ]; then
     echo "env file is not accessible in path ${_storage}"
     exit 1
 fi
-_name=$(grep HOSTNAME ${_env_file} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
-_port=$(grep LISTEN ${_env_file} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
-_env=$(grep ENV ${_env_file} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
-
-echo ${_env}
+_name=$(grep HOSTNAME ${_env} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
+if [ -z ${_name} ]; then
+    _name=${_app}
+fi
+_port=$(grep LISTEN ${_env} | tail -n1 | cut -d'=' -f 2 | cut -d':' -f 2)
 
 CMD=$(command -v podman || which docker)
 
-$CMD run --pull=newer --network=host --name=${_name} --replace -v ${_env_file}:/.env -v ${_storage}:/storage --env-file=${_env_file} ${_what} fedbox -env ${_env}
+#$CMD pull ${_what}
+$CMD run --security-opt no-new-privileges --pull=newer --network=host --name=${_name} --replace -v ${_env}:/.env -v ${_storage}:/storage --env-file=${_env} ${_what} ${@}
+
