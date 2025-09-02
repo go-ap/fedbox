@@ -51,6 +51,8 @@ func (t testLogger) Accept(l containers.Log) {
 func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error) {
 	t.Helper()
 
+	// NOTE(marius): the docker host can come from multiple places.
+	// @see github.com/testcontainers/testcontainers-go/internal/core.MustExtractDockerHost()
 	m := make(cntrs)
 	for _, s := range suites {
 		storage := filepath.Join(".", "mocks")
@@ -139,7 +141,7 @@ func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomiz
 
 	req := defaultFedBOXRequest
 	opts = append(opts, containers.WithLogConsumers(logger))
-	//opts = append(opts, WithLogger(logger))
+	opts = append(opts, WithLogger(logger))
 	for _, opt := range opts {
 		if err := opt.Customize(&req); err != nil {
 			return nil, err
@@ -175,7 +177,6 @@ func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomiz
 		if _, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out); err != nil {
 			errs = append(errs, err)
 		}
-		//time.Sleep(100 * time.Millisecond)
 	}
 	return &f, errors.Join(errs...)
 }

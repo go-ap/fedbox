@@ -8,14 +8,10 @@ import (
 	"strconv"
 
 	"github.com/containers/buildah"
-	"github.com/containers/buildah/define"
 	"github.com/containers/common/pkg/config"
-	stt "github.com/containers/image/v5/storage"
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/storage"
-	"github.com/containers/storage/pkg/idtools"
 	"github.com/containers/storage/pkg/unshare"
-	"github.com/containers/storage/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,8 +24,9 @@ const (
 	commitSHA     = "deadbeef"
 )
 
-// var basePath = filepath.Join("/home/habarnam/.cache/podman/fedbox-test")
-var basePath = filepath.Join(os.TempDir(), "fedbox-test")
+var basePath = filepath.Join("/home/habarnam/.cache/podman/fedbox-test")
+
+//var basePath = filepath.Join(os.TempDir(), "fedbox-test")
 
 func buildImage(ctx context.Context, verbose bool) (string, error) {
 	logrus.SetOutput(os.Stderr)
@@ -38,7 +35,7 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 	}
 	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true})
 
-	//logger := logrus.New()
+	logger := logrus.New()
 
 	buildah.InitReexec()
 
@@ -47,21 +44,23 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 		return "", err
 	}
 
-	buildStoreOptions.RunRoot = filepath.Join(basePath, "root")
-	buildStoreOptions.GraphRoot = filepath.Join(basePath, "graph")
-	buildStoreOptions.RootlessStoragePath = filepath.Join(basePath, "rootless")
-	//buildStoreOptions.GraphDriverName = "vfs"
+	//buildStoreOptions.RunRoot = filepath.Join(basePath, "root")
+	//buildStoreOptions.GraphRoot = filepath.Join(basePath, "graph")
+	//buildStoreOptions.RootlessStoragePath = filepath.Join(basePath, "rootless")
+	//buildStoreOptions.RootAutoNsUser = filepath.Join(basePath, "rootless")
+	buildStoreOptions.GraphDriverName = "vfs"
+	//buildStoreOptions.GraphDriverName = "btrfs"
 	//buildStoreOptions.GraphDriverName = "aufs"
-	//buildStoreOptions.GraphDriverName = "overlay"
+	//buildStoreOptions.GraphDriverName = "overlay2"
 	//buildStoreOptions.GraphDriverOptions = []string{
-	//	"skip_mount_home=true",
-	//	"ignore_chown_errors=true",
-	//	"use_composefs=true", // error building: composefs is not supported in user namespaces
+	//"skip_mount_home=true",
+	//"ignore_chown_errors=true",
+	//"use_composefs=true", // error building: composefs is not supported in user namespaces
 	//}
 	//buildStoreOptions.DisableVolatile = true
 	//buildStoreOptions.TransientStore = true
-	buildStoreOptions.UIDMap = stt.Transport.DefaultUIDMap()
-	buildStoreOptions.GIDMap = stt.Transport.DefaultGIDMap()
+	//buildStoreOptions.UIDMap = stt.Transport.DefaultUIDMap()
+	//buildStoreOptions.GIDMap = stt.Transport.DefaultGIDMap()
 
 	store, err := storage.GetStore(buildStoreOptions)
 	if err != nil {
@@ -79,8 +78,8 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 	//if err != nil {
 	//	return "", err
 	//}
-	//
-	commonBuildOpts := buildah.CommonBuildOptions{}
+
+	//commonBuildOpts := buildah.CommonBuildOptions{}
 	//defaultEnv := []string{}
 
 	// NOTE(marius): this fails with a mounting error.
@@ -88,6 +87,7 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 	// but I don't know how to do this programmatically, and they don't give any clues:
 	// https://github.com/containers/buildah/issues/5744
 	// https://github.com/containers/buildah/issues/3948
+	// https://github.com/containers/buildah/issues/4489
 	//namespaces, err := buildah.DefaultNamespaceOptions()
 	//if err != nil {
 	//	return "", err
@@ -98,6 +98,8 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	//conf.Secrets.Opts["seccomp"] = "unconfined"
+	//conf.Secrets.Opts["apparmor"] = "unconfined"
 
 	uidStr := strconv.Itoa(os.Geteuid())
 	capabilities, err := conf.Capabilities(uidStr, nil, nil)
@@ -106,31 +108,31 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 	}
 
 	buildOpts := buildah.BuilderOptions{
-		Args:         nil,
+		//Args:         nil,
 		FromImage:    baseImage,
 		Capabilities: capabilities,
 		Container:    containerName,
-		//Logger:       logger,
-		//Mount:            true,
+		Logger:       logger,
+		//Mount:        true,
 		ReportWriter: os.Stderr,
-		Isolation:    buildah.IsolationOCIRootless,
+		//Isolation:    buildah.IsolationChroot,
 		//NamespaceOptions: namespaces,
-		//ConfigureNetwork:      0,
+		//ConfigureNetwork: 0,
 		//NetworkInterface: net,
-		IDMappingOptions: &define.IDMappingOptions{
-			AutoUserNs: true,
-			AutoUserNsOpts: types.AutoUserNsOptions{
-				Size:        4096,
-				InitialSize: 1024,
-				AdditionalUIDMappings: []idtools.IDMap{
-					{ContainerID: 10000, HostID: 1, Size: 4096},
-				},
-				AdditionalGIDMappings: []idtools.IDMap{
-					{ContainerID: 10000, HostID: 1, Size: 4096},
-				},
-			},
-		},
-		CommonBuildOpts: &commonBuildOpts,
+		//IDMappingOptions: &define.IDMappingOptions{
+		//	AutoUserNs: true,
+		//	AutoUserNsOpts: types.AutoUserNsOptions{
+		//		Size:        4096,
+		//		InitialSize: 1024,
+		//		AdditionalUIDMappings: []idtools.IDMap{
+		//			{ContainerID: 10000, HostID: 1, Size: 4096},
+		//		},
+		//		AdditionalGIDMappings: []idtools.IDMap{
+		//			{ContainerID: 10000, HostID: 1, Size: 4096},
+		//		},
+		//	},
+		//},
+		//CommonBuildOpts: &commonBuildOpts,
 		//Format:                "",
 		//Devices:               nil,
 		//DeviceSpecs:           nil,
