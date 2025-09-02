@@ -28,6 +28,7 @@ const (
 	commitSHA     = "deadbeef"
 )
 
+// var basePath = filepath.Join("/home/habarnam/.cache/podman/fedbox-test")
 var basePath = filepath.Join(os.TempDir(), "fedbox-test")
 
 func buildImage(ctx context.Context, verbose bool) (string, error) {
@@ -51,12 +52,12 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 	buildStoreOptions.RootlessStoragePath = filepath.Join(basePath, "rootless")
 	//buildStoreOptions.GraphDriverName = "vfs"
 	//buildStoreOptions.GraphDriverName = "aufs"
-	buildStoreOptions.GraphDriverName = "overlay"
-	buildStoreOptions.GraphDriverOptions = []string{
-		"skip_mount_home=true",
-		//"ignore_chown_errors=true",
-		//"use_composefs=true", // error building: composefs is not supported in user namespaces
-	}
+	//buildStoreOptions.GraphDriverName = "overlay"
+	//buildStoreOptions.GraphDriverOptions = []string{
+	//	"skip_mount_home=true",
+	//	"ignore_chown_errors=true",
+	//	"use_composefs=true", // error building: composefs is not supported in user namespaces
+	//}
 	//buildStoreOptions.DisableVolatile = true
 	//buildStoreOptions.TransientStore = true
 	buildStoreOptions.UIDMap = stt.Transport.DefaultUIDMap()

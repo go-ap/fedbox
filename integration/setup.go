@@ -28,7 +28,10 @@ type fedboxContainer struct {
 
 type cntrs map[string]*fedboxContainer
 
-var defaultFedBOXImageName = "localhost/fedbox/app:dev"
+var (
+	defaultFedBOXImageName = "localhost/fedbox/app:dev"
+	defaultAuthImageName   = "localhost/auth/app:dev"
+)
 
 type suite struct {
 	name    string
@@ -46,8 +49,9 @@ func (t testLogger) Accept(l containers.Log) {
 }
 
 func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error) {
-	m := make(cntrs)
+	t.Helper()
 
+	m := make(cntrs)
 	for _, s := range suites {
 		storage := filepath.Join(".", "mocks")
 		env := filepath.Join(storage, ".env")
@@ -56,7 +60,7 @@ func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error
 		if s.storage != "" {
 			img += "-" + s.storage
 		}
-		c, err := Run(ctx, t, img, WithEnvFile(env), WithStorage(storage))
+		c, err := Run(ctx, t, WithImageName(img), WithEnvFile(env), WithStorage(storage))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize container %s: %w", s.name, err)
 		}
@@ -67,6 +71,7 @@ func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error
 		m[s.name] = c
 	}
 
+	m.cleanup(t)
 	return m, nil
 }
 
@@ -119,31 +124,29 @@ func (fc *fedboxContainer) Req(ctx context.Context, met, u string, body io.Reade
 	return r, nil
 }
 
+var defaultFedBOXRequest = containers.GenericContainerRequest{
+	ContainerRequest: containers.ContainerRequest{
+		Image:      defaultFedBOXImageName,
+		WaitingFor: wait.ForLog("Starting").WithStartupTimeout(time.Second),
+	},
+	ProviderType: containers.ProviderPodman,
+	Started:      true,
+}
+
 // Run creates an instance of the FedBOX container type
-func Run(ctx context.Context, t testing.TB, image string, opts ...containers.ContainerCustomizer) (*fedboxContainer, error) {
+func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomizer) (*fedboxContainer, error) {
 	logger := testLogger(t.Logf)
 
-	gcr := containers.GenericContainerRequest{
-		ContainerRequest: containers.ContainerRequest{
-			Image: image,
-			LogConsumerCfg: &containers.LogConsumerConfig{
-				Opts:      []containers.LogProductionOption{containers.WithLogProductionTimeout(5 * time.Second)},
-				Consumers: []containers.LogConsumer{logger},
-			},
-			WaitingFor: wait.ForLog("Starting").WithStartupTimeout(time.Second),
-		},
-		ProviderType: containers.ProviderPodman,
-		Started:      true,
-	}
-
-	opts = append(opts, WithLogger(logger))
+	req := defaultFedBOXRequest
+	opts = append(opts, containers.WithLogConsumers(logger))
+	//opts = append(opts, WithLogger(logger))
 	for _, opt := range opts {
-		if err := opt.Customize(&gcr); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	fc, err := containers.GenericContainer(ctx, gcr)
+	fc, err := containers.GenericContainer(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -154,8 +157,9 @@ func Run(ctx context.Context, t testing.TB, image string, opts ...containers.Con
 	}
 
 	initializers := [][]string{
-		{"fedboxctl", "--env", "dev", "bootstrap"},
+		{"fedboxctl", "--env", "dev", "storage", "bootstrap"},
 		{"fedboxctl", "--env", "dev", "pub", "import", "/storage/import.json"},
+		{"fedboxctl", "--env", "dev", "accounts", "gen-keys", "--key-type", "ED25519"},
 	}
 	errs := make([]error, 0)
 	for _, cmd := range initializers {
@@ -171,7 +175,7 @@ func Run(ctx context.Context, t testing.TB, image string, opts ...containers.Con
 		if _, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out); err != nil {
 			errs = append(errs, err)
 		}
-		time.Sleep(100 * time.Millisecond)
+		//time.Sleep(100 * time.Millisecond)
 	}
 	return &f, errors.Join(errs...)
 }
@@ -212,6 +216,15 @@ func parseListen(s string) (string, int) {
 		host = pieces[0]
 	}
 	return host, port
+}
+
+func WithImageName(image string) containers.CustomizeRequestOption {
+	return func(req *containers.GenericContainerRequest) error {
+		if req.Image == "" {
+			req.Image = image
+		}
+		return nil
+	}
 }
 
 func WithLogger(logFn log.Logger) containers.CustomizeRequestOption {

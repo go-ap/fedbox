@@ -43,6 +43,21 @@ func Test_Fetch(t *testing.T) {
 			arg:    "https://fedbox/objects/1",
 			wanted: wanted{status: http.StatusOK},
 		},
+		{
+			name:   "actor 2",
+			arg:    "https://fedbox/actors/2",
+			wanted: wanted{status: http.StatusOK},
+		},
+		{
+			name:   "actors",
+			arg:    "https://fedbox/actors",
+			wanted: wanted{status: http.StatusOK},
+		},
+		{
+			name:   "objects",
+			arg:    "https://fedbox/objects",
+			wanted: wanted{status: http.StatusOK},
+		},
 	}
 
 	ctx := context.Background()

@@ -32,6 +32,29 @@
   },
   {
     "@context": "https://www.w3.org/ns/activitystreams",
+    "id": "https://fedbox/actors/2",
+    "type": "Person",
+    "attributedTo": "https://fedbox",
+    "audience": ["https://www.w3.org/ns/activitystreams#Public"],
+    "content": "Generated actor",
+    "generator": "https://fedbox",
+    "published": "2019-08-11T13:14:47.726030449+02:00",
+    "summary": "Generated actor",
+    "updated": "2019-08-11T13:14:47.726030449+02:00",
+    "url": "https://fedbox/actors/2",
+    "inbox": "https://fedbox/actors/2/inbox",
+    "outbox": "https://fedbox/actors/2/outbox",
+    "liked": "https://fedbox/actors/2/liked",
+    "preferredUsername": "johndoe",
+    "name": "Johnathan Doe",
+    "endpoints": {
+      "oauthAuthorizationEndpoint": "https://fedbox/oauth/authorize",
+      "oauthTokenEndpoint": "https://fedbox/oauth/token",
+      "sharedInbox": "https://fedbox/inbox"
+    }
+  },
+  {
+    "@context": "https://www.w3.org/ns/activitystreams",
     "id": "https://fedbox/objects/1",
     "type": "Note",
     "attributedTo": "https://fedbox/actors/1",
