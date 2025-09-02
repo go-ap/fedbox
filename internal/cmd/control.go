@@ -99,11 +99,11 @@ func setup(ct *Control, options config.Options, l lw.Logger) error {
 	if err != nil {
 		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
 	}
-	if path != "." {
-		conf.StoragePath = path
-	}
 	if typ != "" {
 		conf.Storage = typ
+	}
+	if conf.StoragePath == "" && path != "." {
+		conf.StoragePath = path
 	}
 	db, err := fedbox.Storage(conf, l)
 	if err != nil {

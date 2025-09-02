@@ -249,10 +249,9 @@ func LoadFromEnv() Options {
 	conf.Listen = Getval(KeyListen, "")
 	conf.Storage = StorageType(strings.ToLower(Getval(KeyStorage, string(DefaultStorage))))
 	conf.StoragePath = Getval(KeyStoragePath, "")
-	if conf.StoragePath == "" {
-		conf.StoragePath = os.TempDir()
+	if conf.StoragePath != "" {
+		conf.StoragePath = filepath.Clean(conf.StoragePath)
 	}
-	conf.StoragePath = filepath.Clean(conf.StoragePath)
 
 	disableCache, _ := strconv.ParseBool(Getval(KeyCacheDisable, "false"))
 	conf.StorageCache = !disableCache

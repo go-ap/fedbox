@@ -292,9 +292,9 @@ func (f *FedBOX) Run(ctx context.Context) error {
 			var err error
 			logFn := logger.Debugf
 
-			op := "to"
+			op := "TO"
 			if inMaintenanceMode {
-				op = "out of"
+				op = "OUT of"
 			}
 
 			if err = f.Pause(); err != nil {
