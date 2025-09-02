@@ -124,7 +124,7 @@ func (i Import) Run(ctl *Control) error {
 
 type GenKeys struct {
 	Type string      `help:"Type of keys to generate." name:"key-type" enum:"${keyTypes}" default:"${defaultKeyType}"`
-	IRIs []vocab.IRI `arg:"" name:"iris" help:"Actors for which to generate the keys."`
+	IRIs []vocab.IRI `arg:"" optional:"" name:"iri" help:"Actors for which to generate the keys. Defaults to all actors if missing."`
 }
 
 func (g GenKeys) Run(ctl *Control) error {
@@ -155,8 +155,14 @@ func (g GenKeys) Run(ctl *Control) error {
 		if err != nil {
 			return err
 		}
-		_ = vocab.OnActor(actors, func(act *vocab.Actor) error {
-			col = append(col, act)
+		_ = vocab.OnCollectionIntf(actors, func(colIntf vocab.CollectionInterface) error {
+			for _, it := range colIntf.Collection() {
+				if !vocab.ActorTypes.Contains(it.GetType()) {
+					continue
+				}
+				act, _ := vocab.ToActor(it)
+				_ = col.Append(act)
+			}
 			return nil
 		})
 	}
