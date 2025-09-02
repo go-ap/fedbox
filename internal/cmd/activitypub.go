@@ -105,7 +105,7 @@ func (a AddActorCmd) Run(ctl *Control) error {
 		}
 		fmt.Printf("Added %q [%s]: %s\n", a.Type, name, p.GetLink())
 		if metaSaver, ok := ctl.Storage.(s.MetadataStorage); ok {
-			if err := AddKeyToItem(metaSaver, p, keyType); err != nil {
+			if err := fedbox.AddKeyToItem(metaSaver, p, keyType); err != nil {
 				Errf("Error saving metadata for %s: %s", name, err)
 			}
 		}

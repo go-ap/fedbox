@@ -38,7 +38,7 @@ func (b BootstrapCmd) Run(ctl *Control) error {
 		return err
 	}
 	if metaSaver, ok := ctl.Storage.(s.MetadataStorage); ok {
-		if err := AddKeyToItem(metaSaver, &ctl.Service, keyType); err != nil {
+		if err := fedbox.AddKeyToItem(metaSaver, &ctl.Service, keyType); err != nil {
 			Errf("Error saving metadata for service: %s", err)
 			return err
 		}

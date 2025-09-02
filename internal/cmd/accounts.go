@@ -14,9 +14,10 @@ import (
 )
 
 type Accounts struct {
-	Export  Export  `cmd:"" help:"Exports accounts metadata"`
-	Import  Import  `cmd:"" help:"Imports accounts metadata"`
-	GenKeys GenKeys `cmd:"" help:"Generate public/private key pairs for actors that are missing them"`
+	Export  Export         `cmd:"" help:"Exports accounts metadata."`
+	Import  Import         `cmd:"" help:"Imports accounts metadata."`
+	GenKeys GenKeys        `cmd:"" help:"Generate public/private key pairs for actors that are missing them."`
+	Pass    ChangePassword `cmd:"" help:"Change password for an actor."`
 }
 
 type Export struct{}
@@ -171,13 +172,37 @@ func (g GenKeys) Run(ctl *Control) error {
 		if !vocab.ActorTypes.Contains(it.GetType()) {
 			continue
 		}
-		if err := AddKeyToItem(metaSaver, it, typ); err != nil {
+		if err := fedbox.AddKeyToItem(metaSaver, it, typ); err != nil {
 			Errf("Error: %s", err.Error())
 		}
 	}
 	return nil
 }
 
-func AddKeyToItem(metaSaver storage.MetadataStorage, it vocab.Item, typ string) error {
-	return fedbox.AddKeyToItem(metaSaver, it, typ)
+type ChangePassword struct {
+	IRI vocab.IRI `arg:"" optional:"" name:"iri" help:"The actor for which to change the password."`
+}
+
+func (c ChangePassword) Run(ctl *Control) error {
+	actors, err := ctl.Storage.Load(c.IRI)
+	if err != nil {
+		return err
+	}
+	actor, err := vocab.ToActor(actors)
+	if err != nil {
+		return err
+	}
+	pw, err := loadPwFromStdin(true, "%s's", nameOf(actor))
+	if err != nil {
+		return err
+	}
+	if pw == nil {
+		return errors.Errorf("empty password")
+	}
+
+	pwManager, ok := ctl.Storage.(storage.PasswordChanger)
+	if !ok {
+		return errors.Errorf("unable to save password for current storage %T", ctl.Storage)
+	}
+	return pwManager.PasswordSet(c.IRI, pw)
 }

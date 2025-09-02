@@ -141,7 +141,7 @@ func (c *Control) AddClient(pw []byte, redirectUris []string, u any) (string, er
 		return "", err
 	}
 	if metaSaver, ok := c.Storage.(s.MetadataStorage); ok {
-		if err := AddKeyToItem(metaSaver, p, fedbox.KeyTypeRSA); err != nil {
+		if err = fedbox.AddKeyToItem(metaSaver, p, fedbox.KeyTypeRSA); err != nil {
 			Errf("Error saving metadata for application %s: %s", name, err)
 		}
 	}
@@ -323,7 +323,7 @@ func SearchActorsIRI(baseIRI vocab.IRI, searchParams ...url.Values) vocab.IRI {
 	return IRIWithFilters(filters.ActorsType.IRI(baseIRI), searchParams...)
 }
 
-func name(act *vocab.Actor) string {
+func nameOf(act *vocab.Actor) string {
 	n := act.Name.First().String()
 	if act.PreferredUsername != nil {
 		n = act.PreferredUsername.First().String()
