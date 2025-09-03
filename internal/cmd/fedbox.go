@@ -33,6 +33,8 @@ func (r Run) Run(version string) error {
 	if err != nil {
 		return err
 	}
+
+	conf.AppName = AppName
 	conf.Profile = r.Profile
 	conf.Secure = conf.Secure && !conf.Profile
 	conf.Version = version

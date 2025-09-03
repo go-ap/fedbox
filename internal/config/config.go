@@ -290,7 +290,7 @@ func (o Options) RuntimePath() string {
 }
 
 func (o Options) DefaultSocketPath() string {
-	name := strings.ToLower(o.pathInstanceName())
+	name := o.pathInstanceName()
 	return filepath.Join(o.RuntimePath(), name+".sock")
 }
 
@@ -302,7 +302,7 @@ func (o Options) pathInstanceName() string {
 		host = strings.Replace(host, ".", "-", -1)
 		name += "-" + host
 	}
-	return name
+	return strings.ToLower(name)
 }
 
 func (o Options) PidPath() string {
