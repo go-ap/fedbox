@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -294,13 +295,19 @@ func (o Options) DefaultSocketPath() string {
 	return filepath.Join(o.RuntimePath(), name+".sock")
 }
 
+func reverseDNSName(host string) string {
+	host = strings.Replace(host, "https://", "", 1)
+	host = strings.Replace(host, "http://", "", 1)
+	pieces := strings.Split(host, ".")
+	sort.Slice(pieces, func(i, j int) bool {
+		return i > j
+	})
+	return strings.Join(pieces, ".")
+}
 func (o Options) pathInstanceName() string {
 	name := o.AppName
 	if o.Hostname != "" {
-		host := strings.Replace(o.Hostname, "https://", "", 1)
-		host = strings.Replace(host, "http://", "", 1)
-		host = strings.Replace(host, ".", "-", -1)
-		name += "-" + host
+		name = reverseDNSName(o.Hostname) + "." + name
 	}
 	return strings.ToLower(name)
 }
