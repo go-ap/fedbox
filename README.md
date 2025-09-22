@@ -38,4 +38,4 @@ More information about FedBOX and the other packages in the GoActivityPub librar
 
 ## Contact and feedback
 
-If you have problems, questions, ideas or suggestions, please contact us by posting to the [mailing list](https://lists.sr.ht/~mariusor/activitypub-go), or on [GitHub](https://github.com/go-ap/fedbox/issues). If you desire quick feedback, the mailing list is preferred, as the GitHub issues are not checked very often.
+If you have problems, questions, ideas or suggestions, please contact us by posting to the [discussions mailing list](https://lists.sr.ht/~mariusor/go-activitypub-discuss), or on [GitHub](https://github.com/go-ap/fedbox/issues). If you desire quicker feedback, the mailing list is preferred, as the GitHub issues are not checked very often.
