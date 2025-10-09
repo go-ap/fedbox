@@ -13,11 +13,13 @@ also built every push.
   * `sqlite`: the JSON-Ld documents are saved in a key-value store under the guise of a database table. 
 Querying large collections could be slow.
   * `boltdb`: a more traditional key-value store in the Go ecosystem. 
+  * ~~`badger`: another key-value store for the Go ecosystem. (unavailable at the moment)~~ 
 
 A resulting image tag has information about all of these, and it would look like `qa-boltdb` 
-(stripped image supporting boltdb storage), or `dev` (not stripped image with all storage options available).
+(stripped image supporting boltdb storage), or `dev` (not stripped image with all storage options available and selectable through the configuration `.env` file).
 
-The `tools/run-container` script can be used as an example of how to run such a container.
+To run containers based on the image, use the following command.
+The `tools/run-container` script can also be used.
 
 ```sh
 # /var/cache/fedbox must exist and be writable as current user
@@ -25,15 +27,15 @@ The `tools/run-container` script can be used as an example of how to run such a 
 $ podman run --network=host --name=FedBOX -v /var/cache/fedbox/env:/.env -v /var/cache/fedbox:/storage --env-file=/var/cache/fedbox/env quay.io/go-ap/fedbox:latest
 ```
 
-### Running *ctl commands in the containers
+### Running fedboxctl commands in the containers
 
 ```sh
 # running with the same configuration environment as above
 $ podman exec --env-file=/var/cache/fedbox/env FedBOX fedboxctl bootstrap
 $ podman exec --env-file=/var/cache/fedbox/env FedBOX fedboxctl pub actor add --type Application
 Enter the actor's name: test
-test's pw: 
-pw again: 
+test's pw:
+pw again:
 Added "Application" [test]: https://fedbox/actors/22200000-0000-0000-0001-93e066611fcb
 ```
 
