@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/pprof"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -43,6 +44,7 @@ type FedBOX struct {
 	caches  canStore
 	logger  lw.Logger
 
+	debugMode       atomic.Bool
 	maintenanceMode bool
 	shuttingDown    bool
 
@@ -117,6 +119,7 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 	}
 
 	errors.IncludeBacktrace = conf.LogLevel == lw.TraceLevel
+	app.debugMode.Store(conf.Env.IsDev())
 
 	if err := app.setupService(); err != nil {
 		app.errFn("unable to save the instance's self service: %s", err)
@@ -262,6 +265,7 @@ func (f *FedBOX) Run(ctx context.Context) error {
 	logCtx := lw.Ctx{
 		"URL":      f.conf.BaseURL,
 		"version":  f.conf.Version,
+		"debug":    f.debugMode.Load(),
 		"listenOn": f.conf.Listen,
 		"TLS":      f.conf.Secure,
 	}
@@ -271,7 +275,7 @@ func (f *FedBOX) Run(ctx context.Context) error {
 	defer cancelFn()
 
 	logger := f.logger.WithContext(logCtx)
-	logger.Infof("Starting")
+	logger.Infof("Started")
 	if err := f.conf.WritePid(); err != nil {
 		logger.Warnf("Unable to write pid file: %s", err)
 		logger.Warnf("Some CLI commands relying on it will not work")
@@ -284,20 +288,24 @@ func (f *FedBOX) Run(ctx context.Context) error {
 				logger.Errorf("Failed: %+s", err.Error())
 			}
 		},
-		syscall.SIGUSR1: func(_ chan<- error) {
-			inMaintenanceMode := f.maintenanceMode
-
-			f.maintenanceMode = !inMaintenanceMode
-
-			var err error
-			logFn := logger.Debugf
-
+		syscall.SIGUSR2: func(_ chan<- error) {
 			op := "TO"
-			if inMaintenanceMode {
+			isDebug := f.debugMode.Load()
+			if isDebug {
 				op = "OUT of"
 			}
+			f.debugMode.Store(!isDebug)
+			logger.Debugf("SIGUSR2 received, switching %s debug mode", op)
+		},
+		syscall.SIGUSR1: func(_ chan<- error) {
+			op := "TO"
+			if f.maintenanceMode {
+				op = "OUT of"
+			}
+			f.maintenanceMode = !f.maintenanceMode
 
-			if err = f.Pause(); err != nil {
+			logFn := logger.Debugf
+			if err := f.Pause(); err != nil {
 				logFn = logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf
 			}
 			logFn("SIGUSR1 received, switching %s maintenance mode", op)

@@ -1,21 +1,18 @@
 package fedbox
 
 import (
-	"bytes"
 	"crypto"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/cache"
 	"github.com/go-ap/client"
+	"github.com/go-ap/client/debug"
 	"github.com/go-ap/client/s2s"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -70,6 +67,9 @@ func fedboxClient(fb FedBOX) *client.C {
 
 func actorClient(fb FedBOX, iri vocab.IRI) *client.C {
 	var tr http.RoundTripper = &http.Transport{}
+	if fb.debugMode.Load() {
+		tr = debug.New(debug.WithTransport(tr), debug.WithPath(fb.conf.StoragePath))
+	}
 	if !vocab.PublicNS.Equals(iri, true) {
 		signActor, prv, err := fb.LoadLocalActorWithKey(iri)
 		if err != nil {
@@ -247,20 +247,6 @@ func (f *FedBOX) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto
 	return signActor, prv, nil
 }
 
-func logRequest(o FedBOX, h http.Header, body []byte) {
-	// TODO(marius): use a different flag for enabling request debugging
-	if !o.maintenanceMode {
-		return
-	}
-	path, _ := o.conf.BaseStoragePath()
-	fn := fmt.Sprintf("%s/%s.req", path, time.Now().UTC().Format(time.RFC3339))
-	all := bytes.Buffer{}
-	_ = h.Write(&all)
-	all.Write([]byte{'\n', '\n'})
-	all.Write(body)
-	_ = os.WriteFile(fn, all.Bytes(), 0660)
-}
-
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 	if fb.keyGenerator != nil {
@@ -279,7 +265,6 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 			fb.errFn("failed loading body: %+s", err)
 			return it, http.StatusBadRequest, errors.NewNotValid(err, "unable to read request body")
 		}
-		defer logRequest(*fb, r.Header, body)
 
 		if it, err = vocab.UnmarshalJSON(body); err != nil {
 			fb.errFn("failed unmarshalling jsonld body: %+s", err)

@@ -129,7 +129,7 @@ func (fc *fedboxContainer) Req(ctx context.Context, met, u string, body io.Reade
 var defaultFedBOXRequest = containers.GenericContainerRequest{
 	ContainerRequest: containers.ContainerRequest{
 		Image:      defaultFedBOXImageName,
-		WaitingFor: wait.ForLog("Starting").WithStartupTimeout(time.Second),
+		WaitingFor: wait.ForLog("Started").WithStartupTimeout(time.Second),
 	},
 	ProviderType: containers.ProviderPodman,
 	Started:      true,
