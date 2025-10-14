@@ -49,9 +49,9 @@ type CTL struct {
 	OAuth       OAuth       `cmd:"" name:"oauth"`
 	Storage     Storage     `cmd:""`
 	Accounts    Accounts    `cmd:"" help:"Accounts helper."`
-	Maintenance Maintenance `cmd:"" help:"Toggle maintenance mode for the main FedBOX server."`
-	Reload      Reload      `cmd:"" help:"Reload the main FedBOX server configuration"`
-	Stop        Stop        `cmd:"" help:"Stops the main FedBOX server configuration"`
+	Maintenance Maintenance `cmd:"" help:"Toggle maintenance mode for the running FedBOX server."`
+	Reload      Reload      `cmd:"" help:"Reload the running FedBOX server configuration."`
+	Stop        Stop        `cmd:"" help:"Stops the running FedBOX server configuration."`
 }
 
 func InitControl(c *CTL, version string) (*Control, error) {
