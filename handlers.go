@@ -276,8 +276,8 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 
 		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
 
-		auth := fb.actorFromRequestWithClient(r, actorClient(*fb, vocab.PublicNS))
-		if auth.ID.Equals(vocab.PublicNS, true) {
+		authorized := fb.actorFromRequestWithClient(r, actorClient(*fb, vocab.PublicNS))
+		if authorized.ID.Equals(vocab.PublicNS, true) {
 			fb.errFn("invalid Anonymous actor request: %s", receivedIn)
 			return it, http.StatusUnauthorized, errors.Unauthorizedf("authorized Actor is invalid")
 		}
@@ -304,7 +304,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		}
 
 		typ := it.GetType()
-		if it, err = processor.ProcessActivity(it, auth, receivedIn); err != nil {
+		if it, err = processor.ProcessActivity(it, authorized, receivedIn); err != nil {
 			fb.errFn("failed processing activity: %+s", err)
 			return it, errors.HttpStatus(err), errors.Annotatef(err, "Unable to save activity %s to %s", typ, receivedIn)
 		}

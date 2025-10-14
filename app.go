@@ -247,17 +247,16 @@ func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C) vocab
 		f.logger.WithContext(ctx).Debugf(msg, p...)
 	}
 
-	ar := auth.ClientResolver(cl,
+	ar := auth.Resolver(cl,
 		auth.SolverWithLogger(logFn),
 		auth.SolverWithStorage(f.storage),
 		auth.SolverWithLocalIRIFn(isLocalFn),
 	)
 
-	act, err := ar.LoadActorFromRequest(r)
-	if err != nil {
+	if err := ar.Verify(r); err != nil {
 		f.logger.WithContext(lw.Ctx{"err": err.Error()}).Errorf("unable to load an authorized Actor from request")
 	}
-	return act
+	return ar.Actor()
 }
 
 // Run is the wrapper for starting the web-server and handling signals
