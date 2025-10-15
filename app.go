@@ -237,7 +237,7 @@ func (f *FedBOX) reload() (err error) {
 	return err
 }
 
-func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C) vocab.Actor {
+func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, receivedIn vocab.IRI) vocab.Actor {
 	// NOTE(marius): if the storage is nil, we can still use the remote client in the load function
 	isLocalFn := func(iri vocab.IRI) bool {
 		return iri.Contains(vocab.IRI(f.conf.BaseURL), true)
@@ -247,16 +247,27 @@ func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C) vocab
 		f.logger.WithContext(ctx).Debugf(msg, p...)
 	}
 
-	ar := auth.Resolver(cl,
+	initFns := []auth.SolverInitFn{
 		auth.SolverWithLogger(logFn),
 		auth.SolverWithStorage(f.storage),
 		auth.SolverWithLocalIRIFn(isLocalFn),
-	)
+	}
 
-	if err := ar.Verify(r); err != nil {
+	var ar auth.ActorVerifier
+	switch {
+	case processing.IsInbox(receivedIn):
+		ar = auth.HTTPSignatureResolver(cl, initFns...)
+	case processing.IsOutbox(receivedIn):
+		ar = auth.OAuth2Resolver(cl, initFns...)
+	default:
+		ar = auth.Resolver(cl, initFns...)
+	}
+
+	actor, err := ar.Verify(r)
+	if err != nil {
 		f.logger.WithContext(lw.Ctx{"err": err.Error()}).Errorf("unable to load an authorized Actor from request")
 	}
-	return ar.Actor()
+	return actor
 }
 
 // Run is the wrapper for starting the web-server and handling signals

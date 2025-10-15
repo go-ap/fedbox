@@ -61,11 +61,11 @@ func reqURL(r http.Request, secure bool) string {
 	return u.String()
 }
 
-func fedboxClient(fb FedBOX) *client.C {
+func fedboxClient(fb *FedBOX) *client.C {
 	return actorClient(fb, fb.self.ID)
 }
 
-func actorClient(fb FedBOX, iri vocab.IRI) *client.C {
+func actorClient(fb *FedBOX, iri vocab.IRI) *client.C {
 	var tr http.RoundTripper = &http.Transport{}
 	if fb.debugMode.Load() {
 		tr = debug.New(debug.WithTransport(tr), debug.WithPath(fb.conf.StoragePath))
@@ -85,6 +85,9 @@ func actorClient(fb FedBOX, iri vocab.IRI) *client.C {
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
+	if fb == nil {
+		return outOfOrderCollectionHandler
+	}
 	return func(typ vocab.CollectionPath, r *http.Request) (vocab.CollectionInterface, error) {
 		if typ == vocab.Unknown {
 			return nil, errors.NotFoundf("%s not found", r.URL.Path)
@@ -108,9 +111,9 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.SeeOther(r.URL.String())
 		}
 
-		authorized := fb.actorFromRequestWithClient(r, fedboxClient(*fb))
 		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
-		cacheKey := CacheKey(*fb, authorized, *r)
+		authorized := fb.actorFromRequestWithClient(r, fedboxClient(fb), iri)
+		cacheKey := CacheKey(fb, authorized, *r)
 
 		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
@@ -203,7 +206,7 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 }
 
 // CacheKey generates a unique vocab.IRI hash based on its authenticated user and other parameters
-func CacheKey(fb FedBOX, auth vocab.Actor, r http.Request) vocab.IRI {
+func CacheKey(fb *FedBOX, auth vocab.Actor, r http.Request) vocab.IRI {
 	u := r.URL
 	if !auth.ID.Equals(vocab.PublicNS, true) {
 		u.User = url.User(filepath.Base(auth.ID.String()))
@@ -249,6 +252,9 @@ func (f *FedBOX) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto
 
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
+	if fb == nil {
+		return outOfOrderActivityHandler
+	}
 	if fb.keyGenerator != nil {
 		processing.WithActorKeyGenerator(fb.keyGenerator)
 	}
@@ -276,7 +282,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 
 		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
 
-		authorized := fb.actorFromRequestWithClient(r, actorClient(*fb, vocab.PublicNS))
+		authorized := fb.actorFromRequestWithClient(r, actorClient(fb, vocab.PublicNS), receivedIn)
 		if authorized.ID.Equals(vocab.PublicNS, true) {
 			fb.errFn("invalid Anonymous actor request: %s", receivedIn)
 			return it, http.StatusUnauthorized, errors.Unauthorizedf("authorized Actor is invalid")
@@ -288,7 +294,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		initFns := make([]processing.OptionFn, 0)
 		initFns = append(initFns,
 			processing.WithIRI(baseIRI, InternalIRI),
-			processing.WithClient(actorClient(*fb, receivedIn)),
+			processing.WithClient(actorClient(fb, receivedIn)),
 			processing.WithStorage(repo),
 			processing.WithLogger(l),
 			processing.WithIDGenerator(GenerateID(baseIRI)),
@@ -328,11 +334,14 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 // HandleItem serves content from the following, followers, liked, and likes end-points
 // that returns a single ActivityPub object
 func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
+	if fb == nil {
+		return outOfOrderItemHandler
+	}
 	return func(r *http.Request) (vocab.Item, error) {
 		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
 
-		authorized := fb.actorFromRequestWithClient(r, actorClient(*fb, vocab.PublicNS))
-		cacheKey := CacheKey(*fb, authorized, *r)
+		authorized := fb.actorFromRequestWithClient(r, actorClient(fb, vocab.PublicNS), iri)
+		cacheKey := CacheKey(fb, authorized, *r)
 
 		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)

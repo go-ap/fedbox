@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"path"
 
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-chi/chi/v5"
 )
@@ -29,6 +30,16 @@ func CleanRequestPath(next http.Handler) http.Handler {
 var (
 	errShuttingDown = errors.ServiceUnavailablef("server is shutting down")
 	errOutOfOrder   = errors.ServiceUnavailablef("temporarily out of order")
+
+	outOfOrderCollectionHandler = func(path vocab.CollectionPath, request *http.Request) (vocab.CollectionInterface, error) {
+		return nil, errOutOfOrder
+	}
+	outOfOrderActivityHandler = func(iri vocab.IRI, request *http.Request) (vocab.Item, int, error) {
+		return nil, errors.HttpStatus(errOutOfOrder), errOutOfOrder
+	}
+	outOfOrderItemHandler = func(request *http.Request) (vocab.Item, error) {
+		return nil, errOutOfOrder
+	}
 )
 
 func OutOfOrderMw(f *FedBOX) func(next http.Handler) http.Handler {
