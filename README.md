@@ -30,6 +30,15 @@ The current iteration can persist data to [BoltDB](https://go.etcd.io/bbolt), [B
 
 See the [INSTALL](./doc/INSTALL.md) file.
 
+### Running a server in a production environment
+
+If you want to run a FedBOX instance as part of the wider fediverse you must
+make sure that it was built with `-tags prod` or `-tags qa` in the build
+command because the development builds of FedBOX are not compatible with
+public instances due to the fact that the HTTP-Signatures generated are meant
+to be replayble from other contexts and lack security.
+
+
 ## Further reading
 
 If you are interested in using FedBOX from an application developer point of view, make sure to read the [Client to Server](./doc/c2s.md) document, which details how the local flavour of ActivityPub C2S API can be used.
