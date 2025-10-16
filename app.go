@@ -70,7 +70,7 @@ func Client(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
 		tr = &http.Transport{}
 	}
 
-	ua := fmt.Sprintf("%s/%s (+%s)", conf.BaseURL, conf.Version, ap.ProjectURL)
+	ua := fmt.Sprintf("%s@%s (+%s)", conf.BaseURL, conf.Version, ap.ProjectURL)
 	baseClient := &http.Client{
 		Transport: client.UserAgentTransport(ua, cache2.Private(tr, cache2.FS(filepath.Join(cachePath, conf.AppName)))),
 	}
