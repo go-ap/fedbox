@@ -16,35 +16,29 @@ func bytef(s string, p ...any) []byte {
 func outObject(o *vocab.Object, b io.Writer) error {
 	_, _ = b.Write(bytef("[%s] %s // %s", o.Type, o.ID, o.Published.Format("02 Jan 2006 15:04:05")))
 	if len(o.Name) > 0 {
-		for _, s := range o.Name {
-			ss := strings.Trim(s.Value.String(), "\n\r\t ")
-			if s.Ref != vocab.NilLangRef {
-				_, _ = b.Write(bytef("\n\tName[%s]: %s", s.Ref, ss))
+		for ref, s := range o.Name {
+			ss := strings.Trim(s.String(), "\n\r\t ")
+			if ref != vocab.NilLangRef {
+				_, _ = b.Write(bytef("\n\tName[%s]: %s", ref, ss))
 			}
 			_, _ = b.Write(bytef("\n\tName: %s", ss))
 		}
 	}
 	if o.Summary != nil {
-		for _, s := range o.Summary {
-			ss := strings.Trim(s.Value.String(), "\n\r\t ")
-			if s.Ref != vocab.NilLangRef {
-				cont := s.Ref
-				if len(cont) > 72 {
-					cont = cont[:72]
-				}
+		for ref, s := range o.Summary {
+			ss := strings.Trim(s.String(), "\n\r\t ")
+			if ref != vocab.NilLangRef {
+				cont := ref
 				_, _ = b.Write(bytef("\n\tSummary[%s]: %s", cont, ss))
 			}
 			_, _ = b.Write(bytef("\n\tSummary: %s", ss))
 		}
 	}
 	if o.Content != nil {
-		for _, c := range o.Content {
-			cc := strings.Trim(c.Value.String(), "\n\r\t ")
-			if c.Ref != vocab.NilLangRef {
-				cont := c.Ref
-				if len(cont) > 72 {
-					cont = cont[:72]
-				}
+		for ref, c := range o.Content {
+			cc := strings.Trim(c.String(), "\n\r\t ")
+			if ref != vocab.NilLangRef {
+				cont := ref
 				_, _ = b.Write(bytef("\n\tContent[%s]: %s", cont, cc))
 			}
 			_, _ = b.Write(bytef("\n\tContent: %s", cc))
@@ -80,10 +74,10 @@ func outActor(a *vocab.Actor, b io.Writer) error {
 		return err
 	}
 	if len(a.PreferredUsername) > 0 {
-		for _, s := range a.PreferredUsername {
-			ss := strings.Trim(s.Value.String(), "\n\r\t ")
-			if s.Ref != vocab.NilLangRef {
-				b.Write(bytef("\n\tPreferredUsername[%s]: %s", s.Ref, ss))
+		for ref, s := range a.PreferredUsername {
+			ss := strings.Trim(s.String(), "\n\r\t ")
+			if ref != vocab.NilLangRef {
+				b.Write(bytef("\n\tPreferredUsername[%s]: %s", ref, ss))
 			}
 			b.Write(bytef("\n\tPreferredUsername: %s", ss))
 		}

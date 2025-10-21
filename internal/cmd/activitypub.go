@@ -57,7 +57,7 @@ func (a AddActorCmd) Run(ctl *Control) error {
 		for _, it := range col.Collection() {
 			_ = vocab.OnObject(it, func(object *vocab.Object) error {
 				for _, tag := range a.Tags {
-					if object.Name.First().Value.String() != tag {
+					if object.Name.First().String() != tag {
 						continue
 					}
 					if object.AttributedTo.GetLink() != author.GetLink() {
@@ -89,11 +89,11 @@ func (a AddActorCmd) Run(ctl *Control) error {
 			Generator:    author.GetLink(),
 			Published:    now,
 			Summary: vocab.NaturalLanguageValues{
-				{vocab.NilLangRef, vocab.Content("Generated actor")},
+				vocab.NilLangRef: vocab.Content("Generated actor"),
 			},
 			Updated: now,
 			PreferredUsername: vocab.NaturalLanguageValues{
-				{vocab.NilLangRef, vocab.Content(name)},
+				vocab.NilLangRef: vocab.Content(name),
 			},
 		}
 		if len(tags) > 0 {
@@ -471,7 +471,7 @@ func (a AddCmd) Run(ctl *Control) error {
 		AttributedTo: author.GetLink(),
 		CC:           vocab.ItemCollection{vocab.PublicNS},
 		Published:    now,
-		Name:         vocab.DefaultNaturalLanguageValue(incName),
+		Name:         vocab.DefaultNaturalLanguage(incName),
 	}
 
 	if p, err = ctl.AddObject(p, author); err != nil {

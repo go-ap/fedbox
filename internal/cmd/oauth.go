@@ -133,7 +133,7 @@ func (c *Control) AddClient(pw []byte, redirectUris []string, u any) (string, er
 		Audience:          vocab.ItemCollection{vocab.PublicNS},
 		Generator:         self.GetLink(),
 		Published:         now,
-		PreferredUsername: vocab.DefaultNaturalLanguageValue(name),
+		PreferredUsername: vocab.DefaultNaturalLanguage(name),
 		URL:               urls,
 	}
 	app, err := c.AddActor(p, pw, self)
