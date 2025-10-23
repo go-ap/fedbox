@@ -65,14 +65,14 @@ go.sum: go.mod
 fedbox: bin/fedbox ## Builds the main FedBOX service binary.
 bin/fedbox: go.mod go.sum cmd/fedbox/main.go $(APPSOURCES)
 	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/fedbox/main.go
-ifneq ($(ENV),dev)
+ifneq (,$(findstring $(ENV), "prod qa"))
 	$(UPX) -q --mono --no-progress --best $@ || true
 endif
 
 fedboxctl: bin/fedboxctl ## Builds the control binary for the FedBOX service.
 bin/fedboxctl: go.mod go.sum cmd/control/main.go $(APPSOURCES)
 	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/control/main.go
-ifneq ($(ENV),dev)
+ifneq (,$(findstring $(ENV), "prod qa"))
 	$(UPX) -q --mono --no-progress --best $@ || true
 endif
 
