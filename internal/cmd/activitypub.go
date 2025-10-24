@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"sort"
@@ -13,7 +14,6 @@ import (
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
-	c "github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
@@ -188,16 +188,12 @@ func saver(ctl *Control) processing.P {
 	baseIRI := vocab.IRI(ctl.Conf.BaseURL)
 	db := ctl.Storage
 	l := ctl.Logger.WithContext(lw.Ctx{"log": "processing"})
+	cl := fedbox.Client(http.DefaultTransport, ctl.Conf, l)
 	p := processing.New(
-		processing.WithIRI(baseIRI),
-		processing.WithStorage(db),
+		processing.WithIRI(baseIRI), processing.WithLogger(l),
+		processing.WithStorage(db), processing.WithClient(cl),
 		processing.WithIDGenerator(fedbox.GenerateID(baseIRI)),
-		processing.WithClient(c.New(
-			c.WithLogger(l),
-			c.SkipTLSValidation(!ctl.Conf.Env.IsProd()),
-		)),
 		processing.WithLocalIRIChecker(s.IsLocalIRI(db)),
-		processing.WithLogger(l),
 	)
 	return p
 }

@@ -61,11 +61,11 @@ func reqURL(r http.Request, secure bool) string {
 	return u.String()
 }
 
-func fedboxClient(fb *FedBOX) *client.C {
-	return actorClient(fb, fb.self.ID)
+func FedBOXClient(fb *FedBOX) *client.C {
+	return ActorClient(fb, fb.self.ID)
 }
 
-func actorClient(fb *FedBOX, iri vocab.IRI) *client.C {
+func ActorClient(fb *FedBOX, iri vocab.IRI) *client.C {
 	var tr http.RoundTripper = &http.Transport{}
 	if fb.debugMode.Load() {
 		tr = debug.New(debug.WithTransport(tr), debug.WithPath(fb.conf.StoragePath))
@@ -112,7 +112,7 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 		}
 
 		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
-		authorized := fb.actorFromRequestWithClient(r, fedboxClient(fb), iri)
+		authorized := fb.actorFromRequestWithClient(r, FedBOXClient(fb), iri)
 		cacheKey := CacheKey(fb, authorized, *r)
 
 		it := fb.caches.Load(cacheKey)
@@ -282,7 +282,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 
 		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
 
-		authorized := fb.actorFromRequestWithClient(r, actorClient(fb, vocab.PublicNS), receivedIn)
+		authorized := fb.actorFromRequestWithClient(r, ActorClient(fb, vocab.PublicNS), receivedIn)
 		if authorized.ID.Equals(vocab.PublicNS, true) {
 			fb.errFn("invalid Anonymous actor request: %s", receivedIn)
 			return it, http.StatusUnauthorized, errors.Unauthorizedf("authorized Actor is invalid")
@@ -294,7 +294,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		initFns := make([]processing.OptionFn, 0)
 		initFns = append(initFns,
 			processing.WithIRI(baseIRI, InternalIRI),
-			processing.WithClient(actorClient(fb, receivedIn)),
+			processing.WithClient(ActorClient(fb, receivedIn)),
 			processing.WithStorage(repo),
 			processing.WithLogger(l),
 			processing.WithIDGenerator(GenerateID(baseIRI)),
@@ -340,7 +340,7 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 	return func(r *http.Request) (vocab.Item, error) {
 		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
 
-		authorized := fb.actorFromRequestWithClient(r, actorClient(fb, vocab.PublicNS), iri)
+		authorized := fb.actorFromRequestWithClient(r, ActorClient(fb, vocab.PublicNS), iri)
 		cacheKey := CacheKey(fb, authorized, *r)
 
 		it := fb.caches.Load(cacheKey)
