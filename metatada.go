@@ -12,7 +12,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/fedbox/internal/storage"
 	"github.com/go-ap/processing"
 	"golang.org/x/crypto/ed25519"
 )

@@ -9,7 +9,7 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
-	"github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/fedbox/internal/storage"
 	"github.com/go-ap/jsonld"
 )
 

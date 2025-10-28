@@ -37,8 +37,8 @@ type CanBootstrap interface {
 }
 
 type PasswordChanger interface {
-	PasswordSet(vocab.Item, []byte) error
-	PasswordCheck(vocab.Item, []byte) error
+	PasswordSet(vocab.IRI, []byte) error
+	PasswordCheck(vocab.IRI, []byte) error
 }
 
 type MetadataStorage interface {

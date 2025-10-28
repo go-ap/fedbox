@@ -90,7 +90,7 @@ clean: ## Cleanup the build workspace.
 	-$(RM) bin/*
 	$(MAKE) -C tests $@
 
-test: TEST_TARGET := . ./{activitypub,storage,internal}/...
+test: TEST_TARGET := . ./{activitypub,internal}/...
 test: download ## Run unit tests for the service.
 	$(TEST) $(TEST_FLAGS) -tags "$(TAGS)" $(TEST_TARGET)
 

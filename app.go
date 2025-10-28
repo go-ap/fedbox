@@ -21,7 +21,7 @@ import (
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
-	st "github.com/go-ap/fedbox/storage"
+	st "github.com/go-ap/fedbox/internal/storage"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
 	"github.com/openshift/osin"

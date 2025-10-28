@@ -13,7 +13,7 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
-	s "github.com/go-ap/fedbox/storage"
+	s "github.com/go-ap/fedbox/internal/storage"
 	"github.com/go-ap/filters"
 	"github.com/openshift/osin"
 )

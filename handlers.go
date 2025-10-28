@@ -16,7 +16,7 @@ import (
 	"github.com/go-ap/client/s2s"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
-	st "github.com/go-ap/fedbox/storage"
+	st "github.com/go-ap/fedbox/internal/storage"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 )
@@ -70,7 +70,7 @@ func ActorClient(fb *FedBOX, iri vocab.IRI) *client.C {
 	if fb.debugMode.Load() {
 		tr = debug.New(debug.WithTransport(tr), debug.WithPath(fb.conf.StoragePath))
 	}
-	if !vocab.PublicNS.Equals(iri, true) {
+	if !vocab.PublicNS.Equal(iri) {
 		signActor, prv, err := fb.LoadLocalActorWithKey(iri)
 		if err != nil {
 			fb.errFn("unable to sign request: %+s", err)
@@ -208,7 +208,7 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 // CacheKey generates a unique vocab.IRI hash based on its authenticated user and other parameters
 func CacheKey(fb *FedBOX, auth vocab.Actor, r http.Request) vocab.IRI {
 	u := r.URL
-	if !auth.ID.Equals(vocab.PublicNS, true) {
+	if !auth.ID.Equal(vocab.PublicNS) {
 		u.User = url.User(filepath.Base(auth.ID.String()))
 	}
 	r.URL = u
@@ -283,7 +283,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
 
 		authorized := fb.actorFromRequestWithClient(r, ActorClient(fb, vocab.PublicNS), receivedIn)
-		if authorized.ID.Equals(vocab.PublicNS, true) {
+		if authorized.ID.Equal(vocab.PublicNS) {
 			fb.errFn("invalid Anonymous actor request: %s", receivedIn)
 			return it, http.StatusUnauthorized, errors.Unauthorizedf("authorized Actor is invalid")
 		}

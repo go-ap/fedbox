@@ -25,7 +25,7 @@ import (
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
-	ls "github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/fedbox/internal/storage"
 	"github.com/go-ap/jsonld"
 	"golang.org/x/crypto/ed25519"
 )
@@ -58,7 +58,7 @@ func loadMockJson(file string, model any) func() (string, error) {
 	}
 }
 
-func addMockObjects(r ls.FullStorage, obj vocab.ItemCollection) error {
+func addMockObjects(r storage.FullStorage, obj vocab.ItemCollection) error {
 	var err error
 	for _, it := range obj {
 		if it.GetLink() == "" {
@@ -154,7 +154,7 @@ func loadMockFromDisk(file string, model any) vocab.Item {
 	return it
 }
 
-func saveMocks(testData []string, config config.Options, db ls.FullStorage, l lw.Logger) error {
+func saveMocks(testData []string, config config.Options, db storage.FullStorage, l lw.Logger) error {
 	if len(testData) == 0 {
 		return nil
 	}
@@ -176,7 +176,7 @@ func saveMocks(testData []string, config config.Options, db ls.FullStorage, l lw
 
 	o, _ := cmd.New(db, config, l)
 	if strings.Contains(defaultTestAccountC2S.ID, config.BaseURL) {
-		if err := saveMetadataForActor(defaultTestAccountC2S, db.(ls.MetadataStorage)); err != nil {
+		if err := saveMetadataForActor(defaultTestAccountC2S, db.(storage.MetadataStorage)); err != nil {
 			return err
 		}
 
@@ -185,7 +185,7 @@ func saveMocks(testData []string, config config.Options, db ls.FullStorage, l lw
 		}
 	}
 	if strings.Contains(defaultTestAccountS2S.ID, config.BaseURL) {
-		if err := saveMetadataForActor(defaultTestAccountS2S, db.(ls.MetadataStorage)); err != nil {
+		if err := saveMetadataForActor(defaultTestAccountS2S, db.(storage.MetadataStorage)); err != nil {
 			return err
 		}
 
@@ -196,7 +196,7 @@ func saveMocks(testData []string, config config.Options, db ls.FullStorage, l lw
 	return nil
 }
 
-func saveMetadataForActor(act testAccount, metaSaver ls.MetadataStorage) error {
+func saveMetadataForActor(act testAccount, metaSaver storage.MetadataStorage) error {
 	prvEnc, err := x509.MarshalPKCS8PrivateKey(act.PrivateKey)
 	if err != nil {
 		return err
@@ -233,7 +233,7 @@ func getTestFedBOX(options config.Options, l lw.Logger) (*fedbox.FedBOX, error) 
 	}
 	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": basePath}
 
-	db, err := fedbox.Storage(options, l.WithContext(fields))
+	db, err := storage.Init(options, l.WithContext(fields))
 	if err != nil {
 		return nil, err
 	}

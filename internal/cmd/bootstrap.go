@@ -8,7 +8,6 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/storage"
-	s "github.com/go-ap/fedbox/storage"
 )
 
 type ResetCmd struct{}
@@ -37,7 +36,7 @@ func (b BootstrapCmd) Run(ctl *Control) error {
 		Errf("Error adding service: %s\n", err)
 		return err
 	}
-	if metaSaver, ok := ctl.Storage.(s.MetadataStorage); ok {
+	if metaSaver, ok := ctl.Storage.(storage.MetadataStorage); ok {
 		if err := fedbox.AddKeyToItem(metaSaver, &ctl.Service, keyType); err != nil {
 			Errf("Error saving metadata for service: %s", err)
 			return err
@@ -60,7 +59,7 @@ func bootstrap(conf config.Options, service vocab.Item, l lw.Logger) error {
 	}
 	l.Infof("Successfully created %s db for storage %s", path, conf.Storage)
 
-	db, err := fedbox.Storage(conf, l)
+	db, err := storage.Init(conf, l)
 	if err != nil {
 		return http.Annotatef(err, "Unable to initialize FedBOX storage for path %s", conf.StoragePath)
 	}
@@ -92,6 +91,6 @@ func reset(conf config.Options, l lw.Logger) error {
 	return nil
 }
 
-func CreateService(r s.FullStorage, self vocab.Item) (err error) {
+func CreateService(r storage.FullStorage, self vocab.Item) (err error) {
 	return fedbox.CreateService(r, self)
 }

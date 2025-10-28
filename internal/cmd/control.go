@@ -12,11 +12,10 @@ import (
 	"github.com/alecthomas/kong"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	st "github.com/go-ap/fedbox/storage"
+	"github.com/go-ap/fedbox/internal/storage"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -24,7 +23,7 @@ type Control struct {
 	Conf    config.Options
 	Logger  lw.Logger
 	Service vocab.Actor
-	Storage st.FullStorage
+	Storage storage.FullStorage
 }
 
 type Storage struct {
@@ -77,7 +76,7 @@ func InitControl(c *CTL, version string) (*Control, error) {
 	return &ct, nil
 }
 
-func New(db st.FullStorage, conf config.Options, l lw.Logger) (*Control, error) {
+func New(db storage.FullStorage, conf config.Options, l lw.Logger) (*Control, error) {
 	self, err := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
 	if err != nil {
 		l.Warnf("unable to load actor: %s", err)
@@ -105,7 +104,7 @@ func setup(ct *Control, options config.Options, l lw.Logger) error {
 	if conf.StoragePath == "" && path != "." {
 		conf.StoragePath = path
 	}
-	db, err := fedbox.Storage(conf, l)
+	db, err := storage.Init(conf, l)
 	if err != nil {
 		return err
 	}
