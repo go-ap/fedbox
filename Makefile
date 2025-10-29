@@ -29,6 +29,7 @@ ASSETFILES := $(wildcard templates/*)
 TAGS := $(ENV) storage_$(STORAGE)
 
 export CGO_ENABLED=0
+export GOEXPERIMENT=greenteagc
 
 ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
 	BRANCH=$(shell git rev-parse --abbrev-ref HEAD | tr '/' '-')
