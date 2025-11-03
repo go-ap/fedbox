@@ -199,26 +199,18 @@ func (c *Control) GenAuthToken(clientID, actorIdentifier string, _ any) (string,
 	} else {
 		f = SearchActorsIRI(c.Service.ID, ByName(actorIdentifier), ByType(vocab.ActorTypes...))
 	}
-	list, err := c.Storage.Load(f.GetLink())
+	maybeActors, err := c.Storage.Load(f.GetLink())
 	if err != nil {
 		return "", err
 	}
-	if vocab.IsNil(list) {
+	if vocab.IsNil(maybeActors) {
 		return "", errors.NotFoundf("not found")
 	}
 	var actor vocab.Item
-	if list.IsCollection() {
-		err = vocab.OnCollectionIntf(list, func(c vocab.CollectionInterface) error {
-			f := c.Collection().First()
-			if f == nil {
-				return errors.NotFoundf("no actor found %s", c.GetLink())
-			}
-			actor, err = vocab.ToActor(f)
-			return err
-		})
-	} else {
-		actor, err = vocab.ToActor(list)
-	}
+	err = vocab.OnActor(maybeActors, func(act *vocab.Actor) error {
+		actor = act
+		return nil
+	})
 	if err != nil {
 		return "", err
 	}
