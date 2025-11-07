@@ -15,10 +15,10 @@ require (
 	github.com/go-ap/filters v0.0.0-20251028142811-9b3305faa3cd
 	github.com/go-ap/jsonld v0.0.0-20250905102310-8480b0fe24d9
 	github.com/go-ap/processing v0.0.0-20251028142716-e33323290dae
-	github.com/go-ap/storage-badger v0.0.0-20251028143046-4a73c88bce09
-	github.com/go-ap/storage-boltdb v0.0.0-20251102162736-613edcbb42af
-	github.com/go-ap/storage-fs v0.0.0-20251102162749-1b45fdcb2173
-	github.com/go-ap/storage-sqlite v0.0.0-20251103140036-7ee2cb1ec369
+	github.com/go-ap/storage-badger v0.0.0-20251107113658-048781d8e565
+	github.com/go-ap/storage-boltdb v0.0.0-20251107113612-75b68d0c0332
+	github.com/go-ap/storage-fs v0.0.0-20251107113541-3ad5a4771cd3
+	github.com/go-ap/storage-sqlite v0.0.0-20251107114203-79dec08f354e
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
