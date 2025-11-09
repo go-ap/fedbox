@@ -20,13 +20,14 @@ import (
 	"text/template"
 
 	"git.sr.ht/~mariusor/lw"
+	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/storage"
 	"github.com/go-ap/jsonld"
+	"github.com/openshift/osin"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -208,6 +209,15 @@ func saveMetadataForActor(act testAccount, metaSaver storage.MetadataStorage) er
 	)
 }
 
+type clientSaver interface {
+	// UpdateClient updates the client (identified by its id) and replaces the values with the values of client.
+	UpdateClient(c osin.Client) error
+	// CreateClient stores the client in the database and returns an error, if something went wrong.
+	CreateClient(c osin.Client) error
+	// RemoveClient removes a client (identified by id) from the database. Returns an error if something went wrong.
+	RemoveClient(id string) error
+}
+
 func seedTestData(app *fedbox.FedBOX) error {
 	db := app.Storage()
 
@@ -216,7 +226,10 @@ func seedTestData(app *fedbox.FedBOX) error {
 		return err
 	}
 
-	return db.CreateClient(mockClient)
+	if clientCreator, ok := db.(clientSaver); ok {
+		return clientCreator.CreateClient(mockClient)
+	}
+	return nil
 }
 
 func getTestFedBOX(options config.Options, l lw.Logger) (*fedbox.FedBOX, error) {
@@ -233,7 +246,7 @@ func getTestFedBOX(options config.Options, l lw.Logger) (*fedbox.FedBOX, error) 
 	}
 	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": basePath}
 
-	db, err := storage.Init(options, l.WithContext(fields))
+	db, err := storage.New(options.StorageInitFns(l.WithContext(fields))...)
 	if err != nil {
 		return nil, err
 	}

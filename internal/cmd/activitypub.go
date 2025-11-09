@@ -104,7 +104,7 @@ func (a AddActorCmd) Run(ctl *Control) error {
 			return err
 		}
 		fmt.Printf("Added %q [%s]: %s\n", a.Type, name, p.GetLink())
-		if metaSaver, ok := ctl.Storage.(s.MetadataStorage); ok {
+		if metaSaver, ok := ctl.Storage.(fedbox.MetadataStorage); ok {
 			if err := fedbox.AddKeyToItem(metaSaver, p, keyType); err != nil {
 				Errf("Error saving metadata for %s: %s", name, err)
 			}
@@ -230,7 +230,7 @@ func (c *Control) AddActor(p *vocab.Person, pw []byte, author vocab.Actor) (*voc
 		return nil, err
 	}
 
-	if pwManager, ok := c.Storage.(s.PasswordChanger); ok && pw != nil {
+	if pwManager, ok := c.Storage.(fedbox.PasswordChanger); ok && pw != nil {
 		err = pwManager.PasswordSet(p.GetLink(), pw)
 	}
 	return p, err

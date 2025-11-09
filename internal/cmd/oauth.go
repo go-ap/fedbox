@@ -13,7 +13,6 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
-	s "github.com/go-ap/fedbox/internal/storage"
 	"github.com/go-ap/filters"
 	"github.com/openshift/osin"
 )
@@ -140,7 +139,7 @@ func (c *Control) AddClient(pw []byte, redirectUris []string, u any) (string, er
 	if err != nil {
 		return "", err
 	}
-	if metaSaver, ok := c.Storage.(s.MetadataStorage); ok {
+	if metaSaver, ok := c.Storage.(fedbox.MetadataStorage); ok {
 		if err = fedbox.AddKeyToItem(metaSaver, p, fedbox.KeyTypeRSA); err != nil {
 			Errf("Error saving metadata for application %s: %s", name, err)
 		}

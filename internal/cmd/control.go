@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"git.sr.ht/~mariusor/lw"
+	"git.sr.ht/~mariusor/storage-all"
 	"github.com/alecthomas/kong"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/fedbox/internal/storage"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -27,7 +27,7 @@ type Control struct {
 }
 
 type Storage struct {
-	Type config.StorageType `help:"Type of the backend to use. Possible values: ${storageTypes}"`
+	Type storage.Type `help:"Type of the backend to use. Possible values: ${storageTypes}"`
 
 	Bootstrap      BootstrapCmd   `cmd:""`
 	Reset          ResetCmd       `cmd:"" help:"Reset an existing storage."`
@@ -104,7 +104,7 @@ func setup(ct *Control, options config.Options, l lw.Logger) error {
 	if conf.StoragePath == "" && path != "." {
 		conf.StoragePath = path
 	}
-	db, err := storage.Init(conf, l)
+	db, err := storage.New(conf.StorageInitFns(l)...)
 	if err != nil {
 		return err
 	}

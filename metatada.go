@@ -9,11 +9,10 @@ import (
 	"encoding/pem"
 	"fmt"
 
+	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox/internal/storage"
-	"github.com/go-ap/processing"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -23,11 +22,21 @@ const (
 	KeyTypeRSA     = "RSA"
 )
 
-func AddKeyToItem(metaSaver storage.MetadataStorage, it vocab.Item, typ string) error {
+type MetadataStorage interface {
+	LoadMetadata(vocab.IRI, any) error
+	SaveMetadata(vocab.IRI, any) error
+}
+
+type PasswordChanger interface {
+	PasswordSet(vocab.IRI, []byte) error
+	PasswordCheck(vocab.IRI, []byte) error
+}
+
+func AddKeyToItem(metaSaver MetadataStorage, it vocab.Item, typ string) error {
 	if err := vocab.OnActor(it, AddKeyToPerson(metaSaver, typ)); err != nil {
 		return errors.Annotatef(err, "failed to process actor: %s", it.GetID())
 	}
-	st, ok := metaSaver.(processing.Store)
+	st, ok := metaSaver.(storage.FullStorage)
 	if !ok {
 		return errors.Newf("invalid item store, failed to save actor: %s", it.GetID())
 	}

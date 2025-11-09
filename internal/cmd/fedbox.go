@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"git.sr.ht/~mariusor/lw"
+	"git.sr.ht/~mariusor/storage-all"
 	"github.com/alecthomas/kong"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	"github.com/go-ap/fedbox/internal/storage"
 )
 
 const AppName = "FedBOX"
@@ -57,7 +57,7 @@ func (r Run) Run(version string) error {
 	} else {
 		l = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
 	}
-	db, err := storage.Init(conf, l.WithContext(lw.Ctx{"log": "storage"}))
+	db, err := storage.New(conf.StorageInitFns(l)...)
 	if err != nil {
 		l.Errorf("Unable to open storage: %s", err)
 		return err

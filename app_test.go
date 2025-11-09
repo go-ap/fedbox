@@ -4,16 +4,12 @@ import (
 	"testing"
 
 	"git.sr.ht/~mariusor/lw"
+	"git.sr.ht/~mariusor/storage-all"
 	"github.com/go-ap/fedbox/internal/config"
-	fs "github.com/go-ap/storage-fs"
 )
 
-var defaultConfig = config.Options{
-	Storage: config.StorageFS,
-}
-
 func TestNew(t *testing.T) {
-	store, err := fs.New(fs.Config{Path: t.TempDir()})
+	store, err := storage.New(storage.WithPath(t.TempDir()))
 	if err != nil {
 		t.Errorf("unable to initialize fs storage: %s", err)
 	}

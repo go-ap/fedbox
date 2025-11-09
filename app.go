@@ -13,6 +13,7 @@ import (
 
 	cache2 "git.sr.ht/~mariusor/cache"
 	"git.sr.ht/~mariusor/lw"
+	"git.sr.ht/~mariusor/storage-all"
 	w "git.sr.ht/~mariusor/wrapper"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
@@ -21,7 +22,6 @@ import (
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
-	st "github.com/go-ap/fedbox/internal/storage"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
 	"github.com/openshift/osin"
@@ -40,7 +40,7 @@ type FedBOX struct {
 	R       chi.Router
 	conf    config.Options
 	self    vocab.Service
-	storage st.FullStorage
+	storage storage.FullStorage
 	caches  canStore
 	logger  lw.Logger
 
@@ -86,7 +86,7 @@ func Client(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
 const defaultGraceWait = 1500 * time.Millisecond
 
 // New instantiates a new FedBOX instance
-func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
+func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, error) {
 	if db == nil {
 		return nil, errors.Newf("invalid storage")
 	}
@@ -108,7 +108,7 @@ func New(l lw.Logger, conf config.Options, db st.FullStorage) (*FedBOX, error) {
 		stopFn:  emptyCtxtFn,
 	}
 
-	if metaSaver, ok := db.(st.MetadataStorage); ok {
+	if metaSaver, ok := db.(storage.MetadataStorage); ok {
 		keysType := "ED25519"
 		if conf.MastodonCompatible {
 			keysType = "RSA"
@@ -196,7 +196,7 @@ func (f *FedBOX) Config() config.Options {
 	return f.conf
 }
 
-func (f *FedBOX) Storage() st.FullStorage {
+func (f *FedBOX) Storage() storage.FullStorage {
 	return f.storage
 }
 
@@ -355,7 +355,7 @@ func (f *FedBOX) errFn(s string, p ...any) {
 	}
 }
 
-func CreateService(r st.FullStorage, self vocab.Item) (err error) {
+func CreateService(r storage.FullStorage, self vocab.Item) (err error) {
 	_ = vocab.OnActor(self, func(service *vocab.Actor) error {
 		service.Published = time.Now().UTC()
 		return nil

@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"git.sr.ht/~mariusor/lw"
+	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
 	"github.com/go-ap/fedbox"
@@ -177,12 +178,12 @@ var storagePath = func() string {
 	return path
 }
 
-var storageType = func() config.StorageType {
+var storageType = func() storage.Type {
 	envStorage := config.Getval("STORAGE", "all")
 	if len(envStorage) > 0 {
-		return config.StorageType(envStorage)
+		return storage.Type(envStorage)
 	}
-	return config.DefaultStorage
+	return storage.Default
 }
 
 func defaultC2SAccount() *testAccount {

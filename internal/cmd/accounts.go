@@ -9,7 +9,6 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
-	"github.com/go-ap/fedbox/internal/storage"
 	"github.com/go-ap/jsonld"
 )
 
@@ -23,7 +22,7 @@ type Accounts struct {
 type Export struct{}
 
 func (e Export) Run(ctl *Control) error {
-	metaLoader, ok := ctl.Storage.(storage.MetadataStorage)
+	metaLoader, ok := ctl.Storage.(fedbox.MetadataStorage)
 	if !ok {
 		return errors.Newf("")
 	}
@@ -76,7 +75,7 @@ type Import struct {
 }
 
 func (i Import) Run(ctl *Control) error {
-	metaLoader, ok := ctl.Storage.(storage.MetadataStorage)
+	metaLoader, ok := ctl.Storage.(fedbox.MetadataStorage)
 	if !ok {
 		return errors.Newf("")
 	}
@@ -130,7 +129,7 @@ type GenKeys struct {
 
 func (g GenKeys) Run(ctl *Control) error {
 	typ := g.Type
-	metaSaver, ok := ctl.Storage.(storage.MetadataStorage)
+	metaSaver, ok := ctl.Storage.(fedbox.MetadataStorage)
 	if !ok {
 		return errors.Newf("storage doesn't support saving key")
 	}
@@ -200,7 +199,7 @@ func (c ChangePassword) Run(ctl *Control) error {
 		return errors.Errorf("empty password")
 	}
 
-	pwManager, ok := ctl.Storage.(storage.PasswordChanger)
+	pwManager, ok := ctl.Storage.(fedbox.PasswordChanger)
 	if !ok {
 		return errors.Errorf("unable to save password for current storage %T", ctl.Storage)
 	}

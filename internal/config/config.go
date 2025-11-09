@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"git.sr.ht/~mariusor/lw"
+	"git.sr.ht/~mariusor/storage-all"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/joho/godotenv"
@@ -43,7 +44,7 @@ type Options struct {
 	Hostname           string
 	Listen             string
 	BaseURL            string
-	Storage            StorageType
+	Storage            storage.Type
 	StoragePath        string
 	StorageCache       bool
 	RequestCache       bool
@@ -51,6 +52,25 @@ type Options struct {
 	Profile            bool
 	MastodonCompatible bool
 	ShuttingDown       bool
+}
+
+func (o Options) StorageInitFns(l lw.Logger) []storage.InitFn {
+	path, err := o.BaseStoragePath()
+	if err != nil {
+		return nil
+	}
+	initFns := []storage.InitFn{
+		storage.WithPath(path),
+		storage.UseIndex(o.UseIndex),
+		storage.WithType(o.Storage),
+		storage.WithCache(o.StorageCache),
+		storage.WithEnv(string(o.Env)),
+		storage.WithHostname(o.Hostname),
+	}
+	if l != nil {
+		initFns = append(initFns, storage.WithLogger(l))
+	}
+	return initFns
 }
 
 type StorageType string
@@ -84,11 +104,11 @@ const (
 	varStorage = "%storage%"
 	varHost    = "%host%"
 
-	StorageBoltDB   = StorageType("boltdb")
-	StorageFS       = StorageType("fs")
-	StorageBadger   = StorageType("badger")
-	StoragePostgres = StorageType("postgres")
-	StorageSqlite   = StorageType("sqlite")
+	StorageBoltDB   = storage.Type("boltdb")
+	StorageFS       = storage.Type("fs")
+	StorageBadger   = storage.Type("badger")
+	StoragePostgres = storage.Type("postgres")
+	StorageSqlite   = storage.Type("sqlite")
 )
 
 const defaultDirPerm = os.ModeDir | os.ModePerm | 0700
@@ -248,7 +268,7 @@ func LoadFromEnv() Options {
 	}
 
 	conf.Listen = Getval(KeyListen, "")
-	conf.Storage = StorageType(strings.ToLower(Getval(KeyStorage, string(DefaultStorage))))
+	conf.Storage = storage.Type(strings.ToLower(Getval(KeyStorage, string(storage.Default))))
 	conf.StoragePath = Getval(KeyStoragePath, "")
 	if conf.StoragePath != "" {
 		conf.StoragePath = filepath.Clean(conf.StoragePath)

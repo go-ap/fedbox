@@ -36,7 +36,7 @@ func (b BootstrapCmd) Run(ctl *Control) error {
 		Errf("Error adding service: %s\n", err)
 		return err
 	}
-	if metaSaver, ok := ctl.Storage.(storage.MetadataStorage); ok {
+	if metaSaver, ok := ctl.Storage.(fedbox.MetadataStorage); ok {
 		if err := fedbox.AddKeyToItem(metaSaver, &ctl.Service, keyType); err != nil {
 			Errf("Error saving metadata for service: %s", err)
 			return err
@@ -54,21 +54,12 @@ func bootstrap(conf config.Options, service vocab.Item, l lw.Logger) error {
 	if err != nil {
 		return err
 	}
-	if err = storage.BootstrapFn(conf); err != nil {
+	if err = storage.BootstrapFn(conf, l); err != nil {
 		return http.Annotatef(err, "Unable to create %s path for storage %s", path, conf.Storage)
 	}
 	l.Infof("Successfully created %s db for storage %s", path, conf.Storage)
 
-	db, err := storage.Init(conf, l)
-	if err != nil {
-		return http.Annotatef(err, "Unable to initialize FedBOX storage for path %s", conf.StoragePath)
-	}
-	if err := db.Open(); err != nil {
-		return http.Annotatef(err, "Unable to open FedBOX storage for path %s", conf.StoragePath)
-	}
-	defer db.Close()
-
-	if err = CreateService(db, service); err != nil {
+	if err = storage.CreateService(conf, service, l); err != nil {
 		return http.Annotatef(err, "Unable to create FedBOX service %s for storage %s", service.GetID(), conf.Storage)
 	}
 	l.Infof("Successfully created FedBOX service %s for storage %s", service.GetID(), conf.Storage)
@@ -80,17 +71,9 @@ func ResetStorage(conf config.Options, l lw.Logger) error {
 }
 
 func reset(conf config.Options, l lw.Logger) error {
-	path, err := conf.BaseStoragePath()
-	if err != nil {
-		return err
+	if err := storage.CleanFn(conf, l); err != nil {
+		return http.Annotatef(err, "Unable to reset %s db for storage %s", conf.StoragePath, conf.Storage)
 	}
-	if err = storage.CleanFn(conf); err != nil {
-		return http.Annotatef(err, "Unable to reset %s db for storage %s", path, conf.Storage)
-	}
-	l.Infof("Successfully reset %s db for storage %s", path, conf.Storage)
+	l.Infof("Successfully reset %s db for storage %s", conf.StoragePath, conf.Storage)
 	return nil
-}
-
-func CreateService(r storage.FullStorage, self vocab.Item) (err error) {
-	return fedbox.CreateService(r, self)
 }
