@@ -1,11 +1,11 @@
 module github.com/go-ap/fedbox
 
-go 1.25.4
+go 1.25
 
 require (
 	git.sr.ht/~mariusor/cache v0.0.0-20250616110250-18a60a6f9473
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
-	git.sr.ht/~mariusor/storage-all v0.0.0-20251109100449-b19601b3b9ac
+	git.sr.ht/~mariusor/storage-all v0.0.0-20251109113722-c0a54fafc14f
 	git.sr.ht/~mariusor/wrapper v0.0.0-20250504120759-5fa47ac25e08
 	github.com/alecthomas/kong v1.12.1
 	github.com/go-ap/activitypub v0.0.0-20251028130710-8bc6217f6c8d
