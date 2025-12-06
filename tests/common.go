@@ -45,23 +45,21 @@ var HeaderAccept = `application/ld+json; profile="https://www.w3.org/ns/activity
 var activityCount = 0
 
 var C2SConfig = config.Options{
-	Env:         env.TEST,
-	Hostname:    "127.0.0.1:9998",
-	Listen:      "127.0.0.1:9998",
-	BaseURL:     "http://127.0.0.1:9998/",
-	LogLevel:    lw.WarnLevel,
-	StoragePath: filepath.Join(storagePath(), "127.0.0.1:9998"),
-	Storage:     storageType(),
+	Env:      env.TEST,
+	Hostname: "127.0.0.1:9998",
+	Listen:   "127.0.0.1:9998",
+	BaseURL:  "http://127.0.0.1:9998/",
+	LogLevel: lw.WarnLevel,
+	Storage:  storageType(),
 }
 
 var S2SConfig = config.Options{
-	Env:         env.TEST,
-	Hostname:    "127.0.2.1:9999",
-	Listen:      "127.0.2.1:9999",
-	BaseURL:     "http://127.0.2.1:9999/",
-	LogLevel:    lw.WarnLevel,
-	StoragePath: filepath.Join(storagePath(), "127.0.2.1:9999"),
-	Storage:     storageType(),
+	Env:      env.TEST,
+	Hostname: "127.0.2.1:9999",
+	Listen:   "127.0.2.1:9999",
+	BaseURL:  "http://127.0.2.1:9999/",
+	LogLevel: lw.WarnLevel,
+	Storage:  storageType(),
 }
 
 var c2sConfigs = []config.Options{
@@ -969,7 +967,7 @@ func runTestSuite(t *testing.T, suite testSuite) {
 		ctx, stopFn := context.WithCancel(context.TODO())
 
 		suite.apps = make(map[vocab.IRI]*fedbox.FedBOX)
-		for _, options := range suite.configs {
+		for i, options := range suite.configs {
 			if Verbose {
 				options.LogLevel = lw.WarnLevel
 			}
@@ -988,6 +986,7 @@ func runTestSuite(t *testing.T, suite testSuite) {
 				}
 				suite.apps[self.ID] = fb
 			}
+			suite.configs[i] = options
 		}
 
 		for _, test := range suite.tests {
@@ -1023,9 +1022,18 @@ func runTestSuite(t *testing.T, suite testSuite) {
 }
 
 func runTestSuites(t *testing.T, pairs testPairs) {
-	t.Cleanup(cleanupTestPairs(pairs, t))
-
 	t.Helper()
+
+	basePath := t.TempDir()
+	for i, p := range pairs {
+		for j, options := range p.configs {
+			options.StoragePath = filepath.Join(basePath, options.Hostname)
+			p.configs[j] = options
+		}
+		pairs[i] = p
+	}
+
+	t.Cleanup(cleanupTestPairs(pairs, t))
 
 	for _, suite := range pairs {
 		runTestSuite(t, suite)
