@@ -38,14 +38,18 @@ type suite struct {
 	storage string
 }
 
-type testLogger func(s string, args ...any)
+type testLogger struct {
+	*testing.T //func(s string, args ...any)
+}
 
 func (t testLogger) Printf(s string, args ...any) {
-	t(s, args...)
+	t.Helper()
+	t.Logf(s, args...)
 }
 
 func (t testLogger) Accept(l containers.Log) {
-	t(string(l.Content))
+	t.Helper()
+	t.Logf("%s", l.Content)
 }
 
 func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error) {
@@ -137,7 +141,7 @@ var defaultFedBOXRequest = containers.GenericContainerRequest{
 
 // Run creates an instance of the FedBOX container type
 func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomizer) (*fedboxContainer, error) {
-	logger := testLogger(t.Logf)
+	logger := testLogger{T: t.(*testing.T)}
 
 	req := defaultFedBOXRequest
 	opts = append(opts, containers.WithLogConsumers(logger))

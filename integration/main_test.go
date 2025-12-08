@@ -20,9 +20,9 @@ func TestMain(m *testing.M) {
 		name, err := buildImage(context.Background(), Verbose)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "error building: %s", err)
-			os.Exit(-1)
+		} else {
+			_, _ = fmt.Fprintf(os.Stdout, "built image: %s", name)
 		}
-		_, _ = fmt.Fprintf(os.Stdout, "built image: %s", name)
 	}
 
 	if st := m.Run(); st != 0 {
