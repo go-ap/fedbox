@@ -50,3 +50,8 @@ tasks:
       _push boltdb
       _push badger
       #complete-build
+  - integration-new: |
+      cd fedbox/integration
+      export DOCKER_HOST=unix:///run/user/1000/podman/podman.sock
+      go test -cover -count=1 -json . |  go run github.com/mfridman/tparse@latest --all
+
