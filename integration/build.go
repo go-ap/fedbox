@@ -35,15 +35,7 @@ var cachePath, _ = os.UserCacheDir()
 //var basePath = filepath.Join(os.TempDir(), "fedbox-test")
 var basePath = filepath.Join(cachePath, "fedbox-test")
 
-func buildImage(ctx context.Context, verbose bool) (string, error) {
-	logrus.SetOutput(os.Stderr)
-	if verbose {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
-	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true})
-
-	logger := logrus.New()
-
+func buildImage(ctx context.Context, logger *logrus.Logger) (string, error) {
 	buildah.InitReexec()
 	//unshare.MaybeReexecUsingUserNamespace(true)
 	_ = os.Setenv(unshare.UsernsEnvName, "done")
@@ -127,7 +119,7 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 
 	buildOpts := buildah.BuilderOptions{
 		//Args:         nil,
-		FromImage: baseImage,
+		//FromImage: baseImage,
 		//Capabilities: capabilities,
 		Container:        containerName,
 		Logger:           logger,

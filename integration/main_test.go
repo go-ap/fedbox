@@ -3,9 +3,10 @@ package integration
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 )
 
 var Verbose bool
@@ -17,11 +18,18 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	if Build {
-		name, err := buildImage(context.Background(), Verbose)
+		logger := logrus.New()
+		logger.SetOutput(os.Stderr)
+		if Verbose {
+			logger.SetLevel(logrus.DebugLevel)
+		}
+		logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true, DisableLevelTruncation: true})
+
+		name, err := buildImage(context.Background(), logger)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "error building: %s", err)
+			logger.Errorf("error building: %+v", err)
 		} else {
-			_, _ = fmt.Fprintf(os.Stdout, "built image: %s", name)
+			logger.Infof("built image: %s", name)
 		}
 	}
 
