@@ -191,7 +191,7 @@ func (c ChangePassword) Run(ctl *Control) error {
 	if err != nil {
 		return err
 	}
-	pw, err := loadPwFromStdin(true, "%s's", nameOf(actor))
+	pw, err := loadPwFromStdin(true, "%s's", vocab.PreferredNameOf(actor))
 	if err != nil {
 		return err
 	}

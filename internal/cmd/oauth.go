@@ -313,11 +313,3 @@ func IRIWithFilters(iri vocab.IRI, searchParams ...url.Values) vocab.IRI {
 func SearchActorsIRI(baseIRI vocab.IRI, searchParams ...url.Values) vocab.IRI {
 	return IRIWithFilters(filters.ActorsType.IRI(baseIRI), searchParams...)
 }
-
-func nameOf(act *vocab.Actor) string {
-	n := act.Name.First().String()
-	if act.PreferredUsername != nil {
-		n = act.PreferredUsername.First().String()
-	}
-	return n
-}
