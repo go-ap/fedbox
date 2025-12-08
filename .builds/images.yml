@@ -43,10 +43,10 @@ tasks:
             make -C images STORAGE="${_storage}" ENV=prod VERSION="${_tag}" push
         fi
       }
-      #_push
-      _push fs
+      _push
       # I guess I don't need everything while we're in heavy development
-      complete-build
+      _push fs
       _push sqlite
       _push boltdb
       _push badger
+      #complete-build
