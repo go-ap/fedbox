@@ -67,6 +67,12 @@ func IsLocalIRI(s processing.Store) processing.IRIValidator {
 		return c.IsLocalIRI
 	}
 	return func(i vocab.IRI) bool {
+		if vocab.ValidCollectionIRI(i) {
+			i, _ = vocab.Split(i)
+		}
+		if _, err := s.Load(i); err == nil {
+			return true
+		}
 		return false
 	}
 }
