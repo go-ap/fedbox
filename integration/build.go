@@ -24,9 +24,7 @@ const (
 	commitSHA     = "deadbeef"
 )
 
-var basePath = filepath.Join("/home/habarnam/.cache/podman/fedbox-test")
-
-//var basePath = filepath.Join(os.TempDir(), "fedbox-test")
+var basePath = filepath.Join(os.TempDir(), "fedbox-test")
 
 func buildImage(ctx context.Context, verbose bool) (string, error) {
 	logrus.SetOutput(os.Stderr)
@@ -44,14 +42,14 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 		return "", err
 	}
 
-	//buildStoreOptions.RunRoot = filepath.Join(basePath, "root")
-	//buildStoreOptions.GraphRoot = filepath.Join(basePath, "graph")
-	//buildStoreOptions.RootlessStoragePath = filepath.Join(basePath, "rootless")
-	//buildStoreOptions.RootAutoNsUser = filepath.Join(basePath, "rootless")
-	buildStoreOptions.GraphDriverName = "vfs"
+	buildStoreOptions.RunRoot = filepath.Join(basePath, "root")
+	buildStoreOptions.GraphRoot = filepath.Join(basePath, "graph")
+	buildStoreOptions.RootlessStoragePath = filepath.Join(basePath, "rootless")
+	buildStoreOptions.RootAutoNsUser = filepath.Join(basePath, "rootless")
+	//buildStoreOptions.GraphDriverName = "vfs"
 	//buildStoreOptions.GraphDriverName = "btrfs"
 	//buildStoreOptions.GraphDriverName = "aufs"
-	//buildStoreOptions.GraphDriverName = "overlay2"
+	buildStoreOptions.GraphDriverName = "overlay"
 	//buildStoreOptions.GraphDriverOptions = []string{
 	//"skip_mount_home=true",
 	//"ignore_chown_errors=true",
@@ -62,6 +60,9 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 	//buildStoreOptions.UIDMap = stt.Transport.DefaultUIDMap()
 	//buildStoreOptions.GIDMap = stt.Transport.DefaultGIDMap()
 
+	/*
+		chown /home/habarnam/.cache/podman/fedbox-test/graph/vfs/dir/bff7f7a9d44356d8784500366094c66399aa6a2edd990cc70e02e27c84402753: operation not permitted
+	*/
 	store, err := storage.GetStore(buildStoreOptions)
 	if err != nil {
 		return "", err
@@ -143,7 +144,7 @@ func buildImage(ctx context.Context, verbose bool) (string, error) {
 		return "", err
 	}
 
-	img, err := alltransports.ParseImageName("localhost/fedbox/app:test")
+	img, err := alltransports.ParseImageName("localhost/fedbox/app:dev")
 	if err != nil {
 		return "", err
 	}

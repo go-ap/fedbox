@@ -7,11 +7,15 @@ import (
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
+	client "github.com/go-ap/client"
+	ap "github.com/go-ap/fedbox/activitypub"
 )
 
 var httpClient = http.Client{
 	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 }
+
+var self = ap.Self
 
 func Test_Fetch(t *testing.T) {
 	type wanted struct {
@@ -24,9 +28,12 @@ func Test_Fetch(t *testing.T) {
 		wanted wanted
 	}{
 		{
-			name:   "FedBOX root",
-			arg:    "https://fedbox",
-			wanted: wanted{status: http.StatusOK},
+			name: "FedBOX root",
+			arg:  "https://fedbox",
+			wanted: wanted{
+				status: http.StatusOK,
+				item:   self("https://fedbox"),
+			},
 		},
 		{
 			name:   "FedBOX Admin",
@@ -70,10 +77,11 @@ func Test_Fetch(t *testing.T) {
 		mocks.cleanup(t)
 	})
 
+	cl := client.New(client.WithHTTPClient(&httpClient), client.SkipTLSValidation(true))
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			req, err := mocks.Req(ctx, http.MethodGet, string(test.arg), nil)
-			r, err := httpClient.Do(req)
+			r, err := cl.Do(req)
 			if err != nil {
 				t.Fatalf("Err received: %+v", err)
 			}
