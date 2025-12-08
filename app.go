@@ -110,7 +110,7 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 
 	if metaSaver, ok := db.(storage.MetadataStorage); ok {
 		keysType := "ED25519"
-		if conf.MastodonCompatible {
+		if conf.MastodonIncompatible {
 			keysType = "RSA"
 		}
 
@@ -181,9 +181,9 @@ func (f *FedBOX) setupService() error {
 			return err
 		}
 		f.self = self
-		keysType := KeyTypeED25519
-		if conf.MastodonCompatible {
-			keysType = KeyTypeRSA
+		keysType := KeyTypeRSA
+		if conf.MastodonIncompatible {
+			keysType = KeyTypeED25519
 		}
 		if err = AddKeyToItem(db, &f.self, keysType); err != nil {
 			f.errFn("Unable to save the instance's self service public key: %s", err)

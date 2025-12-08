@@ -32,26 +32,26 @@ type BackendConfig struct {
 }
 
 type Options struct {
-	AppName            string
-	Version            string
-	Env                env.Type
-	LogLevel           lw.Level
-	LogOutput          string
-	TimeOut            time.Duration
-	Secure             bool
-	CertPath           string
-	KeyPath            string
-	Hostname           string
-	Listen             string
-	BaseURL            string
-	Storage            storage.Type
-	StoragePath        string
-	StorageCache       bool
-	RequestCache       bool
-	UseIndex           bool
-	Profile            bool
-	MastodonCompatible bool
-	ShuttingDown       bool
+	AppName              string
+	Version              string
+	Env                  env.Type
+	LogLevel             lw.Level
+	LogOutput            string
+	TimeOut              time.Duration
+	Secure               bool
+	CertPath             string
+	KeyPath              string
+	Hostname             string
+	Listen               string
+	BaseURL              string
+	Storage              storage.Type
+	StoragePath          string
+	StorageCache         bool
+	RequestCache         bool
+	UseIndex             bool
+	Profile              bool
+	MastodonIncompatible bool
+	ShuttingDown         bool
 }
 
 func (o Options) StorageInitFns(l lw.Logger) []storage.InitFn {
@@ -294,7 +294,7 @@ func LoadFromEnv() Options {
 	}
 
 	disableMastodonCompatibility, _ := strconv.ParseBool(Getval(KeyMastodonCompatibilityDisable, "false"))
-	conf.MastodonCompatible = !disableMastodonCompatibility
+	conf.MastodonIncompatible = disableMastodonCompatibility
 
 	conf.KeyPath = normalizeConfigPath(Getval(KeyKeyPath, ""), conf)
 	conf.CertPath = normalizeConfigPath(Getval(KeyCertPath, ""), conf)

@@ -238,7 +238,7 @@ func getTestFedBOX(options config.Options, l lw.Logger) (*fedbox.FedBOX, error) 
 	}
 	options.AppName = "fedbox/integration-tests"
 	options.Version = "HEAD"
-	options.MastodonCompatible = true
+	options.MastodonIncompatible = false
 
 	basePath, err := options.BaseStoragePath()
 	if err != nil {

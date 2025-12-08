@@ -5,6 +5,7 @@ packages:
   - podman
   - buildah
   - passt
+  - go
 sources:
   - https://git.sr.ht/~mariusor/fedbox
 tasks:
