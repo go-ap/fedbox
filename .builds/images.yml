@@ -32,7 +32,6 @@ tasks:
       _branch=$(git branch --points-at=${_sha} | tail -n1 | tr -d '* ')
       _version=$(printf "%s-%s" "${_branch}" "${_sha}")
 
-      make -C images build
       _push() {
         _storage=${1:-all}
         make -C images STORAGE="${_storage}" ENV=dev VERSION="${_version}" push
@@ -43,11 +42,10 @@ tasks:
 
         _tag=$(git describe --long --tags || true)
         if [ -n "${_tag}" ]; then
-            make -C images STORAGE="${_storage}" ENV=prod VERSION="${_tag}" push
+          make -C images STORAGE="${_storage}" ENV=prod VERSION="${_tag}" push
         fi
       }
       _push
-      # I guess I don't need everything while we're in heavy development
       _push fs
       _push sqlite
       _push boltdb

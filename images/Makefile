@@ -14,7 +14,6 @@ STORAGE_OBJECTS = $(STORAGE_PATH)/objects
 TAG ?= $(ENV)
 VERSION ?= HEAD
 
-
 TAG_CMD=podman tag
 PUSH_CMD=podman push
 

@@ -12,8 +12,8 @@ PROJECT ?= fedbox
 VERSION ?= HEAD
 
 LDFLAGS ?= -X main.version=$(VERSION)
-BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)'
-TEST_FLAGS ?= -count=1
+BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)' -tags "$(TAGS)"
+TEST_FLAGS ?= -count=1 -tags "$(TAGS)"
 
 UPX = upx
 M4 = m4
@@ -48,7 +48,7 @@ endif
 BUILD := $(GO) build $(BUILDFLAGS)
 TEST := $(GO) test $(BUILDFLAGS)
 
-.PHONY: all run cert clean test coverage integration install download help
+.PHONY: all cert clean test coverage integration install download help
 
 .DEFAULT_GOAL := help
 
