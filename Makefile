@@ -48,7 +48,7 @@ endif
 BUILD := $(GO) build $(BUILDFLAGS)
 TEST := $(GO) test $(BUILDFLAGS)
 
-.PHONY: all run clean test coverage integration install download help
+.PHONY: all run cert clean test coverage integration install download help
 
 .DEFAULT_GOAL := help
 
@@ -81,11 +81,8 @@ systemd/fedbox.service: systemd/fedbox.service.in ## Creates a systemd service f
 	$(M4) $(M4_FLAGS) -DWORKING_DIR=$(STORAGE_PATH) $< >$@
 
 systemd/fedbox.socket: systemd/fedbox.socket.in ## Creates a socket systemd unit file to accompany the service file.
-	$(M4) $(M4_FLAGS) -DLISTEN_HOST=$(LISTEN_HOST) -DLISTEN_PORT=$(LISTEN_PORT) $< >$@
+	$(M4) $(M4_FLAGS) -DLISTEN_HOST=$(FEDBOX_HOSTNAME) -DLISTEN_PORT=$(LISTEN_PORT) $< >$@
 
-
-run: fedbox ## Runs the FedBOX binary.
-	@./bin/fedbox
 
 clean: ## Cleanup the build workspace.
 	-$(RM) bin/*
@@ -102,19 +99,18 @@ coverage: test ## Run unit tests for the service with coverage.
 integration: download ## Run integration tests for the service.
 	$(MAKE) -C tests $@
 
-$(FEDBOX_HOSTNAME).key $(FEDBOX_HOSTNAME).crt:
-	openssl req -subj "/C=AQ/ST=Omond/L=Omond/O=*.$(FEDBOX_HOSTNAME)/OU=none/CN=*.$(FEDBOX_HOSTNAME)" -newkey rsa:2048 -sha256 -keyout $(FEDBOX_HOSTNAME).key -nodes -x509 -days 365 -out $(FEDBOX_HOSTNAME).crt
+cert: bin/$(FEDBOX_HOSTNAME).pem ## Create a certificate.
+bin/$(FEDBOX_HOSTNAME).pem: bin/$(FEDBOX_HOSTNAME).key bin/$(FEDBOX_HOSTNAME).crt
+bin/$(FEDBOX_HOSTNAME).key bin/$(FEDBOX_HOSTNAME).crt:
+	./tools/gen-certs.sh ./bin/$(FEDBOX_HOSTNAME)
 
-$(FEDBOX_HOSTNAME).pem: $(FEDBOX_HOSTNAME).key $(FEDBOX_HOSTNAME).crt
-	cat $(FEDBOX_HOSTNAME).key $(FEDBOX_HOSTNAME).crt > $(FEDBOX_HOSTNAME).pem
-
-cert: $(FEDBOX_HOSTNAME).key ## Create a certificate.
-
-install: ./bin/fedbox systemd/fedbox.service systemd/fedbox.socket $(FEDBOX_HOSTNAME).crt $(FEDBOX_HOSTNAME).key ## Install the application.
+install: ./bin/fedbox ./bin/fedboxctl systemd/fedbox.service systemd/fedbox.socket $(FEDBOX_HOSTNAME).crt $(FEDBOX_HOSTNAME).key ## Install the application.
 	useradd -m -s /bin/false -u 2000 fedbox
-	install bin/fedbox $(DESTDIR)$(INSTALL_PREFIX)/bin
+	install -m 644 -o fedbox bin/fedbox $(DESTDIR)$(INSTALL_PREFIX)/bin
+	install -m 644 -o fedbox bin/fedboxctl $(DESTDIR)$(INSTALL_PREFIX)/bin
 	install -m 644 -o fedbox systemd/fedbox.service $(DESTDIR)/etc/systemd/system
 	install -m 644 -o fedbox systemd/fedbox.socket $(DESTDIR)/etc/systemd/system
+	install -m 600 -o bin/$(FEDBOX_HOSTNAME).crt $(STORAGE_PATH)
+	install -m 600 -o bin/$(FEDBOX_HOSTNAME).key $(STORAGE_PATH)
+	install -m 600 -o bin/$(FEDBOX_HOSTNAME).pem $(STORAGE_PATH)
 	install -m 600 -o fedbox .env.prod $(STORAGE_PATH)
-	install -m 600 -o $(FEDBOX_HOSTNAME).crt $(STORAGE_PATH)
-	install -m 600 -o $(FEDBOX_HOSTNAME).key $(STORAGE_PATH)

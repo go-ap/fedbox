@@ -14,6 +14,9 @@ tasks:
       set -a +x
       source ~/.buildah.env
 
+      cd fedbox || exit
+      make download
+
       _user=$(id -un)
 
       echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/unq-search.conf
@@ -24,13 +27,12 @@ tasks:
       podman login -u="${BUILDAH_USER}" -p="${BUILDAH_SECRET}" quay.io
 
       set --
-      cd fedbox || exit
 
       _sha=$(git rev-parse --short HEAD)
       _branch=$(git branch --points-at=${_sha} | tail -n1 | tr -d '* ')
       _version=$(printf "%s-%s" "${_branch}" "${_sha}")
 
-      make -C images cert builder
+      make -C images build
       _push() {
         _storage=${1:-all}
         make -C images STORAGE="${_storage}" ENV=dev VERSION="${_version}" push
@@ -50,7 +52,6 @@ tasks:
       _push sqlite
       _push boltdb
       _push badger
-      #complete-build
   - integration-new: |
       cd fedbox/integration
       export DOCKER_HOST=unix:///run/user/1000/podman/podman.sock
