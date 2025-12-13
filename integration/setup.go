@@ -28,11 +28,6 @@ type fedboxContainer struct {
 
 type cntrs map[string]*fedboxContainer
 
-var (
-	defaultFedBOXImageName = "localhost/fedbox/app:dev"
-	defaultAuthImageName   = "localhost/auth/app:dev"
-)
-
 type suite struct {
 	name    string
 	storage string
@@ -62,7 +57,7 @@ func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error
 		storage := filepath.Join(".", "mocks")
 		env := filepath.Join(storage, ".env")
 
-		img := defaultFedBOXImageName
+		img := FedBOXImageName
 		if s.storage != "" {
 			img += "-" + s.storage
 		}
@@ -132,7 +127,7 @@ func (fc *fedboxContainer) Req(ctx context.Context, met, u string, body io.Reade
 
 var defaultFedBOXRequest = containers.GenericContainerRequest{
 	ContainerRequest: containers.ContainerRequest{
-		Image:      defaultFedBOXImageName,
+		Image:      FedBOXImageName,
 		WaitingFor: wait.ForLog("Started").WithStartupTimeout(time.Second),
 	},
 	ProviderType: containers.ProviderPodman,

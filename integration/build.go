@@ -35,7 +35,7 @@ var cachePath, _ = os.UserCacheDir()
 //var basePath = filepath.Join(os.TempDir(), "fedbox-test")
 var basePath = filepath.Join(cachePath, "fedbox-test")
 
-func buildImage(ctx context.Context, logger *logrus.Logger) (string, error) {
+func buildImage(ctx context.Context, imageName string, logger *logrus.Logger) (string, error) {
 	buildah.InitReexec()
 	//unshare.MaybeReexecUsingUserNamespace(true)
 	_ = os.Setenv(unshare.UsernsEnvName, "done")

@@ -9,12 +9,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var Verbose bool
-var Build bool
+var (
+	Verbose bool
+	Build   bool
+
+	FedBOXImageName      = "localhost/fedbox/app:dev"
+	defaultAuthImageName = "localhost/auth/app:dev"
+)
 
 func TestMain(m *testing.M) {
 	flag.BoolVar(&Verbose, "verbose", false, "enable more verbose logging")
 	flag.BoolVar(&Build, "build", false, "build images before run")
+	flag.StringVar(&FedBOXImageName, "image", "quay.io/go-ap/fedbox:latest", "which image to use for running the tests")
 	flag.Parse()
 
 	if Build {
@@ -25,7 +31,7 @@ func TestMain(m *testing.M) {
 		}
 		logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true, DisableLevelTruncation: true})
 
-		name, err := buildImage(context.Background(), logger)
+		name, err := buildImage(context.Background(), FedBOXImageName, logger)
 		if err != nil {
 			logger.Errorf("error building: %+v", err)
 		} else {
