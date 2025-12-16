@@ -57,22 +57,3 @@ func CreateService(opt config.Options, self vocab.Item, l lw.Logger) (err error)
 		return multi
 	})
 }
-
-type IRIChecker interface {
-	IsLocalIRI(i vocab.IRI) bool
-}
-
-func IsLocalIRI(s processing.Store) processing.IRIValidator {
-	if c, ok := s.(IRIChecker); ok {
-		return c.IsLocalIRI
-	}
-	return func(i vocab.IRI) bool {
-		if vocab.ValidCollectionIRI(i) {
-			i, _ = vocab.Split(i)
-		}
-		if _, err := s.Load(i); err == nil {
-			return true
-		}
-		return false
-	}
-}

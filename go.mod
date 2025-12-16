@@ -15,7 +15,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20250905102357-4480b47a00c4
 	github.com/go-ap/filters v0.0.0-20251215103009-83db92ca9d83
 	github.com/go-ap/jsonld v0.0.0-20250905102310-8480b0fe24d9
-	github.com/go-ap/processing v0.0.0-20251215103356-a4358ebe99a2
+	github.com/go-ap/processing v0.0.0-20251216153824-67feea4fa190
 	github.com/go-ap/storage-badger v0.0.0-20251215104410-175754981936 // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20251215104347-0dfb66a462b0 // indirect
 	github.com/go-ap/storage-fs v0.0.0-20251215103506-4b9f2f0b9618 // indirect

@@ -17,7 +17,6 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
-	s "github.com/go-ap/fedbox/internal/storage"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 )
@@ -193,7 +192,6 @@ func saver(ctl *Control) processing.P {
 		processing.WithIRI(baseIRI), processing.WithLogger(l),
 		processing.WithStorage(db), processing.WithClient(cl),
 		processing.WithIDGenerator(fedbox.GenerateID(baseIRI)),
-		processing.WithLocalIRIChecker(s.IsLocalIRI(db)),
 	)
 	return p
 }

@@ -16,7 +16,6 @@ import (
 	"github.com/go-ap/client/s2s"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
-	st "github.com/go-ap/fedbox/internal/storage"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 )
@@ -298,7 +297,6 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 			processing.WithStorage(repo),
 			processing.WithLogger(l),
 			processing.WithIDGenerator(GenerateID(baseIRI)),
-			processing.WithLocalIRIChecker(st.IsLocalIRI(repo)),
 		)
 		if !fb.Config().Env.IsTest() {
 			initFns = append(initFns, processing.Async)
