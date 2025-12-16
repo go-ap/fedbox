@@ -5,21 +5,21 @@ go 1.25
 require (
 	git.sr.ht/~mariusor/cache v0.0.0-20250616110250-18a60a6f9473
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
-	git.sr.ht/~mariusor/storage-all v0.0.0-20251215104926-2ce246df0a6d
+	git.sr.ht/~mariusor/storage-all v0.0.0-20251216164106-0c94c96acce9
 	git.sr.ht/~mariusor/wrapper v0.0.0-20250504120759-5fa47ac25e08
 	github.com/alecthomas/kong v1.12.1
-	github.com/go-ap/activitypub v0.0.0-20251215102718-6daa5f68e1b6
-	github.com/go-ap/auth v0.0.0-20251215103232-fa16f4c042c2
-	github.com/go-ap/cache v0.0.0-20251215102918-a1f0036ad3da
-	github.com/go-ap/client v0.0.0-20251215103128-dd130c03e4d8
-	github.com/go-ap/errors v0.0.0-20250905102357-4480b47a00c4
-	github.com/go-ap/filters v0.0.0-20251215103009-83db92ca9d83
-	github.com/go-ap/jsonld v0.0.0-20250905102310-8480b0fe24d9
-	github.com/go-ap/processing v0.0.0-20251216153824-67feea4fa190
-	github.com/go-ap/storage-badger v0.0.0-20251215104410-175754981936 // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20251215104347-0dfb66a462b0 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20251215103506-4b9f2f0b9618 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20251215103608-c6f1deaa5491 // indirect
+	github.com/go-ap/activitypub v0.0.0-20251216163124-e62e2d059636
+	github.com/go-ap/auth v0.0.0-20251216163439-64a800340136
+	github.com/go-ap/cache v0.0.0-20251216163157-446dbe3865f8
+	github.com/go-ap/client v0.0.0-20251216163356-f1ceaa14f7e4
+	github.com/go-ap/errors v0.0.0-20251216162958-cb99ea99a461
+	github.com/go-ap/filters v0.0.0-20251216163255-a21e95c19f74
+	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77
+	github.com/go-ap/processing v0.0.0-20251216174455-cb0ebdc4e68c
+	github.com/go-ap/storage-badger v0.0.0-20251216163950-41433f7596a9 // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20251216163924-57000b52737a // indirect
+	github.com/go-ap/storage-fs v0.0.0-20251216163648-702dfe782e1c // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20251216163727-2e9a899e25c1 // indirect
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -72,7 +72,7 @@ require (
 	modernc.org/libc v1.67.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.40.1 // indirect
+	modernc.org/sqlite v1.40.2-0.20251208121757-c233febc9136 // indirect
 )
 
 replace go.opencensus.io => github.com/census-instrumentation/opencensus-go v0.23.0

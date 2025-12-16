@@ -79,7 +79,6 @@ func Client(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
 		client.WithLogger(l.WithContext(lw.Ctx{"log": "client"})),
 		client.WithHTTPClient(baseClient),
 		client.SkipTLSValidation(!conf.Env.IsProd()),
-		client.SetDefaultHTTPClient(),
 	)
 }
 
