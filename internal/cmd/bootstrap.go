@@ -1,13 +1,16 @@
 package cmd
 
 import (
+	"errors"
+	"os"
+
 	"git.sr.ht/~mariusor/lw"
+	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	http "github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/storage"
 )
 
 type ResetCmd struct{}
@@ -54,12 +57,22 @@ func bootstrap(conf config.Options, service vocab.Item, l lw.Logger) error {
 	if err != nil {
 		return err
 	}
-	if err = storage.BootstrapFn(conf, l); err != nil {
+	initFns := conf.StorageInitFns(l)
+	if err := storage.Bootstrap(initFns...); err != nil {
 		return http.Annotatef(err, "Unable to create %s path for storage %s", path, conf.Storage)
 	}
 	l.Infof("Successfully created %s db for storage %s", path, conf.Storage)
 
-	if err = storage.CreateService(conf, service, l); err != nil {
+	st, err := storage.New(initFns...)
+	if err != nil {
+		return http.Annotatef(err, "Unable to initialize %s path for storage %s", path, conf.Storage)
+	}
+	if err = st.Open(); err != nil {
+		return http.Annotatef(err, "Unable to open %s path for storage %s", path, conf.Storage)
+	}
+	defer st.Close()
+
+	if err = fedbox.CreateService(st, service); err != nil {
 		return http.Annotatef(err, "Unable to create FedBOX service %s for storage %s", service.GetID(), conf.Storage)
 	}
 	l.Infof("Successfully created FedBOX service %s for storage %s", service.GetID(), conf.Storage)
@@ -71,7 +84,7 @@ func ResetStorage(conf config.Options, l lw.Logger) error {
 }
 
 func reset(conf config.Options, l lw.Logger) error {
-	if err := storage.CleanFn(conf, l); err != nil {
+	if err := storage.Clean(conf.StorageInitFns(l)...); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return http.Annotatef(err, "Unable to reset %s db for storage %s", conf.StoragePath, conf.Storage)
 	}
 	l.Infof("Successfully reset %s db for storage %s", conf.StoragePath, conf.Storage)
