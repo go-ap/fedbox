@@ -177,7 +177,7 @@ var storagePath = func() string {
 }
 
 var storageType = func() storage.Type {
-	envStorage := config.Getval("STORAGE", "all")
+	envStorage := config.Getval("STORAGE", string(storage.Default))
 	if len(envStorage) > 0 {
 		return storage.Type(envStorage)
 	}
