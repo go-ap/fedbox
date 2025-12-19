@@ -142,9 +142,12 @@ func saveMocks(testData []string, config config.Options, db storage.FullStorage,
 		return err
 	}
 
-	o, _ := cmd.New(db, config, l)
+	o, err := cmd.New(db, config, l)
+	if err != nil {
+		return err
+	}
 	if strings.Contains(defaultTestAccountC2S.ID, config.BaseURL) {
-		if err := saveMetadataForActor(defaultTestAccountC2S, db.(storage.MetadataStorage)); err != nil {
+		if err = saveMetadataForActor(defaultTestAccountC2S, db.(storage.MetadataStorage)); err != nil {
 			return err
 		}
 
@@ -153,7 +156,7 @@ func saveMocks(testData []string, config config.Options, db storage.FullStorage,
 		}
 	}
 	if strings.Contains(defaultTestAccountS2S.ID, config.BaseURL) {
-		if err := saveMetadataForActor(defaultTestAccountS2S, db.(storage.MetadataStorage)); err != nil {
+		if err = saveMetadataForActor(defaultTestAccountS2S, db.(storage.MetadataStorage)); err != nil {
 			return err
 		}
 
