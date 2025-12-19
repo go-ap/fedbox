@@ -48,7 +48,7 @@ tasks:
       _push
       _push fs
       _push sqlite
-      _push boltdb
+      #_push boltdb
       _push badger
   - integration-new: |
       cd fedbox/integration
