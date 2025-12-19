@@ -14,9 +14,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
-	"testing"
 	"text/template"
 
 	"git.sr.ht/~mariusor/lw"
@@ -80,37 +78,6 @@ func addMockObjects(r storage.FullStorage, obj vocab.ItemCollection) error {
 		}
 	}
 	return nil
-}
-
-func cleanDB(t *testing.T, opt config.Options, l lw.Logger) {
-	if opt.Storage == "all" {
-		opt.Storage = config.StorageFS
-	}
-	t.Logf("resetting %q db: %s", opt.Storage, opt.StoragePath)
-	if err := cmd.ResetStorage(opt, l); err != nil {
-		t.Error(err)
-	}
-	if t.Failed() {
-		return
-	}
-
-	tempPath, err := os.Getwd()
-	if err != nil {
-		t.Logf("Unable to get current path: %s", err)
-	}
-
-	tempPath = path.Clean(filepath.Join(tempPath, filepath.Dir(opt.StoragePath)))
-	if !strings.Contains(tempPath, ".cache") {
-		t.Logf("Unable to clean path: %s", tempPath)
-		return
-	}
-	t.Logf("Removing path: %s", tempPath)
-
-	//As we're using t.TempDir for the storage path, we can remove it fully
-	t.Logf("Removing path: %s", tempPath)
-	if err = os.RemoveAll(tempPath); err != nil {
-		t.Logf("Unable to remove path: %s: %s", tempPath, err)
-	}
 }
 
 func publicKeyFrom(key crypto.PrivateKey) crypto.PublicKey {

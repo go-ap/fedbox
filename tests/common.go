@@ -15,7 +15,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"runtime/debug"
 	"sort"
@@ -167,14 +166,6 @@ type objectVal struct {
 	current           *objectVal
 	items             map[string]*objectVal
 	audience          []string
-}
-
-var storagePath = func() string {
-	path, err := os.MkdirTemp(".cache", "*")
-	if err != nil {
-		panic(err)
-	}
-	return path
 }
 
 var storageType = func() storage.Type {
@@ -945,26 +936,10 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 	return test.res.val.id != "" && test.res.val.id != req.URL.String()
 }
 
-func cleanupTestPairs(pairs testPairs, t *testing.T, l lw.Logger) func() {
-	return func() {
-		if t.Failed() {
-			return
-		}
-		for _, suite := range pairs {
-			for _, options := range suite.configs {
-				// NOTE(marius): we removed the deferred app.Stop(),
-				// to avoid race conditions when running multiple FedBOX instances for the federated tests
-				cleanDB(t, options, l)
-			}
-		}
-	}
-}
-
 func runTestSuite(t *testing.T, suite testSuite, l lw.Logger) {
 	t.Helper()
 
 	t.Run(suite.name, func(t *testing.T) {
-		ctx, stopFn := context.WithCancel(context.TODO())
 		suite.apps = make(map[vocab.IRI]*fedbox.FedBOX)
 		basePath := t.TempDir()
 		for i, options := range suite.configs {
@@ -986,7 +961,7 @@ func runTestSuite(t *testing.T, suite testSuite, l lw.Logger) {
 		}
 
 		for _, test := range suite.tests {
-			for _, app := range suite.apps {
+			for appID, app := range suite.apps {
 				options := app.Config()
 				fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
 				l := lw.Prod(lw.SetLevel(options.LogLevel), lw.SetOutput(t.Output())).WithContext(fields)
@@ -995,6 +970,13 @@ func runTestSuite(t *testing.T, suite testSuite, l lw.Logger) {
 				if err := saveMocks(m, app.Config(), app.Storage(), l); err != nil {
 					t.Fatalf("%s", err)
 				}
+				ctx, stopFn := context.WithCancel(context.TODO())
+				t.Cleanup(func() {
+					stopFn()
+					if err := app.Stop(ctx); err != nil {
+						t.Errorf("unable to stop application %s: %s", appID, err)
+					}
+				})
 				go func(ctx context.Context) {
 					_ = app.Run(ctx)
 				}(ctx)
@@ -1004,16 +986,6 @@ func runTestSuite(t *testing.T, suite testSuite, l lw.Logger) {
 				errOnRequest(t)(test)
 			})
 		}
-
-		t.Cleanup(func() {
-			for _, app := range suite.apps {
-				// NOTE(marius): we removed the deferred app.Stop(),
-				// to avoid race conditions when running multiple FedBOX instances for the federated tests
-				_ = app.Stop(ctx)
-				cleanDB(t, app.Config(), lw.Prod(lw.SetOutput(t.Output()), lw.SetLevel(app.Config().LogLevel)))
-			}
-			stopFn()
-		})
 	})
 }
 
@@ -1029,6 +1001,4 @@ func runTestSuites(t *testing.T, pairs testPairs) {
 	for _, suite := range pairs {
 		runTestSuite(t, suite, l)
 	}
-
-	t.Cleanup(cleanupTestPairs(pairs, t, l))
 }
