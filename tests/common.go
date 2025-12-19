@@ -87,6 +87,7 @@ type actC2SMock struct {
 type testSuite struct {
 	name    string
 	configs []config.Options
+	l       lw.Logger
 	apps    map[vocab.IRI]*fedbox.FedBOX
 	mocks   []string
 	tests   []testPair
@@ -944,14 +945,13 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 	return test.res.val.id != "" && test.res.val.id != req.URL.String()
 }
 
-func cleanupTestPairs(pairs testPairs, t *testing.T) func() {
+func cleanupTestPairs(pairs testPairs, t *testing.T, l lw.Logger) func() {
 	return func() {
 		if t.Failed() {
 			return
 		}
 		for _, suite := range pairs {
 			for _, options := range suite.configs {
-				l := lw.Prod(lw.SetOutput(t.Output()), lw.SetLevel(options.LogLevel))
 				// NOTE(marius): we removed the deferred app.Stop(),
 				// to avoid race conditions when running multiple FedBOX instances for the federated tests
 				cleanDB(t, options, l)
@@ -960,19 +960,15 @@ func cleanupTestPairs(pairs testPairs, t *testing.T) func() {
 	}
 }
 
-func runTestSuite(t *testing.T, suite testSuite) {
+func runTestSuite(t *testing.T, suite testSuite, l lw.Logger) {
 	t.Helper()
 
 	t.Run(suite.name, func(t *testing.T) {
 		ctx, stopFn := context.WithCancel(context.TODO())
-
 		suite.apps = make(map[vocab.IRI]*fedbox.FedBOX)
+		basePath := t.TempDir()
 		for i, options := range suite.configs {
-			if Verbose {
-				options.LogLevel = lw.WarnLevel
-			}
-			l := lw.Prod(lw.SetLevel(options.LogLevel), lw.SetOutput(t.Output()))
-
+			options.StoragePath = filepath.Join(basePath, options.Hostname)
 			self := ap.Self(ap.DefaultServiceIRI(options.BaseURL))
 			if err := cmd.BootstrapStorage(options, self, l); err != nil {
 				t.Fatalf("%+v", err)
@@ -1024,18 +1020,15 @@ func runTestSuite(t *testing.T, suite testSuite) {
 func runTestSuites(t *testing.T, pairs testPairs) {
 	t.Helper()
 
-	basePath := t.TempDir()
-	for i, p := range pairs {
-		for j, options := range p.configs {
-			options.StoragePath = filepath.Join(basePath, options.Hostname)
-			p.configs[j] = options
-		}
-		pairs[i] = p
+	logLevel := lw.WarnLevel
+	if Verbose {
+		logLevel = lw.DebugLevel
 	}
-
-	t.Cleanup(cleanupTestPairs(pairs, t))
+	l := lw.Prod(lw.SetLevel(logLevel), lw.SetOutput(t.Output()))
 
 	for _, suite := range pairs {
-		runTestSuite(t, suite)
+		runTestSuite(t, suite, l)
 	}
+
+	t.Cleanup(cleanupTestPairs(pairs, t, l))
 }
