@@ -88,7 +88,6 @@ type testSuite struct {
 	name    string
 	configs []config.Options
 	l       lw.Logger
-	apps    map[vocab.IRI]*fedbox.FedBOX
 	mocks   []string
 	tests   []testPair
 }
@@ -937,52 +936,66 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 	return test.res.val.id != "" && test.res.val.id != req.URL.String()
 }
 
+func initializeApps(t *testing.T, l lw.Logger, configs ...config.Options) map[vocab.IRI]*fedbox.FedBOX {
+	t.Helper()
+
+	apps := make(map[vocab.IRI]*fedbox.FedBOX)
+	basePath := t.TempDir()
+	for _, options := range configs {
+		options.StoragePath = filepath.Join(basePath, options.Hostname)
+		self := ap.Self(ap.DefaultServiceIRI(options.BaseURL))
+		if err := cmd.BootstrapStorage(options, self, l); err != nil {
+			t.Fatalf("%s", err)
+		}
+		app, ok := apps[self.ID]
+		if !ok {
+			var err error
+			app, err = getTestFedBOX(options, l)
+			if err != nil {
+				t.Fatalf("%s", err)
+			}
+			apps[self.ID] = app
+		}
+	}
+	return apps
+}
+
+func bootstrapApps(t *testing.T, l lw.Logger, apps map[vocab.IRI]*fedbox.FedBOX, mocks ...string) {
+	t.Helper()
+
+	for appID, app := range apps {
+		options := app.Config()
+
+		fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
+		l = l.WithContext(fields)
+
+		if err := saveMocks(mocks, app.Config(), app.Storage(), l); err != nil {
+			t.Fatalf("%s", err)
+		}
+		ctx, stopFn := context.WithCancel(context.TODO())
+
+		t.Cleanup(func() {
+			stopFn()
+			if err := app.Stop(ctx); err != nil {
+				t.Errorf("unable to stop application %s: %s", appID, err)
+			}
+		})
+
+		go func(ctx context.Context) {
+			_ = app.Run(ctx)
+		}(ctx)
+	}
+}
+
 func runTestSuite(t *testing.T, suite testSuite, l lw.Logger) {
 	t.Helper()
 
 	defer goleak.VerifyNone(t)
 	t.Run(suite.name, func(t *testing.T) {
-		suite.apps = make(map[vocab.IRI]*fedbox.FedBOX)
-		basePath := t.TempDir()
-		for i, options := range suite.configs {
-			options.StoragePath = filepath.Join(basePath, options.Hostname)
-			self := ap.Self(ap.DefaultServiceIRI(options.BaseURL))
-			if err := cmd.BootstrapStorage(options, self, l); err != nil {
-				t.Fatalf("%+v", err)
-				return
-			}
-			if suite.apps[self.ID] == nil {
-				fb, err := getTestFedBOX(options, l)
-				if err != nil {
-					t.Fatalf("%s", err)
-					return
-				}
-				suite.apps[self.ID] = fb
-			}
-			suite.configs[i] = options
-		}
-
+		apps := initializeApps(t, l, suite.configs...)
 		for _, test := range suite.tests {
-			for appID, app := range suite.apps {
-				options := app.Config()
-				fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
-				l := lw.Prod(lw.SetLevel(options.LogLevel), lw.SetOutput(t.Output())).WithContext(fields)
-
-				m := append(suite.mocks, test.mocks...)
-				if err := saveMocks(m, app.Config(), app.Storage(), l); err != nil {
-					t.Fatalf("%s", err)
-				}
-				ctx, stopFn := context.WithCancel(context.TODO())
-				t.Cleanup(func() {
-					stopFn()
-					if err := app.Stop(ctx); err != nil {
-						t.Errorf("unable to stop application %s: %s", appID, err)
-					}
-				})
-				go func(ctx context.Context) {
-					_ = app.Run(ctx)
-				}(ctx)
-			}
+			mocks := append(suite.mocks, test.mocks...)
+			bootstrapApps(t, l, apps, mocks...)
 
 			t.Run(test.label(), func(t *testing.T) {
 				errOnRequest(t)(test)
