@@ -320,11 +320,19 @@ func (f *FedBOX) Run(ctx context.Context) error {
 		},
 		syscall.SIGINT: func(exit chan<- error) {
 			logger.WithContext(lw.Ctx{"wait": f.conf.TimeOut}).Debugf("SIGINT received, interrupted")
-			exit <- f.Stop(ctx)
+			err := f.Stop(ctx)
+			if err == nil {
+				err = w.Interrupt
+			}
+			exit <- err
 		},
 		syscall.SIGTERM: func(exit chan<- error) {
 			logger.Debugf("SIGTERM received, stopping with cleanup")
-			exit <- f.Stop(ctx)
+			err := f.Stop(ctx)
+			if err == nil {
+				err = w.Interrupt
+			}
+			exit <- err
 		},
 		syscall.SIGQUIT: func(exit chan<- error) {
 			logger.Debugf("SIGQUIT received, force stopping with core-dump")
@@ -332,7 +340,8 @@ func (f *FedBOX) Run(ctx context.Context) error {
 			_ = pprof.Lookup("goroutine").WriteTo(os.Stderr, 1)
 			_ = pprof.Lookup("block").WriteTo(os.Stderr, 1)
 			//_ = pprof.Lookup("threadcreate").WriteTo(os.Stderr, 1)
-			exit <- nil
+			go f.Stop(ctx)
+			exit <- w.Interrupt
 		},
 	}).Exec(ctx, f.startFn)
 	if err == nil {

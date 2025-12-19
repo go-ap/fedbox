@@ -6,7 +6,7 @@ require (
 	git.sr.ht/~mariusor/cache v0.0.0-20250616110250-18a60a6f9473
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/storage-all v0.0.0-20251219125852-2a126e5671bb
-	git.sr.ht/~mariusor/wrapper v0.0.0-20250504120759-5fa47ac25e08
+	git.sr.ht/~mariusor/wrapper v0.0.0-20251219150913-93638cf5461b
 	github.com/alecthomas/kong v1.12.1
 	github.com/go-ap/activitypub v0.0.0-20251217103921-9808e9a35f7b
 	github.com/go-ap/auth v0.0.0-20251217104215-2c09b3122a42
@@ -76,5 +76,3 @@ require (
 )
 
 require go.uber.org/goleak v1.3.0
-
-replace go.opencensus.io => github.com/census-instrumentation/opencensus-go v0.23.0

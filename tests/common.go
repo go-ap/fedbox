@@ -35,6 +35,7 @@ import (
 	"github.com/go-ap/jsonld"
 	"github.com/go-fed/httpsig"
 	"github.com/openshift/osin"
+	"go.uber.org/goleak"
 )
 
 // UserAgent value that the client uses when performing requests
@@ -939,6 +940,7 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 func runTestSuite(t *testing.T, suite testSuite, l lw.Logger) {
 	t.Helper()
 
+	defer goleak.VerifyNone(t)
 	t.Run(suite.name, func(t *testing.T) {
 		suite.apps = make(map[vocab.IRI]*fedbox.FedBOX)
 		basePath := t.TempDir()
