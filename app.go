@@ -211,10 +211,9 @@ func (f *FedBOX) Pause() error {
 
 // Stop
 func (f *FedBOX) Stop(ctx context.Context) error {
-	f.shuttingDown = true
-
 	f.storage.Close()
 
+	f.shuttingDown = true
 	if err := f.stopFn(ctx); err != nil {
 		f.logger.Errorf("Error: %+v", err)
 	}
@@ -367,7 +366,7 @@ func CreateService(r storage.FullStorage, self vocab.Item) (err error) {
 	c := osin.DefaultClient{Id: string(self.GetLink())}
 	_ = r.CreateClient(&c)
 
-	rr, ok := r.(processing.CollectionStore)
+	rr, ok := r.(storage.CollectionStore)
 	if !ok {
 		return nil
 	}

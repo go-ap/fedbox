@@ -254,9 +254,6 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 	if fb == nil {
 		return outOfOrderActivityHandler
 	}
-	if fb.keyGenerator != nil {
-		processing.WithActorKeyGenerator(fb.keyGenerator)
-	}
 
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
 		var it vocab.Item
@@ -298,6 +295,9 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 			processing.WithLogger(l),
 			processing.WithIDGenerator(GenerateID(baseIRI)),
 		)
+		if fb.keyGenerator != nil {
+			initFns = append(initFns, processing.WithActorKeyGenerator(fb.keyGenerator))
+		}
 		if !fb.Config().Env.IsTest() {
 			initFns = append(initFns, processing.Async)
 		}
