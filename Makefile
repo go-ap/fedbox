@@ -92,12 +92,13 @@ test: TEST_TARGET := . ./{activitypub,internal}/...
 test: download ## Run unit tests for the service.
 	$(TEST) $(TEST_FLAGS) -tags "$(TAGS)" $(TEST_TARGET)
 
-coverage: TEST_TARGET := .
-coverage: TEST_FLAGS += -covermode=count -coverprofile $(PROJECT).coverprofile
-coverage: test ## Run unit tests for the service with coverage.
+coverage: integration ## Run unit tests for the service with coverage.
+	$(GO) tool covdata percent -i=./tests/.cache -o $(PROJECT).coverprofile
 
 integration: download ## Run integration tests for the service.
-	$(MAKE) -C tests $@
+	$(MAKE) STORAGE=fs -C tests $@
+	$(MAKE) STORAGE=sqlite -C tests $@
+	$(MAKE) STORAGE=badger -C tests $@
 
 cert: bin/$(FEDBOX_HOSTNAME).pem ## Create a certificate.
 bin/$(FEDBOX_HOSTNAME).pem: bin/$(FEDBOX_HOSTNAME).key bin/$(FEDBOX_HOSTNAME).crt
