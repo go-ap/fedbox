@@ -35,6 +35,7 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			logger.Errorf("error building: %+v", err)
 		} else {
+			FedBOXImageName = name
 			logger.Infof("built image: %s", name)
 		}
 	}

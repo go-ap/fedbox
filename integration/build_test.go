@@ -1,3 +1,5 @@
+//go:build buildah
+
 package integration
 
 import (

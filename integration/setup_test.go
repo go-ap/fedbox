@@ -125,20 +125,22 @@ func (fc *fedboxContainer) Req(ctx context.Context, met, u string, body io.Reade
 	return r, nil
 }
 
-var defaultFedBOXRequest = containers.GenericContainerRequest{
-	ContainerRequest: containers.ContainerRequest{
-		Image:      FedBOXImageName,
-		WaitingFor: wait.ForLog("Started").WithStartupTimeout(time.Second),
-	},
-	ProviderType: containers.ProviderPodman,
-	Started:      true,
+func defaultFedBOXRequest(name string) containers.GenericContainerRequest {
+	return containers.GenericContainerRequest{
+		ContainerRequest: containers.ContainerRequest{
+			Image:      name,
+			WaitingFor: wait.ForLog("Started").WithStartupTimeout(time.Second),
+		},
+		ProviderType: containers.ProviderPodman,
+		Started:      true,
+	}
 }
 
 // Run creates an instance of the FedBOX container type
 func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomizer) (*fedboxContainer, error) {
 	logger := testLogger{T: t.(*testing.T)}
 
-	req := defaultFedBOXRequest
+	req := defaultFedBOXRequest(FedBOXImageName)
 	opts = append(opts, containers.WithLogConsumers(logger))
 	opts = append(opts, WithLogger(logger))
 	for _, opt := range opts {
