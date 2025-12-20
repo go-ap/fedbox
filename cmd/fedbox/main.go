@@ -37,7 +37,7 @@ func run() int {
 	ctx := kong.Parse(
 		CTLRun,
 		kong.Name("fedbox"),
-		kong.Description("{{name}} instance server version {{version}}"),
+		kong.Description("{{name}} instance server (version {{version}})"),
 		kong.Vars{
 			"defaultWaitDuration": defaultWaitDuration.String(),
 			"version":             version,

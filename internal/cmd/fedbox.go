@@ -16,6 +16,7 @@ import (
 const AppName = "FedBOX"
 
 type Run struct {
+	Listen  string        `help:"The socket on which to listen" env:"FEDBOX_LISTEN" env:"LISTEN"`
 	Wait    time.Duration `help:"The duration for which the server waits for existing connections to finish" default:"${defaultWaitDuration}"`
 	Profile bool          `hidden:""`
 }
@@ -25,6 +26,9 @@ func (r Run) Run(ctl *Control) error {
 
 	conf := ctl.Conf
 	conf.TimeOut = r.Wait
+	if r.Listen != "" {
+		conf.Listen = r.Listen
+	}
 
 	var out io.WriteCloser
 	if conf.LogOutput != "" {
