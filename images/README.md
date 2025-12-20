@@ -39,12 +39,12 @@ $ podman run --network=host --name=FedBOX -v /var/cache/fedbox/env:/.env -v /var
 
 The `tools/run-container` script can also be used.
 
-### Running `fedboxctl` commands in the containers
+### Running `fedbox` commands in the containers
 
 ```sh
 # running with the same configuration environment as above
-$ podman exec --env-file=/var/cache/fedbox/env FedBOX fedboxctl bootstrap
-$ podman exec --env-file=/var/cache/fedbox/env FedBOX fedboxctl pub actor add --type Application
+$ podman exec --env-file=/var/cache/fedbox/env FedBOX fedbox bootstrap
+$ podman exec --env-file=/var/cache/fedbox/env FedBOX fedbox pub actor add --type Application
 Enter the actor's name: test
 test's pw:
 pw again:

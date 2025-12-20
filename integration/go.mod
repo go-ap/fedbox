@@ -8,6 +8,8 @@ require (
 	github.com/go-ap/activitypub v0.0.0-20251217103921-9808e9a35f7b
 	github.com/go-ap/client v0.0.0-20251217104137-490438ffbafc
 	github.com/go-ap/fedbox v0.0.0-20251219173938-752da1111e02
+	github.com/google/go-containerregistry v0.20.7
+	github.com/google/ko v0.18.1
 	github.com/joho/godotenv v1.5.1
 	github.com/moby/sys/capability v0.4.0
 	github.com/opencontainers/runtime-spec v1.3.0
@@ -141,9 +143,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/certificate-transparency-go v1.3.2 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/go-containerregistry v0.20.7 // indirect
 	github.com/google/go-intervals v0.0.2 // indirect
-	github.com/google/ko v0.18.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3 // indirect

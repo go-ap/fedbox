@@ -1,6 +1,6 @@
 #!/bin/sh
 
-_ctl=./bin/fedboxctl
+_ctl=./bin/fedbox
 _env=${1}
 
 if ! expect -v &> /dev/null ; then

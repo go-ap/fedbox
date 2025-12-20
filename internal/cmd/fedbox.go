@@ -9,36 +9,22 @@ import (
 
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/storage-all"
-	"github.com/alecthomas/kong"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
-	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/env"
 )
 
 const AppName = "FedBOX"
 
 type Run struct {
-	Wait    time.Duration    `help:"The duration for which the server waits for existing connections to finish" default:"${defaultWaitDuration}"`
-	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`
-	Path    string           `path:"" help:"The path for the storage folder." default:"." env:"STORAGE_PATH"`
-	Profile bool             `hidden:""`
-	Version kong.VersionFlag `short:"V"`
+	Wait    time.Duration `help:"The duration for which the server waits for existing connections to finish" default:"${defaultWaitDuration}"`
+	Profile bool          `hidden:""`
 }
 
-func (r Run) Run(version string) error {
-	w := r.Wait
-	e := r.Env
+func (r Run) Run(ctl *Control) error {
+	var err error
 
-	conf, err := config.Load(r.Path, e, w)
-	if err != nil {
-		return err
-	}
-
-	conf.AppName = AppName
-	conf.Profile = r.Profile
-	conf.Secure = conf.Secure && !conf.Profile
-	conf.Version = version
+	conf := ctl.Conf
+	conf.TimeOut = r.Wait
 
 	var out io.WriteCloser
 	if conf.LogOutput != "" {
@@ -63,7 +49,7 @@ func (r Run) Run(version string) error {
 		return err
 	}
 
-	a, err := fedbox.New(l.WithContext(lw.Ctx{"log": "fedbox", "env": e}), conf, db)
+	a, err := fedbox.New(l.WithContext(lw.Ctx{"log": "fedbox", "env": conf.Env}), conf, db)
 	if err != nil {
 		l.Errorf("Unable to initialize: %s", err)
 		return err

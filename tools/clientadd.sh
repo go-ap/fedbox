@@ -5,7 +5,7 @@
 set pass [lindex $argv 0]
 set callback_url [lindex $argv 1]
 
-spawn ./bin/fedboxctl oauth client add --redirectUri "${callback_url}"
+spawn ./bin/fedbox oauth client add --redirectUri "${callback_url}"
 expect "client's pw: "
 send "${pass}\r"
 expect "pw again: "

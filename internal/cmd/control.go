@@ -44,6 +44,7 @@ type CTL struct {
 	Version kong.VersionFlag `short:"V"`
 
 	// Commands
+	Run         Run         `cmd:"" help:"Run the ${name} instance server (version: ${version})" default:"withargs"`
 	Pub         Pub         `cmd:"" name:"pub" alt:"ap" help:"ActivityPub management helper"`
 	OAuth       OAuth       `cmd:"" name:"oauth"`
 	Storage     Storage     `cmd:""`

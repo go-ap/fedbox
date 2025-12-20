@@ -5,7 +5,7 @@
 set name [lindex $argv 0]
 set pass [lindex $argv 1]
 
-spawn ./bin/fedboxctl ap actor add ${name}
+spawn ./bin/fedbox ap actor add ${name}
 expect "${name}'s pw: "
 send "${pass}\r"
 expect "pw again: "

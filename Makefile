@@ -55,7 +55,7 @@ TEST := $(GO) test $(BUILDFLAGS)
 help: ## Help target that shows this message.
 	@sed -rn 's/^([^:]+):.*[ ]##[ ](.+)/\1:\2/p' $(MAKEFILE_LIST) | column -ts: -l2
 
-all: fedbox fedboxctl ##
+all: fedbox ##
 
 download: go.sum ## Downloads dependencies and tidies the go.mod file.
 
@@ -66,13 +66,6 @@ go.sum: go.mod
 fedbox: bin/fedbox ## Builds the main FedBOX service binary.
 bin/fedbox: go.mod go.sum cmd/fedbox/main.go $(APPSOURCES)
 	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/fedbox/main.go
-ifneq (,$(findstring $(ENV), "prod qa"))
-	$(UPX) -q --mono --no-progress --best $@ || true
-endif
-
-fedboxctl: bin/fedboxctl ## Builds the control binary for the FedBOX service.
-bin/fedboxctl: go.mod go.sum cmd/control/main.go $(APPSOURCES)
-	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/control/main.go
 ifneq (,$(findstring $(ENV), "prod qa"))
 	$(UPX) -q --mono --no-progress --best $@ || true
 endif
@@ -105,10 +98,9 @@ bin/$(FEDBOX_HOSTNAME).pem: bin/$(FEDBOX_HOSTNAME).key bin/$(FEDBOX_HOSTNAME).cr
 bin/$(FEDBOX_HOSTNAME).key bin/$(FEDBOX_HOSTNAME).crt:
 	./tools/gen-certs.sh ./bin/$(FEDBOX_HOSTNAME)
 
-install: ./bin/fedbox ./bin/fedboxctl systemd/fedbox.service systemd/fedbox.socket $(FEDBOX_HOSTNAME).crt $(FEDBOX_HOSTNAME).key ## Install the application.
+install: ./bin/fedbox systemd/fedbox.service systemd/fedbox.socket $(FEDBOX_HOSTNAME).crt $(FEDBOX_HOSTNAME).key ## Install the application.
 	useradd -m -s /bin/false -u 2000 fedbox
 	install -m 644 -o fedbox bin/fedbox $(DESTDIR)$(INSTALL_PREFIX)/bin
-	install -m 644 -o fedbox bin/fedboxctl $(DESTDIR)$(INSTALL_PREFIX)/bin
 	install -m 644 -o fedbox systemd/fedbox.service $(DESTDIR)/etc/systemd/system
 	install -m 644 -o fedbox systemd/fedbox.socket $(DESTDIR)/etc/systemd/system
 	install -m 600 -o bin/$(FEDBOX_HOSTNAME).crt $(STORAGE_PATH)
