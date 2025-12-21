@@ -289,6 +289,13 @@ func (f *FedBOX) Run(ctx context.Context) error {
 		logger.Warnf("Some CLI commands relying on it will not work")
 	}
 
+	exitWithErrOrInterrupt := func(err error, exit chan<- error) {
+		if err == nil {
+			err = w.Interrupt
+		}
+		exit <- err
+	}
+
 	err := w.RegisterSignalHandlers(w.SignalHandlers{
 		syscall.SIGHUP: func(_ chan<- error) {
 			logger.Debugf("SIGHUP received, reloading configuration")
@@ -320,19 +327,11 @@ func (f *FedBOX) Run(ctx context.Context) error {
 		},
 		syscall.SIGINT: func(exit chan<- error) {
 			logger.WithContext(lw.Ctx{"wait": f.conf.TimeOut}).Debugf("SIGINT received, interrupted")
-			err := f.Stop(ctx)
-			if err == nil {
-				err = w.Interrupt
-			}
-			exit <- err
+			exitWithErrOrInterrupt(f.Stop(ctx), exit)
 		},
 		syscall.SIGTERM: func(exit chan<- error) {
 			logger.Debugf("SIGTERM received, stopping with cleanup")
-			err := f.Stop(ctx)
-			if err == nil {
-				err = w.Interrupt
-			}
-			exit <- err
+			exitWithErrOrInterrupt(f.Stop(ctx), exit)
 		},
 		syscall.SIGQUIT: func(exit chan<- error) {
 			logger.Debugf("SIGQUIT received, force stopping with core-dump")
@@ -340,8 +339,7 @@ func (f *FedBOX) Run(ctx context.Context) error {
 			_ = pprof.Lookup("goroutine").WriteTo(os.Stderr, 1)
 			_ = pprof.Lookup("block").WriteTo(os.Stderr, 1)
 			//_ = pprof.Lookup("threadcreate").WriteTo(os.Stderr, 1)
-			go f.Stop(ctx)
-			exit <- w.Interrupt
+			exitWithErrOrInterrupt(f.Stop(ctx), exit)
 		},
 	}).Exec(ctx, f.startFn)
 	if err == nil {
