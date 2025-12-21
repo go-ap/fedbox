@@ -6,10 +6,10 @@ require (
 	git.sr.ht/~mariusor/cache v0.0.0-20250616110250-18a60a6f9473
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/storage-all v0.0.0-20251219125852-2a126e5671bb
-	git.sr.ht/~mariusor/wrapper v0.0.0-20251219150913-93638cf5461b
+	git.sr.ht/~mariusor/wrapper v0.0.0-20251221111217-c45748b78917
 	github.com/alecthomas/kong v1.12.1
 	github.com/go-ap/activitypub v0.0.0-20251217103921-9808e9a35f7b
-	github.com/go-ap/auth v0.0.0-20251217104215-2c09b3122a42
+	github.com/go-ap/auth v0.0.0-20251221160736-4ea5cc34e298
 	github.com/go-ap/cache v0.0.0-20251216163157-446dbe3865f8
 	github.com/go-ap/client v0.0.0-20251217104137-490438ffbafc
 	github.com/go-ap/errors v0.0.0-20251216162958-cb99ea99a461
@@ -40,7 +40,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/google/flatbuffers v25.9.23+incompatible // indirect
+	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
 	github.com/klauspost/compress v1.18.2 // indirect
@@ -61,7 +61,7 @@ require (
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
-	golang.org/x/exp v0.0.0-20251209150349-8475f28825e9 // indirect
+	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93 // indirect
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
