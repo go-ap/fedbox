@@ -5,21 +5,21 @@ go 1.25
 require (
 	git.sr.ht/~mariusor/cache v0.0.0-20250616110250-18a60a6f9473
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
-	git.sr.ht/~mariusor/storage-all v0.0.0-20251219125852-2a126e5671bb
-	git.sr.ht/~mariusor/wrapper v0.0.0-20251221111217-c45748b78917
+	git.sr.ht/~mariusor/storage-all v0.0.0-20251223173927-1a9494b2daa7
+	git.sr.ht/~mariusor/wrapper v0.0.0-20251222125502-e381d9b657be
 	github.com/alecthomas/kong v1.12.1
-	github.com/go-ap/activitypub v0.0.0-20251217103921-9808e9a35f7b
-	github.com/go-ap/auth v0.0.0-20251221160736-4ea5cc34e298
-	github.com/go-ap/cache v0.0.0-20251216163157-446dbe3865f8
-	github.com/go-ap/client v0.0.0-20251217104137-490438ffbafc
+	github.com/go-ap/activitypub v0.0.0-20251223172601-b4d07d3da29a
+	github.com/go-ap/auth v0.0.0-20251223172916-f8644555cc1d
+	github.com/go-ap/cache v0.0.0-20251223172710-f742dbb84a5b
+	github.com/go-ap/client v0.0.0-20251223172820-ff14ea92c2d8
 	github.com/go-ap/errors v0.0.0-20251216162958-cb99ea99a461
-	github.com/go-ap/filters v0.0.0-20251217104054-a89c371835ef
+	github.com/go-ap/filters v0.0.0-20251223172742-63088f21cc67
 	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77
-	github.com/go-ap/processing v0.0.0-20251217104322-f87561b8dc99
-	github.com/go-ap/storage-badger v0.0.0-20251218134939-77a229989de5 // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20251217163214-48e5042b4192 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20251217104523-be5b0e5e23a2 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20251217104657-485937124f96 // indirect
+	github.com/go-ap/processing v0.0.0-20251223172935-a040b266994b
+	github.com/go-ap/storage-badger v0.0.0-20251223173702-f38bb2d9fb29 // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20251223173607-d6a792f0066e // indirect
+	github.com/go-ap/storage-fs v0.0.0-20251223173104-55069d7672cc // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20251223173153-9ffd01696e13 // indirect
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
