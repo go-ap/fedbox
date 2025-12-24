@@ -6,7 +6,7 @@ require (
 	git.sr.ht/~mariusor/cache v0.0.0-20250616110250-18a60a6f9473
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/storage-all v0.0.0-20251223173927-1a9494b2daa7
-	git.sr.ht/~mariusor/wrapper v0.0.0-20251222125502-e381d9b657be
+	git.sr.ht/~mariusor/wrapper v0.0.0-20251224151401-852801607a0c
 	github.com/alecthomas/kong v1.12.1
 	github.com/go-ap/activitypub v0.0.0-20251223172601-b4d07d3da29a
 	github.com/go-ap/auth v0.0.0-20251223172916-f8644555cc1d

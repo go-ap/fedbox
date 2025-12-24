@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime/pprof"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -45,8 +44,8 @@ type FedBOX struct {
 	logger  lw.Logger
 
 	debugMode       atomic.Bool
-	maintenanceMode bool
-	shuttingDown    bool
+	maintenanceMode atomic.Bool
+	shuttingDown    atomic.Bool
 
 	keyGenerator func(act *vocab.Actor) error
 
@@ -200,7 +199,7 @@ func (f *FedBOX) Storage() storage.FullStorage {
 }
 
 func (f *FedBOX) Pause() error {
-	if f.maintenanceMode {
+	if f.maintenanceMode.Load() {
 		// restart everything
 		f.storage.Close()
 	} else {
@@ -213,20 +212,18 @@ func (f *FedBOX) Pause() error {
 func (f *FedBOX) Stop(ctx context.Context) error {
 	f.storage.Close()
 
-	f.shuttingDown = true
-	if err := f.stopFn(ctx); err != nil {
-		f.logger.Errorf("Error: %+v", err)
-	}
-
-	_ = os.RemoveAll(f.conf.PidPath())
-	_ = os.RemoveAll(f.conf.DefaultSocketPath())
-	if filepath.IsAbs(f.conf.Listen) {
-		if _, err := os.Stat(f.conf.Listen); err == nil {
-			_ = os.RemoveAll(f.conf.Listen)
+	f.shuttingDown.Store(true)
+	defer func() {
+		_ = os.RemoveAll(f.conf.PidPath())
+		_ = os.RemoveAll(f.conf.DefaultSocketPath())
+		if filepath.IsAbs(f.conf.Listen) {
+			if _, err := os.Stat(f.conf.Listen); err == nil {
+				_ = os.RemoveAll(f.conf.Listen)
+			}
 		}
-	}
+	}()
 
-	return nil
+	return f.stopFn(ctx)
 }
 
 func (f *FedBOX) reload() (err error) {
@@ -271,11 +268,10 @@ func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, recei
 // Run is the wrapper for starting the web-server and handling signals
 func (f *FedBOX) Run(ctx context.Context) error {
 	logCtx := lw.Ctx{
-		"URL":      f.conf.BaseURL,
-		"version":  f.conf.Version,
-		"debug":    f.debugMode.Load(),
-		"listenOn": f.conf.Listen,
-		"TLS":      f.conf.Secure,
+		"URL": f.conf.BaseURL,
+	}
+	if f.conf.Version != "" {
+		logCtx["version"] = f.conf.Version
 	}
 	var cancelFn func()
 
@@ -283,7 +279,7 @@ func (f *FedBOX) Run(ctx context.Context) error {
 	defer cancelFn()
 
 	logger := f.logger.WithContext(logCtx)
-	logger.Infof("Started")
+	logger.WithContext(lw.Ctx{"listenOn": f.conf.Listen, "TLS": f.conf.Secure}).Infof("Started")
 	if err := f.conf.WritePid(); err != nil {
 		logger.Warnf("Unable to write pid file: %s", err)
 		logger.Warnf("Some CLI commands relying on it will not work")
@@ -304,41 +300,32 @@ func (f *FedBOX) Run(ctx context.Context) error {
 			}
 		},
 		syscall.SIGUSR2: func(_ chan<- error) {
-			op := "TO"
 			isDebug := f.debugMode.Load()
-			if isDebug {
-				op = "OUT of"
-			}
 			f.debugMode.Store(!isDebug)
-			logger.Debugf("SIGUSR2 received, switching %s debug mode", op)
+			logger.WithContext(lw.Ctx{"debug": !isDebug}).Debugf("SIGUSR2 received, toggle debug mode")
 		},
 		syscall.SIGUSR1: func(_ chan<- error) {
-			op := "TO"
-			if f.maintenanceMode {
-				op = "OUT of"
-			}
-			f.maintenanceMode = !f.maintenanceMode
+			isMaintenance := f.maintenanceMode.Load()
+			f.maintenanceMode.Store(!isMaintenance)
 
-			logFn := logger.Debugf
+			logFn := logger.WithContext(lw.Ctx{"maintenance": !isMaintenance}).Debugf
 			if err := f.Pause(); err != nil {
 				logFn = logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf
 			}
-			logFn("SIGUSR1 received, switching %s maintenance mode", op)
+			logFn("SIGUSR1 received, toggle maintenance mode")
 		},
 		syscall.SIGINT: func(exit chan<- error) {
-			logger.WithContext(lw.Ctx{"wait": f.conf.TimeOut}).Debugf("SIGINT received, interrupted")
+			logger.WithContext(lw.Ctx{"wait": defaultGraceWait}).Debugf("SIGINT received, interrupted")
 			exitWithErrOrInterrupt(f.Stop(ctx), exit)
 		},
 		syscall.SIGTERM: func(exit chan<- error) {
-			logger.Debugf("SIGTERM received, stopping with cleanup")
+			logger.WithContext(lw.Ctx{"wait": defaultGraceWait}).Debugf("SIGTERM received, stopping with cleanup")
 			exitWithErrOrInterrupt(f.Stop(ctx), exit)
 		},
 		syscall.SIGQUIT: func(exit chan<- error) {
-			logger.Debugf("SIGQUIT received, force stopping with core-dump")
-			//_ = pprof.Lookup("heap").WriteTo(os.Stderr, 1)
-			_ = pprof.Lookup("goroutine").WriteTo(os.Stderr, 1)
-			_ = pprof.Lookup("block").WriteTo(os.Stderr, 1)
-			//_ = pprof.Lookup("threadcreate").WriteTo(os.Stderr, 1)
+			logger.Debugf("SIGQUIT received, ungraceful force stopping")
+			// NOTE(marius): to skip any graceful wait on the listening server, cancel the context first
+			cancelFn()
 			exitWithErrOrInterrupt(f.Stop(ctx), exit)
 		},
 	}).Exec(ctx, f.startFn)
