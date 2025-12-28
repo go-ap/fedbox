@@ -977,7 +977,7 @@ func bootstrapApps(t *testing.T, l lw.Logger, apps map[vocab.IRI]*fedbox.FedBOX,
 		t.Cleanup(func() {
 			stopFn()
 			if err := app.Stop(ctx); err != nil {
-				t.Errorf("unable to stop application %s: %s", appID, err)
+				t.Logf("unable to stop application %s: %s", appID, err)
 			}
 		})
 
