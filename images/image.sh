@@ -45,13 +45,13 @@ buildah run \
 
 _image=$(buildah from gcr.io/distroless/static:latest)
 
-buildah config --env ENV="${_environment}" "${_image}"
-buildah config --env HOSTNAME="${_hostname}" "${_image}"
-buildah config --env LISTEN=:"${_listen_port}" "${_image}"
-buildah config --env KEY_PATH=/etc/ssl/certs/"${_hostname}.key" "${_image}"
-buildah config --env CERT_PATH=/etc/ssl/certs/"${_hostname}.crt" "${_image}"
+buildah config --env "ENV=${_environment}" "${_image}"
+buildah config --env "HOSTNAME=${_hostname}" "${_image}"
+buildah config --env "LISTEN=:${_listen_port}" "${_image}"
+buildah config --env "KEY_PATH=/etc/ssl/certs/${_hostname}.key" "${_image}"
+buildah config --env "CERT_PATH=/etc/ssl/certs/${_hostname}.crt" "${_image}"
+buildah config --env "STORAGE=${_storage}" "${_image}"
 buildah config --env HTTPS=true "${_image}"
-buildah config --env STORAGE="${_storage}" "${_image}"
 
 buildah config --port "${_listen_port}" "${_image}"
 

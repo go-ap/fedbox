@@ -30,7 +30,7 @@ ifneq ($(STORAGE),all)
 	TAG=$(ENV)-$(STORAGE)
 endif
 
-.PHONY: clean build builder push cert
+.PHONY: clean build builder push
 
 build:
 	ENV=$(ENV) VERSION=$(VERSION) STORAGE=$(STORAGE) PORT=$(PORT) HOSTNAME=$(FEDBOX_HOSTNAME) ./image.sh $(FEDBOX_HOSTNAME)/app:$(TAG)
