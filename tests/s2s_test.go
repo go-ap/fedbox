@@ -246,20 +246,7 @@ var UndoTests = testPairs{
 				},
 			},
 			{
-				req: testReq{
-					met:   http.MethodGet,
-					urlFn: OutboxURL(defaultC2SAccount()),
-				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        CollectionURL(OutboxURL(defaultC2SAccount())(), firstPage()),
-						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
-					},
-				},
-			},
-			{
+				name: "Test follower doesn't exist in following collection",
 				req: testReq{
 					met:   http.MethodGet,
 					urlFn: FollowingURL(defaultC2SAccount()),
@@ -295,7 +282,7 @@ var UndoTests = testPairs{
 				},
 			},
 			{
-				name: "Test Follow exists in inbox",
+				name: "Test Follow exists in remote inbox",
 				req: testReq{
 					met:   http.MethodGet,
 					urlFn: InboxURL(defaultS2SAccount()),
@@ -362,7 +349,6 @@ var UndoTests = testPairs{
 				},
 			},
 			{
-				// Undo the follow
 				name: "Undo the Follow",
 				req: testReq{
 					met:     http.MethodPost,

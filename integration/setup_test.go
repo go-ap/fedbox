@@ -160,9 +160,9 @@ func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomiz
 	}
 
 	initializers := [][]string{
-		{"fedboxctl", "--env", "dev", "storage", "bootstrap"},
-		{"fedboxctl", "--env", "dev", "pub", "import", "/storage/import.json"},
-		{"fedboxctl", "--env", "dev", "accounts", "gen-keys", "--key-type", "ED25519"},
+		{"fedbox", "--env", "dev", "storage", "bootstrap"},
+		{"fedbox", "--env", "dev", "pub", "import", "/storage/import.json"},
+		{"fedbox", "--env", "dev", "accounts", "gen-keys", "--key-type", "ED25519"},
 	}
 	errs := make([]error, 0)
 	for _, cmd := range initializers {

@@ -29,10 +29,10 @@ run_tests() {
 if [[ "${1}" = "" ]]; then
     _tests=(fs sqlite boltdb badger)
 else
-    _tests="${@}"
+    _tests=("$@")
 fi
 
-for _test in ${_tests[@]} ; do
+for _test in "${_tests[@]}" ; do
     run_tests "${_test}"
 done
 

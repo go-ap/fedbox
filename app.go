@@ -116,7 +116,7 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 		app.keyGenerator = AddKeyToPerson(metaSaver, keysType)
 	}
 
-	errors.IncludeBacktrace = conf.LogLevel == lw.TraceLevel
+	errors.SetIncludeBacktrace(conf.LogLevel == lw.TraceLevel)
 	app.debugMode.Store(conf.Env.IsDev())
 
 	if err := app.setupService(); err != nil {
