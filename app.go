@@ -35,15 +35,21 @@ type LogFn func(string, ...any)
 
 type canStore = cache.CanStore
 
-type FedBOX struct {
-	R       chi.Router
-	conf    config.Options
-	self    vocab.Service
-	storage storage.FullStorage
-	caches  canStore
-	logger  lw.Logger
+type Base struct {
+	Conf    config.Options
+	Logger  lw.Logger
+	Service vocab.Actor
+	Storage storage.FullStorage
 
-	debugMode       atomic.Bool
+	debugMode atomic.Bool
+}
+
+type FedBOX struct {
+	Base
+
+	R      chi.Router
+	caches canStore
+
 	maintenanceMode atomic.Bool
 	shuttingDown    atomic.Bool
 
@@ -86,21 +92,23 @@ const defaultGraceWait = 1500 * time.Millisecond
 // New instantiates a new FedBOX instance
 func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, error) {
 	if db == nil {
-		return nil, errors.Newf("invalid storage")
+		return nil, errors.Newf("invalid Storage")
 	}
 	if err := db.Open(); err != nil {
-		return nil, errors.Annotatef(err, "unable to open storage: %s", conf.StoragePath)
+		return nil, errors.Annotatef(err, "unable to open Storage: %s", conf.StoragePath)
 	}
 	if conf.BaseURL == "" {
 		return nil, errors.Newf("invalid empty BaseURL config")
 	}
 
 	app := FedBOX{
-		conf:    conf,
-		R:       chi.NewRouter(),
-		storage: db,
-		logger:  l,
-		caches:  cache.New(conf.RequestCache),
+		Base: Base{
+			Storage: db,
+			Logger:  l,
+			Conf:    conf,
+		},
+		R:      chi.NewRouter(),
+		caches: cache.New(conf.RequestCache),
 
 		startFn: emptyCtxtFn,
 		stopFn:  emptyCtxtFn,
@@ -127,63 +135,63 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 	app.R.Group(app.Routes())
 
 	sockType := ""
-	setters := []w.SetFn{w.Handler(app.R), w.WriteWait(app.conf.TimeOut)}
+	setters := []w.SetFn{w.Handler(app.R), w.WriteWait(app.Conf.TimeOut)}
 
-	if app.conf.Secure {
-		if len(app.conf.CertPath)+len(app.conf.KeyPath) > 0 {
-			setters = append(setters, w.WithTLSCert(app.conf.CertPath, app.conf.KeyPath))
+	if app.Conf.Secure {
+		if len(app.Conf.CertPath)+len(app.Conf.KeyPath) > 0 {
+			setters = append(setters, w.WithTLSCert(app.Conf.CertPath, app.Conf.KeyPath))
 		} else {
-			app.conf.Secure = false
+			app.Conf.Secure = false
 		}
 	}
 
 	// NOTE(marius): we now set-up a default socket listener
-	if !app.conf.Env.IsTest() {
-		_ = os.RemoveAll(app.conf.DefaultSocketPath())
-		setters = append(setters, w.OnSocket(app.conf.DefaultSocketPath()), w.GracefulWait(defaultGraceWait))
+	if !app.Conf.Env.IsTest() {
+		_ = os.RemoveAll(app.Conf.DefaultSocketPath())
+		setters = append(setters, w.OnSocket(app.Conf.DefaultSocketPath()), w.GracefulWait(defaultGraceWait))
 	}
-	if app.conf.Listen == "systemd" {
+	if app.Conf.Listen == "systemd" {
 		sockType = "Systemd"
 		setters = append(setters, w.OnSystemd())
-	} else if filepath.IsAbs(app.conf.Listen) {
-		dir := filepath.Dir(app.conf.Listen)
+	} else if filepath.IsAbs(app.Conf.Listen) {
+		dir := filepath.Dir(app.Conf.Listen)
 		if _, err := os.Stat(dir); err == nil {
 			sockType = "socket"
-			setters = append(setters, w.OnSocket(app.conf.Listen))
+			setters = append(setters, w.OnSocket(app.Conf.Listen))
 		}
 	} else {
 		sockType = "TCP"
-		setters = append(setters, w.OnTCP(app.conf.Listen))
+		setters = append(setters, w.OnTCP(app.Conf.Listen))
 	}
 
 	// Get start/stop functions for the http server
 	app.startFn, app.stopFn = w.HttpServer(setters...)
-	app.conf.Listen += "[" + sockType + "]"
+	app.Conf.Listen += "[" + sockType + "]"
 
 	return &app, nil
 }
 
 func (f *FedBOX) setupService() error {
-	db := f.storage
+	db := f.Storage
 
-	conf := f.conf
+	conf := f.Conf
 
 	selfIRI := ap.DefaultServiceIRI(conf.BaseURL)
 	var err error
 
-	f.self, err = ap.LoadActor(db, selfIRI)
+	f.Service, err = ap.LoadActor(db, selfIRI)
 	if err != nil && errors.IsNotFound(err) {
 		f.infFn("No service actor found, creating one: %s", selfIRI)
 		self := ap.Self(selfIRI)
 		if err = CreateService(db, self); err != nil {
 			return err
 		}
-		f.self = self
+		f.Service = self
 		keysType := KeyTypeRSA
 		if conf.MastodonIncompatible {
 			keysType = KeyTypeED25519
 		}
-		if err = AddKeyToItem(db, &f.self, keysType); err != nil {
+		if err = AddKeyToItem(db, &f.Service, keysType); err != nil {
 			f.errFn("Unable to save the instance's self service public key: %s", err)
 		}
 	}
@@ -191,34 +199,30 @@ func (f *FedBOX) setupService() error {
 }
 
 func (f *FedBOX) Config() config.Options {
-	return f.conf
-}
-
-func (f *FedBOX) Storage() storage.FullStorage {
-	return f.storage
+	return f.Conf
 }
 
 func (f *FedBOX) Pause() error {
 	if f.maintenanceMode.Load() {
 		// restart everything
-		f.storage.Close()
+		f.Storage.Close()
 	} else {
-		return f.storage.Open()
+		return f.Storage.Open()
 	}
 	return nil
 }
 
 // Stop
 func (f *FedBOX) Stop(ctx context.Context) error {
-	f.storage.Close()
+	f.Storage.Close()
 
 	f.shuttingDown.Store(true)
 	defer func() {
-		_ = os.RemoveAll(f.conf.PidPath())
-		_ = os.RemoveAll(f.conf.DefaultSocketPath())
-		if filepath.IsAbs(f.conf.Listen) {
-			if _, err := os.Stat(f.conf.Listen); err == nil {
-				_ = os.RemoveAll(f.conf.Listen)
+		_ = os.RemoveAll(f.Conf.PidPath())
+		_ = os.RemoveAll(f.Conf.DefaultSocketPath())
+		if filepath.IsAbs(f.Conf.Listen) {
+			if _, err := os.Stat(f.Conf.Listen); err == nil {
+				_ = os.RemoveAll(f.Conf.Listen)
 			}
 		}
 	}()
@@ -227,24 +231,24 @@ func (f *FedBOX) Stop(ctx context.Context) error {
 }
 
 func (f *FedBOX) reload() (err error) {
-	f.conf, err = config.Load(".", f.conf.Env, f.conf.TimeOut)
+	f.Conf, err = config.Load(".", f.Conf.Env, f.Conf.TimeOut)
 	f.caches.Delete()
 	return err
 }
 
 func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, receivedIn vocab.IRI) vocab.Actor {
-	// NOTE(marius): if the storage is nil, we can still use the remote client in the load function
+	// NOTE(marius): if the Storage is nil, we can still use the remote client in the load function
 	isLocalFn := func(iri vocab.IRI) bool {
-		return iri.Contains(vocab.IRI(f.conf.BaseURL), true)
+		return iri.Contains(vocab.IRI(f.Conf.BaseURL), true)
 	}
 
 	var logFn auth.LoggerFn = func(ctx lw.Ctx, msg string, p ...interface{}) {
-		f.logger.WithContext(ctx).Debugf(msg, p...)
+		f.Logger.WithContext(ctx).Debugf(msg, p...)
 	}
 
 	initFns := []auth.SolverInitFn{
 		auth.SolverWithLogger(logFn),
-		auth.SolverWithStorage(f.storage),
+		auth.SolverWithStorage(f.Storage),
 		auth.SolverWithLocalIRIFn(isLocalFn),
 	}
 
@@ -260,7 +264,7 @@ func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, recei
 
 	actor, err := ar.Verify(r)
 	if err != nil {
-		f.logger.WithContext(lw.Ctx{"err": err.Error()}).Errorf("unable to load an authorized Actor from request")
+		f.Logger.WithContext(lw.Ctx{"err": err.Error()}).Errorf("unable to load an authorized Actor from request")
 	}
 	return actor
 }
@@ -268,19 +272,19 @@ func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, recei
 // Run is the wrapper for starting the web-server and handling signals
 func (f *FedBOX) Run(ctx context.Context) error {
 	logCtx := lw.Ctx{
-		"URL": f.conf.BaseURL,
+		"URL": f.Conf.BaseURL,
 	}
-	if f.conf.Version != "" {
-		logCtx["version"] = f.conf.Version
+	if f.Conf.Version != "" {
+		logCtx["version"] = f.Conf.Version
 	}
 	var cancelFn func()
 
 	ctx, cancelFn = context.WithCancel(ctx)
 	defer cancelFn()
 
-	logger := f.logger.WithContext(logCtx)
-	logger.WithContext(lw.Ctx{"listenOn": f.conf.Listen, "TLS": f.conf.Secure}).Infof("Started")
-	if err := f.conf.WritePid(); err != nil {
+	logger := f.Logger.WithContext(logCtx)
+	logger.WithContext(lw.Ctx{"listenOn": f.Conf.Listen, "TLS": f.Conf.Secure}).Infof("Started")
+	if err := f.Conf.WritePid(); err != nil {
 		logger.Warnf("Unable to write pid file: %s", err)
 		logger.Warnf("Some CLI commands relying on it will not work")
 	}
@@ -335,15 +339,23 @@ func (f *FedBOX) Run(ctx context.Context) error {
 	return err
 }
 
-func (f *FedBOX) infFn(s string, p ...any) {
-	if f.logger != nil {
-		f.logger.Infof(s, p...)
+func (b *Base) SendSignal(sig syscall.Signal) error {
+	pid, err := b.Conf.ReadPid()
+	if err != nil {
+		return errors.Annotatef(err, "unable to read pid file")
+	}
+	return syscall.Kill(pid, sig)
+}
+
+func (b *Base) infFn(s string, p ...any) {
+	if b.Logger != nil {
+		b.Logger.Infof(s, p...)
 	}
 }
 
-func (f *FedBOX) errFn(s string, p ...any) {
-	if f.logger != nil {
-		f.logger.Errorf(s, p...)
+func (b *Base) errFn(s string, p ...any) {
+	if b.Logger != nil {
+		b.Logger.Errorf(s, p...)
 	}
 }
 

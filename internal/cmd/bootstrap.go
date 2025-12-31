@@ -15,7 +15,7 @@ import (
 
 type ResetCmd struct{}
 
-func (b ResetCmd) Run(ctl *Control) error {
+func (b ResetCmd) Run(ctl *fedbox.Base) error {
 	if err := ctl.Storage.Open(); err != nil {
 		return http.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
 	}
@@ -32,7 +32,7 @@ type BootstrapCmd struct {
 	KeyType string `help:"Type of keys to generate: ${keyTypes}" enum:"${keyTypes}" default:"${defaultKeyType}"`
 }
 
-func (b BootstrapCmd) Run(ctl *Control) error {
+func (b BootstrapCmd) Run(ctl *fedbox.Base) error {
 	keyType := b.KeyType
 	ctl.Service = ap.Self(ap.DefaultServiceIRI(ctl.Conf.BaseURL))
 	if err := bootstrap(ctl.Conf, ctl.Service, ctl.Logger); err != nil {

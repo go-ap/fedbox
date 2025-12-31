@@ -61,24 +61,25 @@ func reqURL(r http.Request, secure bool) string {
 }
 
 func FedBOXClient(fb *FedBOX) *client.C {
-	return ActorClient(fb, fb.self.ID)
+	return ActorClient(&fb.Base, fb.Service.ID)
 }
 
-func ActorClient(fb *FedBOX, iri vocab.IRI) *client.C {
+func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 	var tr http.RoundTripper = &http.Transport{}
-	if fb.debugMode.Load() {
-		tr = debug.New(debug.WithTransport(tr), debug.WithPath(fb.conf.StoragePath))
+	if ctl.debugMode.Load() {
+		tr = debug.New(debug.WithTransport(tr), debug.WithPath(ctl.Conf.StoragePath))
 	}
-	if !vocab.PublicNS.Equal(iri) {
-		signActor, prv, err := fb.LoadLocalActorWithKey(iri)
+
+	if vocab.IsNil(actor) || !vocab.PublicNS.Equal(actor.GetLink()) {
+		signActor, prv, err := ctl.LoadLocalActorWithKey(actor.GetLink())
 		if err != nil {
-			fb.errFn("unable to sign request: %+s", err)
+			ctl.errFn("unable to sign request: %+s", err)
 		} else if prv != nil && signActor != nil {
-			tr = s2s.New(s2s.WithActor(signActor, prv), s2s.WithLogger(fb.logger.WithContext(lw.Ctx{"log": "HTTP-Sig"})))
+			tr = s2s.New(s2s.WithActor(signActor, prv), s2s.WithLogger(ctl.Logger.WithContext(lw.Ctx{"log": "HTTP-Sig"})))
 		}
 	}
 
-	return Client(tr, fb.conf, fb.logger)
+	return Client(tr, ctl.Conf, ctl.Logger)
 }
 
 // HandleCollection serves content from the generic collection end-points
@@ -110,7 +111,7 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.SeeOther(r.URL.String())
 		}
 
-		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
+		iri := vocab.IRI(reqURL(*r, fb.Conf.Secure))
 		authorized := fb.actorFromRequestWithClient(r, FedBOXClient(fb), iri)
 		cacheKey := CacheKey(fb, authorized, *r)
 
@@ -122,7 +123,7 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 			fil := filters.Checks{filters.Authorized(authorized.ID)}
 			fil = append(fil, filters.FromValues(r.URL.Query())...)
 
-			repo := fb.storage
+			repo := fb.Storage
 			if it, err = repo.Load(iri, fil...); err != nil {
 				return nil, err
 			}
@@ -211,22 +212,22 @@ func CacheKey(fb *FedBOX, auth vocab.Actor, r http.Request) vocab.IRI {
 		u.User = url.User(filepath.Base(auth.ID.String()))
 	}
 	r.URL = u
-	return vocab.IRI(reqURL(r, fb.conf.Secure))
+	return vocab.IRI(reqURL(r, fb.Conf.Secure))
 }
 
 type keyStorage interface {
 	LoadKey(vocab.IRI) (crypto.PrivateKey, error)
 }
 
-func (f *FedBOX) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto.PrivateKey, error) {
-	signActorID := f.self.ID
+func (b *Base) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto.PrivateKey, error) {
+	signActorID := b.Service.ID
 
-	var signActor *vocab.Actor = &f.self
+	var signActor *vocab.Actor = &b.Service
 	if maybeActorID, col := vocab.Split(actorIRI); filters.ValidCollection(col) {
 		signActorID = maybeActorID
 	}
 
-	it, err := f.storage.Load(signActorID)
+	it, err := b.Storage.Load(signActorID)
 	if err != nil {
 		return signActor, nil, err
 	}
@@ -236,7 +237,7 @@ func (f *FedBOX) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto
 	}
 	signActor = act
 
-	keyStore, ok := f.storage.(keyStorage)
+	keyStore, ok := b.Storage.(keyStorage)
 	if !ok {
 		return signActor, nil, nil
 	}
@@ -276,21 +277,21 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
 		}
 
-		l := fb.logger.WithContext(lw.Ctx{"log": "processing"})
+		l := fb.Logger.WithContext(lw.Ctx{"log": "processing"})
 
-		authorized := fb.actorFromRequestWithClient(r, ActorClient(fb, vocab.PublicNS), receivedIn)
+		authorized := fb.actorFromRequestWithClient(r, ActorClient(&fb.Base, vocab.PublicNS), receivedIn)
 		if authorized.ID.Equal(vocab.PublicNS) {
 			fb.errFn("invalid Anonymous actor request: %s", receivedIn)
 			return it, http.StatusUnauthorized, errors.Unauthorizedf("authorized Actor is invalid")
 		}
 
-		repo := fb.storage
+		repo := fb.Storage
 
 		baseIRI := vocab.IRI(fb.Config().BaseURL)
 		initFns := make([]processing.OptionFn, 0)
 		initFns = append(initFns,
 			processing.WithIRI(baseIRI, InternalIRI),
-			processing.WithClient(ActorClient(fb, receivedIn)),
+			processing.WithClient(ActorClient(&fb.Base, receivedIn)),
 			processing.WithStorage(repo),
 			processing.WithLogger(l),
 			processing.WithIDGenerator(GenerateID(baseIRI)),
@@ -336,9 +337,9 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 		return outOfOrderItemHandler
 	}
 	return func(r *http.Request) (vocab.Item, error) {
-		iri := vocab.IRI(reqURL(*r, fb.conf.Secure))
+		iri := vocab.IRI(reqURL(*r, fb.Conf.Secure))
 
-		authorized := fb.actorFromRequestWithClient(r, ActorClient(fb, vocab.PublicNS), iri)
+		authorized := fb.actorFromRequestWithClient(r, ActorClient(&fb.Base, vocab.PublicNS), iri)
 		cacheKey := CacheKey(fb, authorized, *r)
 
 		it := fb.caches.Load(cacheKey)
@@ -347,7 +348,7 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 		what := r.URL.Path
 
 		if !fromCache {
-			repo := fb.storage
+			repo := fb.Storage
 			var err error
 			var f filters.Check
 			f = filters.Authorized(authorized.ID)

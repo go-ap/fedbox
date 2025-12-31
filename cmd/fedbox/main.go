@@ -80,7 +80,7 @@ func run() int {
 	return Success
 }
 
-func sendSignalToServer(ctl *cmd.Control, sig syscall.Signal) func() error {
+func sendSignalToServer(ctl *fedbox.Base, sig syscall.Signal) func() error {
 	return func() error {
 		return ctl.SendSignal(sig)
 	}

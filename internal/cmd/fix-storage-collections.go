@@ -5,6 +5,7 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 )
@@ -16,7 +17,7 @@ var streamCollections = vocab.CollectionPaths{
 	filters.ObjectsType,
 }
 
-func newOrderedCollection(ctl *Control, id vocab.IRI) *vocab.OrderedCollection {
+func newOrderedCollection(ctl *fedbox.Base, id vocab.IRI) *vocab.OrderedCollection {
 	return &vocab.OrderedCollection{
 		ID:        id,
 		Type:      vocab.OrderedCollectionType,
@@ -47,7 +48,7 @@ func getActorCollections(act vocab.Item) vocab.IRIs {
 
 type FixCollections struct{}
 
-func (f FixCollections) Run(ctl *Control) error {
+func (f FixCollections) Run(ctl *fedbox.Base) error {
 	if _, ok := ctl.Storage.(processing.CollectionStore); !ok {
 		return errors.Newf("Invalid storage type %T. Unable to handle collection operations.", ctl.Storage)
 	}
@@ -59,7 +60,7 @@ func (f FixCollections) Run(ctl *Control) error {
 	return tryCreateAllObjectsCollections(ctl, ctl.Service)
 }
 
-func tryCreateAllObjectsCollections(ctl *Control, actor vocab.Item) error {
+func tryCreateAllObjectsCollections(ctl *fedbox.Base, actor vocab.Item) error {
 	if actor == nil {
 		return nil
 	}
@@ -107,7 +108,7 @@ func tryCreateAllObjectsCollections(ctl *Control, actor vocab.Item) error {
 	return nil
 }
 
-func tryCreateActorCollections(ctl *Control, actor vocab.Item) error {
+func tryCreateActorCollections(ctl *fedbox.Base, actor vocab.Item) error {
 	initialCollections := make([]vocab.IRI, 0)
 	initialCollections = append(initialCollections, getActorCollections(actor)...)
 	err := vocab.OnActor(actor, func(actor *vocab.Actor) error {
@@ -136,7 +137,7 @@ func tryCreateActorCollections(ctl *Control, actor vocab.Item) error {
 	return nil
 }
 
-func tryCreateCollection(ctl *Control, colIRI vocab.IRI) error {
+func tryCreateCollection(ctl *fedbox.Base, colIRI vocab.IRI) error {
 	storage := ctl.Storage
 	var collection *vocab.OrderedCollection
 	items, err := ctl.Storage.Load(colIRI.GetLink())

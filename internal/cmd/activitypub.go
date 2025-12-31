@@ -4,21 +4,16 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"sort"
-	"strings"
 	"time"
 
-	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/filters"
-	"github.com/go-ap/processing"
 )
 
 type AddActorCmd struct {
@@ -29,7 +24,7 @@ type AddActorCmd struct {
 	Names        []string                     `arg:"" name:"name" help:"The name(s) of the actor."`
 }
 
-func (a AddActorCmd) Run(ctl *Control) error {
+func (a AddActorCmd) Run(ctl *fedbox.Base) error {
 	keyType := a.KeyType
 	if len(a.Names) == 0 {
 		name, err := loadFromStdin("Enter the actor's name")
@@ -130,110 +125,6 @@ type Pub struct {
 	Import ImportCmd `cmd:"" help:"Imports ActivityPub objects."`
 }
 
-func wrapObjectInCreate(p vocab.Item, author vocab.Item) (vocab.Activity, error) {
-	act := vocab.Activity{
-		Type:    vocab.CreateType,
-		To:      vocab.ItemCollection{vocab.PublicNS},
-		Updated: time.Now().UTC(),
-		Object:  p,
-	}
-	if act.AttributedTo == nil {
-		act.AttributedTo = author.GetLink()
-	}
-	if act.Actor == nil {
-		act.Actor = author
-	}
-	if !act.CC.Contains(author.GetLink()) {
-		_ = act.CC.Append(author.GetLink())
-	}
-	return act, nil
-}
-
-func (c *Control) AddObject(p *vocab.Object, author vocab.Actor) (*vocab.Object, error) {
-	if c.Storage == nil {
-		return nil, errors.Errorf("invalid storage backend")
-	}
-	if author.GetLink().Equals(auth.AnonymousActor.GetLink(), false) {
-		self, err := ap.LoadActor(c.Storage, ap.DefaultServiceIRI(c.Conf.BaseURL))
-		if err != nil {
-			return nil, errors.NewNotFound(err, "unable to load current's instance Application actor")
-		}
-		if self.ID == "" {
-			return nil, errors.NotFoundf("unable to load current's instance Application actor")
-		}
-		author = self
-	}
-	if author.GetID() == "" {
-		return nil, errors.NotFoundf("unable to load current's instance Application actor: %s", c.Conf.BaseURL)
-	}
-
-	processor := saver(c)
-	outbox := vocab.Outbox.Of(author).GetLink()
-	if vocab.IsNil(outbox) {
-		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
-	}
-
-	create, err := wrapObjectInCreate(p, author)
-	if err != nil {
-		return nil, errors.Annotatef(err, "unable to wrap Object in Create activity")
-	}
-	if _, err = processor.ProcessClientActivity(create, author, outbox); err != nil {
-		return nil, err
-	}
-	return p, nil
-}
-
-func saver(ctl *Control) processing.P {
-	baseIRI := vocab.IRI(ctl.Conf.BaseURL)
-	db := ctl.Storage
-	l := ctl.Logger.WithContext(lw.Ctx{"log": "processing"})
-	cl := fedbox.Client(http.DefaultTransport, ctl.Conf, l)
-	p := processing.New(
-		processing.WithIRI(baseIRI), processing.WithLogger(l),
-		processing.WithStorage(db), processing.WithClient(cl),
-		processing.WithIDGenerator(fedbox.GenerateID(baseIRI)),
-	)
-	return p
-}
-
-func (c *Control) AddActor(p *vocab.Person, pw []byte, author vocab.Actor) (*vocab.Person, error) {
-	if c.Storage == nil {
-		return nil, errors.Errorf("invalid storage backend")
-	}
-	if author.GetLink().Equals(auth.AnonymousActor.GetLink(), false) {
-		self, err := ap.LoadActor(c.Storage, ap.DefaultServiceIRI(c.Conf.BaseURL))
-		if err != nil {
-			return nil, errors.NewNotFound(err, "unable to load current's instance Application actor")
-		}
-		if self.ID == "" {
-			return nil, errors.NotFoundf("unable to load current's instance Application actor")
-		}
-		author = self
-	}
-	if author.GetID() == "" {
-		return nil, errors.NotFoundf("unable to load current's instance Application actor: %s", c.Conf.BaseURL)
-	}
-
-	create, err := wrapObjectInCreate(p, author)
-	if err != nil {
-		return nil, errors.Annotatef(err, "unable to wrap Actor in Create activity")
-	}
-
-	outbox := vocab.Outbox.Of(author)
-	if vocab.IsNil(outbox) {
-		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
-	}
-
-	if _, err := saver(c).ProcessClientActivity(create, author, outbox.GetLink()); err != nil {
-		return nil, err
-	}
-
-	if pwManager, ok := c.Storage.(fedbox.PasswordChanger); ok && pw != nil {
-		err = pwManager.PasswordSet(p.GetLink(), pw)
-	}
-	return p, err
-}
-
 var ValidGenericTypes = vocab.ActivityVocabularyTypes{vocab.ObjectType, vocab.ActorType}
 
 type DeleteCmd struct {
@@ -242,68 +133,8 @@ type DeleteCmd struct {
 	IRIs      []vocab.IRI `arg:"" name:"iris"`
 }
 
-func (d DeleteCmd) Run(ctl *Control) error {
+func (d DeleteCmd) Run(ctl *fedbox.Base) error {
 	return ctl.DeleteObjects(d.Reason, d.InReplyTo, d.IRIs...)
-}
-
-func (c *Control) DeleteObjects(reason string, inReplyTo []string, ids ...vocab.IRI) error {
-	invalidRemoveTypes := append(append(vocab.ActivityTypes, vocab.IntransitiveActivityTypes...), vocab.TombstoneType)
-	self := ap.Self(vocab.IRI(c.Conf.BaseURL))
-
-	d := new(vocab.Delete)
-	d.Type = vocab.DeleteType
-	d.To = vocab.ItemCollection{vocab.PublicNS}
-	d.CC = make(vocab.ItemCollection, 0)
-	if reason != "" {
-		d.Content = vocab.NaturalLanguageValuesNew()
-		_ = d.Content.Append(vocab.NilLangRef, vocab.Content(reason))
-	}
-	if len(inReplyTo) > 0 {
-		replIRI := make(vocab.ItemCollection, 0)
-		for _, repl := range inReplyTo {
-			if _, err := url.Parse(repl); err != nil {
-				continue
-			}
-			replIRI = append(replIRI, vocab.IRI(repl))
-		}
-		d.InReplyTo = replIRI
-	}
-	d.Actor = self
-
-	delItems := make(vocab.ItemCollection, 0)
-	for _, iri := range ids {
-		it, err := c.Storage.Load(iri)
-		if err != nil {
-			continue
-		}
-		// NOTE(marius): this should work if "it" is a collection or a single object
-		_ = vocab.OnObject(it, func(o *vocab.Object) error {
-			if invalidRemoveTypes.Contains(o.GetType()) {
-				return nil
-			}
-			d.To = o.To
-			d.Bto = o.Bto
-			d.CC = o.CC
-			d.BCC = o.BCC
-			if o.AttributedTo != nil {
-				d.CC = append(d.CC, o.AttributedTo.GetLink())
-			}
-			delItems = append(delItems, o.GetLink())
-			return nil
-		})
-	}
-	d.CC = append(d.CC, self.GetLink())
-	if len(delItems) == 0 {
-		return errors.NotFoundf("No items found to delete")
-	}
-	d.Object = delItems
-
-	if _, err := saver(c).ProcessClientActivity(d, self, vocab.Outbox.Of(d.Actor).GetLink()); err != nil {
-		return err
-	}
-
-	_ = printItem(d, "text")
-	return nil
 }
 
 type ListCmd struct {
@@ -319,7 +150,7 @@ func printItem(it vocab.Item, outType string) error {
 	return outText(os.Stdout)(it)
 }
 
-func (l ListCmd) Run(ctl *Control) error {
+func (l ListCmd) Run(ctl *fedbox.Base) error {
 	typeFl := l.Type
 
 	var paths vocab.IRIs
@@ -353,65 +184,6 @@ func (l ListCmd) Run(ctl *Control) error {
 	return nil
 }
 
-func loadPubTypes(types ...vocab.ActivityVocabularyType) []vocab.ActivityVocabularyType {
-	objectTyp := make(vocab.ActivityVocabularyTypes, 0)
-	actorTyp := make(vocab.ActivityVocabularyTypes, 0)
-	activityTyp := make(vocab.ActivityVocabularyTypes, 0)
-	if len(types) == 0 {
-		objectTyp = vocab.ObjectTypes
-		actorTyp = vocab.ActorTypes
-		activityTyp = vocab.ActivityTypes
-	} else {
-		for _, t := range types {
-			if vocab.ObjectTypes.Contains(t) {
-				objectTyp = append(objectTyp, t)
-			}
-			if vocab.ActorTypes.Contains(t) {
-				actorTyp = append(actorTyp, t)
-			}
-			if vocab.ActivityTypes.Contains(t) {
-				activityTyp = append(activityTyp, t)
-			}
-			if strings.ToLower(string(t)) == strings.ToLower(string(vocab.ObjectType)) {
-				objectTyp = vocab.ObjectTypes
-			}
-			if strings.ToLower(string(t)) == strings.ToLower(string(vocab.ActorType)) {
-				actorTyp = vocab.ActorTypes
-			}
-			if strings.ToLower(string(t)) == strings.ToLower(string(vocab.ActivityType)) {
-				activityTyp = vocab.ActivityTypes
-			}
-		}
-	}
-	return append(append(objectTyp, actorTyp...), activityTyp...)
-}
-
-func (c *Control) List(iris vocab.IRIs, types ...vocab.ActivityVocabularyType) (vocab.ItemCollection, error) {
-	var typeFilter []vocab.ActivityVocabularyType
-	if len(types) > 0 {
-		typeFilter = loadPubTypes(types...)
-	}
-	var items vocab.ItemCollection
-	var err error
-
-	for _, iri := range iris {
-		ff, _ := filters.FromIRI(iri)
-		ff = append(ff, filters.HasType(typeFilter...))
-
-		col, err := c.Storage.Load(IRIWithFilters(iri, ByType(typeFilter...)), ff...)
-		if err != nil {
-			return items, err
-		}
-		_ = vocab.OnItem(col, func(it vocab.Item) error {
-			if !vocab.IsNil(it) {
-				items = append(items, it)
-			}
-			return nil
-		})
-	}
-	return items, err
-}
-
 type AddCmd struct {
 	Type         vocab.ActivityVocabularyType `help:"The type of ActivityPub object(s) to create." default:"${defaultObjectTypes}"`
 	Name         string                       `help:"The name of the ActivityPub object(s) to create."`
@@ -421,7 +193,7 @@ type AddCmd struct {
 
 var validObjects = append(vocab.ObjectTypes, vocab.ObjectType, "")
 
-func (a AddCmd) Run(ctl *Control) error {
+func (a AddCmd) Run(ctl *fedbox.Base) error {
 	f := make(filters.Checks, 0)
 
 	incType := a.Type
@@ -481,7 +253,7 @@ type ImportCmd struct {
 	Files []*os.File `arg:""`
 }
 
-func (i ImportCmd) Run(ctl *Control) error {
+func (i ImportCmd) Run(ctl *fedbox.Base) error {
 	baseIRI := ctl.Conf.BaseURL
 	toReplace := i.Base
 
@@ -531,7 +303,7 @@ func (i ImportCmd) Run(ctl *Control) error {
 						if err != nil {
 							actor = &vocab.Actor{ID: a.Actor.GetLink()}
 						}
-						activityPub := saver(ctl)
+						activityPub := fedbox.Saver(ctl, &ctl.Service)
 						it, err = activityPub.ProcessClientActivity(it, *actor, vocab.Outbox.Of(a.Actor).GetLink())
 						return err
 					})
@@ -561,7 +333,7 @@ type ExportCmd struct {
 	File string `help:"The path where to output the items, if absent it will be printed to stdout."`
 }
 
-func dumpAll(ctl *Control, iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection, error) {
+func dumpAll(ctl *fedbox.Base, iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection, error) {
 	col := make(vocab.ItemCollection, 0)
 	objects, err := ctl.Storage.Load(iri, f...)
 	if err != nil {
@@ -578,7 +350,7 @@ func dumpAll(ctl *Control, iri vocab.IRI, f ...filters.Check) (vocab.ItemCollect
 	return col, nil
 }
 
-func (e ExportCmd) Run(ctl *Control) error {
+func (e ExportCmd) Run(ctl *fedbox.Base) error {
 	baseURL := vocab.IRI(ctl.Conf.BaseURL)
 	objects := make(vocab.ItemCollection, 0)
 	allCollections := vocab.CollectionPaths{filters.ActivitiesType, filters.ActorsType, filters.ObjectsType}
@@ -611,7 +383,7 @@ type InfoCmd struct {
 	Output string      `help:"The format in which to output the items." enum:"text,json" default:"text"`
 }
 
-func (l InfoCmd) Run(ctl *Control) error {
+func (l InfoCmd) Run(ctl *fedbox.Base) error {
 	objects := make(vocab.ItemCollection, 0)
 	if len(l.IRIs) == 0 {
 		return errors.Errorf("No IRIs passed")
@@ -631,63 +403,13 @@ func (l InfoCmd) Run(ctl *Control) error {
 	return nil
 }
 
-func (c *Control) operateOnObjects(fn func(col vocab.IRI, it vocab.Item) error, to vocab.IRI, from ...vocab.IRI) error {
-	if !vocab.ValidCollectionIRI(to) {
-		return errors.Newf("destination is not a valid collection %s", to)
-	}
-	_, err := c.Storage.Load(to)
-	if err != nil {
-		return err
-	}
-
-	for _, iri := range from {
-		it, err := c.Storage.Load(iri.GetLink())
-		if err != nil {
-			return err
-		}
-		if vocab.IsItemCollection(it) {
-			return vocab.OnCollectionIntf(it, func(col vocab.CollectionInterface) error {
-				return c.operateOnObjects(fn, to, col.Collection().IRIs()...)
-			})
-		}
-		if !vocab.IsObject(it) {
-			return errors.Newf("Invalid object at IRI %s, %v", from, it)
-		}
-
-		if err = fn(to, it); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 type MoveCmd struct {
 	To   vocab.IRI   `help:"Collection to which to move the objects." required:""`
 	IRIs []vocab.IRI `arg:"" name:"iris"`
 }
 
-func (m MoveCmd) Run(ctl *Control) error {
+func (m MoveCmd) Run(ctl *fedbox.Base) error {
 	return ctl.MoveObjects(m.To, m.IRIs...)
-}
-
-func (c *Control) MoveObjects(to vocab.IRI, from ...vocab.IRI) error {
-	st, ok := c.Storage.(processing.CollectionStore)
-	if !ok {
-		return errors.Newf("invalid storage %T", c.Storage)
-	}
-
-	copyFn := func(col vocab.IRI, it vocab.Item) error {
-		if err := st.AddTo(col.GetLink(), it); err != nil {
-			return err
-		}
-
-		if err := c.Storage.Delete(it.GetLink()); err != nil {
-			return err
-		}
-		return nil
-	}
-	return c.operateOnObjects(copyFn, to, from...)
 }
 
 type CopyCmd struct {
@@ -695,24 +417,8 @@ type CopyCmd struct {
 	IRIs []vocab.IRI `arg:"" name:"iris"`
 }
 
-func (c CopyCmd) Run(ctl *Control) error {
+func (c CopyCmd) Run(ctl *fedbox.Base) error {
 	return ctl.CopyObjects(c.To, c.IRIs...)
-}
-
-func (c *Control) CopyObjects(to vocab.IRI, from ...vocab.IRI) error {
-	st, ok := c.Storage.(processing.CollectionStore)
-	if !ok {
-		return errors.Newf("invalid storage %T", c.Storage)
-	}
-
-	copyFn := func(col vocab.IRI, it vocab.Item) error {
-		err := st.AddTo(col.GetLink(), it)
-		if err != nil {
-			Errf("Error: %s", err)
-		}
-		return nil
-	}
-	return c.operateOnObjects(copyFn, to, from...)
 }
 
 type IndexCmd struct{}
@@ -721,7 +427,7 @@ type reindexer interface {
 	Reindex() error
 }
 
-func (i IndexCmd) Run(ctl *Control) error {
+func (i IndexCmd) Run(ctl *fedbox.Base) error {
 	start := time.Now()
 
 	indexer, ok := ctl.Storage.(reindexer)

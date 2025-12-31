@@ -1,20 +1,11 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/url"
-	"path"
-	"path/filepath"
 	"strings"
-	"time"
 
-	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
-	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/filters"
-	"github.com/openshift/osin"
 )
 
 type Client struct {
@@ -30,7 +21,7 @@ type OAuth struct {
 
 type LsClient struct{}
 
-func (l LsClient) Run(ctl *Control) error {
+func (l LsClient) Run(ctl *fedbox.Base) error {
 	clients, err := ctl.ListClients()
 	if err != nil {
 		return err
@@ -45,7 +36,7 @@ type DelClient struct {
 	Client []string `arg:"" help:"Removes an existing OAuth2 client"`
 }
 
-func (d DelClient) Run(ctl *Control) error {
+func (d DelClient) Run(ctl *fedbox.Base) error {
 	for _, id := range d.Client {
 		if id == "" {
 			continue
@@ -64,7 +55,7 @@ type AddClient struct {
 	RedirectURIs []string `name:"redirect-uri" help:"The redirect URIs for current application"`
 }
 
-func (a AddClient) Run(ctl *Control) error {
+func (a AddClient) Run(ctl *fedbox.Base) error {
 	redirectURIs := a.RedirectURIs
 	if len(redirectURIs) < 1 {
 		return errors.Newf("Need to provide at least a redirect URI for the client")
@@ -89,7 +80,7 @@ type AddToken struct {
 	Actor  string `arg:"" help:"The actor identifier we want to generate the authorization for (ID)"`
 }
 
-func (a AddToken) Run(ctl *Control) error {
+func (a AddToken) Run(ctl *fedbox.Base) error {
 	clientID := a.Client
 	if clientID == "" {
 		clientID = string(ctl.Service.GetLink())
@@ -103,213 +94,4 @@ func (a AddToken) Run(ctl *Control) error {
 		fmt.Printf("Authorization: Bearer %s\n", tok)
 	}
 	return err
-}
-
-const URISeparator = "\n"
-
-func (c *Control) AddClient(pw []byte, redirectUris []string, u any) (string, error) {
-	var id string
-
-	self := ap.Self(vocab.IRI(c.Conf.BaseURL))
-	now := time.Now().UTC()
-	name := "oauth-client-app"
-	urls := make(vocab.ItemCollection, 0)
-
-	for i, redirectUri := range redirectUris {
-		if u, err := url.ParseRequestURI(redirectUri); err == nil {
-			u.Path = path.Clean(u.Path)
-			name = u.Host
-			curURL := u.String()
-			redirectUris[i] = curURL
-
-			u.Path = ""
-			_ = urls.Append(vocab.IRI(u.String()), vocab.IRI(curURL))
-		}
-	}
-	p := &vocab.Application{
-		Type:              vocab.ApplicationType,
-		AttributedTo:      self.GetLink(),
-		Audience:          vocab.ItemCollection{vocab.PublicNS},
-		Generator:         self.GetLink(),
-		Published:         now,
-		PreferredUsername: vocab.DefaultNaturalLanguage(name),
-		URL:               urls,
-	}
-	app, err := c.AddActor(p, pw, self)
-	if err != nil {
-		return "", err
-	}
-	if metaSaver, ok := c.Storage.(fedbox.MetadataStorage); ok {
-		if err = fedbox.AddKeyToItem(metaSaver, p, fedbox.KeyTypeRSA); err != nil {
-			Errf("Error saving metadata for application %s: %s", name, err)
-		}
-	}
-
-	// TODO(marius): allow for updates of the application actor with incoming parameters for Icon, Summary, samd.
-
-	id = app.GetID().String()
-	if id == "" {
-		return "", errors.Newf("invalid actor saved, id is null")
-	}
-
-	// TODO(marius): add a local Client struct that implements Client and ClientSecretMatcher interfaces with bcrypt support
-	//   It could even be a struct composite from an vocab.Application + secret and callback properties
-	userData, _ := json.Marshal(u)
-	d := osin.DefaultClient{
-		Id:          id,
-		Secret:      string(pw),
-		RedirectUri: strings.Join(redirectUris, URISeparator),
-		UserData:    userData,
-	}
-
-	return id, c.Storage.CreateClient(&d)
-}
-
-func (c *Control) DeleteClient(id string) error {
-	iri := vocab.IRI(id)
-	if _, err := iri.URL(); err != nil {
-		iri = vocab.IRI(fmt.Sprintf("%s/%s/%s", c.Conf.BaseURL, filters.ActorsType, id))
-	}
-	err := c.DeleteObjects("Remove OAuth2 Client", nil, iri)
-	if err != nil {
-		return err
-	}
-
-	return c.Storage.RemoveClient(iri.String())
-}
-
-func (c *Control) ListClients() ([]osin.Client, error) {
-	return c.Storage.ListClients()
-}
-
-func (c *Control) GenAuthToken(clientID, actorIdentifier string, _ any) (string, error) {
-	if u, err := vocab.IRI(clientID).URL(); err == nil {
-		clientID = filepath.Base(u.Path)
-	}
-	cl, err := c.Storage.GetClient(clientID)
-	if err != nil {
-		return "", err
-	}
-
-	now := time.Now().UTC()
-	var f vocab.IRI
-	if u, err := url.Parse(actorIdentifier); err == nil {
-		f = vocab.IRI(u.String())
-	} else {
-		f = SearchActorsIRI(c.Service.ID, ByName(actorIdentifier), ByType(vocab.ActorTypes...))
-	}
-	maybeActors, err := c.Storage.Load(f.GetLink())
-	if err != nil {
-		return "", err
-	}
-	if vocab.IsNil(maybeActors) {
-		return "", errors.NotFoundf("not found")
-	}
-	var actor vocab.Item
-	err = vocab.OnActor(maybeActors, func(act *vocab.Actor) error {
-		actor = act
-		return nil
-	})
-	if err != nil {
-		return "", err
-	}
-
-	aud := &osin.AuthorizeData{
-		Client:      cl,
-		CreatedAt:   now,
-		ExpiresIn:   86400,
-		RedirectUri: cl.GetRedirectUri(),
-		State:       "state",
-	}
-
-	// generate token code
-	aud.Code, err = (&osin.AuthorizeTokenGenDefault{}).GenerateAuthorizeToken(aud)
-	if err != nil {
-		return "", err
-	}
-
-	// generate token directly
-	ar := &osin.AccessRequest{
-		Type:          osin.AUTHORIZATION_CODE,
-		AuthorizeData: aud,
-		Client:        cl,
-		RedirectUri:   cl.GetRedirectUri(),
-		Scope:         "scope",
-		Authorized:    true,
-		Expiration:    86400,
-	}
-
-	ad := &osin.AccessData{
-		Client:        ar.Client,
-		AuthorizeData: ar.AuthorizeData,
-		AccessData:    ar.AccessData,
-		ExpiresIn:     ar.Expiration,
-		Scope:         ar.Scope,
-		RedirectUri:   cl.GetRedirectUri(),
-		CreatedAt:     now,
-		UserData:      actor.GetLink(),
-	}
-
-	// generate access token
-	ad.AccessToken, ad.RefreshToken, err = (&osin.AccessTokenGenDefault{}).GenerateAccessToken(ad, ar.GenerateRefresh)
-	if err != nil {
-		return "", err
-	}
-	// save authorize data
-	if err = c.Storage.SaveAuthorize(aud); err != nil {
-		return "", err
-	}
-	// save access token
-	if err = c.Storage.SaveAccess(ad); err != nil {
-		return "", err
-	}
-
-	return ad.AccessToken, nil
-}
-
-func ByName(names ...string) url.Values {
-	q := make(url.Values)
-	q["name"] = names
-	return q
-}
-
-func ByType(types ...vocab.ActivityVocabularyType) url.Values {
-	q := make(url.Values)
-	tt := make([]string, len(types))
-	for i, t := range types {
-		tt[i] = string(t)
-	}
-	q["type"] = tt
-	return q
-}
-
-func ByURL(urls ...vocab.IRI) url.Values {
-	q := make(url.Values)
-	uu := make([]string, len(urls))
-	for i, u := range urls {
-		uu[i] = u.String()
-	}
-	q["url"] = uu
-	return q
-}
-
-func IRIWithFilters(iri vocab.IRI, searchParams ...url.Values) vocab.IRI {
-	q := make(url.Values)
-	for _, params := range searchParams {
-		for k, vals := range params {
-			if _, ok := q[k]; !ok {
-				q[k] = make([]string, 0)
-			}
-			q[k] = append(q[k], vals...)
-		}
-	}
-	if s, err := iri.URL(); err == nil {
-		s.RawQuery = q.Encode()
-		iri = vocab.IRI(s.String())
-	}
-	return iri
-}
-
-func SearchActorsIRI(baseIRI vocab.IRI, searchParams ...url.Values) vocab.IRI {
-	return IRIWithFilters(filters.ActorsType.IRI(baseIRI), searchParams...)
 }

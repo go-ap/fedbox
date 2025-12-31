@@ -30,12 +30,12 @@ func (f *FedBOX) Routes() func(chi.Router) {
 		AllowCredentials: true,
 		AllowOriginFunc:  checkOriginForBlockedActors,
 		MaxAge:           int(time.Hour.Seconds()),
-		Debug:            !f.conf.Env.IsProd(),
+		Debug:            !f.Conf.Env.IsProd(),
 	})
-	c.Log = corsLogger(f.logger.WithContext(lw.Ctx{"log": "cors"}).Tracef)
+	c.Log = corsLogger(f.Logger.WithContext(lw.Ctx{"log": "cors"}).Tracef)
 
 	return func(r chi.Router) {
-		r.Use(lw.Middlewares(f.logger)...)
+		r.Use(lw.Middlewares(f.Logger)...)
 		r.Use(middleware.RequestID, middleware.RealIP, c.Handler, CleanRequestPath, OutOfOrderMw(f))
 
 		r.Method(http.MethodGet, "/", HandleItem(f))
@@ -47,7 +47,7 @@ func (f *FedBOX) Routes() func(chi.Router) {
 		r.Route("/{collection}", f.CollectionRoutes(true))
 
 		debugMw := func() http.Handler {
-			if f.conf.Env.IsDev() || f.debugMode.Load() {
+			if f.Conf.Env.IsDev() || f.debugMode.Load() {
 				return middleware.Profiler()
 			}
 			return errors.NotFound

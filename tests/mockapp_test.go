@@ -189,7 +189,7 @@ type clientSaver interface {
 }
 
 func seedTestData(app *fedbox.FedBOX) error {
-	db := app.Storage()
+	db := app.Storage
 
 	act := loadMockFromDisk("mocks/c2s/actors/application.json", nil)
 	if err := addMockObjects(db, vocab.ItemCollection{act}); err != nil {

@@ -11,7 +11,7 @@ import (
 func TestNew(t *testing.T) {
 	store, err := storage.New(storage.WithPath(t.TempDir()))
 	if err != nil {
-		t.Errorf("unable to initialize fs storage: %s", err)
+		t.Errorf("unable to initialize fs Storage: %s", err)
 	}
 	app, err := New(lw.Dev(), config.Options{BaseURL: "http://example.com"}, store)
 	if err != nil {

@@ -21,13 +21,13 @@ type Accounts struct {
 
 type Export struct{}
 
-func (e Export) Run(ctl *Control) error {
+func (e Export) Run(ctl *fedbox.Base) error {
 	metaLoader, ok := ctl.Storage.(fedbox.MetadataStorage)
 	if !ok {
 		return errors.Newf("")
 	}
 
-	iri := SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), ByType(vocab.PersonType))
+	iri := fedbox.SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), fedbox.ByType(vocab.PersonType))
 	col, err := ctl.Storage.Load(iri)
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ type Import struct {
 	Files []*os.File `arg:""`
 }
 
-func (i Import) Run(ctl *Control) error {
+func (i Import) Run(ctl *fedbox.Base) error {
 	metaLoader, ok := ctl.Storage.(fedbox.MetadataStorage)
 	if !ok {
 		return errors.Newf("")
@@ -127,22 +127,22 @@ type GenKeys struct {
 	IRIs []vocab.IRI `arg:"" optional:"" name:"iri" help:"Actors for which to generate the keys. Defaults to all actors if missing."`
 }
 
-func (g GenKeys) Run(ctl *Control) error {
+func (g GenKeys) Run(ctl *fedbox.Base) error {
 	typ := g.Type
 	metaSaver, ok := ctl.Storage.(fedbox.MetadataStorage)
 	if !ok {
 		return errors.Newf("storage doesn't support saving key")
 	}
 
-	col := make(vocab.ItemCollection, 0)
+	actors := make([]*vocab.Actor, 0)
 	for _, iri := range g.IRIs {
-		actors, err := ctl.Storage.Load(iri)
+		maybeActor, err := ctl.Storage.Load(iri)
 		if err != nil {
 			Errf(err.Error())
 			continue
 		}
-		_ = vocab.OnActor(actors, func(act *vocab.Actor) error {
-			col = append(col, act)
+		_ = vocab.OnActor(maybeActor, func(act *vocab.Actor) error {
+			actors = append(actors, act)
 			return nil
 		})
 	}
@@ -150,31 +150,35 @@ func (g GenKeys) Run(ctl *Control) error {
 	if len(g.IRIs) == 0 {
 		// TODO(marius): we should improve this with filtering based on public key existing in the actor,
 		//  and with batching.
-		iri := SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), ByType(vocab.PersonType))
-		actors, err := ctl.Storage.Load(iri)
+		iri := fedbox.SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), fedbox.ByType(vocab.PersonType))
+		maybeActor, err := ctl.Storage.Load(iri)
 		if err != nil {
 			return err
 		}
-		_ = vocab.OnCollectionIntf(actors, func(colIntf vocab.CollectionInterface) error {
-			for _, it := range colIntf.Collection() {
-				if !vocab.ActorTypes.Contains(it.GetType()) {
-					continue
-				}
-				act, _ := vocab.ToActor(it)
-				_ = col.Append(act)
+
+		_ = vocab.OnActor(maybeActor, func(act *vocab.Actor) error {
+			if vocab.ActorTypes.Contains(act.Type) {
+				actors = append(actors, act)
 			}
 			return nil
 		})
 	}
 
-	for _, it := range col {
-		if !vocab.ActorTypes.Contains(it.GetType()) {
-			continue
-		}
-		if err := fedbox.AddKeyToItem(metaSaver, it, typ); err != nil {
+	for _, actor := range actors {
+		// NOTE(marius): we initialize the client that we're going to use for Update
+		// dissemination with an HTTP-Signature based on the current private key.
+		saver := fedbox.Saver(ctl, actor)
+		if err := fedbox.AddKeyToItem(metaSaver, actor, typ); err != nil {
 			Errf("Error: %s", err.Error())
 		}
+
+		outbox := vocab.Outbox.IRI(actor)
+		update := fedbox.WrapObjectInUpdate(actor, actor)
+		if _, err := saver.ProcessClientActivity(update, *actor, outbox); err != nil {
+			return err
+		}
 	}
+	_, _ = fmt.Fprintln(os.Stdout, "OK")
 	return nil
 }
 
@@ -182,7 +186,7 @@ type ChangePassword struct {
 	IRI vocab.IRI `arg:"" optional:"" name:"iri" help:"The actor for which to change the password."`
 }
 
-func (c ChangePassword) Run(ctl *Control) error {
+func (c ChangePassword) Run(ctl *fedbox.Base) error {
 	actors, err := ctl.Storage.Load(c.IRI)
 	if err != nil {
 		return err

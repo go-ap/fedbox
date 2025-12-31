@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"time"
@@ -11,20 +12,13 @@ import (
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/storage-all"
 	"github.com/alecthomas/kong"
-	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"golang.org/x/crypto/ssh/terminal"
 )
-
-type Control struct {
-	Conf    config.Options
-	Logger  lw.Logger
-	Service vocab.Actor
-	Storage storage.FullStorage
-}
 
 type Storage struct {
 	Type storage.Type `help:"Type of the backend to use. Possible values: ${storageTypes}"`
@@ -35,8 +29,6 @@ type Storage struct {
 }
 
 type CTL struct {
-	ctl *Control
-
 	Url     url.URL          `help:"The URL used by the application."`
 	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`
 	Verbose int              `counter:"v" help:"Increase verbosity level from the default associated with the environment settings."`
@@ -54,7 +46,7 @@ type CTL struct {
 	Stop        Stop        `cmd:"" help:"Stops the running FedBOX server configuration."`
 }
 
-func InitControl(c *CTL, version string) (*Control, error) {
+func InitControl(c *CTL, version string) (*fedbox.Base, error) {
 	opt := config.Options{
 		Env:         c.Env,
 		LogLevel:    lw.InfoLevel,
@@ -69,21 +61,39 @@ func InitControl(c *CTL, version string) (*Control, error) {
 		opt.LogLevel = lw.DebugLevel
 	}
 
-	logger := lw.Prod(lw.SetOutput(os.Stderr), lw.SetLevel(opt.LogLevel))
-	ct := Control{}
-	if err := setup(&ct, opt, logger); err != nil {
+	var err error
+	var out io.WriteCloser
+	if opt.LogOutput != "" {
+		if out, err = os.Open(opt.LogOutput); err != nil {
+			return nil, errors.Newf("Unable to output logs to %s: %s", opt.LogOutput, err)
+		}
+		defer func() {
+			if err := out.Close(); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "Unable to close log output: %s", err)
+			}
+		}()
+	}
+	var l lw.Logger
+	if opt.Env.IsDev() {
+		l = lw.Dev(lw.SetLevel(opt.LogLevel), lw.SetOutput(out))
+	} else {
+		l = lw.Prod(lw.SetLevel(opt.LogLevel), lw.SetOutput(out))
+	}
+
+	ct := fedbox.Base{}
+	if err := setup(&ct, opt, l); err != nil {
 		return nil, err
 	}
 	return &ct, nil
 }
 
-func New(db storage.FullStorage, conf config.Options, l lw.Logger) (*Control, error) {
+func New(db storage.FullStorage, conf config.Options, l lw.Logger) (*fedbox.Base, error) {
 	self, err := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
 	if err != nil {
 		l.Warnf("unable to load actor: %s", err)
 	}
 
-	return &Control{
+	return &fedbox.Base{
 		Conf:    conf,
 		Service: self,
 		Storage: db,
@@ -91,7 +101,7 @@ func New(db storage.FullStorage, conf config.Options, l lw.Logger) (*Control, er
 	}, nil
 }
 
-func setup(ct *Control, options config.Options, l lw.Logger) error {
+func setup(ct *fedbox.Base, options config.Options, l lw.Logger) error {
 	environ := options.Env
 	path := options.StoragePath
 	typ := options.Storage
