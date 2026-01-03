@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -42,6 +43,7 @@ type Options struct {
 	CertPath             string
 	KeyPath              string
 	Hostname             string
+	SSHPort              int
 	Listen               string
 	BaseURL              string
 	Storage              storage.Type
@@ -83,6 +85,7 @@ const (
 	KeyLogLevel                     = "LOG_LEVEL"
 	KeyLogOutput                    = "LOG_OUTPUT"
 	KeyHostname                     = "HOSTNAME"
+	KeySSHPort                      = "SSH_PORT"
 	KeyHTTPS                        = "HTTPS"
 	KeyCertPath                     = "CERT_PATH"
 	KeyKeyPath                      = "KEY_PATH"
@@ -231,6 +234,10 @@ func validateOptions(opts Options) error {
 	return nil
 }
 
+const minPort = 1024
+
+var RandPort = minPort + rand.IntN(65536-minPort)
+
 func LoadFromEnv() Options {
 	conf := Options{}
 	lvl := Getval(KeyLogLevel, "")
@@ -291,6 +298,10 @@ func LoadFromEnv() Options {
 	if v := Getval(KeyStorageIndexDisable, "false"); v != "" {
 		disableStorageIndex, _ := strconv.ParseBool(v)
 		conf.UseIndex = !disableStorageIndex
+	}
+	if v := Getval(KeySSHPort, strconv.Itoa(RandPort)); v != "" {
+		sshPort, _ := strconv.ParseUint(v, 10, 32)
+		conf.SSHPort = int(sshPort)
 	}
 
 	disableMastodonCompatibility, _ := strconv.ParseBool(Getval(KeyMastodonCompatibilityDisable, "false"))

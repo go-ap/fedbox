@@ -12,8 +12,10 @@ import (
 
 	cache2 "git.sr.ht/~mariusor/cache"
 	"git.sr.ht/~mariusor/lw"
+	m "git.sr.ht/~mariusor/servermux"
 	"git.sr.ht/~mariusor/storage-all"
 	w "git.sr.ht/~mariusor/wrapper"
+	"github.com/charmbracelet/ssh"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/cache"
@@ -42,6 +44,7 @@ type Base struct {
 	Storage storage.FullStorage
 
 	debugMode atomic.Bool
+	sshServer *ssh.Server
 }
 
 type FedBOX struct {
@@ -89,6 +92,40 @@ func Client(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
 
 const defaultGraceWait = 1500 * time.Millisecond
 
+func initHttpServer(app *FedBOX) (m.Server, error) {
+	setters := []m.SetFn{m.Handler(app.R)}
+
+	if app.Conf.Secure {
+		if len(app.Conf.CertPath)+len(app.Conf.KeyPath) > 0 {
+			setters = append(setters, m.WithTLSCert(app.Conf.CertPath, app.Conf.KeyPath))
+		} else {
+			app.Conf.Secure = false
+		}
+	}
+
+	// NOTE(marius): we now set-up a default socket listener
+	if !app.Conf.Env.IsTest() {
+		_ = os.RemoveAll(app.Conf.DefaultSocketPath())
+		setters = append(setters, m.OnSocket(app.Conf.DefaultSocketPath()))
+	}
+	if app.Conf.Listen == "systemd" {
+		setters = append(setters, m.OnSystemd())
+	} else if filepath.IsAbs(app.Conf.Listen) {
+		dir := filepath.Dir(app.Conf.Listen)
+		if _, err := os.Stat(dir); err == nil {
+			setters = append(setters, m.OnSocket(app.Conf.Listen))
+		}
+	} else {
+		setters = append(setters, m.OnTCP(app.Conf.Listen))
+	}
+
+	httpSrv, err := m.HttpServer(setters...)
+	if err != nil {
+		return nil, err
+	}
+	return httpSrv, nil
+}
+
 // New instantiates a new FedBOX instance
 func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, error) {
 	if db == nil {
@@ -134,39 +171,34 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 
 	app.R.Group(app.Routes())
 
-	sockType := ""
-	setters := []w.SetFn{w.Handler(app.R), w.WriteWait(app.Conf.TimeOut)}
-
-	if app.Conf.Secure {
-		if len(app.Conf.CertPath)+len(app.Conf.KeyPath) > 0 {
-			setters = append(setters, w.WithTLSCert(app.Conf.CertPath, app.Conf.KeyPath))
-		} else {
-			app.Conf.Secure = false
-		}
+	muxSetters := []m.MuxFn{m.WriteWait(app.Conf.TimeOut)}
+	if !app.Conf.Env.IsTest() && !app.Conf.Env.IsDev() {
+		muxSetters = append(muxSetters, m.GracefulWait(defaultGraceWait))
 	}
 
-	// NOTE(marius): we now set-up a default socket listener
-	if !app.Conf.Env.IsTest() {
-		_ = os.RemoveAll(app.Conf.DefaultSocketPath())
-		setters = append(setters, w.OnSocket(app.Conf.DefaultSocketPath()), w.GracefulWait(defaultGraceWait))
+	httpSrv, err := initHttpServer(&app)
+	if err != nil {
+		return nil, err
 	}
-	if app.Conf.Listen == "systemd" {
-		sockType = "Systemd"
-		setters = append(setters, w.OnSystemd())
-	} else if filepath.IsAbs(app.Conf.Listen) {
-		dir := filepath.Dir(app.Conf.Listen)
-		if _, err := os.Stat(dir); err == nil {
-			sockType = "socket"
-			setters = append(setters, w.OnSocket(app.Conf.Listen))
-		}
-	} else {
-		sockType = "TCP"
-		setters = append(setters, w.OnTCP(app.Conf.Listen))
+	muxSetters = append(muxSetters, m.WithServer(httpSrv))
+
+	sshServ, err := initSSHServer(&app)
+	if err != nil {
+		app.Logger.WithContext(lw.Ctx{"err": err}).Errorf("unable to open SSH connection")
+	}
+	if sshServ != nil {
+		muxSetters = append(muxSetters, m.WithServer(sshServ))
 	}
 
 	// Get start/stop functions for the http server
-	app.startFn, app.stopFn = w.HttpServer(setters...)
-	app.Conf.Listen += "[" + sockType + "]"
+	s, err := m.Mux(muxSetters...)
+	if err != nil {
+		return nil, err
+	}
+	app.startFn = s.Start
+	app.stopFn = s.Stop
+
+	//app.Conf.Listen += "[" + sockType + "]"
 
 	return &app, nil
 }
@@ -195,6 +227,7 @@ func (f *FedBOX) setupService() error {
 			f.errFn("Unable to save the instance's self service public key: %s", err)
 		}
 	}
+
 	return nil
 }
 
