@@ -177,7 +177,7 @@ func initSSHServer(app *FedBOX) (m.Server, error) {
 	app.Logger.WithContext(lw.Ctx{"ssh": listen, "port": app.Conf.SSHPort}).Debugf("Accepting SSH requests")
 	return m.SSHServer(
 		wish.WithAddress(fmt.Sprintf("%s:%d", listen, app.Conf.SSHPort)),
-		//wish.WithHostKeyPath(filepath.Join(app.Conf.StoragePath, ".ssh", "host_key")),
+		wish.WithHostKeyPEM(app.ServicePrivateKey),
 		wish.WithPublicKeyAuth(SSHAuthPublicKey(app)),
 		wish.WithPasswordAuth(SSHAuthPw(app)),
 		wish.WithMiddleware(

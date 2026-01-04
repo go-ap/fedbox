@@ -2,6 +2,8 @@ package fedbox
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"net/http"
 	"os"
@@ -38,10 +40,11 @@ type LogFn func(string, ...any)
 type canStore = cache.CanStore
 
 type Base struct {
-	Conf    config.Options
-	Logger  lw.Logger
-	Service vocab.Actor
-	Storage storage.FullStorage
+	Conf              config.Options
+	Logger            lw.Logger
+	Service           vocab.Actor
+	ServicePrivateKey []byte
+	Storage           storage.FullStorage
 
 	debugMode atomic.Bool
 	sshServer *ssh.Server
@@ -232,6 +235,16 @@ func (f *FedBOX) setupService() error {
 			f.errFn("Unable to save the instance's self service public key: %s", err)
 		}
 	}
+	key, err := db.LoadKey(f.Service.ID)
+	if err != nil {
+		f.errFn("Unable to load the private key for the instance's Service: %s", err)
+	}
+	prvEnc, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return err
+	}
+	r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
+	f.ServicePrivateKey = pem.EncodeToMemory(&r)
 
 	return nil
 }
