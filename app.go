@@ -95,9 +95,11 @@ const defaultGraceWait = 1500 * time.Millisecond
 func initHttpServer(app *FedBOX) (m.Server, error) {
 	setters := []m.SetFn{m.Handler(app.R)}
 
+	lwCtx := lw.Ctx{}
 	if app.Conf.Secure {
 		if len(app.Conf.CertPath)+len(app.Conf.KeyPath) > 0 {
 			setters = append(setters, m.WithTLSCert(app.Conf.CertPath, app.Conf.KeyPath))
+			lwCtx["TLS"] = true
 		} else {
 			app.Conf.Secure = false
 		}
@@ -109,13 +111,16 @@ func initHttpServer(app *FedBOX) (m.Server, error) {
 		setters = append(setters, m.OnSocket(app.Conf.DefaultSocketPath()))
 	}
 	if app.Conf.Listen == "systemd" {
+		lwCtx["systemd"] = true
 		setters = append(setters, m.OnSystemd())
 	} else if filepath.IsAbs(app.Conf.Listen) {
 		dir := filepath.Dir(app.Conf.Listen)
+		lwCtx["socket"] = app.Conf.Listen
 		if _, err := os.Stat(dir); err == nil {
 			setters = append(setters, m.OnSocket(app.Conf.Listen))
 		}
 	} else {
+		lwCtx["tcp"] = app.Conf.Listen
 		setters = append(setters, m.OnTCP(app.Conf.Listen))
 	}
 
@@ -123,6 +128,7 @@ func initHttpServer(app *FedBOX) (m.Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	app.Logger.WithContext(lwCtx).Debugf("Accepting HTTP requests")
 	return httpSrv, nil
 }
 
@@ -161,7 +167,6 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 		app.keyGenerator = AddKeyToPerson(metaSaver, keysType)
 	}
 
-	errors.SetIncludeBacktrace(conf.LogLevel == lw.TraceLevel)
 	app.debugMode.Store(conf.Env.IsDev())
 
 	if err := app.setupService(); err != nil {
@@ -316,7 +321,7 @@ func (f *FedBOX) Run(ctx context.Context) error {
 	defer cancelFn()
 
 	logger := f.Logger.WithContext(logCtx)
-	logger.WithContext(lw.Ctx{"listenOn": f.Conf.Listen, "TLS": f.Conf.Secure}).Infof("Started")
+	logger.Infof("Started")
 	if err := f.Conf.WritePid(); err != nil {
 		logger.Warnf("Unable to write pid file: %s", err)
 		logger.Warnf("Some CLI commands relying on it will not work")

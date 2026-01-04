@@ -61,27 +61,9 @@ func InitControl(c *CTL, version string) (*fedbox.Base, error) {
 		opt.LogLevel = lw.DebugLevel
 	}
 
-	var err error
-	var out io.WriteCloser
-	if opt.LogOutput != "" {
-		if out, err = os.Open(opt.LogOutput); err != nil {
-			return nil, errors.Newf("Unable to output logs to %s: %s", opt.LogOutput, err)
-		}
-		defer func() {
-			if err := out.Close(); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "Unable to close log output: %s", err)
-			}
-		}()
-	}
-	var l lw.Logger
-	if opt.Env.IsDev() {
-		l = lw.Dev(lw.SetLevel(opt.LogLevel), lw.SetOutput(out))
-	} else {
-		l = lw.Prod(lw.SetLevel(opt.LogLevel), lw.SetOutput(out))
-	}
-
+	errors.SetIncludeBacktrace(opt.LogLevel == lw.TraceLevel)
 	ct := fedbox.Base{}
-	if err := setup(&ct, opt, l); err != nil {
+	if err := setup(&ct, opt); err != nil {
 		return nil, err
 	}
 	return &ct, nil
@@ -101,14 +83,33 @@ func New(db storage.FullStorage, conf config.Options, l lw.Logger) (*fedbox.Base
 	}, nil
 }
 
-func setup(ct *fedbox.Base, options config.Options, l lw.Logger) error {
+func setup(ct *fedbox.Base, options config.Options) error {
 	environ := options.Env
 	path := options.StoragePath
-	typ := options.Storage
 	conf, err := config.Load(path, environ, time.Second)
 	if err != nil {
-		l.Errorf("Unable to load config files for environment %s: %s", environ, err)
+		return err
 	}
+
+	var out io.WriteCloser
+	if conf.LogOutput != "" {
+		if out, err = os.Open(conf.LogOutput); err != nil {
+			return errors.Newf("Unable to output logs to %s: %s", conf.LogOutput, err)
+		}
+		defer func() {
+			if err := out.Close(); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "Unable to close log output: %s", err)
+			}
+		}()
+	}
+	var l lw.Logger
+	if conf.Env.IsDev() {
+		l = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+	} else {
+		l = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+	}
+
+	typ := options.Storage
 	if typ != "" {
 		conf.Storage = typ
 	}
