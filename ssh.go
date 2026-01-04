@@ -9,8 +9,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"git.sr.ht/~mariusor/lw"
@@ -27,39 +25,6 @@ import (
 	"github.com/muesli/termenv"
 	"golang.org/x/crypto/ed25519"
 )
-
-// ResolveFilePathWithSubdir resolves a file path in a subdirectory
-// Priority:
-// 1. Local working directory (e.g., ./.ssh/stegodonhostkey)
-// 2. User config directory (e.g., ~/.config/stegodon/.ssh/stegodonhostkey)
-// 3. Returns the user config directory path if neither exists (for creation)
-func ResolveFilePathWithSubdir(subdir, filename string) string {
-	localPath := filepath.Join(subdir, filename)
-
-	// Check local directory first
-	if _, err := os.Stat(localPath); err == nil {
-		return localPath
-	}
-
-	// Try user config directory
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		// Fallback to local directory if we can't get config dir
-		return localPath
-	}
-
-	userSubdir := filepath.Join(configDir, subdir)
-	userPath := filepath.Join(userSubdir, filename)
-
-	// If file exists in user dir, return that path
-	if _, err := os.Stat(userPath); err == nil {
-		return userPath
-	}
-
-	// Neither exists, create subdirectory and return user config path
-	_ = os.MkdirAll(userSubdir, 0755)
-	return userPath
-}
 
 func SSHAuthPw(f *FedBOX) ssh.PasswordHandler {
 	return func(ctx ssh.Context, pw string) bool {
@@ -112,8 +77,12 @@ func MainTui(f *FedBOX) wish.Middleware {
 			lwCtx["actor"] = acc.GetLink()
 		}
 		f.Logger.WithContext(lwCtx).Infof("opening ssh session")
-		return nil //tea.NewProgram(nil, tea.WithFPS(60), tea.WithInput(s), tea.WithOutput(s), tea.WithAltScreen())
+
+		r := bm.MakeRenderer(s)
+		model := TUIModel(&f.Base, acc, r, pty.Window.Width, pty.Window.Height)
+		return tea.NewProgram(model, tea.WithFPS(60), tea.WithInput(s), tea.WithOutput(s), tea.WithAltScreen())
 	}
+
 	return bm.MiddlewareWithProgramHandler(teaHandler, termenv.ANSI256)
 }
 

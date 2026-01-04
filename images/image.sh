@@ -5,7 +5,8 @@ _context=$(realpath "../")
 
 _environment=${ENV:-dev}
 _hostname=${FEDBOX_HOSTNAME:-fedbox}
-_listen_port=${PORT:-4000}
+_listen_http_port=${PORT:-4000}
+_listen_ssh_port=${PORT:-4022}
 _storage=${STORAGE:-all}
 _version=${VERSION:-HEAD}
 
@@ -29,7 +30,7 @@ buildah config --env "GOMODCACHE=${GOMODCACHE}" "${_builder}"
 
 buildah config --workingdir /go/src/app "${_builder}"
 
-echo "Building image ${_image_name} for host=${_hostname} env:${_environment} storage:${_storage} version:${_version} port:${_listen_port}"
+echo "Building image ${_image_name} for host=${_hostname} env:${_environment} storage:${_storage} version:${_version} port:${_listen_http_port}"
 
 buildah run \
     --mount="type=bind,rw,source=${HOST_GOCACHE},destination=${GOCACHE}" \
@@ -47,13 +48,14 @@ _image=$(buildah from gcr.io/distroless/static:latest)
 
 buildah config --env "ENV=${_environment}" "${_image}"
 buildah config --env "HOSTNAME=${_hostname}" "${_image}"
-buildah config --env "LISTEN=:${_listen_port}" "${_image}"
+buildah config --env "LISTEN=:${_listen_http_port}" "${_image}"
 buildah config --env "KEY_PATH=/etc/ssl/certs/${_hostname}.key" "${_image}"
 buildah config --env "CERT_PATH=/etc/ssl/certs/${_hostname}.crt" "${_image}"
 buildah config --env "STORAGE=${_storage}" "${_image}"
 buildah config --env HTTPS=true "${_image}"
 
-buildah config --port "${_listen_port}" "${_image}"
+buildah config --port "${_listen_http_port}" "${_image}"
+buildah config --port "${_listen_ssh_port}" "${_image}"
 
 buildah config --volume /storage "${_image}"
 buildah config --volume /.env "${_image}"
