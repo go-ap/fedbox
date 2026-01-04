@@ -1,3 +1,5 @@
+//go:build ssh
+
 package fedbox
 
 import (
@@ -9,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/mask"
@@ -17,6 +20,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
+	"github.com/charmbracelet/wish/activeterm"
 	bm "github.com/charmbracelet/wish/bubbletea"
 	"github.com/charmbracelet/wish/logging"
 	vocab "github.com/go-ap/activitypub"
@@ -90,6 +94,7 @@ func SSHAuthPublicKey(f *FedBOX) ssh.PublicKeyHandler {
 		return true
 	}
 }
+
 func MainTui(f *FedBOX) wish.Middleware {
 	teaHandler := func(s ssh.Session) *tea.Program {
 		pty, _, active := s.Pty()
@@ -137,9 +142,11 @@ func publicKeyCheck(f *FedBOX, id string, sessKey ssh.PublicKey) (*vocab.Actor, 
 	err = vocab.OnActor(maybeActor, func(actor *vocab.Actor) error {
 		servicePubKey := actor.PublicKey.PublicKeyPem
 		pubBytes, _ := pem.Decode([]byte(servicePubKey))
-		key, err = x509.ParsePKCS8PrivateKey(pubBytes.Bytes)
+		key, err = x509.ParsePKIXPublicKey(pubBytes.Bytes)
 		if err != nil {
-			return err
+			if key, err = x509.ParsePKCS1PublicKey(pubBytes.Bytes); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -158,17 +165,24 @@ func publicKeyCheck(f *FedBOX, id string, sessKey ssh.PublicKey) (*vocab.Actor, 
 		return nil, false
 	}
 }
+
 func initSSHServer(app *FedBOX) (m.Server, error) {
 	if app.Conf.SSHPort <= 0 {
 		return nil, nil
 	}
+	listen := app.Conf.Listen
+	if portIndex := strings.Index(listen, ":"); portIndex > 0 {
+		listen = listen[:portIndex]
+	}
+	app.Logger.WithContext(lw.Ctx{"ssh": listen, "port": app.Conf.SSHPort}).Debugf("Accepting SSH requests")
 	return m.SSHServer(
-		wish.WithAddress(fmt.Sprintf("%s:%d", app.Conf.Hostname, app.Conf.SSHPort)),
+		wish.WithAddress(fmt.Sprintf("%s:%d", listen, app.Conf.SSHPort)),
 		//wish.WithHostKeyPath(filepath.Join(app.Conf.StoragePath, ".ssh", "host_key")),
 		wish.WithPublicKeyAuth(SSHAuthPublicKey(app)),
 		wish.WithPasswordAuth(SSHAuthPw(app)),
 		wish.WithMiddleware(
 			logging.MiddlewareWithLogger(corsLogger(app.Logger.Debugf)),
+			activeterm.Middleware(),
 			MainTui(app),
 		),
 	)
