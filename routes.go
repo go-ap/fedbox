@@ -76,7 +76,7 @@ func (f *FedBOX) CollectionRoutes(descend bool) func(chi.Router) {
 			})
 
 			// NOTE(marius): dump received requests to disk for debugging purposes
-			if basePath, err := f.Config().BaseStoragePath(); err == nil {
+			if basePath, err := f.Conf.BaseStoragePath(); err == nil {
 				r = r.With(processing.RequestToDiskMw(basePath, f.debugMode.Load))
 			}
 			r.Method(http.MethodPost, "/", HandleActivity(f))

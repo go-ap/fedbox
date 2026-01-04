@@ -287,7 +287,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 
 		repo := fb.Storage
 
-		baseIRI := vocab.IRI(fb.Config().BaseURL)
+		baseIRI := vocab.IRI(fb.Conf.BaseURL)
 		initFns := make([]processing.OptionFn, 0)
 		initFns = append(initFns,
 			processing.WithIRI(baseIRI, InternalIRI),
@@ -299,7 +299,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		if fb.keyGenerator != nil {
 			initFns = append(initFns, processing.WithActorKeyGenerator(fb.keyGenerator))
 		}
-		if !fb.Config().Env.IsTest() {
+		if !fb.Conf.Env.IsTest() {
 			initFns = append(initFns, processing.Async)
 		}
 		processor := processing.New(initFns...)

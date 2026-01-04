@@ -964,12 +964,12 @@ func bootstrapApps(t *testing.T, l lw.Logger, apps map[vocab.IRI]*fedbox.FedBOX,
 	t.Helper()
 
 	for appID, app := range apps {
-		options := app.Config()
+		options := app.Conf
 
 		fields := lw.Ctx{"action": "seeding", "storage": options.Storage, "path": options.StoragePath}
 		l = l.WithContext(fields)
 
-		if err := saveMocks(mocks, app.Config(), app.Storage, l); err != nil {
+		if err := saveMocks(mocks, app.Conf, app.Storage, l); err != nil {
 			t.Fatalf("%s", err)
 		}
 		ctx, stopFn := context.WithCancel(context.TODO())

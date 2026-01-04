@@ -53,6 +53,7 @@ type Base struct {
 type FedBOX struct {
 	Base
 
+	server m.Server
 	R      chi.Router
 	caches canStore
 
@@ -60,13 +61,6 @@ type FedBOX struct {
 	shuttingDown    atomic.Bool
 
 	keyGenerator func(act *vocab.Actor) error
-
-	startFn func(ctx context.Context) error
-	stopFn  func(ctx context.Context) error
-}
-
-var emptyCtxtFn = func(_ context.Context) error {
-	return nil
 }
 
 var InternalIRI = vocab.IRI("https://fedbox/")
@@ -155,9 +149,6 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 		},
 		R:      chi.NewRouter(),
 		caches: cache.New(conf.RequestCache),
-
-		startFn: emptyCtxtFn,
-		stopFn:  emptyCtxtFn,
 	}
 
 	if metaSaver, ok := db.(storage.MetadataStorage); ok {
@@ -184,6 +175,7 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 		muxSetters = append(muxSetters, m.GracefulWait(defaultGraceWait))
 	}
 
+	// NOTE(marius): we initialize the HTTP Server
 	httpSrv, err := initHttpServer(&app)
 	if err != nil {
 		return nil, err
@@ -195,18 +187,14 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 		app.Logger.WithContext(lw.Ctx{"err": err}).Errorf("unable to open SSH connection")
 	}
 	if sshServ != nil {
+		// NOTE(marius): if the SSH Server could be initialized
 		muxSetters = append(muxSetters, m.WithServer(sshServ))
 	}
 
-	// Get start/stop functions for the http server
-	s, err := m.Mux(muxSetters...)
+	app.server, err = m.Mux(muxSetters...)
 	if err != nil {
 		return nil, err
 	}
-	app.startFn = s.Start
-	app.stopFn = s.Stop
-
-	//app.Conf.Listen += "[" + sockType + "]"
 
 	return &app, nil
 }
@@ -220,37 +208,32 @@ func (f *FedBOX) setupService() error {
 	var err error
 
 	f.Service, err = ap.LoadActor(db, selfIRI)
+	keysType := KeyTypeRSA
+	if conf.MastodonIncompatible {
+		keysType = KeyTypeED25519
+	}
 	if err != nil && errors.IsNotFound(err) {
 		f.infFn("No service actor found, creating one: %s", selfIRI)
 		self := ap.Self(selfIRI)
-		if err = CreateService(db, self); err != nil {
+		if err = CreateService(db, self, keysType); err != nil {
 			return err
 		}
 		f.Service = self
-		keysType := KeyTypeRSA
-		if conf.MastodonIncompatible {
-			keysType = KeyTypeED25519
-		}
-		if err = AddKeyToItem(db, &f.Service, keysType); err != nil {
-			f.errFn("Unable to save the instance's self service public key: %s", err)
-		}
 	}
 	key, err := db.LoadKey(f.Service.ID)
 	if err != nil {
 		f.errFn("Unable to load the private key for the instance's Service: %s", err)
 	}
-	prvEnc, err := x509.MarshalPKCS8PrivateKey(key)
-	if err != nil {
-		return err
+	if key != nil {
+		prvEnc, err := x509.MarshalPKCS8PrivateKey(key)
+		if err != nil {
+			return err
+		}
+		r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
+		f.ServicePrivateKey = pem.EncodeToMemory(&r)
 	}
-	r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
-	f.ServicePrivateKey = pem.EncodeToMemory(&r)
 
 	return nil
-}
-
-func (f *FedBOX) Config() config.Options {
-	return f.Conf
 }
 
 func (f *FedBOX) Pause() error {
@@ -278,7 +261,7 @@ func (f *FedBOX) Stop(ctx context.Context) error {
 		}
 	}()
 
-	return f.stopFn(ctx)
+	return f.server.Stop(ctx)
 }
 
 func (f *FedBOX) reload() (err error) {
@@ -383,7 +366,7 @@ func (f *FedBOX) Run(ctx context.Context) error {
 			cancelFn()
 			exitWithErrOrInterrupt(f.Stop(ctx), exit)
 		},
-	}).Exec(ctx, f.startFn)
+	}).Exec(ctx, f.server.Start)
 	if err == nil {
 		logger.Infof("Stopped")
 	}
@@ -410,7 +393,7 @@ func (b *Base) errFn(s string, p ...any) {
 	}
 }
 
-func CreateService(r storage.FullStorage, self vocab.Item) (err error) {
+func CreateService(r storage.FullStorage, self vocab.Item, keyType string) (err error) {
 	_ = vocab.OnActor(self, func(service *vocab.Actor) error {
 		service.Published = time.Now().UTC()
 		return nil
@@ -422,6 +405,10 @@ func CreateService(r storage.FullStorage, self vocab.Item) (err error) {
 
 	c := osin.DefaultClient{Id: string(self.GetLink())}
 	_ = r.CreateClient(&c)
+
+	if err = AddKeyToItem(r, self, keyType); err != nil {
+		return err
+	}
 
 	rr, ok := r.(storage.CollectionStore)
 	if !ok {
@@ -440,6 +427,7 @@ func CreateService(r storage.FullStorage, self vocab.Item) (err error) {
 	return vocab.OnActor(self, func(service *vocab.Actor) error {
 		var multi error
 		for _, stream := range service.Streams {
+			// NOTE(marius): create fedbox custom collections /activities, /objects, /actors
 			if _, err := rr.Create(col(stream.GetID())); err != nil {
 				multi = errors.Join(multi, err)
 			}

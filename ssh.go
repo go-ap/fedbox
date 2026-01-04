@@ -144,9 +144,8 @@ func initSSHServer(app *FedBOX) (m.Server, error) {
 		listen = listen[:portIndex]
 	}
 	app.Logger.WithContext(lw.Ctx{"ssh": listen, "port": app.Conf.SSHPort}).Debugf("Accepting SSH requests")
-	return m.SSHServer(
+	initFns := []m.SSHSetFn{
 		wish.WithAddress(fmt.Sprintf("%s:%d", listen, app.Conf.SSHPort)),
-		wish.WithHostKeyPEM(app.ServicePrivateKey),
 		wish.WithPublicKeyAuth(SSHAuthPublicKey(app)),
 		wish.WithPasswordAuth(SSHAuthPw(app)),
 		wish.WithMiddleware(
@@ -154,5 +153,10 @@ func initSSHServer(app *FedBOX) (m.Server, error) {
 			activeterm.Middleware(),
 			MainTui(app),
 		),
-	)
+	}
+	if app.ServicePrivateKey != nil {
+		// NOTE(marius): use the service private key as a host key
+		initFns = append(initFns, wish.WithHostKeyPEM(app.ServicePrivateKey))
+	}
+	return m.SSHServer(initFns...)
 }

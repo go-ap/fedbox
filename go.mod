@@ -10,6 +10,7 @@ require (
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.12.1
 	github.com/charmbracelet/bubbletea v1.3.10
+	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/charmbracelet/wish v1.4.7
@@ -21,10 +22,6 @@ require (
 	github.com/go-ap/filters v0.0.0-20260102113139-8ad00475b09e
 	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77
 	github.com/go-ap/processing v0.0.0-20260102113618-83e5c1da3baf
-	github.com/go-ap/storage-badger v0.0.0-20260102114145-aa5bc644359e // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260102114123-757dc56b2df9 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260102113726-6d94ccf75406 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260102121418-4baf35f75d8a // indirect
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -48,7 +45,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/bubbles v0.21.1-0.20250623103423-23b8fd6302d7 // indirect
 	github.com/charmbracelet/colorprofile v0.4.1 // indirect
-	github.com/charmbracelet/huh v0.8.0 // indirect
 	github.com/charmbracelet/keygen v0.5.4 // indirect
 	github.com/charmbracelet/log v0.4.2 // indirect
 	github.com/charmbracelet/x/ansi v0.11.3 // indirect
@@ -67,6 +63,10 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.3.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260102114145-aa5bc644359e // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260102114123-757dc56b2df9 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260102113726-6d94ccf75406 // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260102121418-4baf35f75d8a // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

@@ -72,7 +72,11 @@ func bootstrap(conf config.Options, service vocab.Item, l lw.Logger) error {
 	}
 	defer st.Close()
 
-	if err = fedbox.CreateService(st, service); err != nil {
+	keyType := fedbox.KeyTypeRSA
+	if conf.MastodonIncompatible {
+		keyType = fedbox.KeyTypeED25519
+	}
+	if err = fedbox.CreateService(st, service, keyType); err != nil {
 		return http.Annotatef(err, "Unable to create FedBOX service %s for storage %s", service.GetID(), conf.Storage)
 	}
 	l.Infof("Successfully created FedBOX service %s for storage %s", service.GetID(), conf.Storage)

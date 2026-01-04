@@ -76,7 +76,6 @@ systemd/fedbox.service: systemd/fedbox.service.in ## Creates a systemd service f
 systemd/fedbox.socket: systemd/fedbox.socket.in ## Creates a socket systemd unit file to accompany the service file.
 	$(M4) $(M4_FLAGS) -DLISTEN_HOST=$(FEDBOX_HOSTNAME) -DLISTEN_PORT=$(LISTEN_PORT) $< >$@
 
-
 clean: ## Cleanup the build workspace.
 	-$(RM) bin/*
 	$(MAKE) -C tests $@
