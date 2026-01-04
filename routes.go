@@ -2,6 +2,7 @@ package fedbox
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"git.sr.ht/~mariusor/lw"
@@ -12,10 +13,10 @@ import (
 	"github.com/go-chi/cors"
 )
 
-type corsLogger func(string, ...any)
+type justPrintLogger func(string, ...any)
 
-func (c corsLogger) Printf(f string, v ...interface{}) {
-	c(f, v...)
+func (c justPrintLogger) Printf(f string, v ...interface{}) {
+	c(strings.TrimSpace(f), v...)
 }
 
 func checkOriginForBlockedActors(r *http.Request, origin string) bool {
@@ -32,7 +33,7 @@ func (f *FedBOX) Routes() func(chi.Router) {
 		MaxAge:           int(time.Hour.Seconds()),
 		Debug:            !f.Conf.Env.IsProd(),
 	})
-	c.Log = corsLogger(f.Logger.WithContext(lw.Ctx{"log": "cors"}).Tracef)
+	c.Log = justPrintLogger(f.Logger.WithContext(lw.Ctx{"log": "cors"}).Tracef)
 
 	return func(r chi.Router) {
 		r.Use(lw.Middlewares(f.Logger)...)

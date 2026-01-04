@@ -181,7 +181,7 @@ func initSSHServer(app *FedBOX) (m.Server, error) {
 		wish.WithPublicKeyAuth(SSHAuthPublicKey(app)),
 		wish.WithPasswordAuth(SSHAuthPw(app)),
 		wish.WithMiddleware(
-			logging.MiddlewareWithLogger(corsLogger(app.Logger.Debugf)),
+			logging.MiddlewareWithLogger(justPrintLogger(app.Logger.Debugf)),
 			activeterm.Middleware(),
 			MainTui(app),
 		),
