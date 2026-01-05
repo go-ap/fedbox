@@ -1,4 +1,4 @@
-package cmd
+package fedbox
 
 import (
 	"bufio"
@@ -13,7 +13,6 @@ import (
 	"git.sr.ht/~mariusor/storage-all"
 	"github.com/alecthomas/kong"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
@@ -28,15 +27,7 @@ type Storage struct {
 	FixCollections FixCollections `cmd:"" help:"Fix storage collections."`
 }
 
-type CTL struct {
-	Url     url.URL          `help:"The URL used by the application."`
-	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`
-	Verbose int              `counter:"v" help:"Increase verbosity level from the default associated with the environment settings."`
-	Path    string           `path:"" help:"The path for the storage folder or socket" default:"." env:"STORAGE_PATH"`
-	Version kong.VersionFlag `short:"V"`
-
-	// Commands
-	Run         Serve       `cmd:"" name:"run" help:"Run the ${name} instance server (version: ${version})" default:"withargs"`
+type SSH struct {
 	Pub         Pub         `cmd:"" name:"pub" alt:"ap" help:"ActivityPub management helper"`
 	OAuth       OAuth       `cmd:"" name:"oauth"`
 	Storage     Storage     `cmd:""`
@@ -46,7 +37,20 @@ type CTL struct {
 	Stop        Stop        `cmd:"" help:"Stops the running FedBOX server configuration."`
 }
 
-func InitControl(c *CTL, version string) (*fedbox.Base, error) {
+type CTL struct {
+	SSH
+
+	Url     url.URL          `help:"The URL used by the application."`
+	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`
+	Verbose int              `counter:"v" help:"Increase verbosity level from the default associated with the environment settings."`
+	Path    string           `path:"" help:"The path for the storage folder or socket" default:"." env:"STORAGE_PATH"`
+	Version kong.VersionFlag `short:"V"`
+
+	// Commands
+	Run Serve `cmd:"" name:"run" help:"Run the ${name} instance server (version: ${version})" default:"withargs"`
+}
+
+func InitControl(c *CTL, version string) (*Base, error) {
 	opt := config.Options{
 		Env:         c.Env,
 		LogLevel:    lw.InfoLevel,
@@ -62,28 +66,35 @@ func InitControl(c *CTL, version string) (*fedbox.Base, error) {
 	}
 
 	errors.SetIncludeBacktrace(opt.LogLevel == lw.TraceLevel)
-	ct := fedbox.Base{}
+	ct := Base{
+		in:  os.Stdin,
+		out: os.Stdout,
+		err: os.Stderr,
+	}
 	if err := setup(&ct, opt); err != nil {
 		return nil, err
 	}
 	return &ct, nil
 }
 
-func New(db storage.FullStorage, conf config.Options, l lw.Logger) (*fedbox.Base, error) {
+func NewBase(db storage.FullStorage, conf config.Options, l lw.Logger) (*Base, error) {
 	self, err := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
 	if err != nil {
 		l.Warnf("unable to load actor: %s", err)
 	}
 
-	return &fedbox.Base{
+	return &Base{
 		Conf:    conf,
 		Service: self,
 		Storage: db,
 		Logger:  l,
+		in:      os.Stdin,
+		out:     os.Stdout,
+		err:     os.Stderr,
 	}, nil
 }
 
-func setup(ct *fedbox.Base, options config.Options) error {
+func setup(ct *Base, options config.Options) error {
 	environ := options.Env
 	path := options.StoragePath
 	conf, err := config.Load(path, environ, time.Second)
@@ -159,6 +170,6 @@ func loadFromStdin(s string, params ...any) ([]byte, error) {
 	return input[:len(input)-1], nil
 }
 
-func Errf(s string, par ...any) {
-	_, _ = fmt.Fprintf(os.Stderr, s+"\n", par...)
+func Errf(out io.Writer, s string, par ...any) {
+	_, _ = fmt.Fprintf(out, s+"\n", par...)
 }

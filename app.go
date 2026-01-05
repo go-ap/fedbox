@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,12 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	cache2 "git.sr.ht/~mariusor/cache"
 	"git.sr.ht/~mariusor/lw"
 	m "git.sr.ht/~mariusor/servermux"
 	"git.sr.ht/~mariusor/storage-all"
 	w "git.sr.ht/~mariusor/wrapper"
-	"github.com/charmbracelet/ssh"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/cache"
@@ -27,7 +24,6 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
-	"github.com/openshift/osin"
 )
 
 func init() {
@@ -38,17 +34,6 @@ func init() {
 type LogFn func(string, ...any)
 
 type canStore = cache.CanStore
-
-type Base struct {
-	Conf              config.Options
-	Logger            lw.Logger
-	Service           vocab.Actor
-	ServicePrivateKey []byte
-	Storage           storage.FullStorage
-
-	debugMode atomic.Bool
-	sshServer *ssh.Server
-}
 
 type FedBOX struct {
 	Base
@@ -61,30 +46,6 @@ type FedBOX struct {
 	shuttingDown    atomic.Bool
 
 	keyGenerator func(act *vocab.Actor) error
-}
-
-var InternalIRI = vocab.IRI("https://fedbox/")
-
-func Client(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
-	cachePath, err := os.UserCacheDir()
-	if err != nil {
-		cachePath = os.TempDir()
-	}
-
-	if tr == nil {
-		tr = &http.Transport{}
-	}
-
-	ua := fmt.Sprintf("%s@%s (+%s)", conf.BaseURL, conf.Version, ap.ProjectURL)
-	baseClient := &http.Client{
-		Transport: client.UserAgentTransport(ua, cache2.Private(tr, cache2.FS(filepath.Join(cachePath, conf.AppName)))),
-	}
-
-	return client.New(
-		client.WithLogger(l.WithContext(lw.Ctx{"log": "client"})),
-		client.WithHTTPClient(baseClient),
-		client.SkipTLSValidation(!conf.Env.IsProd()),
-	)
 }
 
 const defaultGraceWait = 1500 * time.Millisecond
@@ -146,6 +107,9 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 			Storage: db,
 			Logger:  l,
 			Conf:    conf,
+			out:     os.Stdout,
+			err:     os.Stderr,
+			in:      os.Stdin,
 		},
 		R:      chi.NewRouter(),
 		caches: cache.New(conf.RequestCache),
@@ -158,7 +122,7 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 		}
 
 		l.Debugf("Setting actor key generator %T[%s]", metaSaver, keysType)
-		app.keyGenerator = AddKeyToPerson(metaSaver, keysType)
+		app.keyGenerator = ap.AddKeyToPerson(metaSaver, keysType)
 	}
 
 	app.debugMode.Store(conf.Env.IsDev())
@@ -208,14 +172,14 @@ func (f *FedBOX) setupService() error {
 	var err error
 
 	f.Service, err = ap.LoadActor(db, selfIRI)
-	keysType := KeyTypeRSA
+	keysType := ap.KeyTypeRSA
 	if conf.MastodonIncompatible {
-		keysType = KeyTypeED25519
+		keysType = ap.KeyTypeED25519
 	}
 	if err != nil && errors.IsNotFound(err) {
 		f.infFn("No service actor found, creating one: %s", selfIRI)
 		self := ap.Self(selfIRI)
-		if err = CreateService(db, self, keysType); err != nil {
+		if err = ap.CreateService(db, self, keysType); err != nil {
 			return err
 		}
 		f.Service = self
@@ -244,12 +208,6 @@ func (f *FedBOX) Pause() error {
 		return f.Storage.Open()
 	}
 	return nil
-}
-
-func (ctl *Base) SendSignalToServer(sig syscall.Signal) func() error {
-	return func() error {
-		return ctl.SendSignal(sig)
-	}
 }
 
 // Stop
@@ -377,67 +335,4 @@ func (f *FedBOX) Run(ctx context.Context) error {
 		logger.Infof("Stopped")
 	}
 	return err
-}
-
-func (b *Base) SendSignal(sig syscall.Signal) error {
-	pid, err := b.Conf.ReadPid()
-	if err != nil {
-		return errors.Annotatef(err, "unable to read pid file")
-	}
-	return syscall.Kill(pid, sig)
-}
-
-func (b *Base) infFn(s string, p ...any) {
-	if b.Logger != nil {
-		b.Logger.Infof(s, p...)
-	}
-}
-
-func (b *Base) errFn(s string, p ...any) {
-	if b.Logger != nil {
-		b.Logger.Errorf(s, p...)
-	}
-}
-
-func CreateService(r storage.FullStorage, self vocab.Item, keyType string) (err error) {
-	_ = vocab.OnActor(self, func(service *vocab.Actor) error {
-		service.Published = time.Now().UTC()
-		return nil
-	})
-	self, err = r.Save(self)
-	if err != nil {
-		return err
-	}
-
-	c := osin.DefaultClient{Id: string(self.GetLink())}
-	_ = r.CreateClient(&c)
-
-	if err = AddKeyToItem(r, self, keyType); err != nil {
-		return err
-	}
-
-	rr, ok := r.(storage.CollectionStore)
-	if !ok {
-		return nil
-	}
-
-	col := func(iri vocab.IRI) vocab.CollectionInterface {
-		return &vocab.OrderedCollection{
-			ID:           iri,
-			Type:         vocab.OrderedCollectionType,
-			Published:    time.Now().UTC(),
-			AttributedTo: self.GetLink(),
-			CC:           vocab.ItemCollection{vocab.PublicNS},
-		}
-	}
-	return vocab.OnActor(self, func(service *vocab.Actor) error {
-		var multi error
-		for _, stream := range service.Streams {
-			// NOTE(marius): create fedbox custom collections /activities, /objects, /actors
-			if _, err := rr.Create(col(stream.GetID())); err != nil {
-				multi = errors.Join(multi, err)
-			}
-		}
-		return multi
-	})
 }

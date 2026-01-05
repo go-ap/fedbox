@@ -1,11 +1,10 @@
-package cmd
+package fedbox
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox"
 )
 
 type Client struct {
@@ -21,13 +20,13 @@ type OAuth struct {
 
 type LsClient struct{}
 
-func (l LsClient) Run(ctl *fedbox.Base) error {
+func (l LsClient) Run(ctl *Base) error {
 	clients, err := ctl.ListClients()
 	if err != nil {
 		return err
 	}
 	for i, client := range clients {
-		fmt.Printf("%d %s - %s\n", i, client.GetId(), strings.ReplaceAll(client.GetRedirectUri(), "\n", " :: "))
+		_, _ = fmt.Fprintf(ctl.out, "%d %s - %s\n", i, client.GetId(), strings.ReplaceAll(client.GetRedirectUri(), "\n", " :: "))
 	}
 	return nil
 }
@@ -36,17 +35,17 @@ type DelClient struct {
 	Client []string `arg:"" help:"Removes an existing OAuth2 client"`
 }
 
-func (d DelClient) Run(ctl *fedbox.Base) error {
+func (d DelClient) Run(ctl *Base) error {
 	for _, id := range d.Client {
 		if id == "" {
 			continue
 		}
 		err := ctl.DeleteClient(id)
 		if err != nil {
-			Errf("Error deleting %s: %s\n", id, err)
+			Errf(ctl.err, "Error deleting %s: %s\n", id, err)
 			continue
 		}
-		fmt.Printf("Deleted: %s\n", id)
+		_, _ = fmt.Fprintf(ctl.out, "Deleted: %s\n", id)
 	}
 	return nil
 }
@@ -55,7 +54,7 @@ type AddClient struct {
 	RedirectURIs []string `name:"redirect-uri" help:"The redirect URIs for current application"`
 }
 
-func (a AddClient) Run(ctl *fedbox.Base) error {
+func (a AddClient) Run(ctl *Base) error {
 	redirectURIs := a.RedirectURIs
 	if len(redirectURIs) < 1 {
 		return errors.Newf("Need to provide at least a redirect URI for the client")
@@ -80,7 +79,7 @@ type AddToken struct {
 	Actor  string `arg:"" help:"The actor identifier we want to generate the authorization for (ID)"`
 }
 
-func (a AddToken) Run(ctl *fedbox.Base) error {
+func (a AddToken) Run(ctl *Base) error {
 	clientID := a.Client
 	if clientID == "" {
 		clientID = string(ctl.Service.GetLink())

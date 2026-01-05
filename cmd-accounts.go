@@ -1,4 +1,4 @@
-package cmd
+package fedbox
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/jsonld"
 )
 
@@ -21,13 +21,13 @@ type Accounts struct {
 
 type Export struct{}
 
-func (e Export) Run(ctl *fedbox.Base) error {
-	metaLoader, ok := ctl.Storage.(fedbox.MetadataStorage)
+func (e Export) Run(ctl *Base) error {
+	metaLoader, ok := ctl.Storage.(ap.MetadataStorage)
 	if !ok {
 		return errors.Newf("")
 	}
 
-	iri := fedbox.SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), fedbox.ByType(vocab.PersonType))
+	iri := ap.SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), ap.ByType(vocab.PersonType))
 	col, err := ctl.Storage.Load(iri)
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func (e Export) Run(ctl *fedbox.Base) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s\n", bytes)
+	_, _ = fmt.Fprintf(ctl.out, "%s\n", bytes)
 	return nil
 }
 
@@ -74,32 +74,32 @@ type Import struct {
 	Files []*os.File `arg:""`
 }
 
-func (i Import) Run(ctl *fedbox.Base) error {
-	metaLoader, ok := ctl.Storage.(fedbox.MetadataStorage)
+func (i Import) Run(ctl *Base) error {
+	metaLoader, ok := ctl.Storage.(ap.MetadataStorage)
 	if !ok {
 		return errors.Newf("")
 	}
 	for _, f := range i.Files {
 		s, err := f.Stat()
 		if err != nil {
-			Errf("Error %s", err)
+			Errf(ctl.err, "Error %s", err)
 			continue
 		}
 		buf := make([]byte, s.Size())
 		size, err := f.Read(buf)
 		if err != nil {
-			Errf("Error %s", err)
+			Errf(ctl.err, "Error %s", err)
 			continue
 		}
 		if size == 0 {
-			Errf("Empty file %s", f.Name())
+			Errf(ctl.err, "Empty file %s", f.Name())
 			continue
 		}
 
 		metadata := make(map[vocab.IRI]auth.Metadata)
 		err = jsonld.Unmarshal(buf, &metadata)
 		if err != nil {
-			Errf("Error unmarshaling JSON: %s", err)
+			Errf(ctl.err, "Error unmarshaling JSON: %s", err)
 			continue
 		}
 		start := time.Now()
@@ -113,10 +113,10 @@ func (i Import) Run(ctl *fedbox.Base) error {
 		}
 
 		tot := time.Now().Sub(start)
-		fmt.Printf("Elapsed time:          %s\n", tot)
+		_, _ = fmt.Fprintf(ctl.out, "Elapsed time:          %s\n", tot)
 		if count > 0 {
 			perIt := time.Duration(int64(tot) / int64(count))
-			fmt.Printf("Elapsed time per item: %s\n", perIt)
+			_, _ = fmt.Fprintf(ctl.out, "Elapsed time per item: %s\n", perIt)
 		}
 	}
 	return nil
@@ -127,9 +127,9 @@ type GenKeys struct {
 	IRIs []vocab.IRI `arg:"" optional:"" name:"iri" help:"Actors for which to generate the keys. Defaults to all actors if missing."`
 }
 
-func (g GenKeys) Run(ctl *fedbox.Base) error {
+func (g GenKeys) Run(ctl *Base) error {
 	typ := g.Type
-	metaSaver, ok := ctl.Storage.(fedbox.MetadataStorage)
+	metaSaver, ok := ctl.Storage.(ap.MetadataStorage)
 	if !ok {
 		return errors.Newf("storage doesn't support saving key")
 	}
@@ -138,7 +138,7 @@ func (g GenKeys) Run(ctl *fedbox.Base) error {
 	for _, iri := range g.IRIs {
 		maybeActor, err := ctl.Storage.Load(iri)
 		if err != nil {
-			Errf(err.Error())
+			Errf(ctl.err, err.Error())
 			continue
 		}
 		_ = vocab.OnActor(maybeActor, func(act *vocab.Actor) error {
@@ -150,7 +150,7 @@ func (g GenKeys) Run(ctl *fedbox.Base) error {
 	if len(g.IRIs) == 0 {
 		// TODO(marius): we should improve this with filtering based on public key existing in the actor,
 		//  and with batching.
-		iri := fedbox.SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), fedbox.ByType(vocab.PersonType))
+		iri := ap.SearchActorsIRI(vocab.IRI(ctl.Conf.BaseURL), ap.ByType(vocab.PersonType))
 		maybeActor, err := ctl.Storage.Load(iri)
 		if err != nil {
 			return err
@@ -167,13 +167,13 @@ func (g GenKeys) Run(ctl *fedbox.Base) error {
 	for _, actor := range actors {
 		// NOTE(marius): we initialize the client that we're going to use for Update
 		// dissemination with an HTTP-Signature based on the current private key.
-		saver := fedbox.Saver(ctl, actor)
-		if err := fedbox.AddKeyToItem(metaSaver, actor, typ); err != nil {
-			Errf("Error: %s", err.Error())
+		saver := ctl.Saver(actor)
+		if err := ap.AddKeyToItem(metaSaver, actor, typ); err != nil {
+			Errf(ctl.err, "Error: %s", err.Error())
 		}
 
 		outbox := vocab.Outbox.IRI(actor)
-		update := fedbox.WrapObjectInUpdate(actor, actor)
+		update := ap.WrapObjectInUpdate(actor, actor)
 		if _, err := saver.ProcessClientActivity(update, *actor, outbox); err != nil {
 			return err
 		}
@@ -186,7 +186,12 @@ type ChangePassword struct {
 	IRI vocab.IRI `arg:"" optional:"" name:"iri" help:"The actor for which to change the password."`
 }
 
-func (c ChangePassword) Run(ctl *fedbox.Base) error {
+type passwordChanger interface {
+	PasswordSet(vocab.IRI, []byte) error
+	PasswordCheck(vocab.IRI, []byte) error
+}
+
+func (c ChangePassword) Run(ctl *Base) error {
 	actors, err := ctl.Storage.Load(c.IRI)
 	if err != nil {
 		return err
@@ -195,6 +200,7 @@ func (c ChangePassword) Run(ctl *fedbox.Base) error {
 	if err != nil {
 		return err
 	}
+	// FIXME(marius): pass stdIn also to the Run
 	pw, err := loadPwFromStdin(true, "%s's", vocab.PreferredNameOf(actor))
 	if err != nil {
 		return err
@@ -203,7 +209,7 @@ func (c ChangePassword) Run(ctl *fedbox.Base) error {
 		return errors.Errorf("empty password")
 	}
 
-	pwManager, ok := ctl.Storage.(fedbox.PasswordChanger)
+	pwManager, ok := ctl.Storage.(passwordChanger)
 	if !ok {
 		return errors.Errorf("unable to save password for current storage %T", ctl.Storage)
 	}

@@ -1,4 +1,4 @@
-package fedbox
+package ap
 
 import (
 	"crypto"
@@ -25,11 +25,6 @@ const (
 type MetadataStorage interface {
 	LoadMetadata(vocab.IRI, any) error
 	SaveMetadata(vocab.IRI, any) error
-}
-
-type PasswordChanger interface {
-	PasswordSet(vocab.IRI, []byte) error
-	PasswordCheck(vocab.IRI, []byte) error
 }
 
 func AddKeyToItem(metaSaver MetadataStorage, it vocab.Item, typ string) error {

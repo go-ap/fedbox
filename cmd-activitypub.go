@@ -1,4 +1,4 @@
-package cmd
+package fedbox
 
 import (
 	"bytes"
@@ -11,7 +11,6 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
-	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/filters"
 )
@@ -24,9 +23,10 @@ type AddActorCmd struct {
 	Names        []string                     `arg:"" name:"name" help:"The name(s) of the actor."`
 }
 
-func (a AddActorCmd) Run(ctl *fedbox.Base) error {
+func (a AddActorCmd) Run(ctl *Base) error {
 	keyType := a.KeyType
 	if len(a.Names) == 0 {
+		// FIXME(marius): pass stdIn also to the Run
 		name, err := loadFromStdin("Enter the actor's name")
 		if err != nil {
 			return errors.Errorf("Missing the actor's name")
@@ -67,6 +67,7 @@ func (a AddActorCmd) Run(ctl *fedbox.Base) error {
 
 	var actors = make(vocab.ItemCollection, 0)
 	for _, name := range a.Names {
+		// FIXME(marius): pass stdIn also to the Run
 		pw, err := loadPwFromStdin(true, "%s's", name)
 		if err != nil {
 			return err
@@ -98,9 +99,9 @@ func (a AddActorCmd) Run(ctl *fedbox.Base) error {
 			return err
 		}
 		fmt.Printf("Added %q [%s]: %s\n", a.Type, name, p.GetLink())
-		if metaSaver, ok := ctl.Storage.(fedbox.MetadataStorage); ok {
-			if err := fedbox.AddKeyToItem(metaSaver, p, keyType); err != nil {
-				Errf("Error saving metadata for %s: %s", name, err)
+		if metaSaver, ok := ctl.Storage.(ap.MetadataStorage); ok {
+			if err := ap.AddKeyToItem(metaSaver, p, keyType); err != nil {
+				Errf(ctl.err, "Error saving metadata for %s: %s", name, err)
 			}
 		}
 		actors = append(actors, p)
@@ -133,7 +134,7 @@ type DeleteCmd struct {
 	IRIs      []vocab.IRI `arg:"" name:"iris"`
 }
 
-func (d DeleteCmd) Run(ctl *fedbox.Base) error {
+func (d DeleteCmd) Run(ctl *Base) error {
 	return ctl.DeleteObjects(d.Reason, d.InReplyTo, d.IRIs...)
 }
 
@@ -143,14 +144,7 @@ type ListCmd struct {
 	IRIs   []vocab.IRI                    `arg:"" name:"iris"`
 }
 
-func printItem(it vocab.Item, outType string) error {
-	if outType == "json" {
-		return outJSON(os.Stdout)(it)
-	}
-	return outText(os.Stdout)(it)
-}
-
-func (l ListCmd) Run(ctl *fedbox.Base) error {
+func (l ListCmd) Run(ctl *Base) error {
 	typeFl := l.Type
 
 	var paths vocab.IRIs
@@ -180,7 +174,7 @@ func (l ListCmd) Run(ctl *fedbox.Base) error {
 	sort.Slice(all, func(i, j int) bool {
 		return vocab.ItemOrderTimestamp(all[i], all[j])
 	})
-	_ = printItem(all, l.Output)
+	_ = printItem(ctl.out, all, l.Output)
 	return nil
 }
 
@@ -193,7 +187,7 @@ type AddCmd struct {
 
 var validObjects = append(vocab.ObjectTypes, vocab.ObjectType, "")
 
-func (a AddCmd) Run(ctl *fedbox.Base) error {
+func (a AddCmd) Run(ctl *Base) error {
 	f := make(filters.Checks, 0)
 
 	incType := a.Type
@@ -253,18 +247,18 @@ type ImportCmd struct {
 	Files []*os.File `arg:""`
 }
 
-func (i ImportCmd) Run(ctl *fedbox.Base) error {
+func (i ImportCmd) Run(ctl *Base) error {
 	baseIRI := ctl.Conf.BaseURL
 	toReplace := i.Base
 
 	for _, f := range i.Files {
 		buf, err := io.ReadAll(f)
 		if err != nil {
-			Errf("Error %s", err)
+			Errf(ctl.err, "Error %s", err)
 			continue
 		}
 		if len(buf) == 0 {
-			Errf("Empty file %s", f.Name())
+			Errf(ctl.err, "Empty file %s", f.Name())
 			continue
 		}
 
@@ -273,7 +267,7 @@ func (i ImportCmd) Run(ctl *fedbox.Base) error {
 		}
 		ob, err := vocab.UnmarshalJSON(buf)
 		if err != nil {
-			Errf("Error unmarshaling JSON: %s", err)
+			Errf(ctl.err, "Error unmarshaling JSON: %s", err)
 			continue
 		}
 
@@ -292,18 +286,18 @@ func (i ImportCmd) Run(ctl *fedbox.Base) error {
 				if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
 					_ = vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
 						if a == nil {
-							Errf("invalid activity, is nil: %s", it.GetLink())
+							Errf(ctl.err, "invalid activity, is nil: %s", it.GetLink())
 							return nil
 						}
 						if a.Actor == nil {
-							Errf("invalid activity, actor is nil: %s", it.GetLink())
+							Errf(ctl.err, "invalid activity, actor is nil: %s", it.GetLink())
 							return nil
 						}
 						actor, err := vocab.ToActor(a.Actor)
 						if err != nil {
 							actor = &vocab.Actor{ID: a.Actor.GetLink()}
 						}
-						activityPub := fedbox.Saver(ctl, &ctl.Service)
+						activityPub := ctl.Saver(&ctl.Service)
 						it, err = activityPub.ProcessClientActivity(it, *actor, vocab.Outbox.Of(a.Actor).GetLink())
 						return err
 					})
@@ -311,7 +305,7 @@ func (i ImportCmd) Run(ctl *fedbox.Base) error {
 					it, err = ctl.Storage.Save(it)
 				}
 				if err != nil {
-					Errf("Unable to save %s %s: %s", it.GetType(), it.GetID(), err)
+					Errf(ctl.err, "Unable to save %s %s: %s", it.GetType(), it.GetID(), err)
 					continue
 				}
 				count++
@@ -333,7 +327,7 @@ type ExportCmd struct {
 	File string `help:"The path where to output the items, if absent it will be printed to stdout."`
 }
 
-func dumpAll(ctl *fedbox.Base, iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection, error) {
+func dumpAll(ctl *Base, iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection, error) {
 	col := make(vocab.ItemCollection, 0)
 	objects, err := ctl.Storage.Load(iri, f...)
 	if err != nil {
@@ -350,7 +344,7 @@ func dumpAll(ctl *fedbox.Base, iri vocab.IRI, f ...filters.Check) (vocab.ItemCol
 	return col, nil
 }
 
-func (e ExportCmd) Run(ctl *fedbox.Base) error {
+func (e ExportCmd) Run(ctl *Base) error {
 	baseURL := vocab.IRI(ctl.Conf.BaseURL)
 	objects := make(vocab.ItemCollection, 0)
 	allCollections := vocab.CollectionPaths{filters.ActivitiesType, filters.ActorsType, filters.ObjectsType}
@@ -375,7 +369,7 @@ func (e ExportCmd) Run(ctl *fedbox.Base) error {
 		}
 		where = f
 	}
-	return outJSON(where)(objects)
+	return OutJSON(where)(objects)
 }
 
 type InfoCmd struct {
@@ -383,7 +377,7 @@ type InfoCmd struct {
 	Output string      `help:"The format in which to output the items." enum:"text,json" default:"text"`
 }
 
-func (l InfoCmd) Run(ctl *fedbox.Base) error {
+func (l InfoCmd) Run(ctl *Base) error {
 	objects := make(vocab.ItemCollection, 0)
 	if len(l.IRIs) == 0 {
 		return errors.Errorf("No IRIs passed")
@@ -391,14 +385,14 @@ func (l InfoCmd) Run(ctl *fedbox.Base) error {
 	for _, iri := range l.IRIs {
 		ob, err := ctl.Storage.Load(iri)
 		if err != nil {
-			Errf(err.Error())
+			Errf(ctl.err, err.Error())
 			continue
 		}
 		objects = append(objects, ob)
 	}
 
 	for _, ob := range objects {
-		_ = printItem(ob, l.Output)
+		_ = printItem(ctl.out, ob, l.Output)
 	}
 	return nil
 }
@@ -408,7 +402,7 @@ type MoveCmd struct {
 	IRIs []vocab.IRI `arg:"" name:"iris"`
 }
 
-func (m MoveCmd) Run(ctl *fedbox.Base) error {
+func (m MoveCmd) Run(ctl *Base) error {
 	return ctl.MoveObjects(m.To, m.IRIs...)
 }
 
@@ -417,7 +411,7 @@ type CopyCmd struct {
 	IRIs []vocab.IRI `arg:"" name:"iris"`
 }
 
-func (c CopyCmd) Run(ctl *fedbox.Base) error {
+func (c CopyCmd) Run(ctl *Base) error {
 	return ctl.CopyObjects(c.To, c.IRIs...)
 }
 
@@ -427,7 +421,7 @@ type reindexer interface {
 	Reindex() error
 }
 
-func (i IndexCmd) Run(ctl *fedbox.Base) error {
+func (i IndexCmd) Run(ctl *Base) error {
 	start := time.Now()
 
 	indexer, ok := ctl.Storage.(reindexer)

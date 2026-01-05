@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	vocab "github.com/go-ap/activitypub"
@@ -138,9 +137,9 @@ func bytef(s string, p ...any) []byte {
 	return []byte(fmt.Sprintf(s, p...))
 }
 
-func printItem(it vocab.Item, outType string) error {
+func printItem(out io.Writer, it vocab.Item, outType string) error {
 	if outType == "json" {
-		return OutJSON(os.Stdout)(it)
+		return OutJSON(out)(it)
 	}
-	return OutText(os.Stdout)(it)
+	return OutText(out)(it)
 }

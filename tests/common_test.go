@@ -28,7 +28,6 @@ import (
 	"github.com/go-ap/client"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/cmd"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/filters"
@@ -944,7 +943,7 @@ func initializeApps(t *testing.T, l lw.Logger, configs ...config.Options) map[vo
 	for _, options := range configs {
 		options.StoragePath = filepath.Join(basePath, options.Hostname)
 		self := ap.Self(ap.DefaultServiceIRI(options.BaseURL))
-		if err := cmd.BootstrapStorage(options, self, l); err != nil {
+		if err := fedbox.BootstrapStorage(options, self, l); err != nil {
 			t.Fatalf("%s", err)
 		}
 		app, ok := apps[self.ID]

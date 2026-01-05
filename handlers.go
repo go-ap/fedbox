@@ -1,7 +1,6 @@
 package fedbox
 
 import (
-	"crypto"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,10 +11,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/cache"
 	"github.com/go-ap/client"
-	"github.com/go-ap/client/debug"
-	"github.com/go-ap/client/s2s"
 	"github.com/go-ap/errors"
-	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 )
@@ -64,24 +60,6 @@ func FedBOXClient(fb *FedBOX) *client.C {
 	return ActorClient(&fb.Base, fb.Service.ID)
 }
 
-func ActorClient(ctl *Base, actor vocab.Item) *client.C {
-	var tr http.RoundTripper = &http.Transport{}
-	if ctl.debugMode.Load() {
-		tr = debug.New(debug.WithTransport(tr), debug.WithPath(ctl.Conf.StoragePath))
-	}
-
-	if vocab.IsNil(actor) || !vocab.PublicNS.Equal(actor.GetLink()) {
-		signActor, prv, err := ctl.LoadLocalActorWithKey(actor.GetLink())
-		if err != nil {
-			ctl.errFn("unable to sign request: %+s", err)
-		} else if prv != nil && signActor != nil {
-			tr = s2s.New(s2s.WithActor(signActor, prv), s2s.WithLogger(ctl.Logger.WithContext(lw.Ctx{"log": "HTTP-Sig"})))
-		}
-	}
-
-	return Client(tr, ctl.Conf, ctl.Logger)
-}
-
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
@@ -111,7 +89,8 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 			return nil, errors.SeeOther(r.URL.String())
 		}
 
-		iri := vocab.IRI(reqURL(*r, fb.Conf.Secure))
+		colUrl := reqURL(*r, fb.Conf.Secure)
+		iri := vocab.IRI(colUrl)
 		authorized := fb.actorFromRequestWithClient(r, FedBOXClient(fb), iri)
 		cacheKey := CacheKey(fb, authorized, *r)
 
@@ -187,24 +166,6 @@ func ValidateRequest(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-// GenerateID creates an IRI that can be used to uniquely identify the "it" item, based on the collection "col" and
-// its creator "by"
-func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Item) (vocab.ID, error) {
-	return func(it vocab.Item, col vocab.Item, by vocab.Item) (vocab.ID, error) {
-		typ := it.GetType()
-
-		var partOf vocab.IRI
-		if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
-			partOf = filters.ActivitiesType.IRI(base)
-		} else if vocab.ActorTypes.Contains(typ) || typ == vocab.ActorType {
-			partOf = filters.ActorsType.IRI(base)
-		} else {
-			partOf = filters.ObjectsType.IRI(base)
-		}
-		return ap.GenerateID(it, partOf, by)
-	}
-}
-
 // CacheKey generates a unique vocab.IRI hash based on its authenticated user and other parameters
 func CacheKey(fb *FedBOX, auth vocab.Actor, r http.Request) vocab.IRI {
 	u := r.URL
@@ -213,41 +174,6 @@ func CacheKey(fb *FedBOX, auth vocab.Actor, r http.Request) vocab.IRI {
 	}
 	r.URL = u
 	return vocab.IRI(reqURL(r, fb.Conf.Secure))
-}
-
-type keyStorage interface {
-	LoadKey(vocab.IRI) (crypto.PrivateKey, error)
-}
-
-func (b *Base) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto.PrivateKey, error) {
-	signActorID := b.Service.ID
-
-	var signActor *vocab.Actor = &b.Service
-	if maybeActorID, col := vocab.Split(actorIRI); filters.ValidCollection(col) {
-		signActorID = maybeActorID
-	}
-
-	it, err := b.Storage.Load(signActorID)
-	if err != nil {
-		return signActor, nil, err
-	}
-	act, err := vocab.ToActor(it)
-	if err != nil {
-		return signActor, nil, err
-	}
-	signActor = act
-
-	keyStore, ok := b.Storage.(keyStorage)
-	if !ok {
-		return signActor, nil, nil
-	}
-
-	prv, err := keyStore.LoadKey(signActorID)
-	if err != nil {
-		return signActor, prv, err
-	}
-
-	return signActor, prv, nil
 }
 
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType

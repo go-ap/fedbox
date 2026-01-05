@@ -9,16 +9,17 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"strings"
 
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/mask"
 	m "git.sr.ht/~mariusor/servermux"
+	"github.com/alecthomas/kong"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
-	"github.com/charmbracelet/wish/activeterm"
 	bm "github.com/charmbracelet/wish/bubbletea"
 	"github.com/charmbracelet/wish/logging"
 	vocab "github.com/go-ap/activitypub"
@@ -60,11 +61,49 @@ func SSHAuthPublicKey(f *FedBOX) ssh.PublicKeyHandler {
 	}
 }
 
+func runSSHCommand(f *FedBOX, outIo, errIo io.Writer, args []string) {
+	cmd := new(SSH)
+	kongDefaultVars["name"] = "FedBOX SSH admin"
+	kongDefaultVars["URL"] = string(f.Service.ID)
+	k, err := kong.New(
+		cmd,
+		kong.Name(kongDefaultVars["name"]),
+		kong.Description("${name} (version ${version}) ${URL}"),
+		kongDefaultVars,
+		kong.Writers(outIo, errIo),
+	)
+	if err != nil {
+		_, _ = fmt.Fprintf(errIo, "Error: %s\n", err)
+		return
+	}
+	ctx, err := k.Parse(args)
+	if err != nil {
+		_ = k.Errorf("%s\n", err)
+		return
+	}
+	f.out = k.Stdout
+	f.err = k.Stderr
+
+	if err = ctx.Run(&f.Base); err != nil {
+		_ = k.Errorf("%s\n", err)
+		_ = ctx.PrintUsage(true)
+	}
+	return
+}
+
 func MainTui(f *FedBOX) wish.Middleware {
 	teaHandler := func(s ssh.Session) *tea.Program {
 		pty, _, active := s.Pty()
 		if !active {
-			wish.Println(s, "no active terminal, skipping")
+			// NOTE(marius): this is not an interactive session, try to run the received command
+			if len(s.Command()) == 0 {
+				_, _ = fmt.Fprintln(s.Stderr(), "PTY is not interactive and no command was sent")
+				_ = s.Exit(1)
+				return nil
+			}
+			runSSHCommand(f, s, s.Stderr(), s.Command())
+			_, _ = fmt.Fprintln(s)
+			_ = s.Exit(0)
 			return nil
 		}
 
@@ -150,7 +189,7 @@ func initSSHServer(app *FedBOX) (m.Server, error) {
 		wish.WithPasswordAuth(SSHAuthPw(app)),
 		wish.WithMiddleware(
 			logging.MiddlewareWithLogger(justPrintLogger(app.Logger.Debugf)),
-			activeterm.Middleware(),
+			//activeterm.Middleware(),
 			MainTui(app),
 		),
 	}

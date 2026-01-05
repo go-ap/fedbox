@@ -18,7 +18,6 @@ type Model struct {
 	Form     *huh.Form
 	Style    lipgloss.Style
 	w, h     int
-	loggedIn bool
 }
 
 func TUIModel(base *Base, acc *vocab.Actor, r *lipgloss.Renderer, w, h int) *Model {
@@ -30,7 +29,7 @@ func (m *Model) Init() tea.Cmd {
 
 	m.Style = r.NewStyle().
 		Border(lipgloss.NormalBorder()).
-		Padding(1, 2).
+		Padding(1, 2, 10).
 		BorderForeground(lipgloss.Color("#444444")).
 		Foreground(lipgloss.Color("#7571F9"))
 
@@ -49,17 +48,15 @@ func (m *Model) Init() tea.Cmd {
 		BorderLeft(true).
 		BorderForeground(lipgloss.Color("#7571F9"))
 
-	name := ""
-	if m.Actor != nil {
-		name = vocab.PreferredNameOf(m.Actor)
-	}
-
+	var command string
 	m.Form = huh.NewForm(
 		huh.NewGroup(
-			huh.NewInput().Title("Username").Key("username").Value(&name),
-			huh.NewInput().Title("Password").EchoMode(huh.EchoModePassword),
+			huh.NewInput().Title("Command").Value(&command),
 		),
 	)
+
+	m.Form.WithHeight(1)
+	m.Form.WithWidth(m.w)
 	m.Form.WithTheme(custom)
 
 	return m.Form.Init()
@@ -78,7 +75,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	m.loggedIn = m.Form.State == huh.StateCompleted
+	//m.loggedIn = m.Form.State == huh.StateCompleted
 	if m.Form.State == huh.StateAborted {
 		return m, tea.Quit
 	}
@@ -99,9 +96,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) View() string {
 	if m.Form == nil {
 		return "Starting..."
-	}
-	if m.loggedIn {
-		return m.Style.Render("Welcome, " + m.Form.GetString("username") + "!")
 	}
 	return m.Form.View()
 }

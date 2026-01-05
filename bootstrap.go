@@ -1,4 +1,4 @@
-package cmd
+package fedbox
 
 import (
 	"errors"
@@ -8,14 +8,13 @@ import (
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	http "github.com/go-ap/errors"
-	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 )
 
 type ResetCmd struct{}
 
-func (b ResetCmd) Run(ctl *fedbox.Base) error {
+func (b ResetCmd) Run(ctl *Base) error {
 	if err := ctl.Storage.Open(); err != nil {
 		return http.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
 	}
@@ -32,16 +31,16 @@ type BootstrapCmd struct {
 	KeyType string `help:"Type of keys to generate: ${keyTypes}" enum:"${keyTypes}" default:"${defaultKeyType}"`
 }
 
-func (b BootstrapCmd) Run(ctl *fedbox.Base) error {
+func (b BootstrapCmd) Run(ctl *Base) error {
 	keyType := b.KeyType
 	ctl.Service = ap.Self(ap.DefaultServiceIRI(ctl.Conf.BaseURL))
 	if err := bootstrap(ctl.Conf, ctl.Service, ctl.Logger); err != nil {
-		Errf("Error adding service: %s\n", err)
+		Errf(ctl.err, "Error adding service: %s\n", err)
 		return err
 	}
-	if metaSaver, ok := ctl.Storage.(fedbox.MetadataStorage); ok {
-		if err := fedbox.AddKeyToItem(metaSaver, &ctl.Service, keyType); err != nil {
-			Errf("Error saving metadata for service: %s", err)
+	if metaSaver, ok := ctl.Storage.(ap.MetadataStorage); ok {
+		if err := ap.AddKeyToItem(metaSaver, &ctl.Service, keyType); err != nil {
+			Errf(ctl.err, "Error saving metadata for service: %s", err)
 			return err
 		}
 	}
@@ -72,11 +71,11 @@ func bootstrap(conf config.Options, service vocab.Item, l lw.Logger) error {
 	}
 	defer st.Close()
 
-	keyType := fedbox.KeyTypeRSA
+	keyType := ap.KeyTypeRSA
 	if conf.MastodonIncompatible {
-		keyType = fedbox.KeyTypeED25519
+		keyType = ap.KeyTypeED25519
 	}
-	if err = fedbox.CreateService(st, service, keyType); err != nil {
+	if err = ap.CreateService(st, service, keyType); err != nil {
 		return http.Annotatef(err, "Unable to create FedBOX service %s for storage %s", service.GetID(), conf.Storage)
 	}
 	l.Infof("Successfully created FedBOX service %s for storage %s", service.GetID(), conf.Storage)

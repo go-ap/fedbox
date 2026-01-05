@@ -22,7 +22,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox"
-	"github.com/go-ap/fedbox/internal/cmd"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/jsonld"
 	"github.com/openshift/osin"
@@ -65,7 +65,7 @@ func addMockObjects(r storage.FullStorage, obj vocab.ItemCollection) error {
 		}
 		if it.GetLink().Equals(vocab.IRI(service.ID), false) {
 			self, _ := vocab.ToActor(it)
-			if err = fedbox.AddKeyToPerson(r, fedbox.KeyTypeRSA)(self); err != nil {
+			if err = ap.AddKeyToPerson(r, ap.KeyTypeRSA)(self); err != nil {
 				return err
 			}
 			if self.ID.Equals(vocab.IRI(service.ID), false) {
@@ -142,7 +142,7 @@ func saveMocks(testData []string, config config.Options, db storage.FullStorage,
 		return err
 	}
 
-	o, err := cmd.New(db, config, l)
+	o, err := fedbox.NewBase(db, config, l)
 	if err != nil {
 		return err
 	}

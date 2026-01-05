@@ -1,4 +1,4 @@
-package cmd
+package fedbox
 
 import (
 	vocab "github.com/go-ap/activitypub"
