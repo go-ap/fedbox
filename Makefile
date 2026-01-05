@@ -11,7 +11,7 @@ ENV ?= dev
 PROJECT ?= fedbox
 VERSION ?= HEAD
 
-LDFLAGS ?= -X main.version=$(VERSION)
+LDFLAGS ?= -X github.com/go-ap/fedbox/internal/cmd.AppVersion=$(VERSION)
 BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)' -tags "$(TAGS)"
 TEST_FLAGS ?= -count=1 -tags "$(TAGS)"
 

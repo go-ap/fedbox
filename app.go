@@ -246,6 +246,12 @@ func (f *FedBOX) Pause() error {
 	return nil
 }
 
+func (ctl *Base) SendSignalToServer(sig syscall.Signal) func() error {
+	return func() error {
+		return ctl.SendSignal(sig)
+	}
+}
+
 // Stop
 func (f *FedBOX) Stop(ctx context.Context) error {
 	f.Storage.Close()
