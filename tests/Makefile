@@ -27,6 +27,7 @@ s2s: clean .cache
 test: c2s s2s
 
 coverage:
-	$(TEST) $(TEST_FLAGS) -tags "$(TAGS) c2s s2s" -coverpkg github.com/go-ap/fedbox,github.com/go-ap/fedbox/internal/assets,github.com/go-ap/fedbox/activitypub -covermode=count -args -test.gocoverdir="$(PWD)/tests/.cache" $(TEST_TARGET)
+	@$(TEST) $(TEST_FLAGS) -tags "$(TAGS) c2s s2s" -coverpkg github.com/go-ap/fedbox,github.com/go-ap/fedbox/internal/config,github.com/go-ap/fedbox/internal/env,github.com/go-ap/fedbox/activitypub \
+	-covermode=count -args -test.gocoverdir="$(PWD)/tests/.cache" $(TEST_TARGET)
 
 integration: coverage
