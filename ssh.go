@@ -110,17 +110,17 @@ func MainTui(f *FedBOX) wish.Middleware {
 
 		// Set the global color profile to ANSI256 for Docker compatibility
 		lipgloss.SetColorProfile(termenv.ANSI256)
-		lwCtx := lw.Ctx{"w": pty.Window.Width, "h": pty.Window.Height}
+		lwCtx := lw.Ctx{}
 
 		acc, ok := s.Context().Value("actor").(*vocab.Actor)
 		if ok {
 			lwCtx["actor"] = acc.GetLink()
 		}
-		f.Logger.WithContext(lwCtx).Infof("opening ssh session")
+		f.Logger.WithContext(lwCtx, lw.Ctx{"w": pty.Window.Width, "h": pty.Window.Height}).Infof("opening ssh session")
 
-		service, err := motley.FedBOX(f.Logger, motley.Storage{
+		service, err := motley.FedBOX(f.Logger.WithContext(lwCtx), motley.Storage{
 			FullStorage: f.Storage,
-			Root:        f.Service,
+			Root:        acc,
 		})
 		if err != nil {
 			_, _ = fmt.Fprintf(s.Stderr(), "Error: %s", err)
@@ -196,7 +196,6 @@ func initSSHServer(app *FedBOX) (m.Server, error) {
 		wish.WithPasswordAuth(SSHAuthPw(app)),
 		wish.WithMiddleware(
 			logging.MiddlewareWithLogger(justPrintLogger(app.Logger.Debugf)),
-			//activeterm.Middleware(),
 			MainTui(app),
 		),
 	}

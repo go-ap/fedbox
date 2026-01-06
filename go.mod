@@ -5,7 +5,7 @@ go 1.25
 require (
 	git.sr.ht/~mariusor/cache v0.0.0-20250616110250-18a60a6f9473
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
-	git.sr.ht/~mariusor/motley v0.0.0-20260106111846-e3c1051d6e7c
+	git.sr.ht/~mariusor/motley v0.0.0-20260106112645-67260d2893d3
 	git.sr.ht/~mariusor/servermux v0.0.0-20260104112549-0a3ff90bf795
 	git.sr.ht/~mariusor/storage-all v0.0.0-20260102121942-5834a4e39424
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
