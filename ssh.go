@@ -14,9 +14,11 @@ import (
 
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/mask"
+	"git.sr.ht/~mariusor/motley"
 	m "git.sr.ht/~mariusor/servermux"
 	"github.com/alecthomas/kong"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
 	bm "github.com/charmbracelet/wish/bubbletea"
@@ -92,7 +94,7 @@ func runSSHCommand(f *FedBOX, outIo, errIo io.Writer, args []string) {
 
 func MainTui(f *FedBOX) wish.Middleware {
 	teaHandler := func(s ssh.Session) *tea.Program {
-		_, _, active := s.Pty()
+		pty, _, active := s.Pty()
 		if !active {
 			// NOTE(marius): this is not an interactive session, try to run the received command
 			if len(s.Command()) == 0 {
@@ -105,10 +107,26 @@ func MainTui(f *FedBOX) wish.Middleware {
 			_ = s.Exit(0)
 			return nil
 		}
-		_, _ = fmt.Fprintln(s.Stderr(), "Interactive PTYs are not supported")
-		_ = s.Exit(1)
 
-		return nil
+		// Set the global color profile to ANSI256 for Docker compatibility
+		lipgloss.SetColorProfile(termenv.ANSI256)
+		lwCtx := lw.Ctx{"w": pty.Window.Width, "h": pty.Window.Height}
+
+		acc, ok := s.Context().Value("actor").(*vocab.Actor)
+		if ok {
+			lwCtx["actor"] = acc.GetLink()
+		}
+		f.Logger.WithContext(lwCtx).Infof("opening ssh session")
+
+		service, err := motley.FedBOX(f.Logger, motley.Storage{
+			FullStorage: f.Storage,
+			Root:        f.Service,
+		})
+		if err != nil {
+			_, _ = fmt.Fprintf(s.Stderr(), "Error: %s", err)
+			_ = s.Exit(1)
+		}
+		return tea.NewProgram(motley.Model(service), tea.WithFPS(60), tea.WithInput(s), tea.WithOutput(s), tea.WithAltScreen())
 	}
 
 	return bm.MiddlewareWithProgramHandler(teaHandler, termenv.ANSI256)
