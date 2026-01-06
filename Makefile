@@ -26,7 +26,7 @@ GO ?= go
 APPSOURCES := $(wildcard ./*.go activitypub/*.go internal/*/*.go storage/*/*.go)
 ASSETFILES := $(wildcard templates/*)
 
-TAGS := $(ENV) storage_$(STORAGE)
+TAGS := $(ENV) storage_$(STORAGE) ssh
 
 export CGO_ENABLED=0
 export GOEXPERIMENT=greenteagc
