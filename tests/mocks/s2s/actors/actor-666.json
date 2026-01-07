@@ -1,5 +1,5 @@
 {
-  "@context": "https://www.w3.org/ns/activitystreams",
+  "@context": ["https://www.w3.org/ns/activitystreams"],
   "id": "http://127.0.2.1:9999/actors/666",
   "type": "Person",
   "attributedTo": "http://127.0.2.1:9999",

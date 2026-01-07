@@ -1,6 +1,7 @@
 {
+  {{ with .Id }}"id": "{{ . }}",{{ end }}
   "type": "Create",
+  "to": [ "https://www.w3.org/ns/activitystreams#Public" ],
   "actor": "{{ .ActorID }}",
-  "object": {{ .Object | json }},
-  "to": [ "https://www.w3.org/ns/activitystreams#Public" ]
+  "object": {{ .Object | json }}
 }

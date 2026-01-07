@@ -25,6 +25,7 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/jsonld"
+	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
 	"golang.org/x/crypto/ed25519"
 )
@@ -63,7 +64,8 @@ func addMockObjects(r storage.FullStorage, obj vocab.ItemCollection) error {
 		if it.GetLink() == "" {
 			continue
 		}
-		if it.GetLink().Equals(vocab.IRI(service.ID), false) {
+		itID := it.GetLink()
+		if itID.Equals(vocab.IRI(service.ID), false) {
 			self, _ := vocab.ToActor(it)
 			if err = ap.AddKeyToPerson(r, ap.KeyTypeRSA)(self); err != nil {
 				return err
@@ -74,6 +76,10 @@ func addMockObjects(r storage.FullStorage, obj vocab.ItemCollection) error {
 			}
 		}
 		if it, err = r.Save(it); err != nil {
+			return err
+		}
+		p := processing.New(processing.WithStorage(r))
+		if err = p.CreateCollectionsForObject(it); err != nil {
 			return err
 		}
 	}

@@ -353,13 +353,7 @@ var ActorsCollectionTests = testPairs{
 							"2": {
 								id:  "http://127.0.0.1:9998/actors/2",
 								typ: string(vocab.PersonType),
-								tag: []*objectVal{
-									{
-										id:   "http://127.0.0.1:9998/objects/t1",
-										typ:  "",
-										name: "#mod",
-									},
-								},
+								tag: []*objectVal{{id: "http://127.0.0.1:9998/objects/t1"}},
 							},
 						},
 					},
@@ -1741,6 +1735,148 @@ var QuestionTests = testPairs{
 	},
 }
 
+var createID = fmt.Sprintf("http://%s/create/1", host)
+var UndoCreateTests = testPairs{
+	{
+		name:    "CreateNote",
+		configs: c2sConfigs,
+		mocks: []string{
+			"mocks/c2s/actors/service.json",
+			"mocks/c2s/actors/actor-johndoe.json",
+		},
+		tests: []testPair{
+			{
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn: loadMockJson(
+						"mocks/c2s/activities/create-object.json",
+						&actC2SMock{
+							Id:      createID,
+							Type:    "Create",
+							ActorID: defaultC2SAccount().ID,
+							Object:  loadMockFromDisk("mocks/c2s/objects/note-1.json", nil),
+						},
+					),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						id:  "",
+						typ: string(vocab.CreateType),
+						act: &objectVal{
+							typ:               string(vocab.PersonType),
+							preferredUsername: defaultC2SAccount().Handle,
+						},
+						obj: &objectVal{
+							id: "http://127.0.0.1:9998/objects/1",
+						},
+					},
+				},
+			},
+			{
+				name: "Create is available",
+				req: testReq{
+					met:     http.MethodGet,
+					account: defaultC2SAccount(),
+					url:     createID,
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:  createID,
+						typ: string(vocab.CreateType),
+					},
+				},
+			},
+			{
+				name: "Note is available",
+				req: testReq{
+					met:     http.MethodGet,
+					account: defaultC2SAccount(),
+					url:     "http://127.0.0.1:9998/objects/1",
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:  "http://127.0.0.1:9998/objects/1",
+						typ: string(vocab.NoteType),
+					},
+				},
+			},
+			{
+				name: "Actor's Outbox contains the Create",
+				req: testReq{
+					met:     http.MethodGet,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+				},
+				res: testRes{
+					code: http.StatusOK,
+					val: &objectVal{
+						id:        CollectionURL(OutboxURL(defaultC2SAccount())(), firstPage()),
+						typ:       string(vocab.OrderedCollectionPageType),
+						itemCount: 1,
+					},
+				},
+			},
+			{
+				name: "Undo the Create",
+				req: testReq{
+					met:     http.MethodPost,
+					account: defaultC2SAccount(),
+					urlFn:   OutboxURL(defaultC2SAccount()),
+					bodyFn: loadMockJson(
+						"mocks/c2s/activities/activity.json",
+						&actS2SMock{
+							Type:     "Undo",
+							ActorID:  defaultC2SAccount().ID,
+							ObjectID: createID,
+						},
+					),
+				},
+				res: testRes{
+					code: http.StatusCreated,
+					val: &objectVal{
+						typ: string(vocab.UndoType),
+						act: &objectVal{
+							typ:               string(vocab.PersonType),
+							preferredUsername: "johndoe",
+						},
+						obj: &objectVal{
+							id:  createID,
+							typ: string(vocab.CreateType),
+						},
+					},
+				},
+			},
+			{
+				name: "No more Create",
+				req: testReq{
+					met:     http.MethodGet,
+					account: defaultC2SAccount(),
+					url:     createID,
+				},
+				res: testRes{
+					code: http.StatusNotFound,
+				},
+			},
+			{
+				name: "No more Note",
+				req: testReq{
+					met:     http.MethodGet,
+					account: defaultC2SAccount(),
+					url:     "http://127.0.0.1:9998/objects/1",
+				},
+				res: testRes{
+					code: http.StatusNotFound,
+				},
+			},
+		},
+	},
+}
+
 func Test_SingleItemLoad(t *testing.T) {
 	runTestSuites(t, SingleItemLoadTests)
 }
@@ -1783,4 +1919,8 @@ func Test_C2S_BlockRequests(t *testing.T) {
 
 func Test_C2S_QuestionRequests(t *testing.T) {
 	runTestSuites(t, QuestionTests)
+}
+
+func Test_C2S_UndoRequests(t *testing.T) {
+	runTestSuites(t, UndoCreateTests)
 }

@@ -78,6 +78,7 @@ type actS2SMock struct {
 }
 
 type actC2SMock struct {
+	Id      string
 	Type    string
 	ActorID string
 	Object  vocab.Item
@@ -414,6 +415,7 @@ func errOnArray(t *testing.T) stringArrFieldAssertFn {
 }
 
 func errOnMapProp(t *testing.T, errFn func(format string, args ...any)) mapFieldAssertFn {
+	t.Helper()
 	return func(ob map[string]any, key string, tVal any) {
 		t.Helper()
 		t.Run(key, func(t *testing.T) {
@@ -632,24 +634,24 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 			if tVal.tag != nil {
 				assertMapKey(ob, "tag", tVal.tag)
 				if len(tVal.tag) > 0 {
-					for _, tVal := range tVal.tag {
-						if len(tVal.id) == 0 {
+					for _, tagVal := range tVal.tag {
+						if len(tagVal.id) == 0 {
 							continue
 						}
-						derefCol := assertGetRequest(tVal.id, nil)
-						assertObjectProperties(derefCol, tVal)
+						derefCol := assertGetRequest(tagVal.id, nil)
+						assertObjectProperties(derefCol, tagVal)
 					}
 				}
 			}
 			if tVal.anyOf != nil {
 				assertMapKey(ob, "anyOf", tVal.anyOf)
 				if len(tVal.anyOf) > 0 {
-					for _, tVal := range tVal.anyOf {
-						if len(tVal.id) == 0 {
+					for _, anyOfVal := range tVal.anyOf {
+						if len(anyOfVal.id) == 0 {
 							continue
 						}
-						derefCol := assertGetRequest(tVal.id, nil)
-						assertObjectProperties(derefCol, tVal)
+						derefCol := assertGetRequest(anyOfVal.id, nil)
+						assertObjectProperties(derefCol, anyOfVal)
 					}
 				}
 			}
@@ -822,10 +824,11 @@ func errOnRequest(t *testing.T) func(testPair) map[string]any {
 		},
 		Timeout: 400 * time.Second,
 	}
+	t.Helper()
 	return func(test testPair) map[string]any {
-		t.Helper()
 		res := make(map[string]any)
 		t.Run(test.label(), func(t *testing.T) {
+			t.Helper()
 			assertTrue := errIfNotTrue(t, t.Errorf)
 			assertGetRequest := errNotOKGetRequest(t)
 			assertObjectProperties := errOnObjectProperties(t)
