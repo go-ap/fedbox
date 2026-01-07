@@ -120,6 +120,7 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 			return nil, err
 		}
 
+		vocab.CleanRecipients(col)
 		for _, ob := range col.Collection() {
 			// Remove bcc and bto
 			vocab.CleanRecipients(ob)
