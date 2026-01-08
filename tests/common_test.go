@@ -386,6 +386,7 @@ func errorf(t *testing.T, errFn func(format string, args ...any)) errFn {
 }
 
 func errIfNotTrue(t *testing.T, errFn func(format string, args ...any)) assertFn {
+	t.Helper()
 	return func(v bool, msg string, args ...any) {
 		t.Helper()
 		if !v {
@@ -395,7 +396,9 @@ func errIfNotTrue(t *testing.T, errFn func(format string, args ...any)) assertFn
 }
 
 func errOnArray(t *testing.T) stringArrFieldAssertFn {
+	t.Helper()
 	return func(arrI []any, tVal []string) {
+		t.Helper()
 		arr := make([]string, len(arrI))
 		for k, v := range arrI {
 			arr[k] = fmt.Sprintf("%s", v)
@@ -725,7 +728,9 @@ func errOnObjectProperties(t *testing.T) objectPropertiesAssertFn {
 }
 
 func getRequest(t *testing.T, st int) func(iri string, acc *testAccount) map[string]any {
+	t.Helper()
 	return func(iri string, acc *testAccount) map[string]any {
+		t.Helper()
 		if iri == "" {
 			return nil
 		}
@@ -939,8 +944,6 @@ func loadAfterPost(test testPair, req *http.Request) bool {
 }
 
 func initializeApps(t *testing.T, l lw.Logger, configs ...config.Options) map[vocab.IRI]*fedbox.FedBOX {
-	t.Helper()
-
 	apps := make(map[vocab.IRI]*fedbox.FedBOX)
 	basePath := t.TempDir()
 	for _, options := range configs {

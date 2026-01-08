@@ -7,7 +7,7 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/motley v0.0.0-20260106112645-67260d2893d3
 	git.sr.ht/~mariusor/servermux v0.0.0-20260104112549-0a3ff90bf795
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260107124550-3fe08d1411d4
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260108121959-8c5f0d6f9ef9
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.12.1
 	github.com/charmbracelet/bubbletea v1.3.10
@@ -64,7 +64,7 @@ require (
 	github.com/go-ap/storage-badger v0.0.0-20260102114145-aa5bc644359e // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260102114123-757dc56b2df9 // indirect
 	github.com/go-ap/storage-fs v0.0.0-20260107121028-2811b990146e // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260102121418-4baf35f75d8a // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260108113015-44b4272b36f5 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -79,7 +79,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
-	github.com/mattn/go-sqlite3 v1.14.32 // indirect
+	github.com/mattn/go-sqlite3 v1.14.33 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
@@ -102,7 +102,7 @@ require (
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/term v0.38.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
