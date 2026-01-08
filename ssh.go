@@ -186,7 +186,7 @@ func initSSHServer(app *FedBOX) (m.Server, error) {
 		return nil, nil
 	}
 	listen := app.Conf.Listen
-	if portIndex := strings.Index(listen, ":"); portIndex > 0 {
+	if portIndex := strings.Index(listen, ":"); portIndex >= 0 {
 		listen = listen[:portIndex]
 	}
 	app.Logger.WithContext(lw.Ctx{"ssh": listen, "port": app.Conf.SSHPort}).Debugf("Accepting SSH requests")

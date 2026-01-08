@@ -112,5 +112,3 @@ require (
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.42.2 // indirect
 )
-
-replace github.com/mattn/go-sqlite3 => github.com/mattn/go-sqlite3 v1.14.32
