@@ -65,21 +65,29 @@ func initHttpServer(app *FedBOX) (m.Server, error) {
 
 	// NOTE(marius): we now set-up a default socket listener
 	if !app.Conf.Env.IsTest() {
-		_ = os.RemoveAll(app.Conf.DefaultSocketPath())
-		setters = append(setters, m.OnSocket(app.Conf.DefaultSocketPath()))
+		_ = os.RemoveAll(app.Conf.InternalSocketPath())
+		setters = append(setters, m.OnSocket(app.Conf.InternalSocketPath()))
 	}
-	if app.Conf.Listen == "systemd" {
-		lwCtx["systemd"] = true
-		setters = append(setters, m.OnSystemd())
-	} else if filepath.IsAbs(app.Conf.Listen) {
-		dir := filepath.Dir(app.Conf.Listen)
-		lwCtx["socket"] = app.Conf.Listen
-		if _, err := os.Stat(dir); err == nil {
-			setters = append(setters, m.OnSocket(app.Conf.Listen))
+
+	listenHTTP := app.Conf.HTTPListen()
+	if len(listenHTTP) == 0 {
+		return nil, errors.Newf("No valid HTTP listen configurations")
+	}
+	for _, pathOrHost := range listenHTTP {
+		if pathOrHost == "systemd" {
+			lwCtx["systemd"] = true
+			setters = append(setters, m.OnSystemd())
+		} else if filepath.IsAbs(pathOrHost) {
+			dir := filepath.Dir(pathOrHost)
+			lwCtx["socket"] = pathOrHost
+			if _, err := os.Stat(dir); err == nil {
+				setters = append(setters, m.OnSocket(pathOrHost))
+			}
+		} else {
+			lwCtx["host"] = app.Conf.ListenHost
+			lwCtx["port"] = app.Conf.HTTPPort
+			setters = append(setters, m.OnTCP(pathOrHost))
 		}
-	} else {
-		lwCtx["tcp"] = app.Conf.Listen
-		setters = append(setters, m.OnTCP(app.Conf.Listen))
 	}
 
 	httpSrv, err := m.HttpServer(setters...)
@@ -134,9 +142,9 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 
 	app.R.Group(app.Routes())
 
-	muxSetters := []m.MuxFn{m.WriteWait(app.Conf.TimeOut)}
+	muxSetters := make([]m.MuxFn, 0, 1)
 	if !app.Conf.Env.IsTest() && !app.Conf.Env.IsDev() {
-		muxSetters = append(muxSetters, m.GracefulWait(defaultGraceWait))
+		muxSetters = append(muxSetters, m.GracefulWait(app.Conf.TimeOut))
 	}
 
 	// NOTE(marius): we initialize the HTTP Server
@@ -217,10 +225,10 @@ func (f *FedBOX) Stop(ctx context.Context) error {
 	f.shuttingDown.Store(true)
 	defer func() {
 		_ = os.RemoveAll(f.Conf.PidPath())
-		_ = os.RemoveAll(f.Conf.DefaultSocketPath())
-		if filepath.IsAbs(f.Conf.Listen) {
-			if _, err := os.Stat(f.Conf.Listen); err == nil {
-				_ = os.RemoveAll(f.Conf.Listen)
+		_ = os.RemoveAll(f.Conf.InternalSocketPath())
+		if filepath.IsAbs(f.Conf.SocketPath) {
+			if _, err := os.Stat(f.Conf.SocketPath); err == nil {
+				_ = os.RemoveAll(f.Conf.SocketPath)
 			}
 		}
 	}()

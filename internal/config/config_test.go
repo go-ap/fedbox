@@ -68,8 +68,8 @@ func TestLoadFromEnv(t *testing.T) {
 		if c.Secure != secure {
 			t.Errorf("Invalid loaded value for %s: %t, expected %t", KeyHTTPS, c.Secure, secure)
 		}
-		if c.Listen != listen {
-			t.Errorf("Invalid loaded value for %s: %s, expected %s", KeyListen, c.Listen, listen)
+		if c.SocketPath != listen {
+			t.Errorf("Invalid loaded value for %s: %s, expected %s", KeyListen, c.SocketPath, listen)
 		}
 		if c.BaseURL != baseURL {
 			t.Errorf("Invalid loaded BaseURL value: %s, expected %s", c.BaseURL, baseURL)

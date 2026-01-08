@@ -44,21 +44,21 @@ var HeaderAccept = `application/ld+json; profile="https://www.w3.org/ns/activity
 var activityCount = 0
 
 var C2SConfig = config.Options{
-	Env:      env.TEST,
-	Hostname: "127.0.0.1:9998",
-	Listen:   "127.0.0.1:9998",
-	BaseURL:  "http://127.0.0.1:9998/",
-	LogLevel: lw.WarnLevel,
-	Storage:  storageType(),
+	Env:        env.TEST,
+	Hostname:   "127.0.0.1:9998",
+	SocketPath: "127.0.0.1:9998",
+	BaseURL:    "http://127.0.0.1:9998/",
+	LogLevel:   lw.WarnLevel,
+	Storage:    storageType(),
 }
 
 var S2SConfig = config.Options{
-	Env:      env.TEST,
-	Hostname: "127.0.2.1:9999",
-	Listen:   "127.0.2.1:9999",
-	BaseURL:  "http://127.0.2.1:9999/",
-	LogLevel: lw.WarnLevel,
-	Storage:  storageType(),
+	Env:        env.TEST,
+	Hostname:   "127.0.2.1:9999",
+	SocketPath: "127.0.2.1:9999",
+	BaseURL:    "http://127.0.2.1:9999/",
+	LogLevel:   lw.WarnLevel,
+	Storage:    storageType(),
 }
 
 var c2sConfigs = []config.Options{

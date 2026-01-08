@@ -183,9 +183,10 @@ func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomiz
 }
 
 var envKeys = []string{
-	"DISABLE_STORAGE_CACHE", "DISABLE_REQUEST_CACHE", "DISABLE_STORAGE_INDEX", "DISABLE_MASTODON_COMPATIBILITY",
-	"STORAGE_PATH", "DISABLE_CACHE", "DB_PASSWORD", "LISTEN", "DB_HOST", "DB_PORT", "DB_NAME", "DB_USER", "STORAGE",
-	"LOG_LEVEL", "TIME_OUT", "LOG_OUTPUT", "HOSTNAME", "HTTPS", "CERT_PATH", "KEY_PATH", "ENV",
+	"LISTEN_PATH", "HTTP_PORT", "SSH_PORT",
+	"STORAGE_PATH", "STORAGE", "LOG_LEVEL", "LOG_OUTPUT",
+	"HOSTNAME", "HTTPS", "CERT_PATH", "KEY_PATH",
+	"ENV", "TIME_OUT",
 }
 
 func loadEnv() map[string]string {
@@ -201,24 +202,6 @@ func loadEnv() map[string]string {
 }
 
 var defaultPort = 6669
-
-func parseListen(s string) (string, int) {
-	pieces := strings.Split(s, ":")
-	port := defaultPort
-	host := ""
-	switch len(pieces) {
-	case 1:
-		if p, err := strconv.Atoi(pieces[0]); err == nil {
-			port = p
-		}
-	case 2:
-		if p, err := strconv.Atoi(pieces[1]); err == nil {
-			port = p
-		}
-		host = pieces[0]
-	}
-	return host, port
-}
 
 func WithImageName(image string) containers.CustomizeRequestOption {
 	return func(req *containers.GenericContainerRequest) error {
@@ -247,10 +230,13 @@ func WithEnvFile(configFile string) containers.CustomizeRequestOption {
 				req.Env[k] = v
 			}
 		}
-		if listen, ok := req.Env["LISTEN"]; ok {
-			host, port := parseListen(listen)
-			req.ContainerRequest.ExposedPorts = append(req.ContainerRequest.ExposedPorts, strconv.FormatInt(int64(port), 10))
-			req.NetworkAliases = map[string][]string{host: {host}}
+		if httpPort, ok := req.Env["HTTP_PORT"]; ok {
+			if port, err := strconv.ParseUint(httpPort, 10, 32); err == nil {
+				req.ContainerRequest.ExposedPorts = append(req.ContainerRequest.ExposedPorts, strconv.FormatInt(int64(port), 10))
+			}
+		}
+		if listenHost, ok := req.Env["LISTEN_HOST"]; ok {
+			req.NetworkAliases = map[string][]string{listenHost: {listenHost}}
 		}
 		if host, ok := req.Env["HOSTNAME"]; ok {
 			req.NetworkAliases = map[string][]string{host: {host}}

@@ -7,7 +7,7 @@ MAKEFLAGS += --no-builtin-rules
 
 ENV ?= dev
 FEDBOX_HOSTNAME ?= fedbox
-PORT ?= 4000
+HTTP_PORT ?= 4000
 STORAGE ?= all
 STORAGE_PATH ?= $(shell realpath .cache)
 STORAGE_OBJECTS = $(STORAGE_PATH)/objects
@@ -33,7 +33,7 @@ endif
 .PHONY: clean build builder push
 
 build:
-	ENV=$(ENV) VERSION=$(VERSION) STORAGE=$(STORAGE) PORT=$(PORT) HOSTNAME=$(FEDBOX_HOSTNAME) ./image.sh $(FEDBOX_HOSTNAME)/app:$(TAG)
+	ENV=$(ENV) VERSION=$(VERSION) STORAGE=$(STORAGE) HTTP_PORT=$(HTTP_PORT) HOSTNAME=$(FEDBOX_HOSTNAME) ./image.sh $(FEDBOX_HOSTNAME)/app:$(TAG)
 
 push: build
 	$(TAG_CMD) "$(FEDBOX_HOSTNAME)/app:$(TAG)" "quay.io/go-ap/fedbox:$(TAG)"

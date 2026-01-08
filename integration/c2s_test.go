@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
-	client "github.com/go-ap/client"
+	"github.com/go-ap/client"
 	ap "github.com/go-ap/fedbox/activitypub"
 )
 

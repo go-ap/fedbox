@@ -31,7 +31,8 @@ func buildImage(ctx context.Context, imageName string, logger *logrus.Logger) (s
 		build.WithDefaultEnv([]string{
 			"ENV=dev",
 			"HOSTNAME=fedbox",
-			"LISTEN=:4000",
+			"HTTP_PORT=4000",
+			"SSH_PORT=4044",
 			"HTTPS=true",
 			"STORAGE=all",
 		}),

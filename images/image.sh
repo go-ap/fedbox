@@ -5,7 +5,7 @@ _context=$(realpath "../")
 
 _environment=${ENV:-dev}
 _hostname=${FEDBOX_HOSTNAME:-fedbox}
-_listen_http_port=${PORT:-4000}
+_listen_http_port=${HTTP_PORT:-4000}
 _listen_ssh_port=${PORT:-4022}
 _storage=${STORAGE:-all}
 _version=${VERSION:-HEAD}
@@ -48,7 +48,8 @@ _image=$(buildah from gcr.io/distroless/static:latest)
 
 buildah config --env "ENV=${_environment}" "${_image}"
 buildah config --env "HOSTNAME=${_hostname}" "${_image}"
-buildah config --env "LISTEN=:${_listen_http_port}" "${_image}"
+buildah config --env "HTTP_PORT=${_listen_http_port}" "${_image}"
+buildah config --env "SSH_PORT=${_listen_ssh_port}" "${_image}"
 buildah config --env "KEY_PATH=/etc/ssl/certs/${_hostname}.key" "${_image}"
 buildah config --env "CERT_PATH=/etc/ssl/certs/${_hostname}.crt" "${_image}"
 buildah config --env "STORAGE=${_storage}" "${_image}"

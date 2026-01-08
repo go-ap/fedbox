@@ -43,8 +43,10 @@ type Options struct {
 	CertPath             string
 	KeyPath              string
 	Hostname             string
+	ListenHost           string
 	SSHPort              int
-	Listen               string
+	HTTPPort             int
+	SocketPath           string
 	BaseURL              string
 	Storage              storage.Type
 	StoragePath          string
@@ -86,10 +88,12 @@ const (
 	KeyLogOutput                    = "LOG_OUTPUT"
 	KeyHostname                     = "HOSTNAME"
 	KeySSHPort                      = "SSH_PORT"
+	KeyHTTPPort                     = "HTTP_PORT"
 	KeyHTTPS                        = "HTTPS"
 	KeyCertPath                     = "CERT_PATH"
 	KeyKeyPath                      = "KEY_PATH"
-	KeyListen                       = "LISTEN"
+	KeyListenHost                   = "LISTEN_HOST"
+	KeyListenPath                   = "LISTEN_PATH"
 	KeyDBHost                       = "DB_HOST"
 	KeyDBPort                       = "DB_PORT"
 	KeyDBName                       = "DB_NAME"
@@ -228,15 +232,18 @@ func validateOptions(opts Options) error {
 	if opts.StoragePath == "" {
 		return errors.Errorf("invalid storage path")
 	}
-	if opts.Listen == "" {
-		return errors.Errorf("invalid listen socket")
+
+	if lst := Getval("LISTEN", ""); len(lst) > 0 {
+		return errors.Newf("The \"%s=%s\" configuration option is no longer valid. Please use %q and %q for HTTP listeners or %q for sockets.", "LISTEN", lst, KeyListenHost, KeyHTTPPort, KeyListenPath)
 	}
 	return nil
 }
 
 const minPort = 1024
 
-var RandPort = minPort + rand.IntN(65536-minPort)
+func RandPort() int {
+	return minPort + rand.IntN(65536-minPort)
+}
 
 func LoadFromEnv() Options {
 	conf := Options{}
@@ -274,7 +281,6 @@ func LoadFromEnv() Options {
 		conf.BaseURL = fmt.Sprintf("http://%s", conf.Hostname)
 	}
 
-	conf.Listen = Getval(KeyListen, "")
 	conf.Storage = storage.Type(strings.ToLower(Getval(KeyStorage, string(storage.Default))))
 	conf.StoragePath = Getval(KeyStoragePath, "")
 	if conf.StoragePath != "" {
@@ -299,9 +305,16 @@ func LoadFromEnv() Options {
 		disableStorageIndex, _ := strconv.ParseBool(v)
 		conf.UseIndex = !disableStorageIndex
 	}
-	if v := Getval(KeySSHPort, strconv.Itoa(RandPort)); v != "" {
+	conf.SocketPath = Getval(KeyListenPath, "")
+	conf.ListenHost = Getval(KeyListenHost, "")
+
+	if v := Getval(KeySSHPort, strconv.Itoa(RandPort())); v != "" {
 		sshPort, _ := strconv.ParseUint(v, 10, 32)
 		conf.SSHPort = int(sshPort)
+	}
+	if v := Getval(KeyHTTPPort, strconv.Itoa(RandPort())); v != "" {
+		httpPort, _ := strconv.ParseUint(v, 10, 32)
+		conf.HTTPPort = int(httpPort)
 	}
 
 	disableMastodonCompatibility, _ := strconv.ParseBool(Getval(KeyMastodonCompatibilityDisable, "false"))
@@ -321,9 +334,28 @@ func (o Options) RuntimePath() string {
 	return path
 }
 
-func (o Options) DefaultSocketPath() string {
+func (o Options) InternalSocketPath() string {
 	name := o.pathInstanceName()
 	return filepath.Join(o.RuntimePath(), name+".sock")
+}
+
+func (o Options) SSHListen() []string {
+	result := make([]string, 0, 1)
+	if o.SSHPort != 0 {
+		result = append(result, o.ListenHost+":"+strconv.Itoa(o.SSHPort))
+	}
+	return result
+}
+
+func (o Options) HTTPListen() []string {
+	result := make([]string, 0, 2)
+	if len(o.SocketPath) != 0 {
+		result = append(result, o.SocketPath)
+	}
+	if o.HTTPPort != 0 {
+		result = append(result, o.ListenHost+":"+strconv.Itoa(o.HTTPPort))
+	}
+	return result
 }
 
 func reverseDNSName(host string) string {

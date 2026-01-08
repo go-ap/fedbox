@@ -10,7 +10,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
-	"strings"
 
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/mask"
@@ -185,19 +184,22 @@ func initSSHServer(app *FedBOX) (m.Server, error) {
 	if app.Conf.SSHPort <= 0 {
 		return nil, nil
 	}
-	listen := app.Conf.Listen
-	if portIndex := strings.Index(listen, ":"); portIndex >= 0 {
-		listen = listen[:portIndex]
-	}
-	app.Logger.WithContext(lw.Ctx{"ssh": listen, "port": app.Conf.SSHPort}).Debugf("Accepting SSH requests")
 	initFns := []m.SSHSetFn{
-		wish.WithAddress(fmt.Sprintf("%s:%d", listen, app.Conf.SSHPort)),
 		wish.WithPublicKeyAuth(SSHAuthPublicKey(app)),
 		wish.WithPasswordAuth(SSHAuthPw(app)),
 		wish.WithMiddleware(
 			logging.MiddlewareWithLogger(justPrintLogger(app.Logger.Debugf)),
 			MainTui(app),
 		),
+	}
+
+	listen := app.Conf.SSHListen()
+	if len(listen) == 0 {
+		app.Logger.Warnf("No valid SSH listen configurations")
+		return nil, nil
+	} else {
+		initFns = append(initFns, wish.WithAddress(listen[0]))
+		app.Logger.WithContext(lw.Ctx{"host": app.Conf.ListenHost, "port": app.Conf.SSHPort}).Debugf("Accepting SSH requests")
 	}
 	if app.ServicePrivateKey != nil {
 		// NOTE(marius): use the service private key as a host key
