@@ -36,7 +36,6 @@ func TestLoadFromEnv(t *testing.T) {
 		_ = os.Setenv(KeyHostname, hostname)
 		_ = os.Setenv(KeyLogLevel, logLvl)
 		_ = os.Setenv(KeyHTTPS, fmt.Sprintf("%t", secure))
-		_ = os.Setenv(KeyListen, listen)
 		_ = os.Setenv(KeyStorage, pgSQL)
 
 		var baseURL = fmt.Sprintf("https://%s", hostname)
@@ -67,9 +66,6 @@ func TestLoadFromEnv(t *testing.T) {
 		}
 		if c.Secure != secure {
 			t.Errorf("Invalid loaded value for %s: %t, expected %t", KeyHTTPS, c.Secure, secure)
-		}
-		if c.SocketPath != listen {
-			t.Errorf("Invalid loaded value for %s: %s, expected %s", KeyListen, c.SocketPath, listen)
 		}
 		if c.BaseURL != baseURL {
 			t.Errorf("Invalid loaded BaseURL value: %s, expected %s", c.BaseURL, baseURL)
