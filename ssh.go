@@ -71,6 +71,7 @@ func runSSHCommand(f *FedBOX, outIo, errIo io.Writer, args []string) {
 		kong.Description("${name} (version ${version}) ${URL}"),
 		kongDefaultVars,
 		kong.Writers(outIo, errIo),
+		kong.Exit(func(_ int) {}),
 	)
 	if err != nil {
 		_, _ = fmt.Fprintf(errIo, "Error: %s\n", err)
@@ -197,10 +198,9 @@ func initSSHServer(app *FedBOX) (m.Server, error) {
 	if len(listen) == 0 {
 		app.Logger.Warnf("No valid SSH listen configurations")
 		return nil, nil
-	} else {
-		initFns = append(initFns, wish.WithAddress(listen[0]))
-		app.Logger.WithContext(lw.Ctx{"host": app.Conf.ListenHost, "port": app.Conf.SSHPort}).Debugf("Accepting SSH requests")
 	}
+	initFns = append(initFns, wish.WithAddress(listen[0]))
+	app.Logger.WithContext(lw.Ctx{"host": app.Conf.ListenHost, "port": app.Conf.SSHPort}).Debugf("Accepting SSH requests")
 	if app.ServicePrivateKey != nil {
 		// NOTE(marius): use the service private key as a host key
 		initFns = append(initFns, wish.WithHostKeyPEM(app.ServicePrivateKey))
