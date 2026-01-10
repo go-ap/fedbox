@@ -9,13 +9,10 @@ packages:
 sources:
   - https://git.sr.ht/~mariusor/fedbox
 tasks:
-  - images: |
+  - setup: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
       set -a +x
       source ~/.buildah.env
-
-      cd fedbox || exit
-      make download
 
       _user=$(id -un)
 
@@ -25,8 +22,14 @@ tasks:
       podman system migrate
 
       podman login -u="${BUILDAH_USER}" -p="${BUILDAH_SECRET}" quay.io
-
-      set --
+  - integration-new: |
+      cd fedbox/integration
+      systemctl --user start podman.service
+      export DOCKER_HOST=unix:///run/user/1000/podman/podman.sock
+      go test -cover -count=1 -json . |  go run github.com/mfridman/tparse@latest --all
+  - images: |
+      cd fedbox || exit
+      make download
 
       _sha=$(git rev-parse --short HEAD)
       _branch=$(git branch --points-at=${_sha} | tail -n1 | tr -d '* ')
@@ -50,9 +53,3 @@ tasks:
       _push sqlite
       #_push boltdb
       _push badger
-  - integration-new: |
-      cd fedbox/integration
-      systemctl --user start podman.service
-      export DOCKER_HOST=unix:///run/user/1000/podman/podman.sock
-      go test -cover -count=1 -json . |  go run github.com/mfridman/tparse@latest --all
-
