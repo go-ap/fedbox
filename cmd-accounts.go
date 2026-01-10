@@ -200,8 +200,12 @@ func (c ChangePassword) Run(ctl *Base) error {
 	if err != nil {
 		return err
 	}
-	// FIXME(marius): pass stdIn also to the Run
-	pw, err := loadPwFromStdin(true, "%s's", vocab.PreferredNameOf(actor))
+
+	// NOTE(marius): the ssh client needs to be forced to allocate
+	// a TTY with `ssh -tt` when executing the command from
+	// the ssh handler in order for the input to work correctly.
+	rw := muxReadWriter{Reader: ctl.in, Writer: ctl.out}
+	pw, err := loadPwFromStdin(rw, fmt.Sprintf("%s's password: ", vocab.PreferredNameOf(actor)))
 	if err != nil {
 		return err
 	}

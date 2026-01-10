@@ -9,7 +9,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io"
 
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/mask"
@@ -61,7 +60,13 @@ func SSHAuthPublicKey(f *FedBOX) ssh.PublicKeyHandler {
 	}
 }
 
-func runSSHCommand(f *FedBOX, outIo, errIo io.Writer, args []string) {
+func runSSHCommand(f *FedBOX, s ssh.Session) error {
+	args := s.Command()
+	// NOTE(marius): this is not an interactive session, try to run the received command
+	if len(args) == 0 {
+		return fmt.Errorf("PTY is not interactive and no command was sent")
+	}
+
 	cmd := new(SSH)
 	kongDefaultVars["name"] = "FedBOX SSH admin"
 	kongDefaultVars["URL"] = string(f.Service.ID)
@@ -70,53 +75,59 @@ func runSSHCommand(f *FedBOX, outIo, errIo io.Writer, args []string) {
 		kong.Name(kongDefaultVars["name"]),
 		kong.Description("${name} (version ${version}) ${URL}"),
 		kongDefaultVars,
-		kong.Writers(outIo, errIo),
+		kong.Writers(s, s.Stderr()),
 		kong.Exit(func(_ int) {}),
 	)
 	if err != nil {
-		_, _ = fmt.Fprintf(errIo, "Error: %s\n", err)
-		return
+		return err
 	}
 	ctx, err := k.Parse(args)
 	if err != nil {
-		_ = k.Errorf("%s\n", err)
-		return
+		return err
 	}
 	f.out = k.Stdout
 	f.err = k.Stderr
+	f.in = s
 
 	if err = ctx.Run(&f.Base); err != nil {
 		_ = k.Errorf("%s\n", err)
 		_ = ctx.PrintUsage(true)
 	}
-	return
+	return err
 }
 
 func MainTui(f *FedBOX) wish.Middleware {
 	teaHandler := func(s ssh.Session) *tea.Program {
-		pty, _, active := s.Pty()
+		lwCtx := lw.Ctx{}
+		acc, ok := s.Context().Value("actor").(*vocab.Actor)
+		if ok {
+			lwCtx["actor"] = acc.GetLink()
+		}
+
+		_, _, active := s.Pty()
+		lwCtx["active"] = active
+
+		f.Logger.WithContext(lwCtx).Infof("opening ssh session")
+		// NOTE(marius): this is not an interactive session, try to run the received command
+		if len(s.Command()) > 0 {
+			if err := runSSHCommand(f, s); err != nil {
+				_, _ = fmt.Fprintln(s.Stderr(), err.Error())
+				_ = s.Exit(1)
+			}
+			_ = s.Exit(0)
+			return nil
+		}
+
 		if !active {
-			// NOTE(marius): this is not an interactive session, try to run the received command
 			if len(s.Command()) == 0 {
 				_, _ = fmt.Fprintln(s.Stderr(), "PTY is not interactive and no command was sent")
 				_ = s.Exit(1)
 				return nil
 			}
-			runSSHCommand(f, s, s.Stderr(), s.Command())
-			_, _ = fmt.Fprintln(s)
-			_ = s.Exit(0)
-			return nil
 		}
 
 		// Set the global color profile to ANSI256 for Docker compatibility
 		lipgloss.SetColorProfile(termenv.ANSI256)
-		lwCtx := lw.Ctx{}
-
-		acc, ok := s.Context().Value("actor").(*vocab.Actor)
-		if ok {
-			lwCtx["actor"] = acc.GetLink()
-		}
-		f.Logger.WithContext(lwCtx, lw.Ctx{"w": pty.Window.Width, "h": pty.Window.Height}).Infof("opening ssh session")
 
 		service, err := motley.FedBOX(f.Logger.WithContext(lwCtx), motley.Storage{
 			FullStorage: f.Storage,

@@ -65,10 +65,10 @@ func (a AddActorCmd) Run(ctl *Base) error {
 		return nil
 	})
 
+	rw := muxReadWriter{Reader: ctl.in, Writer: ctl.out}
 	var actors = make(vocab.ItemCollection, 0)
 	for _, name := range a.Names {
-		// FIXME(marius): pass stdIn also to the Run
-		pw, err := loadPwFromStdin(true, "%s's", name)
+		pw, err := loadPwFromStdin(rw, fmt.Sprintf("%s's password: ", name))
 		if err != nil {
 			return err
 		}
@@ -367,6 +367,7 @@ func (e ExportCmd) Run(ctl *Base) error {
 		if err != nil {
 			return err
 		}
+		defer f.Close()
 		where = f
 	}
 	return OutJSON(where)(objects)

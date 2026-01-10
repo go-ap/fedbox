@@ -59,7 +59,8 @@ func (a AddClient) Run(ctl *Base) error {
 	if len(redirectURIs) < 1 {
 		return errors.Newf("Need to provide at least a redirect URI for the client")
 	}
-	pw, err := loadPwFromStdin(true, "client's")
+	rw := muxReadWriter{Reader: ctl.in, Writer: ctl.out}
+	pw, err := loadPwFromStdin(rw, "client's password: ")
 	if err != nil {
 		return err
 	}

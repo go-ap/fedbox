@@ -2,7 +2,6 @@ package fedbox
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"net/url"
@@ -148,19 +147,36 @@ func setup(ct *Base, options config.Options) error {
 	return nil
 }
 
-func loadPwFromStdin(confirm bool, s string, params ...any) ([]byte, error) {
-	fmt.Printf(s+" pw: ", params...)
-	pw1, _ := terminal.ReadPassword(0)
-	fmt.Println()
-	if confirm {
-		fmt.Printf("pw again: ")
-		pw2, _ := terminal.ReadPassword(0)
-		fmt.Println()
-		if !bytes.Equal(pw1, pw2) {
-			return nil, errors.Errorf("Passwords do not match")
-		}
+type muxReadWriter struct {
+	io.Reader
+	io.Writer
+}
+
+func (w muxReadWriter) Read(p []byte) (n int, err error) {
+	if w.Reader != nil {
+		return w.Reader.Read(p)
 	}
-	return pw1, nil
+	return 0, nil
+}
+
+func (w muxReadWriter) Write(p []byte) (n int, err error) {
+	if w.Writer != nil {
+		return w.Writer.Write(p)
+	}
+	return 0, nil
+}
+
+var _ io.Reader = muxReadWriter{}
+
+func loadPwFromStdin(rw io.ReadWriter, prompt string) ([]byte, error) {
+	term := terminal.NewTerminal(rw, "")
+	pw1, _ := term.ReadPassword(prompt)
+	p2 := "password again: "
+	pw2, _ := term.ReadPassword(p2)
+	if pw1 != pw2 {
+		return nil, errors.Errorf("Passwords do not match")
+	}
+	return []byte(pw1), nil
 }
 
 func loadFromStdin(s string, params ...any) ([]byte, error) {
