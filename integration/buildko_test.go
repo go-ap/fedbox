@@ -34,7 +34,7 @@ func buildImage(ctx context.Context, imageName string, logger *logrus.Logger) (s
 			"HTTP_PORT=4000",
 			"SSH_PORT=4044",
 			"HTTPS=true",
-			"STORAGE=all",
+			"STORAGE=fs",
 		}),
 		build.WithBaseImages(func(ctx context.Context, _ string) (name.Reference, build.Result, error) {
 			ref := name.MustParseReference(baseImage)
@@ -73,7 +73,7 @@ func buildImage(ctx context.Context, imageName string, logger *logrus.Logger) (s
 	if err != nil {
 		return "", err
 	}
-	ref, err := pub.Publish(ctx, res, "kofedbox")
+	ref, err := pub.Publish(ctx, res, "app/fedbox")
 	if err != nil {
 		return "", err
 	}

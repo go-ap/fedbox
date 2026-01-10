@@ -14,7 +14,7 @@ require (
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/charmbracelet/wish v1.4.7
 	github.com/go-ap/activitypub v0.0.0-20260102112410-54375d828154
-	github.com/go-ap/auth v0.0.0-20260102113527-7eacd35a8b49
+	github.com/go-ap/auth v0.0.0-20260109092107-38c0f9cf6659
 	github.com/go-ap/cache v0.0.0-20260102112930-bfa197b487fb
 	github.com/go-ap/client v0.0.0-20260102113429-e43de2d4ea43
 	github.com/go-ap/errors v0.0.0-20251229095444-2702aa2d8569
@@ -104,11 +104,11 @@ require (
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/term v0.38.0 // indirect
-	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 	modernc.org/libc v1.67.4 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.42.2 // indirect
+	modernc.org/sqlite v1.43.0 // indirect
 )

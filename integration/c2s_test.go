@@ -29,7 +29,7 @@ func Test_Fetch(t *testing.T) {
 	}{
 		{
 			name: "FedBOX root",
-			arg:  "https://fedbox",
+			arg:  "http://fedbox",
 			wanted: wanted{
 				status: http.StatusOK,
 				item:   self("https://fedbox"),
@@ -37,32 +37,32 @@ func Test_Fetch(t *testing.T) {
 		},
 		{
 			name:   "FedBOX Admin",
-			arg:    "https://fedbox/actors/1",
+			arg:    "http://fedbox/actors/1",
 			wanted: wanted{status: http.StatusOK},
 		},
 		{
 			name:   "sysop tag",
-			arg:    "https://fedbox/objects/0",
+			arg:    "http://fedbox/objects/0",
 			wanted: wanted{status: http.StatusOK},
 		},
 		{
 			name:   "object 1",
-			arg:    "https://fedbox/objects/1",
+			arg:    "http://fedbox/objects/1",
 			wanted: wanted{status: http.StatusOK},
 		},
 		{
 			name:   "actor 2",
-			arg:    "https://fedbox/actors/2",
+			arg:    "http://fedbox/actors/2",
 			wanted: wanted{status: http.StatusOK},
 		},
 		{
 			name:   "actors",
-			arg:    "https://fedbox/actors",
+			arg:    "http://fedbox/actors",
 			wanted: wanted{status: http.StatusOK},
 		},
 		{
 			name:   "objects",
-			arg:    "https://fedbox/objects",
+			arg:    "http://fedbox/objects",
 			wanted: wanted{status: http.StatusOK},
 		},
 	}
