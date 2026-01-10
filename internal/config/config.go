@@ -275,10 +275,12 @@ func LoadFromEnv() Options {
 		conf.TimeOut = to
 	}
 	conf.Secure, _ = strconv.ParseBool(Getval(KeyHTTPS, "false"))
-	if conf.Secure {
-		conf.BaseURL = fmt.Sprintf("https://%s", conf.Hostname)
-	} else {
-		conf.BaseURL = fmt.Sprintf("http://%s", conf.Hostname)
+	if len(conf.Hostname) > 0 {
+		if conf.Secure {
+			conf.BaseURL = fmt.Sprintf("https://%s", conf.Hostname)
+		} else {
+			conf.BaseURL = fmt.Sprintf("http://%s", conf.Hostname)
+		}
 	}
 
 	conf.Storage = storage.Type(strings.ToLower(Getval(KeyStorage, string(storage.Default))))

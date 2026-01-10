@@ -213,7 +213,10 @@ func initSSHServer(app *FedBOX) (m.Server, error) {
 	app.Logger.WithContext(lw.Ctx{"host": app.Conf.ListenHost, "port": app.Conf.SSHPort}).Debugf("Accepting SSH requests")
 	if app.ServicePrivateKey != nil {
 		// NOTE(marius): use the service private key as a host key
-		initFns = append(initFns, wish.WithHostKeyPEM(app.ServicePrivateKey))
+		if prvEnc, err := x509.MarshalPKCS8PrivateKey(app.ServicePrivateKey); err == nil {
+			r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
+			initFns = append(initFns, wish.WithHostKeyPEM(pem.EncodeToMemory(&r)))
+		}
 	}
 	return m.SSHServer(initFns...)
 }

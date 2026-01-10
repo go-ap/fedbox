@@ -20,7 +20,7 @@ import (
 type Storage struct {
 	Type storage.Type `help:"Type of the backend to use. Possible values: ${storageTypes}"`
 
-	Bootstrap      BootstrapCmd   `cmd:""`
+	Bootstrap      BootstrapCmd   `cmd:"" help:"Bootstrap the storage"`
 	Reset          ResetCmd       `cmd:"" help:"Reset an existing storage."`
 	FixCollections FixCollections `cmd:"" help:"Fix storage collections."`
 }
@@ -36,7 +36,7 @@ type SSH struct {
 }
 
 type CTL struct {
-	SSH
+	SSH `embed:""`
 
 	Url     url.URL          `help:"The URL used by the application."`
 	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`

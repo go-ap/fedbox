@@ -2,6 +2,7 @@ package fedbox
 
 import (
 	"context"
+	"crypto"
 	"io"
 	"sync/atomic"
 	"time"
@@ -21,7 +22,7 @@ type Base struct {
 	Conf              config.Options
 	Logger            lw.Logger
 	Service           vocab.Actor
-	ServicePrivateKey []byte
+	ServicePrivateKey crypto.PrivateKey
 	Storage           storage.FullStorage
 
 	debugMode atomic.Bool

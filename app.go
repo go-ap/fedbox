@@ -2,8 +2,6 @@ package fedbox
 
 import (
 	"context"
-	"crypto/x509"
-	"encoding/pem"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -101,13 +99,10 @@ func initHttpServer(app *FedBOX) (m.Server, error) {
 // New instantiates a new FedBOX instance
 func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, error) {
 	if db == nil {
-		return nil, errors.Newf("invalid Storage")
+		return nil, errors.Newf("invalid storage")
 	}
 	if err := db.Open(); err != nil {
-		return nil, errors.Annotatef(err, "unable to open Storage: %s", conf.StoragePath)
-	}
-	if conf.BaseURL == "" {
-		return nil, errors.Newf("invalid empty BaseURL config")
+		return nil, errors.Annotatef(err, "unable to open storage: %s", conf.StoragePath)
 	}
 
 	app := FedBOX{
@@ -136,7 +131,6 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 	app.debugMode.Store(conf.Env.IsDev())
 
 	if err := app.setupService(); err != nil {
-		app.errFn("unable to save the instance's self service: %s", err)
 		return nil, err
 	}
 
@@ -185,24 +179,15 @@ func (f *FedBOX) setupService() error {
 		keysType = ap.KeyTypeED25519
 	}
 	if err != nil && errors.IsNotFound(err) {
-		f.infFn("No service actor found, creating one: %s", selfIRI)
+		f.Logger.Tracef("No service actor found, creating one: %s", selfIRI)
 		self := ap.Self(selfIRI)
 		if err = ap.CreateService(db, self, keysType); err != nil {
 			return err
 		}
 		f.Service = self
 	}
-	key, err := db.LoadKey(f.Service.ID)
-	if err != nil {
-		f.errFn("Unable to load the private key for the instance's Service: %s", err)
-	}
-	if key != nil {
-		prvEnc, err := x509.MarshalPKCS8PrivateKey(key)
-		if err != nil {
-			return err
-		}
-		r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
-		f.ServicePrivateKey = pem.EncodeToMemory(&r)
+	if key, _ := db.LoadKey(f.Service.ID); key != nil {
+		f.ServicePrivateKey = key
 	}
 
 	return nil
@@ -277,8 +262,9 @@ func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, recei
 
 // Run is the wrapper for starting the web-server and handling signals
 func (f *FedBOX) Run(ctx context.Context) error {
-	logCtx := lw.Ctx{
-		"URL": f.Conf.BaseURL,
+	logCtx := lw.Ctx{}
+	if f.Conf.BaseURL != "" {
+		logCtx["URL"] = f.Conf.BaseURL
 	}
 	if f.Conf.Version != "" {
 		logCtx["version"] = f.Conf.Version
@@ -325,11 +311,11 @@ func (f *FedBOX) Run(ctx context.Context) error {
 			logFn("SIGUSR1 received, toggle maintenance mode")
 		},
 		syscall.SIGINT: func(exit chan<- error) {
-			logger.WithContext(lw.Ctx{"wait": defaultGraceWait}).Debugf("SIGINT received, interrupted")
+			logger.WithContext(lw.Ctx{"wait": f.Conf.TimeOut}).Debugf("SIGINT received, interrupted")
 			exitWithErrOrInterrupt(f.Stop(ctx), exit)
 		},
 		syscall.SIGTERM: func(exit chan<- error) {
-			logger.WithContext(lw.Ctx{"wait": defaultGraceWait}).Debugf("SIGTERM received, stopping with cleanup")
+			logger.WithContext(lw.Ctx{"wait": f.Conf.TimeOut}).Debugf("SIGTERM received, stopping with cleanup")
 			exitWithErrOrInterrupt(f.Stop(ctx), exit)
 		},
 		syscall.SIGQUIT: func(exit chan<- error) {
