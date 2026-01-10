@@ -3,6 +3,8 @@ package integration
 import (
 	"context"
 	"path/filepath"
+	"runtime/debug"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -16,18 +18,33 @@ const (
 	//baseImage     = "cgr.dev/chainguard/static:latest"
 	baseImage  = "gcr.io/distroless/static:latest"
 	targetRepo = "localhost"
-	imageName  = "fedbox/app"
+
 	importPath = "github.com/go-ap/fedbox"
-	commitSHA  = "deadbeef"
 )
 
 func justName(s string, s2 string) string {
 	return s2
 }
 
-func buildImage(ctx context.Context, imageName string, logger *logrus.Logger) (string, error) {
+func extractStorageTagsFromBuild() string {
+	storageType := "storage_fs"
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, bs := range info.Settings {
+			if bs.Key == "-tags" {
+				for _, tt := range strings.Split(bs.Value, " ") {
+					if strings.HasPrefix(tt, "storage_") {
+						storageType = tt
+					}
+				}
+			}
+		}
+	}
+	return "-tags " + storageType
+}
+
+func buildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string, error) {
 	builder, err := build.NewGo(ctx, "",
-		//build.WithDebugger(),
+		//build.WithDebugger(), // NOTE(marius): we're using statically linked fedbox, and a minimal base image, so we can't use Delve
 		build.WithDefaultEnv([]string{
 			"ENV=dev",
 			"HOSTNAME=fedbox",
@@ -46,9 +63,10 @@ func buildImage(ctx context.Context, imageName string, logger *logrus.Logger) (s
 		build.WithConfig(map[string]build.Config{
 			"cmd/fedbox": {
 				Dir:   "cmd/fedbox",
-				Flags: []string{"-tags storage_fs"},
+				Flags: []string{extractStorageTagsFromBuild()},
 			},
 		}),
+		build.WithTrimpath(true),
 		build.WithDisabledSBOM(),
 	)
 	if err != nil {
@@ -59,21 +77,21 @@ func buildImage(ctx context.Context, imageName string, logger *logrus.Logger) (s
 		return "", err
 	}
 	publishOpts := options.PublishOptions{
-		LocalDomain: targetRepo,
-		Tags:        []string{"dev"},
-		TagOnly:     true,
-		Push:        true,
-		Local:       true,
-		//InsecureRegistry:    true,
-		//PreserveImportPaths: true,
-		//Bare:                true,
-		ImageNamer: justName,
+		LocalDomain:         targetRepo,
+		Tags:                []string{"dev"},
+		TagOnly:             true,
+		Push:                true,
+		Local:               true,
+		InsecureRegistry:    true,
+		PreserveImportPaths: true,
+		Bare:                true,
+		ImageNamer:          justName,
 	}
 	pub, err := commands.NewPublisher(&publishOpts)
 	if err != nil {
 		return "", err
 	}
-	ref, err := pub.Publish(ctx, res, "app/fedbox")
+	ref, err := pub.Publish(ctx, res, strings.TrimPrefix(imageName, targetRepo+"/"))
 	if err != nil {
 		return "", err
 	}

@@ -57,7 +57,7 @@ func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error
 		storage := filepath.Join(".", "mocks")
 		env := filepath.Join(storage, ".env")
 
-		img := FedBOXImageName
+		img := fedboxImageName
 		if s.storage != "" {
 			img += "-" + s.storage
 		}
@@ -140,7 +140,7 @@ func defaultFedBOXRequest(name string) containers.GenericContainerRequest {
 func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomizer) (*fedboxContainer, error) {
 	logger := testLogger{T: t.(*testing.T)}
 
-	req := defaultFedBOXRequest(FedBOXImageName)
+	req := defaultFedBOXRequest(fedboxImageName)
 	opts = append(opts, containers.WithLogConsumers(logger))
 	opts = append(opts, WithLogger(logger))
 	for _, opt := range opts {

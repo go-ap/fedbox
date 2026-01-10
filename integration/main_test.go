@@ -13,29 +13,28 @@ var (
 	Verbose bool
 	Build   bool
 
-	FedBOXImageName      = "localhost/fedbox/app:dev"
-	defaultAuthImageName = "localhost/auth/app:dev"
+	fedboxImageName      = "localhost/fedbox/app"
+	defaultAuthImageName = "localhost/auth/app"
 )
 
 func TestMain(m *testing.M) {
 	flag.BoolVar(&Verbose, "verbose", false, "enable more verbose logging")
 	flag.BoolVar(&Build, "build", false, "build images before run")
-	flag.StringVar(&FedBOXImageName, "image", "quay.io/go-ap/fedbox:latest", "which image to use for running the tests")
 	flag.Parse()
 
 	if Build {
 		logger := logrus.New()
 		logger.SetOutput(os.Stderr)
 		if Verbose {
-			logger.SetLevel(logrus.DebugLevel)
+			logger.SetLevel(logrus.TraceLevel)
 		}
 		logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true, DisableLevelTruncation: true})
 
-		name, err := buildImage(context.Background(), FedBOXImageName, logger)
+		name, err := buildImage(context.Background(), fedboxImageName, logger)
 		if err != nil {
 			logger.Errorf("error building: %+v", err)
 		} else {
-			FedBOXImageName = name
+			fedboxImageName = name
 			logger.Infof("built image: %s", name)
 		}
 	}

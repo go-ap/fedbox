@@ -65,7 +65,7 @@ go.sum: go.mod
 
 fedbox: bin/fedbox ## Builds the main FedBOX service binary.
 bin/fedbox: go.mod go.sum cmd/fedbox/main.go $(APPSOURCES)
-	$(BUILD) -tags "$(TAGS)" -o $@ ./cmd/fedbox/main.go
+	$(BUILD) -o $@ ./cmd/fedbox/main.go
 ifneq (,$(findstring $(ENV), "prod qa"))
 	$(UPX) -q --mono --no-progress --best $@ || true
 endif
@@ -82,7 +82,7 @@ clean: ## Cleanup the build workspace.
 
 test: TEST_TARGET := . ./{activitypub,internal}/...
 test: download ## Run unit tests for the service.
-	$(TEST) $(TEST_FLAGS) -tags "$(TAGS)" $(TEST_TARGET)
+	$(TEST) $(TEST_FLAGS) $(TEST_TARGET)
 
 coverage: integration ## Run unit tests for the service with coverage.
 	$(GO) tool covdata percent -i=./tests/.cache -o $(PROJECT).coverprofile
