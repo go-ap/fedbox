@@ -68,15 +68,16 @@ func runSSHCommand(f *FedBOX, s ssh.Session) error {
 	}
 
 	cmd := new(SSH)
-	kongDefaultVars["name"] = "FedBOX SSH admin"
+	kongDefaultVars["name"] = "FedBOX SSH"
 	kongDefaultVars["URL"] = string(f.Service.ID)
 	k, err := kong.New(
 		cmd,
+		kong.UsageOnError(),
 		kong.Name(kongDefaultVars["name"]),
 		kong.Description("${name} (version ${version}) ${URL}"),
-		kongDefaultVars,
 		kong.Writers(s, s.Stderr()),
 		kong.Exit(func(_ int) {}),
+		kongDefaultVars,
 	)
 	if err != nil {
 		return err
@@ -91,7 +92,6 @@ func runSSHCommand(f *FedBOX, s ssh.Session) error {
 
 	if err = ctx.Run(&f.Base); err != nil {
 		_ = k.Errorf("%s\n", err)
-		_ = ctx.PrintUsage(true)
 	}
 	return err
 }
@@ -111,7 +111,6 @@ func MainTui(f *FedBOX) wish.Middleware {
 		// NOTE(marius): this is not an interactive session, try to run the received command
 		if len(s.Command()) > 0 {
 			if err := runSSHCommand(f, s); err != nil {
-				_, _ = fmt.Fprintln(s.Stderr(), err.Error())
 				_ = s.Exit(1)
 			}
 			_ = s.Exit(0)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -26,32 +27,57 @@ func justName(s string, s2 string) string {
 	return s2
 }
 
-func extractStorageTagsFromBuild() string {
-	storageType := "storage_fs"
-	if info, ok := debug.ReadBuildInfo(); ok {
-		for _, bs := range info.Settings {
+var validEnvs = []string{"dev", "prod", "qa", "test"}
+
+var buildInfo, buildOk = debug.ReadBuildInfo()
+
+func extractEnvTagFromBuild() string {
+	env := "dev"
+	if buildOk {
+		for _, bs := range buildInfo.Settings {
 			if bs.Key == "-tags" {
 				for _, tt := range strings.Split(bs.Value, " ") {
-					if strings.HasPrefix(tt, "storage_") {
-						storageType = tt
+					if slices.Contains(validEnvs, tt) {
+						env = tt
+						break
 					}
 				}
 			}
 		}
 	}
-	return "-tags " + storageType
+	return env
+}
+
+func extractStorageTagFromBuild() string {
+	storageType := "storage_fs"
+	if buildOk {
+		for _, bs := range buildInfo.Settings {
+			if bs.Key == "-tags" {
+				for _, tt := range strings.Split(bs.Value, " ") {
+					if strings.HasPrefix(tt, "storage_") {
+						storageType = strings.TrimPrefix(tt, "storage_")
+					}
+				}
+			}
+		}
+	}
+	return storageType
 }
 
 func buildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string, error) {
+	storageType := extractStorageTagFromBuild()
+	envType := extractEnvTagFromBuild()
+	tags := "-tag 'ssh storage_" + storageType + " " + envType + "' "
+
 	builder, err := build.NewGo(ctx, "",
-		//build.WithDebugger(), // NOTE(marius): we're using statically linked fedbox, and a minimal base image, so we can't use Delve
+		//build.WithDebugger(), // NOTE(marius): we're using a minimal base image, requiring a statically compiled app, so we can't use Delve
 		build.WithDefaultEnv([]string{
-			"ENV=dev",
+			"ENV=" + envType,
+			"STORAGE=" + storageType,
 			"HOSTNAME=fedbox",
 			"HTTP_PORT=4000",
 			"SSH_PORT=4044",
 			"HTTPS=true",
-			"STORAGE=fs",
 		}),
 		build.WithBaseImages(func(ctx context.Context, _ string) (name.Reference, build.Result, error) {
 			ref := name.MustParseReference(baseImage)
@@ -63,7 +89,7 @@ func buildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 		build.WithConfig(map[string]build.Config{
 			"cmd/fedbox": {
 				Dir:   "cmd/fedbox",
-				Flags: []string{extractStorageTagsFromBuild()},
+				Flags: []string{tags},
 			},
 		}),
 		build.WithTrimpath(true),

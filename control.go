@@ -12,7 +12,6 @@ import (
 	"git.sr.ht/~mariusor/storage-all"
 	"github.com/alecthomas/kong"
 	"github.com/go-ap/errors"
-	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"golang.org/x/crypto/ssh/terminal"
@@ -77,14 +76,8 @@ func InitControl(c *CTL, version string) (*Base, error) {
 }
 
 func NewBase(db storage.FullStorage, conf config.Options, l lw.Logger) (*Base, error) {
-	self, err := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
-	if err != nil {
-		l.Warnf("unable to load actor: %s", err)
-	}
-
 	return &Base{
 		Conf:    conf,
-		Service: self,
 		Storage: db,
 		Logger:  l,
 		in:      os.Stdin,
@@ -135,13 +128,7 @@ func setup(ct *Base, options config.Options) error {
 	}
 	defer db.Close()
 
-	self, err := ap.LoadActor(db, ap.DefaultServiceIRI(conf.BaseURL))
-	if err != nil {
-		l.Warnf("unable to load actor: %s", err)
-	}
-
 	ct.Conf = conf
-	ct.Service = self
 	ct.Storage = db
 	ct.Logger = l
 	return nil
