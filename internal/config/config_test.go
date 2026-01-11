@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/go-ap/fedbox/internal/env"
 )
@@ -14,7 +13,6 @@ const (
 	hostname = "testing.git"
 	logLvl   = "panic"
 	secure   = true
-	listen   = "127.0.0.3:666"
 	pgSQL    = "postgres"
 	boltDB   = "boltdb"
 	dbHost   = "127.0.0.6"
@@ -39,7 +37,7 @@ func TestLoadFromEnv(t *testing.T) {
 		_ = os.Setenv(KeyStorage, pgSQL)
 
 		var baseURL = fmt.Sprintf("https://%s", hostname)
-		c, err := Load(".", env.TEST, time.Second)
+		c, err := Load(".", env.TEST)
 		if err != nil {
 			t.Errorf("Error loading env: %s", err)
 		}
@@ -73,7 +71,7 @@ func TestLoadFromEnv(t *testing.T) {
 	}
 	{
 		_ = os.Setenv(KeyStorage, boltDB)
-		c, err := Load(".", env.TEST, time.Second)
+		c, err := Load(".", env.TEST)
 		if err != nil {
 			t.Errorf("Error loading env: %s", err)
 		}
