@@ -368,9 +368,12 @@ func reverseDNSName(host string) string {
 	return strings.Join(pieces, ".")
 }
 func (o Options) pathInstanceName() string {
-	name := o.AppName
+	name := "fedbox"
 	if o.Hostname != "" {
-		name = reverseDNSName(o.Hostname) + "." + name
+		name = reverseDNSName(o.Hostname)
+	}
+	if o.AppName != "" {
+		name += "." + o.AppName
 	}
 	return strings.ToLower(name)
 }

@@ -130,10 +130,6 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 
 	app.debugMode.Store(conf.Env.IsDev())
 
-	if err := app.setupService(); err != nil {
-		return nil, err
-	}
-
 	app.R.Group(app.Routes())
 
 	muxSetters := make([]m.MuxFn, 0, 1)
@@ -163,42 +159,6 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 	}
 
 	return &app, nil
-}
-
-func (f *FedBOX) setupService() error {
-	db := f.Storage
-
-	conf := f.Conf
-
-	if conf.BaseURL == "" {
-		// NOTE(marius): if we haven't configured the BaseURL option
-		// we wait for a bootstrap of the service
-		//f.maintenanceMode.Store(true)
-		//return f.Pause()
-		return nil
-	}
-
-	selfIRI := ap.DefaultServiceIRI(conf.BaseURL)
-	var err error
-
-	f.Service, err = ap.LoadActor(db, selfIRI)
-	keysType := ap.KeyTypeRSA
-	if conf.MastodonIncompatible {
-		keysType = ap.KeyTypeED25519
-	}
-	if err != nil && errors.IsNotFound(err) {
-		f.Logger.Tracef("No service actor found, creating one: %s", selfIRI)
-		self := ap.Self(selfIRI)
-		if err = ap.CreateService(db, self, keysType); err != nil {
-			return err
-		}
-		f.Service = self
-	}
-	if key, _ := db.LoadKey(f.Service.ID); key != nil {
-		f.ServicePrivateKey = key
-	}
-
-	return nil
 }
 
 func (f *FedBOX) Pause() error {

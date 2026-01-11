@@ -50,19 +50,23 @@ func Run(args ...string) error {
 		return err
 	}
 
-	switch ctx.Command() {
+	cmd := ctx.Command()
+	switch cmd {
 	case "maintenance", "stop", "reload", "run":
 		// NOTE(marius): these don't interact with the storage, and additionally,
 		// they involve sending their own signals, so we skip pausing.
 	default:
 		pauseFn := ctl.SendSignalToServer(syscall.SIGUSR1)
-		_ = pauseFn()
-		defer func() { _ = pauseFn() }()
+		if err = pauseFn(); err == nil {
+			defer func() { _ = pauseFn() }()
 
-		if err = ctl.Storage.Open(); err != nil {
-			return err
+			if cmd != "storage bootstrap" {
+				if err = ctl.Storage.Open(); err != nil {
+					return err
+				}
+				defer ctl.Storage.Close()
+			}
 		}
-		defer ctl.Storage.Close()
 	}
 
 	return ctx.Run(ctl)

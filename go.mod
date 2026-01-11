@@ -62,7 +62,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/go-ap/storage-badger v0.0.0-20260102114145-aa5bc644359e // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260102114123-757dc56b2df9 // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260111150500-4f99d1adaa8b // indirect
 	github.com/go-ap/storage-fs v0.0.0-20260107121028-2811b990146e // indirect
 	github.com/go-ap/storage-sqlite v0.0.0-20260108113015-44b4272b36f5 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect

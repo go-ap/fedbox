@@ -123,10 +123,6 @@ func setup(ct *Base, options config.Options) error {
 	if err != nil {
 		return err
 	}
-	if err = db.Open(); err != nil {
-		return errors.Annotatef(err, "Unable to open FedBOX storage for path %s", conf.StoragePath)
-	}
-	defer db.Close()
 
 	ct.Conf = conf
 	ct.Storage = db

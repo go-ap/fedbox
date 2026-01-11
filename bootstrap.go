@@ -38,12 +38,14 @@ func (b BootstrapCmd) Run(ctl *Base) error {
 	}
 	ctl.Service = ap.Self(ap.DefaultServiceIRI(ctl.Conf.BaseURL))
 	if err := bootstrap(ctl.Conf, ctl.Service, ctl.Logger); err != nil {
-		Errf(ctl.err, "Error adding service: %s\n", err)
 		return err
 	}
+	if err := ctl.Storage.Open(); err != nil {
+		return err
+	}
+	defer ctl.Storage.Close()
 	if metaSaver, ok := ctl.Storage.(ap.MetadataStorage); ok {
 		if err := ap.AddKeyToItem(metaSaver, &ctl.Service, keyType); err != nil {
-			Errf(ctl.err, "Error saving metadata for service: %s", err)
 			return err
 		}
 	}

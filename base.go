@@ -28,17 +28,15 @@ import (
 )
 
 func (ctl *Base) SendSignalToServer(sig syscall.Signal) func() error {
-	return func() error {
-		return ctl.SendSignal(sig)
-	}
-}
-
-func (ctl *Base) SendSignal(sig syscall.Signal) error {
 	pid, err := ctl.Conf.ReadPid()
 	if err != nil {
-		return errors.Annotatef(err, "unable to read pid file")
+		return func() error {
+			return err
+		}
 	}
-	return syscall.Kill(pid, sig)
+	return func() error {
+		return syscall.Kill(pid, sig)
+	}
 }
 
 func (ctl *Base) infFn(s string, p ...any) {
