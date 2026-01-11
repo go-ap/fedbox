@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -129,25 +128,24 @@ func (fc *fedboxContainer) Req(ctx context.Context, met, u string, body io.Reade
 }
 
 func defaultFedBOXRequest(name string) containers.GenericContainerRequest {
+	envType := extractEnvTagFromBuild()
 	return containers.GenericContainerRequest{
 		ContainerRequest: containers.ContainerRequest{
 			Image:      name,
-			WaitingFor: wait.ForLog("Started").WithStartupTimeout(time.Second),
+			Cmd:        []string{"--env", envType},
+			WaitingFor: wait.ForLog("Started").WithStartupTimeout(800 * time.Millisecond),
 		},
 		ProviderType: containers.ProviderPodman,
 		Started:      true,
 	}
 }
 
-func (fc *fedboxContainer) remoteRun(ctx context.Context, cmd []string) (string, error) {
-	// privateKey could be read from a file, or retrieved from another storage
-	// source, such as the Secret Service / GNOME Keyring
+func (fc *fedboxContainer) RemoteExec(ctx context.Context, cmd []string) (string, error) {
 	//key, err := ssh.ParsePrivateKey([]byte(privateKey))
 	//if err != nil {
 	//	return "", err
 	//}
 
-	//host, err := fc.Endpoint(ctx, "ssh")
 	inspect, err := fc.Inspect(ctx)
 	if err != nil {
 		return "", err
@@ -156,18 +154,20 @@ func (fc *fedboxContainer) remoteRun(ctx context.Context, cmd []string) (string,
 	if len(inspect.NetworkSettings.Ports) <= 1 {
 		return "", errors.New("invalid ports")
 	}
-	host := "127.0.0.1"
-	for label, ports := range inspect.NetworkSettings.Ports {
-		if strings.HasPrefix(string(label), "4044") && len(ports) > 0 {
-			host = net.JoinHostPort(host, ports[0].HostPort)
-		}
-	}
+	host := "fedbox:4044"
+	//for label, ports := range inspect.NetworkSettings.Ports {
+	//	if strings.HasPrefix(string(label), "4044") && len(ports) > 0 {
+	//		host = net.JoinHostPort(host, ports[0].HostPort)
+	//	}
+	//}
 	// Authentication
 	user := "http://fedbox"
 	config := &ssh.ClientConfig{
 		User:            user,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Auth:            []ssh.AuthMethod{ssh.Password("PASSWORD") /*, ssh.PublicKeys(key)*/},
+		// TODO(marius): make sure the password or the private key are available
+		//   Currently for TEST environments password check is skipped
+		Auth: []ssh.AuthMethod{ssh.Password(defaultPassword) /*, ssh.PublicKeys(key)*/},
 	}
 	// Connect
 	client, err := ssh.Dial("tcp", host, config)
@@ -193,6 +193,8 @@ func (fc *fedboxContainer) remoteRun(ctx context.Context, cmd []string) (string,
 
 var defaultPassword = "asd"
 
+const ctlBin = "fedbox"
+
 // Run creates an instance of the FedBOX container type
 func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomizer) (*fedboxContainer, error) {
 	logger := testLogger{T: t.(*testing.T)}
@@ -217,31 +219,33 @@ func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomiz
 	}
 
 	envType := extractEnvTagFromBuild()
-	storageType := extractStorageTagFromBuild()
-	if storageType == "all" {
-		storageType = string(storage.Default)
-	}
+	//storageType := extractStorageTagFromBuild()
+	//if storageType == "all" {
+	//	storageType = string(storage.Default)
+	//}
 	initializers := [][]string{
-		{"fedbox", "--env", envType, "storage", "--type", storageType, "bootstrap" /*, "--password", defaultPassword*/},
-		{"fedbox", "--env", envType, "pub", "import", "/storage/import.json"},
-		{"fedbox", "--env", envType, "accounts", "gen-keys", "--key-type", "ED25519"},
+		{ctlBin, "--env", envType, /**/ "storage", /*"--type", storageType,*/ "bootstrap", "--password", defaultPassword},
+		{ctlBin, "--env", envType, /**/ "pub", "import", "/storage/import.json"},
+		{ctlBin, "--env", envType, /**/ "accounts", "gen-keys", "--key-type", "ED25519"},
 	}
 	errs := make([]error, 0)
 	for _, cmd := range initializers {
-		//if _, err := f.remoteRun(ctx, cmd); err != nil {
-		//	errs = append(errs, err)
-		//}
-		st, out, err := f.Exec(ctx, cmd)
-		if err != nil {
-			errs = append(errs, err)
-		}
-		if st != 0 {
-			// command didn't return success.
-			errs = append(errs, fmt.Errorf("command failed"))
-		}
-
-		if _, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out); err != nil {
-			errs = append(errs, err)
+		if cmd[0] == ctlBin {
+			st, out, err := f.Exec(ctx, cmd)
+			if err != nil {
+				errs = append(errs, err)
+			}
+			if st != 0 {
+				// command didn't return success.
+				errs = append(errs, fmt.Errorf("command failed"))
+			}
+			if _, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out); err != nil {
+				errs = append(errs, err)
+			}
+		} else {
+			if _, err := f.RemoteExec(ctx, cmd); err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
 	return &f, errors.Join(errs...)
