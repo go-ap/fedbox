@@ -12,7 +12,7 @@ import (
 	"github.com/go-ap/fedbox/internal/env"
 )
 
-const defaultWaitDuration = 5 * time.Second
+const defaultWaitDuration = 1 * time.Millisecond
 
 var kongDefaultVars = kong.Vars{
 	"version":            AppVersion,
