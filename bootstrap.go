@@ -28,7 +28,8 @@ func (b ResetCmd) Run(ctl *Base) error {
 }
 
 type BootstrapCmd struct {
-	KeyType string `help:"Type of keys to generate: ${keyTypes}" enum:"${keyTypes}" default:"${defaultKeyType}"`
+	KeyType  string `help:"Type of keys to generate: ${keyTypes}" enum:"${keyTypes}" default:"${defaultKeyType}"`
+	Password string `hidden:""`
 }
 
 func (b BootstrapCmd) Run(ctl *Base) error {
@@ -44,8 +45,11 @@ func (b BootstrapCmd) Run(ctl *Base) error {
 		return err
 	}
 	defer ctl.Storage.Close()
-	if metaSaver, ok := ctl.Storage.(ap.MetadataStorage); ok {
-		if err := ap.AddKeyToItem(metaSaver, &ctl.Service, keyType); err != nil {
+	if err := ap.AddKeyToItem(ctl.Storage, &ctl.Service, keyType); err != nil {
+		return err
+	}
+	if b.Password != "" {
+		if err := ctl.Storage.PasswordSet(ctl.Service.ID, []byte(b.Password)); err != nil {
 			return err
 		}
 	}
