@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 
 		name, err := buildImage(context.Background(), fedboxImageName, logger)
 		if err != nil {
-			logger.Errorf("error building: %+v", err)
+			logger.Fatalf("error building: %+v", err)
 		} else {
 			fedboxImageName = name
 			logger.Infof("built image: %s", name)

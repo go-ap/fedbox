@@ -33,7 +33,7 @@ var validEnvs = []string{"dev", "prod", "qa", "test"}
 var buildInfo, buildOk = debug.ReadBuildInfo()
 
 func extractEnvTagFromBuild() string {
-	env := "dev"
+	env := "test"
 	if buildOk {
 		for _, bs := range buildInfo.Settings {
 			if bs.Key == "-tags" {
@@ -68,15 +68,13 @@ func extractStorageTagFromBuild() string {
 func buildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string, error) {
 	storageType := extractStorageTagFromBuild()
 	envType := extractEnvTagFromBuild()
-	tags := `-tag "ssh storage_` + storageType + " " + envType + `" `
+	tags := `-tags=ssh,storage_` + storageType + "," + envType
 	if storageType == "all" {
 		storageType = string(storage.Default)
 	}
 
 	builder, err := build.NewGo(ctx, "",
 		//build.WithDebugger(), // NOTE(marius): we're using a minimal base image, requiring a statically compiled app, so we can't use Delve
-		build.WithAnnotation("storage", storageType),
-		build.WithAnnotation("env", envType),
 		build.WithBaseImages(func(ctx context.Context, _ string) (name.Reference, build.Result, error) {
 			ref := name.MustParseReference(baseImage)
 			base, err := remote.Index(ref, remote.WithContext(ctx))
@@ -84,7 +82,8 @@ func buildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 		}),
 		build.WithPlatforms("linux/amd64"),
 		build.WithConfig(map[string]build.Config{
-			"cmd/fedbox": {
+			filepath.Join(importPath, "cmd/fedbox"): {
+				ID:      "fedbox",
 				Dir:     "cmd/fedbox",
 				Flags:   []string{tags},
 				Ldflags: []string{`-extldflags "-static"`},
@@ -103,14 +102,8 @@ func buildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 	publishOpts := options.PublishOptions{
 		LocalDomain: targetRepo,
 		DockerRepo:  targetRepo,
-		Tags:        []string{storageType},
-		//TagOnly:     true,
-		//Push:        false,
-		Local: true,
-		//InsecureRegistry:    true,
-		//PreserveImportPaths: true,
-		//Bare:                true,
-		ImageNamer: justName,
+		Local:       true,
+		ImageNamer:  justName,
 	}
 	pub, err := commands.NewPublisher(&publishOpts)
 	if err != nil {
