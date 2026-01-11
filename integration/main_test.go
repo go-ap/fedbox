@@ -38,7 +38,6 @@ func TestMain(m *testing.M) {
 			logger.Infof("built image: %s", name)
 		}
 	}
-
 	if st := m.Run(); st != 0 {
 		os.Exit(st)
 	}
