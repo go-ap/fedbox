@@ -1,16 +1,29 @@
 image: archlinux
 packages:
   - go
+  - podman
 sources:
   - https://github.com/go-ap/fedbox
 environment:
   GOTOOLCHAIN: go1.25.0
+  DOCKER_HOST: unix:///run/user/1000/podman/podman.sock
 secrets:
-  - 3dcea276-38d6-4a7e-85e5-20cbc903e1ea
+- 3dcea276-38d6-4a7e-85e5-20cbc903e1ea
+- 3f30fd61-e33d-4198-aafb-0ff341e9db1c
 tasks:
   - setup: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
-      cd fedbox && make download && go mod vendor
+      cd fedbox && make download
+      set -a +x
+      source ~/.buildah.env
+
+      _user=$(id -un)
+
+      echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/unq-search.conf
+      echo "${_user}:10000:65536" | sudo tee /etc/subuid
+      echo "${_user}:10000:65536" | sudo tee /etc/subgid
+
+      podman system migrate
   - build: |
       cd fedbox
       make STORAGE=fs clean all
@@ -20,6 +33,12 @@ tasks:
   - tests: |
       cd fedbox
       make test
+  - integration-new: |
+      systemctl --user start podman.service
+
+      cd fedbox/integration
+      go mod download
+      go test -cover -count=1 -json . -build | go run github.com/mfridman/tparse@latest --all
   - push_to_github: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
       set -a +x
