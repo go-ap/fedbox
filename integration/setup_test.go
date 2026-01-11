@@ -1,11 +1,13 @@
 package integration
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -21,6 +23,7 @@ import (
 	containers "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"golang.org/x/crypto/ssh"
 )
 
 type fedboxContainer struct {
@@ -136,6 +139,60 @@ func defaultFedBOXRequest(name string) containers.GenericContainerRequest {
 	}
 }
 
+func (fc *fedboxContainer) remoteRun(ctx context.Context, cmd []string) (string, error) {
+	// privateKey could be read from a file, or retrieved from another storage
+	// source, such as the Secret Service / GNOME Keyring
+	//key, err := ssh.ParsePrivateKey([]byte(privateKey))
+	//if err != nil {
+	//	return "", err
+	//}
+
+	//host, err := fc.Endpoint(ctx, "ssh")
+	inspect, err := fc.Inspect(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	if len(inspect.NetworkSettings.Ports) <= 1 {
+		return "", errors.New("invalid ports")
+	}
+	host := "127.0.0.1"
+	for label, ports := range inspect.NetworkSettings.Ports {
+		if strings.HasPrefix(string(label), "4044") && len(ports) > 0 {
+			host = net.JoinHostPort(host, ports[0].HostPort)
+		}
+	}
+	// Authentication
+	user := "http://fedbox"
+	config := &ssh.ClientConfig{
+		User:            user,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Auth:            []ssh.AuthMethod{ssh.Password("PASSWORD") /*, ssh.PublicKeys(key)*/},
+	}
+	// Connect
+	client, err := ssh.Dial("tcp", host, config)
+	if err != nil {
+		return "", err
+	}
+	// Create a session. It is one session per command.
+	session, err := client.NewSession()
+	if err != nil {
+		return "", err
+	}
+	defer session.Close()
+	var b bytes.Buffer  // import "bytes"
+	session.Stdout = &b // get output
+	// you can also pass what gets input to the stdin, allowing you to pipe
+	// content from client to server
+	//      session.Stdin = bytes.NewBufferString("My input")
+
+	// Finally, run the command
+	err = session.Run(strings.Join(cmd, " "))
+	return b.String(), err
+}
+
+var defaultPassword = "asd"
+
 // Run creates an instance of the FedBOX container type
 func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomizer) (*fedboxContainer, error) {
 	logger := testLogger{T: t.(*testing.T)}
@@ -165,12 +222,15 @@ func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomiz
 		storageType = string(storage.Default)
 	}
 	initializers := [][]string{
-		{"fedbox", "--env", envType, "storage", "--type", storageType, "bootstrap"},
+		{"fedbox", "--env", envType, "storage", "--type", storageType, "bootstrap" /*, "--password", defaultPassword*/},
 		{"fedbox", "--env", envType, "pub", "import", "/storage/import.json"},
 		{"fedbox", "--env", envType, "accounts", "gen-keys", "--key-type", "ED25519"},
 	}
 	errs := make([]error, 0)
 	for _, cmd := range initializers {
+		//if _, err := f.remoteRun(ctx, cmd); err != nil {
+		//	errs = append(errs, err)
+		//}
 		st, out, err := f.Exec(ctx, cmd)
 		if err != nil {
 			errs = append(errs, err)
@@ -205,8 +265,6 @@ func loadEnv() map[string]string {
 	}
 	return conf
 }
-
-var defaultPort = 6669
 
 func WithImageName(image string) containers.CustomizeRequestOption {
 	return func(req *containers.GenericContainerRequest) error {
