@@ -15,21 +15,20 @@ import (
 const defaultWaitDuration = 1 * time.Millisecond
 
 var kongDefaultVars = kong.Vars{
-	"version":            AppVersion,
-	"name":               AppName,
-	"defaultEnv":         string(env.DEV),
-	"envTypes":           fmt.Sprintf("%s, %s, %s, %s", env.TEST, env.DEV, env.QA, env.PROD),
-	"keyTypes":           fmt.Sprintf("%s, %s", ap.KeyTypeED25519, ap.KeyTypeRSA),
-	"storageTypes":       fmt.Sprintf("%s, %s, %s, %s", config.StorageFS, config.StorageSqlite, config.StorageBoltDB, config.StorageBadger),
-	"defaultKeyType":     ap.KeyTypeRSA,
-	"defaultObjectTypes": fmt.Sprintf("%v", ValidGenericTypes),
+	"version":             AppVersion,
+	"name":                AppName,
+	"defaultEnv":          string(env.DEV),
+	"envTypes":            fmt.Sprintf("%s, %s, %s, %s", env.TEST, env.DEV, env.QA, env.PROD),
+	"keyTypes":            fmt.Sprintf("%s, %s", ap.KeyTypeED25519, ap.KeyTypeRSA),
+	"storageTypes":        fmt.Sprintf("%s, %s, %s, %s", config.StorageFS, config.StorageSqlite, config.StorageBoltDB, config.StorageBadger),
+	"defaultKeyType":      ap.KeyTypeRSA,
+	"defaultWaitDuration": defaultWaitDuration.String(),
+	"defaultObjectTypes":  fmt.Sprintf("%v", ValidGenericTypes),
 }
 
 var CTLRun = new(CTL)
 
 func Run(args ...string) error {
-	kongDefaultVars["defaultWaitDuration"] = defaultWaitDuration.String()
-
 	k, err := kong.New(
 		CTLRun,
 		kong.Name("fedbox"),

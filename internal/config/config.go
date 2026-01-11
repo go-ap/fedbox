@@ -203,7 +203,7 @@ func findConfigs(path string, e env.Type) []string {
 	return configs
 }
 
-func Load(path string, e env.Type, timeOut time.Duration) (Options, error) {
+func Load(path string, e env.Type) (Options, error) {
 	if !env.ValidType(e) {
 		e = env.Type(Getval(KeyENV, ""))
 	}
@@ -217,7 +217,6 @@ func Load(path string, e env.Type, timeOut time.Duration) (Options, error) {
 
 	opts := LoadFromEnv()
 	opts.Env = e
-	opts.TimeOut = timeOut
 
 	return opts, validateOptions(opts)
 }
@@ -270,7 +269,6 @@ func LoadFromEnv() Options {
 	if conf.Hostname == "" {
 		conf.Hostname = Getval(KeyHostname, conf.Hostname)
 	}
-	conf.TimeOut = 0
 	if to, _ := time.ParseDuration(Getval(KeyTimeOut, "")); to > 0 {
 		conf.TimeOut = to
 	}

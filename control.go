@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/url"
 	"os"
-	"time"
 
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/storage-all"
@@ -58,6 +57,7 @@ func InitControl(c *CTL, version string) (*Base, error) {
 		Secure:      c.Url.Scheme == "https",
 		BaseURL:     c.Url.String(),
 		Version:     version,
+		TimeOut:     c.Run.Wait,
 	}
 	if c.Verbose > 1 {
 		opt.LogLevel = lw.DebugLevel
@@ -89,7 +89,7 @@ func NewBase(db storage.FullStorage, conf config.Options, l lw.Logger) (*Base, e
 func setup(ct *Base, options config.Options) error {
 	environ := options.Env
 	path := options.StoragePath
-	conf, err := config.Load(path, environ, time.Second)
+	conf, err := config.Load(path, environ)
 	if err != nil {
 		return err
 	}
