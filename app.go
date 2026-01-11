@@ -170,6 +170,14 @@ func (f *FedBOX) setupService() error {
 
 	conf := f.Conf
 
+	if conf.BaseURL == "" {
+		// NOTE(marius): if we haven't configured the BaseURL option
+		// we wait for a bootstrap of the service
+		//f.maintenanceMode.Store(true)
+		//return f.Pause()
+		return nil
+	}
+
 	selfIRI := ap.DefaultServiceIRI(conf.BaseURL)
 	var err error
 
