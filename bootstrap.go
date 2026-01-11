@@ -33,6 +33,7 @@ type BootstrapCmd struct {
 
 func (b BootstrapCmd) Run(ctl *Base) error {
 	keyType := b.KeyType
+	ctl.Conf.Storage = CTLRun.Storage.Type
 	ctl.Service = ap.Self(ap.DefaultServiceIRI(ctl.Conf.BaseURL))
 	if err := bootstrap(ctl.Conf, ctl.Service, ctl.Logger); err != nil {
 		Errf(ctl.err, "Error adding service: %s\n", err)

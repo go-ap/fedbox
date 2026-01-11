@@ -25,8 +25,9 @@ var kongDefaultVars = kong.Vars{
 	"defaultObjectTypes": fmt.Sprintf("%v", ValidGenericTypes),
 }
 
+var CTLRun = new(CTL)
+
 func Run(args ...string) error {
-	CTLRun := new(CTL)
 	kongDefaultVars["defaultWaitDuration"] = defaultWaitDuration.String()
 
 	k, err := kong.New(
