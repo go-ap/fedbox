@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"git.sr.ht/~mariusor/storage-all"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/joho/godotenv"
 	containers "github.com/testcontainers/testcontainers-go"
@@ -54,14 +55,13 @@ func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error
 	// @see github.com/testcontainers/testcontainers-go/internal/core.MustExtractDockerHost()
 	m := make(cntrs)
 	for _, s := range suites {
-		storage := filepath.Join(".", "mocks")
-		env := filepath.Join(storage, ".env")
+		storagePath := filepath.Join(".", "mocks")
+		env := filepath.Join(storagePath, ".env")
 
+		//storagePath := t.TempDir()
 		img := fedboxImageName
-		if s.storage != "" {
-			img += "-" + s.storage
-		}
-		c, err := Run(ctx, t, WithImageName(img), WithEnvFile(env), WithStorage(storage))
+		t.Logf("Mock image: %s path %s", fedboxImageName, storagePath)
+		c, err := Run(ctx, t, WithImageName(img), WithEnvFile(env), WithStorage(storagePath))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize container %s: %w", s.name, err)
 		}
@@ -159,10 +159,15 @@ func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomiz
 		return &f, err
 	}
 
+	envType := extractEnvTagFromBuild()
+	storageType := extractStorageTagFromBuild()
+	if storageType == "all" {
+		storageType = string(storage.Default)
+	}
 	initializers := [][]string{
-		{"fedbox", "--env", "dev", "storage", "bootstrap"},
-		{"fedbox", "--env", "dev", "pub", "import", "/storage/import.json"},
-		{"fedbox", "--env", "dev", "accounts", "gen-keys", "--key-type", "ED25519"},
+		{"fedbox", "--env", envType, "storage", "--type", storageType, "bootstrap"},
+		{"fedbox", "--env", envType, "pub", "import", "/storage/import.json"},
+		{"fedbox", "--env", envType, "accounts", "gen-keys", "--key-type", "ED25519"},
 	}
 	errs := make([]error, 0)
 	for _, cmd := range initializers {
@@ -221,6 +226,12 @@ func WithLogger(logFn log.Logger) containers.CustomizeRequestOption {
 
 func WithEnvFile(configFile string) containers.CustomizeRequestOption {
 	_ = godotenv.Load(configFile)
+
+	storageType := extractStorageTagFromBuild()
+	envType := extractEnvTagFromBuild()
+	if storageType == "all" {
+		storageType = string(storage.Default)
+	}
 	return func(req *containers.GenericContainerRequest) error {
 		if req.Env == nil {
 			req.Env = make(map[string]string)
@@ -230,10 +241,23 @@ func WithEnvFile(configFile string) containers.CustomizeRequestOption {
 				req.Env[k] = v
 			}
 		}
-		if httpPort, ok := req.Env["HTTP_PORT"]; ok {
-			if port, err := strconv.ParseUint(httpPort, 10, 32); err == nil {
+		exposePort := func(portVal string) {
+			if port, err := strconv.ParseUint(portVal, 10, 32); err == nil {
 				req.ContainerRequest.ExposedPorts = append(req.ContainerRequest.ExposedPorts, strconv.FormatInt(int64(port), 10))
 			}
+		}
+
+		req.Env["ENV"] = envType
+		req.Env["STORAGE"] = storageType
+		if Verbose {
+			req.Env["LOG_LEVEL"] = "trace"
+		}
+
+		if httpPort, ok := req.Env["HTTP_PORT"]; ok {
+			exposePort(httpPort)
+		}
+		if sshPort, ok := req.Env["SSH_PORT"]; ok {
+			exposePort(sshPort)
 		}
 		if listenHost, ok := req.Env["LISTEN_HOST"]; ok {
 			req.NetworkAliases = map[string][]string{listenHost: {listenHost}}

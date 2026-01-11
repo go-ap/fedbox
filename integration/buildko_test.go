@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"git.sr.ht/~mariusor/storage-all"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/ko/pkg/build"
@@ -49,7 +50,7 @@ func extractEnvTagFromBuild() string {
 }
 
 func extractStorageTagFromBuild() string {
-	storageType := "storage_fs"
+	storageType := "all"
 	if buildOk {
 		for _, bs := range buildInfo.Settings {
 			if bs.Key == "-tags" {
@@ -67,29 +68,26 @@ func extractStorageTagFromBuild() string {
 func buildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string, error) {
 	storageType := extractStorageTagFromBuild()
 	envType := extractEnvTagFromBuild()
-	tags := "-tag 'ssh storage_" + storageType + " " + envType + "' "
+	tags := `-tag "ssh storage_` + storageType + " " + envType + `" `
+	if storageType == "all" {
+		storageType = string(storage.Default)
+	}
 
 	builder, err := build.NewGo(ctx, "",
 		//build.WithDebugger(), // NOTE(marius): we're using a minimal base image, requiring a statically compiled app, so we can't use Delve
-		build.WithDefaultEnv([]string{
-			"ENV=" + envType,
-			"STORAGE=" + storageType,
-			"HOSTNAME=fedbox",
-			"HTTP_PORT=4000",
-			"SSH_PORT=4044",
-			"HTTPS=true",
-		}),
+		build.WithAnnotation("storage", storageType),
+		build.WithAnnotation("env", envType),
 		build.WithBaseImages(func(ctx context.Context, _ string) (name.Reference, build.Result, error) {
 			ref := name.MustParseReference(baseImage)
 			base, err := remote.Index(ref, remote.WithContext(ctx))
 			return ref, base, err
 		}),
 		build.WithPlatforms("linux/amd64"),
-		build.WithDefaultLdflags([]string{`-extldflags "-static"`}),
 		build.WithConfig(map[string]build.Config{
 			"cmd/fedbox": {
-				Dir:   "cmd/fedbox",
-				Flags: []string{tags},
+				Dir:     "cmd/fedbox",
+				Flags:   []string{tags},
+				Ldflags: []string{`-extldflags "-static"`},
 			},
 		}),
 		build.WithTrimpath(true),
@@ -103,15 +101,16 @@ func buildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 		return "", err
 	}
 	publishOpts := options.PublishOptions{
-		LocalDomain:         targetRepo,
-		Tags:                []string{"dev"},
-		TagOnly:             true,
-		Push:                true,
-		Local:               true,
-		InsecureRegistry:    true,
-		PreserveImportPaths: true,
-		Bare:                true,
-		ImageNamer:          justName,
+		LocalDomain: targetRepo,
+		DockerRepo:  targetRepo,
+		Tags:        []string{storageType},
+		//TagOnly:     true,
+		//Push:        false,
+		Local: true,
+		//InsecureRegistry:    true,
+		//PreserveImportPaths: true,
+		//Bare:                true,
+		ImageNamer: justName,
 	}
 	pub, err := commands.NewPublisher(&publishOpts)
 	if err != nil {
