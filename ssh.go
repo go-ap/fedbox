@@ -29,7 +29,7 @@ import (
 func SSHAuthPw(f *FedBOX) ssh.PasswordHandler {
 	return func(ctx ssh.Context, pw string) bool {
 		acc, ok := pwCheck(f, ctx.User(), []byte(pw))
-		if !ok && !f.Conf.Env.IsTest() {
+		if !ok {
 			f.Logger.WithContext(lw.Ctx{"iri": ctx.User(), "pw": mask.S(pw)}).Warnf("failed password authentication")
 			return false
 		}
@@ -121,8 +121,8 @@ func MainTui(f *FedBOX) wish.Middleware {
 			if len(s.Command()) == 0 {
 				_, _ = fmt.Fprintln(s.Stderr(), "PTY is not interactive and no command was sent")
 				_ = s.Exit(1)
-				return nil
 			}
+			return nil
 		}
 
 		// Set the global color profile to ANSI256 for Docker compatibility
@@ -167,13 +167,12 @@ func publicKeyCheck(f *FedBOX, id string, sessKey ssh.PublicKey) (*vocab.Actor, 
 	err = vocab.OnActor(maybeActor, func(actor *vocab.Actor) error {
 		servicePubKey := actor.PublicKey.PublicKeyPem
 		pubBytes, _ := pem.Decode([]byte(servicePubKey))
-		key, err = x509.ParsePKIXPublicKey(pubBytes.Bytes)
-		if err != nil {
-			if key, err = x509.ParsePKCS1PublicKey(pubBytes.Bytes); err != nil {
-				return err
-			}
+		key, _ = x509.ParsePKIXPublicKey(pubBytes.Bytes)
+		if key != nil {
+			return nil
 		}
-		return nil
+		key, err = x509.ParsePKCS1PublicKey(pubBytes.Bytes)
+		return err
 	})
 	if err != nil {
 		return nil, false

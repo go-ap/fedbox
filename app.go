@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"sync/atomic"
 	"syscall"
-	"time"
 
 	"git.sr.ht/~mariusor/lw"
 	m "git.sr.ht/~mariusor/servermux"
@@ -45,8 +44,6 @@ type FedBOX struct {
 
 	keyGenerator func(act *vocab.Actor) error
 }
-
-const defaultGraceWait = 1500 * time.Millisecond
 
 func initHttpServer(app *FedBOX) (m.Server, error) {
 	setters := []m.SetFn{m.Handler(app.R)}
@@ -119,13 +116,23 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 	}
 
 	if metaSaver, ok := db.(storage.MetadataStorage); ok {
-		keysType := "ED25519"
+		keysType := ap.KeyTypeED25519
 		if conf.MastodonIncompatible {
-			keysType = "RSA"
+			keysType = ap.KeyTypeRSA
 		}
 
 		l.Debugf("Setting actor key generator %T[%s]", metaSaver, keysType)
-		app.keyGenerator = ap.AddKeyToPerson(metaSaver, keysType)
+		app.keyGenerator = ap.KeyGenerator(metaSaver, keysType)
+	}
+
+	if conf.BaseURL != "" {
+		selfIRI := ap.DefaultServiceIRI(conf.BaseURL)
+		if actor, err := ap.LoadActor(db, selfIRI); err == nil {
+			app.Service = actor
+		}
+		if key, err := db.LoadKey(selfIRI); err == nil {
+			app.ServicePrivateKey = key
+		}
 	}
 
 	app.debugMode.Store(conf.Env.IsDev())

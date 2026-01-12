@@ -4,9 +4,8 @@
   "type": "Service",
   "name": "self",
   "attributedTo": "https://github.com/mariusor",
-  "audience": [
-    "https://www.w3.org/ns/activitystreams#Public"
-  ],
+  "audience": ["https://www.w3.org/ns/activitystreams#Public"],
+  "cc": ["https://www.w3.org/ns/activitystreams#Public"],
   "summary": "Generic ActivityPub service",
   "inbox": "http://127.0.0.1:9998/inbox",
   "outbox": "http://127.0.0.1:9998/outbox"

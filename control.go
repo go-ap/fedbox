@@ -105,11 +105,14 @@ func setup(ct *Base, options config.Options) error {
 			}
 		}()
 	}
-	var l lw.Logger
-	if conf.Env.IsDev() {
-		l = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
-	} else {
-		l = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+	if ct.Logger == nil {
+		var l lw.Logger
+		if conf.Env.IsDev() {
+			l = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+		} else {
+			l = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+		}
+		ct.Logger = l
 	}
 
 	typ := options.Storage
@@ -119,14 +122,13 @@ func setup(ct *Base, options config.Options) error {
 	if conf.StoragePath == "" && path != "." {
 		conf.StoragePath = path
 	}
-	db, err := storage.New(conf.StorageInitFns(l)...)
+	ct.Conf = conf
+
+	db, err := storage.New(conf.StorageInitFns(ct.Logger)...)
 	if err != nil {
 		return err
 	}
-
-	ct.Conf = conf
 	ct.Storage = db
-	ct.Logger = l
 	return nil
 }
 

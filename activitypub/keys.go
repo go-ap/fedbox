@@ -14,12 +14,15 @@ import (
 	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	"golang.org/x/crypto/ed25519"
+	"golang.org/x/crypto/ssh"
 )
 
+type KeyType string
+
 const (
-	KeyTypeECDSA   = "ECDSA"
-	KeyTypeED25519 = "ED25519"
-	KeyTypeRSA     = "RSA"
+	KeyTypeECDSA   KeyType = "ECDSA"
+	KeyTypeED25519 KeyType = "ED25519"
+	KeyTypeRSA     KeyType = "RSA"
 )
 
 type MetadataStorage interface {
@@ -27,24 +30,20 @@ type MetadataStorage interface {
 	SaveMetadata(vocab.IRI, any) error
 }
 
-func AddKeyToItem(metaSaver MetadataStorage, it vocab.Item, typ string) error {
-	if err := vocab.OnActor(it, AddKeyToPerson(metaSaver, typ)); err != nil {
+func AddKeyToItem(metaSaver MetadataStorage, it vocab.Item, pair KeyPair) error {
+	if err := vocab.OnActor(it, AddKeyToPerson(metaSaver, pair)); err != nil {
 		return errors.Annotatef(err, "failed to process actor: %s", it.GetID())
-	}
-	st, ok := metaSaver.(storage.FullStorage)
-	if !ok {
-		return errors.Newf("invalid item store, failed to save actor: %s", it.GetID())
-	}
-	if _, err := st.Save(it); err != nil {
-		return errors.Annotatef(err, "failed to save actor: %s", it.GetID())
 	}
 	return nil
 }
 
-func AddKeyToPerson(metaSaver storage.MetadataStorage, typ string) func(act *vocab.Actor) error {
-	// TODO(marius): add a way to pass if we should overwrite the keys
-	//  for now we'll assume that if we're calling this, we want to do it
-	overwriteKeys := true
+type KeyPair struct {
+	Private crypto.PrivateKey
+	Public  crypto.PublicKey
+	Type    KeyType
+}
+
+func AddKeyToPerson(metaSaver storage.MetadataStorage, pair KeyPair) func(act *vocab.Actor) error {
 	return func(act *vocab.Actor) error {
 		if !vocab.ActorTypes.Contains(act.Type) {
 			return nil
@@ -52,96 +51,91 @@ func AddKeyToPerson(metaSaver storage.MetadataStorage, typ string) func(act *voc
 
 		m := new(auth.Metadata)
 		_ = metaSaver.LoadMetadata(act.ID, m)
-		var pubB, prvB pem.Block
-		if m.PrivateKey == nil || overwriteKeys {
-			if typ == KeyTypeED25519 {
-				pubB, prvB = GenerateECKeyPair()
-			} else {
-				pubB, prvB = GenerateRSAKeyPair()
-			}
-			m.PrivateKey = pem.EncodeToMemory(&prvB)
-			if err := metaSaver.SaveMetadata(act.ID, m); err != nil {
-				return errors.Annotatef(err, "failed saving metadata for actor: %s", act.ID)
-			}
-		} else {
-			pubB = publicKeyFrom(m.PrivateKey)
+		pubB, prvB, err := EncodeKeyPair(pair)
+		if err != nil {
+			return err
 		}
-		if len(pubB.Bytes) > 0 {
-			act.PublicKey = vocab.PublicKey{
-				ID:           vocab.IRI(fmt.Sprintf("%s#main", act.ID)),
-				Owner:        act.ID,
-				PublicKeyPem: string(pem.EncodeToMemory(&pubB)),
+
+		m.PrivateKey = pem.EncodeToMemory(&prvB)
+		if err := metaSaver.SaveMetadata(act.ID, m); err != nil {
+			return errors.Annotatef(err, "failed saving metadata for actor: %s", act.ID)
+		}
+		act.PublicKey.ID = vocab.IRI(fmt.Sprintf("%s#main", act.ID))
+		act.PublicKey.Owner = act.ID
+		act.PublicKey.PublicKeyPem = string(pem.EncodeToMemory(&pubB))
+
+		if st, ok := metaSaver.(storage.FullStorage); ok {
+			if _, err := st.Save(act); err != nil {
+				return errors.Annotatef(err, "failed to save actor: %s", act.ID)
 			}
 		}
 		return nil
 	}
 }
 
-func publicKeyFrom(prvBytes []byte) pem.Block {
-	prv, _ := pem.Decode(prvBytes)
-	var pubKey crypto.PublicKey
-	if key, _ := x509.ParseECPrivateKey(prvBytes); key != nil {
-		pubKey = key.PublicKey
+func KeyPairFromPrivateBytes(prvBytes []byte) (*KeyPair, error) {
+	pair := new(KeyPair)
+	key, err := ssh.ParseRawPrivateKey(prvBytes)
+	if err != nil {
+		return nil, err
 	}
-	if key, _ := x509.ParsePKCS8PrivateKey(prv.Bytes); pubKey == nil && key != nil {
-		switch k := key.(type) {
-		case *rsa.PrivateKey:
-			pubKey = k.PublicKey
-		case *ecdsa.PrivateKey:
-			pubKey = k.PublicKey
-		case ed25519.PrivateKey:
-			pubKey = k.Public()
+	switch k := key.(type) {
+	case *rsa.PrivateKey:
+		pair.Private = k
+		pair.Public = &k.PublicKey
+		pair.Type = KeyTypeRSA
+	case *ecdsa.PrivateKey:
+		pair.Private = k
+		pair.Public = &k.PublicKey
+		pair.Type = KeyTypeECDSA
+	case *ed25519.PrivateKey:
+		pair.Private = *k
+		pair.Public = k.Public()
+		pair.Type = KeyTypeED25519
+	case ed25519.PrivateKey:
+		pair.Private = k
+		pair.Public = k.Public()
+		pair.Type = KeyTypeED25519
+	}
+	return pair, nil
+}
+
+func GenerateKeyPair(typ KeyType) (*KeyPair, error) {
+	var pub crypto.PublicKey
+	var prv crypto.PrivateKey
+	var err error
+	if typ == KeyTypeED25519 {
+		pub, prv, err = ed25519.GenerateKey(rand.Reader)
+	} else {
+		var rsaPrv *rsa.PrivateKey
+		rsaPrv, err = rsa.GenerateKey(rand.Reader, 2048)
+		if rsaPrv != nil {
+			prv = rsaPrv
+			pub = rsaPrv.Public()
 		}
 	}
-	pubEnc, err := x509.MarshalPKIXPublicKey(pubKey)
 	if err != nil {
-		return pem.Block{}
+		return nil, err
 	}
-	return pem.Block{Type: "PUBLIC KEY", Bytes: pubEnc}
+	return &KeyPair{Private: prv, Public: pub, Type: KeyType(typ)}, nil
 }
 
-func GenerateRSAKeyPair() (pem.Block, pem.Block) {
-	keyPrv, _ := rsa.GenerateKey(rand.Reader, 2048)
-
-	keyPub := keyPrv.PublicKey
-	pubEnc, err := x509.MarshalPKIXPublicKey(&keyPub)
+func EncodeKeyPair(p KeyPair) (pem.Block, pem.Block, error) {
+	pubEnc, err := x509.MarshalPKIXPublicKey(p.Public)
 	if err != nil {
-		panic(err)
+		return pem.Block{}, pem.Block{}, err
 	}
-	prvEnc, err := x509.MarshalPKCS8PrivateKey(keyPrv)
+	prvEnc, err := x509.MarshalPKCS8PrivateKey(p.Private)
 	if err != nil {
-		panic(err)
+		return pem.Block{}, pem.Block{}, err
 	}
-	p := pem.Block{
+	pub := pem.Block{
 		Type:  "PUBLIC KEY",
 		Bytes: pubEnc,
 	}
-	r := pem.Block{
+	prv := pem.Block{
 		Type:  "PRIVATE KEY",
 		Bytes: prvEnc,
 	}
-	return p, r
-}
-
-func GenerateECKeyPair() (pem.Block, pem.Block) {
-	// TODO(marius): make this actually produce proper keys
-	keyPub, keyPrv, _ := ed25519.GenerateKey(rand.Reader)
-
-	pubEnc, err := x509.MarshalPKIXPublicKey(keyPub)
-	if err != nil {
-		panic(err)
-	}
-	prvEnc, err := x509.MarshalPKCS8PrivateKey(keyPrv)
-	if err != nil {
-		panic(err)
-	}
-	p := pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pubEnc,
-	}
-	r := pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: prvEnc,
-	}
-	return p, r
+	return pub, prv, nil
 }

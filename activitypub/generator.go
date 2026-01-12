@@ -1,12 +1,8 @@
 package ap
 
 import (
-	"time"
-
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/errors"
-	"github.com/openshift/osin"
 	"github.com/pborman/uuid"
 )
 
@@ -51,45 +47,12 @@ func GenerateID(it vocab.Item, partOf vocab.IRI, by vocab.Item) (vocab.ID, error
 	})
 }
 
-func CreateService(r storage.FullStorage, self vocab.Item, keyType string) (err error) {
-	_ = vocab.OnActor(self, func(service *vocab.Actor) error {
-		service.Published = time.Now().UTC()
-		return nil
-	})
-	self, err = r.Save(self)
-	if err != nil {
-		return err
-	}
-
-	c := osin.DefaultClient{Id: string(self.GetLink())}
-	_ = r.CreateClient(&c)
-
-	if err = AddKeyToItem(r, self, keyType); err != nil {
-		return err
-	}
-
-	rr, ok := r.(storage.CollectionStore)
-	if !ok {
-		return nil
-	}
-
-	col := func(iri vocab.IRI) vocab.CollectionInterface {
-		return &vocab.OrderedCollection{
-			ID:           iri,
-			Type:         vocab.OrderedCollectionType,
-			Published:    time.Now().UTC(),
-			AttributedTo: self.GetLink(),
-			CC:           vocab.ItemCollection{vocab.PublicNS},
+func KeyGenerator(metaSaver storage.MetadataStorage, typ KeyType) func(act *vocab.Actor) error {
+	return func(act *vocab.Actor) error {
+		pair, err := GenerateKeyPair(typ)
+		if err != nil {
+			return err
 		}
+		return AddKeyToPerson(metaSaver, *pair)(act)
 	}
-	return vocab.OnActor(self, func(service *vocab.Actor) error {
-		var multi error
-		for _, stream := range service.Streams {
-			// NOTE(marius): create fedbox custom collections /activities, /objects, /actors
-			if _, err := rr.Create(col(stream.GetID())); err != nil {
-				multi = errors.Join(multi, err)
-			}
-		}
-		return multi
-	})
 }

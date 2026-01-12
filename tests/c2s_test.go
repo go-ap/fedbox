@@ -946,20 +946,6 @@ var CreateTests = testPairs{
 			{
 				req: testReq{
 					met: http.MethodGet,
-					url: ActivitiesURL(),
-				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        CollectionURL(ActivitiesURL(), firstPage()),
-						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
-					},
-				},
-			},
-			{
-				req: testReq{
-					met: http.MethodGet,
 					url: CollectionURL(ObjectsURL()),
 				},
 				res: testRes{
@@ -1404,20 +1390,6 @@ var LikeTests = testPairs{
 					code: http.StatusOK,
 					val: &objectVal{
 						id:        CollectionURL(OutboxURL(defaultC2SAccount())(), firstPage()),
-						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
-					},
-				},
-			},
-			{
-				req: testReq{
-					met: http.MethodGet,
-					url: ActivitiesURL(),
-				},
-				res: testRes{
-					code: http.StatusOK,
-					val: &objectVal{
-						id:        CollectionURL(ActivitiesURL(), firstPage()),
 						typ:       string(vocab.OrderedCollectionPageType),
 						itemCount: 1,
 					},
@@ -1882,14 +1854,17 @@ func Test_SingleItemLoad(t *testing.T) {
 }
 
 func Test_ObjectsCollections(t *testing.T) {
+	t.Skipf("We no longer want to rely on /objects being the storage collection")
 	runTestSuites(t, ObjectsCollectionTests)
 }
 
 func Test_ActivitiesCollection(t *testing.T) {
+	t.Skipf("We no longer want to rely on /activities being the storage collection")
 	runTestSuites(t, ActivitiesCollectionTests)
 }
 
 func Test_ActorsCollection(t *testing.T) {
+	t.Skipf("We no longer want to rely on /actors being the storage collection")
 	runTestSuites(t, ActorsCollectionTests)
 }
 

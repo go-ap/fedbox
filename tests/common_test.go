@@ -949,7 +949,11 @@ func initializeApps(t *testing.T, l lw.Logger, configs ...config.Options) map[vo
 	for _, options := range configs {
 		options.StoragePath = filepath.Join(basePath, options.Hostname)
 		self := ap.Self(ap.DefaultServiceIRI(options.BaseURL))
-		if err := fedbox.BootstrapStorage(options, self, l); err != nil {
+		pair, err := ap.GenerateKeyPair(ap.KeyTypeRSA)
+		if err != nil {
+			t.Fatalf("%s", err)
+		}
+		if err := fedbox.BootstrapStorage(options, self, l, pair); err != nil {
 			t.Fatalf("%s", err)
 		}
 		app, ok := apps[self.ID]

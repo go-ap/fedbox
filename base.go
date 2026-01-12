@@ -151,13 +151,21 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 		tr = debug.New(debug.WithTransport(tr), debug.WithPath(ctl.Conf.StoragePath))
 	}
 
-	if vocab.IsNil(actor) || !vocab.PublicNS.Equal(actor.GetLink()) {
-		signActor, prv, err := ctl.LoadLocalActorWithKey(actor.GetLink())
-		if err != nil {
-			ctl.errFn("unable to sign request: %+s", err)
-		} else if prv != nil && signActor != nil {
-			tr = s2s.New(s2s.WithActor(signActor, prv), s2s.WithLogger(ctl.Logger.WithContext(lw.Ctx{"log": "HTTP-Sig"})))
+	var signActor *vocab.Actor
+	var prv crypto.PrivateKey
+	if vocab.IsNil(actor) || ctl.Service.Equals(actor) {
+		if ctl.ServicePrivateKey != nil {
+			signActor = &ctl.Service
+			prv = ctl.ServicePrivateKey
 		}
+	} else {
+		var err error
+		if signActor, prv, err = ctl.LoadLocalActorWithKey(actor.GetLink()); err != nil {
+			ctl.errFn("unable to sign request: %+s", err)
+		}
+	}
+	if prv != nil && signActor != nil {
+		tr = s2s.New(s2s.WithActor(signActor, prv), s2s.WithLogger(ctl.Logger.WithContext(lw.Ctx{"log": "HTTP-Sig"})))
 	}
 
 	return initClient(tr, ctl.Conf, ctl.Logger)
@@ -206,24 +214,29 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 }
 
 func (ctl *Base) Saver(actor *vocab.Actor) processing.P {
-	baseIRI := vocab.IRI(ctl.Conf.BaseURL)
+	baseIRI := ctl.Service.ID
+
 	db := ctl.Storage
 	l := ctl.Logger.WithContext(lw.Ctx{"log": "processing"})
+
+	initFns := []processing.OptionFn{
+		processing.WithLogger(l), processing.WithStorage(db),
+		//processing.WithLocalIRIChecker(),
+	}
+
+	if baseIRI != "" && !baseIRI.Equal(auth.AnonymousActor.ID) {
+		initFns = append(initFns, processing.WithIRI(baseIRI, InternalIRI), processing.WithIDGenerator(GenerateID(baseIRI)))
+	}
 	if vocab.IsNil(actor) {
 		actor = &ctl.Service
 	}
-	cl := ActorClient(ctl, actor)
-	p := processing.New(
-		processing.WithIRI(baseIRI, InternalIRI), processing.WithLogger(l),
-		processing.WithStorage(db), processing.WithClient(cl),
-		processing.WithIDGenerator(GenerateID(baseIRI)),
-		//processing.WithLocalIRIChecker(),
-	)
+	initFns = append(initFns, processing.WithClient(ActorClient(ctl, actor)))
+	p := processing.New(initFns...)
 	return p
 }
 
-func (ctl *Base) AddActor(p *vocab.Person, pw []byte, author vocab.Actor) (*vocab.Person, error) {
-	if ctl.Storage == nil {
+func (ctl *Base) AddActor(p *vocab.Actor, pw []byte, author vocab.Actor) (*vocab.Actor, error) {
+	if ctl == nil || ctl.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
 	if author.GetLink().Equals(auth.AnonymousActor.GetLink(), false) {
@@ -246,15 +259,11 @@ func (ctl *Base) AddActor(p *vocab.Person, pw []byte, author vocab.Actor) (*voca
 		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
 	}
 
-	if _, err := ctl.Saver(&author).ProcessClientActivity(create, author, outbox.GetLink()); err != nil {
+	_, err := ctl.Saver(&author).ProcessClientActivity(create, author, outbox.GetLink())
+	if err != nil && !errors.IsConflict(err) {
 		return nil, err
 	}
-
-	var err error
-	if pwManager, ok := ctl.Storage.(passwordChanger); ok && pw != nil {
-		err = pwManager.PasswordSet(p.GetLink(), pw)
-	}
-	return p, err
+	return p, nil
 }
 
 func (ctl *Base) AddObject(p *vocab.Object, author vocab.Actor) (*vocab.Object, error) {
@@ -550,10 +559,18 @@ func (ctl *Base) AddClient(pw []byte, redirectUris []string, u any) (string, err
 	if err != nil {
 		return "", err
 	}
-	if metaSaver, ok := ctl.Storage.(ap.MetadataStorage); ok {
-		if err = ap.AddKeyToItem(metaSaver, p, ap.KeyTypeRSA); err != nil {
+
+	pair, err := ap.GenerateKeyPair(ap.KeyTypeRSA)
+	if err != nil {
+		ctl.Logger.Errorf("Unable to generate key pair for application %s: %s", name, err)
+	} else {
+		if err = ap.AddKeyToItem(ctl.Storage, p, *pair); err != nil {
 			ctl.Logger.Errorf("Error saving metadata for application %s: %s", name, err)
 		}
+	}
+
+	if pw != nil {
+		err = ctl.Storage.PasswordSet(app.ID, pw)
 	}
 
 	// TODO(marius): allow for updates of the application actor with incoming parameters for Icon, Summary, samd.
@@ -573,4 +590,84 @@ func (ctl *Base) AddClient(pw []byte, redirectUris []string, u any) (string, err
 	}
 
 	return id, ctl.Storage.CreateClient(&d)
+}
+
+func (ctl *Base) Bootstrap(pw []byte, pair *ap.KeyPair) error {
+	conf := ctl.Conf
+	if conf.BaseURL == "" {
+		// NOTE(marius): if we haven't configured the BaseURL option
+		// we wait for a bootstrap of the service
+		//ctl.maintenanceMode.Store(true)
+		//return ctl.Pause()
+		return nil
+	}
+
+	actor := ap.Self(ap.DefaultServiceIRI(conf.BaseURL))
+	// NOTE(marius): Storage needs to be closed for bootstrapping
+	ctl.Storage.Close()
+	if err := bootstrap(ctl, actor, ctl.Logger, pair, pw); err != nil {
+		return err
+	}
+	if err := ctl.Storage.Open(); err != nil {
+		return err
+	}
+
+	ctl.Service = actor
+	ctl.ServicePrivateKey = pair.Private
+
+	return nil
+}
+
+func CreateService(ctl *Base, self vocab.Item, pair *ap.KeyPair, pw []byte) (err error) {
+	service, err := vocab.ToActor(self)
+	if err != nil {
+		return err
+	}
+	service.Published = time.Now().Truncate(time.Second).UTC()
+
+	ctl.Service = *service
+	service, err = ctl.AddActor(service, pw, *service)
+	if err != nil {
+		return err
+	}
+
+	storage := ctl.Storage
+	c := osin.DefaultClient{Id: string(service.ID)}
+	_ = storage.CreateClient(&c)
+
+	if pw != nil {
+		if err = storage.PasswordSet(service.ID, pw); err != nil {
+			return err
+		}
+	}
+
+	if pair != nil {
+		if err = ap.AddKeyToItem(storage, self, *pair); err != nil {
+			return err
+		}
+	}
+
+	col := func(iri vocab.IRI) vocab.CollectionInterface {
+		return &vocab.OrderedCollection{
+			ID:           iri,
+			Type:         vocab.OrderedCollectionType,
+			Published:    service.Published,
+			AttributedTo: service.ID,
+			To:           service.To,
+			CC:           service.CC,
+			Bto:          service.Bto,
+			BCC:          service.BCC,
+			Audience:     service.Audience,
+		}
+	}
+	return vocab.OnActor(self, func(service *vocab.Actor) error {
+		var multi error
+		for _, stream := range service.Streams {
+			// NOTE(marius): create fedbox custom collections /activities, /objects, /actors
+			if _, err := storage.Create(col(stream.GetID())); err != nil {
+				multi = errors.Join(multi, err)
+			}
+		}
+		return multi
+	})
 }

@@ -98,11 +98,15 @@ func (a AddActorCmd) Run(ctl *Base) error {
 			//Errf("Error adding %s: %s\n", name, err)
 			return err
 		}
-		fmt.Printf("Added %q [%s]: %s\n", a.Type, name, p.GetLink())
-		if metaSaver, ok := ctl.Storage.(ap.MetadataStorage); ok {
-			if err := ap.AddKeyToItem(metaSaver, p, keyType); err != nil {
+		_, _ = fmt.Fprintf(ctl.out, "Added %q [%s]: %s\n", a.Type, name, p.GetLink())
+		pair, _ := ap.GenerateKeyPair(ap.KeyType(keyType))
+		if pair != nil {
+			if err := ap.AddKeyToItem(ctl.Storage, p, *pair); err != nil {
 				Errf(ctl.err, "Error saving metadata for %s: %s", name, err)
 			}
+		}
+		if pw != nil {
+			err = ctl.Storage.PasswordSet(p.ID, pw)
 		}
 		actors = append(actors, p)
 	}
@@ -237,7 +241,7 @@ func (a AddCmd) Run(ctl *Base) error {
 	if p, err = ctl.AddObject(p, author); err != nil {
 		return errors.Annotatef(err, "Unable to save object")
 	}
-	fmt.Printf("Added %s [%s]: %s\n", incType, incName, p.GetLink())
+	_, _ = fmt.Fprintf(ctl.out, "Added %s [%s]: %s\n", incType, incName, p.GetLink())
 
 	return nil
 }

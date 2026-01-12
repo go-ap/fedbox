@@ -3,10 +3,15 @@ package integration
 import (
 	"bytes"
 	"context"
+	"crypto"
+	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -22,6 +27,7 @@ import (
 	containers "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -51,8 +57,6 @@ func (t testLogger) Accept(l containers.Log) {
 }
 
 func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error) {
-	t.Helper()
-
 	// NOTE(marius): the docker host can come from multiple places.
 	// @see github.com/testcontainers/testcontainers-go/internal/core.MustExtractDockerHost()
 	m := make(cntrs)
@@ -63,7 +67,7 @@ func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error
 		//storagePath := t.TempDir()
 		img := fedboxImageName
 		t.Logf("Mock image: %s path %s", fedboxImageName, storagePath)
-		c, err := Run(ctx, t, WithImageName(img), WithEnvFile(env), WithStorage(storagePath))
+		c, err := Run(ctx, t, WithImageName(img), WithEnvFile(env), WithStorage(storagePath), WithPassword(defaultPassword), WithPrivateKey(defaultPrivateKey))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize container %s: %w", s.name, err)
 		}
@@ -132,7 +136,7 @@ func defaultFedBOXRequest(name string) containers.GenericContainerRequest {
 	return containers.GenericContainerRequest{
 		ContainerRequest: containers.ContainerRequest{
 			Image:      name,
-			Cmd:        []string{"--env", envType},
+			Cmd:        []string{"--env", envType, "--bootstrap"},
 			WaitingFor: wait.ForLog("Started").WithStartupTimeout(800 * time.Millisecond),
 		},
 		ProviderType: containers.ProviderPodman,
@@ -140,58 +144,62 @@ func defaultFedBOXRequest(name string) containers.GenericContainerRequest {
 	}
 }
 
-func (fc *fedboxContainer) RemoteExec(ctx context.Context, cmd []string) (string, error) {
-	//key, err := ssh.ParsePrivateKey([]byte(privateKey))
-	//if err != nil {
-	//	return "", err
-	//}
-
-	inspect, err := fc.Inspect(ctx)
+func (fc *fedboxContainer) RemoteExec(ctx context.Context, cmd []string) error {
+	host, _ := fc.Host(ctx)
+	portsMap, err := fc.Ports(ctx)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	if len(inspect.NetworkSettings.Ports) <= 1 {
-		return "", errors.New("invalid ports")
-	}
-	host := "fedbox:4044"
-	//for label, ports := range inspect.NetworkSettings.Ports {
-	//	if strings.HasPrefix(string(label), "4044") && len(ports) > 0 {
-	//		host = net.JoinHostPort(host, ports[0].HostPort)
-	//	}
-	//}
-	// Authentication
 	user := "http://fedbox"
+	if hostName, ok := loadEnv()["HOSTNAME"]; ok {
+		user = "http://" + hostName
+	}
+
+	for label, ports := range portsMap {
+		if strings.HasPrefix(string(label), "4044") && len(ports) > 0 {
+			host = net.JoinHostPort(host, ports[0].HostPort)
+		}
+	}
+
+	prvEnc, err := x509.MarshalPKCS8PrivateKey(defaultPrivateKey)
+	if err != nil {
+		return err
+	}
+
+	prv, err := ssh.ParseRawPrivateKey(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}))
+	if err != nil {
+		return err
+	}
+	sig, err := ssh.NewSignerFromKey(prv)
+	if err != nil {
+		return err
+	}
 	config := &ssh.ClientConfig{
 		User:            user,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		// TODO(marius): make sure the password or the private key are available
-		//   Currently for TEST environments password check is skipped
-		Auth: []ssh.AuthMethod{ssh.Password(defaultPassword) /*, ssh.PublicKeys(key)*/},
+		Auth:            []ssh.AuthMethod{ssh.Password(defaultPassword), ssh.PublicKeys(sig)},
 	}
 	// Connect
 	client, err := ssh.Dial("tcp", host, config)
 	if err != nil {
-		return "", err
+		return err
 	}
 	// Create a session. It is one session per command.
 	session, err := client.NewSession()
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer session.Close()
-	var b bytes.Buffer  // import "bytes"
-	session.Stdout = &b // get output
-	// you can also pass what gets input to the stdin, allowing you to pipe
-	// content from client to server
-	//      session.Stdin = bytes.NewBufferString("My input")
+	//session.Stdout = os.Stdout
 
 	// Finally, run the command
-	err = session.Run(strings.Join(cmd, " "))
-	return b.String(), err
+	return session.Run(strings.Join(cmd, " "))
 }
 
+// NOTE(marius): we need to provision the test docker image volume with corresponding files
 var defaultPassword = "asd"
+var defaultPublicKey, defaultPrivateKey, _ = ed25519.GenerateKey(rand.Reader)
 
 const ctlBin = "fedbox"
 
@@ -218,15 +226,8 @@ func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomiz
 		return &f, err
 	}
 
-	envType := extractEnvTagFromBuild()
-	//storageType := extractStorageTagFromBuild()
-	//if storageType == "all" {
-	//	storageType = string(storage.Default)
-	//}
 	initializers := [][]string{
-		{ctlBin, "--env", envType, /**/ "storage", /*"--type", storageType,*/ "bootstrap", "--password", defaultPassword},
-		{ctlBin, "--env", envType, /**/ "pub", "import", "/storage/import.json"},
-		{ctlBin, "--env", envType, /**/ "accounts", "gen-keys", "--key-type", "ED25519"},
+		{ /*ctlBin, "--env", envType, */ "pub", "import", "/storage/import.json"},
 	}
 	errs := make([]error, 0)
 	for _, cmd := range initializers {
@@ -239,11 +240,9 @@ func Run(ctx context.Context, t testing.TB, opts ...containers.ContainerCustomiz
 				// command didn't return success.
 				errs = append(errs, fmt.Errorf("command failed"))
 			}
-			if _, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out); err != nil {
-				errs = append(errs, err)
-			}
+			_, _ = stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 		} else {
-			if _, err := f.RemoteExec(ctx, cmd); err != nil {
+			if err = f.RemoteExec(ctx, cmd); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -331,24 +330,57 @@ func WithEnvFile(configFile string) containers.CustomizeRequestOption {
 	}
 }
 
-func WithStorage(storage string) containers.CustomizeRequestOption {
-	var files []containers.ContainerFile
-
-	_ = filepath.WalkDir(storage, func(path string, d fs.DirEntry, err error) error {
-		if strings.HasPrefix(filepath.Base(path), ".") {
+func WithPrivateKey(prv crypto.PrivateKey) containers.CustomizeRequestOption {
+	return func(req *containers.GenericContainerRequest) error {
+		hostname, ok := req.Env["HOSTNAME"]
+		if !ok {
 			return nil
 		}
-		cf := containers.ContainerFile{
-			HostFilePath:      path,
-			ContainerFilePath: filepath.Join("/storage", strings.ReplaceAll(path, "mocks", "")),
-			FileMode:          0o755,
+		prvEnc, err := x509.MarshalPKCS8PrivateKey(prv)
+		if err != nil {
+			return err
 		}
-		files = append(files, cf)
+		keyReader := bytes.NewReader(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}))
+		keyFile := containers.ContainerFile{
+			ContainerFilePath: filepath.Join("/storage", hostname+".key"),
+			Reader:            keyReader,
+			FileMode:          0600,
+		}
+		req.Files = append(req.Files, keyFile)
 		return nil
-	})
+	}
+}
 
+func WithPassword(pw string) containers.CustomizeRequestOption {
 	return func(req *containers.GenericContainerRequest) error {
-		req.Files = append(req.Files, files...)
+		hostname, ok := req.Env["HOSTNAME"]
+		if !ok {
+			return nil
+		}
+		keyFile := containers.ContainerFile{
+			ContainerFilePath: filepath.Join("/storage", hostname+".pw"),
+			Reader:            bytes.NewReader([]byte(pw)),
+			FileMode:          0600,
+		}
+		req.Files = append(req.Files, keyFile)
+		return nil
+	}
+}
+
+func WithStorage(storage string) containers.CustomizeRequestOption {
+	return func(req *containers.GenericContainerRequest) error {
+		_ = filepath.WalkDir(storage, func(path string, d fs.DirEntry, err error) error {
+			if d.IsDir() {
+				return nil
+			}
+			cf := containers.ContainerFile{
+				HostFilePath:      path,
+				ContainerFilePath: filepath.Join("/storage", strings.ReplaceAll(path, "mocks", "")),
+				FileMode:          0600,
+			}
+			req.Files = append(req.Files, cf)
+			return nil
+		})
 		return nil
 	}
 }

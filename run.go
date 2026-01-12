@@ -21,7 +21,7 @@ var kongDefaultVars = kong.Vars{
 	"envTypes":            fmt.Sprintf("%s, %s, %s, %s", env.TEST, env.DEV, env.QA, env.PROD),
 	"keyTypes":            fmt.Sprintf("%s, %s", ap.KeyTypeED25519, ap.KeyTypeRSA),
 	"storageTypes":        fmt.Sprintf("%s, %s, %s, %s", config.StorageFS, config.StorageSqlite, config.StorageBoltDB, config.StorageBadger),
-	"defaultKeyType":      ap.KeyTypeRSA,
+	"defaultKeyType":      string(ap.KeyTypeRSA),
 	"defaultWaitDuration": defaultWaitDuration.String(),
 	"defaultObjectTypes":  fmt.Sprintf("%v", ValidGenericTypes),
 }
@@ -59,13 +59,12 @@ func Run(args ...string) error {
 		pauseFn := ctl.SendSignalToServer(syscall.SIGUSR1)
 		if err = pauseFn(); err == nil {
 			defer func() { _ = pauseFn() }()
-
-			if cmd != "storage bootstrap" {
-				if err = ctl.Storage.Open(); err != nil {
-					return err
-				}
-				defer ctl.Storage.Close()
+		}
+		if cmd != "storage bootstrap" {
+			if err = ctl.Storage.Open(); err != nil {
+				return err
 			}
+			defer ctl.Storage.Close()
 		}
 	}
 

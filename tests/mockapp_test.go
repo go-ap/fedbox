@@ -67,7 +67,11 @@ func addMockObjects(r storage.FullStorage, obj vocab.ItemCollection) error {
 		itID := it.GetLink()
 		if itID.Equals(vocab.IRI(service.ID), false) {
 			self, _ := vocab.ToActor(it)
-			if err = ap.AddKeyToPerson(r, ap.KeyTypeRSA)(self); err != nil {
+			pair, err := ap.GenerateKeyPair(ap.KeyTypeRSA)
+			if err != nil {
+				return err
+			}
+			if err = ap.AddKeyToPerson(r, *pair)(self); err != nil {
 				return err
 			}
 			if self.ID.Equals(vocab.IRI(service.ID), false) {
@@ -210,7 +214,7 @@ func seedTestData(app *fedbox.FedBOX) error {
 
 func getTestFedBOX(options config.Options, l lw.Logger) (*fedbox.FedBOX, error) {
 	if options.Storage == "all" {
-		options.Storage = config.StorageFS
+		options.Storage = storage.Default
 	}
 	options.AppName = "fedbox/integration-tests"
 	options.Version = "HEAD"

@@ -168,8 +168,11 @@ func (g GenKeys) Run(ctl *Base) error {
 		// NOTE(marius): we initialize the client that we're going to use for Update
 		// dissemination with an HTTP-Signature based on the current private key.
 		saver := ctl.Saver(actor)
-		if err := ap.AddKeyToItem(metaSaver, actor, typ); err != nil {
-			Errf(ctl.err, "Error: %s", err.Error())
+		pair, _ := ap.GenerateKeyPair(ap.KeyType(typ))
+		if pair != nil {
+			if err := ap.AddKeyToItem(metaSaver, actor, *pair); err != nil {
+				Errf(ctl.err, "Error: %s", err.Error())
+			}
 		}
 
 		outbox := vocab.Outbox.IRI(actor)
