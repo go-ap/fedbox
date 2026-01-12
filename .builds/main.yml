@@ -38,7 +38,10 @@ tasks:
 
       cd fedbox/integration
       go mod download
-      go test -cover -count=1 -json . -build | go run github.com/mfridman/tparse@latest --all
+      go test -tags storage_fs -json . -build | go run github.com/mfridman/tparse@latest --all
+      #go test -tags storage_sqlite -json . -build | go run github.com/mfridman/tparse@latest --all
+      #go test -tags storage_boltdb -json . -build | go run github.com/mfridman/tparse@latest --all
+      go test -tags storage_badger -json . -build | go run github.com/mfridman/tparse@latest --all
   - push_to_github: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
       set -a +x
