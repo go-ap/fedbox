@@ -90,7 +90,7 @@ func runSSHCommand(f *FedBOX, s ssh.Session) error {
 	f.err = k.Stderr
 	f.in = s
 
-	if err = ctx.Run(&f.Base); err != nil {
+	if err = ctx.Run(f.Base); err != nil {
 		_ = k.Errorf("%s\n", err)
 	}
 	return err
