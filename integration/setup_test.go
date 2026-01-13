@@ -64,10 +64,9 @@ func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error
 		storagePath := filepath.Join(".", "mocks")
 		env := filepath.Join(storagePath, ".env")
 
-		//storagePath := t.TempDir()
 		img := fedboxImageName
-		t.Logf("Mock image: %s path %s", fedboxImageName, storagePath)
-		c, err := Run(ctx, t, WithImageName(img), WithEnvFile(env), WithStorage(storagePath), WithPassword(defaultPassword), WithPrivateKey(defaultPrivateKey))
+		t.Logf("Mock image: %s path %s", img, storagePath)
+		c, err := Run(ctx, t, WithImage(img), WithEnvFile(env), WithStorage(storagePath), WithPassword(defaultPassword), WithPrivateKey(defaultPrivateKey))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize container %s: %w", s.name, err)
 		}
@@ -275,7 +274,7 @@ func loadEnv() map[string]string {
 	return conf
 }
 
-func WithImageName(image string) containers.CustomizeRequestOption {
+func WithImage(image string) containers.CustomizeRequestOption {
 	return func(req *containers.GenericContainerRequest) error {
 		if req.Image == "" {
 			req.Image = image
