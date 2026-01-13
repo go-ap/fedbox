@@ -57,7 +57,7 @@ func reqURL(r http.Request, secure bool) string {
 }
 
 func FedBOXClient(fb *FedBOX) *client.C {
-	return ActorClient(&fb.Base, fb.Service.ID)
+	return ActorClient(fb.Base, fb.Service.ID)
 }
 
 // HandleCollection serves content from the generic collection end-points
@@ -206,7 +206,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 
 		l := fb.Logger.WithContext(lw.Ctx{"log": "processing"})
 
-		authorized := fb.actorFromRequestWithClient(r, ActorClient(&fb.Base, vocab.PublicNS), receivedIn)
+		authorized := fb.actorFromRequestWithClient(r, ActorClient(fb.Base, vocab.PublicNS), receivedIn)
 		if authorized.ID.Equal(vocab.PublicNS) {
 			fb.errFn("invalid Anonymous actor request: %s", receivedIn)
 			return it, http.StatusUnauthorized, errors.Unauthorizedf("authorized Actor is invalid")
@@ -218,7 +218,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		initFns := make([]processing.OptionFn, 0)
 		initFns = append(initFns,
 			processing.WithIRI(baseIRI, InternalIRI),
-			processing.WithClient(ActorClient(&fb.Base, receivedIn)),
+			processing.WithClient(ActorClient(fb.Base, receivedIn)),
 			processing.WithStorage(repo),
 			processing.WithLogger(l),
 			processing.WithIDGenerator(GenerateID(baseIRI)),
@@ -266,7 +266,7 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 	return func(r *http.Request) (vocab.Item, error) {
 		iri := vocab.IRI(reqURL(*r, fb.Conf.Secure))
 
-		authorized := fb.actorFromRequestWithClient(r, ActorClient(&fb.Base, vocab.PublicNS), iri)
+		authorized := fb.actorFromRequestWithClient(r, ActorClient(fb.Base, vocab.PublicNS), iri)
 		cacheKey := CacheKey(fb, authorized, *r)
 
 		it := fb.caches.Load(cacheKey)

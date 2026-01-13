@@ -33,7 +33,7 @@ type LogFn func(string, ...any)
 type canStore = cache.CanStore
 
 type FedBOX struct {
-	Base
+	*Base
 
 	server m.Server
 	R      chi.Router
@@ -94,23 +94,30 @@ func initHttpServer(app *FedBOX) (m.Server, error) {
 }
 
 // New instantiates a new FedBOX instance
-func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, error) {
+func New(ctl *Base) (*FedBOX, error) {
+	if ctl == nil {
+		return nil, errors.Newf("invalid initializer")
+	}
+	db := ctl.Storage
 	if db == nil {
 		return nil, errors.Newf("invalid storage")
 	}
+	conf := ctl.Conf
 	if err := db.Open(); err != nil {
 		return nil, errors.Annotatef(err, "unable to open storage: %s", conf.StoragePath)
 	}
 
+	if ctl.in == nil {
+		ctl.in = os.Stdin
+	}
+	if ctl.out == nil {
+		ctl.out = os.Stdout
+	}
+	if ctl.err == nil {
+		ctl.err = os.Stderr
+	}
 	app := FedBOX{
-		Base: Base{
-			Storage: db,
-			Logger:  l,
-			Conf:    conf,
-			out:     os.Stdout,
-			err:     os.Stderr,
-			in:      os.Stdin,
-		},
+		Base:   ctl,
 		R:      chi.NewRouter(),
 		caches: cache.New(conf.RequestCache),
 	}
@@ -121,7 +128,7 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 			keysType = ap.KeyTypeRSA
 		}
 
-		l.Debugf("Setting actor key generator %T[%s]", metaSaver, keysType)
+		ctl.Logger.Debugf("Setting actor key generator %T[%s]", metaSaver, keysType)
 		app.keyGenerator = ap.KeyGenerator(metaSaver, keysType)
 	}
 
@@ -140,7 +147,7 @@ func New(l lw.Logger, conf config.Options, db storage.FullStorage) (*FedBOX, err
 	app.R.Group(app.Routes())
 
 	muxSetters := make([]m.MuxFn, 0, 1)
-	if !app.Conf.Env.IsTest() && !app.Conf.Env.IsDev() {
+	if !(app.Conf.Env.IsTest() || app.Conf.Env.IsDev()) {
 		muxSetters = append(muxSetters, m.GracefulWait(app.Conf.TimeOut))
 	}
 
@@ -286,11 +293,17 @@ func (f *FedBOX) Run(ctx context.Context) error {
 			logFn("SIGUSR1 received, toggle maintenance mode")
 		},
 		syscall.SIGINT: func(exit chan<- error) {
-			logger.WithContext(lw.Ctx{"wait": f.Conf.TimeOut}).Debugf("SIGINT received, interrupted")
+			if !(f.Conf.Env.IsTest() || f.Conf.Env.IsDev()) {
+				logger = logger.WithContext(lw.Ctx{"wait": f.Conf.TimeOut})
+			}
+			logger.Debugf("SIGINT received, interrupted")
 			exitWithErrOrInterrupt(f.Stop(ctx), exit)
 		},
 		syscall.SIGTERM: func(exit chan<- error) {
-			logger.WithContext(lw.Ctx{"wait": f.Conf.TimeOut}).Debugf("SIGTERM received, stopping with cleanup")
+			if !(f.Conf.Env.IsTest() || f.Conf.Env.IsDev()) {
+				logger = logger.WithContext(lw.Ctx{"wait": f.Conf.TimeOut})
+			}
+			logger.Debugf("SIGTERM received, stopping with cleanup")
 			exitWithErrOrInterrupt(f.Stop(ctx), exit)
 		},
 		syscall.SIGQUIT: func(exit chan<- error) {

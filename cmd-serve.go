@@ -41,7 +41,7 @@ type Serve struct {
 }
 
 func (r Serve) Run(ctl *Base) error {
-	a, err := New(ctl.Logger.WithContext(lw.Ctx{"env": ctl.Conf.Env}), ctl.Conf, ctl.Storage)
+	a, err := New(ctl)
 	if err != nil {
 		return errors.Annotatef(err, "unable to initialize service")
 	}

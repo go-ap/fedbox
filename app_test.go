@@ -13,7 +13,12 @@ func TestNew(t *testing.T) {
 	if err != nil {
 		t.Errorf("unable to initialize fs Storage: %s", err)
 	}
-	app, err := New(lw.Dev(), config.Options{BaseURL: "http://example.com", SocketPath: ":1234"}, store)
+	ctl := Base{
+		Conf:    config.Options{BaseURL: "http://example.com", SocketPath: ":1234"},
+		Storage: store,
+		Logger:  lw.Dev(),
+	}
+	app, err := New(&ctl)
 	if err != nil {
 		t.Errorf("Environment 'test' should not trigger an error: %s", err)
 	}

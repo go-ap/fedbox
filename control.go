@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"sync/atomic"
 
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/storage-all"
@@ -106,14 +107,13 @@ func setup(ct *Base, options config.Options) error {
 		}()
 	}
 	if ct.Logger == nil {
-		var l lw.Logger
 		if conf.Env.IsDev() {
-			l = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+			ct.Logger = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
 		} else {
-			l = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+			ct.Logger = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
 		}
-		ct.Logger = l
 	}
+	_l.Store(ct.Logger)
 
 	typ := options.Storage
 	if typ != "" {
@@ -171,6 +171,15 @@ func loadFromStdin(s string, params ...any) ([]byte, error) {
 	return input[:len(input)-1], nil
 }
 
+var _l atomic.Value
+
 func Errf(out io.Writer, s string, par ...any) {
-	_, _ = fmt.Fprintf(out, s+"\n", par...)
+	ll := _l.Load()
+	if ll != nil {
+		if lll, ok := ll.(lw.Logger); ok {
+			zl := lw.ZeroLog(lll)
+			zl.Output(out)
+			lll.Errorf(s+"\n", par...)
+		}
+	}
 }

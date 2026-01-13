@@ -231,7 +231,8 @@ func getTestFedBOX(options config.Options, l lw.Logger) (*fedbox.FedBOX, error) 
 		return nil, err
 	}
 
-	a, err := fedbox.New(l, options, db)
+	b := fedbox.Base{Conf: options, Storage: db, Logger: l}
+	a, err := fedbox.New(&b)
 	if err != nil {
 		return nil, err
 	}
