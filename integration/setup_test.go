@@ -191,10 +191,16 @@ func (fc *fedboxContainer) RemoteExec(ctx context.Context, cmd []string) error {
 		return err
 	}
 	defer session.Close()
-	//session.Stdout = os.Stdout
+	errBuff := bytes.Buffer{}
+	outBuff := bytes.Buffer{}
+	session.Stderr = &errBuff
+	session.Stdout = &outBuff
 
 	// Finally, run the command
-	return session.Run(strings.Join(cmd, " "))
+	if err = session.Run(strings.Join(cmd, " ")); err != nil {
+		return fmt.Errorf("%w: %s\n%s", err, outBuff.String(), errBuff.String())
+	}
+	return nil
 }
 
 // NOTE(marius): we need to provision the test docker image volume with corresponding files
