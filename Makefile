@@ -28,6 +28,9 @@ ASSETFILES := $(wildcard templates/*)
 
 TAGS := $(ENV) storage_$(STORAGE) ssh
 
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+mkfile_dir := $(dir $(mkfile_path))
+
 export CGO_ENABLED=0
 export GOEXPERIMENT=greenteagc
 
@@ -82,15 +85,17 @@ clean: ## Cleanup the build workspace.
 
 test: TEST_TARGET := . ./{activitypub,internal}/...
 test: download ## Run unit tests for the service.
-	$(TEST) $(TEST_FLAGS) $(TEST_TARGET)
+	$(TEST) $(TEST_FLAGS) -coverpkg github.com/go-ap/fedbox,github.com/go-ap/fedbox/internal/config,github.com/go-ap/fedbox/internal/env,github.com/go-ap/fedbox/activitypub \
+	-covermode=count -args -test.gocoverdir="$(mkfile_dir)/tests/.cache" $(TEST_TARGET)
 
-coverage: integration ## Run unit tests for the service with coverage.
+coverage: test integration ## Run unit tests for the service with coverage.
 	$(GO) tool covdata percent -i=./tests/.cache -o $(PROJECT).coverprofile
 
 integration: download ## Run integration tests for the service.
-	@$(MAKE) STORAGE=fs -C tests $@
-	@$(MAKE) STORAGE=sqlite -C tests $@
-	@$(MAKE) STORAGE=badger -C tests $@
+	@
+	$(MAKE) STORAGE=fs -C tests $@
+	$(MAKE) STORAGE=sqlite -C tests $@
+	$(MAKE) STORAGE=badger -C tests $@
 
 cert: bin/$(FEDBOX_HOSTNAME).pem ## Create a certificate.
 bin/$(FEDBOX_HOSTNAME).pem: bin/$(FEDBOX_HOSTNAME).key bin/$(FEDBOX_HOSTNAME).crt

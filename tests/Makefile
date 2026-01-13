@@ -9,6 +9,9 @@ TEST_TARGET = ./
 
 TEST := $(GO) test $(BUILDFLAGS)
 
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+mkfile_dir := $(dir $(mkfile_path))
+
 .PHONY: test integration clean coverage
 
 .cache:
@@ -28,6 +31,6 @@ test: c2s s2s
 
 coverage:
 	@$(TEST) $(TEST_FLAGS) -tags "$(TAGS) c2s s2s" -coverpkg github.com/go-ap/fedbox,github.com/go-ap/fedbox/internal/config,github.com/go-ap/fedbox/internal/env,github.com/go-ap/fedbox/activitypub \
-	-covermode=count -args -test.gocoverdir="$(PWD)/tests/.cache" $(TEST_TARGET)
+	-covermode=count -args -test.gocoverdir="$(mkfile_dir)/.cache" $(TEST_TARGET)
 
 integration: coverage
