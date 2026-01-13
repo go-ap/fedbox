@@ -36,12 +36,11 @@ tasks:
   - integration-new: |
       systemctl --user start podman.service
 
-      cd fedbox/integration
-      go mod download
-      go test -tags storage_fs -json . -build | go run github.com/mfridman/tparse@latest --all
-      #go test -tags storage_sqlite -json . -build | go run github.com/mfridman/tparse@latest --all
-      #go test -tags storage_boltdb -json . -build | go run github.com/mfridman/tparse@latest --all
-      go test -tags storage_badger -json . -build | go run github.com/mfridman/tparse@latest --all
+      cd fedbox
+      make STORAGE=fs -C integration test
+      #make STORAGE=sqlite -C integration test
+      #make STORAGE=boltdb -C integration test
+      make STORAGE=badger -C integration test
   - push_to_github: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
       set -a +x

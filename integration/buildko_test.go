@@ -32,12 +32,22 @@ var validEnvs = []string{"dev", "prod", "qa", "test"}
 
 var buildInfo, buildOk = debug.ReadBuildInfo()
 
+func extractValuesFromGoArgument(val string) []string {
+	vals := make([]string, 0)
+	for _, tt := range strings.Split(val, ",") {
+		for _, ttt := range strings.Split(tt, " ") {
+			vals = append(vals, ttt)
+		}
+	}
+	return vals
+}
+
 func extractEnvTagFromBuild() string {
 	env := "test"
 	if buildOk {
 		for _, bs := range buildInfo.Settings {
 			if bs.Key == "-tags" {
-				for _, tt := range strings.Split(bs.Value, " ") {
+				for _, tt := range extractValuesFromGoArgument(bs.Value) {
 					if slices.Contains(validEnvs, tt) {
 						env = tt
 						break
@@ -54,7 +64,7 @@ func extractStorageTagFromBuild() string {
 	if buildOk {
 		for _, bs := range buildInfo.Settings {
 			if bs.Key == "-tags" {
-				for _, tt := range strings.Split(bs.Value, " ") {
+				for _, tt := range extractValuesFromGoArgument(bs.Value) {
 					if strings.HasPrefix(tt, "storage_") {
 						storageType = strings.TrimPrefix(tt, "storage_")
 					}
