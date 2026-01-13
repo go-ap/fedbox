@@ -192,6 +192,12 @@ func hasLiked() func(*a) error {
 	}
 }
 
+func hasID(i iri) func(*o) error {
+	return func(ob *o) error {
+		ob.ID = i
+		return nil
+	}
+}
 func hasType(t t) func(*o) error {
 	return func(ob *o) error {
 		ob.Type = t
@@ -199,8 +205,8 @@ func hasType(t t) func(*o) error {
 	}
 }
 
-func object(id iri, initFn ...itfn) *o {
-	ob := o{ID: id}
+func object(initFn ...itfn) *o {
+	ob := o{}
 	for _, maybeFn := range initFn {
 		switch fn := maybeFn.(type) {
 		case func(*vocab.Object) error:
@@ -210,8 +216,8 @@ func object(id iri, initFn ...itfn) *o {
 	return &ob
 }
 
-func actor(id iri, initFn ...itfn) *a {
-	act := a{ID: id}
+func actor(initFn ...itfn) *a {
+	act := a{}
 	for _, maybeFn := range initFn {
 		switch fn := maybeFn.(type) {
 		case func(*vocab.Object) error:

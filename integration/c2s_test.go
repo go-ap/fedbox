@@ -14,7 +14,7 @@ var httpClient = http.Client{
 }
 
 var service = actor(
-	"http://fedbox/",
+	hasID("http://fedbox/"),
 	hasType(vocab.ServiceType),
 	hasName("self"),
 	hasAttributedTo("https://github.com/mariusor"),
@@ -31,7 +31,7 @@ var service = actor(
 )
 
 var admin1 = actor(
-	"https://fedbox/actors/1",
+	hasID("https://fedbox/actors/1"),
 	hasType(vocab.PersonType),
 	hasAttributedTo("https://fedbox"),
 	hasAudience(vocab.PublicNS),
@@ -45,7 +45,7 @@ var admin1 = actor(
 )
 
 var actor2 = actor(
-	"https://fedbox/actors/2",
+	hasID("https://fedbox/actors/2"),
 	hasType(vocab.PersonType),
 	hasAttributedTo("https://fedbox"),
 	hasAudience(vocab.PublicNS),
@@ -65,14 +65,14 @@ var actor2 = actor(
 )
 
 var tag0 = object(
-	"https://fedbox/objects/0",
+	hasID("https://fedbox/objects/0"),
 	hasName("#sysop"),
 	hasAttributedTo("https://fedbox"),
 	hasTo(vocab.PublicNS),
 )
 
 var object1 = object(
-	"https://fedbox/objects/1",
+	hasID("https://fedbox/objects/1"),
 	hasType(vocab.NoteType),
 	hasContent("<p>Hello</p><code>FedBOX</code>!</p>\n"),
 	hasMediaType("text/html"),
