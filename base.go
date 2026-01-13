@@ -56,6 +56,9 @@ type keyStorage interface {
 }
 
 func (ctl *Base) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto.PrivateKey, error) {
+	if ctl.Service.GetLink().Equal(actorIRI) && ctl.ServicePrivateKey != nil {
+		return &ctl.Service, ctl.ServicePrivateKey, nil
+	}
 	signActorID := ctl.Service.ID
 
 	var signActor *vocab.Actor = &ctl.Service
@@ -151,24 +154,19 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 		tr = debug.New(debug.WithTransport(tr), debug.WithPath(ctl.Conf.StoragePath))
 	}
 
-	var signActor *vocab.Actor
-	var prv crypto.PrivateKey
-	if vocab.IsNil(actor) || ctl.Service.Equals(actor) {
-		if ctl.ServicePrivateKey != nil {
-			signActor = &ctl.Service
-			prv = ctl.ServicePrivateKey
+	ll := ctl.Logger
+	if !auth.AnonymousActor.GetLink().Equal(actor.GetLink()) {
+		ll = ll.WithContext(lw.Ctx{"log": "HTTP-Sig", "actor": actor.GetLink()})
+		signActor, prv, err := ctl.LoadLocalActorWithKey(actor.GetLink())
+		if err != nil {
+			ll.WithContext(lw.Ctx{"err": err}).Debugf("unable to load a valid actor for signing requests")
 		}
-	} else {
-		var err error
-		if signActor, prv, err = ctl.LoadLocalActorWithKey(actor.GetLink()); err != nil {
-			ctl.errFn("unable to sign request: %+s", err)
+		if prv != nil && signActor != nil {
+			tr = s2s.New(s2s.WithActor(signActor, prv), s2s.WithLogger(ll))
 		}
-	}
-	if prv != nil && signActor != nil {
-		tr = s2s.New(s2s.WithActor(signActor, prv), s2s.WithLogger(ctl.Logger.WithContext(lw.Ctx{"log": "HTTP-Sig"})))
 	}
 
-	return initClient(tr, ctl.Conf, ctl.Logger)
+	return initClient(tr, ctl.Conf, ll.WithContext(lw.Ctx{"log": "client"}))
 }
 
 func initClient(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
