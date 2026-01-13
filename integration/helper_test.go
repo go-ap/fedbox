@@ -119,13 +119,13 @@ func (res output) assertResponse(t *testing.T, r *http.Response) {
 	}
 }
 
-type inOutTest struct {
+type ioTest struct {
 	name   string
 	input  input
 	output output
 }
 
-func (test inOutTest) run(ctx context.Context, mocks cntrs) func(t *testing.T) {
+func (test ioTest) run(ctx context.Context, mocks cntrs) func(t *testing.T) {
 	cl := client.New(client.WithHTTPClient(&httpClient), client.SkipTLSValidation(true))
 	return func(t *testing.T) {
 		req, err := test.input.Request(ctx, mocks)

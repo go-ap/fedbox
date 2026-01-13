@@ -84,7 +84,7 @@ var object1 = object(
 )
 
 func Test_Fetch(t *testing.T) {
-	tests := []inOutTest{
+	tests := []ioTest{
 		{
 			name:   "service",
 			input:  in(withURL("http://fedbox/")),
@@ -113,7 +113,7 @@ func Test_Fetch(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	mocks, err := initMocks(ctx, t, suite{name: "fedbox"})
+	mocks, err := initMocks(ctx, t, suite{name: "fedbox", items: vocab.ItemCollection{tag0, object1, admin1, actor2}})
 	if err != nil {
 		t.Fatalf("unable to initialize containers: %s", err)
 	}

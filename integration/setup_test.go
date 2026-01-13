@@ -23,7 +23,7 @@ import (
 
 	"git.sr.ht/~mariusor/storage-all"
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/joho/godotenv"
+	vocab "github.com/go-ap/activitypub"
 	containers "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -38,12 +38,12 @@ type fedboxContainer struct {
 type cntrs map[string]*fedboxContainer
 
 type suite struct {
-	name    string
-	storage string
+	name  string
+	items vocab.ItemCollection
 }
 
 type testLogger struct {
-	*testing.T //func(s string, args ...any)
+	*testing.T
 }
 
 func (t testLogger) Printf(s string, args ...any) {
@@ -56,17 +56,22 @@ func (t testLogger) Accept(l containers.Log) {
 	t.Logf("%s", l.Content)
 }
 
+var defaultEnv = map[string]string{
+	"HTTP_PORT":    "4000",
+	"SSH_PORT":     "4044",
+	"HTTPS":        "false",
+	"HOSTNAME":     "fedbox",
+	"STORAGE_PATH": "/storage",
+	"TIME_OUT":     "10ms",
+}
+
 func initMocks(ctx context.Context, t *testing.T, suites ...suite) (cntrs, error) {
 	// NOTE(marius): the docker host can come from multiple places.
 	// @see github.com/testcontainers/testcontainers-go/internal/core.MustExtractDockerHost()
 	m := make(cntrs)
 	for _, s := range suites {
-		storagePath := filepath.Join(".", "mocks")
-		env := filepath.Join(storagePath, ".env")
-
 		img := fedboxImageName
-		t.Logf("Mock image: %s path %s", img, storagePath)
-		c, err := Run(ctx, t, WithImage(img), WithEnvFile(env), WithStorage(storagePath), WithPassword(defaultPassword), WithPrivateKey(defaultPrivateKey))
+		c, err := Run(ctx, t, WithImage(img), WithEnvFile(defaultEnv), WithMocks(s.items...), WithPassword(defaultPassword), WithPrivateKey(defaultPrivateKey))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize container %s: %w", s.name, err)
 		}
@@ -290,9 +295,7 @@ func WithLogger(logFn log.Logger) containers.CustomizeRequestOption {
 	}
 }
 
-func WithEnvFile(configFile string) containers.CustomizeRequestOption {
-	_ = godotenv.Load(configFile)
-
+func WithEnvFile(env map[string]string) containers.CustomizeRequestOption {
 	storageType := extractStorageTagFromBuild()
 	envType := extractEnvTagFromBuild()
 	if storageType == "all" {
@@ -302,7 +305,7 @@ func WithEnvFile(configFile string) containers.CustomizeRequestOption {
 		if req.Env == nil {
 			req.Env = make(map[string]string)
 		}
-		for k, v := range loadEnv() {
+		for k, v := range env {
 			if v != "" {
 				req.Env[k] = v
 			}
@@ -372,7 +375,24 @@ func WithPassword(pw string) containers.CustomizeRequestOption {
 	}
 }
 
+func WithMocks(items ...vocab.Item) containers.CustomizeRequestOption {
+	return func(req *containers.GenericContainerRequest) error {
+		raw, err := vocab.MarshalJSON(vocab.ItemCollection(items))
+		if err != nil {
+			return err
+		}
+		cf := containers.ContainerFile{
+			Reader:            bytes.NewBuffer(raw),
+			ContainerFilePath: filepath.Join("/storage", "import.json"),
+			FileMode:          0600,
+		}
+		req.Files = append(req.Files, cf)
+		return nil
+	}
+}
+
 func WithStorage(storage string) containers.CustomizeRequestOption {
+	base := filepath.Dir(storage)
 	return func(req *containers.GenericContainerRequest) error {
 		_ = filepath.WalkDir(storage, func(path string, d fs.DirEntry, err error) error {
 			if d.IsDir() {
@@ -380,7 +400,7 @@ func WithStorage(storage string) containers.CustomizeRequestOption {
 			}
 			cf := containers.ContainerFile{
 				HostFilePath:      path,
-				ContainerFilePath: filepath.Join("/storage", strings.ReplaceAll(path, "mocks", "")),
+				ContainerFilePath: filepath.Join("/storage", strings.TrimPrefix(path, base)),
 				FileMode:          0600,
 			}
 			req.Files = append(req.Files, cf)
