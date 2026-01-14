@@ -1,6 +1,6 @@
 //go:build buildah
 
-package integration
+package internal
 
 import (
 	"context"

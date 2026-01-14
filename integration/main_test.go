@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,7 +14,7 @@ var (
 	Verbose bool
 	Build   bool
 
-	fedboxImageName      = "localhost/fedbox/app"
+	fedBOXImageName      = "localhost/fedbox/app"
 	defaultAuthImageName = "localhost/auth/app"
 )
 
@@ -27,14 +28,15 @@ func TestMain(m *testing.M) {
 		logger.SetOutput(os.Stderr)
 		if Verbose {
 			logger.SetLevel(logrus.TraceLevel)
+			defaultC2SEnv["LOG_LEVEL"] = "trace"
 		}
 		logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true, DisableLevelTruncation: true})
 
-		name, err := buildImage(context.Background(), fedboxImageName, logger)
+		name, err := containers.BuildImage(context.Background(), fedBOXImageName, logger)
 		if err != nil {
 			logger.Fatalf("error building: %+v", err)
 		} else {
-			fedboxImageName = name
+			fedBOXImageName = name
 			logger.Infof("built image: %s", name)
 		}
 	}

@@ -1,4 +1,4 @@
-package integration
+package containers
 
 import (
 	"context"
@@ -75,7 +75,7 @@ func extractStorageTagFromBuild() string {
 	return storageType
 }
 
-func buildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string, error) {
+func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string, error) {
 	storageType := extractStorageTagFromBuild()
 	envType := extractEnvTagFromBuild()
 	tags := `-tags=ssh,storage_` + storageType + "," + envType
@@ -119,6 +119,8 @@ func buildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 	if err != nil {
 		return "", err
 	}
+	defer pub.Close()
+
 	ref, err := pub.Publish(ctx, res, strings.TrimPrefix(imageName, targetRepo+"/"))
 	if err != nil {
 		return "", err

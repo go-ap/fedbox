@@ -1,4 +1,4 @@
-package integration
+package vocab
 
 import (
 	"crypto"
@@ -23,28 +23,28 @@ type (
 )
 
 var (
-	en = vocab.DefaultNaturalLanguage[string]
+	EN = vocab.DefaultNaturalLanguage[string]
 )
 
-func nl[T ~string](content T) vocab.NaturalLanguageValues {
+func NL[T ~string](content T) vocab.NaturalLanguageValues {
 	return vocab.NaturalLanguageValuesNew(vocab.RefValue(vocab.NilLangRef, content))
 }
 
-func hasAttributedTo(i iri) func(*o) error {
+func HasAttributedTo(i iri) func(*o) error {
 	return func(ob *o) error {
 		ob.AttributedTo = i
 		return nil
 	}
 }
 
-func hasContext(i iri) func(*o) error {
+func HasContext(i iri) func(*o) error {
 	return func(ob *o) error {
 		ob.Context = i
 		return nil
 	}
 }
 
-func hasAudience(i iri) func(*o) error {
+func HasAudience(i iri) func(*o) error {
 	return func(ob *o) error {
 		if ob.Audience == nil {
 			ob.Audience = make(ic, 0)
@@ -53,21 +53,21 @@ func hasAudience(i iri) func(*o) error {
 	}
 }
 
-func hasGenerator(i iri) func(*o) error {
+func HasGenerator(i iri) func(*o) error {
 	return func(ob *o) error {
 		ob.Generator = i
 		return nil
 	}
 }
 
-func hasURL(i iri) func(*o) error {
+func HasURL(i iri) func(*o) error {
 	return func(ob *o) error {
 		ob.URL = i
 		return nil
 	}
 }
 
-func hasStream(i iri) func(*a) error {
+func HasStream(i iri) func(*a) error {
 	return func(ob *a) error {
 		if ob.Streams == nil {
 			ob.Streams = make(ic, 0)
@@ -76,7 +76,7 @@ func hasStream(i iri) func(*a) error {
 	}
 }
 
-func hasPublicKey(k crypto.PublicKey) func(*a) error {
+func HasPublicKey(k crypto.PublicKey) func(*a) error {
 	pubEnc, _ := x509.MarshalPKIXPublicKey(k)
 	pubEncoded := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: pubEnc})
 	return func(ob *a) error {
@@ -89,7 +89,7 @@ func hasPublicKey(k crypto.PublicKey) func(*a) error {
 	}
 }
 
-func hasTag(t i) func(*o) error {
+func HasTag(t i) func(*o) error {
 	return func(ob *o) error {
 		if ob.Tag == nil {
 			ob.Tag = make(ic, 0)
@@ -98,7 +98,7 @@ func hasTag(t i) func(*o) error {
 	}
 }
 
-func hasCC(i iri) func(*o) error {
+func HasCC(i iri) func(*o) error {
 	return func(ob *o) error {
 		if ob.CC == nil {
 			ob.CC = make(ic, 0)
@@ -107,7 +107,7 @@ func hasCC(i iri) func(*o) error {
 	}
 }
 
-func hasTo(i iri) func(*o) error {
+func HasTo(i iri) func(*o) error {
 	return func(ob *o) error {
 		if ob.To == nil {
 			ob.To = make(ic, 0)
@@ -116,43 +116,43 @@ func hasTo(i iri) func(*o) error {
 	}
 }
 
-func hasName(n string) func(*o) error {
+func HasName(n string) func(*o) error {
 	return func(ob *o) error {
-		ob.Name = en(n)
+		ob.Name = EN(n)
 		return nil
 	}
 }
 
-func hasSummary(n string) func(*o) error {
+func HasSummary(n string) func(*o) error {
 	return func(ob *o) error {
-		ob.Summary = en(n)
+		ob.Summary = EN(n)
 		return nil
 	}
 }
 
-func hasSource(c string, mt string) func(*o) error {
+func HasSource(c string, mt string) func(*o) error {
 	return func(ob *o) error {
-		ob.Source.Content = nl(c)
+		ob.Source.Content = NL(c)
 		ob.Source.MediaType = vocab.MimeType(mt)
 		return nil
 	}
 }
 
-func hasContent(c string) func(*o) error {
+func HasContent(c string) func(*o) error {
 	return func(ob *o) error {
-		ob.Content = en(c)
+		ob.Content = EN(c)
 		return nil
 	}
 }
 
-func hasMediaType(m string) func(*o) error {
+func HasMediaType(m string) func(*o) error {
 	return func(ob *o) error {
 		ob.MediaType = vocab.MimeType(m)
 		return nil
 	}
 }
 
-func hasPublished(s string) func(*o) error {
+func HasPublished(s string) func(*o) error {
 	p, _ := time.Parse(time.RFC3339Nano, s)
 	return func(ob *o) error {
 		ob.Published = p
@@ -160,7 +160,7 @@ func hasPublished(s string) func(*o) error {
 	}
 }
 
-func hasUpdated(s string) func(*o) error {
+func HasUpdated(s string) func(*o) error {
 	u, _ := time.Parse(time.RFC3339Nano, s)
 	return func(ob *o) error {
 		ob.Updated = u
@@ -168,14 +168,14 @@ func hasUpdated(s string) func(*o) error {
 	}
 }
 
-func hasPreferredUsername(n string) func(*a) error {
+func HasPreferredUsername(n string) func(*a) error {
 	return func(act *a) error {
-		act.PreferredUsername = en(n)
+		act.PreferredUsername = EN(n)
 		return nil
 	}
 }
 
-func hasSharedInbox(i iri) func(*a) error {
+func HasSharedInbox(i iri) func(*a) error {
 	return func(act *a) error {
 		if act.Endpoints == nil {
 			act.Endpoints = new(ep)
@@ -185,27 +185,27 @@ func hasSharedInbox(i iri) func(*a) error {
 	}
 }
 
-func hasLiked() func(*a) error {
+func HasLiked() func(*a) error {
 	return func(act *a) error {
 		act.Liked = vocab.Liked.IRI(act.ID)
 		return nil
 	}
 }
 
-func hasID(i iri) func(*o) error {
+func HasID(i iri) func(*o) error {
 	return func(ob *o) error {
 		ob.ID = i
 		return nil
 	}
 }
-func hasType(t t) func(*o) error {
+func HasType(t t) func(*o) error {
 	return func(ob *o) error {
 		ob.Type = t
 		return nil
 	}
 }
 
-func object(initFn ...itfn) *o {
+func Object(initFn ...itfn) *o {
 	ob := o{}
 	for _, maybeFn := range initFn {
 		switch fn := maybeFn.(type) {
@@ -216,7 +216,7 @@ func object(initFn ...itfn) *o {
 	return &ob
 }
 
-func actor(initFn ...itfn) *a {
+func Actor(initFn ...itfn) *a {
 	act := a{}
 	for _, maybeFn := range initFn {
 		switch fn := maybeFn.(type) {
@@ -235,7 +235,7 @@ func actor(initFn ...itfn) *a {
 	return &act
 }
 
-func hasAuthEp(i iri) func(*a) error {
+func HasAuthEp(i iri) func(*a) error {
 	return func(act *a) error {
 		if act.Endpoints == nil {
 			act.Endpoints = new(ep)
@@ -245,7 +245,7 @@ func hasAuthEp(i iri) func(*a) error {
 	}
 }
 
-func hasTokenEp(i iri) func(*a) error {
+func HasTokenEp(i iri) func(*a) error {
 	return func(act *a) error {
 		if act.Endpoints == nil {
 			act.Endpoints = new(ep)

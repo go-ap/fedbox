@@ -1,14 +1,16 @@
-package integration
+package tests
 
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"io"
 	"net/http"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
+	"github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/jsonld"
 	"github.com/google/go-cmp/cmp"
 )
@@ -20,13 +22,13 @@ type input struct {
 	body    io.Reader
 }
 
-func (req *input) Request(ctx context.Context, mocks cntrs) (*http.Request, error) {
-	return mocks.Req(ctx, req.met, req.urlFn(), nil)
+func (req *input) Request(ctx context.Context, mocks containers.Running) (*http.Request, error) {
+	return mocks.BuildRequest(ctx, req.met, req.urlFn(), nil)
 }
 
 type reqInitFn func(*input)
 
-func withURL(u string) reqInitFn {
+func WithURL(u string) reqInitFn {
 	return func(t *input) {
 		t.urlFn = func() string {
 			return u
@@ -34,13 +36,13 @@ func withURL(u string) reqInitFn {
 	}
 }
 
-func withMethod(m string) reqInitFn {
+func WithMethod(m string) reqInitFn {
 	return func(t *input) {
 		t.met = m
 	}
 }
 
-func withBody(r io.Reader) reqInitFn {
+func WithBody(r io.Reader) reqInitFn {
 	w := bytes.Buffer{}
 	return func(t *input) {
 		_, _ = io.Copy(&w, r)
@@ -58,7 +60,7 @@ func (n nilReader) Read(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func in(initFn ...reqInitFn) input {
+func IN(initFn ...reqInitFn) input {
 	r := input{
 		met:     http.MethodGet,
 		headers: make(http.Header),
@@ -71,6 +73,7 @@ func in(initFn ...reqInitFn) input {
 	return r
 }
 
+// output represents the expected result of a http request to a FedBOX service
 type output struct {
 	code int
 	it   vocab.Item
@@ -78,18 +81,18 @@ type output struct {
 
 type resInitFn func(*output)
 
-func hasCode(c int) resInitFn {
+func HasCode(c int) resInitFn {
 	return func(res *output) {
 		res.code = c
 	}
 }
-func hasItem(it vocab.Item) resInitFn {
+func HasItem(it vocab.Item) resInitFn {
 	return func(res *output) {
 		res.it = it
 	}
 }
 
-func out(initFn ...resInitFn) output {
+func OUT(initFn ...resInitFn) output {
 	s := output{code: http.StatusNotImplemented}
 	for _, fn := range initFn {
 		fn(&s)
@@ -119,16 +122,20 @@ func (res output) assertResponse(t *testing.T, r *http.Response) {
 	}
 }
 
-type ioTest struct {
-	name   string
-	input  input
-	output output
+type IOTest struct {
+	Name string
+	IN   input
+	OUT  output
 }
 
-func (test ioTest) run(ctx context.Context, mocks cntrs) func(t *testing.T) {
+var httpClient = http.Client{
+	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+}
+
+func (test IOTest) Run(ctx context.Context, mocks containers.Running) func(t *testing.T) {
 	cl := client.New(client.WithHTTPClient(&httpClient), client.SkipTLSValidation(true))
 	return func(t *testing.T) {
-		req, err := test.input.Request(ctx, mocks)
+		req, err := test.IN.Request(ctx, mocks)
 		if err != nil {
 			t.Fatalf("unable to create request: %+v", err)
 		}
@@ -138,6 +145,6 @@ func (test ioTest) run(ctx context.Context, mocks cntrs) func(t *testing.T) {
 			t.Fatalf("Err received: %+v", err)
 		}
 
-		test.output.assertResponse(t, resp)
+		test.OUT.assertResponse(t, resp)
 	}
 }

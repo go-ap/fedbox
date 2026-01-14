@@ -2,127 +2,151 @@ package integration
 
 import (
 	"context"
-	"crypto/tls"
+	"crypto/rand"
 	"net/http"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
+	c "github.com/go-ap/fedbox/integration/internal/containers"
+	"github.com/go-ap/fedbox/integration/internal/tests"
+	ap "github.com/go-ap/fedbox/integration/internal/vocab"
+	"golang.org/x/crypto/ed25519"
 )
 
-var httpClient = http.Client{
-	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-}
+var (
+	defaultPublicKey, defaultPrivateKey, _ = ed25519.GenerateKey(rand.Reader)
 
-var service = actor(
-	hasID("http://fedbox/"),
-	hasType(vocab.ServiceType),
-	hasName("self"),
-	hasAttributedTo("https://github.com/mariusor"),
-	hasAudience(vocab.PublicNS),
-	hasContext("https://github.com/go-ap/fedbox"),
-	hasSummary("Generic ActivityPub service"),
-	hasURL("http://fedbox/"),
-	hasStream("http://fedbox/actors"),
-	hasStream("http://fedbox/activities"),
-	hasStream("http://fedbox/objects"),
-	hasPublicKey(defaultPublicKey),
-	hasAuthEp("http://fedbox/oauth/authorize"),
-	hasTokenEp("http://fedbox/oauth/token"),
+	defaultPassword = "asd"
+	defaultC2SEnv   = map[string]string{
+		"HTTP_PORT":    "4000",
+		"SSH_PORT":     "4044",
+		"HTTPS":        "false",
+		"HOSTNAME":     "fedbox",
+		"STORAGE_PATH": "/storage",
+	}
 )
 
-var admin1 = actor(
-	hasID("https://fedbox/actors/1"),
-	hasType(vocab.PersonType),
-	hasAttributedTo("https://fedbox"),
-	hasAudience(vocab.PublicNS),
-	hasGenerator("https://fedbox"),
-	hasURL("https://fedbox/actors/1"),
-	hasPreferredUsername("admin"),
-	hasTag(tag0),
-	hasAuthEp("https://fedbox/actors/1/oauth/authorize"),
-	hasTokenEp("https://fedbox/actors/1/oauth/token"),
-	hasSharedInbox("https://fedbox/inbox"),
+var service = ap.Actor(
+	ap.HasID("http://fedbox/"),
+	ap.HasType(vocab.ServiceType),
+	ap.HasName("self"),
+	ap.HasAttributedTo("https://github.com/mariusor"),
+	ap.HasAudience(vocab.PublicNS),
+	ap.HasContext("https://github.com/go-ap/fedbox"),
+	ap.HasSummary("Generic ActivityPub service"),
+	ap.HasURL("http://fedbox/"),
+	ap.HasStream("http://fedbox/actors"),
+	ap.HasStream("http://fedbox/activities"),
+	ap.HasStream("http://fedbox/objects"),
+	ap.HasPublicKey(defaultPublicKey),
+	ap.HasAuthEp("http://fedbox/oauth/authorize"),
+	ap.HasTokenEp("http://fedbox/oauth/token"),
 )
 
-var actor2 = actor(
-	hasID("https://fedbox/actors/2"),
-	hasType(vocab.PersonType),
-	hasAttributedTo("https://fedbox"),
-	hasAudience(vocab.PublicNS),
-	hasContent("Generated actor"),
-	hasSummary("Generated actor"),
-	hasGenerator("https://fedbox"),
-	hasURL("https://fedbox/actors/2"),
-	hasLiked(),
-	hasPreferredUsername("johndoe"),
-	hasPublished("2019-08-11T13:14:47.000000000+02:00"),
-	hasUpdated("2019-08-11T13:14:47.000000000+02:00"),
-	hasName("Johnathan Doe"),
-	hasSharedInbox("https://fedbox/inbox"),
-	hasAuthEp("https://fedbox/oauth/authorize"),
-	hasTokenEp("https://fedbox/oauth/token"),
-	hasSharedInbox("https://fedbox/inbox"),
+var admin1 = ap.Actor(
+	ap.HasID("https://fedbox/actors/1"),
+	ap.HasType(vocab.PersonType),
+	ap.HasAttributedTo("https://fedbox"),
+	ap.HasAudience(vocab.PublicNS),
+	ap.HasGenerator("https://fedbox"),
+	ap.HasURL("https://fedbox/actors/1"),
+	ap.HasPreferredUsername("admin"),
+	ap.HasTag(tag0),
+	ap.HasAuthEp("https://fedbox/actors/1/oauth/authorize"),
+	ap.HasTokenEp("https://fedbox/actors/1/oauth/token"),
+	ap.HasSharedInbox("https://fedbox/inbox"),
 )
 
-var tag0 = object(
-	hasID("https://fedbox/objects/0"),
-	hasName("#sysop"),
-	hasAttributedTo("https://fedbox"),
-	hasTo(vocab.PublicNS),
+var actor2 = ap.Actor(
+	ap.HasID("https://fedbox/actors/2"),
+	ap.HasType(vocab.PersonType),
+	ap.HasAttributedTo("https://fedbox"),
+	ap.HasAudience(vocab.PublicNS),
+	ap.HasContent("Generated actor"),
+	ap.HasSummary("Generated actor"),
+	ap.HasGenerator("https://fedbox"),
+	ap.HasURL("https://fedbox/actors/2"),
+	ap.HasLiked(),
+	ap.HasPreferredUsername("johndoe"),
+	ap.HasPublished("2019-08-11T13:14:47.000000000+02:00"),
+	ap.HasUpdated("2019-08-11T13:14:47.000000000+02:00"),
+	ap.HasName("Johnathan Doe"),
+	ap.HasSharedInbox("https://fedbox/inbox"),
+	ap.HasAuthEp("https://fedbox/oauth/authorize"),
+	ap.HasTokenEp("https://fedbox/oauth/token"),
+	ap.HasSharedInbox("https://fedbox/inbox"),
 )
 
-var object1 = object(
-	hasID("https://fedbox/objects/1"),
-	hasType(vocab.NoteType),
-	hasContent("<p>Hello</p><code>FedBOX</code>!</p>\n"),
-	hasMediaType("text/html"),
-	hasPublished("2019-09-27T14:26:43.000000000Z"),
-	hasUpdated("2019-09-27T14:26:43.000000000Z"),
-	hasAttributedTo(admin1.ID),
-	hasSource("Hello `FedBOX`!", "text/markdown"),
-	hasTo("https://www.w3.org/ns/activitystreams#Public"),
+var tag0 = ap.Object(
+	ap.HasID("https://fedbox/objects/0"),
+	ap.HasName("#sysop"),
+	ap.HasAttributedTo("https://fedbox"),
+	ap.HasTo(vocab.PublicNS),
+)
+
+var object1 = ap.Object(
+	ap.HasID("https://fedbox/objects/1"),
+	ap.HasType(vocab.NoteType),
+	ap.HasContent("<p>Hello</p><code>FedBOX</code>!</p>\n"),
+	ap.HasMediaType("text/html"),
+	ap.HasPublished("2019-09-27T14:26:43.000000000Z"),
+	ap.HasUpdated("2019-09-27T14:26:43.000000000Z"),
+	ap.HasAttributedTo(admin1.ID),
+	ap.HasSource("Hello `FedBOX`!", "text/markdown"),
+	ap.HasTo("https://www.w3.org/ns/activitystreams#Public"),
 )
 
 func Test_Fetch(t *testing.T) {
-	tests := []ioTest{
+	toRun := []tests.IOTest{
 		{
-			name:   "service",
-			input:  in(withURL("http://fedbox/")),
-			output: out(hasCode(http.StatusOK), hasItem(service)),
+			Name: "service",
+			IN:   tests.IN(tests.WithURL("http://fedbox")),
+			OUT:  tests.OUT(tests.HasCode(http.StatusOK), tests.HasItem(service)),
 		},
 		{
-			name:   "actors/1",
-			input:  in(withURL("http://fedbox/actors/1")),
-			output: out(hasCode(http.StatusOK), hasItem(admin1)),
+			Name: "actors/1",
+			IN:   tests.IN(tests.WithURL("http://fedbox/actors/1")),
+			OUT:  tests.OUT(tests.HasCode(http.StatusOK), tests.HasItem(admin1)),
 		},
 		{
-			name:   "objects/0",
-			input:  in(withURL("http://fedbox/objects/0")),
-			output: out(hasCode(http.StatusOK), hasItem(tag0)),
+			Name: "objects/0",
+			IN:   tests.IN(tests.WithURL("http://fedbox/objects/0")),
+			OUT:  tests.OUT(tests.HasCode(http.StatusOK), tests.HasItem(tag0)),
 		},
 		{
-			name:   "objects/1",
-			input:  in(withURL("http://fedbox/objects/1")),
-			output: out(hasCode(http.StatusOK), hasItem(object1)),
+			Name: "objects/1",
+			IN:   tests.IN(tests.WithURL("http://fedbox/objects/1")),
+			OUT:  tests.OUT(tests.HasCode(http.StatusOK), tests.HasItem(object1)),
 		},
 		{
-			name:   "actors/2",
-			input:  in(withURL("http://fedbox/actors/2")),
-			output: out(hasCode(http.StatusOK), hasItem(actor2)),
+			Name: "actors/2",
+			IN:   tests.IN(tests.WithURL("http://fedbox/actors/2")),
+			OUT:  tests.OUT(tests.HasCode(http.StatusOK), tests.HasItem(actor2)),
 		},
 	}
 
+	var c2sFedBOX = c.C2SfedBOX(
+		c.WithEnv(defaultC2SEnv),
+		c.WithImageName(fedBOXImageName),
+		c.WithKey(defaultPrivateKey),
+		c.WithUser(service.ID),
+		c.WithPw(defaultPassword),
+		c.WithItems(tag0, object1, admin1, actor2),
+	)
+
+	images := c.Suite{c2sFedBOX}
+
 	ctx := context.Background()
-	mocks, err := initMocks(ctx, t, suite{name: "fedbox", items: vocab.ItemCollection{tag0, object1, admin1, actor2}})
+	cont, err := c.Init(ctx, t, images...)
 	if err != nil {
 		t.Fatalf("unable to initialize containers: %s", err)
 	}
 
 	t.Cleanup(func() {
-		mocks.cleanup(t)
+		cont.Cleanup(t)
 	})
 
-	for _, test := range tests {
-		t.Run(test.name, test.run(ctx, mocks))
+	for _, test := range toRun {
+		t.Run(test.Name, test.Run(ctx, cont))
 	}
 }
