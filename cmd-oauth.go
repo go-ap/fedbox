@@ -66,7 +66,7 @@ func (a AddClient) Run(ctl *Base) error {
 	}
 	id, err := ctl.AddClient(pw, redirectURIs, nil)
 	if err == nil {
-		fmt.Printf("Client ID: %s\n", id)
+		_, _ = fmt.Fprintf(ctl.out, "Client ID: %s\n", id)
 	}
 	return err
 }
@@ -91,7 +91,7 @@ func (a AddToken) Run(ctl *Base) error {
 	}
 	tok, err := ctl.GenAuthToken(clientID, actor, nil)
 	if err == nil {
-		fmt.Printf("Authorization: Bearer %s\n", tok)
+		_, _ = fmt.Fprintf(ctl.out, "Authorization: Bearer %s\n", tok)
 	}
 	return err
 }

@@ -116,6 +116,17 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			},
 			OutputChecks: []testOutput{endOK},
 		},
+		{
+			Name: "oauth client add",
+			Host: service.ID.String(),
+			Cmd: c.SSHCmd{
+				Cmd:   []string{"oauth", "client", "add", "--redirect-uri", "http://127.0.0.1"},
+				User:  service.ID.String(),
+				Key:   defaultPrivateKey,
+				Input: bytes.NewReader([]byte("asd\nasd\n")),
+			},
+			OutputChecks: []testOutput{endOK},
+		},
 	}
 
 	for _, test := range toRun {

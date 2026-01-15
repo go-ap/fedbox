@@ -284,7 +284,7 @@ func (i ImportCmd) Run(ctl *Base) error {
 		_ = vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
 			for _, it := range c.Collection() {
 				typ := it.GetType()
-				fmt.Printf("Saving %s\n", it.GetID())
+				_, _ = fmt.Fprintf(ctl.out, "Saving %s\n", it.GetID())
 
 				var err error
 				if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
@@ -317,13 +317,13 @@ func (i ImportCmd) Run(ctl *Base) error {
 			return nil
 		})
 		tot := time.Now().Sub(start)
-		fmt.Printf("Elapsed time:          %4s\n", tot)
+		_, _ = fmt.Fprintf(ctl.out, "Elapsed time:          %4s\n", tot)
 		if count > 0 {
 			perIt := time.Duration(int64(tot) / int64(count))
-			fmt.Printf("Elapsed time per item: %4s\n", perIt)
+			_, _ = fmt.Fprintf(ctl.out, "Elapsed time per item: %4s\n", perIt)
 		}
 	}
-	fmt.Printf("Import done!\n")
+	_, _ = fmt.Fprintf(ctl.out, "Import done!\n")
 	return nil
 }
 
@@ -441,7 +441,7 @@ func (i IndexCmd) Run(ctl *Base) error {
 	}
 
 	tot := time.Now().Sub(start)
-	fmt.Printf("Elapsed time:          %s\n", tot)
+	_, _ = fmt.Fprintf(ctl.out, "Elapsed time:          %s\n", tot)
 
 	return nil
 }
