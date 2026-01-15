@@ -180,12 +180,13 @@ func publicKeyCheck(f *FedBOX, id string, sessKey ssh.PublicKey) (*vocab.Actor, 
 	var key crypto.PublicKey
 	err = vocab.OnActor(maybeActor, func(actor *vocab.Actor) error {
 		servicePubKey := actor.PublicKey.PublicKeyPem
-		pubBytes, _ := pem.Decode([]byte(servicePubKey))
-		key, _ = x509.ParsePKIXPublicKey(pubBytes.Bytes)
-		if key != nil {
-			return nil
+		if pubBytes, _ := pem.Decode([]byte(servicePubKey)); pubBytes != nil {
+			key, _ = x509.ParsePKIXPublicKey(pubBytes.Bytes)
+			if key != nil {
+				return nil
+			}
+			key, err = x509.ParsePKCS1PublicKey(pubBytes.Bytes)
 		}
-		key, err = x509.ParsePKCS1PublicKey(pubBytes.Bytes)
 		return err
 	})
 	if err != nil {
