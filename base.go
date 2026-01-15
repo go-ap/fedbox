@@ -219,7 +219,6 @@ func (ctl *Base) Saver(actor *vocab.Actor) processing.P {
 
 	initFns := []processing.OptionFn{
 		processing.WithLogger(l), processing.WithStorage(db),
-		//processing.WithLocalIRIChecker(),
 	}
 
 	if baseIRI != "" && !baseIRI.Equal(auth.AnonymousActor.ID) {
