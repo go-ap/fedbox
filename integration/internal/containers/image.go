@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	vocab "github.com/go-ap/activitypub"
 	tc "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 type ContainerInitializer interface {
@@ -58,8 +61,14 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB) (tc.Container, erro
 	logger := testLogger{T: t.(*testing.T)}
 
 	req := defaultFedBOXRequest(f.name)
-	opts = append(opts, tc.WithLogConsumers(logger))
-	//opts = append(opts, tc.WithLogger(log.TestLogger(t)))
+	hostCfg := func(hostConfig *container.HostConfig) {
+		hostConfig.NetworkMode = network.NetworkBridge
+		hostConfig.AutoRemove = true
+		hostConfig.ExtraHosts = []string{"localhost:" + f.env["HOSTNAME"]}
+	}
+
+	opts = append(opts, tc.WithLogConsumers(logger), tc.WithHostConfigModifier(hostCfg))
+	opts = append(opts, tc.WithLogger(log.TestLogger(t)))
 	for _, opt := range opts {
 		if err := opt.Customize(&req); err != nil {
 			return nil, err
