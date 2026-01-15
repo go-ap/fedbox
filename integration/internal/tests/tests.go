@@ -142,7 +142,7 @@ func (test IOTest) Run(ctx context.Context, mocks containers.Running) func(t *te
 
 		resp, err := cl.Do(req)
 		if err != nil {
-			t.Fatalf("Err received: %+v", err)
+			t.Fatalf("Err received on %s->%s: %+v", req.Method, req.URL.String(), err)
 		}
 
 		test.OUT.assertResponse(t, resp)
