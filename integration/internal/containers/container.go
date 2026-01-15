@@ -97,7 +97,10 @@ func execSSH(ctx context.Context, fc tc.Container, cmd []string, opts ...exec.Pr
 	session.Stdin = conf.Reader
 
 	if err = session.Run(strings.Join(cmd, " ")); err != nil {
-		return nil, fmt.Errorf("command execution failed: %w", err)
+		if errBuff.Len() == 0 {
+			return nil, fmt.Errorf("command execution failed: %w", err)
+		}
+		return nil, fmt.Errorf("command execution failed: %w\n%s", err, errBuff.String())
 	}
 	// NOTE(marius): if stdErr had output, we treat it as an error
 	if errBuff.Len() > 0 {

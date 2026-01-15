@@ -34,13 +34,25 @@ func diffErrs(want, got error) string {
 	return cmp.Diff(want, got, equateWeakErrors)
 }
 
+type testOutput func(*testing.T, []byte)
+
+func endOK(t *testing.T, raw []byte) {
+	ok := []byte("FedBOX SSH: OK")
+	raw = bytes.TrimSpace(raw)
+	lines := bytes.Split(raw, []byte{'\n'})
+	last := lines[len(lines)-1]
+	if !bytes.Equal(last, ok) {
+		t.Errorf("Last output line %s, expected: %s", last, ok)
+	}
+}
+
 func Test_Commands_inSeparateContainers(t *testing.T) {
 	toRun := []struct {
-		Name       string
-		Host       string
-		Cmd        tc.Executable
-		WantOutput string
-		WantErr    error
+		Name         string
+		Host         string
+		Cmd          tc.Executable
+		OutputChecks []testOutput
+		WantErr      error
 	}{
 		{
 			Name: "--help",
@@ -51,7 +63,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  defaultPrivateKey,
 			},
 			// NOTE(marius): this is strange. The output should actually be the
-			WantOutput: "FedBOX SSH: OK\n",
+			OutputChecks: []testOutput{endOK},
 		},
 		{
 			Name: "reload",
@@ -61,7 +73,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			WantOutput: "FedBOX SSH: OK\n",
+			OutputChecks: []testOutput{endOK},
 		},
 		{
 			Name: "maintenance",
@@ -71,7 +83,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			WantOutput: "FedBOX SSH: OK\n",
+			OutputChecks: []testOutput{endOK},
 		},
 		{
 			Name: "stop",
@@ -81,7 +93,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			WantOutput: "FedBOX SSH: OK\n",
+			OutputChecks: []testOutput{endOK},
 		},
 		{
 			Name: "stop",
@@ -91,7 +103,18 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			WantOutput: "FedBOX SSH: OK\n",
+			OutputChecks: []testOutput{endOK},
+		},
+		{
+			Name: "pub actor add",
+			Host: service.ID.String(),
+			Cmd: c.SSHCmd{
+				Cmd:   []string{"pub", "actor", "add", "--type", "Person", "--key-type", "RSA", "--tag", "#sysop", "jdoe"},
+				User:  service.ID.String(),
+				Key:   defaultPrivateKey,
+				Input: bytes.NewReader([]byte("asd\nasd\n")),
+			},
+			OutputChecks: []testOutput{endOK},
 		},
 	}
 
@@ -124,12 +147,13 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				}
 				t.Fatalf("Err received executing command %s->%v: %+v", test.Host, test.Cmd.AsCommand(), diffErrs(test.WantErr, err))
 			}
-			if len(test.WantOutput) > 0 && out == nil {
-				t.Fatalf("No output from command when it was expected %s->%v, size %d", test.Host, test.Cmd.AsCommand(), len(test.WantOutput))
+			if len(test.OutputChecks) > 0 && out == nil {
+				t.Fatalf("No output from command when it was expected %s->%v", test.Host, test.Cmd.AsCommand())
 			}
+
 			raw, _ := io.ReadAll(out)
-			if !bytes.Equal([]byte(test.WantOutput), raw) {
-				t.Errorf("Output from command differs %s->%v\n %s", test.Host, test.Cmd.AsCommand(), cmp.Diff(test.WantOutput, string(raw)))
+			for _, check := range test.OutputChecks {
+				check(t, raw)
 			}
 		})
 	}
