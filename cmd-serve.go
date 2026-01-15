@@ -55,8 +55,6 @@ func (r Serve) Run(ctl *Base) error {
 			if err = a.Bootstrap(getPwAndKey(ctl, keyType)); err != nil {
 				ctl.Logger.WithContext(lw.Ctx{"err": err}).Warnf("Unable to bootstrap service actor")
 			}
-		} else {
-			ctl.Logger.Tracef("Bootstrap required but service actor exists")
 		}
 	}
 
