@@ -125,8 +125,10 @@ func Test_Fetch(t *testing.T) {
 		},
 	}
 
+	envType := c.ExtractEnvTagFromBuild()
 	var c2sFedBOX = c.C2SfedBOX(
 		c.WithEnv(defaultC2SEnv),
+		c.WithArgs([]string{"--env", envType, "--bootstrap"}),
 		c.WithImageName(fedBOXImageName),
 		c.WithKey(defaultPrivateKey),
 		c.WithUser(service.ID),

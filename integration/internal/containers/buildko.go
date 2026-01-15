@@ -42,7 +42,7 @@ func extractValuesFromGoArgument(val string) []string {
 	return vals
 }
 
-func extractEnvTagFromBuild() string {
+func ExtractEnvTagFromBuild() string {
 	env := "test"
 	if buildOk {
 		for _, bs := range buildInfo.Settings {
@@ -77,7 +77,7 @@ func extractStorageTagFromBuild() string {
 
 func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string, error) {
 	storageType := extractStorageTagFromBuild()
-	envType := extractEnvTagFromBuild()
+	envType := ExtractEnvTagFromBuild()
 	tags := `-tags=ssh,storage_` + storageType + "," + envType
 	if storageType == "all" {
 		storageType = string(storage.Default)

@@ -11,17 +11,16 @@ import (
 )
 
 type ContainerInitializer interface {
-	//initFns() []tc.ContainerCustomizer
 	Start(ctx context.Context, t testing.TB) (tc.Container, error)
 }
 
 type fboxImage struct {
-	name string
-	env  map[string]string
-	user string
-	key  crypto.PrivateKey
-	pw   []byte
-	//startCmds []tc.Executable
+	name  string
+	args  []string
+	env   map[string]string
+	user  string
+	key   crypto.PrivateKey
+	pw    []byte
 	mocks vocab.ItemCollection
 }
 
@@ -36,7 +35,8 @@ func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 				Cmd:  []string{ /*ctlBin, "--env", envType, */ "pub", "import", "/storage/import.json"},
 				User: f.user,
 			}
-			if len(f.user) > 0 {
+			if f.args != nil {
+				initFns = append(initFns, tc.WithCmdArgs(f.args...))
 			}
 			if f.key != nil {
 				importCmd.Key = f.key
@@ -132,6 +132,12 @@ func WithPw(pw string) imageInitFn {
 func WithEnv(m map[string]string) imageInitFn {
 	return func(f *fboxImage) {
 		f.env = m
+	}
+}
+
+func WithArgs(args []string) imageInitFn {
+	return func(f *fboxImage) {
+		f.args = args
 	}
 }
 

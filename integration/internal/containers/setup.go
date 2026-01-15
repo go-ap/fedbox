@@ -153,7 +153,7 @@ func buildRequest(ctx context.Context, fc tc.Container, met, u string, body io.R
 }
 
 func defaultFedBOXRequest(name string) tc.GenericContainerRequest {
-	envType := extractEnvTagFromBuild()
+	envType := ExtractEnvTagFromBuild()
 	return tc.GenericContainerRequest{
 		ContainerRequest: tc.ContainerRequest{
 			Image:      name,
@@ -182,7 +182,7 @@ func WithImage(image string) tc.CustomizeRequestOption {
 
 func WithEnvFile(env map[string]string) tc.CustomizeRequestOption {
 	storageType := extractStorageTagFromBuild()
-	envType := extractEnvTagFromBuild()
+	envType := ExtractEnvTagFromBuild()
 	if storageType == "all" {
 		storageType = string(storage.Default)
 	}
