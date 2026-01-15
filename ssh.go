@@ -159,9 +159,14 @@ func pwCheck(f *FedBOX, id string, pw []byte) (*vocab.Actor, bool) {
 }
 
 func publicKeyCheck(f *FedBOX, id string, sessKey ssh.PublicKey) (*vocab.Actor, bool) {
-	maybeActor, err := f.Storage.Load(vocab.IRI(id))
+	actorIRI := vocab.IRI(id)
+	maybeActor, err := f.Storage.Load(actorIRI)
 	if err != nil {
-		return nil, false
+		if f.Service.ID.Equals(actorIRI, false) {
+			maybeActor = f.Service
+		} else {
+			return nil, false
+		}
 	}
 	var key crypto.PublicKey
 	err = vocab.OnActor(maybeActor, func(actor *vocab.Actor) error {
