@@ -66,6 +66,15 @@ func runSSHCommand(f *FedBOX, s ssh.Session) error {
 	if len(args) == 0 {
 		return fmt.Errorf("PTY is not interactive and no command was sent")
 	}
+	ctl := new(Base)
+	ctl.Conf = f.Conf
+	ctl.Logger = f.Logger
+	ctl.Service = f.Service
+	ctl.ServicePrivateKey = f.ServicePrivateKey
+	ctl.Storage = f.Storage
+	ctl.out = s
+	ctl.in = s
+	ctl.err = s.Stderr()
 
 	cmd := new(SSH)
 	kongDefaultVars["name"] = "FedBOX SSH"
@@ -84,16 +93,16 @@ func runSSHCommand(f *FedBOX, s ssh.Session) error {
 	}
 	ctx, err := k.Parse(args)
 	if err != nil {
+		_ = k.Errorf("%s\n", err)
 		return err
 	}
-	f.out = k.Stdout
-	f.err = k.Stderr
-	f.in = s
 
-	if err = ctx.Run(f.Base); err != nil {
+	if err = ctx.Run(ctl); err != nil {
 		_ = k.Errorf("%s\n", err)
+		return err
 	}
-	return err
+	_ = k.Printf("OK\n")
+	return nil
 }
 
 func MainTui(f *FedBOX) wish.Middleware {
