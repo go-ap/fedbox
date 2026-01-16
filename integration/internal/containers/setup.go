@@ -21,10 +21,14 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
+	nw "github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-type Running []tc.Container
+type Running struct {
+	Containers []tc.Container
+	Network    *tc.DockerNetwork
+}
 
 type Suite []ContainerInitializer
 
@@ -59,14 +63,18 @@ func (i image) Start(ctx context.Context, t testing.TB) (tc.Container, error) {
 func Init(ctx context.Context, t testing.TB, s ...ContainerInitializer) (Running, error) {
 	// NOTE(marius): the docker host can come from multiple places.
 	// @see github.com/testcontainers/testcontainers-go/internal/core.MustExtractDockerHost()
-	m := make(Running, 0)
+	newNetwork, err := nw.New(ctx)
+	if err != nil {
+		t.Fatalf("unable to initialize nw: %s", err)
+	}
+	m := Running{Containers: make([]tc.Container, 0), Network: newNetwork}
 	for _, img := range s {
 		c, err := img.Start(ctx, t)
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize container %T: %w", img, err)
+			t.Fatalf("unable to initialize container %T: %s", img, err)
 		}
 
-		m = append(m, c)
+		m.Containers = append(m.Containers, c)
 	}
 
 	m.Cleanup(t)
@@ -74,9 +82,10 @@ func Init(ctx context.Context, t testing.TB, s ...ContainerInitializer) (Running
 }
 
 func (m Running) Cleanup(t testing.TB) {
-	for _, mm := range m {
+	for _, mm := range m.Containers {
 		tc.CleanupContainer(t, mm)
 	}
+	tc.CleanupNetwork(t, m.Network)
 }
 
 func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable) (io.Reader, error) {
@@ -85,7 +94,7 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable)
 		return nil, fmt.Errorf("received invalid url: %w", err)
 	}
 
-	for _, fc := range m {
+	for _, fc := range m.Containers {
 		info, err := fc.Inspect(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("unable to inspect container: %w", err)
@@ -107,7 +116,7 @@ func (m Running) BuildRequest(ctx context.Context, met, u string, body io.Reader
 		return nil, fmt.Errorf("received invalid url: %w", err)
 	}
 
-	for _, fc := range m {
+	for _, fc := range m.Containers {
 		info, err := fc.Inspect(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("unable to inspect container: %w", err)
@@ -156,9 +165,13 @@ func defaultFedBOXRequest(name string) tc.GenericContainerRequest {
 	envType := ExtractEnvTagFromBuild()
 	return tc.GenericContainerRequest{
 		ContainerRequest: tc.ContainerRequest{
-			Image:      name,
-			Cmd:        []string{"--env", envType, "--bootstrap"},
-			WaitingFor: wait.ForLog("Started").WithStartupTimeout(800 * time.Millisecond),
+			Image: name,
+			Cmd:   []string{"--env", envType, "--bootstrap"},
+			WaitingFor: wait.ForAll(
+				wait.ForLog("Started"),
+				wait.ForListeningPort("4000"),
+				wait.ForListeningPort("4044"),
+			).WithDeadline(800 * time.Millisecond),
 		},
 		ProviderType: tc.ProviderPodman,
 		Started:      true,
