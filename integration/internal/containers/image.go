@@ -25,32 +25,33 @@ type fboxImage struct {
 	key   crypto.PrivateKey
 	pw    []byte
 	mocks vocab.ItemCollection
+	cmds  []tc.Executable
 }
 
 func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 	initFns := []tc.ContainerCustomizer{WithImage(f.name), WithEnvFile(f.env)}
+	if f.args != nil {
+		initFns = append(initFns, tc.WithCmdArgs(f.args...))
+	}
+	if f.key != nil {
+		initFns = append(initFns, WithPrivateKey(f.key))
+	}
+	if f.pw != nil {
+		initFns = append(initFns, WithPassword(f.pw))
+	}
 	if len(f.mocks) > 0 {
-		// NOTE(marius): the default import for the mocks
-		initFns = append(initFns, WithMocks(f.mocks...))
-		if f.pw != nil || f.key != nil {
-			// NOTE(marius): we also need to add an SSH command to import the mocks file
-			importCmd := SSHCmd{
-				Cmd:  []string{ /*ctlBin, "--env", envType, */ "pub", "import", "/storage/import.json"},
-				User: f.user,
-			}
-			if f.args != nil {
-				initFns = append(initFns, tc.WithCmdArgs(f.args...))
-			}
-			if f.key != nil {
-				importCmd.Key = f.key
-				initFns = append(initFns, WithPrivateKey(f.key))
-			}
-			if f.pw != nil {
-				importCmd.Pw = f.pw
-				initFns = append(initFns, WithPassword(f.pw))
-			}
-			initFns = append(initFns, tc.WithAfterReadyCommand(importCmd))
+		importCmd := SSHCmd{
+			Cmd:  []string{ /*ctlBin, "--env", envType, */ "pub", "import", "/storage/import.json"},
+			User: f.user,
 		}
+		if f.key != nil {
+			importCmd.Key = f.key
+		}
+		if f.pw != nil {
+			importCmd.Pw = f.pw
+		}
+		// NOTE(marius): we add the mocks to the import file, and the SSH command to actually import it.
+		initFns = append(initFns, WithMocks(f.mocks...), tc.WithAfterReadyCommand(importCmd))
 	}
 	return initFns
 }
@@ -147,6 +148,12 @@ func WithEnv(m map[string]string) imageInitFn {
 func WithArgs(args []string) imageInitFn {
 	return func(f *fboxImage) {
 		f.args = args
+	}
+}
+
+func WithCmds(cmds ...tc.Executable) imageInitFn {
+	return func(f *fboxImage) {
+		f.cmds = cmds
 	}
 }
 
