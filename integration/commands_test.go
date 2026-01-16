@@ -1,13 +1,13 @@
 package integration
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"io"
 	"regexp"
 	"testing"
 
-	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/google/go-cmp/cmp"
@@ -36,43 +36,60 @@ func diffErrs(want, got error) string {
 	return cmp.Diff(want, got, equateWeakErrors)
 }
 
-type testOutput func(*testing.T, []byte)
+type testOutput func(*testing.T, io.Reader)
+type testLineOutput func(*testing.T, *bufio.Scanner)
 
-func endOK(t *testing.T, raw []byte) {
-	ok := []byte("FedBOX SSH: OK")
-	raw = bytes.TrimSpace(raw)
-	lines := bytes.Split(raw, []byte{'\n'})
-	last := lines[len(lines)-1]
-	if !bytes.Equal(last, ok) {
-		t.Errorf("Last output line %s, expected: %s", last, ok)
+func consumeAllLines(lineChecks ...testLineOutput) testOutput {
+	return func(t *testing.T, reader io.Reader) {
+		scanner := bufio.NewScanner(reader)
+		scanner.Split(bufio.ScanLines)
+		for _, lineCheck := range lineChecks {
+			lineCheck(t, scanner)
+		}
+		if scanner.Scan() {
+			t.Errorf("Not all output was consumed: %q", scanner.Bytes())
+		}
 	}
 }
 
-var r = regexp.MustCompile(`(http|https://[a-zA-Z0-9./-]+)`)
+func anyOutput(t *testing.T, lr *bufio.Scanner) {
+	if !lr.Scan() {
+		t.Fatalf("Unable to read next line")
+	}
+}
+func endOK(t *testing.T, lr *bufio.Scanner) {
+	if !lr.Scan() {
+		t.Fatalf("Unable to read next line")
+	}
+	last := lr.Bytes()
+	ok := []byte("FedBOX SSH: OK")
+	if !bytes.Equal(last, ok) {
+		t.Errorf("Output line %q, expected: %q", last, ok)
+	}
+}
 
-func hasValidURL(i *vocab.IRI) testOutput {
-	return func(t *testing.T, raw []byte) {
-		raw = bytes.TrimSpace(raw)
-		lines := bytes.Split(raw, []byte{'\n'})
-		for _, line := range lines {
-			if matches := r.FindSubmatch(line); len(matches) > 1 {
-				*i = vocab.IRI(matches[1])
-				return
-			}
+var urlRegexp = regexp.MustCompile(`(http|https://[a-zA-Z0-9./-]+)`)
+
+func matchesRegexp(r *regexp.Regexp) testLineOutput {
+	return func(t *testing.T, lr *bufio.Scanner) {
+		if !lr.Scan() {
+			t.Fatalf("Unable to read next line")
 		}
-		t.Errorf("No output line contained a valid URL")
+		line := lr.Bytes()
+		if matches := r.FindSubmatch(line); len(matches) > 1 {
+			return
+		}
+		t.Errorf("The line %q did not contain the regex, %q", line, r)
 	}
 }
 
 func Test_Commands_inSeparateContainers(t *testing.T) {
-	maybeClientID := vocab.IRI("")
-	maybeActorID := vocab.IRI("")
 	toRun := []struct {
-		Name         string
-		Host         string
-		Cmd          tc.Executable
-		OutputChecks []testOutput
-		WantErr      error
+		Name    string
+		Host    string
+		Cmd     tc.Executable
+		Output  testOutput
+		WantErr error
 	}{
 		{
 			Name: "--help",
@@ -83,7 +100,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  defaultPrivateKey,
 			},
 			// NOTE(marius): this is strange. The output should actually be the
-			OutputChecks: []testOutput{endOK},
+			Output: consumeAllLines(endOK),
 		},
 		{
 			Name: "reload",
@@ -93,7 +110,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			OutputChecks: []testOutput{endOK},
+			Output: consumeAllLines(endOK),
 		},
 		{
 			Name: "maintenance",
@@ -103,17 +120,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			OutputChecks: []testOutput{endOK},
-		},
-		{
-			Name: "stop",
-			Host: service.ID.String(),
-			Cmd: c.SSHCmd{
-				Cmd:  []string{"stop"},
-				User: service.ID.String(),
-				Key:  defaultPrivateKey,
-			},
-			OutputChecks: []testOutput{endOK},
+			Output: consumeAllLines(endOK),
 		},
 		{
 			Name: "pub actor add",
@@ -124,7 +131,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:   defaultPrivateKey,
 				Input: bytes.NewReader([]byte("asd\nasd\n")),
 			},
-			OutputChecks: []testOutput{endOK, hasValidURL(&maybeActorID)},
+			Output: consumeAllLines(anyOutput, anyOutput, matchesRegexp(urlRegexp), endOK),
 		},
 		{
 			Name: "oauth client add",
@@ -135,7 +142,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:   defaultPrivateKey,
 				Input: bytes.NewReader([]byte("asd\nasd\n")),
 			},
-			OutputChecks: []testOutput{endOK, hasValidURL(&maybeClientID)},
+			Output: consumeAllLines(anyOutput, anyOutput, matchesRegexp(urlRegexp), endOK),
 		},
 		{
 			Name: "storage bootstrap",
@@ -145,7 +152,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			OutputChecks: []testOutput{endOK},
+			Output: consumeAllLines(endOK),
 		},
 		{
 			Name: "password change",
@@ -156,16 +163,26 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:   defaultPrivateKey,
 				Input: bytes.NewReader([]byte("test\ntest\n")),
 			},
-			OutputChecks: []testOutput{endOK},
+			Output: consumeAllLines(anyOutput, anyOutput, endOK),
+		},
+		{
+			Name: "stop",
+			Host: service.ID.String(),
+			Cmd: c.SSHCmd{
+				Cmd:  []string{"stop"},
+				User: service.ID.String(),
+				Key:  defaultPrivateKey,
+			},
+			Output: consumeAllLines(endOK),
 		},
 	}
 
 	for _, test := range toRun {
 		t.Run(test.Name, func(t *testing.T) {
-			envType := c.ExtractEnvTagFromBuild()
+			//envType := c.ExtractEnvTagFromBuild()
 			var c2sFedBOX = c.C2SfedBOX(
 				c.WithEnv(defaultC2SEnv),
-				c.WithArgs([]string{"--env", envType, "--bootstrap"}),
+				//c.WithArgs([]string{"--env", envType, "--bootstrap"}),
 				c.WithImageName(fedBOXImageName),
 				c.WithKey(defaultPrivateKey),
 				c.WithUser(service.ID),
@@ -190,14 +207,11 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				}
 				t.Fatalf("Err received executing command %s->%v: %+v", test.Host, test.Cmd.AsCommand(), diffErrs(test.WantErr, err))
 			}
-			if len(test.OutputChecks) > 0 && out == nil {
+			if test.Output != nil && out == nil {
 				t.Fatalf("No output from command when it was expected %s->%v", test.Host, test.Cmd.AsCommand())
 			}
 
-			raw, _ := io.ReadAll(out)
-			for _, check := range test.OutputChecks {
-				check(t, raw)
-			}
+			test.Output(t, out)
 		})
 	}
 }
