@@ -88,7 +88,7 @@ func (m Running) Cleanup(t testing.TB) {
 	tc.CleanupNetwork(t, m.Network)
 }
 
-func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable) (io.Reader, error) {
+func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable, IO io.ReadWriter) (io.Reader, error) {
 	uu, err := url.Parse(host)
 	if err != nil {
 		return nil, fmt.Errorf("received invalid url: %w", err)
@@ -102,7 +102,11 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable)
 		for _, pair := range info.Config.Env {
 			if strings.HasPrefix(pair, "HOSTNAME=") {
 				if host := strings.TrimPrefix(pair, "HOSTNAME="); host == uu.Host {
-					return execSSH(ctx, fc, cmd.AsCommand(), cmd.Options()...)
+					opts := cmd.Options()
+					if IO != nil {
+						opts = append(opts, WithStdin(IO))
+					}
+					return execSSH(ctx, fc, cmd.AsCommand(), opts...)
 				}
 			}
 		}

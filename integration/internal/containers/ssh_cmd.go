@@ -4,18 +4,16 @@ import (
 	"crypto"
 	"crypto/x509"
 	"encoding/pem"
-	"io"
 
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 )
 
 type SSHCmd struct {
-	Cmd   []string
-	User  string
-	Pw    []byte
-	Key   crypto.PrivateKey
-	Input io.Reader
+	Cmd  []string
+	User string
+	Pw   []byte
+	Key  crypto.PrivateKey
 }
 
 func (c SSHCmd) AsCommand() []string {
@@ -34,9 +32,6 @@ func (c SSHCmd) Options() []exec.ProcessOption {
 		"_PW=" + string(c.Pw),
 	}
 	opts := []exec.ProcessOption{exec.WithEnv(env), exec.WithUser(c.User)}
-	if c.Input != nil {
-		opts = append(opts, WithStdin(c.Input))
-	}
 	return opts
 }
 

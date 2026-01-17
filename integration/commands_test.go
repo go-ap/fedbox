@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"io"
@@ -36,46 +35,52 @@ func diffErrs(want, got error) string {
 	return cmp.Diff(want, got, equateWeakErrors)
 }
 
-type testOutput func(*testing.T, io.Reader)
-type testLineOutput func(*testing.T, *bufio.Scanner)
-
-func consumeAllLines(lineChecks ...testLineOutput) testOutput {
-	return func(t *testing.T, reader io.Reader) {
-		scanner := bufio.NewScanner(reader)
-		scanner.Split(bufio.ScanLines)
-		for _, lineCheck := range lineChecks {
-			lineCheck(t, scanner)
-		}
-		if scanner.Scan() {
-			t.Errorf("Not all output was consumed: %q", scanner.Bytes())
-		}
-	}
+type testReadWriter struct {
+	t           *testing.T
+	inLines     [][]byte
+	checkOutput []testLineOutput
 }
 
-func anyOutput(t *testing.T, lr *bufio.Scanner) {
-	if !lr.Scan() {
-		t.Fatalf("Unable to read next line")
+func (t testReadWriter) Read(p []byte) (n int, err error) {
+	if len(t.inLines) == 0 {
+		t.t.Fatalf("Input was asked for, but no output was provided in the test setup")
+		return 0, io.ErrUnexpectedEOF
 	}
+
+	line := t.inLines[0]
+	t.inLines = t.inLines[1:]
+	return copy(p, line), nil
 }
-func endOK(t *testing.T, lr *bufio.Scanner) {
-	if !lr.Scan() {
-		t.Fatalf("Unable to read next line")
+
+func (t testReadWriter) Write(p []byte) (n int, err error) {
+	if len(t.checkOutput) == 0 {
+		t.t.Fatalf("Output was provided, but no handler was provided in the test setup")
 	}
-	last := lr.Bytes()
+	checker := t.checkOutput[0]
+	checker(t.t, p)
+	t.checkOutput = t.checkOutput[1:]
+	return len(p), nil
+}
+
+var _ io.ReadWriter = testReadWriter{}
+
+type testLineOutput func(*testing.T, []byte)
+
+func anyOutput(t *testing.T, line []byte) {
+	t.Logf("read %q", line)
+}
+
+func endOK(t *testing.T, line []byte) {
 	ok := []byte("FedBOX SSH: OK")
-	if !bytes.Equal(last, ok) {
-		t.Errorf("Output line %q, expected: %q", last, ok)
+	if !bytes.Equal(line, ok) {
+		t.Errorf("Output line %q, expected: %q", line, ok)
 	}
 }
 
 var urlRegexp = regexp.MustCompile(`(http|https://[a-zA-Z0-9./-]+)`)
 
 func matchesRegexp(r *regexp.Regexp) testLineOutput {
-	return func(t *testing.T, lr *bufio.Scanner) {
-		if !lr.Scan() {
-			t.Fatalf("Unable to read next line")
-		}
-		line := lr.Bytes()
+	return func(t *testing.T, line []byte) {
 		if matches := r.FindSubmatch(line); len(matches) > 1 {
 			return
 		}
@@ -83,12 +88,32 @@ func matchesRegexp(r *regexp.Regexp) testLineOutput {
 	}
 }
 
+type testerInitFn func(writer *testReadWriter)
+
+func withInput(lines ...[]byte) testerInitFn {
+	return func(w *testReadWriter) {
+		w.inLines = lines
+	}
+}
+func withTests(testFns ...testLineOutput) testerInitFn {
+	return func(w *testReadWriter) {
+		w.checkOutput = testFns
+	}
+}
+func tester(t *testing.T, fns ...testerInitFn) *testReadWriter {
+	tt := testReadWriter{t: t}
+	for _, fn := range fns {
+		fn(&tt)
+	}
+	return &tt
+}
+
 func Test_Commands_inSeparateContainers(t *testing.T) {
 	toRun := []struct {
 		Name    string
 		Host    string
 		Cmd     tc.Executable
-		Output  testOutput
+		IO      io.ReadWriter
 		WantErr error
 	}{
 		{
@@ -100,7 +125,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  defaultPrivateKey,
 			},
 			// NOTE(marius): this is strange. The output should actually be the
-			Output: consumeAllLines(endOK),
+			IO: tester(t, withTests(endOK)),
 		},
 		{
 			Name: "reload",
@@ -110,7 +135,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			Output: consumeAllLines(endOK),
+			IO: tester(t, withTests(endOK)),
 		},
 		{
 			Name: "maintenance",
@@ -120,29 +145,41 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			Output: consumeAllLines(endOK),
+			IO: tester(t, withTests(endOK)),
 		},
 		{
 			Name: "pub actor add",
 			Host: service.ID.String(),
 			Cmd: c.SSHCmd{
-				Cmd:   []string{"pub", "actor", "add", "--type", "Person", "--key-type", "RSA", "--tag", "#sysop", "jdoe"},
-				User:  service.ID.String(),
-				Key:   defaultPrivateKey,
-				Input: bytes.NewReader([]byte("asd\nasd\n")),
+				Cmd:  []string{"pub", "actor", "add", "--type", "Person", "--key-type", "RSA", "--tag", "#sysop", "jdoe"},
+				User: service.ID.String(),
+				Key:  defaultPrivateKey,
 			},
-			Output: consumeAllLines(anyOutput, anyOutput, matchesRegexp(urlRegexp), endOK),
+			IO: tester(
+				t,
+				withInput([]byte("asd\n"), []byte("asd\n")),
+				withTests(
+					anyOutput,
+					anyOutput,
+					matchesRegexp(urlRegexp),
+					endOK,
+				),
+			),
 		},
 		{
 			Name: "oauth client add",
 			Host: service.ID.String(),
 			Cmd: c.SSHCmd{
-				Cmd:   []string{"oauth", "client", "add", "--redirect-uri", "http://127.0.0.1"},
-				User:  service.ID.String(),
-				Key:   defaultPrivateKey,
-				Input: bytes.NewReader([]byte("asd\nasd\n")),
+				Cmd:  []string{"oauth", "client", "add", "--redirect-uri", "http://127.0.0.1"},
+				User: service.ID.String(),
+				Key:  defaultPrivateKey,
 			},
-			Output: consumeAllLines(anyOutput, anyOutput, matchesRegexp(urlRegexp), endOK),
+			IO: tester(t, withInput([]byte("asd\n"), []byte("asd\n")), withTests(
+				anyOutput,
+				anyOutput,
+				matchesRegexp(urlRegexp),
+				endOK),
+			),
 		},
 		{
 			Name: "storage bootstrap",
@@ -152,18 +189,24 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			Output: consumeAllLines(endOK),
+			IO: tester(t, withTests(endOK)),
 		},
 		{
 			Name: "password change",
 			Host: service.ID.String(),
 			Cmd: c.SSHCmd{
-				Cmd:   []string{"accounts", "pass", service.ID.String()},
-				User:  service.ID.String(),
-				Key:   defaultPrivateKey,
-				Input: bytes.NewReader([]byte("test\ntest\n")),
+				Cmd:  []string{"accounts", "pass", service.ID.String()},
+				User: service.ID.String(),
+				Key:  defaultPrivateKey,
 			},
-			Output: consumeAllLines(anyOutput, anyOutput, endOK),
+			IO: tester(t,
+				withInput([]byte("test\n"), []byte("test\n")),
+				withTests(
+					anyOutput,
+					anyOutput,
+					endOK,
+				),
+			),
 		},
 		{
 			Name: "stop",
@@ -173,7 +216,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			Output: consumeAllLines(endOK),
+			IO: tester(t, withTests(endOK)),
 		},
 	}
 
@@ -200,18 +243,13 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			t.Cleanup(func() {
 				cont.Cleanup(t)
 			})
-			out, err := cont.RunCommand(ctx, test.Host, test.Cmd)
+			_, err = cont.RunCommand(ctx, test.Host, test.Cmd, test.IO)
 			if !eqErrs(test.WantErr, err) {
 				if test.Cmd == nil {
 					t.Fatalf("Err received executing nil command %s: %+v", test.Host, diffErrs(test.WantErr, err))
 				}
 				t.Fatalf("Err received executing command %s->%v: %+v", test.Host, test.Cmd.AsCommand(), diffErrs(test.WantErr, err))
 			}
-			if test.Output != nil && out == nil {
-				t.Fatalf("No output from command when it was expected %s->%v", test.Host, test.Cmd.AsCommand())
-			}
-
-			test.Output(t, out)
 		})
 	}
 }

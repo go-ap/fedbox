@@ -91,9 +91,15 @@ func execSSH(ctx context.Context, fc tc.Container, cmd []string, opts ...exec.Pr
 	}
 	defer session.Close()
 	errBuff := bytes.Buffer{}
-	outBuff := bytes.Buffer{}
 	session.Stderr = &errBuff
-	session.Stdout = &outBuff
+	var outBuff io.Writer
+
+	if wr, ok := conf.Reader.(io.Writer); ok {
+		outBuff = wr
+	} else {
+		outBuff = &bytes.Buffer{}
+	}
+	session.Stdout = outBuff
 	session.Stdin = conf.Reader
 
 	if err = session.Run(strings.Join(cmd, " ")); err != nil {
@@ -106,7 +112,7 @@ func execSSH(ctx context.Context, fc tc.Container, cmd []string, opts ...exec.Pr
 	if errBuff.Len() > 0 {
 		return nil, STDErr(errBuff)
 	}
-	return &outBuff, nil
+	return outBuff.(io.Reader), nil
 }
 
 type STDErr bytes.Buffer
