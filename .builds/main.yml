@@ -33,6 +33,7 @@ tasks:
   - tests: |
       cd fedbox
       make test
+      cd integration && go mod tidy
   - integration-new: |
       systemctl --user start podman.service
 
