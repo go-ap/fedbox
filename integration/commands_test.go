@@ -41,28 +41,38 @@ type testReadWriter struct {
 	checkOutput []testLineOutput
 }
 
-func (t testReadWriter) Read(p []byte) (n int, err error) {
+func (t *testReadWriter) Read(p []byte) (n int, err error) {
 	if len(t.inLines) == 0 {
-		t.t.Fatalf("Input was asked for, but no output was provided in the test setup")
-		return 0, io.ErrUnexpectedEOF
+		return 0, io.EOF
 	}
 
 	line := t.inLines[0]
+	if len(p) < len(line) {
+		t.t.Fatalf("Input buffer smaller than provided value")
+		return 0, io.ErrShortBuffer
+	}
+
 	t.inLines = t.inLines[1:]
-	return copy(p, line), nil
+	for i, b := range line {
+		p[i] = b
+	}
+	return len(line), nil
 }
 
-func (t testReadWriter) Write(p []byte) (n int, err error) {
+func (t *testReadWriter) Write(p []byte) (n int, err error) {
 	if len(t.checkOutput) == 0 {
 		t.t.Fatalf("Output was provided, but no handler was provided in the test setup")
 	}
-	checker := t.checkOutput[0]
-	checker(t.t, p)
-	t.checkOutput = t.checkOutput[1:]
+	lines := bytes.Split(bytes.TrimSpace(p), []byte("\n"))
+	for _, line := range lines {
+		checker := t.checkOutput[0]
+		checker(t.t, line)
+		t.checkOutput = t.checkOutput[1:]
+	}
 	return len(p), nil
 }
 
-var _ io.ReadWriter = testReadWriter{}
+var _ io.ReadWriter = new(testReadWriter)
 
 type testLineOutput func(*testing.T, []byte)
 
@@ -100,20 +110,31 @@ func withTests(testFns ...testLineOutput) testerInitFn {
 		w.checkOutput = testFns
 	}
 }
-func tester(t *testing.T, fns ...testerInitFn) *testReadWriter {
-	tt := testReadWriter{t: t}
+
+func ioTester(fns ...testerInitFn) func(*testing.T) *testReadWriter {
+	tt := tester(fns...)
+	return func(t *testing.T) *testReadWriter {
+		tt.t = t
+		return tt
+	}
+}
+
+func tester(fns ...testerInitFn) *testReadWriter {
+	tt := testReadWriter{}
 	for _, fn := range fns {
 		fn(&tt)
 	}
 	return &tt
 }
 
+type testIO func(*testing.T) *testReadWriter
+
 func Test_Commands_inSeparateContainers(t *testing.T) {
 	toRun := []struct {
 		Name    string
 		Host    string
 		Cmd     tc.Executable
-		IO      io.ReadWriter
+		IO      testIO
 		WantErr error
 	}{
 		{
@@ -125,7 +146,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  defaultPrivateKey,
 			},
 			// NOTE(marius): this is strange. The output should actually be the
-			IO: tester(t, withTests(endOK)),
+			IO: ioTester(withTests(endOK)),
 		},
 		{
 			Name: "reload",
@@ -135,7 +156,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: tester(t, withTests(endOK)),
+			IO: ioTester(withTests(endOK)),
 		},
 		{
 			Name: "maintenance",
@@ -145,7 +166,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: tester(t, withTests(endOK)),
+			IO: ioTester(withTests(endOK)),
 		},
 		{
 			Name: "pub actor add",
@@ -155,9 +176,8 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: tester(
-				t,
-				withInput([]byte("asd\n"), []byte("asd\n")),
+			IO: ioTester(
+				withInput([]byte(""), []byte("asd\n"), []byte("asd\n")),
 				withTests(
 					anyOutput,
 					anyOutput,
@@ -174,7 +194,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: tester(t, withInput([]byte("asd\n"), []byte("asd\n")), withTests(
+			IO: ioTester(withInput([]byte("asd\n"), []byte("asd\n")), withTests(
 				anyOutput,
 				anyOutput,
 				matchesRegexp(urlRegexp),
@@ -189,7 +209,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: tester(t, withTests(endOK)),
+			IO: ioTester(withTests(endOK)),
 		},
 		{
 			Name: "password change",
@@ -199,7 +219,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: tester(t,
+			IO: ioTester(
 				withInput([]byte("test\n"), []byte("test\n")),
 				withTests(
 					anyOutput,
@@ -216,7 +236,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: tester(t, withTests(endOK)),
+			IO: ioTester(withTests(endOK)),
 		},
 	}
 
@@ -243,7 +263,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			t.Cleanup(func() {
 				cont.Cleanup(t)
 			})
-			_, err = cont.RunCommand(ctx, test.Host, test.Cmd, test.IO)
+			_, err = cont.RunCommand(ctx, test.Host, test.Cmd, test.IO(t))
 			if !eqErrs(test.WantErr, err) {
 				if test.Cmd == nil {
 					t.Fatalf("Err received executing nil command %s: %+v", test.Host, diffErrs(test.WantErr, err))

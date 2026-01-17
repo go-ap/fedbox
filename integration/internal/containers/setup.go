@@ -104,7 +104,7 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable,
 				if host := strings.TrimPrefix(pair, "HOSTNAME="); host == uu.Host {
 					opts := cmd.Options()
 					if IO != nil {
-						opts = append(opts, WithStdin(IO))
+						opts = append(opts, WithIO(IO))
 					}
 					return execSSH(ctx, fc, cmd.AsCommand(), opts...)
 				}
@@ -182,7 +182,7 @@ func defaultFedBOXRequest(name string) tc.GenericContainerRequest {
 	}
 }
 
-func WithStdin(in io.Reader) exec.ProcessOption {
+func WithIO(in io.ReadWriter) exec.ProcessOption {
 	return exec.ProcessOptionFunc(func(opts *exec.ProcessOptions) {
 		opts.Reader = in
 	})
