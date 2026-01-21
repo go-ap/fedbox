@@ -14,7 +14,7 @@ require (
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/charmbracelet/wish v1.4.7
 	github.com/go-ap/activitypub v0.0.0-20260115142526-c0e6aa6744cc
-	github.com/go-ap/auth v0.0.0-20260115142916-44886cbbc56c
+	github.com/go-ap/auth v0.0.0-20260121160330-c70f82f1d4bb
 	github.com/go-ap/cache v0.0.0-20260115142614-f5f3c7970085
 	github.com/go-ap/client v0.0.0-20260115142838-caa5a377f10e
 	github.com/go-ap/errors v0.0.0-20251229095444-2702aa2d8569
@@ -45,7 +45,7 @@ require (
 	github.com/charmbracelet/keygen v0.5.4 // indirect
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/log v0.4.2 // indirect
-	github.com/charmbracelet/x/ansi v0.11.3 // indirect
+	github.com/charmbracelet/x/ansi v0.11.4 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.14 // indirect
 	github.com/charmbracelet/x/conpty v0.2.0 // indirect
 	github.com/charmbracelet/x/input v0.3.7 // indirect
@@ -54,7 +54,7 @@ require (
 	github.com/charmbracelet/x/windows v0.2.2 // indirect
 	github.com/clipperhouse/displaywidth v0.7.0 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
-	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
+	github.com/clipperhouse/uax29/v2 v2.3.1 // indirect
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be // indirect
 	github.com/creack/pty v1.1.24 // indirect
 	github.com/dgraph-io/badger/v4 v4.9.0 // indirect
@@ -71,7 +71,7 @@ require (
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
-	github.com/klauspost/compress v1.18.2 // indirect
+	github.com/klauspost/compress v1.18.3 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
 	github.com/mariusor/bubbles-tree v0.0.0-20240804164840-b0aaa013ef3a // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
@@ -110,5 +110,5 @@ require (
 	modernc.org/libc v1.67.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.44.0 // indirect
+	modernc.org/sqlite v1.44.3 // indirect
 )
