@@ -9,7 +9,7 @@ packages:
 sources:
   - https://git.sr.ht/~mariusor/fedbox
 tasks:
-  - images: |
+  - setup: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
       set -a +x
       source ~/.buildah.env
@@ -17,36 +17,27 @@ tasks:
       _user=$(id -un)
 
       echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/unq-search.conf
+
       echo "${_user}:10000:65536" | sudo tee /etc/subuid
       echo "${_user}:10000:65536" | sudo tee /etc/subgid
 
       podman system migrate
+
       systemctl --user start podman.service
 
       podman login -u="${BUILDAH_USER}" -p="${BUILDAH_SECRET}" quay.io
 
       cd fedbox || exit
       make download
-
-      _sha=$(git rev-parse --short HEAD)
-      _branch=$(git branch --points-at=${_sha} | tail -n1 | tr -d '* ')
-      _version=$(printf "%s-%s" "${_branch}" "${_sha}")
-
-      _push() {
-        _storage=${1:-all}
-        make -C images STORAGE="${_storage}" ENV=dev VERSION="${_version}" push
-
-        if [ "${_branch}" = "master" ]; then
-            make -C images STORAGE="${_storage}" ENV=qa VERSION="${_version}" push
-        fi
-
-        _tag=$(git describe --long --tags || true)
-        if [ -n "${_tag}" ]; then
-          make -C images STORAGE="${_storage}" ENV=prod VERSION="${_tag}" push
-        fi
-      }
-      _push
-      _push fs
-      _push sqlite
-      #_push boltdb
-      _push badger
+  - fs: |
+      cd fedbox || exit
+      ./tools/build-images.sh push fs
+  - boltdb: |
+      cd fedbox || exit
+      ./tools/build-images.sh push boltdb
+  - badger: |
+      cd fedbox || exit
+      ./tools/build-images.sh push badger
+  - sqlite: |
+      cd fedbox || exit
+      ./tools/build-images.sh push sqlite
