@@ -24,8 +24,12 @@ func checkOriginForBlockedActors(r *http.Request, origin string) bool {
 }
 
 func (f *FedBOX) Routes() func(chi.Router) {
+	allowedOrigins := []string{"https://*"}
+	if !f.Conf.Env.IsProd() {
+		allowedOrigins = append(allowedOrigins, "http://*")
+	}
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"https://*"},
+		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
