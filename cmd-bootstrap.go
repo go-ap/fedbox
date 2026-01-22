@@ -29,7 +29,7 @@ func (b ResetCmd) Run(ctl *Base) error {
 		return err
 	}
 	keyType := ap.KeyTypeED25519
-	if !ctl.Conf.MastodonIncompatible {
+	if ctl.Conf.MastodonCompatible {
 		keyType = ap.KeyTypeRSA
 	}
 	pair, err := ap.GenerateKeyPair(keyType)

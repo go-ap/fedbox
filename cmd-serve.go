@@ -49,7 +49,7 @@ func (r Serve) Run(ctl *Base) error {
 	if r.Bootstrap {
 		if !a.Service.ID.Equal(vocab.IRI(ctl.Conf.BaseURL)) {
 			keyType := ap.KeyTypeED25519
-			if !ctl.Conf.MastodonIncompatible {
+			if ctl.Conf.MastodonCompatible {
 				keyType = ap.KeyTypeRSA
 			}
 			if err = a.Bootstrap(getPwAndKey(ctl, keyType)); err != nil {

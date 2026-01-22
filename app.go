@@ -124,7 +124,7 @@ func New(ctl *Base) (*FedBOX, error) {
 
 	if metaSaver, ok := db.(storage.MetadataStorage); ok {
 		keysType := ap.KeyTypeED25519
-		if conf.MastodonIncompatible {
+		if conf.MastodonCompatible {
 			keysType = ap.KeyTypeRSA
 		}
 
