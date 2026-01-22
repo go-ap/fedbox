@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"time"
 
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
@@ -25,6 +26,10 @@ func (fc fboxContainer) Exec(ctx context.Context, cmd []string, opts ...exec.Pro
 const ctlBin = "fedbox"
 
 func execSSH(ctx context.Context, fc tc.Container, cmd []string, opts ...exec.ProcessOption) (io.Reader, error) {
+	var cancelFn func()
+	ctx, cancelFn = context.WithTimeout(ctx, 2*time.Second)
+	defer cancelFn()
+
 	if cmd[0] == ctlBin {
 		// NOTE(marius): if the command actually wants to call the "fedbox" binary,
 		// we execute it using the docker exec mechanism

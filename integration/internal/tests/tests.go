@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
@@ -135,6 +136,10 @@ var httpClient = http.Client{
 func (test IOTest) Run(ctx context.Context, mocks containers.Running) func(t *testing.T) {
 	cl := client.New(client.WithHTTPClient(&httpClient), client.SkipTLSValidation(true))
 	return func(t *testing.T) {
+		var cancelFn func()
+		ctx, cancelFn = context.WithTimeout(ctx, 2*time.Second)
+		defer cancelFn()
+
 		req, err := test.IN.Request(ctx, mocks)
 		if err != nil {
 			t.Fatalf("unable to create request: %+v", err)
