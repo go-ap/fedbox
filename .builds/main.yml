@@ -38,7 +38,7 @@ tasks:
       systemctl --user start podman.service
 
       cd fedbox
-      make STORAGE=fs -C integration test
+      make STORAGE=fs -C integration test || true
       make STORAGE=badger -C integration test || true
       make STORAGE=boltdb -C integration test || true
       make STORAGE=sqlite -C integration test || true

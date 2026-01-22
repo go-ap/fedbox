@@ -15,7 +15,7 @@ ifneq ($(STORAGE),)
 TAGS := storage_$(STORAGE) $(TAGS)
 endif
 
-TEST_FLAGS ?= -count=1 -tags '$(TAGS)'
+TEST_FLAGS ?= -timeout 30s -count=1 -tags '$(TAGS)'
 
 export DOCKER_HOST = unix:///run/user/$(shell id -u)/podman/podman.sock
 
