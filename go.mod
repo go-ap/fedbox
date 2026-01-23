@@ -14,7 +14,7 @@ require (
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/charmbracelet/wish v1.4.7
 	github.com/go-ap/activitypub v0.0.0-20260115142526-c0e6aa6744cc
-	github.com/go-ap/auth v0.0.0-20260121160330-c70f82f1d4bb
+	github.com/go-ap/auth v0.0.0-20260115142916-44886cbbc56c
 	github.com/go-ap/cache v0.0.0-20260115142614-f5f3c7970085
 	github.com/go-ap/client v0.0.0-20260115142838-caa5a377f10e
 	github.com/go-ap/errors v0.0.0-20251229095444-2702aa2d8569
