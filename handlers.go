@@ -99,7 +99,17 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 
 		var err error
 		if !fromCache {
-			fil := filters.Checks{filters.Authorized(authorized.ID)}
+			fil := make(filters.Checks, 0)
+			// NOTE(marius): I want a way to make that the owner of a collection would automatically
+			// be authorized for all objects inside _even_ when they don't appear in the recipients list.
+			//
+			// Until that behaviour can be added to the filters module: https://todo.sr.ht/~mariusor/go-activitypub/433
+			// we can remove the authorization check if actor extracted from the authorization header
+			// matches the owner of the collection.
+			_, maybeCol := vocab.Split(iri)
+			if col := maybeCol.Of(authorized); vocab.IsNil(col) || col.GetLink().Equal(iri) {
+				fil = append(fil, filters.Authorized(authorized.ID))
+			}
 			fil = append(fil, filters.FromValues(r.URL.Query())...)
 
 			repo := fb.Storage
