@@ -7,20 +7,20 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/motley v0.0.0-20260106112645-67260d2893d3
 	git.sr.ht/~mariusor/servermux v0.0.0-20260113120515-73350ce7afad
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260124131517-f45bdf69d273
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260125131529-e595d27f6a5c
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.12.1
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/charmbracelet/wish v1.4.7
 	github.com/go-ap/activitypub v0.0.0-20260123105353-38736987d071
-	github.com/go-ap/auth v0.0.0-20260124112901-bf09017c31a0
+	github.com/go-ap/auth v0.0.0-20260125130426-4b25223e31b2
 	github.com/go-ap/cache v0.0.0-20260124112700-1e093ed2c53f
-	github.com/go-ap/client v0.0.0-20260124112821-eb9b6af99f4f
+	github.com/go-ap/client v0.0.0-20260125130259-841c3ff4fdcc
 	github.com/go-ap/errors v0.0.0-20251229095444-2702aa2d8569
-	github.com/go-ap/filters v0.0.0-20260124112747-f1400f81a7a6
+	github.com/go-ap/filters v0.0.0-20260125130200-6086ab387cb0
 	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77
-	github.com/go-ap/processing v0.0.0-20260124112942-a5194a932e06
+	github.com/go-ap/processing v0.0.0-20260125130457-d2f25b93dedb
 	github.com/go-chi/chi/v5 v5.2.4
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -54,17 +54,17 @@ require (
 	github.com/charmbracelet/x/windows v0.2.2 // indirect
 	github.com/clipperhouse/displaywidth v0.7.0 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
-	github.com/clipperhouse/uax29/v2 v2.3.1 // indirect
+	github.com/clipperhouse/uax29/v2 v2.4.0 // indirect
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be // indirect
 	github.com/creack/pty v1.1.24 // indirect
 	github.com/dgraph-io/badger/v4 v4.9.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260124131155-f02064509c53 // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260124131124-5de332efdfc2 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260124131044-8245c901b939 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260124131243-b39b9d0119df // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260125131257-0e7e89bc0959 // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260125130828-b73f141b1c20 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260125130536-0ee1a1958903 // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260125131057-5cf16bac3da9 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
