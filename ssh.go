@@ -24,6 +24,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/muesli/termenv"
 	"golang.org/x/crypto/ed25519"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 func SSHAuthPw(f *FedBOX) ssh.PasswordHandler {
@@ -169,6 +170,10 @@ func publicKeyCheck(f *FedBOX, id string, sessKey ssh.PublicKey) (*vocab.Actor, 
 			return nil, false
 		}
 	}
+	actorKey, err := f.Storage.LoadKey(actorIRI)
+	if err != nil {
+		return nil, false
+	}
 	var key crypto.PublicKey
 	var actor *vocab.Actor
 	err = vocab.OnActor(maybeActor, func(act *vocab.Actor) error {
@@ -187,13 +192,27 @@ func publicKeyCheck(f *FedBOX, id string, sessKey ssh.PublicKey) (*vocab.Actor, 
 		return nil, false
 	}
 
-	switch pub := key.(type) {
-	case *rsa.PublicKey:
-		return actor, !pub.Equal(sessKey)
-	case *ecdsa.PublicKey:
-		return actor, !pub.Equal(sessKey)
-	case ed25519.PublicKey:
-		return actor, !pub.Equal(sessKey)
+	sessPubKey, ok := sessKey.(gossh.CryptoPublicKey)
+	if !ok {
+		return nil, false
+	}
+	switch prv := actorKey.(type) {
+	case *rsa.PrivateKey:
+		if !prv.PublicKey.Equal(key) {
+			f.Logger.WithContext(lw.Ctx{"actor": actorIRI}).Warnf("Actor's public key doesn't match the private key any more")
+		}
+		return actor, prv.PublicKey.Equal(sessPubKey.CryptoPublicKey())
+	case *ecdsa.PrivateKey:
+		if !prv.PublicKey.Equal(key) {
+			f.Logger.WithContext(lw.Ctx{"actor": actorIRI}).Warnf("Actor's public key doesn't match the private key any more")
+		}
+		return actor, prv.PublicKey.Equal(sessPubKey.CryptoPublicKey())
+	case ed25519.PrivateKey:
+		pub, ok := prv.Public().(ed25519.PublicKey)
+		if !pub.Equal(key) {
+			f.Logger.WithContext(lw.Ctx{"actor": actorIRI}).Warnf("Actor's public key doesn't match the private key any more")
+		}
+		return actor, ok && pub.Equal(sessPubKey.CryptoPublicKey())
 	default:
 		return nil, false
 	}
