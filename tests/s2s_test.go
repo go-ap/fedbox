@@ -115,7 +115,7 @@ var S2SReceiveTests = testPairs{
 						},
 						obj: &objectVal{
 							id:  loadMockFromDisk("mocks/s2s/objects/note-1.json", nil).GetID().String(),
-							typ: string(loadMockFromDisk("mocks/s2s/objects/note-1.json", nil).GetType()),
+							typ: typesToString(loadMockFromDisk("mocks/s2s/objects/note-1.json", nil).GetType()),
 						},
 					},
 				},

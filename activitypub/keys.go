@@ -45,7 +45,7 @@ type KeyPair struct {
 
 func AddKeyToPerson(metaSaver storage.MetadataStorage, pair KeyPair) func(act *vocab.Actor) error {
 	return func(act *vocab.Actor) error {
-		if !vocab.ActorTypes.Contains(act.Type) {
+		if !vocab.ActorTypes.Match(act.Type) {
 			return nil
 		}
 

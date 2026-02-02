@@ -125,13 +125,13 @@ func loadPubTypes(types ...vocab.ActivityVocabularyType) []vocab.ActivityVocabul
 		activityTyp = vocab.ActivityTypes
 	} else {
 		for _, t := range types {
-			if vocab.ObjectTypes.Contains(t) {
+			if vocab.ObjectTypes.Match(t) {
 				objectTyp = append(objectTyp, t)
 			}
-			if vocab.ActorTypes.Contains(t) {
+			if vocab.ActorTypes.Match(t) {
 				actorTyp = append(actorTyp, t)
 			}
-			if vocab.ActivityTypes.Contains(t) {
+			if vocab.ActivityTypes.Match(t) {
 				activityTyp = append(activityTyp, t)
 			}
 			if strings.ToLower(string(t)) == strings.ToLower(string(vocab.ObjectType)) {
@@ -200,9 +200,9 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Ite
 		typ := it.GetType()
 
 		var partOf vocab.IRI
-		if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
+		if vocab.ActivityTypes.Match(typ) || vocab.IntransitiveActivityTypes.Match(typ) {
 			partOf = filters.ActivitiesType.IRI(base)
-		} else if vocab.ActorTypes.Contains(typ) || typ == vocab.ActorType {
+		} else if vocab.ActorTypes.Match(typ) || vocab.ActorType.Match(typ) {
 			partOf = filters.ActorsType.IRI(base)
 		} else {
 			partOf = filters.ObjectsType.IRI(base)
@@ -326,7 +326,7 @@ func (ctl *Base) DeleteObjects(reason string, inReplyTo []string, ids ...vocab.I
 		}
 		// NOTE(marius): this should work if "it" is a collection or a single object
 		_ = vocab.OnObject(it, func(o *vocab.Object) error {
-			if invalidRemoveTypes.Contains(o.GetType()) {
+			if invalidRemoveTypes.Match(o.GetType()) {
 				return nil
 			}
 			d.To = o.To

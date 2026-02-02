@@ -72,7 +72,7 @@ func (a AddActorCmd) Run(ctl *Base) error {
 		if err != nil {
 			return err
 		}
-		if !vocab.ActorTypes.Contains(a.Type) {
+		if !vocab.ActorTypes.Match(a.Type) {
 			a.Type = vocab.PersonType
 		}
 
@@ -195,13 +195,13 @@ func (a AddCmd) Run(ctl *Base) error {
 	f := make(filters.Checks, 0)
 
 	incType := a.Type
-	if !validObjects.Contains(incType) {
+	if !validObjects.Match(incType) {
 		return errors.Errorf("This command only supports only object of types %v", vocab.ObjectTypes)
 	} else {
 		incType = vocab.NoteType
 	}
 	prop := "title"
-	if vocab.ActorTypes.Contains(incType) {
+	if vocab.ActorTypes.Match(incType) {
 		prop = "name"
 	}
 
@@ -287,7 +287,7 @@ func (i ImportCmd) Run(ctl *Base) error {
 				_, _ = fmt.Fprintf(ctl.out, "Saving %s\n", it.GetID())
 
 				var err error
-				if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
+				if vocab.ActivityTypes.Match(typ) || vocab.IntransitiveActivityTypes.Match(typ) {
 					_ = vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
 						if a == nil {
 							Errf(ctl.err, "invalid activity, is nil: %s", it.GetLink())

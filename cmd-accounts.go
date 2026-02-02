@@ -48,7 +48,7 @@ func (e Export) Run(ctl *Base) error {
 
 	allMeta := make(map[vocab.IRI]auth.Metadata, len(items))
 	for _, it := range items {
-		if it.GetType() != vocab.PersonType {
+		if !vocab.PersonType.Match(it.GetType()) {
 			continue
 		}
 		m := new(auth.Metadata)
@@ -157,7 +157,7 @@ func (g GenKeys) Run(ctl *Base) error {
 		}
 
 		_ = vocab.OnActor(maybeActor, func(act *vocab.Actor) error {
-			if vocab.ActorTypes.Contains(act.Type) {
+			if vocab.ActorTypes.Match(act.Type) {
 				actors = append(actors, act)
 			}
 			return nil

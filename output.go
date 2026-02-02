@@ -24,12 +24,12 @@ func OutItem(it vocab.Item, b io.Writer) error {
 		return err
 	}
 	typ := it.GetType()
-	if vocab.ActivityTypes.Contains(typ) || vocab.IntransitiveActivityTypes.Contains(typ) {
+	if vocab.ActivityTypes.Match(typ) || vocab.IntransitiveActivityTypes.Match(typ) {
 		return vocab.OnActivity(it, func(a *vocab.Activity) error {
 			return outActivity(a, b)
 		})
 	}
-	if vocab.ActorTypes.Contains(typ) {
+	if vocab.ActorTypes.Match(typ) {
 		return vocab.OnActor(it, func(a *vocab.Actor) error {
 			return outActor(a, b)
 		})

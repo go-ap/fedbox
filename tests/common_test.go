@@ -790,9 +790,8 @@ func addHTTPSigAuth(req *http.Request, acc *testAccount) error {
 			err2 := signer.SignRequest(acc.PrivateKey, keyId, req, bodyBuf.Bytes())
 			if err2 == nil {
 				return nil
-			} else {
-				err = err2
 			}
+			err = err2
 		} else {
 			err = err1
 		}
@@ -800,6 +799,15 @@ func addHTTPSigAuth(req *http.Request, acc *testAccount) error {
 	return err
 }
 
+func typesToString(typ vocab.Typer) string {
+	if tt, ok := typ.(vocab.ActivityVocabularyType); ok {
+		return string(tt)
+	}
+	if tt, ok := typ.(vocab.ActivityVocabularyTypes); ok && len(tt) > 0 {
+		return string(tt[0])
+	}
+	return "unknown"
+}
 func signRequest(req *http.Request, acc *testAccount) error {
 	date, _ := time.Parse(time.RFC3339, "2019-01-23T01:23:45Z")
 	req.Header.Set("Date", date.UTC().Format(http.TimeFormat))

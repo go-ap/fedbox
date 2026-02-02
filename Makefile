@@ -26,7 +26,7 @@ GO ?= go
 APPSOURCES := $(wildcard ./*.go activitypub/*.go internal/*/*.go storage/*/*.go)
 ASSETFILES := $(wildcard templates/*)
 
-TAGS := $(ENV) storage_$(STORAGE) ssh
+TAGS := $(ENV),storage_$(STORAGE),ssh
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))

@@ -258,7 +258,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		})
 
 		status := http.StatusCreated
-		if it.GetType() == vocab.DeleteType {
+		if vocab.DeleteType.Match(it.GetType()) {
 			status = http.StatusGone
 		}
 

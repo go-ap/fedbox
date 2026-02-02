@@ -81,7 +81,7 @@ func tryCreateAllObjectsCollections(ctl *Base, actor vocab.Item) error {
 			}
 			_ = vocab.OnCollectionIntf(items, func(col vocab.CollectionInterface) error {
 				for _, it := range col.Collection() {
-					if vocab.ActorTypes.Contains(it.GetType()) {
+					if vocab.ActorTypes.Match(it.GetType()) {
 						allCollections = append(allCollections, getActorCollections(it)...)
 					} else {
 						if it.IsCollection() {

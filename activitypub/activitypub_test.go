@@ -67,7 +67,7 @@ func TestSelf(t *testing.T) {
 	if s.ID != vocab.ID(testURL) {
 		t.Errorf("Invalid ID %s, expected %s", s.ID, testURL)
 	}
-	if s.Type != vocab.ServiceType {
+	if !vocab.ServiceType.Match(s.Type) {
 		t.Errorf("Invalid Type %s, expected %s", s.Type, vocab.ServiceType)
 	}
 	if !s.Name.First().Equal(vocab.Content("self")) {

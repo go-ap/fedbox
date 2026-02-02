@@ -1055,7 +1055,7 @@ var CreateTests = testPairs{
 						},
 						obj: &objectVal{
 							id:  loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetID().String(),
-							typ: string(loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetType()),
+							typ: typesToString(loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetType()),
 						},
 					},
 				},
@@ -1101,7 +1101,7 @@ var CreateTests = testPairs{
 						typ: string(vocab.CreateType),
 						obj: &objectVal{
 							id:  loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetID().String(),
-							typ: string(loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetType()),
+							typ: typesToString(loadMockFromDisk("mocks/c2s/objects/note-1.json", nil).GetType()),
 						},
 					},
 				},
@@ -1148,7 +1148,7 @@ var CreateTests = testPairs{
 						typ: string(vocab.CreateType),
 						obj: &objectVal{
 							id:  loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-and-2.json", nil).GetID().String(),
-							typ: string(loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-and-2.json", nil).GetType()),
+							typ: typesToString(loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-and-2.json", nil).GetType()),
 						},
 					},
 				},
@@ -1208,7 +1208,7 @@ var CreateTests = testPairs{
 						typ: string(vocab.CreateType),
 						obj: &objectVal{
 							id:  loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-2-5.json", nil).GetID().String(),
-							typ: string(loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-2-5.json", nil).GetType()),
+							typ: typesToString(loadMockFromDisk("mocks/c2s/objects/note-replyTo-1-2-5.json", nil).GetType()),
 						},
 					},
 				},
