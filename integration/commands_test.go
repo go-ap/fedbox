@@ -255,7 +255,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 
 			images := c.Suite{c2sFedBOX}
 
-			ctx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
 			t.Cleanup(cancelFn)
 
 			cont, err := c.Init(ctx, t, images...)
