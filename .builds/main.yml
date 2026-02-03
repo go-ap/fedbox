@@ -38,8 +38,11 @@ tasks:
       set -a +x
       cd fedbox
       make coverage
-  - integration-new-fs: |
+  - integration-new-setup: |
       systemctl --user start podman.service
+      cd fedbox
+      make STORAGE=fs -C integration download || true
+  - integration-new-fs: |
       cd fedbox
       make STORAGE=fs -C integration test || true
   - integration-new-badger: |
