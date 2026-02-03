@@ -53,7 +53,10 @@ type image struct {
 }
 
 func (i image) initFns() []tc.ContainerCustomizer {
-	return []tc.ContainerCustomizer{WithImage(i.name), WithEnvFile(i.env)}
+	return []tc.ContainerCustomizer{WithImage(i.name), WithEnvFile(i.env), tc.WithMounts(tc.ContainerMount{
+		Source: tc.GenericTmpfsMountSource{},
+		Target: "/storage",
+	})}
 }
 
 func (i image) Start(ctx context.Context, t testing.TB) (tc.Container, error) {
