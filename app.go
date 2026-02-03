@@ -132,16 +132,9 @@ func New(ctl *Base) (*FedBOX, error) {
 		app.keyGenerator = ap.KeyGenerator(metaSaver, keysType)
 	}
 
-	if conf.BaseURL != "" {
-		selfIRI := ap.DefaultServiceIRI(conf.BaseURL)
-		if actor, err := ap.LoadActor(db, selfIRI); err == nil {
-			app.Service = actor
-		}
-		if key, err := db.LoadKey(selfIRI); err == nil {
-			app.ServicePrivateKey = key
-		}
+	if err := ctl.LoadServiceActor(); err != nil {
+		app.Logger.WithContext(lw.Ctx{"err": err, "iri": ctl.Conf.BaseURL}).Warnf("no root service exists")
 	}
-
 	app.debugMode.Store(conf.Env.IsDev())
 
 	app.R.Group(app.Routes())

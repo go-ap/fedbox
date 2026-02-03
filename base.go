@@ -232,7 +232,7 @@ func (ctl *Base) Saver(actor *vocab.Actor) processing.P {
 	return p
 }
 
-func (ctl *Base) AddActor(p *vocab.Actor, pw []byte, author vocab.Actor) (*vocab.Actor, error) {
+func (ctl *Base) AddActor(p *vocab.Actor, author vocab.Actor) (*vocab.Actor, error) {
 	if ctl == nil || ctl.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
@@ -552,7 +552,7 @@ func (ctl *Base) AddClient(pw []byte, redirectUris []string, u any) (string, err
 		PreferredUsername: vocab.DefaultNaturalLanguage(name),
 		URL:               urls,
 	}
-	app, err := ctl.AddActor(p, pw, self)
+	app, err := ctl.AddActor(p, self)
 	if err != nil {
 		return "", err
 	}
@@ -623,7 +623,7 @@ func CreateService(ctl *Base, self vocab.Item, pair *ap.KeyPair, pw []byte) (err
 	service.Published = time.Now().Truncate(time.Second).UTC()
 
 	ctl.Service = *service
-	service, err = ctl.AddActor(service, pw, *service)
+	service, err = ctl.AddActor(service, *service)
 	if err != nil {
 		return err
 	}

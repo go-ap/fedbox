@@ -12,6 +12,7 @@ import (
 	"git.sr.ht/~mariusor/storage-all"
 	"github.com/alecthomas/kong"
 	"github.com/go-ap/errors"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
 	"golang.org/x/crypto/ssh/terminal"
@@ -76,6 +77,25 @@ func InitControl(c *CTL, version string) (*Base, error) {
 	return &ct, nil
 }
 
+func (ctl *Base) LoadServiceActor() error {
+	if ctl.Conf.BaseURL == "" {
+		return errors.Errorf("No HOSTNAME configured for service")
+	}
+
+	selfIRI := ap.DefaultServiceIRI(ctl.Conf.BaseURL)
+	actor, err := ap.LoadActor(ctl.Storage, selfIRI)
+	if err != nil {
+		return err
+	}
+	key, err := ctl.Storage.LoadKey(selfIRI)
+	if err != nil {
+		return err
+	}
+	ctl.Service = actor
+	ctl.ServicePrivateKey = key
+	return nil
+}
+
 func NewBase(db storage.FullStorage, conf config.Options, l lw.Logger) (*Base, error) {
 	return &Base{
 		Conf:    conf,
@@ -92,7 +112,7 @@ func setup(ct *Base, options config.Options) error {
 	path := options.StoragePath
 	conf, err := config.Load(path, environ)
 	if err != nil {
-		return err
+		return errors.Annotatef(err, "failed to load %s files in path %s", environ, path)
 	}
 
 	var out io.WriteCloser
@@ -175,11 +195,13 @@ var _l atomic.Value
 
 func Errf(out io.Writer, s string, par ...any) {
 	ll := _l.Load()
-	if ll != nil {
-		if lll, ok := ll.(lw.Logger); ok {
-			zl := lw.ZeroLog(lll)
-			zl.Output(out)
-			lll.Errorf(s+"\n", par...)
-		}
+	if ll == nil {
+		_, _ = fmt.Fprintf(out, s+"\n", par...)
+		return
+	}
+	if lll, ok := ll.(lw.Logger); ok {
+		zl := lw.ZeroLog(lll)
+		zl.Output(out)
+		lll.Errorf(s+"\n", par...)
 	}
 }

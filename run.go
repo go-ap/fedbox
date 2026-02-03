@@ -36,10 +36,10 @@ func Run(args ...string) error {
 		kongDefaultVars,
 		kong.Bind(new(io.Writer)),
 	)
-
 	if err != nil {
 		return err
 	}
+
 	ctx, err := k.Parse(args)
 	if err != nil {
 		return err
@@ -49,7 +49,6 @@ func Run(args ...string) error {
 	if err != nil {
 		return err
 	}
-
 	cmd := ctx.Command()
 	switch cmd {
 	case "maintenance", "stop", "reload", "run":
@@ -62,6 +61,9 @@ func Run(args ...string) error {
 		}
 		if cmd != "storage bootstrap" {
 			if err = ctl.Storage.Open(); err != nil {
+				return err
+			}
+			if err = ctl.LoadServiceActor(); err != nil {
 				return err
 			}
 			defer ctl.Storage.Close()

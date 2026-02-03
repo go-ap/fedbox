@@ -22,7 +22,7 @@ func main() {
 		}
 	}
 	if err := fedbox.Run(os.Args[1:]...); err != nil {
-		fedbox.Errf(os.Stderr, "Error: %s", err.Error())
+		fedbox.Errf(os.Stderr, "%+v", err)
 		os.Exit(1)
 	}
 }

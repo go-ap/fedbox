@@ -94,8 +94,7 @@ func (a AddActorCmd) Run(ctl *Base) error {
 		if len(tags) > 0 {
 			p.Tag = tags
 		}
-		if p, err = ctl.AddActor(p, pw, author); err != nil {
-			//Errf("Error adding %s: %s\n", name, err)
+		if p, err = ctl.AddActor(p, author); err != nil {
 			return err
 		}
 		_, _ = fmt.Fprintf(ctl.out, "Added %q [%s]: %s\n", a.Type, name, p.GetLink())

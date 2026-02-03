@@ -228,7 +228,6 @@ func validateOptions(opts Options) error {
 	if opts.Storage == "" {
 		return errors.Errorf("invalid storage")
 	}
-
 	if lst := Getval("LISTEN", ""); len(lst) > 0 {
 		return errors.Newf("The \"%s=%s\" configuration option is no longer valid. Please use %q and %q for HTTP listeners or %q for sockets.", "LISTEN", lst, KeyListenHost, KeyHTTPPort, KeyListenPath)
 	}
