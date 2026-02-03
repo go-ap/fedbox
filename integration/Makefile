@@ -8,13 +8,13 @@ MAKEFLAGS += --no-builtin-rules
 ENV ?= dev
 STORAGE ?= all
 
-TAGS ?= ssh
+TAGS ?=
 
 ifneq ($(STORAGE),)
 TAGS := storage_$(STORAGE),$(TAGS)
 endif
 
-TEST_FLAGS ?= -timeout 60s -count=1 -tags '$(TAGS)'
+TEST_FLAGS ?= -timeout 60s -race -count=1 -tags '$(TAGS)'
 
 export DOCKER_HOST = unix:///run/user/$(shell id -u)/podman/podman.sock
 
