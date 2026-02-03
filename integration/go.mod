@@ -7,10 +7,11 @@ require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/go-ap/activitypub v0.0.0-20260102112410-54375d828154
 	github.com/go-ap/client v0.0.0-20260102113429-e43de2d4ea43
-	github.com/go-ap/fedbox v0.0.0-20260111095514-57b130fc5ef0
+	github.com/go-ap/errors v0.0.0-20251229095444-2702aa2d8569
+	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77
+	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.20.7
 	github.com/google/ko v0.18.1
-	github.com/joho/godotenv v1.5.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/testcontainers/testcontainers-go v0.40.0
 	golang.org/x/crypto v0.46.0
@@ -24,7 +25,6 @@ require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d // indirect
 	git.sr.ht/~mariusor/mask v0.0.0-20250114195353-98705a6977b7 // indirect
-	git.sr.ht/~mariusor/ssm v0.0.0-20250920150353-cc21fa885fda // indirect
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -78,6 +78,7 @@ require (
 	github.com/containerd/stargz-snapshotter/estargz v0.18.1 // indirect
 	github.com/coreos/go-oidc/v3 v3.17.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
+	github.com/creack/pty v1.1.24 // indirect
 	github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgraph-io/badger/v4 v4.9.0 // indirect
@@ -97,12 +98,8 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/go-ap/auth v0.0.0-20260109092107-38c0f9cf6659 // indirect
 	github.com/go-ap/cache v0.0.0-20260102112930-bfa197b487fb // indirect
-	github.com/go-ap/errors v0.0.0-20251229095444-2702aa2d8569 // indirect
 	github.com/go-ap/filters v0.0.0-20260102113139-8ad00475b09e // indirect
-	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77 // indirect
-	github.com/go-ap/processing v0.0.0-20260107160342-39d0c0ea7a97 // indirect
 	github.com/go-ap/storage-badger v0.0.0-20260102114145-aa5bc644359e // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260111150500-4f99d1adaa8b // indirect
 	github.com/go-ap/storage-fs v0.0.0-20260107121028-2811b990146e // indirect
@@ -139,7 +136,6 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/google/certificate-transparency-go v1.3.2 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
-	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.4 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
