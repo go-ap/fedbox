@@ -8,11 +8,10 @@ MAKEFLAGS += --no-builtin-rules
 ENV ?= dev
 STORAGE ?= all
 
-
 TAGS ?= ssh
 
 ifneq ($(STORAGE),)
-TAGS := storage_$(STORAGE) $(TAGS)
+TAGS := storage_$(STORAGE),$(TAGS)
 endif
 
 TEST_FLAGS ?= -timeout 60s -count=1 -tags '$(TAGS)'
