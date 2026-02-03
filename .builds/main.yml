@@ -33,7 +33,6 @@ tasks:
   - tests: |
       cd fedbox
       make test
-      cd integration && go mod tidy
   - coverage: |
       set -a +x
       cd fedbox
@@ -41,10 +40,10 @@ tasks:
   - integration-new-setup: |
       systemctl --user start podman.service
       cd fedbox
-      make STORAGE=fs -C integration download || true
+      make STORAGE=fs -C integration download
   - integration-new-fs: |
       cd fedbox
-      make STORAGE=fs -C integration test || true
+      make STORAGE=fs -C integration test
   - integration-new-badger: |
       cd fedbox
       make STORAGE=badger -C integration test || true
