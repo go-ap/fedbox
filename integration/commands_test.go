@@ -6,6 +6,7 @@ import (
 	"io"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
@@ -254,7 +255,9 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 
 			images := c.Suite{c2sFedBOX}
 
-			ctx := context.Background()
+			ctx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
+			t.Cleanup(cancelFn)
+
 			cont, err := c.Init(ctx, t, images...)
 			if err != nil {
 				t.Fatalf("unable to initialize containers: %s", err)
