@@ -34,13 +34,22 @@ tasks:
       cd fedbox
       make test
       cd integration && go mod tidy
-  - integration-new: |
+  - coverage: |
+      set -a +x
+      cd fedbox
+      make coverage
+  - integration-new-fs: |
       systemctl --user start podman.service
-
       cd fedbox
       make STORAGE=fs -C integration test || true
+  - integration-new-badger: |
+      cd fedbox
       make STORAGE=badger -C integration test || true
+  - integration-new-boltdb: |
+      cd fedbox
       make STORAGE=boltdb -C integration test || true
+  - integration-new-sqlite: |
+      cd fedbox
       make STORAGE=sqlite -C integration test || true
   - push_to_github: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
@@ -50,10 +59,6 @@ tasks:
       cd fedbox
       git remote add hub git@github.com:go-ap/fedbox
       git push hub --force --all
-  - coverage: |
-      set -a +x
-      cd fedbox
-      make coverage
   - integration-fs: |
       cd fedbox
       ./tools/run-tests.sh fs
