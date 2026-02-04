@@ -62,13 +62,15 @@ func (t *testReadWriter) Read(p []byte) (n int, err error) {
 
 func (t *testReadWriter) Write(p []byte) (n int, err error) {
 	if len(t.checkOutput) == 0 {
-		t.t.Fatalf("Output was provided, but no handler was provided in the test setup")
+		return 0, errors.Newf("output was provided, but no handler was provided in the test setup")
 	}
 	lines := bytes.Split(bytes.TrimSpace(p), []byte("\n"))
-	for _, line := range lines {
-		checker := t.checkOutput[0]
+	for i, line := range lines {
+		checker := t.checkOutput[i]
 		checker(t.t, line)
-		t.checkOutput = t.checkOutput[1:]
+	}
+	if len(t.checkOutput) >= len(lines) {
+		t.checkOutput = t.checkOutput[len(lines):]
 	}
 	return len(p), nil
 }
