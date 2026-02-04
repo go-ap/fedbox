@@ -62,7 +62,8 @@ func (t *testReadWriter) Read(p []byte) (n int, err error) {
 
 func (t *testReadWriter) Write(p []byte) (n int, err error) {
 	if len(t.checkOutput) == 0 {
-		return 0, errors.Newf("output was provided, but no handler was provided in the test setup")
+		t.t.Errorf("output was provided, but no handler was provided in the test setup")
+		return len(p), nil
 	}
 	lines := bytes.Split(bytes.TrimSpace(p), []byte("\n"))
 	for i, line := range lines {
