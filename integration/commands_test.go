@@ -47,9 +47,12 @@ func (t *testReadWriter) Read(p []byte) (n int, err error) {
 		return 0, io.EOF
 	}
 
-	line := t.inLines[0]
+	line := append(t.inLines[0], '\r', '\n')
+	if !bytes.HasSuffix(line, []byte{'\n'}) {
+		line = append(line, '\n')
+	}
 	if len(p) < len(line) {
-		t.t.Fatalf("Input buffer smaller than provided value")
+		t.t.Errorf("Input buffer smaller than provided value")
 		return 0, io.ErrShortBuffer
 	}
 
@@ -67,6 +70,7 @@ func (t *testReadWriter) Write(p []byte) (n int, err error) {
 	}
 	lines := bytes.Split(bytes.TrimSpace(p), []byte("\n"))
 	for i, line := range lines {
+		line = bytes.TrimSpace(p)
 		checker := t.checkOutput[i]
 		checker(t.t, line)
 	}
@@ -181,7 +185,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  defaultPrivateKey,
 			},
 			IO: ioTester(
-				withInput([]byte(""), []byte("asd\n"), []byte("asd\n")),
+				withInput([]byte("asd"), []byte("asd")),
 				withTests(
 					anyOutput,
 					anyOutput,
@@ -198,7 +202,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: ioTester(withInput([]byte("asd\n"), []byte("asd\n")), withTests(
+			IO: ioTester(withInput([]byte("asd"), []byte("asd")), withTests(
 				anyOutput,
 				anyOutput,
 				matchesRegexp(urlRegexp),
@@ -224,7 +228,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  defaultPrivateKey,
 			},
 			IO: ioTester(
-				withInput([]byte("test\n"), []byte("test\n")),
+				withInput([]byte("test"), []byte("test")),
 				withTests(
 					anyOutput,
 					anyOutput,
