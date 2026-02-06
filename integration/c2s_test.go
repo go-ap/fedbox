@@ -29,7 +29,8 @@ var (
 var service = ap.Actor(
 	ap.HasID("http://fedbox/"),
 	ap.HasType(vocab.ServiceType),
-	ap.HasName("self"),
+	ap.HasPreferredUsername("self"),
+	ap.HasName("FedBOX"),
 	ap.HasAttributedTo("https://github.com/mariusor"),
 	ap.HasAudience(vocab.PublicNS),
 	ap.HasContext("https://github.com/go-ap/fedbox"),

@@ -16,21 +16,22 @@ const (
 	ProjectURL   = vocab.IRI("https://github.com/go-ap/fedbox")
 )
 
-func Self(baseURL vocab.IRI) vocab.Service {
+func Self(baseURL vocab.IRI, name string) vocab.Service {
 	u, _ := baseURL.URL()
 	oauth := *u
 	oauth.Path = path.Join(oauth.Path, "oauth/")
 	s := vocab.Service{
-		ID:           baseURL,
-		Type:         vocab.ServiceType,
-		Name:         vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef("self")),
-		Context:      ProjectURL,
-		AttributedTo: developerURL,
-		Audience:     vocab.ItemCollection{vocab.PublicNS},
-		Content:      nil, //vocab.NaturalLanguageValues{{Ref: vocab.NilLangRef, Value: ""}},
-		Summary:      vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef("Generic ActivityPub service")),
-		Tag:          nil,
-		URL:          baseURL,
+		ID:                baseURL,
+		Type:              vocab.ServiceType,
+		Name:              vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef(name)),
+		PreferredUsername: vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef("self")),
+		Context:           ProjectURL,
+		AttributedTo:      developerURL,
+		Audience:          vocab.ItemCollection{vocab.PublicNS},
+		Content:           nil, //vocab.NaturalLanguageValues{{Ref: vocab.NilLangRef, Value: ""}},
+		Summary:           vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef("Generic ActivityPub service")),
+		Tag:               nil,
+		URL:               baseURL,
 		Endpoints: &vocab.Endpoints{
 			OauthAuthorizationEndpoint: vocab.IRI(fmt.Sprintf("%s/authorize", oauth.String())),
 			OauthTokenEndpoint:         vocab.IRI(fmt.Sprintf("%s/token", oauth.String())),

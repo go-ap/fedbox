@@ -62,7 +62,7 @@ func TestDefaultServiceIRI(t *testing.T) {
 
 func TestSelf(t *testing.T) {
 	testURL := "http://example.com:666"
-	s := Self(vocab.IRI(testURL))
+	s := Self(vocab.IRI(testURL), "fedbox")
 
 	if s.ID != vocab.ID(testURL) {
 		t.Errorf("Invalid ID %s, expected %s", s.ID, testURL)

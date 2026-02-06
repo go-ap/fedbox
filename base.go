@@ -296,7 +296,7 @@ func (ctl *Base) AddObject(p *vocab.Object, author vocab.Actor) (*vocab.Object, 
 
 func (ctl *Base) DeleteObjects(reason string, inReplyTo []string, ids ...vocab.IRI) error {
 	invalidRemoveTypes := append(append(vocab.ActivityTypes, vocab.IntransitiveActivityTypes...), vocab.TombstoneType)
-	self := ap.Self(vocab.IRI(ctl.Conf.BaseURL))
+	self := ap.Self(vocab.IRI(ctl.Conf.BaseURL), AppName)
 
 	d := new(vocab.Delete)
 	d.Type = vocab.DeleteType
@@ -527,7 +527,7 @@ const URISeparator = "\n"
 func (ctl *Base) AddClient(pw []byte, redirectUris []string, u any) (string, error) {
 	var id string
 
-	self := ap.Self(vocab.IRI(ctl.Conf.BaseURL))
+	self := ap.Self(vocab.IRI(ctl.Conf.BaseURL), AppName)
 	now := time.Now().UTC()
 	name := "oauth-client-app"
 	urls := make(vocab.ItemCollection, 0)
@@ -599,7 +599,7 @@ func (ctl *Base) Bootstrap(pw []byte, pair *ap.KeyPair) error {
 		return nil
 	}
 
-	actor := ap.Self(ap.DefaultServiceIRI(conf.BaseURL))
+	actor := ap.Self(ap.DefaultServiceIRI(conf.BaseURL), AppName)
 	// NOTE(marius): Storage needs to be closed for bootstrapping
 	ctl.Storage.Close()
 	if err := bootstrap(ctl, actor, ctl.Logger, pair, pw); err != nil {

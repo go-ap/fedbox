@@ -34,7 +34,7 @@ func (a AddActorCmd) Run(ctl *Base) error {
 		a.Names = append(a.Names, string(name))
 	}
 
-	author := ap.Self(vocab.IRI(ctl.Conf.BaseURL))
+	author := ap.Self(vocab.IRI(ctl.Conf.BaseURL), AppName)
 	if authIRI := a.AttributedTo; len(authIRI) > 0 {
 		act, err := ap.LoadActor(ctl.Storage, authIRI)
 		if err != nil {
