@@ -38,32 +38,28 @@ func diffErrs(want, got error) string {
 
 type testReadWriter struct {
 	t           *testing.T
-	inLines     [][]byte
+	input       []byte
 	checkOutput []testLineOutput
 }
 
 func (t *testReadWriter) Read(p []byte) (n int, err error) {
-	if len(t.inLines) == 0 {
+	if len(t.input) == 0 {
 		return 0, io.EOF
 	}
 
-	line := append(t.inLines[0], '\r', '\n')
-	if !bytes.HasSuffix(line, []byte{'\n'}) {
-		line = append(line, '\n')
+	if !(bytes.HasSuffix(t.input, []byte{'\n'}) || bytes.HasSuffix(t.input, []byte{'\n', '\r'})) {
+		t.input = append(t.input, '\n')
 	}
-	if len(p) < len(line) {
+	if len(p) < len(t.input) {
 		t.t.Errorf("Input buffer smaller than provided value")
 		return 0, io.ErrShortBuffer
 	}
-
-	t.inLines = t.inLines[1:]
-	for i, b := range line {
-		p[i] = b
-	}
-	return len(line), nil
+	cnt, err := io.Copy(bytes.NewBuffer(p), bytes.NewReader(t.input))
+	return int(cnt), err
 }
 
 func (t *testReadWriter) Write(p []byte) (n int, err error) {
+	t.t.Logf("OUT: %s", p)
 	if len(t.checkOutput) == 0 {
 		t.t.Errorf("output was provided, but no handler was provided in the test setup")
 		return len(p), nil
@@ -72,7 +68,7 @@ func (t *testReadWriter) Write(p []byte) (n int, err error) {
 	for i, line := range lines {
 		line = bytes.TrimSpace(p)
 		checker := t.checkOutput[i]
-		checker(t.t, line)
+		t.input = append(t.input, checker(t.t, line)...)
 	}
 	if len(t.checkOutput) >= len(lines) {
 		t.checkOutput = t.checkOutput[len(lines):]
@@ -82,57 +78,50 @@ func (t *testReadWriter) Write(p []byte) (n int, err error) {
 
 var _ io.ReadWriter = new(testReadWriter)
 
-type testLineOutput func(*testing.T, []byte)
+type testLineOutput func(*testing.T, []byte) []byte
 
-func anyOutput(t *testing.T, line []byte) {
+func anyOutput(t *testing.T, line []byte) []byte {
 	t.Logf("read %q", line)
+	return nil
 }
 
-func endOK(t *testing.T, line []byte) {
+func endOK(t *testing.T, line []byte) []byte {
 	ok := []byte("FedBOX SSH: OK")
 	if !bytes.Equal(line, ok) {
 		t.Errorf("Output line %q, expected: %q", line, ok)
 	}
+	return nil
 }
 
 var urlRegexp = regexp.MustCompile(`(http|https://[a-zA-Z0-9./-]+)`)
+var passRegexp = regexp.MustCompile(`.* password:`)
+
+func withInput(r testLineOutput, input string) testLineOutput {
+	return func(t *testing.T, line []byte) []byte {
+		// NOTE(marius): ignore any input returned by previous test
+		_ = r(t, line)
+		return append([]byte(input), []byte("\r\n")...)
+	}
+}
 
 func matchesRegexp(r *regexp.Regexp) testLineOutput {
-	return func(t *testing.T, line []byte) {
-		if matches := r.FindSubmatch(line); len(matches) > 1 {
-			return
+	return func(t *testing.T, line []byte) []byte {
+		if matches := r.FindSubmatch(line); len(matches) == 0 {
+			t.Errorf("The line %q did not contain the regex, %q", line, r)
 		}
-		t.Errorf("The line %q did not contain the regex, %q", line, r)
+		return nil
 	}
 }
 
-type testerInitFn func(writer *testReadWriter)
-
-func withInput(lines ...[]byte) testerInitFn {
-	return func(w *testReadWriter) {
-		w.inLines = lines
+func withTests(testFns ...testLineOutput) testIO {
+	tt := testReadWriter{
+		checkOutput: testFns,
 	}
-}
-func withTests(testFns ...testLineOutput) testerInitFn {
-	return func(w *testReadWriter) {
-		w.checkOutput = testFns
-	}
-}
 
-func ioTester(fns ...testerInitFn) func(*testing.T) *testReadWriter {
-	tt := tester(fns...)
 	return func(t *testing.T) *testReadWriter {
 		tt.t = t
-		return tt
+		return &tt
 	}
-}
-
-func tester(fns ...testerInitFn) *testReadWriter {
-	tt := testReadWriter{}
-	for _, fn := range fns {
-		fn(&tt)
-	}
-	return &tt
 }
 
 type testIO func(*testing.T) *testReadWriter
@@ -154,7 +143,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  defaultPrivateKey,
 			},
 			// NOTE(marius): this is strange. The output should actually be the
-			IO: ioTester(withTests(endOK)),
+			IO: withTests(endOK),
 		},
 		{
 			Name: "reload",
@@ -164,7 +153,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: ioTester(withTests(endOK)),
+			IO: withTests(endOK),
 		},
 		{
 			Name: "maintenance",
@@ -174,7 +163,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: ioTester(withTests(endOK)),
+			IO: withTests(endOK),
 		},
 		{
 			Name: "pub actor add",
@@ -184,14 +173,10 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: ioTester(
-				withInput([]byte("asd"), []byte("asd")),
-				withTests(
-					anyOutput,
-					anyOutput,
-					matchesRegexp(urlRegexp),
-					endOK,
-				),
+			IO: withTests(
+				withInput(matchesRegexp(passRegexp), "asd"),
+				matchesRegexp(urlRegexp),
+				endOK,
 			),
 		},
 		{
@@ -202,12 +187,10 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: ioTester(withInput([]byte("asd"), []byte("asd")), withTests(
-				anyOutput,
-				anyOutput,
+			IO: withTests(
+				withInput(matchesRegexp(passRegexp), "asd"),
 				matchesRegexp(urlRegexp),
 				endOK),
-			),
 		},
 		{
 			Name: "storage bootstrap",
@@ -217,7 +200,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: ioTester(withTests(endOK)),
+			IO: withTests(endOK),
 		},
 		{
 			Name: "password change",
@@ -227,13 +210,9 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: ioTester(
-				withInput([]byte("test"), []byte("test")),
-				withTests(
-					anyOutput,
-					anyOutput,
-					endOK,
-				),
+			IO: withTests(
+				withInput(matchesRegexp(passRegexp), "asd"),
+				endOK,
 			),
 		},
 		{
@@ -244,7 +223,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: ioTester(withTests(endOK)),
+			IO: withTests(endOK),
 		},
 	}
 
