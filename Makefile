@@ -13,7 +13,7 @@ VERSION ?= HEAD
 
 LDFLAGS ?= -X github.com/go-ap/fedbox/internal/cmd.AppVersion=$(VERSION)
 BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)' -tags "$(TAGS)"
-TEST_FLAGS ?= -count=1 -tags "$(TAGS)"
+TEST_FLAGS ?= -timeout 45s -count=1 -tags "$(TAGS)"
 
 UPX = upx
 M4 = m4
