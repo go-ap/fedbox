@@ -87,6 +87,7 @@ func HasCode(c int) resInitFn {
 		res.code = c
 	}
 }
+
 func HasItem(it vocab.Item) resInitFn {
 	return func(res *output) {
 		res.it = it

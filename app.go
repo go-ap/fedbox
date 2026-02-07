@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"syscall"
 
@@ -202,6 +203,10 @@ func (f *FedBOX) reload() (err error) {
 	return err
 }
 
+func IsProxyURL(i vocab.IRI) bool {
+	return strings.ToLower(filepath.Base(i.String())) == strings.ToLower("proxyUrl")
+}
+
 func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, receivedIn vocab.IRI) vocab.Actor {
 	// NOTE(marius): if the Storage is nil, we can still use the remote client in the load function
 	isLocalFn := func(iri vocab.IRI) bool {
@@ -222,7 +227,7 @@ func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, recei
 	switch {
 	case processing.IsInbox(receivedIn):
 		ar = auth.HTTPSignatureResolver(cl, initFns...)
-	case processing.IsOutbox(receivedIn):
+	case processing.IsOutbox(receivedIn) || IsProxyURL(receivedIn):
 		ar = auth.OAuth2Resolver(cl, initFns...)
 	default:
 		ar = auth.Resolver(cl, initFns...)

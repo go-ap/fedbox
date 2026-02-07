@@ -175,6 +175,16 @@ func HasPreferredUsername(n string) func(*a) error {
 	}
 }
 
+func HasProxyURL(i iri) func(*a) error {
+	return func(act *a) error {
+		if act.Endpoints == nil {
+			act.Endpoints = new(ep)
+		}
+		act.Endpoints.ProxyURL = i
+		return nil
+	}
+}
+
 func HasSharedInbox(i iri) func(*a) error {
 	return func(act *a) error {
 		if act.Endpoints == nil {

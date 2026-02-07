@@ -42,6 +42,7 @@ var service = ap.Actor(
 	ap.HasPublicKey(defaultPublicKey),
 	ap.HasAuthEp("http://fedbox/oauth/authorize"),
 	ap.HasTokenEp("http://fedbox/oauth/token"),
+	ap.HasProxyURL("http://fedbox/proxyUrl"),
 )
 
 var admin1 = ap.Actor(
@@ -56,6 +57,7 @@ var admin1 = ap.Actor(
 	ap.HasAuthEp("https://fedbox/actors/1/oauth/authorize"),
 	ap.HasTokenEp("https://fedbox/actors/1/oauth/token"),
 	ap.HasSharedInbox("https://fedbox/inbox"),
+	ap.HasProxyURL("https://fedbox/proxyUrl"),
 )
 
 var actor2 = ap.Actor(

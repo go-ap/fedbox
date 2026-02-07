@@ -323,3 +323,44 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 		return vocab.CleanRecipients(it), err
 	}
 }
+
+// ProxyURL
+// Endpoint URI so this actor's clients may access remote ActivityStreams objects which require authentication to access.
+// To use this endpoint, the client posts an x-www-form-urlencoded id parameter with the value being the id of the
+// requested ActivityStreams object.
+//
+// https://www.w3.org/TR/activitypub/#proxyUrl
+func ProxyURL(fb *FedBOX) http.Handler {
+	if fb == nil {
+		return processing.ItemHandlerFn(outOfOrderItemHandler)
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if ct := r.Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
+			errors.HandleError(errors.UnsupportedMediaTypef("content type is not supported by the proxy")).ServeHTTP(w, r)
+			return
+		}
+		id := r.FormValue("id")
+		if id == "" {
+			errors.HandleError(errors.NotFoundf(`invalid 'id' value for proxy retrieval`)).ServeHTTP(w, r)
+			return
+		}
+
+		// NOTE(marius): if we can load a valid actor from the request, we use it for fetching the/
+		// remote resource pointed at by "id"
+		authorized := fb.actorFromRequestWithClient(r, ActorClient(fb.Base, vocab.PublicNS), vocab.IRI(id))
+		cl := ActorClient(fb.Base, authorized)
+		res, err := cl.Get(id)
+		if err != nil {
+			errors.HandleError(errors.NotFoundf(`invalid 'id' value for proxy retrieval`)).ServeHTTP(w, r)
+			return
+		}
+		defer res.Body.Close()
+		fb.Logger.WithContext(lw.Ctx{"original": id, "for": authorized.ID}).Infof("request proxied successfully")
+
+		w.WriteHeader(res.StatusCode)
+		for k := range res.Header {
+			w.Header().Set(k, res.Header.Get(k))
+		}
+		_, _ = io.Copy(w, res.Body)
+	})
+}

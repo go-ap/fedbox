@@ -1,9 +1,7 @@
 package ap
 
 import (
-	"fmt"
 	"net/url"
-	"path"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
@@ -17,9 +15,7 @@ const (
 )
 
 func Self(baseURL vocab.IRI, name string) vocab.Service {
-	u, _ := baseURL.URL()
-	oauth := *u
-	oauth.Path = path.Join(oauth.Path, "oauth/")
+	oauth := baseURL.AddPath("oauth")
 	s := vocab.Service{
 		ID:                baseURL,
 		Type:              vocab.ServiceType,
@@ -33,8 +29,9 @@ func Self(baseURL vocab.IRI, name string) vocab.Service {
 		Tag:               nil,
 		URL:               baseURL,
 		Endpoints: &vocab.Endpoints{
-			OauthAuthorizationEndpoint: vocab.IRI(fmt.Sprintf("%s/authorize", oauth.String())),
-			OauthTokenEndpoint:         vocab.IRI(fmt.Sprintf("%s/token", oauth.String())),
+			OauthAuthorizationEndpoint: oauth.AddPath("authorize"),
+			OauthTokenEndpoint:         oauth.AddPath("token"),
+			ProxyURL:                   baseURL.AddPath("proxyUrl"),
 		},
 	}
 
