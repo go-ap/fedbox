@@ -323,3 +323,66 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 		return vocab.CleanRecipients(it), err
 	}
 }
+
+// ProxyURL
+// Endpoint URI so this actor's clients may access remote ActivityStreams objects which require authentication to access.
+// To use this endpoint, the client posts an x-www-form-urlencoded id parameter with the value being the id of the
+// requested ActivityStreams object.
+//
+// https://www.w3.org/TR/activitypub/#proxyUrl
+func ProxyURL(fb *FedBOX) processing.ItemHandlerFn {
+	if fb == nil {
+		return outOfOrderItemHandler
+	}
+	return func(r *http.Request) (vocab.Item, error) {
+		iri := vocab.IRI(r.FormValue("id"))
+		if iri == "" {
+			return nil, errors.NotFoundf("invalid id value for proxy retrieval")
+		}
+
+		authorized := fb.actorFromRequestWithClient(r, ActorClient(fb.Base, vocab.PublicNS), iri)
+		cacheKey := CacheKey(fb, authorized, *r)
+
+		it := fb.caches.Load(cacheKey)
+		fromCache := !vocab.IsNil(it)
+
+		what := r.URL.Path
+
+		var err error
+		if !fromCache {
+			cl := ActorClient(fb.Base, authorized)
+			it, err = cl.LoadIRI(iri)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if vocab.IsItemCollection(it) {
+			err = vocab.OnCollectionIntf(it, func(col vocab.CollectionInterface) error {
+				if col.Count() == 0 {
+					return errors.NotFoundf("%s not found", what)
+				}
+
+				if col.Count() > 1 {
+					return errors.Conflictf("Too many %s found", what)
+				}
+				it = col.Collection().First()
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if !fromCache {
+			fb.caches.Store(cacheKey, it)
+		} else {
+			// NOTE(marius): signal the [processing.CollectionHandlerFn]
+			// that the collection was loaded from cache.
+			err = processing.NotModified
+		}
+
+		// Remove bcc and bto
+		return vocab.CleanRecipients(it), err
+	}
+}

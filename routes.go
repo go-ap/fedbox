@@ -45,6 +45,7 @@ func (f *FedBOX) Routes() func(chi.Router) {
 
 		r.Method(http.MethodGet, "/", HandleItem(f))
 		r.Method(http.MethodHead, "/", HandleItem(f))
+		r.Method(http.MethodPost, "/proxyUrl", ProxyURL(f))
 		// TODO(marius): we can separate here the FedBOX specific collections from the ActivityPub spec ones
 		//   using some regular expressions
 		//   Eg: "/{collection:(inbox|outbox|followed)}"
