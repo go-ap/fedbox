@@ -59,7 +59,9 @@ func (ctl *Base) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto
 	if ctl.Service.GetLink().Equal(actorIRI) && ctl.ServicePrivateKey != nil {
 		return &ctl.Service, ctl.ServicePrivateKey, nil
 	}
-	signActorID := ctl.Service.ID
+	signActorID := actorIRI
+	fallbackActor := &ctl.Service
+	fallbackKey := ctl.ServicePrivateKey
 
 	var signActor *vocab.Actor = &ctl.Service
 	if maybeActorID, col := vocab.Split(actorIRI); filters.ValidCollection(col) {
@@ -68,11 +70,11 @@ func (ctl *Base) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto
 
 	it, err := ctl.Storage.Load(signActorID)
 	if err != nil {
-		return signActor, nil, err
+		return fallbackActor, fallbackKey, err
 	}
 	act, err := vocab.ToActor(it)
 	if err != nil {
-		return signActor, nil, err
+		return fallbackActor, fallbackKey, err
 	}
 	signActor = act
 
@@ -157,9 +159,19 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 	ll := ctl.Logger
 	if !auth.AnonymousActor.GetLink().Equal(actor.GetLink()) {
 		ll = ll.WithContext(lw.Ctx{"log": "HTTP-Sig", "actor": actor.GetLink()})
-		signActor, prv, err := ctl.LoadLocalActorWithKey(actor.GetLink())
+		var signActor *vocab.Actor
+		var prv crypto.PrivateKey
+		var err error
+		if vocab.IsObject(actor) {
+			signActor, err = vocab.ToActor(actor)
+			if err == nil {
+				prv, err = ctl.Storage.LoadKey(actor.GetLink())
+			}
+		} else {
+			signActor, prv, err = ctl.LoadLocalActorWithKey(actor.GetLink())
+		}
 		if err != nil {
-			ll.WithContext(lw.Ctx{"err": err}).Debugf("unable to load a valid actor for signing requests")
+			ll.WithContext(lw.Ctx{"err": err}).Debugf("unable to load a valid actor and key for signing requests")
 		}
 		if prv != nil && signActor != nil {
 			tr = s2s.New(s2s.WithActor(signActor, prv), s2s.WithLogger(ll))

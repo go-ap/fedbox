@@ -14,13 +14,13 @@ require (
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/charmbracelet/wish v1.4.7
 	github.com/go-ap/activitypub v0.0.0-20260208110334-902f6cf8c2cc
-	github.com/go-ap/auth v0.0.0-20260209093110-33c0457f0528
+	github.com/go-ap/auth v0.0.0-20260209105202-3d7ef419f21b
 	github.com/go-ap/cache v0.0.0-20260208110517-9ae26d9d036b
-	github.com/go-ap/client v0.0.0-20260209092950-04b862f57f56
+	github.com/go-ap/client v0.0.0-20260209104958-52253d42d1b0
 	github.com/go-ap/errors v0.0.0-20260208110149-e1b309365966
 	github.com/go-ap/filters v0.0.0-20260208110534-2b07661eb286
 	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77
-	github.com/go-ap/processing v0.0.0-20260209093134-3d2e8d00f248
+	github.com/go-ap/processing v0.0.0-20260209105220-7e6bf1e8db14
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0

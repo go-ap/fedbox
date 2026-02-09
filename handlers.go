@@ -355,7 +355,7 @@ func ProxyURL(fb *FedBOX) http.Handler {
 			return
 		}
 		defer res.Body.Close()
-		fb.Logger.WithContext(lw.Ctx{"original": id, "for": authorized.ID}).Infof("request proxied successfully")
+		fb.Logger.WithContext(lw.Ctx{"iri": id, "actor": authorized.ID, "status": res.Status}).Infof("request proxied successfully")
 
 		w.WriteHeader(res.StatusCode)
 		for k := range res.Header {
