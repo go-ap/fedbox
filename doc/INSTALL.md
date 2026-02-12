@@ -70,10 +70,10 @@ handle /oauth/* {
 }
 ```
 
-## Allowing for WebFinger actor discovery
+## WebFinger actor discovery
 
 Similarly to how OAuth2 is handled by a different service that uses the same storage backend as FedBOX, for providing
-web-finger (and other .well-known end-points) we have a [different microservice](https://github.com/go-ap/webfinger?tab=readme-ov-file#webfinger-handlers-on-top-of-go-activitypub-storage).
+web-finger we have a different [microservice for .well-known](https://github.com/go-ap/webfinger?tab=readme-ov-file#webfinger-handlers-on-top-of-go-activitypub-storage) end-points.
 
 It can also be run with the same configuration `.env` file as FedBOX.
 
@@ -88,4 +88,4 @@ handle /.well-known/* {
 
 ## Containers
 
-See the [containers](../images/README.md) document for details about how to build podman/docker images or use the ready made ones.
+See the [containers](../images/README.md) document for details about how to build podman/docker images or use the existing ones.
