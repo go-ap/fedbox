@@ -61,7 +61,8 @@ Besides the filters applicable to Object collections we have also:
 
 # The filtering
 
-Filtering collections is done using query parameters corresponding to the snakeCased value of the property's name it matches against.
+Filtering collections is done using query parameters corresponding to the property name it matches against.
+For a formalized document about this mechanism see FEP-6606.
 
 For end-points that return collection of activities, filtering can be done on the activity's actor/object/target properties 
 by composing the filter name with a matching prefix for the child property:
@@ -90,5 +91,6 @@ For date based properties
 * `key=<value` - match everything that has `key` property before the `value`
 ___
 
-[1] See ActivityPub spec: https://www.w3.org/TR/activitypub/#client-to-server-interactions  
-[2] See RFC3987: https://tools.ietf.org/html/rfc3987  
+[1] See the [ActivityPub spec](https://www.w3.org/TR/activitypub/#client-to-server-interactions) document  
+[2] See [RFC3987](https://tools.ietf.org/html/rfc3987)  
+[3] See [FEP-6606](https://codeberg.org/fediverse/fep/src/branch/main/fep/6606/fep-6606.md)  
