@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<svg
+    id="uuid-0fe668d0-0dce-470e-8328-056c7d663f25"
+    viewBox="0 0 780.26 134.35"
+    version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:svg="http://www.w3.org/2000/svg"
+    xmlns:cc="http://creativecommons.org/ns#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:osb="http://www.openswatchbook.org/uri/2009/osb"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+>
+<metadata> <rdf:RDF> <cc:Work rdf:about=""> <dc:format
+                >image/svg+xml</dc:format> <dc:type
+                    rdf:resource="http://purl.org/dc/dcmitype/StillImage"
+                /> <dc:title>GoActivityPub logo</dc:title> <cc:license
+                    rdf:resource="https://creativecommons.org/licenses/by-sa/4.0/"
+                /> <dc:date>2026-01-14</dc:date> <dc:creator> <cc:Agent
+                    > <dc:title
+                        >Andy Carolan</dc:title> </cc:Agent> </dc:creator> <dc:subject
+                > <rdf:Bag> <rdf:li
+                        >GoActivityPub</rdf:li> </rdf:Bag> </dc:subject> </cc:Work> <cc:License
+                rdf:about="https://creativecommons.org/licenses/by-sa/4.0/"
+            > <cc:permits
+                    rdf:resource="https://creativecommons.org/ns#Sharing"
+                /> <cc:permits
+                    rdf:resource="https://creativecommons.org/ns#Distribution"
+                /> <cc:permits
+                    rdf:resource="https://creativecommons.org/ns#DerivativeWorks"
+                /> <cc:requirs
+                    rdf:resource="https://creativecommons.org/ns#Attribution"
+                /> <cc:requirs
+                    rdf:resource="https://creativecommons.org/ns#ShareAlike"
+                /> </cc:License> </rdf:RDF> </metadata>
+  <defs id="defs1">
+    <style
+            id="style1"
+        >.uuid-dd1c1040-cf9a-416c-babb-fb1306c505c9{fill:#263238;}</style>
+  </defs>
+  <g id="uuid-ded6d3d9-6ef2-4b90-b5b6-075c0d166601">
+    <path
+            class="uuid-dd1c1040-cf9a-416c-babb-fb1306c505c9"
+            d="M 0,4.89 H 58.86 V 22.54 H 22.03 V 41.6 H 49.59 V 58.73 H 22.03 V 95.31 H 0 Z m 98.4,91.45 c -21.12,0 -36.32,-14.17 -36.32,-36.96 0,-22.79 14.94,-36.97 36.32,-36.97 21.38,0 35.81,13.91 35.81,35.81 0,2.06 -0.13,4.25 -0.39,6.44 H 83.97 c 0.77,9.4 6.57,13.78 13.65,13.78 6.18,0 9.66,-3.09 11.46,-6.96 h 23.44 C 129.04,85.52 116.29,96.34 98.39,96.34 Z M 84.1,52.42 h 27.56 c 0,-7.86 -6.18,-12.36 -13.52,-12.36 -7.34,0 -12.75,4.38 -14.04,12.36 z m 89,-30.01 c 9.53,0 17.77,4.38 22.15,10.95 V 0 h 22.03 v 95.31 h -22.03 v -10.3 c -3.99,6.57 -11.59,11.33 -22.15,11.33 -17.65,0 -31.68,-14.43 -31.68,-37.09 0,-22.66 14.04,-36.84 31.68,-36.84 z m 6.44,19.19 c -8.24,0 -15.71,6.18 -15.71,17.65 0,11.47 7.47,17.9 15.71,17.9 8.24,0 15.71,-6.31 15.71,-17.77 0,-11.46 -7.34,-17.77 -15.71,-17.77 z m 93.82,53.71 H 231.24 V 4.89 h 40.7 c 18.42,0 29.37,9.14 29.37,23.44 0,10.95 -6.57,18.03 -15.33,20.61 10.56,2.19 17.39,11.46 17.39,21.77 0,14.94 -10.95,24.6 -30.01,24.6 z M 267.7,22.54 h -14.42 v 18.93 h 14.42 c 7.21,0 11.21,-3.22 11.21,-9.4 0,-6.18 -3.99,-9.53 -11.21,-9.53 z m 1.54,35.03 h -15.97 v 19.96 h 16.23 c 7.34,0 11.59,-3.35 11.59,-9.79 0,-6.44 -4.51,-10.17 -11.85,-10.17 z m 87.65,38.64 c -25.63,0 -46.5,-19.19 -46.5,-46.37 0,-27.18 20.86,-46.23 46.5,-46.23 25.64,0 46.24,19.06 46.24,46.24 0,27.18 -20.61,46.37 -46.24,46.37 z m 0,-20.09 c 14.43,0 23.83,-10.43 23.83,-26.27 0,-15.84 -9.4,-26.28 -23.83,-26.28 -14.43,0 -23.96,10.17 -23.96,26.28 0,16.11 9.27,26.27 23.96,26.27 z m 86.96,-8.5 -16.23,27.69 H 402.63 L 431.61,49.33 401.99,4.89 h 25.63 L 445.78,32.2 461.75,4.89 h 24.99 L 458.02,50.48 487.9,95.3 H 462.27 L 443.85,67.61 Z m 192,26.23 -87.65,-50.6 v 40.5 l 87.65,50.61 144.41,-83.25 V 10.6 Z m 45.67,-85.39 -4.28,-2.47 -49.28,28.45 4.28,2.47 z m -39.79,33.93 49.28,-28.45 -4.28,-2.47 -49.28,28.45 z m 9.49,5.48 49.28,-28.45 -4.28,-2.47 -49.28,28.45 z m -46.94,-4.7 -20.22,-11.67 -20.34,11.75 20.22,11.67 z"
+            id="path1"
+            style="fill:#4f5e65;fill-opacity:1"
+        />
+  </g>
+</svg>

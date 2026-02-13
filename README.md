@@ -4,6 +4,8 @@
 [![Build Status](https://builds.sr.ht/~mariusor/fedbox.svg)](https://builds.sr.ht/~mariusor/fedbox)
 [![Go Report Card](https://goreportcard.com/badge/github.com/go-ap/fedbox)](https://goreportcard.com/report/github.com/go-ap/fedbox)
 
+![FedBOX Logo](./doc/logo.svg)
+
 FedBOX is a simple ActivityPub enabled server. Its goal is to serve as a reference implementation for the rest of the [GoActivityPub](https://github.com/go-ap) packages.
 
 It provides the base for some of the common functionality that such a service would require, such as: HTTP handlers and middlewares, storage and filtering etc.
