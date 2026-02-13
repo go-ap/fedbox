@@ -21,12 +21,13 @@ The current iteration can persist data to [BoltDB](https://go.etcd.io/bbolt), [B
  * Appreciation activities: `Like`, `Dislike`.
  * Reaction activities: `Block` on actors, `Flag` on objects.
  * Negating content management and appreciation activities using `Undo`.
- * OAuth2 authentication
+ * OAuth2 authentication using the [Authorize](https://git.sr.ht/~mariusor/authorize) server.
 
 ### Support for S2S ActivityPub
 
  * Support the same operations as the client to server activities.
  * Capabilities of generating and loading HTTP Signatures from requests.
+ * WebFinger user discovery using the [WebFinger](https://git.sr.ht/~mariusor/webfinger) server.
 
 ## Installation
 
