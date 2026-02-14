@@ -355,12 +355,24 @@ func ProxyURL(fb *FedBOX) http.Handler {
 			return
 		}
 		defer res.Body.Close()
-		fb.Logger.WithContext(lw.Ctx{"iri": id, "actor": authorized.ID, "status": res.Status}).Infof("request proxied successfully")
+
+		lCtx := lw.Ctx{"iri": id, "actor": authorized.ID}
+		ll := fb.Logger.WithContext(lCtx, lw.Ctx{"status": res.Status})
+		logFn := ll.Infof
+		if res.StatusCode > http.StatusOK {
+			logFn = ll.Warnf
+		}
+		logFn("request proxied")
+
+		for k, v := range res.Header {
+			for _, vv := range v {
+				w.Header().Set(k, vv)
+			}
+		}
 
 		w.WriteHeader(res.StatusCode)
-		for k := range res.Header {
-			w.Header().Set(k, res.Header.Get(k))
+		if _, err = io.Copy(w, res.Body); err != nil {
+			ll.WithContext(lw.Ctx{"err": err}).Warnf("unable to passthrough the response body")
 		}
-		_, _ = io.Copy(w, res.Body)
 	})
 }
