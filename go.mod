@@ -14,13 +14,13 @@ require (
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/charmbracelet/wish v1.4.7
 	github.com/go-ap/activitypub v0.0.0-20260208110334-902f6cf8c2cc
-	github.com/go-ap/auth v0.0.0-20260210135722-c02cfe2ee69d
+	github.com/go-ap/auth v0.0.0-20260215143206-f7126894ccae
 	github.com/go-ap/cache v0.0.0-20260208110517-9ae26d9d036b
-	github.com/go-ap/client v0.0.0-20260210135407-296d51fcfc4d
+	github.com/go-ap/client v0.0.0-20260215151109-4ba4c3524026
 	github.com/go-ap/errors v0.0.0-20260208110149-e1b309365966
 	github.com/go-ap/filters v0.0.0-20260208110534-2b07661eb286
 	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77
-	github.com/go-ap/processing v0.0.0-20260210135815-af67007da5c9
+	github.com/go-ap/processing v0.0.0-20260215151322-2cc2c263e0ac
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -98,7 +98,7 @@ require (
 	go.opentelemetry.io/otel v1.40.0 // indirect
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
-	golang.org/x/exp v0.0.0-20260209203927-2842357ff358 // indirect
+	golang.org/x/exp v0.0.0-20260212183809-81e46e3db34a // indirect
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
