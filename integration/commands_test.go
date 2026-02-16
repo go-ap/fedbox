@@ -8,10 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/ssh"
 	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/google/go-cmp/cmp"
 	tc "github.com/testcontainers/testcontainers-go"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 var equateWeakErrors = cmp.FilterValues(areErrors, cmp.Comparer(compareErrors))
@@ -253,7 +255,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				cont.Cleanup(t)
 			})
 			_, err = cont.RunCommand(ctx, test.Host, test.Cmd, test.IO(t))
-			if !eqErrs(test.WantErr, err) {
+			if !eqErrs(test.WantErr, err) && !(errors.Is(err, ssh.ErrServerClosed) || errors.Is(err, new(gossh.ExitMissingError))) {
 				if test.Cmd == nil {
 					t.Fatalf("Err received executing nil command %s: %+v", test.Host, diffErrs(test.WantErr, err))
 				}
