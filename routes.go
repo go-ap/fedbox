@@ -60,7 +60,7 @@ func (f *FedBOX) Routes() func(chi.Router) {
 		}
 		r.Mount("/debug", debugMw())
 
-		r.Handle("/favicon.ico", errors.NotFound)
+		r.Get("/favicon.ico", ServeFavIcon())
 		r.NotFound(errors.NotFound.ServeHTTP)
 		r.MethodNotAllowed(errors.HandleError(errors.MethodNotAllowedf("method not allowed")).ServeHTTP)
 	}
