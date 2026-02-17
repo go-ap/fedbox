@@ -81,7 +81,10 @@ type ioTestFn func(*testing.T) *ioTest
 
 type RunnableTest interface {
 	Label() string
+	// Run is one way to run the tests directly from a func(*testing.T)
 	Run(context.Context, c.Running, *testing.T)
+	// Fn is a way to pass the test fn directly to testing.T.Run()
+	Fn(context.Context, c.Running) func(*testing.T)
 }
 
 type CommandTest struct {
@@ -94,6 +97,12 @@ type CommandTest struct {
 
 func (c CommandTest) Label() string {
 	return c.Name
+}
+
+func (c CommandTest) Fn(ctx context.Context, mocks c.Running) func(t *testing.T) {
+	return func(t *testing.T) {
+		c.Run(ctx, mocks, t)
+	}
 }
 
 func (c CommandTest) Run(ctx context.Context, mocks c.Running, t *testing.T) {

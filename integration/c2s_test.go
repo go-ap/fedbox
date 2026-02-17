@@ -152,8 +152,43 @@ func Test_Fetch(t *testing.T) {
 	})
 
 	for _, test := range toRun {
-		t.Run(test.Name, func(t *testing.T) {
-			test.Run(ctx, cont, t)
-		})
+		t.Run(test.Name, test.Fn(ctx, cont))
+	}
+}
+
+func Test_MoreComplicated(t *testing.T) {
+	t.Skipf("")
+	toRun := []tests.RunnableTest{
+		tests.HTTPTest{
+			Name: "",
+			//Request:   ,
+			//Response:  ,
+		},
+	}
+
+	var c2sFedBOX = c.C2SfedBOX(
+		c.WithEnv(defaultC2SEnv),
+		c.WithImageName(fedBOXImageName),
+		c.WithKey(defaultPrivateKey),
+		c.WithUser(service.ID),
+		c.WithPw(defaultPassword),
+		c.WithItems(admin1),
+		//c.WithCmds(c.SSHCmd{}),
+	)
+
+	images := c.Suite{c2sFedBOX}
+
+	ctx := context.Background()
+	cont, err := c.Init(ctx, t, images...)
+	if err != nil {
+		t.Fatalf("unable to initialize containers: %s", err)
+	}
+
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	for _, test := range toRun {
+		t.Run(test.Label(), test.Fn(ctx, cont))
 	}
 }

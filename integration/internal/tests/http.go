@@ -11,7 +11,7 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
-	"github.com/go-ap/fedbox/integration/internal/containers"
+	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/jsonld"
 	"github.com/google/go-cmp/cmp"
 )
@@ -23,7 +23,7 @@ type testRequest struct {
 	body    io.Reader
 }
 
-func (req *testRequest) build(ctx context.Context, mocks containers.Running) (*http.Request, error) {
+func (req *testRequest) build(ctx context.Context, mocks c.Running) (*http.Request, error) {
 	return mocks.BuildRequest(ctx, req.met, req.urlFn(), nil)
 }
 
@@ -138,7 +138,13 @@ var httpClient = http.Client{
 	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 }
 
-func (pair HTTPTest) Run(ctx context.Context, mocks containers.Running, t *testing.T) {
+func (pair HTTPTest) Fn(ctx context.Context, mocks c.Running) func(t *testing.T) {
+	return func(t *testing.T) {
+		pair.Run(ctx, mocks, t)
+	}
+}
+
+func (pair HTTPTest) Run(ctx context.Context, mocks c.Running, t *testing.T) {
 	cl := client.New(client.WithHTTPClient(&httpClient), client.SkipTLSValidation(true))
 	var cancelFn func()
 	ctx, cancelFn = context.WithTimeout(ctx, 2*time.Second)

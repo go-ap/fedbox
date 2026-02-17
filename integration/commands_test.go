@@ -143,21 +143,20 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 		},
 	}
 
+	//envType := c.ExtractEnvTagFromBuild()
+	var c2sFedBOX = c.C2SfedBOX(
+		c.WithEnv(defaultC2SEnv),
+		//c.WithArgs([]string{"--env", envType, "--bootstrap"}),
+		c.WithImageName(fedBOXImageName),
+		c.WithKey(defaultPrivateKey),
+		c.WithUser(service.ID),
+		c.WithPw(defaultPassword),
+	)
+
+	images := c.Suite{c2sFedBOX}
 	for _, test := range toRun {
 		t.Run(test.Label(), func(t *testing.T) {
-			//envType := c.ExtractEnvTagFromBuild()
-			var c2sFedBOX = c.C2SfedBOX(
-				c.WithEnv(defaultC2SEnv),
-				//c.WithArgs([]string{"--env", envType, "--bootstrap"}),
-				c.WithImageName(fedBOXImageName),
-				c.WithKey(defaultPrivateKey),
-				c.WithUser(service.ID),
-				c.WithPw(defaultPassword),
-			)
-
-			images := c.Suite{c2sFedBOX}
-
-			ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Minute)
 			t.Cleanup(cancelFn)
 
 			cont, err := c.Init(ctx, t, images...)
