@@ -86,10 +86,11 @@ func Init(ctx context.Context, t testing.TB, s ...ContainerInitializer) (Running
 }
 
 func (m Running) Cleanup(t testing.TB) {
+	tc.CleanupNetwork(t, m.Network)
+
 	for _, mm := range m.Containers {
 		tc.CleanupContainer(t, mm)
 	}
-	tc.CleanupNetwork(t, m.Network)
 }
 
 func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable, IO io.ReadWriter) (io.Reader, error) {
