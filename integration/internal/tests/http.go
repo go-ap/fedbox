@@ -16,21 +16,21 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-type input struct {
+type testRequest struct {
 	met     string
 	headers http.Header
 	urlFn   func() string
 	body    io.Reader
 }
 
-func (req *input) Request(ctx context.Context, mocks containers.Running) (*http.Request, error) {
+func (req *testRequest) build(ctx context.Context, mocks containers.Running) (*http.Request, error) {
 	return mocks.BuildRequest(ctx, req.met, req.urlFn(), nil)
 }
 
-type reqInitFn func(*input)
+type reqInitFn func(*testRequest)
 
 func WithURL(u string) reqInitFn {
-	return func(t *input) {
+	return func(t *testRequest) {
 		t.urlFn = func() string {
 			return u
 		}
@@ -38,14 +38,14 @@ func WithURL(u string) reqInitFn {
 }
 
 func WithMethod(m string) reqInitFn {
-	return func(t *input) {
+	return func(t *testRequest) {
 		t.met = m
 	}
 }
 
 func WithBody(r io.Reader) reqInitFn {
 	w := bytes.Buffer{}
-	return func(t *input) {
+	return func(t *testRequest) {
 		_, _ = io.Copy(&w, r)
 		t.body = &w
 	}
@@ -61,8 +61,8 @@ func (n nilReader) Read(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func IN(initFn ...reqInitFn) input {
-	r := input{
+func Request(initFn ...reqInitFn) testRequest {
+	r := testRequest{
 		met:     http.MethodGet,
 		headers: make(http.Header),
 		urlFn:   noS,
@@ -74,35 +74,35 @@ func IN(initFn ...reqInitFn) input {
 	return r
 }
 
-// output represents the expected result of a http request to a FedBOX service
-type output struct {
+// testResponse represents the expected result of a http request to a FedBOX service
+type testResponse struct {
 	code int
 	it   vocab.Item
 }
 
-type resInitFn func(*output)
+type resInitFn func(*testResponse)
 
 func HasCode(c int) resInitFn {
-	return func(res *output) {
+	return func(res *testResponse) {
 		res.code = c
 	}
 }
 
 func HasItem(it vocab.Item) resInitFn {
-	return func(res *output) {
+	return func(res *testResponse) {
 		res.it = it
 	}
 }
 
-func OUT(initFn ...resInitFn) output {
-	s := output{code: http.StatusNotImplemented}
+func Response(initFn ...resInitFn) testResponse {
+	s := testResponse{code: http.StatusNotImplemented}
 	for _, fn := range initFn {
 		fn(&s)
 	}
 	return s
 }
 
-func (res output) assertResponse(t *testing.T, r *http.Response) {
+func (res testResponse) validate(t *testing.T, r *http.Response) {
 	if res.code != r.StatusCode {
 		t.Fatalf("Invalid status code received %d, expected :%d", r.StatusCode, res.code)
 	}
@@ -124,33 +124,37 @@ func (res output) assertResponse(t *testing.T, r *http.Response) {
 	}
 }
 
-type IOTest struct {
+type HTTPTest struct {
 	Name string
-	IN   input
-	OUT  output
+	Req  testRequest
+	Res  testResponse
+}
+
+func (pair HTTPTest) Label() string {
+	return pair.Name
 }
 
 var httpClient = http.Client{
 	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 }
 
-func (test IOTest) Run(ctx context.Context, mocks containers.Running) func(t *testing.T) {
+func (pair HTTPTest) Run(ctx context.Context, mocks containers.Running, t *testing.T) {
 	cl := client.New(client.WithHTTPClient(&httpClient), client.SkipTLSValidation(true))
-	return func(t *testing.T) {
-		var cancelFn func()
-		ctx, cancelFn = context.WithTimeout(ctx, 2*time.Second)
-		defer cancelFn()
+	var cancelFn func()
+	ctx, cancelFn = context.WithTimeout(ctx, 2*time.Second)
+	defer cancelFn()
 
-		req, err := test.IN.Request(ctx, mocks)
-		if err != nil {
-			t.Fatalf("unable to create request: %+v", err)
-		}
-
-		resp, err := cl.Do(req)
-		if err != nil {
-			t.Fatalf("Err received on %s->%s: %+v", req.Method, req.URL.String(), err)
-		}
-
-		test.OUT.assertResponse(t, resp)
+	req, err := pair.Req.build(ctx, mocks)
+	if err != nil {
+		t.Fatalf("unable to create request: %+v", err)
 	}
+
+	resp, err := cl.Do(req)
+	if err != nil {
+		t.Fatalf("Err received on %s->%s: %+v", req.Method, req.URL.String(), err)
+	}
+
+	pair.Res.validate(t, resp)
 }
+
+var _ RunnableTest = HTTPTest{}

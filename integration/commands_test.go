@@ -3,95 +3,16 @@ package integration
 import (
 	"bytes"
 	"context"
-	"io"
 	"regexp"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
-	"github.com/google/go-cmp/cmp"
-	tc "github.com/testcontainers/testcontainers-go"
-	gossh "golang.org/x/crypto/ssh"
+	"github.com/go-ap/fedbox/integration/internal/tests"
 )
 
-var equateWeakErrors = cmp.FilterValues(areErrors, cmp.Comparer(compareErrors))
-
-func areErrors(x, y interface{}) bool {
-	_, ok1 := x.(error)
-	_, ok2 := y.(error)
-	return ok1 && ok2
-}
-
-func compareErrors(x, y interface{}) bool {
-	xe := x.(error)
-	ye := y.(error)
-	return errors.Is(xe, ye) || errors.Is(ye, xe) || xe.Error() == ye.Error()
-}
-
-func eqErrs(want, got error) bool {
-	return cmp.Equal(want, got, equateWeakErrors)
-}
-
-func diffErrs(want, got error) string {
-	return cmp.Diff(want, got, equateWeakErrors)
-}
-
-type testReadWriter struct {
-	t           *testing.T
-	m           sync.Mutex
-	lineCount   int
-	input       []byte
-	checkOutput []testLineOutput
-}
-
-func (t *testReadWriter) Read(p []byte) (n int, err error) {
-	t.m.Lock()
-	defer t.m.Unlock()
-
-	if len(t.input) == 0 {
-		return 0, nil
-	}
-
-	input := append(t.input, cr...)
-	cnt := copy(p, input)
-	t.t.Logf("IN: %s", t.input)
-
-	t.input = t.input[:0]
-
-	return cnt, nil
-}
-
-var crlf = []byte{'\r', '\n'}
-var cr = []byte{'\n'}
-
-func (t *testReadWriter) Write(p []byte) (n int, err error) {
-	t.m.Lock()
-	defer t.m.Unlock()
-
-	if bytes.Equal(p, crlf) || bytes.Equal(p, cr) {
-		return len(p), nil
-	}
-	t.t.Logf("OUT: %s", bytes.Trim(p, string(crlf)))
-	if len(t.checkOutput) == 0 {
-		t.t.Errorf("output was provided, but no handler was provided in the test setup")
-		return len(p), nil
-	}
-
-	checker := t.checkOutput[t.lineCount]
-	t.input = checker(t.t, bytes.Trim(p, string(crlf)))
-	t.lineCount++
-
-	return len(p), nil
-}
-
-var _ io.ReadWriter = new(testReadWriter)
-
-type testLineOutput func(*testing.T, []byte) []byte
-
 func anyOutput(t *testing.T, line []byte) []byte {
-	t.Logf("read %q", bytes.Trim(line, string(crlf)))
+	t.Logf("read %q", bytes.Trim(line, string(tests.CRLF)))
 	return nil
 }
 
@@ -107,15 +28,15 @@ var urlRegexp = regexp.MustCompile(`(http|https://[a-zA-Z0-9./-]+)`)
 var passRegexp = regexp.MustCompile(`.* password:`)
 var passAgain = regexp.MustCompile(`password again:`)
 
-func withInput(r testLineOutput, input string) testLineOutput {
+func withInput(r tests.LineOutputTest, input string) tests.LineOutputTest {
 	return func(t *testing.T, line []byte) []byte {
 		// NOTE(marius): ignore any input returned by previous test
 		_ = r(t, line)
-		return []byte(input) //append([]byte(input), []byte("\r\n")...)
+		return []byte(input)
 	}
 }
 
-func matchesRegexp(r *regexp.Regexp) testLineOutput {
+func matchesRegexp(r *regexp.Regexp) tests.LineOutputTest {
 	return func(t *testing.T, line []byte) []byte {
 		if matches := r.FindSubmatch(line); len(matches) == 0 {
 			t.Errorf("The line %q did not contain the regex, %q", line, r)
@@ -124,27 +45,8 @@ func matchesRegexp(r *regexp.Regexp) testLineOutput {
 	}
 }
 
-func withTests(testFns ...testLineOutput) testIO {
-	tt := testReadWriter{
-		checkOutput: testFns,
-	}
-
-	return func(t *testing.T) *testReadWriter {
-		tt.t = t
-		return &tt
-	}
-}
-
-type testIO func(*testing.T) *testReadWriter
-
 func Test_Commands_inSeparateContainers(t *testing.T) {
-	toRun := []struct {
-		Name    string
-		Host    string
-		Cmd     tc.Executable
-		IO      testIO
-		WantErr error
-	}{
+	toRun := []tests.CommandTest{
 		{
 			Name: "--help",
 			Host: service.ID.String(),
@@ -154,7 +56,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  defaultPrivateKey,
 			},
 			// NOTE(marius): this is strange. The output should actually be the
-			IO: withTests(endOK),
+			IO: tests.WithTests(endOK),
 		},
 		{
 			Name: "reload",
@@ -164,7 +66,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: withTests(endOK),
+			IO: tests.WithTests(endOK),
 		},
 		{
 			Name: "maintenance",
@@ -174,7 +76,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: withTests(endOK),
+			IO: tests.WithTests(endOK),
 		},
 		{
 			Name: "pub actor add",
@@ -184,7 +86,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: withTests(
+			IO: tests.WithTests(
 				withInput(matchesRegexp(passRegexp), "asd"),
 				withInput(matchesRegexp(passAgain), "asd"),
 				matchesRegexp(urlRegexp),
@@ -199,7 +101,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: withTests(
+			IO: tests.WithTests(
 				withInput(matchesRegexp(passRegexp), "asd"),
 				withInput(matchesRegexp(passAgain), "asd"),
 				matchesRegexp(urlRegexp),
@@ -213,7 +115,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: withTests(endOK),
+			IO: tests.WithTests(endOK),
 		},
 		{
 			Name: "password change",
@@ -223,7 +125,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: withTests(
+			IO: tests.WithTests(
 				withInput(matchesRegexp(passRegexp), "asd"),
 				withInput(matchesRegexp(passAgain), "asd"),
 				endOK,
@@ -237,12 +139,12 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: service.ID.String(),
 				Key:  defaultPrivateKey,
 			},
-			IO: withTests(endOK),
+			IO: tests.WithTests(endOK),
 		},
 	}
 
 	for _, test := range toRun {
-		t.Run(test.Name, func(t *testing.T) {
+		t.Run(test.Label(), func(t *testing.T) {
 			//envType := c.ExtractEnvTagFromBuild()
 			var c2sFedBOX = c.C2SfedBOX(
 				c.WithEnv(defaultC2SEnv),
@@ -266,13 +168,8 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			t.Cleanup(func() {
 				cont.Cleanup(t)
 			})
-			_, err = cont.RunCommand(ctx, test.Host, test.Cmd, test.IO(t))
-			if !eqErrs(test.WantErr, err) && !errors.Is(err, new(gossh.ExitMissingError)) {
-				if test.Cmd == nil {
-					t.Fatalf("Err received executing nil command %s: %+v", test.Host, diffErrs(test.WantErr, err))
-				}
-				t.Fatalf("Err received executing command %s->%v: %+v", test.Host, test.Cmd.AsCommand(), diffErrs(test.WantErr, err))
-			}
+
+			test.Run(ctx, cont, t)
 		})
 	}
 }

@@ -100,31 +100,31 @@ var object1 = ap.Object(
 )
 
 func Test_Fetch(t *testing.T) {
-	toRun := []tests.IOTest{
+	toRun := []tests.HTTPTest{
 		{
 			Name: "service",
-			IN:   tests.IN(tests.WithURL("http://fedbox")),
-			OUT:  tests.OUT(tests.HasCode(http.StatusOK), tests.HasItem(service)),
+			Req:  tests.Request(tests.WithURL("http://fedbox")),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(service)),
 		},
 		{
 			Name: "actors/1",
-			IN:   tests.IN(tests.WithURL("http://fedbox/actors/1")),
-			OUT:  tests.OUT(tests.HasCode(http.StatusOK), tests.HasItem(admin1)),
+			Req:  tests.Request(tests.WithURL("http://fedbox/actors/1")),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(admin1)),
 		},
 		{
 			Name: "objects/0",
-			IN:   tests.IN(tests.WithURL("http://fedbox/objects/0")),
-			OUT:  tests.OUT(tests.HasCode(http.StatusOK), tests.HasItem(tag0)),
+			Req:  tests.Request(tests.WithURL("http://fedbox/objects/0")),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(tag0)),
 		},
 		{
 			Name: "objects/1",
-			IN:   tests.IN(tests.WithURL("http://fedbox/objects/1")),
-			OUT:  tests.OUT(tests.HasCode(http.StatusOK), tests.HasItem(object1)),
+			Req:  tests.Request(tests.WithURL("http://fedbox/objects/1")),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(object1)),
 		},
 		{
 			Name: "actors/2",
-			IN:   tests.IN(tests.WithURL("http://fedbox/actors/2")),
-			OUT:  tests.OUT(tests.HasCode(http.StatusOK), tests.HasItem(actor2)),
+			Req:  tests.Request(tests.WithURL("http://fedbox/actors/2")),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(actor2)),
 		},
 	}
 
@@ -152,6 +152,8 @@ func Test_Fetch(t *testing.T) {
 	})
 
 	for _, test := range toRun {
-		t.Run(test.Name, test.Run(ctx, cont))
+		t.Run(test.Name, func(t *testing.T) {
+			test.Run(ctx, cont, t)
+		})
 	}
 }

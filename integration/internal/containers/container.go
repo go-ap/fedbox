@@ -32,8 +32,9 @@ func execSSH(ctx context.Context, fc tc.Container, cmd []string, opts ...exec.Pr
 
 	if cmd[0] == ctlBin {
 		// NOTE(marius): if the command actually wants to call the "fedbox" binary,
-		// we execute it using the docker exec mechanism
-		// Otherwise, we treat this as a command that needs to be run IN SSH.
+		// we execute it using the docker exec mechanis.
+		// Otherwise, we treat this as a command that needs to be run
+		// though SSH.
 		_, out, err := fc.Exec(ctx, cmd, opts...)
 		return out, err
 	}
