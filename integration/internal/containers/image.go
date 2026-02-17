@@ -10,28 +10,27 @@ import (
 	"github.com/docker/docker/api/types/network"
 	vocab "github.com/go-ap/activitypub"
 	tc "github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/log"
 )
 
 type ContainerInitializer interface {
 	Start(ctx context.Context, t testing.TB) (tc.Container, error)
 }
 
-var Verbose bool
-
 type fboxImage struct {
-	name  string
-	args  []string
-	env   map[string]string
-	user  string
-	key   crypto.PrivateKey
-	pw    []byte
-	mocks vocab.ItemCollection
-	cmds  []tc.Executable
+	name   string
+	args   []string
+	env    map[string]string
+	user   string
+	key    crypto.PrivateKey
+	pw     []byte
+	mocks  vocab.ItemCollection
+	cmds   []tc.Executable
+	logger *testLogger
 }
 
 func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 	initFns := []tc.ContainerCustomizer{WithImage(f.name), WithEnvFile(f.env)}
+
 	if f.args != nil {
 		initFns = append(initFns, tc.WithCmdArgs(f.args...))
 	}
@@ -55,6 +54,9 @@ func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 		// NOTE(marius): we add the mocks to the import file, and the SSH command to actually import it.
 		initFns = append(initFns, WithMocks(f.mocks...), tc.WithAfterReadyCommand(importCmd))
 	}
+	if f.logger != nil {
+		initFns = append(initFns, tc.WithLogConsumers(f.logger))
+	}
 	return initFns
 }
 
@@ -69,10 +71,6 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB) (tc.Container, erro
 	}
 
 	opts = append(opts, tc.WithHostConfigModifier(hostCfg))
-	if Verbose {
-		logger := testLogger{T: t.(*testing.T)}
-		opts = append(opts, tc.WithLogger(log.TestLogger(t)), tc.WithLogConsumers(logger))
-	}
 	for _, opt := range opts {
 		if err := opt.Customize(&req); err != nil {
 			return nil, err
@@ -111,6 +109,16 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB) (tc.Container, erro
 }
 
 type imageInitFn func(*fboxImage)
+
+func WithTestLogger(enabled bool, t testing.TB) imageInitFn {
+	return func(f *fboxImage) {
+		if !enabled {
+			return
+		}
+		logger := testLogger{T: t.(*testing.T)}
+		f.logger = &logger
+	}
+}
 
 func WithItems(it ...vocab.Item) imageInitFn {
 	return func(f *fboxImage) {

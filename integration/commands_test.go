@@ -148,14 +148,15 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
 			t.Cleanup(cancelFn)
 
-			//envType := c.ExtractEnvTagFromBuild()
+			envType := c.ExtractEnvTagFromBuild()
 			var c2sFedBOX = c.C2SfedBOX(
 				c.WithEnv(defaultC2SEnv),
-				//c.WithArgs([]string{"--env", envType, "--bootstrap"}),
+				c.WithArgs([]string{"--env", envType, "--bootstrap"}),
 				c.WithImageName(fedBOXImageName),
 				c.WithKey(defaultPrivateKey),
 				c.WithUser(service.ID),
 				c.WithPw(defaultPassword),
+				c.WithTestLogger(Verbose, t),
 			)
 
 			images := c.Suite{c2sFedBOX}

@@ -11,21 +11,22 @@ import (
 )
 
 var (
-	Build bool
+	Build   bool
+	Verbose bool
 
 	fedBOXImageName      = "localhost/fedbox/app"
 	defaultAuthImageName = "localhost/auth/app"
 )
 
 func TestMain(m *testing.M) {
-	flag.BoolVar(&containers.Verbose, "verbose", false, "enable more verbose logging")
+	flag.BoolVar(&Verbose, "verbose", false, "enable more verbose logging")
 	flag.BoolVar(&Build, "build", false, "build images before run")
 	flag.Parse()
 
 	if Build {
 		logger := logrus.New()
 		logger.SetOutput(os.Stderr)
-		if containers.Verbose {
+		if Verbose {
 			logger.SetLevel(logrus.TraceLevel)
 			defaultC2SEnv["LOG_LEVEL"] = "trace"
 		}
