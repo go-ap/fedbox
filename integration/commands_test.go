@@ -73,7 +73,7 @@ func (t *testReadWriter) Write(p []byte) (n int, err error) {
 	if bytes.Equal(p, crlf) || bytes.Equal(p, cr) {
 		return len(p), nil
 	}
-	t.t.Logf("OUT: %s", p)
+	t.t.Logf("OUT: %s", bytes.Trim(p, string(crlf)))
 	if len(t.checkOutput) == 0 {
 		t.t.Errorf("output was provided, but no handler was provided in the test setup")
 		return len(p), nil
@@ -91,7 +91,7 @@ var _ io.ReadWriter = new(testReadWriter)
 type testLineOutput func(*testing.T, []byte) []byte
 
 func anyOutput(t *testing.T, line []byte) []byte {
-	t.Logf("read %q", line)
+	t.Logf("read %q", bytes.Trim(line, string(crlf)))
 	return nil
 }
 
