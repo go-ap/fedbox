@@ -82,7 +82,6 @@ func Init(ctx context.Context, t testing.TB, s ...ContainerInitializer) (Running
 		m.Containers = append(m.Containers, c)
 	}
 
-	m.Cleanup(t)
 	return m, nil
 }
 

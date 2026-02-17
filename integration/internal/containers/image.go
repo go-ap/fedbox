@@ -17,6 +17,8 @@ type ContainerInitializer interface {
 	Start(ctx context.Context, t testing.TB) (tc.Container, error)
 }
 
+var Verbose bool
+
 type fboxImage struct {
 	name  string
 	args  []string
@@ -59,8 +61,6 @@ func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 func (f *fboxImage) Start(ctx context.Context, t testing.TB) (tc.Container, error) {
 	opts := f.InitFns()
 
-	logger := testLogger{T: t.(*testing.T)}
-
 	req := defaultFedBOXRequest(f.name)
 	hostCfg := func(hostConfig *container.HostConfig) {
 		hostConfig.NetworkMode = network.NetworkBridge
@@ -68,8 +68,11 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB) (tc.Container, erro
 		hostConfig.ExtraHosts = []string{"localhost:" + f.env["HOSTNAME"]}
 	}
 
-	opts = append(opts, tc.WithLogConsumers(logger), tc.WithHostConfigModifier(hostCfg))
-	opts = append(opts, tc.WithLogger(log.TestLogger(t)))
+	opts = append(opts, tc.WithHostConfigModifier(hostCfg))
+	if Verbose {
+		logger := testLogger{T: t.(*testing.T)}
+		opts = append(opts, tc.WithLogger(log.TestLogger(t)), tc.WithLogConsumers(logger))
+	}
 	for _, opt := range opts {
 		if err := opt.Customize(&req); err != nil {
 			return nil, err

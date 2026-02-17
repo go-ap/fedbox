@@ -5,10 +5,10 @@ import (
 	"context"
 	"io"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/ssh"
 	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/google/go-cmp/cmp"
@@ -40,41 +40,49 @@ func diffErrs(want, got error) string {
 
 type testReadWriter struct {
 	t           *testing.T
+	m           sync.Mutex
+	lineCount   int
 	input       []byte
 	checkOutput []testLineOutput
 }
 
 func (t *testReadWriter) Read(p []byte) (n int, err error) {
+	t.m.Lock()
+	defer t.m.Unlock()
+
 	if len(t.input) == 0 {
-		return 0, io.EOF
+		return 0, nil
 	}
 
-	if !(bytes.HasSuffix(t.input, []byte{'\n'}) || bytes.HasSuffix(t.input, []byte{'\n', '\r'})) {
-		t.input = append(t.input, '\n')
-	}
-	if len(p) < len(t.input) {
-		t.t.Errorf("Input buffer smaller than provided value")
-		return 0, io.ErrShortBuffer
-	}
-	cnt, err := io.Copy(bytes.NewBuffer(p), bytes.NewReader(t.input))
-	return int(cnt), err
+	input := append(t.input, cr...)
+	cnt := copy(p, input)
+	t.t.Logf("IN: %s", t.input)
+
+	t.input = t.input[:0]
+
+	return cnt, nil
 }
 
+var crlf = []byte{'\r', '\n'}
+var cr = []byte{'\n'}
+
 func (t *testReadWriter) Write(p []byte) (n int, err error) {
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	if bytes.Equal(p, crlf) || bytes.Equal(p, cr) {
+		return len(p), nil
+	}
 	t.t.Logf("OUT: %s", p)
 	if len(t.checkOutput) == 0 {
 		t.t.Errorf("output was provided, but no handler was provided in the test setup")
 		return len(p), nil
 	}
-	lines := bytes.Split(bytes.TrimSpace(p), []byte("\n"))
-	for i, line := range lines {
-		line = bytes.TrimSpace(p)
-		checker := t.checkOutput[i]
-		t.input = append(t.input, checker(t.t, line)...)
-	}
-	if len(t.checkOutput) >= len(lines) {
-		t.checkOutput = t.checkOutput[len(lines):]
-	}
+
+	checker := t.checkOutput[t.lineCount]
+	t.input = checker(t.t, bytes.Trim(p, string(crlf)))
+	t.lineCount++
+
 	return len(p), nil
 }
 
@@ -97,12 +105,13 @@ func endOK(t *testing.T, line []byte) []byte {
 
 var urlRegexp = regexp.MustCompile(`(http|https://[a-zA-Z0-9./-]+)`)
 var passRegexp = regexp.MustCompile(`.* password:`)
+var passAgain = regexp.MustCompile(`password again:`)
 
 func withInput(r testLineOutput, input string) testLineOutput {
 	return func(t *testing.T, line []byte) []byte {
 		// NOTE(marius): ignore any input returned by previous test
 		_ = r(t, line)
-		return append([]byte(input), []byte("\r\n")...)
+		return []byte(input) //append([]byte(input), []byte("\r\n")...)
 	}
 }
 
@@ -177,6 +186,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			},
 			IO: withTests(
 				withInput(matchesRegexp(passRegexp), "asd"),
+				withInput(matchesRegexp(passAgain), "asd"),
 				matchesRegexp(urlRegexp),
 				endOK,
 			),
@@ -191,6 +201,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			},
 			IO: withTests(
 				withInput(matchesRegexp(passRegexp), "asd"),
+				withInput(matchesRegexp(passAgain), "asd"),
 				matchesRegexp(urlRegexp),
 				endOK),
 		},
@@ -214,6 +225,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			},
 			IO: withTests(
 				withInput(matchesRegexp(passRegexp), "asd"),
+				withInput(matchesRegexp(passAgain), "asd"),
 				endOK,
 			),
 		},
@@ -255,7 +267,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				cont.Cleanup(t)
 			})
 			_, err = cont.RunCommand(ctx, test.Host, test.Cmd, test.IO(t))
-			if !eqErrs(test.WantErr, err) && !(errors.Is(err, ssh.ErrServerClosed) || errors.Is(err, new(gossh.ExitMissingError))) {
+			if !eqErrs(test.WantErr, err) && !errors.Is(err, new(gossh.ExitMissingError)) {
 				if test.Cmd == nil {
 					t.Fatalf("Err received executing nil command %s: %+v", test.Host, diffErrs(test.WantErr, err))
 				}
