@@ -9,5 +9,5 @@ const TemplatesPath = "templates"
 //go:embed templates/*
 var Templates embed.FS
 
-//go:embed assets/*
+//go:embed static/*
 var Assets embed.FS
