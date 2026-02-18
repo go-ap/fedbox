@@ -145,9 +145,6 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 
 	for _, test := range toRun {
 		t.Run(test.Label(), func(t *testing.T) {
-			ctx, cancelFn := context.WithTimeout(context.Background(), 30*time.Second)
-			t.Cleanup(cancelFn)
-
 			envType := c.ExtractEnvTagFromBuild()
 			var c2sFedBOX = c.C2SfedBOX(
 				c.WithEnv(defaultC2SEnv),
@@ -158,6 +155,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				c.WithPw(defaultPassword),
 				c.WithTestLogger(Verbose, t),
 			)
+			ctx := context.Background()
 
 			images := c.Suite{c2sFedBOX}
 			cont, err := c.Init(ctx, t, images...)
@@ -168,6 +166,9 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			t.Cleanup(func() {
 				cont.Cleanup(t)
 			})
+
+			ctx, cancelFn := context.WithTimeout(ctx, 30*time.Second)
+			t.Cleanup(cancelFn)
 
 			test.Run(ctx, cont, t)
 		})
