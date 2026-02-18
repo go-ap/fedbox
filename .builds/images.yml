@@ -23,7 +23,7 @@ tasks:
 
       podman system migrate
 
-      systemctl --user start podman.service
+      systemctl --user enable --now podman.socket
 
       podman login -u="${BUILDAH_USER}" -p="${BUILDAH_SECRET}" quay.io
 
