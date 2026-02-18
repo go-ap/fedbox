@@ -104,7 +104,7 @@ func Response(initFn ...resInitFn) testResponse {
 
 func (res testResponse) validate(t *testing.T, r *http.Response) {
 	if res.code != r.StatusCode {
-		t.Fatalf("Invalid status code received %d, expected :%d", r.StatusCode, res.code)
+		t.Fatalf("Invalid status code received %d, expected %d", r.StatusCode, res.code)
 	}
 
 	raw, err := io.ReadAll(r.Body)

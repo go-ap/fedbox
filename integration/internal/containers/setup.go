@@ -223,6 +223,10 @@ func WithEnvFile(env map[string]string) tc.CustomizeRequestOption {
 			}
 		}
 
+		// Disable cache support for the requests handlers and for the storage backends that support it
+		req.Env["FEDBOX_DISABLE_CACHE"] = "true"
+		// Disable cache support strictly for requests handlers
+		req.Env["FEDBOX_DISABLE_STORAGE_CACHE"] = "true"
 		req.Env["ENV"] = envType
 		req.Env["STORAGE"] = storageType
 
