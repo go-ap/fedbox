@@ -2,6 +2,7 @@ package fedbox
 
 import (
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -82,9 +83,7 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 		// * the second as the first page of the collection (which has a link to the Next page)
 		q := r.URL.Query()
 		if filters.PaginatorValues(q).Count() < 0 {
-			for k, vv := range filters.FirstPage() {
-				q[k] = vv
-			}
+			maps.Copy(q, filters.FirstPage())
 			r.URL.RawQuery = q.Encode()
 			return nil, errors.SeeOther(r.URL.String())
 		}

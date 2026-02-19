@@ -134,7 +134,7 @@ func outActor(a *vocab.Actor, b io.Writer) error {
 }
 
 func bytef(s string, p ...any) []byte {
-	return []byte(fmt.Sprintf(s, p...))
+	return fmt.Appendf(nil, s, p...)
 }
 
 func printItem(out io.Writer, it vocab.Item, outType string) error {

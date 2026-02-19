@@ -42,7 +42,6 @@ func (t testLogger) Printf(s string, args ...any) {
 }
 
 func (t testLogger) Accept(l tc.Log) {
-	t.Helper()
 	t.Logf("%s", l.Content)
 }
 

@@ -15,7 +15,7 @@ import (
 
 type justPrintLogger func(string, ...any)
 
-func (c justPrintLogger) Printf(f string, v ...interface{}) {
+func (c justPrintLogger) Printf(f string, v ...any) {
 	c(strings.TrimSpace(f), v...)
 }
 

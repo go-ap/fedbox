@@ -11,8 +11,8 @@ import (
 func TestItemByType(t *testing.T) {
 	type testPairs map[vocab.ActivityVocabularyType]reflect.Type
 
-	var collectionPtrType = reflect.TypeOf(new(*vocab.Collection)).Elem()
-	var orderedCollectionPtrType = reflect.TypeOf(new(*vocab.OrderedCollection)).Elem()
+	var collectionPtrType = reflect.TypeFor[*vocab.Collection]()
+	var orderedCollectionPtrType = reflect.TypeFor[*vocab.OrderedCollection]()
 
 	var tests = testPairs{
 		vocab.CollectionType:        collectionPtrType,

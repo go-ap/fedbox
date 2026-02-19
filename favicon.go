@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/go-ap/errors"
@@ -114,10 +115,5 @@ func requestMatchesETag(h http.Header, eTag string) bool {
 		return false
 	}
 
-	for _, ifNoneMatch := range noneMatchValues {
-		if ifNoneMatch == eTag {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(noneMatchValues, eTag)
 }

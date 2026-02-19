@@ -213,7 +213,7 @@ func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, recei
 		return iri.Contains(vocab.IRI(f.Conf.BaseURL), true)
 	}
 
-	var logFn auth.LoggerFn = func(ctx lw.Ctx, msg string, p ...interface{}) {
+	var logFn auth.LoggerFn = func(ctx lw.Ctx, msg string, p ...any) {
 		f.Logger.WithContext(ctx).Debugf(msg, p...)
 	}
 
