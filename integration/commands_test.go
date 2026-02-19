@@ -5,7 +5,6 @@ import (
 	"context"
 	"regexp"
 	"testing"
-	"time"
 
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/tests"
@@ -166,9 +165,6 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			t.Cleanup(func() {
 				cont.Cleanup(t)
 			})
-
-			ctx, cancelFn := context.WithTimeout(ctx, 60*time.Second)
-			t.Cleanup(cancelFn)
 
 			test.Run(ctx, cont, t)
 		})
