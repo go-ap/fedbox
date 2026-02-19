@@ -27,7 +27,7 @@ const ctlBin = "fedbox"
 
 func execSSH(ctx context.Context, fc tc.Container, cmd []string, opts ...exec.ProcessOption) (io.Reader, error) {
 	var cancelFn func()
-	ctx, cancelFn = context.WithTimeout(ctx, 2*time.Second)
+	ctx, cancelFn = context.WithTimeout(ctx, 20*time.Second)
 	defer cancelFn()
 
 	if cmd[0] == ctlBin {

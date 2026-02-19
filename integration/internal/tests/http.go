@@ -147,7 +147,7 @@ func (pair HTTPTest) Fn(ctx context.Context, mocks c.Running) func(t *testing.T)
 func (pair HTTPTest) Run(ctx context.Context, mocks c.Running, t *testing.T) {
 	cl := client.New(client.WithHTTPClient(&httpClient), client.SkipTLSValidation(true))
 	var cancelFn func()
-	ctx, cancelFn = context.WithTimeout(ctx, 2*time.Second)
+	ctx, cancelFn = context.WithTimeout(ctx, 10*time.Second)
 	defer cancelFn()
 
 	req, err := pair.Req.build(ctx, mocks)

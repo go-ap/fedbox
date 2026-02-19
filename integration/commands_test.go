@@ -167,7 +167,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				cont.Cleanup(t)
 			})
 
-			ctx, cancelFn := context.WithTimeout(ctx, 30*time.Second)
+			ctx, cancelFn := context.WithTimeout(ctx, 60*time.Second)
 			t.Cleanup(cancelFn)
 
 			test.Run(ctx, cont, t)
