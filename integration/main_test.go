@@ -23,15 +23,21 @@ func TestMain(m *testing.M) {
 	flag.BoolVar(&Build, "build", false, "build images before run")
 	flag.Parse()
 
-	if Build {
-		logger := logrus.New()
-		logger.SetOutput(os.Stderr)
-		if Verbose {
-			logger.SetLevel(logrus.TraceLevel)
-			defaultC2SEnv["LOG_LEVEL"] = "trace"
-		}
-		logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true, DisableLevelTruncation: true})
+	logger := logrus.New()
+	logger.SetOutput(os.Stderr)
+	if Verbose {
+		logger.SetLevel(logrus.TraceLevel)
+		defaultC2SEnv["LOG_LEVEL"] = "trace"
+	}
+	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true, DisableLevelTruncation: true})
+	dockerHost := os.Getenv("DOCKER_HOST")
+	if dockerHost == "" {
+		logger.Error("Please set the DOCKER_HOST environment variable")
+		os.Exit(1)
+	}
+	logger.WithField("DOCKER_HOST", dockerHost).Info("Found host")
 
+	if Build {
 		name, err := containers.BuildImage(context.Background(), fedBOXImageName, logger)
 		if err != nil {
 			logger.Fatalf("error building: %+v", err)

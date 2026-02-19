@@ -6,7 +6,6 @@ sources:
   - https://github.com/go-ap/fedbox
 environment:
   GOTOOLCHAIN: go1.25.0
-  DOCKER_HOST: unix:///run/user/1000/podman/podman.sock
 secrets:
 - 3dcea276-38d6-4a7e-85e5-20cbc903e1ea
 - 3f30fd61-e33d-4198-aafb-0ff341e9db1c

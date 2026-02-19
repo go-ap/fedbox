@@ -16,11 +16,11 @@ endif
 
 TEST_FLAGS ?= -timeout 60s -race -count=1 -tags '$(TAGS)'
 
-export DOCKER_HOST = unix:///run/user/$(shell id -u)/podman/podman.sock
 
 download:
 	go mod download
 	go mod tidy
 
 test:
+	@export DOCKER_HOST=unix:///run/user/$(shell id -u)/podman/podman.sock
 	go test $(TEST_FLAGS) -json ./ -build | go tool tparse -all -progress -trimpath github.com/go-ap/
