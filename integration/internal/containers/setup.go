@@ -36,12 +36,11 @@ type testLogger struct {
 	*testing.T
 }
 
-func (t testLogger) Printf(s string, args ...any) {
-	t.Helper()
+func (t *testLogger) Printf(s string, args ...any) {
 	t.Logf(s, args...)
 }
 
-func (t testLogger) Accept(l tc.Log) {
+func (t *testLogger) Accept(l tc.Log) {
 	t.Logf("%s", l.Content)
 }
 

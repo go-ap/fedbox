@@ -30,12 +30,6 @@ func TestMain(m *testing.M) {
 		defaultC2SEnv["LOG_LEVEL"] = "trace"
 	}
 	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true, DisableLevelTruncation: true})
-	dockerHost := os.Getenv("DOCKER_HOST")
-	if dockerHost == "" {
-		logger.Error("Please set the DOCKER_HOST environment variable")
-		os.Exit(1)
-	}
-	logger.WithField("DOCKER_HOST", dockerHost).Info("Found host")
 
 	if Build {
 		name, err := containers.BuildImage(context.Background(), fedBOXImageName, logger)
