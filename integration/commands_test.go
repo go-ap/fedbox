@@ -142,6 +142,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 		},
 	}
 
+	allContainers := make([]c.Running, 0, len(toRun))
 	for _, test := range toRun {
 		t.Run(test.Label(), func(t *testing.T) {
 			envType := c.ExtractEnvTagFromBuild()
@@ -161,12 +162,15 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unable to initialize containers: %s", err)
 			}
-
-			t.Cleanup(func() {
-				cont.Cleanup(t)
-			})
+			allContainers = append(allContainers, cont)
 
 			test.Run(ctx, cont, t)
+		})
+
+		t.Cleanup(func() {
+			for _, r := range allContainers {
+				r.Cleanup(t)
+			}
 		})
 	}
 }
