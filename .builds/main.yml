@@ -2,7 +2,6 @@ image: archlinux
 packages:
   - go
   - podman
-  - docker
 sources:
   - https://github.com/go-ap/fedbox
 environment:
@@ -17,13 +16,13 @@ tasks:
       set -a +x
       source ~/.buildah.env
 
-      #_user=$(id -un)
+      _user=$(id -un)
 
-      #echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/unq-search.conf
-      #echo "${_user}:10000:65536" | sudo tee /etc/subuid
-      #echo "${_user}:10000:65536" | sudo tee /etc/subgid
+      echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/unq-search.conf
+      echo "${_user}:10000:65536" | sudo tee /etc/subuid
+      echo "${_user}:10000:65536" | sudo tee /etc/subgid
 
-      #podman system migrate
+      podman system migrate
   - build: |
       cd fedbox
       make STORAGE=fs clean all
@@ -38,8 +37,7 @@ tasks:
       cd fedbox
       make coverage
   - integration-new-setup: |
-      #systemctl --user enable --now podman.service podman.socket
-      sudo systemctl enable --now docker.service
+      systemctl --user enable --now podman.service podman.socket
       cd fedbox
       make STORAGE=fs -C integration download
   - integration-new-fs: |
