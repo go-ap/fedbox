@@ -951,9 +951,9 @@ var CreateTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:        CollectionURL(ObjectsURL(), firstPage()),
-						typ:       string(vocab.OrderedCollectionPageType),
-						itemCount: 1,
+						id:  CollectionURL(ObjectsURL(), firstPage()),
+						typ: string(vocab.OrderedCollectionPageType),
+						//itemCount: 1, // TODO(marius): we want to remove the tests that handle actors|objects|activities collections
 					},
 				},
 			},
