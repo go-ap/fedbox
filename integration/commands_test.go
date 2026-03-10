@@ -5,6 +5,7 @@ import (
 	"context"
 	"regexp"
 	"testing"
+	"time"
 
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/tests"
@@ -162,8 +163,12 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				t.Fatalf("unable to initialize containers: %s", err)
 			}
 
+			var cancelFn func()
+			ctx, cancelFn = context.WithTimeout(ctx, 2*time.Second)
+
 			test.Run(ctx, cont, t)
 			t.Cleanup(func() {
+				cancelFn()
 				cont.Cleanup(t)
 			})
 		})
