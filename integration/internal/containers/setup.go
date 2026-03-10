@@ -72,7 +72,7 @@ func Init(ctx context.Context, t testing.TB, s ...ContainerInitializer) (Running
 	// @see github.com/testcontainers/testcontainers-go/internal/core.MustExtractDockerHost()
 	m := Running{Containers: make([]tc.Container, 0), Network: newNetwork}
 	for _, img := range s {
-		c, err := img.Start(ctx, t)
+		c, err := img.Start(context.WithoutCancel(ctx), t)
 		if err != nil {
 			t.Fatalf("unable to initialize container %T: %s", img, err)
 		}
