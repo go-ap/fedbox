@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"time"
 
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
@@ -18,26 +19,17 @@ type fboxContainer struct {
 }
 
 func (fc fboxContainer) Exec(ctx context.Context, cmd []string, opts ...exec.ProcessOption) (int, io.Reader, error) {
-	r, err := execSSH(ctx, fc.Container, cmd, opts...)
-	return 0, r, err
-}
-
-const ctlBin = "fedbox"
-
-func execSSH(ctx context.Context, fc tc.Container, cmd []string, opts ...exec.ProcessOption) (io.Reader, error) {
 	if cmd[0] == ctlBin {
 		// NOTE(marius): if the command actually wants to call the "fedbox" binary,
-		// we execute it using the docker exec mechanis.
-		// Otherwise, we treat this as a command that needs to be run
-		// though SSH.
-		_, out, err := fc.Exec(ctx, cmd, opts...)
-		return out, err
+		// we execute it using docker exec.
+		// Otherwise, we treat this as it needs to be run though SSH.
+		return fc.Container.Exec(ctx, cmd, opts...)
 	}
 
 	host, _ := fc.Host(ctx)
 	portsMap, err := fc.Ports(ctx)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	conf := exec.ProcessOptions{}
 	for _, opt := range opts {
@@ -70,51 +62,51 @@ func execSSH(ctx context.Context, fc tc.Container, cmd []string, opts ...exec.Pr
 		}
 	}
 	if len(initFns) == 0 {
-		return nil, fmt.Errorf("no SSH authorization methods found")
+		return 0, nil, fmt.Errorf("no SSH authorization methods found")
 	}
 	if len(conf.ExecConfig.User) == 0 {
-		return nil, fmt.Errorf("no user for SSH authorization found")
+		return 0, nil, fmt.Errorf("no user for SSH authorization found")
 	}
 	config := &ssh.ClientConfig{
 		User:            conf.ExecConfig.User,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Auth:            initFns,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         5 * time.Second,
 	}
 
 	client, err := ssh.Dial("tcp", host, config)
 	if err != nil {
-		return nil, err
+		return 0, nil, fmt.Errorf("unable to connect to SSH server %s %w", host, err)
 	}
 	// Create a session. It is one session per command.
 	session, err := client.NewSession()
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 	defer session.Close()
 	errBuff := bytes.Buffer{}
 	session.Stderr = &errBuff
-	var outBuff io.Writer
 
-	if wr, ok := conf.Reader.(io.Writer); ok {
-		outBuff = wr
-	} else {
-		outBuff = &bytes.Buffer{}
+	outBuff := bytes.Buffer{}
+	if w, ok := conf.Reader.(io.Writer); ok {
+		session.Stdout = io.MultiWriter(&outBuff, w)
 	}
-	session.Stdout = outBuff
 	session.Stdin = conf.Reader
 
 	if err = session.Run(strings.Join(cmd, " ")); err != nil {
 		if errBuff.Len() == 0 {
-			return nil, fmt.Errorf("command execution failed: %w", err)
+			return 0, nil, fmt.Errorf("command execution failed: %w", err)
 		}
-		return nil, fmt.Errorf("command execution failed: %w\n%s", err, errBuff.String())
+		return 0, nil, fmt.Errorf("command execution failed: %w\n%s", err, errBuff.String())
 	}
 	// NOTE(marius): if stdErr had output, we treat it as an error
 	if errBuff.Len() > 0 {
-		return nil, STDErr(errBuff)
+		return 0, nil, STDErr(errBuff)
 	}
-	return outBuff.(io.Reader), nil
+	return outBuff.Len(), &outBuff, nil
 }
+
+const ctlBin = "fedbox"
 
 type STDErr bytes.Buffer
 

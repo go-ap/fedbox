@@ -109,7 +109,8 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable,
 					if IO != nil {
 						opts = append(opts, WithIO(IO))
 					}
-					return execSSH(ctx, fc, cmd.AsCommand(), opts...)
+					_, r, err := fc.Exec(ctx, cmd.AsCommand(), opts...)
+					return r, err
 				}
 			}
 		}
