@@ -24,7 +24,7 @@ const (
 	importPath = "github.com/go-ap/fedbox"
 )
 
-func justName(s string, s2 string) string {
+func justName(_ string, s2 string) string {
 	return s2
 }
 
@@ -84,7 +84,8 @@ func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 	}
 
 	builder, err := build.NewGo(ctx, "",
-		//build.WithDebugger(), // NOTE(marius): we're using a minimal base image, requiring a statically compiled app, so we can't use Delve
+		// NOTE(marius): we're using a minimal base image, requiring a statically compiled app, so we can't use Delve
+		//build.WithDebugger(),
 		build.WithBaseImages(func(ctx context.Context, _ string) (name.Reference, build.Result, error) {
 			ref := name.MustParseReference(baseImage)
 			base, err := remote.Index(ref, remote.WithContext(ctx))

@@ -10,19 +10,17 @@ import (
 	"encoding/pem"
 	"fmt"
 
+	tea "charm.land/bubbletea/v2"
+	"charm.land/wish/v2"
+	bm "charm.land/wish/v2/bubbletea"
+	"charm.land/wish/v2/logging"
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/mask"
 	"git.sr.ht/~mariusor/motley"
 	m "git.sr.ht/~mariusor/servermux"
 	"github.com/alecthomas/kong"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/ssh"
-	"github.com/charmbracelet/wish"
-	bm "github.com/charmbracelet/wish/bubbletea"
-	"github.com/charmbracelet/wish/logging"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/muesli/termenv"
 	"golang.org/x/crypto/ed25519"
 	gossh "golang.org/x/crypto/ssh"
 )
@@ -127,21 +125,12 @@ func MainTui(f *FedBOX) wish.Middleware {
 			return nil
 		}
 
-		// Set the global color profile to ANSI256 for Docker compatibility
-		lipgloss.SetColorProfile(termenv.ANSI256)
-
-		service, err := motley.FedBOX(f.Logger.WithContext(lwCtx), motley.Storage{
-			FullStorage: f.Storage,
-			Root:        acc,
-		})
-		if err != nil {
-			_, _ = fmt.Fprintf(s.Stderr(), "Error: %s", err)
-			_ = s.Exit(1)
-		}
-		return tea.NewProgram(motley.Model(service), tea.WithFPS(60), tea.WithInput(s), tea.WithOutput(s), tea.WithAltScreen())
+		env := string(f.Conf.Env)
+		st := motley.WithStore(f.Storage, acc, env)
+		return tea.NewProgram(motley.Model(f.Logger, st), tea.WithInput(s), tea.WithOutput(s))
 	}
 
-	return bm.MiddlewareWithProgramHandler(teaHandler, termenv.ANSI256)
+	return bm.MiddlewareWithProgramHandler(teaHandler)
 }
 
 func pwCheck(f *FedBOX, id string, pw []byte) (*vocab.Actor, bool) {
