@@ -16,7 +16,6 @@ import (
 	"charm.land/wish/v2/logging"
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/mask"
-	"git.sr.ht/~mariusor/motley"
 	m "git.sr.ht/~mariusor/servermux"
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/ssh"
@@ -125,9 +124,7 @@ func MainTui(f *FedBOX) wish.Middleware {
 			return nil
 		}
 
-		env := string(f.Conf.Env)
-		st := motley.WithStore(f.Storage, acc, env)
-		return tea.NewProgram(motley.Model(f.Logger, st), tea.WithInput(s), tea.WithOutput(s))
+		return wishTUI(f, s)
 	}
 
 	return bm.MiddlewareWithProgramHandler(teaHandler)
