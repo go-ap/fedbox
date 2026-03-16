@@ -179,7 +179,7 @@ func defaultFedBOXRequest(name string) tc.GenericContainerRequest {
 				wait.ForLog("Started"),
 				wait.ForListeningPort("4000"),
 				wait.ForListeningPort("4044"),
-			).WithDeadline(800 * time.Millisecond),
+			).WithDeadline(5 * time.Second),
 		},
 		ProviderType: tc.ProviderPodman,
 		Started:      true,
