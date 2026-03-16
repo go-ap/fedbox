@@ -2,6 +2,7 @@ image: archlinux
 packages:
   - go
   - podman
+  - slirp4netns
 sources:
   - https://github.com/go-ap/fedbox
 secrets:
