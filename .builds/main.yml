@@ -41,13 +41,13 @@ tasks:
       make STORAGE=fs -C integration download
   - integration-new-fs: |
       cd fedbox
-      make STORAGE=fs -C integration test || true
+      make STORAGE=fs -C integration test
   - integration-new-badger: |
       cd fedbox
-      make STORAGE=badger -C integration test || true
+      make STORAGE=badger -C integration test
   - integration-new-boltdb: |
       cd fedbox
-      make STORAGE=boltdb -C integration test || true
+      make STORAGE=boltdb -C integration test
   - integration-new-sqlite: |
       cd fedbox
       make STORAGE=sqlite -C integration test || true

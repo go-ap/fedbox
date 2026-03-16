@@ -110,7 +110,7 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB) (tc.Container, erro
 
 type imageInitFn func(*fboxImage)
 
-func WithTestLogger(enabled bool, t testing.TB) imageInitFn {
+func WithTestLogger(t testing.TB, enabled bool) imageInitFn {
 	return func(f *fboxImage) {
 		if !enabled {
 			return

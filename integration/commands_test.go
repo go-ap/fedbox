@@ -153,7 +153,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				c.WithKey(defaultPrivateKey),
 				c.WithUser(service.ID),
 				c.WithPw(defaultPassword),
-				c.WithTestLogger(Verbose, t),
+				c.WithTestLogger(t, Verbose),
 			)
 			ctx := context.Background()
 

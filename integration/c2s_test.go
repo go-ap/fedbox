@@ -132,9 +132,10 @@ func Test_Fetch(t *testing.T) {
 	var c2sFedBOX = c.C2SfedBOX(
 		c.WithEnv(defaultC2SEnv),
 		c.WithArgs([]string{"--env", envType, "--bootstrap"}),
+		c.WithTestLogger(t, Verbose),
 		c.WithImageName(fedBOXImageName),
-		c.WithKey(defaultPrivateKey),
 		c.WithUser(service.ID),
+		c.WithKey(defaultPrivateKey),
 		c.WithPw(defaultPassword),
 		c.WithItems(tag0, object1, admin1, actor2),
 	)
