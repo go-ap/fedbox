@@ -16,27 +16,27 @@ import (
 
 type ioTest struct {
 	t           *testing.T
-	m           sync.Mutex
+	m           sync.RWMutex
 	lineCount   int
 	input       []byte
 	checkOutput []LineOutputTest
 }
 
 func (t *ioTest) Read(p []byte) (n int, err error) {
-	t.m.Lock()
-	defer t.m.Unlock()
+	t.m.RLock()
+	defer t.m.RUnlock()
 
 	if len(t.input) == 0 {
-		return 0, nil
+		return n, nil
 	}
 
 	input := append(t.input, CR...)
-	cnt := copy(p, input)
+	n = copy(p, input)
 	t.t.Logf("IN: %s", t.input)
 
 	t.input = t.input[:0]
 
-	return cnt, nil
+	return n, nil
 }
 
 var CRLF = []byte{'\r', '\n'}
