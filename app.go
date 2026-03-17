@@ -198,7 +198,7 @@ func (f *FedBOX) Stop(ctx context.Context) error {
 }
 
 func (f *FedBOX) reload() (err error) {
-	f.Conf, err = config.Load(".", f.Conf.Env)
+	err = config.Load(&f.Conf, ".")
 	f.caches.Delete()
 	return err
 }
@@ -248,6 +248,12 @@ func (f *FedBOX) Run(ctx context.Context) error {
 	}
 	if f.Conf.Version != "" {
 		logCtx["version"] = f.Conf.Version
+	}
+	if f.Conf.StoragePath != "" {
+		logCtx["path"] = f.Conf.StoragePath
+	}
+	if f.Conf.Storage != "" {
+		logCtx["storage"] = f.Conf.Storage
 	}
 	var cancelFn func()
 

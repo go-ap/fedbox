@@ -203,22 +203,21 @@ func findConfigs(path string, e env.Type) []string {
 	return configs
 }
 
-func Load(path string, e env.Type) (Options, error) {
-	if !env.ValidType(e) {
-		e = env.Type(Getval(KeyENV, ""))
+func Load(opts *Options, path string) error {
+	if !env.ValidType(opts.Env) {
+		opts.Env = env.Type(Getval(KeyENV, ""))
 	}
 
-	configs := findConfigs(path, e)
+	configs := findConfigs(path, opts.Env)
 	if len(configs) > 0 {
 		if err := godotenv.Overload(configs...); err != nil {
-			return Options{}, err
+			return err
 		}
 	}
 
-	opts := LoadFromEnv()
-	opts.Env = e
+	LoadFromEnv(opts)
 
-	return opts, validateOptions(opts)
+	return validateOptions(*opts)
 }
 
 func validateOptions(opts Options) error {
@@ -240,8 +239,7 @@ func RandPort() int {
 	return minPort + rand.IntN(65536-minPort)
 }
 
-func LoadFromEnv() Options {
-	conf := Options{}
+func LoadFromEnv(conf *Options) {
 	lvl := Getval(KeyLogLevel, "")
 	switch strings.ToLower(lvl) {
 	case "none":
@@ -316,10 +314,8 @@ func LoadFromEnv() Options {
 	disableMastodonCompatibility, _ := strconv.ParseBool(Getval(KeyMastodonCompatibilityDisable, "false"))
 	conf.MastodonCompatible = !disableMastodonCompatibility
 
-	conf.KeyPath = normalizeConfigPath(Getval(KeyKeyPath, ""), conf)
-	conf.CertPath = normalizeConfigPath(Getval(KeyCertPath, ""), conf)
-
-	return conf
+	conf.KeyPath = normalizeConfigPath(Getval(KeyKeyPath, ""), *conf)
+	conf.CertPath = normalizeConfigPath(Getval(KeyCertPath, ""), *conf)
 }
 
 func (o Options) RuntimePath() string {

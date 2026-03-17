@@ -67,9 +67,10 @@ func InitControl(c *CTL, version string) (*Base, error) {
 
 	errors.SetIncludeBacktrace(opt.LogLevel == lw.TraceLevel)
 	ct := Base{
-		in:  os.Stdin,
-		out: os.Stdout,
-		err: os.Stderr,
+		in:   os.Stdin,
+		out:  os.Stdout,
+		err:  os.Stderr,
+		Conf: opt,
 	}
 	if err := setup(&ct, opt); err != nil {
 		return nil, err
@@ -107,12 +108,11 @@ func NewBase(db storage.FullStorage, conf config.Options, l lw.Logger) (*Base, e
 	}, nil
 }
 
-func setup(ct *Base, options config.Options) error {
-	environ := options.Env
-	path := options.StoragePath
-	conf, err := config.Load(path, environ)
+func setup(ct *Base, conf config.Options) error {
+	path := conf.StoragePath
+	err := config.Load(&conf, path)
 	if err != nil {
-		return errors.Annotatef(err, "failed to load %s files in path %s", environ, path)
+		return errors.Annotatef(err, "failed to load %s files in path %s", conf.Env, path)
 	}
 
 	var out io.WriteCloser
@@ -135,7 +135,7 @@ func setup(ct *Base, options config.Options) error {
 	}
 	_l.Store(ct.Logger)
 
-	typ := options.Storage
+	typ := conf.Storage
 	if typ != "" {
 		conf.Storage = typ
 	}

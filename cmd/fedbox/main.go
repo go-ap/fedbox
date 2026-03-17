@@ -9,7 +9,7 @@ import (
 
 func main() {
 	if build, ok := debug.ReadBuildInfo(); ok && fedbox.AppVersion == "HEAD" {
-		if build.Main.Version != "(devel)" {
+		if build.Main.Version != "" {
 			fedbox.AppVersion = build.Main.Version
 		}
 		for _, bs := range build.Settings {
