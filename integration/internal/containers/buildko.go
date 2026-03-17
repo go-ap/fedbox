@@ -13,6 +13,7 @@ import (
 	"github.com/google/ko/pkg/build"
 	"github.com/google/ko/pkg/commands"
 	"github.com/google/ko/pkg/commands/options"
+	"github.com/google/ko/pkg/publish"
 	"github.com/sirupsen/logrus"
 )
 
@@ -105,15 +106,17 @@ func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 		build.WithPlatforms("linux/amd64"),
 		build.WithConfig(map[string]build.Config{
 			filepath.Join(importPath, "cmd/fedbox"): {
-				ID:      "fedbox",
+				ID:      strings.Join([]string{"fedbox", envType, storageType}, "-"),
 				Dir:     "cmd/fedbox",
-				Flags:   []string{tags},
 				Ldflags: []string{`-extldflags "-static"`},
+				Flags:   []string{tags},
 				Env:     []string{extractCGOFromBuild()},
 			},
 		}),
 		build.WithTrimpath(true),
 		build.WithDisabledSBOM(),
+		build.WithLabel("storage", storageType),
+		build.WithLabel("env", envType),
 	)
 	if err != nil {
 		return "", err
@@ -123,8 +126,8 @@ func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 		return "", err
 	}
 	publishOpts := options.PublishOptions{
+		DockerRepo:  publish.LocalDomain,
 		LocalDomain: targetRepo,
-		DockerRepo:  targetRepo,
 		Local:       true,
 		ImageNamer:  justName,
 	}
