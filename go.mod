@@ -14,13 +14,13 @@ require (
 	github.com/alecthomas/kong v1.14.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/go-ap/activitypub v0.0.0-20260314162927-f37166117816
-	github.com/go-ap/auth v0.0.0-20260314172349-636da1ff6f0c
+	github.com/go-ap/auth v0.0.0-20260318093537-1ba102dd5ed9
 	github.com/go-ap/cache v0.0.0-20260314171843-db47857306fa
-	github.com/go-ap/client v0.0.0-20260314172213-e86ab32299ee
+	github.com/go-ap/client v0.0.0-20260318093433-0fb72021bf38
 	github.com/go-ap/errors v0.0.0-20260208110149-e1b309365966
-	github.com/go-ap/filters v0.0.0-20260314171937-f049bd20de96
+	github.com/go-ap/filters v0.0.0-20260318092102-3b81ed7315b1
 	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77
-	github.com/go-ap/processing v0.0.0-20260314172430-abaa6f90b7f1
+	github.com/go-ap/processing v0.0.0-20260318093608-bff926e22751
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -62,10 +62,10 @@ require (
 	github.com/dgraph-io/badger/v4 v4.9.1 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260316081728-9c5b8e54e2df // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260316081711-b2906bf81ab1 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260316081616-25efa1d82db0 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260316130540-a028cc18ac83 // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260318093733-542e082dd436 // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260318093754-ac55630da594 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260318093643-ba50b718cc5c // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260318094123-370caad0ab74 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -114,6 +114,6 @@ require (
 	modernc.org/libc v1.70.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.46.2 // indirect
-	quamina.net/go/quamina v1.5.2-0.20260306081357-88daf10bf1dc // indirect
+	modernc.org/sqlite v1.47.0 // indirect
+	quamina.net/go/quamina/v2 v2.0.2 // indirect
 )
