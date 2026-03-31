@@ -9,7 +9,7 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/motley v0.0.0-20260316084024-27f1802279e5
 	git.sr.ht/~mariusor/servermux v0.0.0-20260310142041-b6c9be7e7820
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260330140947-71316e951445
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260331115307-2c877e9548b8
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.14.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
@@ -65,13 +65,18 @@ require (
 	github.com/go-ap/storage-badger v0.0.0-20260330135621-54045b083c9d // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260330134908-ffc2e289cedf // indirect
 	github.com/go-ap/storage-fs v0.0.0-20260330135305-9d5c2c844251 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260330135040-6b57dc87af7c // indirect
+	github.com/go-ap/storage-pg v0.0.0-20260331112604-31012766b420 // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260331103413-63425e9376f0 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/google/pprof v0.0.0-20260302011040-a15ffb7f9dcc // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/pgx/v5 v5.9.1 // indirect
+	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/leporo/sqlf v1.4.0 // indirect
