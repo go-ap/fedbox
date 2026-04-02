@@ -673,7 +673,7 @@ func CreateService(ctl *Base, self vocab.Item, pair *ap.KeyPair, pw []byte) (err
 		var multi error
 		for _, stream := range service.Streams {
 			// NOTE(marius): create fedbox custom collections /activities, /objects, /actors
-			if _, err := storage.Create(col(stream.GetID())); err != nil {
+			if _, err := storage.Save(col(stream.GetID())); err != nil {
 				multi = errors.Join(multi, err)
 			}
 		}

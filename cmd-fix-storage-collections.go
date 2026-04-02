@@ -145,11 +145,7 @@ func tryCreateCollection(ctl *Base, colIRI vocab.IRI) error {
 			ctl.Logger.Errorf("Unable to load %s: %s", colIRI, err)
 			return err
 		}
-		colSaver, ok := storage.(processing.CollectionStore)
-		if !ok {
-			return errors.Newf("Invalid storage type %T. Unable to handle collection operations.", storage)
-		}
-		it, err := colSaver.Create(newOrderedCollection(ctl, colIRI.GetLink()))
+		it, err := storage.Save(newOrderedCollection(ctl, colIRI.GetLink()))
 		if err != nil {
 			ctl.Logger.Errorf("Unable to create collection %s: %s", colIRI, err)
 			return err
