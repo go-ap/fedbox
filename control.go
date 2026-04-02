@@ -39,7 +39,7 @@ type SSH struct {
 type CTL struct {
 	SSH `embed:""`
 
-	Url     url.URL          `help:"The URL used by the application."`
+	Url     *url.URL         `help:"The URL used by the application."`
 	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`
 	Verbose int              `counter:"v" help:"Increase verbosity level from the default associated with the environment settings."`
 	Path    string           `path:"" help:"The path for the storage folder or socket" default:"." env:"STORAGE_PATH"`
@@ -51,15 +51,20 @@ type CTL struct {
 
 func InitControl(c *CTL, version string) (*Base, error) {
 	opt := config.Options{
-		Env:         c.Env,
-		LogLevel:    lw.InfoLevel,
-		AppName:     AppName,
-		StoragePath: c.Path,
-		Hostname:    c.Url.Host,
-		Secure:      c.Url.Scheme == "https",
-		BaseURL:     c.Url.String(),
-		Version:     version,
-		TimeOut:     c.Run.Wait,
+		LogLevel: lw.InfoLevel,
+		AppName:  AppName,
+		Version:  version,
+	}
+	if c.Env != opt.Env {
+		opt.Env = c.Env
+	}
+	if c.Url != nil {
+		opt.Hostname = c.Url.Hostname()
+		opt.Secure = c.Url.Scheme == "https"
+		opt.BaseURL = c.Url.String()
+	}
+	if c.Path != "" {
+		opt.StoragePath = c.Path
 	}
 	if c.Verbose > 1 {
 		opt.LogLevel = lw.DebugLevel
