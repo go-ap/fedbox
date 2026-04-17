@@ -3,9 +3,11 @@ package integration
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 
+	"git.sr.ht/~mariusor/storage-all"
 	"github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/sirupsen/logrus"
 )
@@ -13,14 +15,24 @@ import (
 var (
 	Build   bool
 	Verbose bool
+	Storage string
 
 	fedBOXImageName      = "localhost/fedbox/app"
 	defaultAuthImageName = "localhost/auth/app"
+
+	validStorageTypes = []string{
+		"boltdb",
+		"fs",
+		"badger",
+		"sqlite",
+		"postgres",
+	}
 )
 
 func TestMain(m *testing.M) {
 	flag.BoolVar(&Verbose, "verbose", false, "enable more verbose logging")
 	flag.BoolVar(&Build, "build", false, "build images before run")
+	flag.StringVar(&Storage, "storage", string(storage.Default), fmt.Sprintf("which storage type to use for tests, valid values: %#v", validStorageTypes))
 	flag.Parse()
 
 	logger := logrus.New()
