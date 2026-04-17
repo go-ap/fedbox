@@ -41,6 +41,27 @@ $ ./bin/fedbox storage bootstrap
 For a more advanced example, the [`bootstrap.sh`](../tools/bootstrap.sh) script has a more elaborate use case to
 automate bootstrapping a project together with adding an Actor and an OAuth2 client.
 
+### Automatic bootstrapping at startup time
+
+FedBOX also supports loading magic files for the root actor's password and private key.
+
+If you place a `{root-actor-iri}.pw` and `{root-actor-iri}.key` at the root of your storage path 
+FedBOX loads them and uses them at startup time.
+
+<div class="alert"> This only works for filesystem based storage backends. </div>
+
+The pw file is a file containing the password in plain text. 
+The key file needs to be a PEM encoded private key.
+
+These files get removed after a fist successful start.
+
+The logs will contain output similar to:
+
+```shell
+TRC Found private key typ=RSA valid=true
+TRC Found valid password file pw=pa****rd
+```
+
 ## Authorization
 
 FedBOX is strictly an ActivityPub server, so despite the fact that it advertises OAuth2 authorization endpoints
@@ -78,6 +99,7 @@ web-finger we have a different [microservice for .well-known](https://github.com
 It can also be run with the same configuration `.env` file as FedBOX.
 
 Similarly to above, it needs additional request proxying setup:
+
 ```caddyfile
 handle /.well-known/* {
 	reverse_proxy http://well-known-service:4555 {

@@ -16,7 +16,8 @@ The containers are split onto two dimensions:
   * `sqlite`: the JSON-Ld documents are saved in a key-value store under the guise of a database table. 
 Querying large collections could be slow.
   * `boltdb`: a more traditional key-value store in the Go ecosystem. 
-  * ~~`badger`: another key-value store for the Go ecosystem. (unavailable at the moment)~~ 
+  * `badger`: another key-value store for the Go ecosystem.
+  * ~~`postgres`: we do provide a PostgreSQL backend, but it's the newest and least tested. Additionally it's not yet integrated into the `storage-all` module.~~
   * If there isn't a storage option in the tag name, the image was built containing all the storage options,
     and requires the environment configuration to specify which one should be used.
 
@@ -34,7 +35,13 @@ To run containers based on the image, use the following command.
 ```sh
 # /var/cache/fedbox must exist and be writable as current user
 # /var/cache/fedbox/env must be a valid env file as shown in the INSTALL document.
-$ podman run --network=host --name=FedBOX -v /var/cache/fedbox/env:/.env -v /var/cache/fedbox:/storage --env-file=/var/cache/fedbox/env quay.io/go-ap/fedbox:latest
+$ podman run --network=host --name=FedBOX -v /var/cache/fedbox/env:/.env -v /var/cache/fedbox:/storage \
+ --env-file=/var/cache/fedbox/env quay.io/go-ap/fedbox:latest
+DBG Setting actor key generator *fs.repo[RSA]
+WRN no root service exists err="invalid service IRI https://fedbox/: not found: statat fedbox: no such file or directory" iri=https://fedbox
+DBG Accepting HTTP requests TLS=true host=127.0.2.1 port=4000
+DBG Accepting SSH requests host=127.0.2.1 port=4022
+INF Started URL=https://fedbox path=/storage storage=fs version=HEAD
 ```
 
 The `tools/run-container` script can also be used.
@@ -44,12 +51,25 @@ The `tools/run-container` script can also be used.
 ```sh
 # running with the same configuration environment as above
 $ podman exec --env-file=/var/cache/fedbox/env FedBOX fedbox bootstrap
-$ podman exec --env-file=/var/cache/fedbox/env FedBOX fedbox pub actor add --type Application
-Enter the actor's name: test
-test's pw:
+$ podman exec --env-file=/var/cache/fedbox/env FedBOX fedbox pub actor add test-application --type Application
+test-application's pw:
 pw again:
 Added "Application" [test]: https://fedbox/actors/22200000-0000-0000-0001-93e066611fcb
 ```
 
-[^1] And docker, of course.
+### Running commands using ssh
 
+As you could see from the run command example, the service by default listens for SSH connections, which accept
+the same commands that can be executed through the CLI.
+
+This however requires that you have the root actor's password available to you, or whichever actor you use for the commands.
+
+So for the server above we could execute the following:
+
+```shell
+# https://fedbox is the "username" sent by the ssh client to FedBOX.
+# Currently this needs to be the full Actor IRI
+$ ssh https://fedbox@127.0.2.1 -p 4022 -- pub actor add test-application --type Application
+```
+
+[^1] And docker, of course.
