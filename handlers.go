@@ -347,7 +347,7 @@ func ProxyURL(fb *FedBOX) http.Handler {
 		// NOTE(marius): if we can load a valid actor from the request, we use it for fetching the/
 		// remote resource pointed at by "id"
 		authorized := fb.actorFromRequestWithClient(r, ActorClient(fb.Base, vocab.PublicNS), vocab.IRI(id))
-		cl := ActorClient(fb.Base, authorized)
+		cl := client.HTTPClient(ActorClient(fb.Base, authorized))
 		res, err := cl.Get(id)
 		if err != nil {
 			errors.HandleError(errors.NotFoundf(`invalid 'id' value for proxy retrieval`)).ServeHTTP(w, r)
