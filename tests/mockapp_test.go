@@ -20,7 +20,6 @@ import (
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -177,6 +176,10 @@ func saveMocks(testData []string, config config.Options, db storage.FullStorage,
 	return nil
 }
 
+type prvKeyMetadata struct {
+	PrivateKey []byte `jsonld:"key,omitempty"`
+}
+
 func saveMetadataForActor(act testAccount, metaSaver storage.MetadataStorage) error {
 	prvEnc, err := x509.MarshalPKCS8PrivateKey(act.PrivateKey)
 	if err != nil {
@@ -185,7 +188,7 @@ func saveMetadataForActor(act testAccount, metaSaver storage.MetadataStorage) er
 	r := pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc}
 	return metaSaver.SaveMetadata(
 		vocab.IRI(act.ID),
-		auth.Metadata{PrivateKey: pem.EncodeToMemory(&r)},
+		prvKeyMetadata{PrivateKey: pem.EncodeToMemory(&r)},
 	)
 }
 

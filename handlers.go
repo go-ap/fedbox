@@ -45,15 +45,17 @@ func reqURL(r http.Request, secure bool) string {
 	if secure || r.TLS != nil {
 		scheme = "https"
 	}
+	host := r.Host
+	if forwardedHost := r.Header.Get("X-Forwarded-Host"); forwardedHost != "" {
+		host = forwardedHost
+	}
 	u := url.URL{
 		Scheme:   scheme,
-		Host:     r.Host,
+		Host:     host,
 		Path:     r.URL.Path,
 		RawPath:  r.URL.RawPath,
 		RawQuery: r.URL.RawQuery,
 	}
-	u.Scheme = scheme
-	u.Host = r.Host
 	return u.String()
 }
 

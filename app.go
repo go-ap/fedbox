@@ -207,28 +207,35 @@ func IsProxyURL(i vocab.IRI) bool {
 	return strings.ToLower(filepath.Base(i.String())) == strings.ToLower("proxyUrl")
 }
 
+// actorVerifier verifies if a [http.Request] contains information about an ActivityPub [vocab.Actor]
+// that has operated it.
+type actorVerifier interface {
+	// Verify validates a request for the existence of an authorized ActivityPub [vocab.Actor] that has
+	// operated it.
+	Verify(*http.Request) (vocab.Actor, error)
+}
+
 func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, receivedIn vocab.IRI) vocab.Actor {
 	// NOTE(marius): if the Storage is nil, we can still use the remote client in the load function
 	isLocalFn := func(iri vocab.IRI) bool {
 		return iri.Contains(vocab.IRI(f.Conf.BaseURL), true)
 	}
 
-	var logFn auth.LoggerFn = func(ctx lw.Ctx, msg string, p ...any) {
-		f.Logger.WithContext(ctx).Debugf(msg, p...)
+	l := f.Logger.WithContext(lw.Ctx{"log": "auth"})
+	initFns := []auth.ConfigInitFn{
+		auth.ConfigWithLogger(l),
+		auth.ConfigWithStorage(f.Storage),
+		auth.ConfigWithLocalIRIFn(isLocalFn),
 	}
 
-	initFns := []auth.SolverInitFn{
-		auth.SolverWithLogger(logFn),
-		auth.SolverWithStorage(f.Storage),
-		auth.SolverWithLocalIRIFn(isLocalFn),
-	}
-
-	var ar auth.ActorVerifier
+	var ar actorVerifier
 	switch {
-	case processing.IsInbox(receivedIn):
-		ar = auth.HTTPSignatureResolver(cl, initFns...)
-	case processing.IsOutbox(receivedIn) || IsProxyURL(receivedIn):
-		ar = auth.OAuth2Resolver(cl, initFns...)
+	case r.Method == http.MethodPost && processing.IsInbox(receivedIn):
+		ar = auth.HTTPSignature(cl, initFns...)
+	case r.Method == http.MethodPost && processing.IsOutbox(receivedIn):
+		ar = auth.OAuth2(cl, initFns...)
+	case IsProxyURL(receivedIn):
+		ar = auth.OAuth2(cl, initFns...)
 	default:
 		ar = auth.Resolver(cl, initFns...)
 	}

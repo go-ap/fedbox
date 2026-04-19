@@ -11,8 +11,8 @@ import (
 
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/jsonld"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
 )
@@ -25,12 +25,7 @@ const (
 	KeyTypeRSA     KeyType = "RSA"
 )
 
-type MetadataStorage interface {
-	LoadMetadata(vocab.IRI, any) error
-	SaveMetadata(vocab.IRI, any) error
-}
-
-func AddKeyToItem(metaSaver MetadataStorage, it vocab.Item, pair KeyPair) error {
+func AddKeyToItem(metaSaver storage.MetadataStorage, it vocab.Item, pair KeyPair) error {
 	if err := vocab.OnActor(it, AddKeyToPerson(metaSaver, pair)); err != nil {
 		return errors.Annotatef(err, "failed to process actor: %s", it.GetID())
 	}
@@ -43,13 +38,18 @@ type KeyPair struct {
 	Type    KeyType
 }
 
+type Metadata struct {
+	Pw         []byte `jsonld:"pw,omitempty"`
+	PrivateKey []byte `jsonld:"key,omitempty"`
+}
+
 func AddKeyToPerson(metaSaver storage.MetadataStorage, pair KeyPair) func(act *vocab.Actor) error {
 	return func(act *vocab.Actor) error {
 		if !vocab.ActorTypes.Match(act.Type) {
 			return nil
 		}
 
-		m := new(auth.Metadata)
+		m := new(Metadata)
 		_ = metaSaver.LoadMetadata(act.ID, m)
 		pubB, prvB, err := EncodeKeyPair(pair)
 		if err != nil {
@@ -71,6 +71,42 @@ func AddKeyToPerson(metaSaver storage.MetadataStorage, pair KeyPair) func(act *v
 		}
 		return nil
 	}
+}
+
+func SaveMetadataForItems(metaLoader storage.MetadataStorage, buf []byte) error {
+	metadata := make(map[vocab.IRI]Metadata)
+	err := jsonld.Unmarshal(buf, &metadata)
+	if err != nil {
+		return err
+	}
+	errs := make([]error, 0, len(metadata))
+	for iri, m := range metadata {
+		if err = metaLoader.SaveMetadata(iri, m); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func LoadMetadataForItems(metaLoader storage.MetadataStorage, items ...vocab.Item) map[vocab.IRI]Metadata {
+	allMeta := make(map[vocab.IRI]Metadata, len(items))
+	for _, it := range items {
+		if !vocab.PersonType.Match(it.GetType()) {
+			continue
+		}
+		m := new(Metadata)
+		if err := metaLoader.LoadMetadata(it.GetLink(), m); err != nil {
+			//Errf("Error loading metadata for %s: %s", it.GetLink(), err)
+			continue
+		}
+		if m == nil {
+			//Errf("Error loading metadata for %s, nil metadata", it.GetLink())
+			continue
+		}
+		allMeta[it.GetLink()] = *m
+	}
+	return allMeta
 }
 
 func KeyPairFromPrivateBytes(prvBytes []byte) (*KeyPair, error) {

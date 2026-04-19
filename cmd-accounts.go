@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
+	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/jsonld"
@@ -22,7 +22,7 @@ type Accounts struct {
 type Export struct{}
 
 func (e Export) Run(ctl *Base) error {
-	metaLoader, ok := ctl.Storage.(ap.MetadataStorage)
+	metaLoader, ok := ctl.Storage.(storage.MetadataStorage)
 	if !ok {
 		return errors.Newf("")
 	}
@@ -46,22 +46,7 @@ func (e Export) Run(ctl *Base) error {
 		items = append(items, col)
 	}
 
-	allMeta := make(map[vocab.IRI]auth.Metadata, len(items))
-	for _, it := range items {
-		if !vocab.PersonType.Match(it.GetType()) {
-			continue
-		}
-		m := new(auth.Metadata)
-		if err = metaLoader.LoadMetadata(it.GetLink(), m); err != nil {
-			//Errf("Error loading metadata for %s: %s", it.GetLink(), err)
-			continue
-		}
-		if m == nil {
-			//Errf("Error loading metadata for %s, nil metadata", it.GetLink())
-			continue
-		}
-		allMeta[it.GetLink()] = *m
-	}
+	allMeta := ap.LoadMetadataForItems(metaLoader)
 	bytes, err := jsonld.Marshal(allMeta)
 	if err != nil {
 		return err
@@ -75,7 +60,7 @@ type Import struct {
 }
 
 func (i Import) Run(ctl *Base) error {
-	metaLoader, ok := ctl.Storage.(ap.MetadataStorage)
+	metaLoader, ok := ctl.Storage.(storage.MetadataStorage)
 	if !ok {
 		return errors.Newf("")
 	}
@@ -96,28 +81,14 @@ func (i Import) Run(ctl *Base) error {
 			continue
 		}
 
-		metadata := make(map[vocab.IRI]auth.Metadata)
-		err = jsonld.Unmarshal(buf, &metadata)
-		if err != nil {
-			Errf(ctl.err, "Error unmarshaling JSON: %s", err)
-			continue
-		}
 		start := time.Now()
-		count := 0
-		for iri, m := range metadata {
-			if err = metaLoader.SaveMetadata(iri, m); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "unable to save metadata for %s: %s", iri, err)
-				continue
-			}
-			count++
+		if err = ap.SaveMetadataForItems(metaLoader, buf); err != nil {
+			Errf(ctl.err, "Error saving metadata: %s", err)
+			continue
 		}
 
 		tot := time.Now().Sub(start)
 		_, _ = fmt.Fprintf(ctl.out, "Elapsed time:          %s\n", tot)
-		if count > 0 {
-			perIt := time.Duration(int64(tot) / int64(count))
-			_, _ = fmt.Fprintf(ctl.out, "Elapsed time per item: %s\n", perIt)
-		}
 	}
 	return nil
 }
@@ -129,7 +100,7 @@ type GenKeys struct {
 
 func (g GenKeys) Run(ctl *Base) error {
 	typ := g.Type
-	metaSaver, ok := ctl.Storage.(ap.MetadataStorage)
+	metaSaver, ok := ctl.Storage.(storage.MetadataStorage)
 	if !ok {
 		return errors.Newf("storage doesn't support saving key")
 	}
