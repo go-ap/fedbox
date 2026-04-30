@@ -217,27 +217,23 @@ type actorVerifier interface {
 
 func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, receivedIn vocab.IRI) vocab.Actor {
 	// NOTE(marius): if the Storage is nil, we can still use the remote client in the load function
-	isLocalFn := func(iri vocab.IRI) bool {
-		return iri.Contains(vocab.IRI(f.Conf.BaseURL), true)
-	}
-
 	l := f.Logger.WithContext(lw.Ctx{"log": "auth"})
-	initFns := []auth.ConfigInitFn{
-		auth.ConfigWithLogger(l),
-		auth.ConfigWithStorage(f.Storage),
-		auth.ConfigWithLocalIRIFn(isLocalFn),
+	initFns := []auth.InitFn{
+		auth.WithClient(cl),
+		auth.WithLogger(l),
+		auth.WithStorage(f.Storage),
 	}
 
 	var ar actorVerifier
 	switch {
 	case r.Method == http.MethodPost && processing.IsInbox(receivedIn):
-		ar = auth.HTTPSignature(cl, initFns...)
+		ar = auth.HTTPSignature(initFns...)
 	case r.Method == http.MethodPost && processing.IsOutbox(receivedIn):
-		ar = auth.OAuth2(cl, initFns...)
+		ar = auth.OAuth2(initFns...)
 	case IsProxyURL(receivedIn):
-		ar = auth.OAuth2(cl, initFns...)
+		ar = auth.OAuth2(initFns...)
 	default:
-		ar = auth.Resolver(cl, initFns...)
+		ar = auth.Verifier(initFns...)
 	}
 
 	actor, err := ar.Verify(r)
