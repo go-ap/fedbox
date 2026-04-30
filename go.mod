@@ -14,7 +14,7 @@ require (
 	github.com/alecthomas/kong v1.15.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/go-ap/activitypub v0.0.0-20260416122353-fb80985e153a
-	github.com/go-ap/auth v0.0.0-20260430140534-2cdb50d065ab
+	github.com/go-ap/auth v0.0.0-20260430195821-093e01ab1966
 	github.com/go-ap/cache v0.0.0-20260416122450-ff51ff8e9ff6
 	github.com/go-ap/client v0.0.0-20260430134201-cafcc068e747
 	github.com/go-ap/errors v0.0.0-20260208110149-e1b309365966
@@ -80,7 +80,7 @@ require (
 	github.com/jackc/pgx/v5 v5.9.2 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
-	github.com/klauspost/compress v1.18.5 // indirect
+	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/leporo/sqlf v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mariusor/bubbles-tree v0.0.0-20260312152406-21329fb3c429 // indirect
