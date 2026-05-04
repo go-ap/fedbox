@@ -9,18 +9,18 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/motley v0.0.0-20260316084024-27f1802279e5
 	git.sr.ht/~mariusor/servermux v0.0.0-20260310142041-b6c9be7e7820
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260417110816-487c3f0a0efa
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260504134016-d570d5ee964a
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.15.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/go-ap/activitypub v0.0.0-20260416122353-fb80985e153a
-	github.com/go-ap/auth v0.0.0-20260430195821-093e01ab1966
+	github.com/go-ap/auth v0.0.0-20260504151533-c7666398e984
 	github.com/go-ap/cache v0.0.0-20260416122450-ff51ff8e9ff6
-	github.com/go-ap/client v0.0.0-20260430134201-cafcc068e747
+	github.com/go-ap/client v0.0.0-20260504151458-2e86761c66c4
 	github.com/go-ap/errors v0.0.0-20260208110149-e1b309365966
 	github.com/go-ap/filters v0.0.0-20260416122840-724cb3c8974c
 	github.com/go-ap/jsonld v0.0.0-20251216162253-e38fa664ea77
-	github.com/go-ap/processing v0.0.0-20260430155833-9c12ea95f06e
+	github.com/go-ap/processing v0.0.0-20260504151552-b4d664457a51
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -40,7 +40,7 @@ require (
 	charm.land/log/v2 v2.0.0 // indirect
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/mask v0.0.0-20250114195353-98705a6977b7
-	git.sr.ht/~mariusor/ssm v0.0.0-20260220115209-1adc83acc174 // indirect
+	git.sr.ht/~mariusor/ssm v0.0.0-20260505081700-875e54c38633 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
@@ -64,11 +64,11 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.4.0 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260417105711-8ae4f1449d1f // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260417105735-369b9c9ea0ab // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260417104507-b66107129185 // indirect
-	github.com/go-ap/storage-pg v0.0.0-20260417110134-ae3a215aad86 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260417105342-ba94bf403b9f // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260504124513-40f1bbb2ac5d // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260504124426-48723b158afd // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260504122928-1f7f535d2f78 // indirect
+	github.com/go-ap/storage-pg v0.0.0-20260504131311-d12b070d439f // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260504123901-9aec95e03944 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -120,7 +120,7 @@ require (
 	golang.org/x/text v0.36.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	modernc.org/libc v1.72.1 // indirect
+	modernc.org/libc v1.72.2 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.50.0 // indirect
