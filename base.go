@@ -598,7 +598,7 @@ func (ctl *Base) AddClient(pw []byte, redirectUris []string, u any) (string, err
 		UserData:    userData,
 	}
 
-	return id, ctl.Storage.CreateClient(&d)
+	return id, ctl.Storage.SaveClient(&d)
 }
 
 func (ctl *Base) Bootstrap(pw []byte, pair *ap.KeyPair) error {
@@ -642,7 +642,7 @@ func CreateService(ctl *Base, self vocab.Item, pair *ap.KeyPair, pw []byte) (err
 
 	storage := ctl.Storage
 	c := osin.DefaultClient{Id: string(service.ID)}
-	_ = storage.CreateClient(&c)
+	_ = storage.SaveClient(&c)
 
 	if pw != nil {
 		if err = storage.PasswordSet(service.ID, pw); err != nil {
