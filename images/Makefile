@@ -14,8 +14,8 @@ STORAGE_OBJECTS = $(STORAGE_PATH)/objects
 TAG ?= $(ENV)
 VERSION ?= HEAD
 
-TAG_CMD=podman tag
-PUSH_CMD=podman push
+TAG_CMD=buildah tag
+PUSH_CMD=buildah push
 
 ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
 	BRANCH=$(shell git rev-parse --abbrev-ref HEAD | tr '/' '-')
