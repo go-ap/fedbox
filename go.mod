@@ -9,13 +9,13 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/motley v0.0.0-20260528102719-22ef96ea9be1
 	git.sr.ht/~mariusor/servermux v0.0.0-20260310142041-b6c9be7e7820
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260516094705-054d0bc05cdb
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260601110127-d52e72472799
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.15.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/go-ap/activitypub v0.0.0-20260416122353-fb80985e153a
 	github.com/go-ap/auth v0.0.0-20260515125052-2d09b2b673c0
-	github.com/go-ap/cache v0.0.0-20260416122450-ff51ff8e9ff6
+	github.com/go-ap/cache v0.0.0-20260601105412-761bb369c090
 	github.com/go-ap/client v0.0.0-20260515125006-7c971011a6dd
 	github.com/go-ap/errors v0.0.0-20260208110149-e1b309365966
 	github.com/go-ap/filters v0.0.0-20260416122840-724cb3c8974c
@@ -64,17 +64,18 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.4.0 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260516094449-c887fbacea7d // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260601105931-8f52a4d15e3f // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260516094401-2788f11a4305 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260516094135-bcf7612ffaf8 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260601105744-896ed98c742c // indirect
 	github.com/go-ap/storage-pg v0.0.0-20260516094546-69b1342fdd91 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260516094216-1fc07e53e46b // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260601105830-4ff65d5d96ba // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/google/pprof v0.0.0-20260402051712-545e8a4df936 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.9.2 // indirect
