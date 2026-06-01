@@ -163,7 +163,7 @@ func validActivityCollection(r *http.Request) bool {
 	return validActivityCollections.Contains(processing.Typer.Type(r))
 }
 
-func ValidateRequest(r *http.Request) (bool, error) {
+func ValidateActivityRequest(r *http.Request) (bool, error) {
 	contType := r.Header.Get("Content-Type")
 	if r.Method != http.MethodPost {
 		return false, errors.MethodNotAllowedf("invalid HTTP method")
@@ -197,10 +197,12 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 	return func(receivedIn vocab.IRI, r *http.Request) (vocab.Item, int, error) {
 		var it vocab.Item
 
-		if ok, err := ValidateRequest(r); !ok {
+		if ok, err := ValidateActivityRequest(r); !ok {
 			fb.errFn("failed request validation: %+s", err)
 			return it, errors.HttpStatus(err), err
 		}
+		defer r.Body.Close()
+
 		body, err := io.ReadAll(r.Body)
 		if err != nil || len(body) == 0 {
 			fb.errFn("failed loading body: %+s", err)
