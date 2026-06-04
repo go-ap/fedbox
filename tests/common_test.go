@@ -893,6 +893,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]any {
 			if resp == nil {
 				return
 			}
+			defer resp.Body.Close()
 
 			b, err = io.ReadAll(resp.Body)
 			assertTrue(err == nil, "Error: invalid HTTP body! Read %d bytes %s", len(b), b)
@@ -961,7 +962,7 @@ func initializeApps(t *testing.T, l lw.Logger, configs ...config.Options) map[vo
 		if err != nil {
 			t.Fatalf("%s", err)
 		}
-		if err := fedbox.BootstrapStorage(options, self, l, pair); err != nil {
+		if err = fedbox.BootstrapStorage(options, self, l, pair); err != nil {
 			t.Fatalf("%s", err)
 		}
 		app, ok := apps[self.ID]

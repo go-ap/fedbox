@@ -157,7 +157,7 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 	}
 
 	ll := ctl.Logger
-	if !auth.AnonymousActor.GetLink().Equal(actor.GetLink()) {
+	if !isAnonymous(actor) {
 		ll = ll.WithContext(lw.Ctx{"log": "HTTP-Sig", "actor": actor.GetLink()})
 		var signActor *vocab.Actor
 		var prv crypto.PrivateKey
@@ -207,8 +207,8 @@ var InternalIRI = vocab.IRI("https://fedbox/")
 
 // GenerateID creates an IRI that can be used to uniquely identify the "it" item, based on the collection "col" and
 // its creator "by"
-func GenerateID(base vocab.IRI) func(it vocab.Item, col vocab.Item, by vocab.Item) (vocab.ID, error) {
-	return func(it vocab.Item, col vocab.Item, by vocab.Item) (vocab.ID, error) {
+func GenerateID(base vocab.IRI) func(it vocab.Item, by vocab.Item) (vocab.ID, error) {
+	return func(it vocab.Item, by vocab.Item) (vocab.ID, error) {
 		typ := it.GetType()
 
 		var partOf vocab.IRI
@@ -248,7 +248,7 @@ func (ctl *Base) AddActor(p *vocab.Actor, author vocab.Actor) (*vocab.Actor, err
 	if ctl == nil || ctl.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	if author.GetLink().Equals(auth.AnonymousActor.GetLink(), false) {
+	if isAnonymous(author) {
 		self, err := ap.LoadActor(ctl.Storage, ap.DefaultServiceIRI(ctl.Conf.BaseURL))
 		if err != nil {
 			return nil, errors.NewNotFound(err, "unable to load current's instance Application actor")
@@ -275,11 +275,15 @@ func (ctl *Base) AddActor(p *vocab.Actor, author vocab.Actor) (*vocab.Actor, err
 	return p, nil
 }
 
+func isAnonymous(author vocab.Item) bool {
+	return auth.AnonymousActor.GetLink().Equals(author.GetLink(), false)
+}
+
 func (ctl *Base) AddObject(p *vocab.Object, author vocab.Actor) (*vocab.Object, error) {
 	if ctl.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	if author.GetLink().Equals(auth.AnonymousActor.GetLink(), false) {
+	if isAnonymous(author.GetLink()) {
 		self, err := ap.LoadActor(ctl.Storage, ap.DefaultServiceIRI(ctl.Conf.BaseURL))
 		if err != nil {
 			return nil, errors.NewNotFound(err, "unable to load current's instance Application actor")
