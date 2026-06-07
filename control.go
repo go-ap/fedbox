@@ -49,9 +49,11 @@ type CTL struct {
 	Run Serve `cmd:"" name:"run" help:"Run the ${name} instance server (version: ${version})" default:"withargs"`
 }
 
+var DefaultLogLevel = lw.WarnLevel
+
 func InitControl(c *CTL, version string) (*Base, error) {
 	opt := config.Options{
-		LogLevel: lw.InfoLevel,
+		LogLevel: DefaultLogLevel,
 		AppName:  AppName,
 		Version:  version,
 	}
@@ -66,8 +68,12 @@ func InitControl(c *CTL, version string) (*Base, error) {
 	if c.Path != "" {
 		opt.StoragePath = c.Path
 	}
-	if c.Verbose > 1 {
-		opt.LogLevel = lw.DebugLevel
+	if c.Verbose > 0 {
+		// NOTE(marius): no verbosity means show only warnings and errors
+		// verbosity = 1 means show info messages
+		// verbosity = 2 debug messages
+		// verbosity = 3 tracing messages
+		opt.LogLevel = DefaultLogLevel - lw.Level(c.Verbose)
 	}
 
 	errors.SetIncludeBacktrace(opt.LogLevel == lw.TraceLevel)
