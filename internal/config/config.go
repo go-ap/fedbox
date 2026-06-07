@@ -125,7 +125,9 @@ func normalizeConfigPath(p string, o Options) string {
 		return p
 	}
 	if p[0] == '~' {
-		p = os.Getenv("HOME") + p[1:]
+		if hp, _ := os.UserHomeDir(); hp != "" {
+			p = hp + p[1:]
+		}
 	}
 	if !filepath.IsAbs(p) {
 		p, _ = filepath.Abs(p)
@@ -278,7 +280,7 @@ func LoadFromEnv(conf *Options) {
 	conf.Storage = storage.Type(strings.ToLower(Getval(KeyStorage, string(storage.Default))))
 	conf.StoragePath = Getval(KeyStoragePath, "")
 	if conf.StoragePath != "" {
-		conf.StoragePath = filepath.Clean(conf.StoragePath)
+		conf.StoragePath = normalizeConfigPath(conf.StoragePath, *conf)
 	}
 
 	disableCache, _ := strconv.ParseBool(Getval(KeyCacheDisable, "false"))
