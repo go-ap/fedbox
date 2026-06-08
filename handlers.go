@@ -10,6 +10,7 @@ import (
 
 	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/auth"
 	"github.com/go-ap/cache"
 	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
@@ -61,6 +62,34 @@ func reqURL(r http.Request, secure bool) string {
 
 func FedBOXClient(fb *FedBOX) *client.C {
 	return ActorClient(fb.Base, fb.Service.ID)
+}
+
+func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, receivedIn vocab.IRI) vocab.Actor {
+	// NOTE(marius): if the Storage is nil, we can still use the remote client in the load function
+	l := f.Logger.WithContext(lw.Ctx{"log": "auth"})
+	initFns := []auth.InitFn{
+		auth.WithClient(cl),
+		auth.WithLogger(l),
+		auth.WithStorage(f.Storage),
+	}
+
+	var ar actorVerifier
+	switch {
+	case r.Method == http.MethodPost && processing.IsInbox(receivedIn):
+		ar = auth.HTTPSignature(initFns...)
+	case r.Method == http.MethodPost && processing.IsOutbox(receivedIn):
+		ar = auth.OAuth2(initFns...)
+	case IsProxyURL(receivedIn):
+		ar = auth.OAuth2(initFns...)
+	default:
+		ar = auth.Verifier(initFns...)
+	}
+
+	actor, err := ar.Verify(r)
+	if err != nil {
+		f.Logger.WithContext(lw.Ctx{"err": err.Error()}).Errorf("unable to load an authorized Actor from request")
+	}
+	return actor
 }
 
 // HandleCollection serves content from the generic collection end-points
@@ -285,26 +314,24 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
 
-		what := r.URL.Path
-
 		if !fromCache {
 			repo := fb.Storage
 			var err error
 			var f filters.Check
 			f = filters.Authorized(authorized.ID)
 			if it, err = repo.Load(iri, f); err != nil {
-				return nil, errors.NotFoundf("%s was not found", what)
+				return nil, errors.NotFoundf("%s was not found", iri)
 			}
 		}
 		var err error
 		if vocab.IsItemCollection(it) {
 			err = vocab.OnCollectionIntf(it, func(col vocab.CollectionInterface) error {
 				if col.Count() == 0 {
-					return errors.NotFoundf("%s not found", what)
+					return errors.NotFoundf("%s not found", iri)
 				}
 
 				if col.Count() > 1 {
-					return errors.Conflictf("Too many %s found", what)
+					return errors.Conflictf("Too many %s found", iri)
 				}
 				it = col.Collection().First()
 				return nil

@@ -14,9 +14,7 @@ import (
 	"git.sr.ht/~mariusor/storage-all"
 	w "git.sr.ht/~mariusor/wrapper"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/auth"
 	"github.com/go-ap/cache"
-	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -215,34 +213,6 @@ type actorVerifier interface {
 	Verify(*http.Request) (vocab.Actor, error)
 }
 
-func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, receivedIn vocab.IRI) vocab.Actor {
-	// NOTE(marius): if the Storage is nil, we can still use the remote client in the load function
-	l := f.Logger.WithContext(lw.Ctx{"log": "auth"})
-	initFns := []auth.InitFn{
-		auth.WithClient(cl),
-		auth.WithLogger(l),
-		auth.WithStorage(f.Storage),
-	}
-
-	var ar actorVerifier
-	switch {
-	case r.Method == http.MethodPost && processing.IsInbox(receivedIn):
-		ar = auth.HTTPSignature(initFns...)
-	case r.Method == http.MethodPost && processing.IsOutbox(receivedIn):
-		ar = auth.OAuth2(initFns...)
-	case IsProxyURL(receivedIn):
-		ar = auth.OAuth2(initFns...)
-	default:
-		ar = auth.Verifier(initFns...)
-	}
-
-	actor, err := ar.Verify(r)
-	if err != nil {
-		f.Logger.WithContext(lw.Ctx{"err": err.Error()}).Errorf("unable to load an authorized Actor from request")
-	}
-	return actor
-}
-
 // Run is the wrapper for starting the web-server and handling signals
 func (f *FedBOX) Run(ctx context.Context) error {
 	logCtx := lw.Ctx{}
@@ -263,8 +233,8 @@ func (f *FedBOX) Run(ctx context.Context) error {
 	ctx, cancelFn = context.WithCancel(ctx)
 	defer cancelFn()
 
-	logger := f.Logger.WithContext(logCtx)
-	logger.Infof("Started")
+	logger := f.Logger
+	logger.WithContext(logCtx).Infof("Started")
 	if err := f.Conf.WritePid(); err != nil {
 		logger.Warnf("Unable to write pid file: %s", err)
 		logger.Warnf("Some CLI commands relying on it will not work")
@@ -321,7 +291,7 @@ func (f *FedBOX) Run(ctx context.Context) error {
 		},
 	}).Exec(ctx, f.server.Start)
 	if err == nil {
-		logger.Infof("Stopped")
+		logger.WithContext(logCtx).Infof("Stopped")
 	}
 	return err
 }
