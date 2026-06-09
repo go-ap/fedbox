@@ -9,7 +9,6 @@ FEDBOX_HOSTNAME ?= fedbox.git
 STORAGE ?= all
 ENV ?= dev
 PROJECT ?= fedbox
-VERSION ?= HEAD
 
 LDFLAGS ?= -X github.com/go-ap/fedbox/internal/cmd.AppVersion=$(VERSION)
 BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)' -tags "$(TAGS)"
@@ -37,13 +36,13 @@ export GOEXPERIMENT=greenteagc
 ifeq ($(shell git describe --always > /dev/null 2>&1 ; echo $$?), 0)
 	BRANCH=$(shell git rev-parse --abbrev-ref HEAD | tr '/' '-')
 	HASH=$(shell git rev-parse --short HEAD)
-	VERSION = $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
+	VERSION ?= $(shell printf "%s-%s" "$(BRANCH)" "$(HASH)")
 endif
 ifeq ($(shell git describe --tags > /dev/null 2>&1 ; echo $$?), 0)
-	VERSION = $(shell git describe --tags | tr '/' '-')
+	VERSION ?= $(shell git describe --tags | tr '/' '-')
 endif
 
-ifneq ($(ENV),dev)
+ifneq ($(ENV), dev)
 	LDFLAGS += -s -w -extldflags "-static"
 	BUILDFLAGS += -trimpath
 endif
@@ -63,7 +62,6 @@ all: fedbox ##
 download: go.sum ## Downloads dependencies and tidies the go.mod file.
 
 go.sum: go.mod
-	$(GO) mod download all
 	$(GO) mod tidy
 
 fedbox: bin/fedbox ## Builds the main FedBOX service binary.
