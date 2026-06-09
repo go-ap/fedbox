@@ -31,6 +31,7 @@ type SSH struct {
 	OAuth       OAuth       `cmd:"" name:"oauth"`
 	Storage     Storage     `cmd:""`
 	Accounts    Accounts    `cmd:"" help:"Accounts helper."`
+	Debug       Debug       `cmd:"" help:"Toggle debug mode for the running FedBOX server."`
 	Maintenance Maintenance `cmd:"" help:"Toggle maintenance mode for the running FedBOX server."`
 	Reload      Reload      `cmd:"" help:"Reload the running FedBOX server configuration."`
 	Stop        Stop        `cmd:"" help:"Stops the running FedBOX server configuration."`
