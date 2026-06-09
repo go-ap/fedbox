@@ -14,7 +14,7 @@ require (
 	github.com/alecthomas/kong v1.15.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/go-ap/activitypub v0.0.0-20260607141243-4f8aa4005e65
-	github.com/go-ap/auth v0.0.0-20260608182917-5a37f28b85e8
+	github.com/go-ap/auth v0.0.0-20260609095621-e2be3e7644b2
 	github.com/go-ap/cache v0.0.0-20260607141501-80f9206d91a9
 	github.com/go-ap/client v0.0.0-20260608175636-b68cfe199b10
 	github.com/go-ap/errors v0.0.0-20260607141156-afed270859b6
@@ -61,7 +61,7 @@ require (
 	github.com/creack/pty v1.1.24 // indirect
 	github.com/dadrus/httpsig v0.9.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dgraph-io/badger/v4 v4.9.1 // indirect
+	github.com/dgraph-io/badger/v4 v4.9.2 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.4.0 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
