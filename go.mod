@@ -14,7 +14,7 @@ require (
 	github.com/alecthomas/kong v1.15.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/go-ap/activitypub v0.0.0-20260607141243-4f8aa4005e65
-	github.com/go-ap/auth v0.0.0-20260612115228-934f46ffdbfa
+	github.com/go-ap/auth v0.0.0-20260612130543-196b62f7ae67
 	github.com/go-ap/cache v0.0.0-20260607141501-80f9206d91a9
 	github.com/go-ap/client v0.0.0-20260612113524-640e9e9bf754
 	github.com/go-ap/errors v0.0.0-20260607141156-afed270859b6
