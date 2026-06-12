@@ -174,7 +174,7 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 			ll.WithContext(lw.Ctx{"err": err}).Debugf("unable to load a valid actor and key for signing requests")
 		}
 		if prv != nil && signActor != nil {
-			tr = s2s.New(s2s.WithActor(signActor, prv), s2s.WithLogger(ll))
+			tr = s2s.New(s2s.WithActor(signActor, prv), s2s.WithLogger(ll), s2s.WithAlg(s2s.KeyTypePKCS))
 		}
 	}
 
