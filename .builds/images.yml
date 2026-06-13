@@ -10,21 +10,9 @@ sources:
 tasks:
   - setup: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
+
       set -a +x
       source ~/.buildah.env
-
-      _user=$(id -un)
-
-      echo "${_user}:10000:65536" | sudo tee /etc/subuid
-      echo "${_user}:10000:65536" | sudo tee /etc/subgid
-
-      echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/unq-search.conf
-
-      # setting up rootless storage options
-      sudo mkdir -p /etc/containers/storage.rootless.conf.d/
-      echo '[storage]' | sudo tee /etc/containers/storage.rootless.conf.d/default.conf
-      echo 'runroot = "/tmp/buildah/storage"' | sudo tee -a /etc/containers/storage.rootless.conf.d/default.conf
-      echo 'graphroot = "/tmp/buildah/containers/"' | sudo tee -a /etc/containers/storage.rootless.conf.d/default.conf
 
       buildah login -u="${BUILDAH_USER}" -p="${BUILDAH_SECRET}" quay.io
 
