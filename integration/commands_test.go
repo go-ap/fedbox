@@ -177,8 +177,8 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 
 			test.Run(ctx, cont, t)
 			t.Cleanup(func() {
-				cancelFn()
 				cont.Cleanup(t)
+				cancelFn()
 			})
 		})
 	}
