@@ -66,10 +66,13 @@ This however requires that you have the root actor's password available to you, 
 
 So for the server above we could execute the following:
 
-```shell
+```sh
 # https://fedbox is the "username" sent by the ssh client to FedBOX.
 # Currently this needs to be the full Actor IRI
-$ ssh https://fedbox@127.0.2.1 -p 4022 -- pub actor add test-application --type Application
+#
+# ⚠️ The '-tt' flag forces ssh to allocate a PTY for the command execution, which is advised in order for the
+# password inputs to not get echoed upon typing them.
+$ ssh -tt https://fedbox@127.0.2.1 -p 4022 -- pub actor add test-application --type Application
 ```
 
 [^1] And docker, of course.
