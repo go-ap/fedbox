@@ -97,7 +97,8 @@ func (a AddActorCmd) Run(ctl *Base) error {
 		if p, err = ctl.AddActor(p, author); err != nil {
 			return err
 		}
-		_, _ = fmt.Fprintf(ctl.out, "Added %q [%s]: %s\n", a.Type, name, p.GetLink())
+		_, _ = fmt.Fprintf(ctl.out, "Added %q %q\n", a.Type, name)
+		_, _ = fmt.Fprintf(ctl.out, "\t%s\n", p.GetLink())
 		pair, _ := ap.GenerateKeyPair(ap.KeyType(keyType))
 		if pair != nil {
 			if err := ap.AddKeyToItem(ctl.Storage, p, *pair); err != nil {

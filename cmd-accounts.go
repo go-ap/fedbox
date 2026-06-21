@@ -179,7 +179,7 @@ func (c ChangePassword) Run(ctl *Base) error {
 	// a TTY with `ssh -tt` when executing the command from
 	// the ssh handler in order for the input to work correctly.
 	rw := muxReadWriter{Reader: ctl.in, Writer: ctl.out}
-	pw, err := loadPwFromStdin(rw, fmt.Sprintf("%s's password: ", vocab.PreferredNameOf(actor)))
+	pw, err := loadPwFromStdin(rw, vocab.PreferredNameOf(actor))
 	if err != nil {
 		return err
 	}

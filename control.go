@@ -186,12 +186,14 @@ func (w muxReadWriter) Write(p []byte) (n int, err error) {
 var _ io.Reader = muxReadWriter{}
 
 func loadPwFromStdin(rw io.ReadWriter, prompt string) ([]byte, error) {
-	term := terminal.NewTerminal(rw, "")
-	pw1, _ := term.ReadPassword(prompt)
-	p2 := "password again: "
-	pw2, _ := term.ReadPassword(p2)
+	term := terminal.NewTerminal(rw, prompt)
+	pw1, _ := term.ReadPassword("Password: ")
+	if len(pw1) == 0 {
+		return nil, errors.Errorf("empty password")
+	}
+	pw2, _ := term.ReadPassword(" Confirm: ")
 	if pw1 != pw2 {
-		return nil, errors.Errorf("Passwords do not match")
+		return nil, errors.Errorf("passwords do not match")
 	}
 	return []byte(pw1), nil
 }

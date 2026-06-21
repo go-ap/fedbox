@@ -81,13 +81,14 @@ func runSSHCommand(f *FedBOX, s ssh.Session) error {
 	if err != nil {
 		return err
 	}
-	ctx, err := k.Parse(args)
+
+	ktx, err := k.Parse(args)
 	if err != nil {
 		_ = k.Errorf("%s\n", err)
 		return err
 	}
 
-	if err = ctx.Run(ctl); err != nil {
+	if err = ktx.Run(ctl); err != nil {
 		_ = k.Errorf("%s\n", err)
 		return err
 	}
@@ -108,7 +109,7 @@ func MainTui(f *FedBOX) wish.Middleware {
 
 		f.Logger.WithContext(lwCtx).Infof("opening ssh session")
 		// NOTE(marius): this is not an interactive session, try to run the received command
-		if len(s.Command()) > 0 {
+		if cmd := s.Command(); len(cmd) > 0 {
 			if err := runSSHCommand(f, s); err != nil {
 				_ = s.Exit(1)
 			}
