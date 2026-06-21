@@ -45,7 +45,7 @@ func Run(args ...string) error {
 		return err
 	}
 
-	ctl, err := InitControl(CTLRun, AppVersion)
+	ctl, err := InitControl(CTLRun)
 	if err != nil {
 		return err
 	}

@@ -52,11 +52,11 @@ type CTL struct {
 
 var DefaultLogLevel = lw.WarnLevel
 
-func InitControl(c *CTL, version string) (*Base, error) {
+func InitControl(c *CTL) (*Base, error) {
 	opt := config.Options{
 		LogLevel: DefaultLogLevel,
 		AppName:  AppName,
-		Version:  version,
+		Version:  AppVersion,
 	}
 	if c.Env != opt.Env {
 		opt.Env = c.Env
