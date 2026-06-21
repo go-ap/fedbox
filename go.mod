@@ -14,13 +14,13 @@ require (
 	github.com/alecthomas/kong v1.15.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/go-ap/activitypub v0.0.0-20260607141243-4f8aa4005e65
-	github.com/go-ap/auth v0.0.0-20260612130543-196b62f7ae67
+	github.com/go-ap/auth v0.0.0-20260621130523-1e4e4f6887a1
 	github.com/go-ap/cache v0.0.0-20260607141501-80f9206d91a9
-	github.com/go-ap/client v0.0.0-20260612113524-640e9e9bf754
+	github.com/go-ap/client v0.0.0-20260621130221-3f12a15c3bce
 	github.com/go-ap/errors v0.0.0-20260607141156-afed270859b6
 	github.com/go-ap/filters v0.0.0-20260607141701-131281f883a2
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/processing v0.0.0-20260612115749-5375e8af4295
+	github.com/go-ap/processing v0.0.0-20260621130550-bf12ca788e7d
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -36,7 +36,7 @@ require (
 
 require (
 	charm.land/bubbles/v2 v2.1.0 // indirect
-	charm.land/lipgloss/v2 v2.0.3 // indirect
+	charm.land/lipgloss/v2 v2.0.4 // indirect
 	charm.land/log/v2 v2.0.0 // indirect
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/mask v0.0.0-20250114195353-98705a6977b7
@@ -49,7 +49,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/keygen v0.5.4 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20260608091853-35bcb7319efa // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260615092913-2399af76d5b1 // indirect
 	github.com/charmbracelet/x/ansi v0.11.7 // indirect
 	github.com/charmbracelet/x/conpty v0.2.0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
@@ -90,7 +90,7 @@ require (
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/mattn/go-runewidth v0.0.24 // indirect
-	github.com/mattn/go-sqlite3 v1.14.45 // indirect
+	github.com/mattn/go-sqlite3 v1.14.46 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
@@ -122,9 +122,9 @@ require (
 	golang.org/x/text v0.38.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	modernc.org/libc v1.73.1 // indirect
+	modernc.org/libc v1.73.4 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.52.0 // indirect
+	modernc.org/sqlite v1.53.0 // indirect
 	quamina.net/go/quamina/v2 v2.0.2 // indirect
 )

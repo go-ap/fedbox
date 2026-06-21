@@ -181,19 +181,25 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 	return initClient(tr, ctl.Conf, ll.WithContext(lw.Ctx{"log": "client"}))
 }
 
-func initClient(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
-	cachePath, err := os.UserCacheDir()
-	if err != nil {
-		cachePath = os.TempDir()
-	}
+const MB = 1024 * 1024 * 1024
 
+func initClient(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
 	if tr == nil {
 		tr = &http.Transport{}
 	}
 
+	var cacheStorage cache2.Storage = cache2.Mem(MB)
+	if !conf.Env.IsDev() {
+		cachePath, err := os.UserCacheDir()
+		if err != nil {
+			cachePath = os.TempDir()
+		}
+		cacheStorage = cache2.FS(filepath.Join(cachePath, conf.AppName))
+	}
+
 	ua := fmt.Sprintf("%s@%s (+%s)", conf.BaseURL, conf.Version, ap.ProjectURL)
 	baseClient := &http.Client{
-		Transport: client.UserAgentTransport(ua, cache2.Private(tr, cache2.FS(filepath.Join(cachePath, conf.AppName)))),
+		Transport: client.UserAgentTransport(ua, cache2.Private(tr, cacheStorage)),
 	}
 
 	return client.New(
