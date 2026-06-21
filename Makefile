@@ -10,7 +10,7 @@ STORAGE ?= all
 ENV ?= dev
 PROJECT ?= fedbox
 
-LDFLAGS ?= -X github.com/go-ap/fedbox/internal/cmd.AppVersion=$(VERSION)
+LDFLAGS ?= -X github.com/go-ap/fedbox.AppVersion=$(VERSION)
 BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)' -tags "$(TAGS)"
 TEST_FLAGS ?= -timeout 45s -count=1 -tags "$(TAGS)"
 
@@ -66,7 +66,7 @@ go.sum: go.mod
 
 fedbox: bin/fedbox ## Builds the main FedBOX service binary.
 bin/fedbox: go.mod go.sum cmd/fedbox/main.go $(APPSOURCES)
-	$(BUILD) -o $@ ./cmd/fedbox/main.go
+	$(BUILD) -o $@ ./cmd/fedbox
 ifneq (,$(findstring $(ENV), "prod qa"))
 	$(UPX) -q --mono --no-progress --best $@ || true
 endif
