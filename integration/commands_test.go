@@ -25,8 +25,8 @@ func endOK(t *testing.T, line []byte) []byte {
 }
 
 var urlRegexp = regexp.MustCompile(`(http|https://[a-zA-Z0-9./-]+)`)
-var passRegexp = regexp.MustCompile(`.* password:`)
-var passAgain = regexp.MustCompile(`password again:`)
+var passMatch = matchesString(`Password: `)
+var confirmMatch = matchesString(` Confirm: `)
 
 func withInput(r tests.LineOutputTest, input string) tests.LineOutputTest {
 	return func(t *testing.T, line []byte) []byte {
@@ -40,6 +40,15 @@ func matchesRegexp(r *regexp.Regexp) tests.LineOutputTest {
 	return func(t *testing.T, line []byte) []byte {
 		if matches := r.FindSubmatch(line); len(matches) == 0 {
 			t.Errorf("The line %q did not contain the regex, %q", line, r)
+		}
+		return nil
+	}
+}
+
+func matchesString(s string) tests.LineOutputTest {
+	return func(t *testing.T, line []byte) []byte {
+		if !bytes.Equal(line, []byte(s)) {
+			t.Errorf("The line %q did not match expected, %q", line, s)
 		}
 		return nil
 	}
@@ -87,8 +96,8 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  defaultPrivateKey,
 			},
 			IO: tests.WithTests(
-				withInput(matchesRegexp(passRegexp), "asd"),
-				withInput(matchesRegexp(passAgain), "asd"),
+				withInput(passMatch, "asd"),
+				withInput(confirmMatch, "asd"),
 				matchesRegexp(urlRegexp),
 				endOK,
 			),
@@ -102,8 +111,8 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  defaultPrivateKey,
 			},
 			IO: tests.WithTests(
-				withInput(matchesRegexp(passRegexp), "asd"),
-				withInput(matchesRegexp(passAgain), "asd"),
+				withInput(passMatch, "asd"),
+				withInput(confirmMatch, "asd"),
 				matchesRegexp(urlRegexp),
 				endOK),
 		},
@@ -126,8 +135,8 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  defaultPrivateKey,
 			},
 			IO: tests.WithTests(
-				withInput(matchesRegexp(passRegexp), "asd"),
-				withInput(matchesRegexp(passAgain), "asd"),
+				withInput(passMatch, "asd"),
+				withInput(confirmMatch, "asd"),
 				endOK,
 			),
 		},
