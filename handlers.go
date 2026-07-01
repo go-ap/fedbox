@@ -198,10 +198,10 @@ func ValidateActivityRequest(r *http.Request) (bool, error) {
 		return false, errors.MethodNotAllowedf("invalid HTTP method")
 	}
 	if !validContentType(contType) {
-		return false, errors.NotValidf("invalid content type")
+		return false, errors.BadRequestf("invalid content type")
 	}
 	if !validActivityCollection(r) {
-		return false, errors.NotValidf("invalid collection")
+		return false, errors.BadRequestf("invalid collection")
 	}
 
 	return true, nil
@@ -235,15 +235,15 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		body, err := io.ReadAll(r.Body)
 		if err != nil || len(body) == 0 {
 			fb.errFn("failed loading body: %+s", err)
-			return it, http.StatusBadRequest, errors.NewNotValid(err, "unable to read request body")
+			return it, http.StatusBadRequest, errors.NewBadRequest(err, "unable to read request body")
 		}
 
 		if it, err = vocab.UnmarshalJSON(body); err != nil {
 			fb.errFn("failed unmarshalling jsonld body: %+s", err)
-			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
+			return it, http.StatusInternalServerError, errors.NewBadRequest(err, "unable to unmarshal JSON request")
 		}
 		if vocab.IsNil(it) {
-			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to unmarshal JSON request")
+			return it, http.StatusInternalServerError, errors.NewBadRequest(err, "unable to unmarshal JSON request")
 		}
 
 		l := fb.Logger.WithContext(lw.Ctx{"log": "processing"})
@@ -274,7 +274,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		processor := processing.New(initFns...)
 		if err != nil {
 			fb.errFn("failed initializing the Activity processor: %+s", err)
-			return it, http.StatusInternalServerError, errors.NewNotValid(err, "unable to initialize processor")
+			return it, http.StatusInternalServerError, errors.Annotatef(err, "unable to initialize processor")
 		}
 
 		typ := it.GetType()
