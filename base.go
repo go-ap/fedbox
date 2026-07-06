@@ -21,7 +21,6 @@ import (
 	"github.com/go-ap/client/s2s"
 	"github.com/go-ap/errors"
 	ap "github.com/go-ap/fedbox/activitypub"
-	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/processing"
 	"github.com/openshift/osin"
@@ -157,6 +156,28 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 	}
 
 	ll := ctl.Logger
+
+	conf := ctl.Conf
+	var cacheStorage cache2.Storage = cache2.Mem(MB)
+	if !conf.Env.IsDev() {
+		cachePath, err := os.UserCacheDir()
+		if err != nil {
+			cachePath = os.TempDir()
+		}
+		cacheStorage = cache2.FS(filepath.Join(cachePath, conf.AppName))
+	}
+
+	ua := fmt.Sprintf("%s@%s (+%s)", conf.BaseURL, conf.Version, ap.ProjectURL)
+	baseClient := &http.Client{
+		Transport: cache2.Private(tr, cacheStorage),
+	}
+
+	initFns := []client.OptionFn{
+		client.WithHTTPClient(baseClient),
+		client.WithUserAgent(ua),
+		client.SkipTLSValidation(!conf.Env.IsProd()),
+	}
+
 	if !isAnonymous(actor) {
 		ll = ll.WithContext(lw.Ctx{"log": "HTTP-Sig", "actor": actor.GetLink()})
 		var signActor *vocab.Actor
@@ -174,40 +195,22 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 			ll.WithContext(lw.Ctx{"err": err}).Debugf("unable to load a valid actor and key for signing requests")
 		}
 		if prv != nil && signActor != nil {
-			tr = s2s.New(s2s.WithActor(signActor, prv), s2s.WithLogger(ll), s2s.WithAlg(s2s.KeyTypePKCS))
+			sig, err := s2s.New(
+				s2s.WithActor(signActor, prv),
+				s2s.WithAlg(s2s.KeyTypePKCS),
+				s2s.WithCoveredComponents(s2s.FetchCoveredComponents...),
+			)
+			if err == nil {
+				initFns = append(initFns, client.WithAuthorizationFn(sig.SignRFC9421, sig.SignDraft))
+			}
 		}
 	}
+	initFns = append(initFns, client.WithLogger(ll.WithContext(lw.Ctx{"log": "client"})))
 
-	return initClient(tr, ctl.Conf, ll.WithContext(lw.Ctx{"log": "client"}))
+	return client.New(initFns...)
 }
 
 const MB = 1024 * 1024 * 1024
-
-func initClient(tr http.RoundTripper, conf config.Options, l lw.Logger) *client.C {
-	if tr == nil {
-		tr = &http.Transport{}
-	}
-
-	var cacheStorage cache2.Storage = cache2.Mem(MB)
-	if !conf.Env.IsDev() {
-		cachePath, err := os.UserCacheDir()
-		if err != nil {
-			cachePath = os.TempDir()
-		}
-		cacheStorage = cache2.FS(filepath.Join(cachePath, conf.AppName))
-	}
-
-	ua := fmt.Sprintf("%s@%s (+%s)", conf.BaseURL, conf.Version, ap.ProjectURL)
-	baseClient := &http.Client{
-		Transport: client.UserAgentTransport(ua, cache2.Private(tr, cacheStorage)),
-	}
-
-	return client.New(
-		client.WithLogger(l.WithContext(lw.Ctx{"log": "client"})),
-		client.WithHTTPClient(baseClient),
-		client.SkipTLSValidation(!conf.Env.IsProd()),
-	)
-}
 
 var InternalIRI = vocab.IRI("https://fedbox/")
 
