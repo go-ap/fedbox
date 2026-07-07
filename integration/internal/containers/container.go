@@ -37,7 +37,7 @@ func (fc fboxContainer) Exec(ctx context.Context, cmd []string, opts ...exec.Pro
 	}
 
 	for label, ports := range portsMap {
-		if strings.HasPrefix(string(label), "4044") && len(ports) > 0 {
+		if strings.HasPrefix(label.String(), "4044") && len(ports) > 0 {
 			host = net.JoinHostPort(host, ports[0].HostPort)
 		}
 	}

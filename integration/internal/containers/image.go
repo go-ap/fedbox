@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
 	vocab "github.com/go-ap/activitypub"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	tc "github.com/testcontainers/testcontainers-go"
 )
 
