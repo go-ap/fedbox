@@ -164,7 +164,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				c.WithPw(defaultPassword),
 				c.WithTestLogger(t, Verbose),
 			)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			images := c.Suite{c2sFedBOX}
 			cont, err := c.Init(ctx, t, images...)
@@ -177,7 +177,9 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 
 			test.Run(ctx, cont, t)
 			t.Cleanup(func() {
-				cont.Cleanup(t)
+				if test.Name != "stop" {
+					cont.Cleanup(t)
+				}
 				cancelFn()
 			})
 		})
