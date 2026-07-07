@@ -177,9 +177,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 
 			test.Run(ctx, cont, t)
 			t.Cleanup(func() {
-				if test.Name != "stop" {
-					cont.Cleanup(t)
-				}
+				cont.Cleanup(t)
 				cancelFn()
 			})
 		})
