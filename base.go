@@ -195,14 +195,12 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 			ll.WithContext(lw.Ctx{"err": err}).Debugf("unable to load a valid actor and key for signing requests")
 		}
 		if prv != nil && signActor != nil {
-			sig, err := s2s.New(
+			sig := s2s.New(
 				s2s.WithActor(signActor, prv),
 				s2s.WithAlg(s2s.KeyTypePKCS),
 				s2s.WithCoveredComponents(s2s.FetchCoveredComponents...),
 			)
-			if err == nil {
-				initFns = append(initFns, client.WithAuthorizationFn(sig.SignRFC9421, sig.SignDraft))
-			}
+			initFns = append(initFns, client.WithAuthorizationFn(sig.SignRFC9421, sig.SignDraft))
 		}
 	}
 	initFns = append(initFns, client.WithLogger(ll.WithContext(lw.Ctx{"log": "client"})))
