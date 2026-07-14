@@ -179,7 +179,7 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 }
 
 func validContentType(c string) bool {
-	if c == client.ContentTypeActivityJson || c == client.ContentTypeJsonLD {
+	if c == client.ContentTypeJsonActivity || c == client.ContentTypeJsonLD {
 		return true
 	}
 

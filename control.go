@@ -43,7 +43,7 @@ type CTL struct {
 	Url     *url.URL         `help:"The URL used by the application."`
 	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`
 	Verbose int              `counter:"v" help:"Increase verbosity level from the default associated with the environment settings."`
-	Path    string           `path:"" help:"The path for the storage folder or socket" default:"." env:"STORAGE_PATH"`
+	Path    string           `path:"" help:"The path for the storage folder or socket" env:"STORAGE_PATH"`
 	Version kong.VersionFlag `short:"V"`
 
 	// Commands
@@ -151,16 +151,18 @@ func setup(ct *Base, conf config.Options) error {
 	if typ != "" {
 		conf.Storage = typ
 	}
-	if conf.StoragePath == "" && path != "." {
+	if conf.StoragePath == "" && path != "" {
 		conf.StoragePath = path
 	}
 	ct.Conf = conf
 
-	db, err := storage.New(conf.StorageInitFns(ct.Logger)...)
+	initFn, err := conf.StorageInitFns(ct.Logger)
 	if err != nil {
 		return err
 	}
-	ct.Storage = db
+	if ct.Storage, err = storage.New(initFn...); err != nil {
+		return err
+	}
 	return nil
 }
 

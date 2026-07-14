@@ -78,7 +78,10 @@ func bootstrap(ctl *Base, service vocab.Item, l lw.Logger, pair *ap.KeyPair, pw 
 	if err != nil {
 		return err
 	}
-	initFns := conf.StorageInitFns(l)
+	initFns, err := conf.StorageInitFns(l)
+	if err != nil {
+		return http.Annotatef(err, "Unable to initialize storage")
+	}
 	if err := storage.Bootstrap(initFns...); err != nil {
 		return http.Annotatef(err, "Unable to create %s path for storage %s", path, conf.Storage)
 	}
@@ -107,7 +110,11 @@ func ResetStorage(conf config.Options, l lw.Logger) error {
 }
 
 func reset(conf config.Options, l lw.Logger) error {
-	if err := storage.Clean(conf.StorageInitFns(l)...); err != nil && !errors.Is(err, os.ErrNotExist) {
+	initFn, err := conf.StorageInitFns(l)
+	if err != nil {
+		return http.Annotatef(err, "Unable to initialize storage")
+	}
+	if err := storage.Clean(initFn...); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return http.Annotatef(err, "Unable to reset %s db for storage %s", conf.StoragePath, conf.Storage)
 	}
 	l.Infof("Successfully reset %s db for storage %s", conf.StoragePath, conf.Storage)

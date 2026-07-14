@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/errors"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
 	tc "github.com/testcontainers/testcontainers-go"
@@ -97,15 +98,17 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB) (tc.Container, erro
 		return &c, err
 	}
 	if len(cmds) > 0 {
+		errs := make([]error, 0, len(cmds))
 		name, _ := c.Name(ctx)
 		for _, ex := range cmds {
 			if err = ex(ctx, c); err != nil {
-				return nil, fmt.Errorf("unable to run startup commands on container %s[%T]: %w", name, f, err)
+				errs = append(errs, fmt.Errorf("unable to run startup command on container %s[%T]: %w", name, f, err))
 			}
 		}
+		err = errors.Join(errs...)
 	}
 
-	return &c, nil
+	return &c, err
 }
 
 type imageInitFn func(*fboxImage)

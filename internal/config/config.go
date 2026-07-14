@@ -58,10 +58,10 @@ type Options struct {
 	ShuttingDown       bool
 }
 
-func (o Options) StorageInitFns(l lw.Logger) []storage.InitFn {
+func (o Options) StorageInitFns(l lw.Logger) ([]storage.InitFn, error) {
 	path, err := o.BaseStoragePath()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	initFns := []storage.InitFn{
 		storage.WithPath(path),
@@ -74,7 +74,7 @@ func (o Options) StorageInitFns(l lw.Logger) []storage.InitFn {
 	if l != nil {
 		initFns = append(initFns, storage.WithLogger(l))
 	}
-	return initFns
+	return initFns, nil
 }
 
 type StorageType string
@@ -140,12 +140,15 @@ func normalizeConfigPath(p string, o Options) string {
 
 func (o Options) BaseStoragePath() (string, error) {
 	o.StoragePath = normalizeConfigPath(o.StoragePath, o)
+	if o.StoragePath == "" {
+		return "", errors.Newf("no storage path was set")
+	}
 	fi, err := os.Stat(o.StoragePath)
 	if err != nil && os.IsNotExist(err) {
 		err = os.MkdirAll(o.StoragePath, defaultDirPerm)
 	}
 	if err != nil {
-		return "", err
+		return "", errors.Annotatef(err, "unable to create base storage path %s", o.StoragePath)
 	}
 	fi, err = os.Stat(o.StoragePath)
 	if err != nil {

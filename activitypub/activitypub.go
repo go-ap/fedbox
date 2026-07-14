@@ -15,6 +15,11 @@ const (
 )
 
 func Self(baseURL vocab.IRI, name string) vocab.Service {
+	u, _ := baseURL.URL()
+	if u.Path == "/" {
+		u.Path = ""
+		baseURL = vocab.IRI(u.String())
+	}
 	oauth := baseURL.AddPath("oauth")
 	s := vocab.Service{
 		ID:                baseURL,
@@ -47,10 +52,6 @@ func Self(baseURL vocab.IRI, name string) vocab.Service {
 
 func DefaultServiceIRI(baseURL string) vocab.IRI {
 	u, _ := url.Parse(baseURL)
-	// TODO(marius): I don't like adding the / folder to something like http://fedbox.git
-	if u.Path == "" {
-		u.Path = "/"
-	}
 	return vocab.IRI(u.String())
 }
 
