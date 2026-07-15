@@ -37,7 +37,7 @@ buildah run \
     --mount="type=bind,rw,source=${HOST_GOMODCACHE},destination=${GOMODCACHE}" \
     --mount="type=bind,rw,source=${_context},destination=/go/src/app" \
     --mount=type=cache,rw,id=bin,target=/go/src/app/bin "${_builder}" \
-    make ENV="${_environment}" STORAGE="${_storage}" VERSION="${_version}" FEDBOX_HOSTNAME="${_hostname}" clean all cert
+    make ENV="${_environment}" STORAGE="${_storage}" VERSION="${_version}" FEDBOX_HOSTNAME="${_hostname}" clean all cert compress
 
 # copy binaries from cache to builder container fs
 buildah run \

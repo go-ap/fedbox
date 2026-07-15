@@ -50,7 +50,7 @@ endif
 BUILD := $(GO) build $(BUILDFLAGS)
 TEST := $(GO) test $(BUILDFLAGS)
 
-.PHONY: all cert clean test coverage integration install download help
+.PHONY: all cert clean test coverage integration install download help compress
 
 .DEFAULT_GOAL := help
 
@@ -67,8 +67,10 @@ go.sum: go.mod
 fedbox: bin/fedbox ## Builds the main FedBOX service binary.
 bin/fedbox: go.mod go.sum cmd/fedbox/main.go $(APPSOURCES)
 	$(BUILD) -o $@ ./cmd/fedbox
+
+compress: bin/fedbox ## Compress the binary.
 ifneq (,$(findstring $(ENV), "prod qa"))
-	$(UPX) -q --mono --no-progress --best $@ || true
+	$(UPX) -q --mono --no-progress --best $< || true
 endif
 
 systemd/fedbox.service: systemd/fedbox.service.in ## Creates a systemd service file for the FedBOX service.
