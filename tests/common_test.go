@@ -855,7 +855,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]any {
 				test.req.met = http.MethodPost
 			}
 			if test.req.met == http.MethodPost {
-				test.req.headers.Set("Content-Type", client.ContentTypeActivityJson)
+				test.req.headers.Set("Content-Type", client.ContentTypeJsonActivity)
 			}
 			if test.req.met == http.MethodGet {
 				test.req.headers.Set("Accept", HeaderAccept)
@@ -928,7 +928,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]any {
 				}
 			}
 			contentType := resp.Header.Get("Content-Type")
-			if contentType == jsonld.ContentType || contentType == client.ContentTypeActivityJson {
+			if contentType == jsonld.ContentType || contentType == client.ContentTypeJsonActivity {
 				err = json.Unmarshal(b, &res)
 				assertTrue(err == nil, "Error: unmarshal failed: %s", err)
 				assertTrue(res != nil, "Error: unmarshal failed: nil result")

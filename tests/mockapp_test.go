@@ -219,7 +219,11 @@ func getTestFedBOX(options config.Options, l lw.Logger) (*fedbox.FedBOX, error) 
 	}
 	fields := lw.Ctx{"action": "running", "storage": options.Storage, "path": basePath}
 
-	db, err := storage.New(options.StorageInitFns(l.WithContext(fields))...)
+	initFns, err := options.StorageInitFns(l.WithContext(fields))
+	if err != nil {
+		return nil, err
+	}
+	db, err := storage.New(initFns...)
 	if err != nil {
 		return nil, err
 	}

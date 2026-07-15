@@ -57,6 +57,9 @@ func reqURL(r http.Request, secure bool) string {
 		RawPath:  r.URL.RawPath,
 		RawQuery: r.URL.RawQuery,
 	}
+	if u.Path == "/" {
+		u.Path = ""
+	}
 	return u.String()
 }
 

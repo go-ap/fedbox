@@ -1,8 +1,8 @@
 {
   "@context": "https://www.w3.org/ns/activitystreams",
-  "id": "http://127.0.0.1:9998/",
+  "id": "http://127.0.0.1:9998",
   "type": "Service",
-  "name": "self",
+  "preferredUsername": "FedBOX-test",
   "attributedTo": "https://github.com/mariusor",
   "audience": ["https://www.w3.org/ns/activitystreams#Public"],
   "cc": ["https://www.w3.org/ns/activitystreams#Public"],

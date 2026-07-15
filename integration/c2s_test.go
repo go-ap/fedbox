@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/fedbox"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/tests"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
@@ -27,10 +28,9 @@ var (
 )
 
 var service = ap.Actor(
-	ap.HasID("http://fedbox/"),
+	ap.HasID("http://fedbox"),
 	ap.HasType(vocab.ServiceType),
-	ap.HasPreferredUsername("self"),
-	ap.HasName("FedBOX"),
+	ap.HasPreferredUsername(fedbox.AppName),
 	ap.HasAttributedTo("https://github.com/mariusor"),
 	ap.HasAudience(vocab.PublicNS),
 	ap.HasContext("https://github.com/go-ap/fedbox"),

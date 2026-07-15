@@ -847,13 +847,13 @@ var SingleItemLoadTests = testPairs{
 				res: testRes{
 					code: http.StatusOK,
 					val: &objectVal{
-						id:      "http://127.0.0.1:9998/",
+						id:      "http://127.0.0.1:9998",
 						typ:     string(vocab.ServiceType),
 						summary: "Generic ActivityPub service",
 						inbox: &objectVal{
 							id: "http://127.0.0.1:9998/inbox",
 						},
-						name: "self",
+						preferredUsername: "FedBOX-test",
 					},
 				},
 			},
