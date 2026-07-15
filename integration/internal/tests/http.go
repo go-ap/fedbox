@@ -113,7 +113,7 @@ func (res testResponse) validate(t *testing.T, r *http.Response) {
 	}
 
 	contentType := r.Header.Get("Content-Type")
-	if contentType == jsonld.ContentType || contentType == client.ContentTypeActivityJson {
+	if contentType == jsonld.ContentType || contentType == client.ContentTypeJsonActivity {
 		it, err := vocab.UnmarshalJSON(raw)
 		if err != nil {
 			t.Fatalf("Error: invalid HTTP body! Read %d: %s", len(raw), err)

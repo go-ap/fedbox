@@ -24,8 +24,7 @@ func Self(baseURL vocab.IRI, name string) vocab.Service {
 	s := vocab.Service{
 		ID:                baseURL,
 		Type:              vocab.ServiceType,
-		Name:              vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef(name)),
-		PreferredUsername: vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef("self")),
+		PreferredUsername: vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef(name)),
 		Context:           ProjectURL,
 		AttributedTo:      developerURL,
 		Audience:          vocab.ItemCollection{vocab.PublicNS},
