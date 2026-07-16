@@ -104,8 +104,8 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable,
 			return nil, fmt.Errorf("unable to inspect container: %w", err)
 		}
 		for _, pair := range info.Config.Env {
-			if strings.HasPrefix(pair, "HOSTNAME=") {
-				if host := strings.TrimPrefix(pair, "HOSTNAME="); host == uu.Host {
+			if hostname, found := strings.CutPrefix(pair, "HOSTNAME="); found {
+				if hostname == uu.Host {
 					opts := cmd.Options()
 					if IO != nil {
 						opts = append(opts, WithIO(IO))

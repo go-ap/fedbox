@@ -76,15 +76,23 @@ func extractStorageTagFromBuild() string {
 	return storageType
 }
 
-func extractCGOFromBuild() string {
+func extractEnvValueFromBuild(k string) string {
 	if buildOk {
 		for _, bs := range buildInfo.Settings {
-			if bs.Key == "CGO_ENABLED" {
+			if bs.Key == k {
 				return bs.Key + "=" + bs.Value
 			}
 		}
 	}
 	return ""
+}
+
+func buildEnvValues() []string {
+	envVars := make([]string, 0)
+	if val := extractEnvValueFromBuild("CGO_ENABLED"); val != "" {
+		envVars = append(envVars, val)
+	}
+	return envVars
 }
 
 func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string, error) {
@@ -110,7 +118,7 @@ func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 				Dir:     "cmd/fedbox",
 				Ldflags: []string{`-extldflags "-static"`},
 				Flags:   []string{tags},
-				Env:     []string{extractCGOFromBuild()},
+				Env:     buildEnvValues(),
 			},
 		}),
 		build.WithTrimpath(true),

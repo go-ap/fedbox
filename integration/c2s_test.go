@@ -46,49 +46,49 @@ var service = ap.Actor(
 )
 
 var admin1 = ap.Actor(
-	ap.HasID("https://fedbox/actors/1"),
+	ap.HasID("http://fedbox/actors/1"),
 	ap.HasType(vocab.PersonType),
-	ap.HasAttributedTo("https://fedbox"),
+	ap.HasAttributedTo("http://fedbox"),
 	ap.HasAudience(vocab.PublicNS),
-	ap.HasGenerator("https://fedbox"),
-	ap.HasURL("https://fedbox/actors/1"),
+	ap.HasGenerator("http://fedbox"),
+	ap.HasURL("http://fedbox/actors/1"),
 	ap.HasPreferredUsername("admin"),
 	ap.HasTag(tag0),
-	ap.HasAuthEp("https://fedbox/actors/1/oauth/authorize"),
-	ap.HasTokenEp("https://fedbox/actors/1/oauth/token"),
-	ap.HasSharedInbox("https://fedbox/inbox"),
-	ap.HasProxyURL("https://fedbox/proxyUrl"),
+	ap.HasAuthEp("http://fedbox/actors/1/oauth/authorize"),
+	ap.HasTokenEp("http://fedbox/actors/1/oauth/token"),
+	ap.HasSharedInbox("http://fedbox/inbox"),
+	ap.HasProxyURL("http://fedbox/proxyUrl"),
 )
 
 var actor2 = ap.Actor(
-	ap.HasID("https://fedbox/actors/2"),
+	ap.HasID("http://fedbox/actors/2"),
 	ap.HasType(vocab.PersonType),
-	ap.HasAttributedTo("https://fedbox"),
+	ap.HasAttributedTo("http://fedbox"),
 	ap.HasAudience(vocab.PublicNS),
 	ap.HasContent("Generated actor"),
 	ap.HasSummary("Generated actor"),
-	ap.HasGenerator("https://fedbox"),
-	ap.HasURL("https://fedbox/actors/2"),
+	ap.HasGenerator("http://fedbox"),
+	ap.HasURL("http://fedbox/actors/2"),
 	ap.HasLiked(),
 	ap.HasPreferredUsername("johndoe"),
 	ap.HasPublished("2019-08-11T13:14:47.000000000+02:00"),
 	ap.HasUpdated("2019-08-11T13:14:47.000000000+02:00"),
 	ap.HasName("Johnathan Doe"),
-	ap.HasSharedInbox("https://fedbox/inbox"),
-	ap.HasAuthEp("https://fedbox/oauth/authorize"),
-	ap.HasTokenEp("https://fedbox/oauth/token"),
-	ap.HasSharedInbox("https://fedbox/inbox"),
+	ap.HasSharedInbox("http://fedbox/inbox"),
+	ap.HasAuthEp("http://fedbox/oauth/authorize"),
+	ap.HasTokenEp("http://fedbox/oauth/token"),
+	ap.HasSharedInbox("http://fedbox/inbox"),
 )
 
 var tag0 = ap.Object(
-	ap.HasID("https://fedbox/objects/0"),
+	ap.HasID("http://fedbox/objects/0"),
 	ap.HasName("#sysop"),
-	ap.HasAttributedTo("https://fedbox"),
+	ap.HasAttributedTo("http://fedbox"),
 	ap.HasTo(vocab.PublicNS),
 )
 
 var object1 = ap.Object(
-	ap.HasID("https://fedbox/objects/1"),
+	ap.HasID("http://fedbox/objects/1"),
 	ap.HasType(vocab.NoteType),
 	ap.HasContent("<p>Hello</p><code>FedBOX</code>!</p>\n"),
 	ap.HasMediaType("text/html"),

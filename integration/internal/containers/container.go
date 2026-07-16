@@ -45,8 +45,8 @@ func (fc fboxContainer) Exec(ctx context.Context, cmd []string, opts ...exec.Pro
 	// NOTE(marius): extract authorization mechanisms from env variables
 	initFns := make([]ssh.AuthMethod, 0)
 	for _, env := range conf.ExecConfig.Env {
-		if strings.HasPrefix(env, "_PK=") {
-			prv, err := ssh.ParseRawPrivateKey([]byte(strings.TrimPrefix(env, "_PK=")))
+		if pk, found := strings.CutPrefix(env, "_PK="); found {
+			prv, err := ssh.ParseRawPrivateKey([]byte(pk))
 			if err != nil {
 				continue
 			}
@@ -56,8 +56,7 @@ func (fc fboxContainer) Exec(ctx context.Context, cmd []string, opts ...exec.Pro
 			}
 			initFns = append(initFns, ssh.PublicKeys(sig))
 		}
-		if strings.HasPrefix(env, "_PW=") {
-			pw := strings.TrimPrefix(env, "_PW=")
+		if pw, found := strings.CutPrefix(env, "_PW="); found {
 			initFns = append(initFns, ssh.Password(pw))
 		}
 	}

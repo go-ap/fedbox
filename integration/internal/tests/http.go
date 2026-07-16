@@ -6,11 +6,13 @@ import (
 	"crypto/tls"
 	"io"
 	"net/http"
+	"slices"
 	"testing"
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
+	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/jsonld"
 	"github.com/google/go-cmp/cmp"
@@ -103,24 +105,35 @@ func Response(initFn ...resInitFn) testResponse {
 }
 
 func (res testResponse) validate(t *testing.T, r *http.Response) {
-	if res.code != r.StatusCode {
-		t.Fatalf("Invalid status code received %d, expected %d", r.StatusCode, res.code)
-	}
-
 	raw, err := io.ReadAll(r.Body)
 	if err != nil {
-		t.Fatalf("Error: invalid HTTP body! Read %d: %s", len(raw), err)
+		t.Fatalf("Unable to read HTTP body (read %d): %v", len(raw), err)
+	}
+	defer r.Body.Close()
+
+	if res.code != r.StatusCode {
+		t.Errorf("Invalid status code received %d, expected %d\n", r.StatusCode, res.code)
+		maybeErr, err := errors.UnmarshalJSON(raw)
+		if err != nil {
+			t.Fatalf("Unable to unmarshal FedBOX error: %v", err)
+		}
+		t.Errorf("Received error from FedBOX server: %s", maybeErr)
+		return
 	}
 
 	contentType := r.Header.Get("Content-Type")
-	if contentType == jsonld.ContentType || contentType == client.ContentTypeJsonActivity {
-		it, err := vocab.UnmarshalJSON(raw)
-		if err != nil {
-			t.Fatalf("Error: invalid HTTP body! Read %d: %s", len(raw), err)
-		}
-		if !cmp.Equal(res.it, it) {
-			t.Errorf("Received item is different %s", cmp.Diff(res.it, it))
-		}
+	validContentTypes := []string{jsonld.ContentType, client.ContentTypeJsonActivity, "application/json"}
+	if !slices.Contains(validContentTypes, contentType) {
+		t.Errorf("Wrong Content-Type header '%s', expected %+v", contentType, validContentTypes)
+	}
+	it, err := vocab.UnmarshalJSON(raw)
+	if err != nil {
+		t.Fatalf("Unable to unmarshal ActivityPub object: %v", err)
+	}
+	if it == nil {
+	}
+	if !cmp.Equal(res.it, it) {
+		t.Errorf("Received item is different %s", cmp.Diff(res.it, it))
 	}
 }
 
