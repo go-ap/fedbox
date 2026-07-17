@@ -37,8 +37,8 @@ func TestLoadFromEnv(t *testing.T) {
 		_ = os.Setenv(KeyStorage, pgSQL)
 
 		var baseURL = fmt.Sprintf("https://%s", hostname)
-		c, err := Load(".", env.TEST)
-		if err != nil {
+		c := Options{Env: env.TEST}
+		if err := Load(&c, "."); err != nil {
 			t.Errorf("Error loading env: %s", err)
 		}
 		// @todo(marius): we're no longer loading SQL db config env variables
@@ -71,8 +71,9 @@ func TestLoadFromEnv(t *testing.T) {
 	}
 	{
 		_ = os.Setenv(KeyStorage, boltDB)
-		c, err := Load(".", env.TEST)
-		if err != nil {
+
+		c := Options{Env: env.TEST}
+		if err := Load(&c, "."); err != nil {
 			t.Errorf("Error loading env: %s", err)
 		}
 		var tmp = strings.TrimRight(os.TempDir(), "/")

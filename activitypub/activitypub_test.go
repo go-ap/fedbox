@@ -62,7 +62,8 @@ func TestDefaultServiceIRI(t *testing.T) {
 
 func TestSelf(t *testing.T) {
 	testURL := "http://example.com:666"
-	s := Self(vocab.IRI(testURL), "fedbox")
+	name := "fedbox-test"
+	s := Self(vocab.IRI(testURL), name)
 
 	if s.ID != vocab.ID(testURL) {
 		t.Errorf("Invalid ID %s, expected %s", s.ID, testURL)
@@ -70,8 +71,8 @@ func TestSelf(t *testing.T) {
 	if !vocab.ServiceType.Match(s.Type) {
 		t.Errorf("Invalid Type %s, expected %s", s.Type, vocab.ServiceType)
 	}
-	if !s.Name.First().Equal(vocab.Content("self")) {
-		t.Errorf("Invalid Name %s, expected %s", s.Name, "self")
+	if !s.PreferredUsername.First().Equal(vocab.Content(name)) {
+		t.Errorf("Invalid Name %s, expected %s", s.Name, name)
 	}
 	if s.AttributedTo.GetLink() != "https://github.com/mariusor" {
 		t.Errorf("Invalid AttributedTo %s, expected %s", s.AttributedTo, "https://github.com/mariusor")
