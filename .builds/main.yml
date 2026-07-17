@@ -38,7 +38,7 @@ tasks:
       make STORAGE=boltdb -C integration test
   - integration-new-sqlite: |
       cd fedbox
-      make STORAGE=sqlite -C integration test || true
+      make STORAGE=sqlite -C integration test
   - push_to_github: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
       set -a +x
