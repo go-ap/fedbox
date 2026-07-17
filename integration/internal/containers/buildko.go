@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"git.sr.ht/~mariusor/storage-all"
+	"github.com/go-ap/fedbox/internal/env"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/ko/pkg/build"
@@ -43,24 +44,24 @@ func extractValuesFromGoArgument(val string) []string {
 	return vals
 }
 
-func ExtractEnvTagFromBuild() string {
-	env := "test"
+func ExtractEnvTagFromBuild() env.Type {
+	e := "test"
 	if buildOk {
 		for _, bs := range buildInfo.Settings {
 			if bs.Key == "-tags" {
 				for _, tt := range extractValuesFromGoArgument(bs.Value) {
 					if slices.Contains(validEnvs, tt) {
-						env = tt
+						e = tt
 						break
 					}
 				}
 			}
 		}
 	}
-	return env
+	return env.Type(e)
 }
 
-func extractStorageTagFromBuild() string {
+func ExtractStorageTagFromBuild() storage.Type {
 	storageType := "all"
 	if buildOk {
 		for _, bs := range buildInfo.Settings {
@@ -73,7 +74,7 @@ func extractStorageTagFromBuild() string {
 			}
 		}
 	}
-	return storageType
+	return storage.Type(storageType)
 }
 
 func extractEnvValueFromBuild(k string) string {
@@ -96,11 +97,13 @@ func buildEnvValues() []string {
 }
 
 func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string, error) {
-	storageType := extractStorageTagFromBuild()
+	storageType := ExtractStorageTagFromBuild()
 	envType := ExtractEnvTagFromBuild()
-	tags := `-tags=ssh,storage_` + storageType + "," + envType
-	if storageType == "all" {
-		storageType = string(storage.Default)
+	tags := []string{"ssh", string(envType)}
+	if storageType != "all" {
+		storageType = storage.Default
+	} else {
+		tags = append(tags, "storage_"+string(storageType))
 	}
 
 	builder, err := build.NewGo(ctx, "",
@@ -114,17 +117,17 @@ func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 		build.WithPlatforms("linux/amd64"),
 		build.WithConfig(map[string]build.Config{
 			filepath.Join(importPath, "cmd/fedbox"): {
-				ID:      strings.Join([]string{"fedbox", envType, storageType}, "-"),
+				ID:      strings.Join([]string{"fedbox", string(envType), string(storageType)}, "-"),
 				Dir:     "cmd/fedbox",
 				Ldflags: []string{`-extldflags "-static"`},
-				Flags:   []string{tags},
+				Flags:   []string{`-tags=` + strings.Join(tags, ",")},
 				Env:     buildEnvValues(),
 			},
 		}),
 		build.WithTrimpath(true),
 		build.WithDisabledSBOM(),
-		build.WithLabel("storage", storageType),
-		build.WithLabel("env", envType),
+		build.WithLabel("storage", string(storageType)),
+		build.WithLabel("env", string(envType)),
 	)
 	if err != nil {
 		return "", err

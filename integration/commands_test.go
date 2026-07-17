@@ -3,6 +3,8 @@ package integration
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"regexp"
 	"testing"
 	"time"
@@ -55,45 +57,46 @@ func matchesString(s string) tests.LineOutputTest {
 }
 
 func Test_Commands_inSeparateContainers(t *testing.T) {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+
 	toRun := []tests.CommandTest{
 		{
 			Name: "--help",
-			Host: service.ID.String(),
+			Host: c2sRootIRI.String(),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"reload"},
-				User: service.ID.String(),
-				Key:  defaultPrivateKey,
+				User: c2sRootIRI.String(),
+				Key:  privateKey,
 			},
-			// NOTE(marius): this is strange. The output should actually be the
 			IO: tests.WithTests(endOK),
 		},
 		{
 			Name: "reload",
-			Host: service.ID.String(),
+			Host: c2sRootIRI.String(),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"reload"},
-				User: service.ID.String(),
-				Key:  defaultPrivateKey,
+				User: c2sRootIRI.String(),
+				Key:  privateKey,
 			},
 			IO: tests.WithTests(endOK),
 		},
 		{
 			Name: "maintenance",
-			Host: service.ID.String(),
+			Host: c2sRootIRI.String(),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"maintenance"},
-				User: service.ID.String(),
-				Key:  defaultPrivateKey,
+				User: c2sRootIRI.String(),
+				Key:  privateKey,
 			},
 			IO: tests.WithTests(endOK),
 		},
 		{
 			Name: "pub actor add",
-			Host: service.ID.String(),
+			Host: c2sRootIRI.String(),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"pub", "actor", "add", "--type", "Person", "--key-type", "RSA", "--tag", "#sysop", "jdoe"},
-				User: service.ID.String(),
-				Key:  defaultPrivateKey,
+				User: c2sRootIRI.String(),
+				Key:  privateKey,
 			},
 			IO: tests.WithTests(
 				withInput(passMatch, "asd"),
@@ -104,11 +107,11 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 		},
 		{
 			Name: "oauth client add",
-			Host: service.ID.String(),
+			Host: c2sRootIRI.String(),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"oauth", "client", "add", "--redirect-uri", "http://127.0.0.1"},
-				User: service.ID.String(),
-				Key:  defaultPrivateKey,
+				User: c2sRootIRI.String(),
+				Key:  privateKey,
 			},
 			IO: tests.WithTests(
 				withInput(passMatch, "asd"),
@@ -118,21 +121,21 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 		},
 		{
 			Name: "storage bootstrap",
-			Host: service.ID.String(),
+			Host: c2sRootIRI.String(),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"storage", "bootstrap"},
-				User: service.ID.String(),
-				Key:  defaultPrivateKey,
+				User: c2sRootIRI.String(),
+				Key:  privateKey,
 			},
 			IO: tests.WithTests(endOK),
 		},
 		{
 			Name: "password change",
-			Host: service.ID.String(),
+			Host: c2sRootIRI.String(),
 			Cmd: c.SSHCmd{
-				Cmd:  []string{"accounts", "pass", service.ID.String()},
-				User: service.ID.String(),
-				Key:  defaultPrivateKey,
+				Cmd:  []string{"accounts", "pass", c2sRootIRI.String()},
+				User: c2sRootIRI.String(),
+				Key:  privateKey,
 			},
 			IO: tests.WithTests(
 				withInput(passMatch, "asd"),
@@ -142,11 +145,11 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 		},
 		{
 			Name: "stop",
-			Host: service.ID.String(),
+			Host: c2sRootIRI.String(),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"stop"},
-				User: service.ID.String(),
-				Key:  defaultPrivateKey,
+				User: c2sRootIRI.String(),
+				Key:  privateKey,
 			},
 			IO: tests.WithTests(endOK),
 		},
@@ -154,15 +157,14 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 
 	for _, test := range toRun {
 		t.Run(test.Label(), func(t *testing.T) {
-			envType := c.ExtractEnvTagFromBuild()
-			var c2sFedBOX = c.C2SfedBOX(
-				c.WithEnv(defaultC2SEnv),
-				c.WithArgs([]string{"--env", envType, "--bootstrap"}),
+			c2sFedBOX := c.FedBOXNew(
+				c.WithConfig(c.ConfigFromBuildInfo(defaultC2SOptions)),
+				c.WithArgs([]string{"--bootstrap"}),
 				c.WithImageName(fedBOXImageName),
-				c.WithKey(defaultPrivateKey),
-				c.WithUser(service.ID),
-				c.WithPw(defaultPassword),
-				c.WithTestLogger(t, Verbose),
+				c.WithKey(privateKey),
+				c.WithRootIRI(c2sRootIRI),
+				c.WithPw(rand.Text()[:8]),
+				c.WithTestLogger(t, Verbose && test.Label() != "stop"),
 			)
 			ctx := t.Context()
 

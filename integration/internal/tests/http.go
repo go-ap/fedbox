@@ -31,10 +31,10 @@ func (req *testRequest) build(ctx context.Context, mocks c.Running) (*http.Reque
 
 type reqInitFn func(*testRequest)
 
-func WithURL(u string) reqInitFn {
+func WithURL[T string | vocab.IRI](u T) reqInitFn {
 	return func(t *testRequest) {
 		t.urlFn = func() string {
-			return u
+			return string(u)
 		}
 	}
 }

@@ -39,7 +39,6 @@ func TestMain(m *testing.M) {
 	logger.SetOutput(os.Stderr)
 	if Verbose {
 		logger.SetLevel(logrus.TraceLevel)
-		defaultC2SEnv["LOG_LEVEL"] = "trace"
 	}
 	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true, DisableLevelTruncation: true})
 

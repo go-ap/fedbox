@@ -19,7 +19,7 @@ type (
 	o   = vocab.Object
 	a   = vocab.Actor
 
-	itfn = any
+	InitFn = any
 )
 
 var (
@@ -215,7 +215,7 @@ func HasType(t t) func(*o) error {
 	}
 }
 
-func Object(initFn ...itfn) *o {
+func Object(initFn ...InitFn) *o {
 	ob := o{}
 	for _, maybeFn := range initFn {
 		switch fn := maybeFn.(type) {
@@ -226,7 +226,7 @@ func Object(initFn ...itfn) *o {
 	return &ob
 }
 
-func Actor(initFn ...itfn) *a {
+func Actor(initFn ...InitFn) *a {
 	act := a{}
 	for _, maybeFn := range initFn {
 		switch fn := maybeFn.(type) {

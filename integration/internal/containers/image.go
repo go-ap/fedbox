@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"testing"
 
+	"git.sr.ht/~mariusor/lw"
+	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/fedbox/internal/config"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
 	tc "github.com/testcontainers/testcontainers-go"
@@ -18,19 +21,35 @@ type ContainerInitializer interface {
 }
 
 type fboxImage struct {
-	name   string
-	args   []string
-	env    map[string]string
-	user   string
-	key    crypto.PrivateKey
-	pw     []byte
-	mocks  vocab.ItemCollection
-	cmds   []tc.Executable
-	logger *testLogger
+	name    string
+	args    []string
+	conf    *config.Options
+	env     map[string]string
+	rootIRI string
+	key     crypto.PrivateKey
+	pw      []byte
+	mocks   vocab.ItemCollection
+	cmds    []tc.Executable
+	logger  *testLogger
+}
+
+func (f *fboxImage) EnvType() string {
+	return string(f.conf.Env)
+}
+
+func (f *fboxImage) StorageType() string {
+	return string(f.conf.Storage)
+}
+
+func (f *fboxImage) Hostname() string {
+	return f.conf.Hostname
 }
 
 func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
-	initFns := []tc.ContainerCustomizer{WithImage(f.name), WithEnvFile(f.env)}
+	initFns := []tc.ContainerCustomizer{WithImage(f.name), WithEnvFromConfig(*f.conf)}
+	if len(f.env) > 0 {
+		initFns = append(initFns, WithEnvFile(f.env))
+	}
 
 	if f.args != nil {
 		initFns = append(initFns, tc.WithCmdArgs(f.args...))
@@ -44,7 +63,7 @@ func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 	if len(f.mocks) > 0 {
 		importCmd := SSHCmd{
 			Cmd:  []string{ /*ctlBin, "--env", envType, */ "pub", "import", "/storage/import.json"},
-			User: f.user,
+			User: f.rootIRI,
 		}
 		if f.key != nil {
 			importCmd.Key = f.key
@@ -64,11 +83,11 @@ func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 func (f *fboxImage) Start(ctx context.Context, t testing.TB) (tc.Container, error) {
 	opts := f.InitFns()
 
-	req := defaultFedBOXRequest(f.name)
+	req := defaultFedBOXRequest(f, t)
 	hostCfg := func(hostConfig *container.HostConfig) {
 		hostConfig.NetworkMode = network.NetworkBridge
 		hostConfig.AutoRemove = true
-		hostConfig.ExtraHosts = []string{"localhost:" + f.env["HOSTNAME"]}
+		hostConfig.ExtraHosts = []string{"localhost:" + f.Hostname()}
 	}
 
 	opts = append(opts, tc.WithHostConfigModifier(hostCfg))
@@ -118,6 +137,7 @@ func WithTestLogger(t testing.TB, enabled bool) imageInitFn {
 		if !enabled {
 			return
 		}
+		f.conf.LogLevel = lw.TraceLevel
 		logger := testLogger{T: t.(*testing.T)}
 		f.logger = &logger
 	}
@@ -135,9 +155,9 @@ func WithImageName(name string) imageInitFn {
 	}
 }
 
-func WithUser(user vocab.IRI) imageInitFn {
+func WithRootIRI(user vocab.IRI) imageInitFn {
 	return func(f *fboxImage) {
-		f.user = string(user)
+		f.rootIRI = string(user)
 	}
 }
 
@@ -159,6 +179,12 @@ func WithEnv(m map[string]string) imageInitFn {
 	}
 }
 
+func WithConfig(opts config.Options) imageInitFn {
+	return func(f *fboxImage) {
+		f.conf = &opts
+	}
+}
+
 func WithArgs(args []string) imageInitFn {
 	return func(f *fboxImage) {
 		f.args = args
@@ -171,10 +197,27 @@ func WithCmds(cmds ...tc.Executable) imageInitFn {
 	}
 }
 
-func C2SfedBOX(fns ...imageInitFn) *fboxImage {
-	img := &fboxImage{}
+func FedBOXNew(fns ...imageInitFn) *fboxImage {
+	img := new(fboxImage)
 	for _, fn := range fns {
 		fn(img)
 	}
 	return img
+}
+
+func ConfigFromBuildInfo(base config.Options) config.Options {
+	if base.Env == "" {
+		base.Env = ExtractEnvTagFromBuild()
+	}
+	if base.Storage == "" {
+		storageTyp := ExtractStorageTagFromBuild()
+		if storageTyp == "all" {
+			storageTyp = storage.Default
+		}
+		base.Storage = storageTyp
+	}
+	if base.StoragePath == "" {
+		base.StoragePath = "/storage"
+	}
+	return base
 }

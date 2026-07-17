@@ -19,6 +19,7 @@ import (
 
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/fedbox/internal/config"
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 	nw "github.com/testcontainers/testcontainers-go/network"
@@ -52,9 +53,13 @@ type image struct {
 }
 
 func (i image) initFns() []tc.ContainerCustomizer {
+	storagePath := "/storage"
+	if path, ok := i.env["STORAGE_PATH"]; ok {
+		storagePath = path
+	}
 	return []tc.ContainerCustomizer{WithImage(i.name), WithEnvFile(i.env), tc.WithMounts(tc.ContainerMount{
 		Source: tc.GenericTmpfsMountSource{},
-		Target: "/storage",
+		Target: tc.ContainerMountTarget(storagePath),
 	})}
 }
 
@@ -170,16 +175,13 @@ func buildRequest(ctx context.Context, fc tc.Container, met, u string, body io.R
 	return r, nil
 }
 
-func defaultFedBOXRequest(name string) tc.GenericContainerRequest {
-	envType := ExtractEnvTagFromBuild()
+func defaultFedBOXRequest(fb *fboxImage, _ testing.TB) tc.GenericContainerRequest {
 	return tc.GenericContainerRequest{
 		ContainerRequest: tc.ContainerRequest{
-			Image: name,
-			Cmd:   []string{"--env", envType, "--bootstrap"},
-			WaitingFor: wait.ForAll(
-				wait.ForLog("Started"),
-				wait.ForListeningPort("4000"),
-				wait.ForListeningPort("4044"),
+			Image: fb.name,
+			WaitingFor: wait.ForAny(
+				wait.ForListeningPort(strconv.Itoa(fb.conf.HTTPPort)),
+				wait.ForListeningPort(strconv.Itoa(fb.conf.SSHPort)),
 			).WithDeadline(5 * time.Second),
 		},
 		ProviderType: tc.ProviderPodman,
@@ -202,11 +204,48 @@ func WithImage(image string) tc.CustomizeRequestOption {
 	}
 }
 
+func WithEnvFromConfig(options config.Options) tc.CustomizeRequestOption {
+	return func(req *tc.GenericContainerRequest) error {
+		if req.Env == nil {
+			req.Env = make(map[string]string)
+		}
+
+		exposePort := func(port int) {
+			req.ContainerRequest.ExposedPorts = append(req.ContainerRequest.ExposedPorts, strconv.Itoa(port))
+		}
+
+		// Disable cache support for the requests handlers and for the storage backends that support it
+		req.Env["DISABLE_CACHE"] = strconv.FormatBool(!options.StorageCache)
+		// Disable cache support strictly for requests handlers
+		req.Env["DISABLE_STORAGE_CACHE"] = strconv.FormatBool(!options.StorageCache)
+		req.Env["ENV"] = string(options.Env)
+		req.Env["STORAGE"] = string(options.Storage)
+		req.Env["STORAGE_PATH"] = options.StoragePath
+		if options.HTTPPort > 0 {
+			req.Env["HTTP_PORT"] = strconv.Itoa(options.HTTPPort)
+			exposePort(options.HTTPPort)
+		}
+		if options.SSHPort > 0 {
+			req.Env["SSH_PORT"] = strconv.Itoa(options.SSHPort)
+			exposePort(options.SSHPort)
+		}
+		if listenHost := options.ListenHost; listenHost != "" {
+			req.Env["LISTEN_HOST"] = options.ListenHost
+			req.NetworkAliases = map[string][]string{listenHost: {listenHost}}
+		}
+		if host := options.Hostname; host != "" {
+			req.Env["HOSTNAME"] = options.Hostname
+			req.NetworkAliases = map[string][]string{host: {host}}
+		}
+		return nil
+	}
+}
+
 func WithEnvFile(env map[string]string) tc.CustomizeRequestOption {
-	storageType := extractStorageTagFromBuild()
+	storageType := ExtractStorageTagFromBuild()
 	envType := ExtractEnvTagFromBuild()
 	if storageType == "all" {
-		storageType = string(storage.Default)
+		storageType = storage.Default
 	}
 	return func(req *tc.GenericContainerRequest) error {
 		if req.Env == nil {
@@ -218,18 +257,19 @@ func WithEnvFile(env map[string]string) tc.CustomizeRequestOption {
 			}
 		}
 		exposePort := func(portVal string) {
-			if port, err := strconv.ParseUint(portVal, 10, 32); err == nil {
-				req.ContainerRequest.ExposedPorts = append(req.ContainerRequest.ExposedPorts, strconv.FormatInt(int64(port), 10))
-			}
+			req.ContainerRequest.ExposedPorts = append(req.ContainerRequest.ExposedPorts, portVal)
 		}
 
 		// Disable cache support for the requests handlers and for the storage backends that support it
 		req.Env["FEDBOX_DISABLE_CACHE"] = "true"
 		// Disable cache support strictly for requests handlers
 		req.Env["FEDBOX_DISABLE_STORAGE_CACHE"] = "true"
-		req.Env["ENV"] = envType
-		req.Env["STORAGE"] = storageType
-
+		req.Env["ENV"] = string(envType)
+		req.Env["STORAGE"] = string(storageType)
+		req.Env["STORAGE_PATH"] = "/storage"
+		if storageType == config.StoragePostgres {
+			req.Env["STORAGE_PATH"] = "TBD"
+		}
 		if httpPort, ok := req.Env["HTTP_PORT"]; ok {
 			exposePort(httpPort)
 		}

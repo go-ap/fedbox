@@ -54,9 +54,13 @@ func (t *ioTest) Write(p []byte) (n int, err error) {
 		t.t.Errorf("output was provided, but no handler was provided in the test setup")
 		return len(p), nil
 	}
+	if t.lineCount >= len(t.checkOutput) {
+		t.t.Errorf("not enough output checker functions %d for how many lines of output we want: %d", len(t.checkOutput), t.lineCount)
+		return len(p), nil
+	}
 
-	checker := t.checkOutput[t.lineCount]
-	t.input = checker(t.t, bytes.Trim(p, string(CRLF)))
+	checkFn := t.checkOutput[t.lineCount]
+	t.input = checkFn(t.t, bytes.Trim(p, string(CRLF)))
 	t.lineCount++
 
 	return len(p), nil
@@ -119,13 +123,13 @@ var _ RunnableTest = CommandTest{}
 
 var equateWeakErrors = cmp.FilterValues(areErrors, cmp.Comparer(compareErrors))
 
-func areErrors(x, y interface{}) bool {
+func areErrors(x, y any) bool {
 	_, ok1 := x.(error)
 	_, ok2 := y.(error)
 	return ok1 && ok2
 }
 
-func compareErrors(x, y interface{}) bool {
+func compareErrors(x, y any) bool {
 	xe := x.(error)
 	ye := y.(error)
 	return errors.Is(xe, ye) || errors.Is(ye, xe) || xe.Error() == ye.Error()

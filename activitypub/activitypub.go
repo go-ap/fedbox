@@ -28,7 +28,6 @@ func Self(baseURL vocab.IRI, name string) vocab.Service {
 		Context:           ProjectURL,
 		AttributedTo:      developerURL,
 		Audience:          vocab.ItemCollection{vocab.PublicNS},
-		Content:           nil, //vocab.NaturalLanguageValues{{Ref: vocab.NilLangRef, Value: ""}},
 		Summary:           vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef("Generic ActivityPub service")),
 		Tag:               nil,
 		URL:               baseURL,
