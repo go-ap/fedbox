@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/rsa"
 	"net/http"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
+	"github.com/go-ap/client/s2s"
 	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/tests"
@@ -190,6 +192,8 @@ func Test_C2S_Requests(t *testing.T) {
 		ap.HasPublicKey(prvKey.Public()),
 	)
 
+	draftSig := s2s.New(s2s.WithActor(admin, prvKey))
+
 	toRun := []tests.RunnableTest{
 		tests.HTTPTest{
 			Name: "tag admin",
@@ -238,6 +242,23 @@ func Test_C2S_Requests(t *testing.T) {
 			Res: tests.Response(
 				tests.HasCode(http.StatusNotFound),
 				tests.HasErrors(errors.NotFoundf("invalid collection")),
+			),
+		},
+		tests.HTTPTest{
+			Name: "to inbox",
+			Req: tests.Request(
+				tests.WithMethod(http.MethodPost),
+				tests.WithURL(admin.Inbox.GetLink()),
+				tests.WithHeader("Content-Type", client.ContentTypeJsonLD),
+				tests.WithSigner(draftSig.SignDraft),
+				tests.WithBody(bytes.NewBuffer([]byte(`{"type":"Flag"}`))),
+			),
+			Res: tests.Response(
+				tests.HasCode(http.StatusBadRequest),
+				tests.HasErrors(
+					errors.NewBadRequest(errors.BadRequestf("Activity is not valid: invalid activity id"), "Unable to save activity Flag to http://fedbox/actors/1/inbox"),
+					errors.BadRequestf("Activity is not valid: invalid activity id"),
+				),
 			),
 		},
 	}

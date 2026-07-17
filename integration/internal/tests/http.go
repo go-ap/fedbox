@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"io"
@@ -21,46 +20,53 @@ import (
 
 type testRequest []reqInitFn
 
-func (req testRequest) build(ctx context.Context, mocks c.Running) (*http.Request, error) {
+func (req testRequest) build(ctx context.Context, mocks c.Running, t testing.TB) (*http.Request, error) {
 	r := new(http.Request)
 	r.Header = make(http.Header)
 	for _, fn := range req {
-		fn(r)
+		fn(r, t)
 	}
-	return mocks.BuildRequest(ctx, r)
+	err := mocks.BuildRequest(ctx, r)
+	return r, err
 }
 
-type reqInitFn func(*http.Request)
+type reqInitFn func(*http.Request, testing.TB)
 
 func WithURL[T string | vocab.IRI](u T) reqInitFn {
-	return func(t *http.Request) {
-		t.URL, _ = url.Parse(string(u))
+	return func(r *http.Request, t testing.TB) {
+		r.URL, _ = url.Parse(string(u))
+		r.Header.Add("Host", r.URL.Hostname())
 	}
 }
 
 func WithMethod(m string) reqInitFn {
-	return func(t *http.Request) {
-		t.Method = m
+	return func(r *http.Request, t testing.TB) {
+		r.Method = m
 	}
 }
 
-func WithBody(r io.Reader) reqInitFn {
-	w := bytes.Buffer{}
-	return func(t *http.Request) {
-		_, _ = io.Copy(&w, r)
-		t.Body = io.NopCloser(&w)
+func WithBody(b io.Reader) reqInitFn {
+	return func(r *http.Request, t testing.TB) {
+		r.Body = io.NopCloser(b)
 	}
 }
 
 func WithHeader(k, v string) reqInitFn {
-	return func(t *http.Request) {
-		t.Header.Add(k, v)
+	return func(r *http.Request, t testing.TB) {
+		r.Header.Add(k, v)
 	}
 }
 
+var MockDate = time.Date(2001, time.April, 1, 0, 0, 23, 00, time.UTC)
+
 func WithSigner(signFn func(*http.Request) error) reqInitFn {
-	return func(t *http.Request) {
-		signFn(t)
+	return func(r *http.Request, t testing.TB) {
+		if hasDate := r.Header.Get("Date"); hasDate == "" {
+			r.Header.Add("Date", MockDate.Format(http.TimeFormat))
+		}
+		if err := signFn(r); err != nil {
+			t.Errorf("Unable to sign request: %v", err)
+		}
 	}
 }
 
@@ -175,7 +181,7 @@ func (pair HTTPTest) Run(ctx context.Context, mocks c.Running, t *testing.T) {
 	ctx, cancelFn = context.WithTimeout(ctx, 10*time.Second)
 	defer cancelFn()
 
-	req, err := pair.Req.build(ctx, mocks)
+	req, err := pair.Req.build(ctx, mocks, t)
 	if err != nil {
 		t.Fatalf("unable to create request: %+v", err)
 	}

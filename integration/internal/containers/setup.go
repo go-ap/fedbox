@@ -128,31 +128,29 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable,
 	return nil, fmt.Errorf("no matching mock instance for the host: %s", host)
 }
 
-func (m Running) BuildRequest(ctx context.Context, req *http.Request) (*http.Request, error) {
+func (m Running) BuildRequest(ctx context.Context, req *http.Request) error {
 	for _, fc := range m.Containers {
 		info, err := fc.Inspect(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("unable to inspect container: %w", err)
+			return fmt.Errorf("unable to inspect container: %w", err)
 		}
 		for _, pair := range info.Config.Env {
-			if strings.HasPrefix(pair, "HOSTNAME=") {
-				if host := strings.TrimPrefix(pair, "HOSTNAME="); host == req.URL.Host {
-					return buildRequest(ctx, fc, req)
-				}
+			if host, found := strings.CutPrefix(pair, "HOSTNAME="); found && host == req.URL.Host {
+				return buildRequest(ctx, fc, req)
 			}
 		}
 	}
-	return nil, fmt.Errorf("no matching mock instance for the url: %s", req.URL)
+	return fmt.Errorf("no matching mock instance for the url: %s", req.URL)
 }
 
-func buildRequest(ctx context.Context, fc tc.Container, r *http.Request) (*http.Request, error) {
-	host, err := fc.Endpoint(ctx, "https")
+func buildRequest(ctx context.Context, fc tc.Container, r *http.Request) error {
+	host, err := fc.Endpoint(ctx, "http")
 	if err != nil {
-		return nil, fmt.Errorf("unable to compose container end-point: %w", err)
+		return fmt.Errorf("unable to compose container end-point: %w", err)
 	}
 	uh, err := url.Parse(host)
 	if err != nil {
-		return nil, fmt.Errorf("invalid container url: %w", err)
+		return fmt.Errorf("invalid container url: %w", err)
 	}
 
 	origHost := r.URL.Host
@@ -160,7 +158,7 @@ func buildRequest(ctx context.Context, fc tc.Container, r *http.Request) (*http.
 	r.URL.Host = uh.Host
 	r.Host = origHost
 
-	return r, nil
+	return nil
 }
 
 func defaultFedBOXRequest(fb *fboxImage, _ testing.TB) tc.GenericContainerRequest {
