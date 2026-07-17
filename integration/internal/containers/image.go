@@ -17,6 +17,7 @@ import (
 )
 
 type ContainerInitializer interface {
+	Name() string
 	Start(ctx context.Context, t testing.TB) (tc.Container, error)
 }
 
@@ -43,6 +44,10 @@ func (f *fboxImage) StorageType() string {
 
 func (f *fboxImage) Hostname() string {
 	return f.conf.Hostname
+}
+
+func (f *fboxImage) Name() string {
+	return f.name
 }
 
 func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
@@ -112,7 +117,7 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB) (tc.Container, erro
 		return nil, err
 	}
 
-	c := fboxContainer{Container: fc}
+	c := fboxContainer{Container: fc, img: *f}
 	if err = c.Start(ctx); err != nil {
 		return &c, err
 	}

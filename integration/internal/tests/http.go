@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"io"
 	"net/http"
+	"net/url"
 	"slices"
 	"testing"
 	"time"
@@ -18,38 +19,48 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-type testRequest struct {
-	met     string
-	headers http.Header
-	urlFn   func() string
-	body    io.Reader
+type testRequest []reqInitFn
+
+func (req testRequest) build(ctx context.Context, mocks c.Running) (*http.Request, error) {
+	r := new(http.Request)
+	r.Header = make(http.Header)
+	for _, fn := range req {
+		fn(r)
+	}
+	return mocks.BuildRequest(ctx, r)
 }
 
-func (req *testRequest) build(ctx context.Context, mocks c.Running) (*http.Request, error) {
-	return mocks.BuildRequest(ctx, req.met, req.urlFn(), nil)
-}
-
-type reqInitFn func(*testRequest)
+type reqInitFn func(*http.Request)
 
 func WithURL[T string | vocab.IRI](u T) reqInitFn {
-	return func(t *testRequest) {
-		t.urlFn = func() string {
-			return string(u)
-		}
+	return func(t *http.Request) {
+		t.URL, _ = url.Parse(string(u))
 	}
 }
 
 func WithMethod(m string) reqInitFn {
-	return func(t *testRequest) {
-		t.met = m
+	return func(t *http.Request) {
+		t.Method = m
 	}
 }
 
 func WithBody(r io.Reader) reqInitFn {
 	w := bytes.Buffer{}
-	return func(t *testRequest) {
+	return func(t *http.Request) {
 		_, _ = io.Copy(&w, r)
-		t.body = &w
+		t.Body = io.NopCloser(&w)
+	}
+}
+
+func WithHeader(k, v string) reqInitFn {
+	return func(t *http.Request) {
+		t.Header.Add(k, v)
+	}
+}
+
+func WithSigner(signFn func(*http.Request) error) reqInitFn {
+	return func(t *http.Request) {
+		signFn(t)
 	}
 }
 
@@ -64,22 +75,14 @@ func (n nilReader) Read(p []byte) (int, error) {
 }
 
 func Request(initFn ...reqInitFn) testRequest {
-	r := testRequest{
-		met:     http.MethodGet,
-		headers: make(http.Header),
-		urlFn:   noS,
-		body:    nilReader{},
-	}
-	for _, fn := range initFn {
-		fn(&r)
-	}
-	return r
+	return initFn
 }
 
 // testResponse represents the expected result of a http request to a FedBOX service
 type testResponse struct {
 	code int
 	it   vocab.Item
+	err  []error
 }
 
 type resInitFn func(*testResponse)
@@ -96,8 +99,14 @@ func HasItem(it vocab.Item) resInitFn {
 	}
 }
 
+func HasErrors(err ...error) resInitFn {
+	return func(res *testResponse) {
+		res.err = err
+	}
+}
+
 func Response(initFn ...resInitFn) testResponse {
-	s := testResponse{code: http.StatusNotImplemented}
+	s := testResponse{code: 0x000}
 	for _, fn := range initFn {
 		fn(&s)
 	}
@@ -112,28 +121,30 @@ func (res testResponse) validate(t *testing.T, r *http.Response) {
 	defer r.Body.Close()
 
 	if res.code != r.StatusCode {
-		t.Errorf("Invalid status code received %d, expected %d\n", r.StatusCode, res.code)
-		maybeErr, err := errors.UnmarshalJSON(raw)
-		if err != nil {
-			t.Fatalf("Unable to unmarshal FedBOX error: %v", err)
-		}
-		t.Errorf("Received error from FedBOX server: %s", maybeErr)
-		return
+		t.Errorf("Invalid status code received %d, expected %d", r.StatusCode, res.code)
 	}
 
-	contentType := r.Header.Get("Content-Type")
-	validContentTypes := []string{jsonld.ContentType, client.ContentTypeJsonActivity, "application/json"}
-	if !slices.Contains(validContentTypes, contentType) {
-		t.Errorf("Wrong Content-Type header '%s', expected %+v", contentType, validContentTypes)
+	if res.it != nil {
+		contentType := r.Header.Get("Content-Type")
+		validContentTypes := []string{jsonld.ContentType, client.ContentTypeJsonActivity, "application/json"}
+		if !slices.Contains(validContentTypes, contentType) {
+			t.Errorf("Wrong Content-Type header '%s', expected %+v", contentType, validContentTypes)
+		}
+		it, err := vocab.UnmarshalJSON(raw)
+		if err != nil {
+			t.Fatalf("Unable to unmarshal ActivityPub object: %v", err)
+		}
+		if !cmp.Equal(res.it, it) {
+			t.Errorf("Received item is different %s", cmp.Diff(res.it, it))
+		}
+		return
 	}
-	it, err := vocab.UnmarshalJSON(raw)
+	maybeErr, err := errors.UnmarshalJSON(raw)
 	if err != nil {
-		t.Fatalf("Unable to unmarshal ActivityPub object: %v", err)
+		t.Fatalf("Unable to unmarshal FedBOX error: %v", err)
 	}
-	if it == nil {
-	}
-	if !cmp.Equal(res.it, it) {
-		t.Errorf("Received item is different %s", cmp.Diff(res.it, it))
+	if !cmp.Equal(res.err, maybeErr, equateWeakErrors) {
+		t.Errorf("Received error from FedBOX server: %s", cmp.Diff(res.err, maybeErr, equateWeakErrors))
 	}
 }
 
@@ -158,7 +169,8 @@ func (pair HTTPTest) Fn(ctx context.Context, mocks c.Running) func(t *testing.T)
 }
 
 func (pair HTTPTest) Run(ctx context.Context, mocks c.Running, t *testing.T) {
-	cl := client.New(client.WithHTTPClient(&httpClient), client.SkipTLSValidation(true))
+	cl := &httpClient
+
 	var cancelFn func()
 	ctx, cancelFn = context.WithTimeout(ctx, 10*time.Second)
 	defer cancelFn()

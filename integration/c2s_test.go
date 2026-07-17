@@ -1,13 +1,15 @@
 package integration
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
-	"crypto/rsa"
 	"net/http"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/client"
+	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/tests"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
@@ -177,59 +179,80 @@ func Test_Fetch(t *testing.T) {
 	}
 }
 
-func Test_MoreComplicated(t *testing.T) {
-	t.Skip()
-	_, c2sPrvKey, _ := ed25519.GenerateKey(rand.Reader)
+func Test_C2S_Requests(t *testing.T) {
+	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
 
-	c2sTagAdmin := object(c2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
-	c2sAdmin := person(c2sRootIRI.AddPath("actors/1"), ap.HasPreferredUsername("admin"), ap.HasTag(c2sTagAdmin))
-
-	s2sPrvKey, _ := rsa.GenerateKey(rand.Reader, 1024)
-
-	s2sTagAdmin := object(s2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
-	s2sAdmin := person(vocab.CollectionPath("actors/1").IRI(s2sRootIRI), ap.HasPreferredUsername("admin"), ap.HasTag(s2sTagAdmin))
+	tagAdmin := object(c2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
+	admin := person(
+		c2sRootIRI.AddPath("actors/1"),
+		ap.HasPreferredUsername("admin"),
+		ap.HasTag(tagAdmin),
+		ap.HasPublicKey(prvKey.Public()),
+	)
 
 	toRun := []tests.RunnableTest{
 		tests.HTTPTest{
-			Name: "c2s tag admin",
-			Req:  tests.Request(tests.WithURL(c2sTagAdmin.ID)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(c2sTagAdmin)),
+			Name: "tag admin",
+			Req:  tests.Request(tests.WithURL(tagAdmin.ID)),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(tagAdmin)),
 		},
 		tests.HTTPTest{
-			Name: "s2s tag admin",
-			Req:  tests.Request(tests.WithURL(s2sTagAdmin.ID)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(s2sTagAdmin)),
+			Name: "admin",
+			Req:  tests.Request(tests.WithURL(admin.ID)),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(admin)),
 		},
 		tests.HTTPTest{
-			Name: "c2s admin",
-			Req:  tests.Request(tests.WithURL(c2sAdmin.ID)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(c2sAdmin)),
+			Name: "invalid body",
+			Req: tests.Request(
+				tests.WithMethod(http.MethodPost),
+				tests.WithURL(admin.Inbox.GetLink()),
+				tests.WithHeader("Content-Type", client.ContentTypeJsonLD),
+				tests.WithBody(bytes.NewBuffer(nil)),
+			),
+			Res: tests.Response(
+				tests.HasCode(http.StatusBadRequest),
+				tests.HasErrors(errors.BadRequestf("unable to unmarshal JSON request")),
+			),
 		},
 		tests.HTTPTest{
-			Name: "s2s admin",
-			Req:  tests.Request(tests.WithURL(s2sAdmin.ID)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(s2sAdmin)),
+			Name: "non authorized",
+			Req: tests.Request(
+				tests.WithMethod(http.MethodPost),
+				tests.WithURL(admin.Inbox.GetLink()),
+				tests.WithHeader("Content-Type", client.ContentTypeJsonLD),
+				tests.WithBody(bytes.NewBuffer([]byte(`{"type":"Flag"}`))),
+			),
+			Res: tests.Response(
+				tests.HasCode(http.StatusUnauthorized),
+				tests.HasErrors(errors.Unauthorizedf("unable to read request body")),
+			),
+		},
+		tests.HTTPTest{
+			Name: "collection not found",
+			Req: tests.Request(
+				tests.WithMethod(http.MethodPost),
+				tests.WithURL(c2sRootIRI.AddPath("test")),
+				tests.WithHeader("Content-Type", client.ContentTypeJsonLD),
+				tests.WithBody(bytes.NewBuffer([]byte(`{"type":"Flag"}`))),
+			),
+			Res: tests.Response(
+				tests.HasCode(http.StatusNotFound),
+				tests.HasErrors(errors.NotFoundf("invalid collection")),
+			),
 		},
 	}
 
 	c2sFedBOX := c.FedBOXNew(
+		c.WithImageName(fedBOXImageName),
 		c.WithConfig(c.ConfigFromBuildInfo(defaultC2SOptions)),
-		c.WithImageName(fedBOXImageName),
-		c.WithKey(c2sPrvKey),
+		c.WithArgs([]string{"--bootstrap"}),
 		c.WithRootIRI(c2sRootIRI),
-		c.WithPw(rand.Text()[:8]),
-		c.WithItems(c2sTagAdmin, c2sAdmin),
-	)
-	s2sFedBOX := c.FedBOXNew(
-		c.WithConfig(c.ConfigFromBuildInfo(defaultS2SOptions)),
-		c.WithImageName(fedBOXImageName),
-		c.WithKey(s2sPrvKey),
-		c.WithRootIRI(s2sRootIRI),
-		c.WithPw(rand.Text()[:8]),
-		c.WithItems(s2sTagAdmin, s2sAdmin),
+		c.WithKey(prvKey), c.WithPw(rand.Text()[:8]),
+		c.WithItems(tagAdmin, admin),
+		c.WithTestLogger(t, Verbose),
 	)
 
-	images := c.Suite{c2sFedBOX, s2sFedBOX}
+	images := c.Suite{c2sFedBOX}
 
 	ctx := context.Background()
 	cont, err := c.Init(ctx, t, images...)

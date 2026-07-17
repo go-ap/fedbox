@@ -204,7 +204,7 @@ func ValidateActivityRequest(r *http.Request) (bool, error) {
 		return false, errors.BadRequestf("invalid content type")
 	}
 	if !validActivityCollection(r) {
-		return false, errors.BadRequestf("invalid collection")
+		return false, errors.NotFoundf("invalid collection")
 	}
 
 	return true, nil
@@ -236,7 +236,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		defer r.Body.Close()
 
 		body, err := io.ReadAll(r.Body)
-		if err != nil || len(body) == 0 {
+		if err != nil {
 			fb.errFn("failed loading body: %+s", err)
 			return it, http.StatusBadRequest, errors.NewBadRequest(err, "unable to read request body")
 		}

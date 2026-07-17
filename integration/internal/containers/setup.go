@@ -63,6 +63,10 @@ func (i image) initFns() []tc.ContainerCustomizer {
 	})}
 }
 
+func (i image) Name() string {
+	return i.name
+}
+
 func (i image) Start(ctx context.Context, t testing.TB) (tc.Container, error) {
 	return nil, fmt.Errorf("TODO generic containers")
 }
@@ -124,12 +128,7 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable,
 	return nil, fmt.Errorf("no matching mock instance for the host: %s", host)
 }
 
-func (m Running) BuildRequest(ctx context.Context, met, u string, body io.Reader) (*http.Request, error) {
-	uu, err := url.Parse(u)
-	if err != nil {
-		return nil, fmt.Errorf("received invalid url: %w", err)
-	}
-
+func (m Running) BuildRequest(ctx context.Context, req *http.Request) (*http.Request, error) {
 	for _, fc := range m.Containers {
 		info, err := fc.Inspect(ctx)
 		if err != nil {
@@ -137,21 +136,16 @@ func (m Running) BuildRequest(ctx context.Context, met, u string, body io.Reader
 		}
 		for _, pair := range info.Config.Env {
 			if strings.HasPrefix(pair, "HOSTNAME=") {
-				if host := strings.TrimPrefix(pair, "HOSTNAME="); host == uu.Host {
-					return buildRequest(ctx, fc, met, u, body)
+				if host := strings.TrimPrefix(pair, "HOSTNAME="); host == req.URL.Host {
+					return buildRequest(ctx, fc, req)
 				}
 			}
 		}
 	}
-	return nil, fmt.Errorf("no matching mock instance for the url: %s", u)
+	return nil, fmt.Errorf("no matching mock instance for the url: %s", req.URL)
 }
 
-func buildRequest(ctx context.Context, fc tc.Container, met, u string, body io.Reader) (*http.Request, error) {
-	uu, err := url.Parse(u)
-	if err != nil {
-		return nil, fmt.Errorf("received invalid url: %w", err)
-	}
-
+func buildRequest(ctx context.Context, fc tc.Container, r *http.Request) (*http.Request, error) {
 	host, err := fc.Endpoint(ctx, "https")
 	if err != nil {
 		return nil, fmt.Errorf("unable to compose container end-point: %w", err)
@@ -161,15 +155,9 @@ func buildRequest(ctx context.Context, fc tc.Container, met, u string, body io.R
 		return nil, fmt.Errorf("invalid container url: %w", err)
 	}
 
-	origHost := uu.Host
-	uu.Host = uh.Host
+	origHost := r.URL.Host
 
-	u = uu.String()
-
-	r, err := http.NewRequestWithContext(ctx, met, u, body)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create request: %w", err)
-	}
+	r.URL.Host = uh.Host
 	r.Host = origHost
 
 	return r, nil
