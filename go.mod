@@ -14,13 +14,13 @@ require (
 	github.com/alecthomas/kong v1.15.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/go-ap/activitypub v0.0.0-20260701132640-13f25467c431
-	github.com/go-ap/auth v0.0.0-20260716111149-287e04f93bfa
+	github.com/go-ap/auth v0.0.0-20260718172851-14aeb2a61a91
 	github.com/go-ap/cache v0.0.0-20260701132808-71a22e0f7796
-	github.com/go-ap/client v0.0.0-20260716111026-68e795915b01
+	github.com/go-ap/client v0.0.0-20260718172348-2cabce602885
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/filters v0.0.0-20260716110857-13bff629eba4
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/processing v0.0.0-20260716111245-78d0ef51171a
+	github.com/go-ap/processing v0.0.0-20260718173147-0ddd95a96af7
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -122,7 +122,7 @@ require (
 	golang.org/x/text v0.40.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	modernc.org/libc v1.74.1 // indirect
+	modernc.org/libc v1.74.2 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.54.0 // indirect

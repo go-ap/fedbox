@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/rsa"
 	"net/http"
+	"strings"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
+	"github.com/go-ap/client/c2s"
 	"github.com/go-ap/client/s2s"
 	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
@@ -182,16 +185,28 @@ func Test_Fetch(t *testing.T) {
 
 func Test_C2S_Requests(t *testing.T) {
 	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
+	_, admKey, _ := ed25519.GenerateKey(rand.Reader)
 
 	tagAdmin := object(c2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
 	admin := person(
 		c2sRootIRI.AddPath("actors/1"),
 		ap.HasPreferredUsername("admin"),
 		ap.HasTag(tagAdmin),
-		ap.HasPublicKey(prvKey.Public()),
+		ap.HasPublicKey(admKey.Public()),
 	)
 
-	draftSig := s2s.New(s2s.WithActor(admin, prvKey))
+	draftSig := s2s.New(s2s.WithActor(admin, admKey))
+	token := new(c2s.BearerSigner)
+
+	c2sFedBOX := c.FedBOXNew(
+		c.WithImageName(fedBOXImageName),
+		c.WithConfig(c.ConfigFromBuildInfo(defaultC2SOptions)),
+		c.WithArgs([]string{"--bootstrap"}),
+		c.WithRootIRI(c2sRootIRI),
+		c.WithKey(prvKey), c.WithPw(rand.Text()[:8]),
+		c.WithItems(tagAdmin, admin),
+		c.WithTestLogger(t, Verbose),
+	)
 
 	toRun := []tests.RunnableTest{
 		tests.HTTPTest{
@@ -260,17 +275,44 @@ func Test_C2S_Requests(t *testing.T) {
 				),
 			),
 		},
+		tests.CommandTest{
+			Name: "gen OAuth2 bearer",
+			Host: string(c2sRootIRI),
+			Cmd: c.SSHCmd{
+				Cmd:  []string{"oauth", "token", "add", string(admin.ID)},
+				User: c2sRootIRI.String(),
+				Key:  prvKey,
+			},
+			IO: tests.WithTests(func(t *testing.T, i []byte) []byte {
+				i = bytes.TrimSpace(i)
+				auth, found := bytes.CutPrefix(i, []byte("Authorization: "))
+				if !found {
+					t.Fatalf("Unable to get Authorization value from CLI output: %s", i)
+				}
+				authPieces := strings.Split(string(auth), " ")
+				if len(authPieces) < 2 {
+					t.Fatalf("Authorization value is not recognized: %+v", authPieces)
+				}
+				token.TokenType = authPieces[0]
+				token.AccessToken = authPieces[1]
+				return nil
+			}, endOK),
+		},
+		tests.HTTPTest{
+			Name: "to outbox",
+			Req: tests.Request(
+				tests.WithMethod(http.MethodPost),
+				tests.WithURL(admin.Outbox.GetLink()),
+				tests.WithHeader("Content-Type", client.ContentTypeJsonLD),
+				tests.WithSigner(token.Sign),
+				tests.WithBody(bytes.NewBuffer([]byte(`{"type":"Flag","actor":"http://fedbox/actors/1","object":"http://fedbox/actors/1"}`))),
+			),
+			Res: tests.Response(
+				tests.HasCode(http.StatusCreated),
+				tests.HasItem(admin),
+			),
+		},
 	}
-
-	c2sFedBOX := c.FedBOXNew(
-		c.WithImageName(fedBOXImageName),
-		c.WithConfig(c.ConfigFromBuildInfo(defaultC2SOptions)),
-		c.WithArgs([]string{"--bootstrap"}),
-		c.WithRootIRI(c2sRootIRI),
-		c.WithKey(prvKey), c.WithPw(rand.Text()[:8]),
-		c.WithItems(tagAdmin, admin),
-		c.WithTestLogger(t, Verbose),
-	)
 
 	images := c.Suite{c2sFedBOX}
 

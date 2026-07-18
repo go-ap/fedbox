@@ -14,7 +14,6 @@ import (
 	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
-	"github.com/go-ap/jsonld"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -132,7 +131,7 @@ func (res testResponse) validate(t *testing.T, r *http.Response) {
 
 	if res.it != nil {
 		contentType := r.Header.Get("Content-Type")
-		validContentTypes := []string{jsonld.ContentType, client.ContentTypeJsonActivity, "application/json"}
+		validContentTypes := []string{client.ContentTypeJsonLD, client.ContentTypeJsonActivity, client.ContentTypeJson}
 		if !slices.Contains(validContentTypes, contentType) {
 			t.Errorf("Wrong Content-Type header '%s', expected %+v", contentType, validContentTypes)
 		}

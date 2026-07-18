@@ -147,7 +147,7 @@ func GenerateKeyPair(typ KeyType) (*KeyPair, error) {
 		rsaPrv, err = rsa.GenerateKey(rand.Reader, 2048)
 		if rsaPrv != nil {
 			prv = rsaPrv
-			pub = rsaPrv.Public()
+			pub = rsaPrv.PublicKey
 		}
 	}
 	if err != nil {
