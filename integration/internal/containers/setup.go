@@ -128,7 +128,7 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable,
 	return nil, fmt.Errorf("no matching mock instance for the host: %s", host)
 }
 
-func (m Running) BuildRequest(ctx context.Context, req *http.Request) error {
+func (m Running) RedirectRequest(ctx context.Context, req *http.Request) error {
 	for _, fc := range m.Containers {
 		info, err := fc.Inspect(ctx)
 		if err != nil {
@@ -136,14 +136,14 @@ func (m Running) BuildRequest(ctx context.Context, req *http.Request) error {
 		}
 		for _, pair := range info.Config.Env {
 			if host, found := strings.CutPrefix(pair, "HOSTNAME="); found && host == req.URL.Host {
-				return buildRequest(ctx, fc, req)
+				return rewriteRequestHost(ctx, fc, req)
 			}
 		}
 	}
 	return fmt.Errorf("no matching mock instance for the url: %s", req.URL)
 }
 
-func buildRequest(ctx context.Context, fc tc.Container, r *http.Request) error {
+func rewriteRequestHost(ctx context.Context, fc tc.Container, r *http.Request) error {
 	host, err := fc.Endpoint(ctx, "http")
 	if err != nil {
 		return fmt.Errorf("unable to compose container end-point: %w", err)

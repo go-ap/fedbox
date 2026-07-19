@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
@@ -34,6 +35,8 @@ var (
 		HTTPPort: 4011,
 		SSHPort:  4055,
 	}
+
+	MockDate = time.Date(2001, time.April, 1, 0, 0, 23, 00, time.UTC)
 )
 
 func rootIRI(conf config.Options) vocab.IRI {
@@ -127,31 +130,32 @@ func Test_Fetch(t *testing.T) {
 	publicKey, privateKey, _ := ed25519.GenerateKey(rand.Reader)
 	var fedbox = service("http://fedbox", ap.HasPublicKey(publicKey))
 
+	contentTypes := []string{client.ContentTypeJsonLD, client.ContentTypeJsonActivity}
 	toRun := []tests.HTTPTest{
 		{
 			Name: "service",
-			Req:  tests.Request(tests.WithURL(c2sRootIRI)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(fedbox)),
+			Req:  tests.URL(c2sRootIRI),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(fedbox)),
 		},
 		{
 			Name: "actors/1",
-			Req:  tests.Request(tests.WithURL(admin1.ID)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(admin1)),
+			Req:  tests.URL(admin1.ID),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(admin1)),
 		},
 		{
 			Name: "objects/0",
-			Req:  tests.Request(tests.WithURL(tag0.ID)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(tag0)),
+			Req:  tests.URL(tag0.ID),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(tag0)),
 		},
 		{
 			Name: "objects/1",
-			Req:  tests.Request(tests.WithURL(object1.ID)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(object1)),
+			Req:  tests.URL(object1.ID),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(object1)),
 		},
 		{
 			Name: "actors/2",
-			Req:  tests.Request(tests.WithURL(actor2.ID)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(actor2)),
+			Req:  tests.URL(actor2.ID),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(actor2)),
 		},
 	}
 
@@ -208,67 +212,65 @@ func Test_C2S_Requests(t *testing.T) {
 		c.WithTestLogger(t, Verbose),
 	)
 
+	contentTypes := []string{client.ContentTypeJsonLD, client.ContentTypeJsonActivity}
 	toRun := []tests.RunnableTest{
 		tests.HTTPTest{
 			Name: "tag admin",
-			Req:  tests.Request(tests.WithURL(tagAdmin.ID)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(tagAdmin)),
+			Req:  tests.URL(string(tagAdmin.ID)),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(tagAdmin)),
 		},
 		tests.HTTPTest{
 			Name: "admin",
-			Req:  tests.Request(tests.WithURL(admin.ID)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasItem(admin)),
+			Req:  tests.URL(admin.ID),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(admin)),
 		},
 		tests.HTTPTest{
 			Name: "invalid body",
-			Req: tests.Request(
-				tests.WithMethod(http.MethodPost),
-				tests.WithURL(admin.Inbox.GetLink()),
-				tests.WithHeader("Content-Type", client.ContentTypeJsonLD),
-				tests.WithBody(bytes.NewBuffer(nil)),
-			),
+			Req: tests.URL(admin.Inbox.GetLink()).
+				Post().
+				Header("Content-Type", client.ContentTypeJsonLD).
+				BodyBytes(nil),
 			Res: tests.Response(
 				tests.HasCode(http.StatusBadRequest),
+				tests.HasContentType(client.ContentTypeJson),
 				tests.HasErrors(errors.BadRequestf("unable to unmarshal JSON request")),
 			),
 		},
 		tests.HTTPTest{
 			Name: "non authorized",
-			Req: tests.Request(
-				tests.WithMethod(http.MethodPost),
-				tests.WithURL(admin.Inbox.GetLink()),
-				tests.WithHeader("Content-Type", client.ContentTypeJsonLD),
-				tests.WithBody(bytes.NewBuffer([]byte(`{"type":"Flag"}`))),
-			),
+			Req: tests.URL(admin.Inbox.GetLink()).
+				Post().
+				Header("Content-Type", client.ContentTypeJsonLD).
+				BodyBytes([]byte(`{"type":"Flag"}`)),
 			Res: tests.Response(
 				tests.HasCode(http.StatusUnauthorized),
+				tests.HasContentType(client.ContentTypeJson),
 				tests.HasErrors(errors.Unauthorizedf("unable to read request body")),
 			),
 		},
 		tests.HTTPTest{
 			Name: "collection not found",
-			Req: tests.Request(
-				tests.WithMethod(http.MethodPost),
-				tests.WithURL(c2sRootIRI.AddPath("test")),
-				tests.WithHeader("Content-Type", client.ContentTypeJsonLD),
-				tests.WithBody(bytes.NewBuffer([]byte(`{"type":"Flag"}`))),
-			),
+			Req: tests.URL(c2sRootIRI.AddPath("test")).
+				Post().
+				Header("Content-Type", client.ContentTypeJsonLD).
+				BodyBytes([]byte(`{"type":"Flag"}`)),
 			Res: tests.Response(
 				tests.HasCode(http.StatusNotFound),
+				tests.HasContentType(client.ContentTypeJson),
 				tests.HasErrors(errors.NotFoundf("invalid collection")),
 			),
 		},
 		tests.HTTPTest{
 			Name: "to inbox",
-			Req: tests.Request(
-				tests.WithMethod(http.MethodPost),
-				tests.WithURL(admin.Inbox.GetLink()),
-				tests.WithHeader("Content-Type", client.ContentTypeJsonLD),
-				tests.WithSigner(draftSig.SignDraft),
-				tests.WithBody(bytes.NewBuffer([]byte(`{"type":"Flag"}`))),
-			),
+			Req: tests.URL(admin.Inbox.GetLink()).
+				Post().
+				ContentType(client.ContentTypeJsonLD).
+				Header("Date", MockDate.Format(http.TimeFormat)).
+				Signer(draftSig.SignDraft).
+				BodyBytes([]byte(`{"type":"Flag"}`)),
 			Res: tests.Response(
 				tests.HasCode(http.StatusBadRequest),
+				tests.HasContentType(client.ContentTypeJson),
 				tests.HasErrors(
 					errors.NewBadRequest(errors.BadRequestf("Activity is not valid: invalid activity id"), "Unable to save activity Flag to http://fedbox/actors/1/inbox"),
 					errors.BadRequestf("Activity is not valid: invalid activity id"),
@@ -300,15 +302,15 @@ func Test_C2S_Requests(t *testing.T) {
 		},
 		tests.HTTPTest{
 			Name: "to outbox",
-			Req: tests.Request(
-				tests.WithMethod(http.MethodPost),
-				tests.WithURL(admin.Outbox.GetLink()),
-				tests.WithHeader("Content-Type", client.ContentTypeJsonLD),
-				tests.WithSigner(token.Sign),
-				tests.WithBody(bytes.NewBuffer([]byte(`{"type":"Flag","actor":"http://fedbox/actors/1","object":"http://fedbox/actors/1"}`))),
-			),
+			Req: tests.URL(admin.Outbox.GetLink()).
+				Post().
+				ContentType(client.ContentTypeJsonLD).
+				Signer(token.Sign).
+				BodyBytes([]byte(`{"type":"Flag","actor":"http://fedbox/actors/1","object":"http://fedbox/actors/1"}`)),
 			Res: tests.Response(
 				tests.HasCode(http.StatusCreated),
+				tests.HasContentType(contentTypes...),
+				tests.HasLocation(admin.ID),
 				tests.HasItem(admin),
 			),
 		},
