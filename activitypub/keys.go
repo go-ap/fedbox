@@ -3,6 +3,7 @@ package ap
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -118,11 +119,11 @@ func KeyPairFromPrivateBytes(prvBytes []byte) (*KeyPair, error) {
 	switch k := key.(type) {
 	case *rsa.PrivateKey:
 		pair.Private = k
-		pair.Public = &k.PublicKey
+		pair.Public = k.Public()
 		pair.Type = KeyTypeRSA
 	case *ecdsa.PrivateKey:
 		pair.Private = k
-		pair.Public = &k.PublicKey
+		pair.Public = k.Public()
 		pair.Type = KeyTypeECDSA
 	case *ed25519.PrivateKey:
 		pair.Private = *k
@@ -140,14 +141,23 @@ func GenerateKeyPair(typ KeyType) (*KeyPair, error) {
 	var pub crypto.PublicKey
 	var prv crypto.PrivateKey
 	var err error
-	if typ == KeyTypeED25519 {
+	switch typ {
+
+	case KeyTypeED25519:
 		pub, prv, err = ed25519.GenerateKey(rand.Reader)
-	} else {
+	case KeyTypeRSA:
 		var rsaPrv *rsa.PrivateKey
 		rsaPrv, err = rsa.GenerateKey(rand.Reader, 2048)
 		if rsaPrv != nil {
 			prv = rsaPrv
-			pub = rsaPrv.PublicKey
+			pub = rsaPrv.Public()
+		}
+	case KeyTypeECDSA:
+		var rsaPrv *ecdsa.PrivateKey
+		rsaPrv, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if rsaPrv != nil {
+			prv = rsaPrv
+			pub = rsaPrv.Public()
 		}
 	}
 	if err != nil {

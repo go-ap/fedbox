@@ -1615,7 +1615,7 @@ var QuestionTests = testPairs{
 					),
 				},
 				res: testRes{
-					code: http.StatusNoContent,
+					code: http.StatusCreated,
 					val: &objectVal{
 						typ: string(vocab.QuestionType),
 						act: &objectVal{
@@ -1649,7 +1649,7 @@ var QuestionTests = testPairs{
 					),
 				},
 				res: testRes{
-					code: http.StatusNoContent,
+					code: http.StatusCreated,
 					val: &objectVal{
 						typ:  string(vocab.QuestionType),
 						name: "Some question",
@@ -1687,7 +1687,7 @@ var QuestionTests = testPairs{
 					),
 				},
 				res: testRes{
-					code: http.StatusNoContent,
+					code: http.StatusCreated,
 					val: &objectVal{
 						typ:  string(vocab.QuestionType),
 						name: "Some question",

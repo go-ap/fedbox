@@ -930,7 +930,7 @@ func errOnRequest(t *testing.T) func(testPair) map[string]any {
 			contentType := resp.Header.Get("Content-Type")
 			if contentType == jsonld.ContentType || contentType == client.ContentTypeJsonActivity {
 				err = json.Unmarshal(b, &res)
-				assertTrue(err == nil, "Error: unmarshal failed: %s", err)
+				assertTrue(err == nil, "Error: unmarshal failed: %v", err)
 				assertTrue(res != nil, "Error: unmarshal failed: nil result")
 			}
 			if test.res.val != nil {

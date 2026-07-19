@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	"crypto/rsa"
 	"net/http"
 	"strings"
 	"testing"
@@ -135,27 +134,27 @@ func Test_Fetch(t *testing.T) {
 		{
 			Name: "service",
 			Req:  tests.URL(c2sRootIRI),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(fedbox)),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(fedbox)),
 		},
 		{
 			Name: "actors/1",
 			Req:  tests.URL(admin1.ID),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(admin1)),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(admin1)),
 		},
 		{
 			Name: "objects/0",
 			Req:  tests.URL(tag0.ID),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(tag0)),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(tag0)),
 		},
 		{
 			Name: "objects/1",
 			Req:  tests.URL(object1.ID),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(object1)),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(object1)),
 		},
 		{
 			Name: "actors/2",
 			Req:  tests.URL(actor2.ID),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(actor2)),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(actor2)),
 		},
 	}
 
@@ -217,12 +216,12 @@ func Test_C2S_Requests(t *testing.T) {
 		tests.HTTPTest{
 			Name: "tag admin",
 			Req:  tests.URL(string(tagAdmin.ID)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(tagAdmin)),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(tagAdmin)),
 		},
 		tests.HTTPTest{
 			Name: "admin",
 			Req:  tests.URL(admin.ID),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasItem(admin)),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(admin)),
 		},
 		tests.HTTPTest{
 			Name: "invalid body",
@@ -306,12 +305,12 @@ func Test_C2S_Requests(t *testing.T) {
 				Post().
 				ContentType(client.ContentTypeJsonLD).
 				Signer(token.Sign).
-				BodyBytes([]byte(`{"type":"Flag","actor":"http://fedbox/actors/1","object":"http://fedbox/actors/1"}`)),
+				BodyBytes([]byte(`{"type":"Flag","actor":"http://fedbox/actors/1","object":"http://fedbox/actors/1","published":"2001-04-01T00:00:23Z"}`)),
 			Res: tests.Response(
 				tests.HasCode(http.StatusCreated),
 				tests.HasContentType(contentTypes...),
 				tests.HasLocation(admin.ID),
-				tests.HasItem(admin),
+				tests.HasItemProperties(&vocab.Activity{Type: vocab.FlagType, Actor: admin, Object: admin, AttributedTo: admin, Published: MockDate}),
 			),
 		},
 	}
