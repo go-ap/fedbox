@@ -41,7 +41,7 @@ func (f *FedBOX) Routes() func(chi.Router) {
 
 	return func(r chi.Router) {
 		r.Use(lw.Middlewares(f.Logger)...)
-		r.Use(middleware.RequestID, c.Handler, CleanRequestPath, OutOfOrderMw(f))
+		r.Use(middleware.RequestID, c.Handler, CleanRequestPath, SetRequestHost(f), OutOfOrderMw(f))
 
 		r.Method(http.MethodGet, "/", HandleItem(f))
 		r.Method(http.MethodHead, "/", HandleItem(f))

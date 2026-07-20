@@ -1,6 +1,7 @@
 package fedbox
 
 import (
+	"context"
 	"net/http"
 	"path"
 
@@ -8,6 +9,20 @@ import (
 	"github.com/go-ap/errors"
 	"github.com/go-chi/chi/v5"
 )
+
+func SetRequestHost(f *FedBOX) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Host != f.Conf.Hostname {
+				if forwardedHost := r.Header.Get("X-Forwarded-Host"); forwardedHost == f.Conf.Hostname {
+					r = r.WithContext(context.WithValue(r.Context(), "X-Original-Host", r.Host))
+					r.Host = forwardedHost
+				}
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
 func CleanRequestPath(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
