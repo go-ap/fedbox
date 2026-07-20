@@ -9,16 +9,16 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/motley v0.0.0-20260701134918-ee840538d90b
 	git.sr.ht/~mariusor/servermux v0.0.0-20260310142041-b6c9be7e7820
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260716114018-9dd029ef0a82
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260720134348-fc68655b1df2
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
-	github.com/alecthomas/kong v1.15.0
+	github.com/alecthomas/kong v1.16.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
-	github.com/go-ap/activitypub v0.0.0-20260701132640-13f25467c431
-	github.com/go-ap/auth v0.0.0-20260718172851-14aeb2a61a91
-	github.com/go-ap/cache v0.0.0-20260701132808-71a22e0f7796
-	github.com/go-ap/client v0.0.0-20260718172348-2cabce602885
+	github.com/go-ap/activitypub v0.0.0-20260720130625-e2c76676dde7
+	github.com/go-ap/auth v0.0.0-20260720131932-148d55cb6dc6
+	github.com/go-ap/cache v0.0.0-20260720130756-5966f822532a
+	github.com/go-ap/client v0.0.0-20260720131204-e2a338936cfd
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
-	github.com/go-ap/filters v0.0.0-20260716110857-13bff629eba4
+	github.com/go-ap/filters v0.0.0-20260720130825-55f4e622346f
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
 	github.com/go-ap/processing v0.0.0-20260719164025-ec070d2f1eb1
 	github.com/go-chi/chi/v5 v5.3.1
@@ -49,7 +49,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/keygen v0.5.4 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20260713092251-4bee1914c0cf // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260720091822-7cc6674724ac // indirect
 	github.com/charmbracelet/x/ansi v0.11.7 // indirect
 	github.com/charmbracelet/x/conpty v0.2.0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
@@ -65,11 +65,11 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.4.2 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260716113120-fb9dbdc295c3 // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260716112902-fda877e9ed69 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260716112713-310e21fe66f7 // indirect
-	github.com/go-ap/storage-pg v0.0.0-20260716113514-ab3668b1f971 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260716113311-0c7f0c9dc235 // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260720133651-9a77f79975eb // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260720133541-b3b4068d37ec // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260720133415-df574ee684e8 // indirect
+	github.com/go-ap/storage-pg v0.0.0-20260720133924-78f126369345 // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260720133505-c65c4f80114e // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -82,7 +82,7 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
-	github.com/klauspost/compress v1.19.0 // indirect
+	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/leporo/sqlf v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mariusor/bubbles-tree v0.0.0-20260519151908-a3185afecf1e // indirect
@@ -113,7 +113,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	golang.org/x/exp v0.0.0-20260718201538-764159d718ef // indirect
-	golang.org/x/image v0.43.0 // indirect
+	golang.org/x/image v0.44.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect

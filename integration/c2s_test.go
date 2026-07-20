@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/rsa"
 	"net/http"
 	"strings"
 	"testing"
@@ -85,21 +86,6 @@ func person(actorIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Actor {
 	return ap.Actor(initFn...)
 }
 
-var admin1 = person("http://fedbox/actors/1",
-	ap.HasPreferredUsername("admin"),
-	ap.HasTag(tag0),
-)
-
-var actor2 = person("http://fedbox/actors/2",
-	ap.HasContent("Generated actor"),
-	ap.HasSummary("Generated actor"),
-	ap.HasLiked(),
-	ap.HasPreferredUsername("johndoe"),
-	ap.HasPublished("2019-08-11T13:14:47.000000000+02:00"),
-	ap.HasUpdated("2019-08-11T13:14:47.000000000+02:00"),
-	ap.HasName("Johnathan Doe"),
-)
-
 func object(objectIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Object {
 	rootU, _ := objectIRI.URL()
 	rootU.Path = ""
@@ -112,22 +98,38 @@ func object(objectIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Object {
 	return ap.Object(initFn...)
 }
 
-var tag0 = object(vocab.CollectionPath("objects/0").IRI(c2sRootIRI), ap.HasName("#sysop"))
-
-var object1 = object(vocab.CollectionPath("objects/1").IRI(c2sRootIRI),
-	ap.HasType(vocab.NoteType),
-	ap.HasContent("<p>Hello</p><code>FedBOX</code>!</p>\n"),
-	ap.HasMediaType("text/html"),
-	ap.HasPublished("2019-09-27T14:26:43.000000000Z"),
-	ap.HasUpdated("2019-09-27T14:26:43.000000000Z"),
-	ap.HasAttributedTo(admin1.ID),
-	ap.HasSource("Hello `FedBOX`!", "text/markdown"),
-	ap.HasTo("https://www.w3.org/ns/activitystreams#Public"),
-)
-
 func Test_Fetch(t *testing.T) {
 	publicKey, privateKey, _ := ed25519.GenerateKey(rand.Reader)
-	var fedbox = service("http://fedbox", ap.HasPublicKey(publicKey))
+
+	fedbox := service(c2sRootIRI, ap.HasPublicKey(publicKey))
+
+	tag0 := object(c2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
+
+	admin1 := person(c2sRootIRI.AddPath("actors/1"),
+		ap.HasPreferredUsername("admin"),
+		ap.HasTag(tag0),
+	)
+
+	actor2 := person(c2sRootIRI.AddPath("actors/2"),
+		ap.HasContent("Generated actor"),
+		ap.HasSummary("Generated actor"),
+		ap.HasLiked(),
+		ap.HasPreferredUsername("johndoe"),
+		ap.HasPublished("2019-08-11T13:14:47.000000000+02:00"),
+		ap.HasUpdated("2019-08-11T13:14:47.000000000+02:00"),
+		ap.HasName("Johnathan Doe"),
+	)
+
+	object1 := object(c2sRootIRI.AddPath("objects/1"),
+		ap.HasType(vocab.NoteType),
+		ap.HasContent("<p>Hello</p><code>FedBOX</code>!</p>\n"),
+		ap.HasMediaType("text/html"),
+		ap.HasPublished("2019-09-27T14:26:43.000000000Z"),
+		ap.HasUpdated("2019-09-27T14:26:43.000000000Z"),
+		ap.HasAttributedTo(admin1.ID),
+		ap.HasSource("Hello `FedBOX`!", "text/markdown"),
+		ap.HasTo("https://www.w3.org/ns/activitystreams#Public"),
+	)
 
 	contentTypes := []string{client.ContentTypeJsonLD, client.ContentTypeJsonActivity}
 	toRun := []tests.HTTPTest{
@@ -296,6 +298,9 @@ func Test_C2S_Requests(t *testing.T) {
 				}
 				token.TokenType = authPieces[0]
 				token.AccessToken = authPieces[1]
+				if token.AccessToken == "" || token.TokenType == "" {
+					t.Fatalf("Unable to build Authorization token")
+				}
 				return nil
 			}, endOK),
 		},
@@ -304,7 +309,14 @@ func Test_C2S_Requests(t *testing.T) {
 			Req: tests.URL(admin.Outbox.GetLink()).
 				Post().
 				ContentType(client.ContentTypeJsonLD).
-				Signer(token.Sign).
+				Signer(func(r *http.Request) error {
+					auth := token.TokenType + " " + token.AccessToken
+					if len(auth) <= 1 {
+						t.Fatalf("Invalid authorization token: %v", token)
+					}
+					r.Header.Set("Authorization", auth)
+					return nil
+				}).
 				BodyBytes([]byte(`{"type":"Flag","actor":"http://fedbox/actors/1","object":"http://fedbox/actors/1","published":"2001-04-01T00:00:23Z"}`)),
 			Res: tests.Response(
 				tests.HasCode(http.StatusCreated),

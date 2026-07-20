@@ -198,7 +198,9 @@ func (ht HTTPTest) Run(ctx context.Context, mocks c.Running, t *testing.T) {
 
 	resp, err := cl.Do(req)
 	if err != nil {
-		t.Fatalf("failed request [%s]%s: %+v", req.Method, req.URL.String(), err)
+		t.Errorf("\t[%s]%s", req.Method, req.URL.String())
+		t.Errorf("\t%+v", req.Header)
+		t.Fatalf("failed request %+v", err)
 	}
 
 	ht.Res.Run(t, resp)

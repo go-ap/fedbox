@@ -72,19 +72,18 @@ func (i image) Start(ctx context.Context, t testing.TB) (tc.Container, error) {
 }
 
 func Init(ctx context.Context, t testing.TB, s ...ContainerInitializer) (Running, error) {
-	var newNetwork *tc.DockerNetwork
-	_ = []nw.NetworkCustomizer{nw.WithInternal(), nw.WithAttachable(), nw.WithDriver("bridge")}
-	//newNetwork, err = nw.New(ctx, netInitFns...)
-	//if err != nil {
-	//	t.Fatalf("unable to initialize nw: %s", err)
-	//}
+	netInitFns := []nw.NetworkCustomizer{nw.WithInternal(), nw.WithAttachable(), nw.WithDriver("bridge"), nw.WithEnableIPv6()}
+	newNetwork, err := nw.New(ctx, netInitFns...)
+	if err != nil {
+		t.Fatalf("unable to initialize network: %v", err)
+	}
 	// NOTE(marius): the docker host can come from multiple places.
 	// @see github.com/testcontainers/testcontainers-go/internal/core.MustExtractDockerHost()
 	m := Running{Containers: make([]tc.Container, 0), Network: newNetwork}
 	for _, img := range s {
 		c, err := img.Start(context.WithoutCancel(ctx), t)
 		if err != nil {
-			t.Fatalf("unable to initialize container %T: %s", img, err)
+			t.Fatalf("unable to initialize container %T: %v", img, err)
 		}
 
 		m.Containers = append(m.Containers, c)

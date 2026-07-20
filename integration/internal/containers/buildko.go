@@ -6,15 +6,16 @@ import (
 	"runtime/debug"
 	"slices"
 	"strings"
+	"time"
 
 	"git.sr.ht/~mariusor/storage-all"
 	"github.com/go-ap/fedbox/internal/env"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/ko/pkg/build"
 	"github.com/google/ko/pkg/commands"
 	"github.com/google/ko/pkg/commands/options"
-	"github.com/google/ko/pkg/publish"
 	"github.com/sirupsen/logrus"
 )
 
@@ -120,11 +121,12 @@ func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 				ID:      strings.Join([]string{"fedbox", string(envType), string(storageType)}, "-"),
 				Dir:     "cmd/fedbox",
 				Ldflags: []string{`-extldflags "-static"`},
-				Flags:   []string{`-tags=` + strings.Join(tags, ",")},
+				Flags:   []string{`-tags=` + strings.Join(tags, ",") /*, "-race"*/},
 				Env:     buildEnvValues(),
 			},
 		}),
 		build.WithTrimpath(true),
+		build.WithCreationTime(v1.Time{Time: time.Now()}),
 		build.WithDisabledSBOM(),
 		build.WithLabel("storage", string(storageType)),
 		build.WithLabel("env", string(envType)),
@@ -137,10 +139,11 @@ func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 		return "", err
 	}
 	publishOpts := options.PublishOptions{
-		DockerRepo:  publish.LocalDomain,
-		LocalDomain: targetRepo,
-		Local:       true,
-		ImageNamer:  justName,
+		DockerRepo:          targetRepo,
+		LocalDomain:         targetRepo,
+		Local:               true,
+		PreserveImportPaths: true,
+		TagOnly:             true,
 	}
 	pub, err := commands.NewPublisher(&publishOpts)
 	if err != nil {
