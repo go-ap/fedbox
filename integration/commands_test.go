@@ -6,10 +6,13 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
+	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
 )
 
@@ -24,6 +27,29 @@ func endOK(t *testing.T, line []byte) []byte {
 		t.Errorf("Output line %q, expected: %q", line, ok)
 	}
 	return nil
+}
+
+func extractToken(token *c2s.BearerSigner) func(t *testing.T, i []byte) []byte {
+	return func(t *testing.T, i []byte) []byte {
+		i = bytes.TrimSpace(i)
+		auth, found := bytes.CutPrefix(i, []byte("Authorization: "))
+		if !found {
+			t.Fatalf("Unable to get Authorization value from CLI output: %s", i)
+		}
+		if hasEoL := bytes.IndexByte(auth, '\n'); hasEoL > 0 {
+			auth = auth[:hasEoL]
+		}
+		authPieces := strings.Split(string(auth), " ")
+		if len(authPieces) < 2 {
+			t.Fatalf("Authorization value is not recognized: %+v", authPieces)
+		}
+		token.TokenType = strings.TrimSpace(authPieces[0])
+		token.AccessToken = strings.TrimSpace(authPieces[1])
+		if token.AccessToken == "" || token.TokenType == "" {
+			t.Fatalf("Unable to build Authorization token")
+		}
+		return nil
+	}
 }
 
 var urlRegexp = regexp.MustCompile(`(http|https://[a-zA-Z0-9./-]+)`)
@@ -157,14 +183,14 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 
 	for _, test := range toRun {
 		t.Run(test.Label(), func(t *testing.T) {
-			c2sFedBOX := c.FedBOXNew(
-				c.WithConfig(c.ConfigFromBuildInfo(defaultC2SOptions)),
-				c.WithArgs([]string{"--bootstrap"}),
-				c.WithImageName(fedBOXImageName),
-				c.WithKey(privateKey),
-				c.WithRootIRI(c2sRootIRI),
-				c.WithPw(rand.Text()[:8]),
-				c.WithTestLogger(t, Verbose && test.Label() != "stop"),
+			c2sFedBOX := fedbox.New(
+				fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+				fedbox.WithArgs([]string{"--bootstrap"}),
+				fedbox.WithImageName(fedBOXImageName),
+				fedbox.WithKey(privateKey),
+				fedbox.WithRootIRI(c2sRootIRI),
+				fedbox.WithPw(rand.Text()[:8]),
+				fedbox.WithTestLogger(t, Verbose && test.Label() != "stop"),
 			)
 			ctx := t.Context()
 

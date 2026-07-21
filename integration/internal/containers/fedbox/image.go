@@ -1,24 +1,37 @@
-package containers
+package fedbox
 
 import (
 	"context"
 	"crypto"
 	"fmt"
+	"strconv"
 	"testing"
+	"time"
 
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
+	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
 	tc "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-type ContainerInitializer interface {
-	Name() string
-	Start(ctx context.Context, t testing.TB) (tc.Container, error)
+type tbLogger struct {
+	testing.TB
+}
+
+func (t *tbLogger) Printf(s string, args ...any) {
+	t.Logf(s, args...)
+}
+
+func (t *tbLogger) Accept(l tc.Log) {
+	t.Helper()
+	t.Logf("%s", l.Content)
 }
 
 type fboxImage struct {
@@ -31,7 +44,7 @@ type fboxImage struct {
 	pw      []byte
 	mocks   vocab.ItemCollection
 	cmds    []tc.Executable
-	logger  *testLogger
+	logger  *tbLogger
 }
 
 func (f *fboxImage) EnvType() string {
@@ -51,22 +64,22 @@ func (f *fboxImage) Name() string {
 }
 
 func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
-	initFns := []tc.ContainerCustomizer{WithImage(f.name), WithEnvFromConfig(*f.conf)}
+	initFns := []tc.ContainerCustomizer{c.WithImage(f.name), c.WithEnvFromConfig(*f.conf)}
 	if len(f.env) > 0 {
-		initFns = append(initFns, WithEnvFile(f.env))
+		initFns = append(initFns, c.WithEnvFile(f.env))
 	}
 
 	if f.args != nil {
 		initFns = append(initFns, tc.WithCmdArgs(f.args...))
 	}
 	if f.key != nil {
-		initFns = append(initFns, WithPrivateKey(f.key))
+		initFns = append(initFns, c.WithPrivateKey(f.key))
 	}
 	if f.pw != nil {
-		initFns = append(initFns, WithPassword(f.pw))
+		initFns = append(initFns, c.WithPassword(f.pw))
 	}
 	if len(f.mocks) > 0 {
-		importCmd := SSHCmd{
+		importCmd := c.SSHCmd{
 			Cmd:  []string{ /*ctlBin, "--env", envType, */ "pub", "import", "/storage/import.json"},
 			User: f.rootIRI,
 		}
@@ -77,7 +90,7 @@ func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 			importCmd.Pw = f.pw
 		}
 		// NOTE(marius): we add the mocks to the import file, and the SSH command to actually import it.
-		initFns = append(initFns, WithMocks(f.mocks...), tc.WithAfterReadyCommand(importCmd))
+		initFns = append(initFns, c.WithMocks(f.mocks...), tc.WithAfterReadyCommand(importCmd))
 	}
 	if f.logger != nil {
 		initFns = append(initFns, tc.WithLogConsumers(f.logger))
@@ -85,8 +98,34 @@ func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 	return initFns
 }
 
-func (f *fboxImage) Start(ctx context.Context, t testing.TB) (tc.Container, error) {
+func initPGSidecar(ctx context.Context, l *tbLogger) (tc.Container, error) {
+	pgInitFns := []tc.ContainerCustomizer{
+		c.WithInitScript(),
+		postgres.WithDatabase("storage"),
+		postgres.WithUsername("postgres"),
+		postgres.WithPassword("postgres"),
+		tc.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).WithStartupTimeout(5 * time.Second)),
+	}
+	if l != nil {
+		pgInitFns = append(pgInitFns, tc.WithLogger(l))
+	}
+	return postgres.Run(ctx, "postgres:18-alpine", pgInitFns...)
+}
+
+func (f *fboxImage) Start(ctx context.Context, t testing.TB) ([]tc.Container, error) {
 	opts := f.InitFns()
+
+	cont := make([]tc.Container, 0, 2)
+	if f.conf.Storage == config.StoragePostgres {
+		// NOTE(marius): currently the FedBOX service doesn't really work with postgres
+		pg, err := initPGSidecar(ctx, f.logger)
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize PostgreSQL container: %w", err)
+		}
+		cont = append(cont, pg)
+	}
 
 	req := defaultFedBOXRequest(f, t)
 	hostCfg := func(hostConfig *container.HostConfig) {
@@ -119,8 +158,9 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB) (tc.Container, erro
 
 	c := fboxContainer{Container: fc, img: *f}
 	if err = c.Start(ctx); err != nil {
-		return &c, err
+		return nil, fmt.Errorf("unable to start FedBOX container: %w", err)
 	}
+	cont = append(cont, &c)
 	if len(cmds) > 0 {
 		errs := make([]error, 0, len(cmds))
 		name, _ := c.Name(ctx)
@@ -132,7 +172,7 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB) (tc.Container, erro
 		err = errors.Join(errs...)
 	}
 
-	return &c, err
+	return cont, err
 }
 
 type imageInitFn func(*fboxImage)
@@ -143,7 +183,7 @@ func WithTestLogger(t testing.TB, enabled bool) imageInitFn {
 			return
 		}
 		f.conf.LogLevel = lw.TraceLevel
-		logger := testLogger{T: t.(*testing.T)}
+		logger := tbLogger{TB: t}
 		f.logger = &logger
 	}
 }
@@ -196,13 +236,13 @@ func WithArgs(args []string) imageInitFn {
 	}
 }
 
-func WithCmds(cmds ...tc.Executable) imageInitFn {
+func WithCmd(cmds ...tc.Executable) imageInitFn {
 	return func(f *fboxImage) {
 		f.cmds = cmds
 	}
 }
 
-func FedBOXNew(fns ...imageInitFn) *fboxImage {
+func New(fns ...imageInitFn) *fboxImage {
 	img := new(fboxImage)
 	for _, fn := range fns {
 		fn(img)
@@ -212,10 +252,10 @@ func FedBOXNew(fns ...imageInitFn) *fboxImage {
 
 func ConfigFromBuildInfo(base config.Options) config.Options {
 	if base.Env == "" {
-		base.Env = ExtractEnvTagFromBuild()
+		base.Env = c.ExtractEnvTagFromBuild()
 	}
 	if base.Storage == "" {
-		storageTyp := ExtractStorageTagFromBuild()
+		storageTyp := c.ExtractStorageTagFromBuild()
 		if storageTyp == "all" {
 			storageTyp = storage.Default
 		}
@@ -225,4 +265,18 @@ func ConfigFromBuildInfo(base config.Options) config.Options {
 		base.StoragePath = "/storage"
 	}
 	return base
+}
+
+func defaultFedBOXRequest(fb *fboxImage, _ testing.TB) tc.GenericContainerRequest {
+	return tc.GenericContainerRequest{
+		ContainerRequest: tc.ContainerRequest{
+			Image: fb.name,
+			WaitingFor: wait.ForAny(
+				wait.ForListeningPort(strconv.Itoa(fb.conf.HTTPPort)),
+				wait.ForListeningPort(strconv.Itoa(fb.conf.SSHPort)),
+			).WithDeadline(5 * time.Second),
+		},
+		ProviderType: tc.ProviderPodman,
+		Started:      true,
+	}
 }

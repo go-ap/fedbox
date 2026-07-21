@@ -1,11 +1,9 @@
 package integration
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +13,7 @@ import (
 	"github.com/go-ap/client/s2s"
 	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
+	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/fedbox/internal/config"
@@ -45,7 +44,7 @@ func rootIRI(conf config.Options) vocab.IRI {
 var c2sRootIRI = rootIRI(defaultC2SOptions)
 var s2sRootIRI = rootIRI(defaultS2SOptions)
 
-func service(rootIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Actor {
+func root(rootIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Actor {
 	initFn = append([]ap.InitFn{
 		ap.HasID(rootIRI),
 		ap.HasType(vocab.ServiceType),
@@ -100,7 +99,7 @@ func object(objectIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Object {
 func Test_Fetch(t *testing.T) {
 	publicKey, privateKey, _ := ed25519.GenerateKey(rand.Reader)
 
-	fedbox := service(c2sRootIRI, ap.HasPublicKey(publicKey))
+	service := root(c2sRootIRI, ap.HasPublicKey(publicKey))
 
 	tag0 := object(c2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
 
@@ -135,7 +134,7 @@ func Test_Fetch(t *testing.T) {
 		{
 			Name: "service",
 			Req:  tests.URL(c2sRootIRI),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(fedbox)),
+			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(service)),
 		},
 		{
 			Name: "actors/1",
@@ -159,15 +158,16 @@ func Test_Fetch(t *testing.T) {
 		},
 	}
 
-	c2sFedBOX := c.FedBOXNew(
-		c.WithConfig(c.ConfigFromBuildInfo(defaultC2SOptions)),
-		c.WithArgs([]string{"--bootstrap"}),
-		c.WithTestLogger(t, Verbose),
-		c.WithImageName(fedBOXImageName),
-		c.WithRootIRI(c2sRootIRI),
-		c.WithKey(privateKey),
-		c.WithPw(rand.Text()[:8]),
-		c.WithItems(tag0, object1, admin1, actor2),
+	conf := fedbox.ConfigFromBuildInfo(defaultC2SOptions)
+	c2sFedBOX := fedbox.New(
+		fedbox.WithConfig(conf),
+		fedbox.WithArgs([]string{"--bootstrap"}),
+		fedbox.WithTestLogger(t, Verbose),
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithRootIRI(c2sRootIRI),
+		fedbox.WithKey(privateKey),
+		fedbox.WithPw(rand.Text()[:8]),
+		fedbox.WithItems(tag0, object1, admin1, actor2),
 	)
 
 	images := c.Suite{c2sFedBOX}
@@ -202,14 +202,14 @@ func Test_C2S_Requests(t *testing.T) {
 	draftSig := s2s.New(s2s.WithActor(admin, admKey))
 	token := new(c2s.BearerSigner)
 
-	c2sFedBOX := c.FedBOXNew(
-		c.WithImageName(fedBOXImageName),
-		c.WithConfig(c.ConfigFromBuildInfo(defaultC2SOptions)),
-		c.WithArgs([]string{"--bootstrap"}),
-		c.WithRootIRI(c2sRootIRI),
-		c.WithKey(prvKey), c.WithPw(rand.Text()[:8]),
-		c.WithItems(tagAdmin, admin),
-		c.WithTestLogger(t, Verbose),
+	c2sFedBOX := fedbox.New(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+		fedbox.WithArgs([]string{"--bootstrap"}),
+		fedbox.WithRootIRI(c2sRootIRI),
+		fedbox.WithKey(prvKey), fedbox.WithPw(rand.Text()[:8]),
+		fedbox.WithItems(tagAdmin, admin),
+		fedbox.WithTestLogger(t, Verbose),
 	)
 
 	contentTypes := []string{client.ContentTypeJsonLD, client.ContentTypeJsonActivity}
@@ -285,23 +285,7 @@ func Test_C2S_Requests(t *testing.T) {
 				User: c2sRootIRI.String(),
 				Key:  prvKey,
 			},
-			IO: tests.WithTests(func(t *testing.T, i []byte) []byte {
-				i = bytes.TrimSpace(i)
-				auth, found := bytes.CutPrefix(i, []byte("Authorization: "))
-				if !found {
-					t.Fatalf("Unable to get Authorization value from CLI output: %s", i)
-				}
-				authPieces := strings.Split(string(auth), " ")
-				if len(authPieces) < 2 {
-					t.Fatalf("Authorization value is not recognized: %+v", authPieces)
-				}
-				token.TokenType = authPieces[0]
-				token.AccessToken = authPieces[1]
-				if token.AccessToken == "" || token.TokenType == "" {
-					t.Fatalf("Unable to build Authorization token")
-				}
-				return nil
-			}, endOK),
+			IO: tests.WithTests(extractToken(token), endOK),
 		},
 		tests.HTTPTest{
 			Name: "to outbox",

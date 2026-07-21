@@ -15,7 +15,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
@@ -23,8 +22,12 @@ import (
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 	nw "github.com/testcontainers/testcontainers-go/network"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+type ContainerInitializer interface {
+	Name() string
+	Start(ctx context.Context, t testing.TB) ([]tc.Container, error)
+}
 
 type Running struct {
 	Containers []tc.Container
@@ -32,44 +35,6 @@ type Running struct {
 }
 
 type Suite []ContainerInitializer
-
-type testLogger struct {
-	*testing.T
-}
-
-func (t *testLogger) Printf(s string, args ...any) {
-	t.Logf(s, args...)
-}
-
-func (t *testLogger) Accept(l tc.Log) {
-	t.Helper()
-	t.Logf("%s", l.Content)
-}
-
-type image struct {
-	name      string
-	env       map[string]string
-	startCmds []tc.Executable
-}
-
-func (i image) initFns() []tc.ContainerCustomizer {
-	storagePath := "/storage"
-	if path, ok := i.env["STORAGE_PATH"]; ok {
-		storagePath = path
-	}
-	return []tc.ContainerCustomizer{WithImage(i.name), WithEnvFile(i.env), tc.WithMounts(tc.ContainerMount{
-		Source: tc.GenericTmpfsMountSource{},
-		Target: tc.ContainerMountTarget(storagePath),
-	})}
-}
-
-func (i image) Name() string {
-	return i.name
-}
-
-func (i image) Start(ctx context.Context, t testing.TB) (tc.Container, error) {
-	return nil, fmt.Errorf("TODO generic containers")
-}
 
 func Init(ctx context.Context, t testing.TB, s ...ContainerInitializer) (Running, error) {
 	netInitFns := []nw.NetworkCustomizer{nw.WithInternal(), nw.WithAttachable(), nw.WithDriver("bridge"), nw.WithEnableIPv6()}
@@ -86,7 +51,7 @@ func Init(ctx context.Context, t testing.TB, s ...ContainerInitializer) (Running
 			t.Fatalf("unable to initialize container %T: %v", img, err)
 		}
 
-		m.Containers = append(m.Containers, c)
+		m.Containers = append(m.Containers, c...)
 	}
 
 	return m, nil
@@ -158,20 +123,6 @@ func rewriteRequestHost(ctx context.Context, fc tc.Container, r *http.Request) e
 	r.Host = origHost
 
 	return nil
-}
-
-func defaultFedBOXRequest(fb *fboxImage, _ testing.TB) tc.GenericContainerRequest {
-	return tc.GenericContainerRequest{
-		ContainerRequest: tc.ContainerRequest{
-			Image: fb.name,
-			WaitingFor: wait.ForAny(
-				wait.ForListeningPort(strconv.Itoa(fb.conf.HTTPPort)),
-				wait.ForListeningPort(strconv.Itoa(fb.conf.SSHPort)),
-			).WithDeadline(5 * time.Second),
-		},
-		ProviderType: tc.ProviderPodman,
-		Started:      true,
-	}
 }
 
 func WithIO(in io.ReadWriter) exec.ProcessOption {
@@ -304,6 +255,23 @@ func WithPassword(pw []byte) tc.CustomizeRequestOption {
 			FileMode:          0600,
 		}
 		req.Files = append(req.Files, keyFile)
+		return nil
+	}
+}
+
+func WithInitScript() tc.CustomizeRequestOption {
+	initScript := `CREATE USER storage;
+-- CREATE DATABASE storage;
+GRANT ALL PRIVILEGES ON DATABASE storage TO storage;
+`
+	return func(req *tc.GenericContainerRequest) error {
+		filePath := filepath.Join("/docker-entrypoint-initdb.d", "init-db.sql")
+		cf := tc.ContainerFile{
+			Reader:            bytes.NewBufferString(initScript),
+			ContainerFilePath: filePath,
+			FileMode:          0755,
+		}
+		req.Files = append(req.Files, cf)
 		return nil
 	}
 }
