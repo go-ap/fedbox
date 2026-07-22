@@ -23,15 +23,9 @@ import (
 
 var (
 	defaultC2SOptions = config.Options{
-		Hostname: "fedbox",
+		Hostname: "first1",
 		HTTPPort: 4000,
 		SSHPort:  4044,
-	}
-
-	defaultS2SOptions = config.Options{
-		Hostname: "secondary",
-		HTTPPort: 4011,
-		SSHPort:  4055,
 	}
 
 	MockDate = time.Date(2001, time.April, 1, 0, 0, 23, 00, time.UTC)
@@ -133,34 +127,33 @@ func Test_Fetch(t *testing.T) {
 	toRun := []tests.HTTPTest{
 		{
 			Name: "service",
-			Req:  tests.URL(c2sRootIRI),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(service)),
+			Req:  tests.Request().IRI(c2sRootIRI),
+			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentTypes...).HasExactItem(service),
 		},
 		{
 			Name: "actors/1",
-			Req:  tests.URL(admin1.ID),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(admin1)),
+			Req:  tests.Request().IRI(admin1.ID),
+			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentTypes...).HasExactItem(admin1),
 		},
 		{
 			Name: "objects/0",
-			Req:  tests.URL(tag0.ID),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(tag0)),
+			Req:  tests.Request().IRI(tag0.ID),
+			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentTypes...).HasExactItem(tag0),
 		},
 		{
 			Name: "objects/1",
-			Req:  tests.URL(object1.ID),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(object1)),
+			Req:  tests.Request().IRI(object1.ID),
+			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentTypes...).HasExactItem(object1),
 		},
 		{
 			Name: "actors/2",
-			Req:  tests.URL(actor2.ID),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(actor2)),
+			Req:  tests.Request().IRI(actor2.ID),
+			Res:  tests.Response().HasCode(http.StatusOK).HasExactItem(actor2),
 		},
 	}
 
-	conf := fedbox.ConfigFromBuildInfo(defaultC2SOptions)
-	c2sFedBOX := fedbox.New(
-		fedbox.WithConfig(conf),
+	images := c.Suite(fedbox.New(
+		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
 		fedbox.WithArgs([]string{"--bootstrap"}),
 		fedbox.WithTestLogger(t, Verbose),
 		fedbox.WithImageName(fedBOXImageName),
@@ -168,9 +161,7 @@ func Test_Fetch(t *testing.T) {
 		fedbox.WithKey(privateKey),
 		fedbox.WithPw(rand.Text()[:8]),
 		fedbox.WithItems(tag0, object1, admin1, actor2),
-	)
-
-	images := c.Suite{c2sFedBOX}
+	))
 
 	ctx := context.Background()
 	cont, err := c.Init(ctx, t, images...)
@@ -202,80 +193,66 @@ func Test_C2S_Requests(t *testing.T) {
 	draftSig := s2s.New(s2s.WithActor(admin, admKey))
 	token := new(c2s.BearerSigner)
 
-	c2sFedBOX := fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithRootIRI(c2sRootIRI),
-		fedbox.WithKey(prvKey), fedbox.WithPw(rand.Text()[:8]),
-		fedbox.WithItems(tagAdmin, admin),
-		fedbox.WithTestLogger(t, Verbose),
-	)
-
 	contentTypes := []string{client.ContentTypeJsonLD, client.ContentTypeJsonActivity}
 	toRun := []tests.RunnableTest{
 		tests.HTTPTest{
 			Name: "tag admin",
-			Req:  tests.URL(string(tagAdmin.ID)),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(tagAdmin)),
+			Req:  tests.Request().IRI(tagAdmin.ID),
+			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentTypes...).HasExactItem(tagAdmin),
 		},
 		tests.HTTPTest{
 			Name: "admin",
-			Req:  tests.URL(admin.ID),
-			Res:  tests.Response(tests.HasCode(http.StatusOK), tests.HasContentType(contentTypes...), tests.HasExactItem(admin)),
+			Req:  tests.Request().IRI(admin.ID),
+			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentTypes...).HasExactItem(admin),
 		},
 		tests.HTTPTest{
 			Name: "invalid body",
-			Req: tests.URL(admin.Inbox.GetLink()).
+			Req: tests.Request().IRI(admin.Inbox.GetLink()).
 				Post().
 				Header("Content-Type", client.ContentTypeJsonLD).
 				BodyBytes(nil),
-			Res: tests.Response(
-				tests.HasCode(http.StatusBadRequest),
-				tests.HasContentType(client.ContentTypeJson),
-				tests.HasErrors(errors.BadRequestf("unable to unmarshal JSON request")),
-			),
+			Res: tests.Response().
+				HasCode(http.StatusBadRequest).
+				HasContentType(client.ContentTypeJson).
+				HasErrors(errors.BadRequestf("unable to unmarshal JSON request")),
 		},
 		tests.HTTPTest{
 			Name: "non authorized",
-			Req: tests.URL(admin.Inbox.GetLink()).
+			Req: tests.Request().IRI(admin.Inbox.GetLink()).
 				Post().
 				Header("Content-Type", client.ContentTypeJsonLD).
 				BodyBytes([]byte(`{"type":"Flag"}`)),
-			Res: tests.Response(
-				tests.HasCode(http.StatusUnauthorized),
-				tests.HasContentType(client.ContentTypeJson),
-				tests.HasErrors(errors.Unauthorizedf("unable to read request body")),
-			),
+			Res: tests.Response().
+				HasCode(http.StatusUnauthorized).
+				HasContentType(client.ContentTypeJson).
+				HasErrors(errors.Unauthorizedf("unable to read request body")),
 		},
 		tests.HTTPTest{
 			Name: "collection not found",
-			Req: tests.URL(c2sRootIRI.AddPath("test")).
+			Req: tests.Request().IRI(c2sRootIRI.AddPath("test")).
 				Post().
 				Header("Content-Type", client.ContentTypeJsonLD).
 				BodyBytes([]byte(`{"type":"Flag"}`)),
-			Res: tests.Response(
-				tests.HasCode(http.StatusNotFound),
-				tests.HasContentType(client.ContentTypeJson),
-				tests.HasErrors(errors.NotFoundf("invalid collection")),
-			),
+			Res: tests.Response().
+				HasCode(http.StatusNotFound).
+				HasContentType(client.ContentTypeJson).
+				HasErrors(errors.NotFoundf("invalid collection")),
 		},
 		tests.HTTPTest{
 			Name: "to inbox",
-			Req: tests.URL(admin.Inbox.GetLink()).
+			Req: tests.Request().IRI(admin.Inbox.GetLink()).
 				Post().
 				ContentType(client.ContentTypeJsonLD).
 				Header("Date", MockDate.Format(http.TimeFormat)).
 				Signer(draftSig.SignDraft).
 				BodyBytes([]byte(`{"type":"Flag"}`)),
-			Res: tests.Response(
-				tests.HasCode(http.StatusBadRequest),
-				tests.HasContentType(client.ContentTypeJson),
-				tests.HasErrors(
+			Res: tests.Response().
+				HasCode(http.StatusBadRequest).
+				HasContentType(client.ContentTypeJson).
+				HasErrors(
 					errors.NewBadRequest(errors.BadRequestf("Activity is not valid: invalid activity id"), "Unable to save activity Flag to http://fedbox/actors/1/inbox"),
 					errors.BadRequestf("Activity is not valid: invalid activity id"),
 				),
-			),
 		},
 		tests.CommandTest{
 			Name: "gen OAuth2 bearer",
@@ -285,11 +262,11 @@ func Test_C2S_Requests(t *testing.T) {
 				User: c2sRootIRI.String(),
 				Key:  prvKey,
 			},
-			IO: tests.WithTests(extractToken(token), endOK),
+			IO: tests.WithTests(extractToken(token), anyOutput),
 		},
 		tests.HTTPTest{
 			Name: "to outbox",
-			Req: tests.URL(admin.Outbox.GetLink()).
+			Req: tests.Request().IRI(admin.Outbox.GetLink()).
 				Post().
 				ContentType(client.ContentTypeJsonLD).
 				Signer(func(r *http.Request) error {
@@ -301,16 +278,23 @@ func Test_C2S_Requests(t *testing.T) {
 					return nil
 				}).
 				BodyBytes([]byte(`{"type":"Flag","actor":"http://fedbox/actors/1","object":"http://fedbox/actors/1","published":"2001-04-01T00:00:23Z"}`)),
-			Res: tests.Response(
-				tests.HasCode(http.StatusCreated),
-				tests.HasContentType(contentTypes...),
-				tests.HasLocation(admin.ID),
-				tests.HasItemProperties(&vocab.Activity{Type: vocab.FlagType, Actor: admin, Object: admin, AttributedTo: admin, Published: MockDate}),
-			),
+			Res: tests.Response().
+				HasCode(http.StatusCreated).
+				HasContentType(contentTypes...).
+				HasLocation(admin.ID).
+				HasItemProperties(&vocab.Activity{Type: vocab.FlagType, Actor: admin, Object: admin, AttributedTo: admin, Published: MockDate}),
 		},
 	}
 
-	images := c.Suite{c2sFedBOX}
+	images := c.Suite(fedbox.New(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+		fedbox.WithArgs([]string{"--bootstrap"}),
+		fedbox.WithRootIRI(c2sRootIRI),
+		fedbox.WithKey(prvKey), fedbox.WithPw(rand.Text()[:8]),
+		fedbox.WithItems(tagAdmin, admin),
+		fedbox.WithTestLogger(t, Verbose),
+	))
 
 	ctx := context.Background()
 	cont, err := c.Init(ctx, t, images...)

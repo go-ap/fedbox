@@ -3,182 +3,200 @@ package tests
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/carlmjohnson/requests"
+	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/jsonld"
 )
 
-type builder struct {
+type reqBuilder struct {
 	*requests.Builder
 	signer func(*http.Request) error
 }
 
-func URL[T ~string](s T) *builder {
-	b := builder{Builder: requests.URL(string(s))}
-	if u, err := b.Builder.URL(); err == nil {
-		b.Header("Host", u.Hostname())
-	}
+func Request() *reqBuilder {
+	b := reqBuilder{Builder: requests.New()}
 	return &b
 }
 
-func (rb *builder) Method(method string) *builder {
+func (rb *reqBuilder) URL(s string) *reqBuilder {
+	rb.Builder = rb.Builder.BaseURL(s)
+	if u, err := url.Parse(s); err == nil {
+		rb.Builder = rb.Builder.Header("Host", u.Hostname())
+	}
+	return rb
+}
+
+func (rb *reqBuilder) IRI(s vocab.IRI) *reqBuilder {
+	return rb.URL(string(s))
+}
+
+func (rb *reqBuilder) Method(method string) *reqBuilder {
 	rb.Builder = rb.Builder.Method(method)
 	return rb
 }
 
-func (rb *builder) Head() *builder {
+func (rb *reqBuilder) Head() *reqBuilder {
 	rb.Builder = rb.Builder.Head()
 	return rb
 }
 
-func (rb *builder) Post() *builder {
+func (rb *reqBuilder) Post() *reqBuilder {
 	rb.Builder = rb.Builder.Post()
 	return rb
 }
 
-func (rb *builder) Hostf(format string, a ...any) *builder {
+func (rb *reqBuilder) Hostf(format string, a ...any) *reqBuilder {
 	rb.Builder = rb.Builder.Hostf(format, a...)
 	return rb
 }
 
-func (rb *builder) Pathf(format string, a ...any) *builder {
+func (rb *reqBuilder) Pathf(format string, a ...any) *reqBuilder {
 	rb.Builder = rb.Builder.Pathf(format, a...)
 	return rb
 }
 
-func (rb *builder) ParamInt(key string, value int) *builder {
+func (rb *reqBuilder) ParamInt(key string, value int) *reqBuilder {
 	rb.Builder = rb.Builder.ParamInt(key, value)
 	return rb
 }
 
-func (rb *builder) Params(m map[string][]string) *builder {
+func (rb *reqBuilder) Params(m map[string][]string) *reqBuilder {
 	rb.Builder = rb.Builder.Params(m)
 	return rb
 }
 
-func (rb *builder) Header(k string, v ...string) *builder {
+func (rb *reqBuilder) Header(k string, v ...string) *reqBuilder {
 	rb.Builder = rb.Builder.Header(k, v...)
 	return rb
 }
 
-func (rb *builder) Headers(m map[string][]string) *builder {
+func (rb *reqBuilder) Headers(m map[string][]string) *reqBuilder {
 	rb.Builder = rb.Builder.Headers(m)
 	return rb
 }
 
-func (rb *builder) Signer(signFn func(*http.Request) error) *builder {
+func (rb *reqBuilder) Signer(signFn func(*http.Request) error) *reqBuilder {
 	rb.signer = signFn
 	return rb
 }
 
-func (rb *builder) Accept(contentTypes string) *builder {
+func (rb *reqBuilder) Accept(contentTypes string) *reqBuilder {
 	rb.Builder = rb.Builder.Accept(contentTypes)
 	return rb
 }
 
-func (rb *builder) CacheControl(directive string) *builder {
+func (rb *reqBuilder) CacheControl(directive string) *reqBuilder {
 	rb.Builder = rb.Builder.CacheControl(directive)
 	return rb
 }
 
-func (rb *builder) ContentType(ct string) *builder {
+func (rb *reqBuilder) ContentType(ct string) *reqBuilder {
 	rb.Builder = rb.Builder.ContentType(ct)
 	return rb
 }
 
-func (rb *builder) UserAgent(s string) *builder {
+func (rb *reqBuilder) UserAgent(s string) *reqBuilder {
 	rb.Builder = rb.Builder.UserAgent(s)
 	return rb
 }
 
-func (rb *builder) BasicAuth(username, password string) *builder {
+func (rb *reqBuilder) BasicAuth(username, password string) *reqBuilder {
 	rb.Builder = rb.Builder.BasicAuth(username, password)
 	return rb
 }
 
-func (rb *builder) Bearer(token string) *builder {
+func (rb *reqBuilder) Bearer(token string) *reqBuilder {
 	rb.Builder = rb.Builder.Bearer(token)
 	return rb
 }
 
-func (rb *builder) BodyReader(r io.Reader) *builder {
+func (rb *reqBuilder) BodyReader(r io.Reader) *reqBuilder {
 	rb.Builder = rb.Builder.Body(requests.BodyReader(r))
 	return rb
 }
 
-func (rb *builder) BodyWriter(f func(w io.Writer) error) *builder {
+func (rb *reqBuilder) BodyWriter(f func(w io.Writer) error) *reqBuilder {
 	rb.Builder = rb.Builder.BodyWriter(f)
 	return rb
 }
 
-func (rb *builder) BodyBytes(b []byte) *builder {
+func (rb *reqBuilder) BodyItem(it vocab.Item) *reqBuilder {
+	raw, _ := vocab.MarshalJSON(it)
+	rb.Builder = rb.Builder.BodyBytes(raw).ContentType(jsonld.ContentType)
+	return rb
+}
+
+func (rb *reqBuilder) BodyBytes(b []byte) *reqBuilder {
 	rb.Builder = rb.Builder.BodyBytes(b)
 	return rb
 }
 
-func (rb *builder) BodySerializer(s requests.Serializer, v any) *builder {
+func (rb *reqBuilder) BodySerializer(s requests.Serializer, v any) *reqBuilder {
 	rb.Builder = rb.Builder.BodySerializer(s, v)
 	return rb
 }
 
-func (rb *builder) BodyJSON(v any) *builder {
+func (rb *reqBuilder) BodyJSON(v any) *reqBuilder {
 	rb.Builder = rb.Builder.BodyJSON(v)
 	return rb
 }
 
-func (rb *builder) BodyForm(data url.Values) *builder {
+func (rb *reqBuilder) BodyForm(data url.Values) *reqBuilder {
 	rb.Builder = rb.Builder.BodyForm(data)
 	return rb
 }
 
-func (rb *builder) BodyFile(name string) *builder {
+func (rb *reqBuilder) BodyFile(name string) *reqBuilder {
 	rb.Builder = rb.Builder.BodyFile(name)
 	return rb
 }
 
-func (rb *builder) CheckStatus(acceptStatuses ...int) *builder {
+func (rb *reqBuilder) CheckStatus(acceptStatuses ...int) *reqBuilder {
 	rb.Builder = rb.Builder.CheckStatus(acceptStatuses...)
 	return rb
 }
 
-func (rb *builder) CheckContentType(cts ...string) *builder {
+func (rb *reqBuilder) CheckContentType(cts ...string) *reqBuilder {
 	rb.Builder = rb.Builder.CheckContentType(cts...)
 	return rb
 }
 
-func (rb *builder) ToJSON(v any) *builder {
+func (rb *reqBuilder) ToJSON(v any) *reqBuilder {
 	rb.Builder = rb.Builder.ToJSON(v)
 	return rb
 }
 
-func (rb *builder) ToString(sp *string) *builder {
+func (rb *reqBuilder) ToString(sp *string) *reqBuilder {
 	rb.Builder = rb.Builder.ToString(sp)
 	return rb
 }
 
-func (rb *builder) ToBytesBuffer(buf *bytes.Buffer) *builder {
+func (rb *reqBuilder) ToBytesBuffer(buf *bytes.Buffer) *reqBuilder {
 	rb.Builder = rb.Builder.ToBytesBuffer(buf)
 	return rb
 }
 
-func (rb *builder) ToWriter(w io.Writer) *builder {
+func (rb *reqBuilder) ToWriter(w io.Writer) *reqBuilder {
 	rb.Builder = rb.Builder.ToWriter(w)
 	return rb
 }
 
-func (rb *builder) CopyHeaders(h map[string][]string) *builder {
+func (rb *reqBuilder) CopyHeaders(h map[string][]string) *reqBuilder {
 	rb.Builder = rb.Builder.CopyHeaders(h)
 	return rb
 }
 
-func (rb *builder) ToHeaders(h map[string][]string) *builder {
+func (rb *reqBuilder) ToHeaders(h map[string][]string) *reqBuilder {
 	rb.Builder = rb.Builder.ToHeaders(h)
 	return rb
 }
 
-func (rb *builder) ErrorJSON(v any) *builder {
+func (rb *reqBuilder) ErrorJSON(v any) *reqBuilder {
 	rb.Builder = rb.Builder.ErrorJSON(v)
 	return rb
 }
@@ -187,7 +205,10 @@ type redirecter interface {
 	RedirectRequest(context.Context, *http.Request) error
 }
 
-func (rb *builder) Request(ctx context.Context, mocks redirecter) (*http.Request, error) {
+func (rb *reqBuilder) Request(ctx context.Context, mocks redirecter) (*http.Request, error) {
+	if rb == nil {
+		return nil, fmt.Errorf("nil request")
+	}
 	req, err := rb.Builder.Request(ctx)
 	if err != nil {
 		return nil, err
