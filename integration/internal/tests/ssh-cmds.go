@@ -159,6 +159,18 @@ func EndOK(t *testing.T, line []byte) []byte {
 	return nil
 }
 
+func MatchToken(t *testing.T, i []byte) []byte {
+	remainder, found := bytes.CutPrefix(i, []byte("Authorization: "))
+	if !found {
+		t.Errorf("Invalid output for oauth token command (missing Authorization prefix): %s", i)
+	}
+	remainder, found = bytes.CutPrefix(remainder, []byte("Bearer"))
+	if !found {
+		t.Errorf("Invalid output for oauth token command (missing Bearer token type): %s", i)
+	}
+	return nil
+}
+
 func GetToken(token *c2s.BearerSigner) func(t *testing.T, i []byte) []byte {
 	return func(t *testing.T, i []byte) []byte {
 		i = bytes.TrimSpace(i)

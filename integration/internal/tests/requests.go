@@ -10,7 +10,7 @@ import (
 
 	"github.com/carlmjohnson/requests"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/jsonld"
+	"github.com/go-ap/client"
 )
 
 type reqBuilder struct {
@@ -126,8 +126,11 @@ func (rb *reqBuilder) BodyWriter(f func(w io.Writer) error) *reqBuilder {
 }
 
 func (rb *reqBuilder) BodyItem(it vocab.Item) *reqBuilder {
-	raw, _ := vocab.MarshalJSON(it)
-	rb.Builder = rb.Builder.BodyBytes(raw).ContentType(jsonld.ContentType)
+	raw, err := vocab.MarshalJSON(it)
+	if err != nil {
+		panic(fmt.Errorf("unable to marshal item: %v", err))
+	}
+	rb.Builder = rb.Builder.ContentType(client.ContentTypeJsonLD).BodyBytes(raw)
 	return rb
 }
 
@@ -201,6 +204,8 @@ func (rb *reqBuilder) ErrorJSON(v any) *reqBuilder {
 	return rb
 }
 
+// redirecter is the interface for modifying a mocked request to reach the correct server in a
+// group of test containers.
 type redirecter interface {
 	RedirectRequest(context.Context, *http.Request) error
 }

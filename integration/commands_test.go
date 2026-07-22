@@ -1,4 +1,4 @@
-//go:build cmds
+//go:build ssh
 
 package integration
 
@@ -20,40 +20,40 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 	toRun := []tests.CommandTest{
 		{
 			Name: "--help",
-			Host: c2sRootIRI.String(),
+			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"reload"},
-				User: c2sRootIRI.String(),
+				User: string(c2sRootIRI),
 				Key:  privateKey,
 			},
 			IO: tests.WithTests(tests.EndOK),
 		},
 		{
 			Name: "reload",
-			Host: c2sRootIRI.String(),
+			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"reload"},
-				User: c2sRootIRI.String(),
+				User: string(c2sRootIRI),
 				Key:  privateKey,
 			},
 			IO: tests.WithTests(tests.EndOK),
 		},
 		{
 			Name: "maintenance",
-			Host: c2sRootIRI.String(),
+			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"maintenance"},
-				User: c2sRootIRI.String(),
+				User: string(c2sRootIRI),
 				Key:  privateKey,
 			},
 			IO: tests.WithTests(tests.EndOK),
 		},
 		{
 			Name: "pub actor add",
-			Host: c2sRootIRI.String(),
+			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"pub", "actor", "add", "--type", "Person", "--key-type", "RSA", "--tag", "#sysop", "jdoe"},
-				User: c2sRootIRI.String(),
+				User: string(c2sRootIRI),
 				Key:  privateKey,
 			},
 			IO: tests.WithTests(
@@ -65,10 +65,10 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 		},
 		{
 			Name: "oauth client add",
-			Host: c2sRootIRI.String(),
+			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"oauth", "client", "add", "--redirect-uri", "http://127.0.0.1"},
-				User: c2sRootIRI.String(),
+				User: string(c2sRootIRI),
 				Key:  privateKey,
 			},
 			IO: tests.WithTests(
@@ -78,21 +78,33 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				tests.EndOK),
 		},
 		{
+			Name: "oauth token generate",
+			Host: string(c2sRootIRI),
+			Cmd: c.SSHCmd{
+				Cmd:  []string{"oauth", "token", "add", string(c2sRootIRI)},
+				User: string(c2sRootIRI),
+				Key:  privateKey,
+			},
+			IO: tests.WithTests(
+				tests.MatchToken,
+				tests.EndOK),
+		},
+		{
 			Name: "storage bootstrap",
-			Host: c2sRootIRI.String(),
+			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"storage", "bootstrap"},
-				User: c2sRootIRI.String(),
+				User: string(c2sRootIRI),
 				Key:  privateKey,
 			},
 			IO: tests.WithTests(tests.EndOK),
 		},
 		{
 			Name: "password change",
-			Host: c2sRootIRI.String(),
+			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
-				Cmd:  []string{"accounts", "pass", c2sRootIRI.String()},
-				User: c2sRootIRI.String(),
+				Cmd:  []string{"accounts", "pass", string(c2sRootIRI)},
+				User: string(c2sRootIRI),
 				Key:  privateKey,
 			},
 			IO: tests.WithTests(
@@ -103,10 +115,10 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 		},
 		{
 			Name: "stop",
-			Host: c2sRootIRI.String(),
+			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"stop"},
-				User: c2sRootIRI.String(),
+				User: string(c2sRootIRI),
 				Key:  privateKey,
 			},
 			IO: tests.WithTests(tests.EndOK),
