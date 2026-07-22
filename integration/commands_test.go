@@ -1,3 +1,5 @@
+//go:build cmds
+
 package integration
 
 import (
@@ -183,7 +185,8 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 
 	for _, test := range toRun {
 		t.Run(test.Label(), func(t *testing.T) {
-			c2sFedBOX := fedbox.New(
+			ctx := t.Context()
+			images := c.Suite(fedbox.New(
 				fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
 				fedbox.WithArgs([]string{"--bootstrap"}),
 				fedbox.WithImageName(fedBOXImageName),
@@ -191,10 +194,8 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				fedbox.WithRootIRI(c2sRootIRI),
 				fedbox.WithPw(rand.Text()[:8]),
 				fedbox.WithTestLogger(t, Verbose && test.Label() != "stop"),
-			)
-			ctx := t.Context()
+			))
 
-			images := c.Suite{c2sFedBOX}
 			cont, err := c.Init(ctx, t, images...)
 			if err != nil {
 				t.Fatalf("unable to initialize containers: %s", err)

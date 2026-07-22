@@ -1,3 +1,5 @@
+//go:build c2s
+
 package integration
 
 import (

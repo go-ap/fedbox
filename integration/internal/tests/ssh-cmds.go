@@ -113,9 +113,9 @@ func (c CommandTest) Run(ctx context.Context, mocks c.Running, t *testing.T) {
 	_, err := mocks.RunCommand(ctx, c.Host, c.Cmd, c.IO(t))
 	if !eqErrs(c.WantErr, err) && !errors.Is(err, new(gossh.ExitMissingError)) {
 		if c.Cmd == nil {
-			t.Fatalf("Err received executing nil command %s: %+v", c.Host, diffErrs(c.WantErr, err))
+			t.Errorf("Err received executing nil command %s: %+v", c.Host, diffErrs(c.WantErr, err))
 		}
-		t.Fatalf("Err received executing command %s->%v: %+v", c.Host, c.Cmd.AsCommand(), diffErrs(c.WantErr, err))
+		t.Errorf("Err received executing command %s->%v: %+v", c.Host, c.Cmd.AsCommand(), diffErrs(c.WantErr, err))
 	}
 }
 

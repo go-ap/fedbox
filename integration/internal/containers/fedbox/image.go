@@ -14,6 +14,8 @@ import (
 	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/internal/config"
+	pg "github.com/go-ap/storage-pg"
+	"github.com/jackc/pgx/v5"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
 	tc "github.com/testcontainers/testcontainers-go"
@@ -98,7 +100,7 @@ func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 	return initFns
 }
 
-func initPGSidecar(ctx context.Context, l *tbLogger) (tc.Container, error) {
+func initPGSidecar(ctx context.Context, f *fboxImage) (tc.Container, error) {
 	pgInitFns := []tc.ContainerCustomizer{
 		c.WithInitScript(),
 		postgres.WithDatabase("storage"),
@@ -108,24 +110,45 @@ func initPGSidecar(ctx context.Context, l *tbLogger) (tc.Container, error) {
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).WithStartupTimeout(5 * time.Second)),
 	}
-	if l != nil {
-		pgInitFns = append(pgInitFns, tc.WithLogger(l))
+	if f.logger != nil {
+		pgInitFns = append(pgInitFns, tc.WithLogger(f.logger))
 	}
-	return postgres.Run(ctx, "postgres:18-alpine", pgInitFns...)
+
+	pgContainer, err := postgres.Run(ctx, "postgres:18-alpine", pgInitFns...)
+	if err != nil {
+		return nil, err
+	}
+	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	if err != nil {
+		return nil, err
+	}
+	pconf, err := pgx.ParseConfig(connStr)
+	if err != nil {
+		return nil, err
+	}
+	pgConf := pg.Config{
+		Host:     pconf.Host,
+		Port:     pconf.Port,
+		Database: pconf.Database,
+		User:     pconf.User,
+		Password: pconf.Password,
+	}
+	f.conf.StoragePath = pgConf.DSN()
+	return pgContainer, nil
 }
 
 func (f *fboxImage) Start(ctx context.Context, t testing.TB) ([]tc.Container, error) {
-	opts := f.InitFns()
-
 	cont := make([]tc.Container, 0, 2)
 	if f.conf.Storage == config.StoragePostgres {
 		// NOTE(marius): currently the FedBOX service doesn't really work with postgres
-		pg, err := initPGSidecar(ctx, f.logger)
+		pg, err := initPGSidecar(ctx, f)
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize PostgreSQL container: %w", err)
 		}
 		cont = append(cont, pg)
 	}
+
+	opts := f.InitFns()
 
 	req := defaultFedBOXRequest(f, t)
 	hostCfg := func(hostConfig *container.HostConfig) {

@@ -34,7 +34,9 @@ type Running struct {
 	Network    *tc.DockerNetwork
 }
 
-type Suite []ContainerInitializer
+func Suite(container ...ContainerInitializer) []ContainerInitializer {
+	return append([]ContainerInitializer{}, container...)
+}
 
 func Init(ctx context.Context, t testing.TB, s ...ContainerInitializer) (Running, error) {
 	netInitFns := []nw.NetworkCustomizer{nw.WithInternal(), nw.WithAttachable(), nw.WithDriver("bridge"), nw.WithEnableIPv6()}
@@ -261,7 +263,6 @@ func WithPassword(pw []byte) tc.CustomizeRequestOption {
 
 func WithInitScript() tc.CustomizeRequestOption {
 	initScript := `CREATE USER storage;
--- CREATE DATABASE storage;
 GRANT ALL PRIVILEGES ON DATABASE storage TO storage;
 `
 	return func(req *tc.GenericContainerRequest) error {
@@ -269,7 +270,7 @@ GRANT ALL PRIVILEGES ON DATABASE storage TO storage;
 		cf := tc.ContainerFile{
 			Reader:            bytes.NewBufferString(initScript),
 			ContainerFilePath: filePath,
-			FileMode:          0755,
+			FileMode:          0644,
 		}
 		req.Files = append(req.Files, cf)
 		return nil

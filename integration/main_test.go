@@ -17,15 +17,14 @@ var (
 	Verbose bool
 	Storage string
 
-	fedBOXImageName      = "localhost/fedbox/app"
-	defaultAuthImageName = "localhost/auth/app"
+	fedBOXImageName = "localhost/fedbox/app"
 
 	validStorageTypes = []string{
-		"boltdb",
 		"fs",
 		"badger",
-		"sqlite",
+		"boltdb",
 		"postgres",
+		"sqlite",
 	}
 )
 

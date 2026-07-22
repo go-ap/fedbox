@@ -11,7 +11,7 @@ STORAGE ?= all
 TAGS ?=
 
 ifneq ($(STORAGE),)
-TAGS := storage_$(STORAGE),$(TAGS)
+TAGS := $(TAGS),storage_$(STORAGE),c2s,s2s,cmds
 endif
 
 TEST_FLAGS ?= -timeout 60s -race -count=1 -tags '$(TAGS)'
