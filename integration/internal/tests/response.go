@@ -4,19 +4,19 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	ct "github.com/elnormous/contenttype"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 type resCheckFn func(testing.TB, *http.Response)
 
 // resChecks represents the expected result of a http request to a FedBOX service
 type resChecks []resCheckFn
-
-type resChecksInitFn func(*resChecks)
 
 func (res resChecks) HasCode(c int) resChecks {
 	return append(res, func(t testing.TB, response *http.Response) {
@@ -93,8 +93,8 @@ func (res resChecks) HasErrors(wanted ...error) resChecks {
 		if err != nil {
 			t.Errorf("Unable to unmarshal FedBOX error: %v", err)
 		}
-		if !cmp.Equal(wanted, maybeErr, equateWeakErrors) {
-			t.Errorf("Received error from FedBOX server: %s", cmp.Diff(wanted, maybeErr, equateWeakErrors))
+		if !cmp.Equal(wanted, maybeErr, EquateWeakErrors) {
+			t.Errorf("Received error from FedBOX server: %s", cmp.Diff(wanted, maybeErr, EquateWeakErrors))
 		}
 	})
 }
@@ -150,4 +150,97 @@ func (res resChecks) BodyMust(bodyChecks ...bodyCheckFn) resChecks {
 			checkFn(t, raw)
 		}
 	})
+}
+
+type itemCheckFn func(testing.TB, vocab.Item)
+
+func (res resChecks) ItemMatch(itemChecks ...itemCheckFn) resChecks {
+	return append(res, func(t testing.TB, r *http.Response) {
+		raw, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("Unable to read response body: %v", err)
+		}
+		defer func() {
+			if err := r.Body.Close(); err != nil {
+				t.Errorf("Unable to close response body: %v", err)
+			}
+		}()
+
+		it, err := vocab.UnmarshalJSON(raw)
+		if err != nil {
+			t.Errorf("Failed to unmarshal ActivityPub object from body: %v", err)
+			return
+		}
+		if vocab.IsNil(it) && len(itemChecks) > 0 {
+			t.Errorf("Invalid nil item in response when expecting to run checks")
+			return
+		}
+		for _, checkFn := range itemChecks {
+			checkFn(t, it)
+		}
+	})
+}
+
+func IsType(typ vocab.ActivityVocabularyType) itemCheckFn {
+	return func(t testing.TB, it vocab.Item) {
+		if ityp := it.GetType(); !typ.Match(ityp) {
+			t.Errorf("Type check failure on item %s, received %s, expected %s", it.GetID(), ityp, typ)
+		}
+	}
+}
+
+func HasContent(cont vocab.NaturalLanguageValues) itemCheckFn {
+	return func(t testing.TB, it vocab.Item) {
+		err := vocab.OnObject(it, func(ob *vocab.Object) error {
+			if !cmp.Equal(cont, ob.Content) {
+				t.Errorf("Failed Content check for %s, received %s", ob.ID, cmp.Diff(cont, ob.Content))
+			}
+			return nil
+		})
+		if err != nil {
+			t.Errorf("Failed Object %s check: %v", it.GetID(), err)
+		}
+	}
+}
+
+func WasPublished(d time.Time) itemCheckFn {
+	return func(t testing.TB, it vocab.Item) {
+		err := vocab.OnObject(it, func(ob *vocab.Object) error {
+			if !cmp.Equal(d, ob.Published, cmpopts.EquateApproxTime(time.Second)) {
+				t.Errorf("Failed Published date check for %s, received %s, expected %s", ob.ID, ob.Published, d)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Errorf("Failed Object %s check: %v", it.GetID(), err)
+		}
+	}
+}
+
+func HasActor(iri vocab.IRI) itemCheckFn {
+	return func(t testing.TB, it vocab.Item) {
+		err := vocab.OnActivity(it, func(act *vocab.Activity) error {
+			if !iri.Equal(act.Actor.GetLink()) {
+				t.Errorf("Failed Actor check for %s, received %s, expected %s", act.ID, act.Actor.GetID(), iri)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Errorf("Failed Activity %s check: %v", it.GetID(), err)
+		}
+	}
+}
+
+func HasObject(iri vocab.IRI) itemCheckFn {
+	return func(t testing.TB, it vocab.Item) {
+		err := vocab.OnActivity(it, func(act *vocab.Activity) error {
+			if !iri.Equal(act.Object.GetLink()) {
+				t.Errorf("Failed Object check for %s, received %s, expected %s", act.ID, act.Object.GetID(), iri)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Errorf("Failed Activity %s check: %v", it.GetID(), err)
+		}
+	}
 }

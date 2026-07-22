@@ -5,9 +5,12 @@ import (
 	"context"
 	"errors"
 	"io"
+	"regexp"
+	"strings"
 	"sync"
 	"testing"
 
+	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/google/go-cmp/cmp"
 	tc "github.com/testcontainers/testcontainers-go"
@@ -111,17 +114,17 @@ func (c CommandTest) Fn(ctx context.Context, mocks c.Running) func(t *testing.T)
 
 func (c CommandTest) Run(ctx context.Context, mocks c.Running, t *testing.T) {
 	_, err := mocks.RunCommand(ctx, c.Host, c.Cmd, c.IO(t))
-	if !eqErrs(c.WantErr, err) && !errors.Is(err, new(gossh.ExitMissingError)) {
+	if !EqErrs(c.WantErr, err) && !errors.Is(err, new(gossh.ExitMissingError)) {
 		if c.Cmd == nil {
-			t.Errorf("Err received executing nil command %s: %+v", c.Host, diffErrs(c.WantErr, err))
+			t.Errorf("Err received executing nil command %s: %+v", c.Host, DiffErrs(c.WantErr, err))
 		}
-		t.Errorf("Err received executing command %s->%v: %+v", c.Host, c.Cmd.AsCommand(), diffErrs(c.WantErr, err))
+		t.Errorf("Err received executing command %s->%v: %+v", c.Host, c.Cmd.AsCommand(), DiffErrs(c.WantErr, err))
 	}
 }
 
 var _ RunnableTest = CommandTest{}
 
-var equateWeakErrors = cmp.FilterValues(areErrors, cmp.Comparer(compareErrors))
+var EquateWeakErrors = cmp.FilterValues(areErrors, cmp.Comparer(compareErrors))
 
 func areErrors(x, y any) bool {
 	_, ok1 := x.(error)
@@ -135,10 +138,78 @@ func compareErrors(x, y any) bool {
 	return errors.Is(xe, ye) || errors.Is(ye, xe) || xe.Error() == ye.Error()
 }
 
-func eqErrs(want, got error) bool {
-	return cmp.Equal(want, got, equateWeakErrors)
+func EqErrs(want, got error) bool {
+	return cmp.Equal(want, got, EquateWeakErrors)
 }
 
-func diffErrs(want, got error) string {
-	return cmp.Diff(want, got, equateWeakErrors)
+func DiffErrs(want, got error) string {
+	return cmp.Diff(want, got, EquateWeakErrors)
+}
+
+func AnyOutput(t *testing.T, line []byte) []byte {
+	t.Logf("read %q", bytes.Trim(line, string(CRLF)))
+	return nil
+}
+
+func EndOK(t *testing.T, line []byte) []byte {
+	ok := []byte("FedBOX SSH: OK")
+	if !bytes.Equal(line, ok) {
+		t.Errorf("Output line %q, expected: %q", line, ok)
+	}
+	return nil
+}
+
+func GetToken(token *c2s.BearerSigner) func(t *testing.T, i []byte) []byte {
+	return func(t *testing.T, i []byte) []byte {
+		i = bytes.TrimSpace(i)
+		auth, found := bytes.CutPrefix(i, []byte("Authorization: "))
+		if !found {
+			t.Fatalf("Unable to get Authorization value from CLI output: %s", i)
+		}
+		if hasEoL := bytes.IndexByte(auth, '\n'); hasEoL > 0 {
+			auth = auth[:hasEoL]
+		}
+		authPieces := strings.Split(string(auth), " ")
+		if len(authPieces) < 2 {
+			t.Fatalf("Authorization value is not recognized: %+v", authPieces)
+		}
+		token.TokenType = strings.TrimSpace(authPieces[0])
+		token.AccessToken = strings.TrimSpace(authPieces[1])
+		if token.AccessToken == "" || token.TokenType == "" {
+			t.Fatalf("Unable to build Authorization token")
+		}
+		return nil
+	}
+}
+
+var (
+	URLRegexp    = regexp.MustCompile(`(http|https://[a-zA-Z0-9./-]+)`)
+	PassMatch    = MatchesString(`Password: `)
+	ConfirmMatch = MatchesString(` Confirm: `)
+)
+
+func WithInput(r LineOutputTest, input string) LineOutputTest {
+	return func(t *testing.T, line []byte) []byte {
+		// NOTE(marius): ignore any input returned by previous test
+		_ = r(t, line)
+		return []byte(input)
+	}
+}
+
+func MatchesRegexp(r *regexp.Regexp) LineOutputTest {
+	return func(t *testing.T, line []byte) []byte {
+		if matches := r.FindSubmatch(line); len(matches) == 0 {
+			t.Errorf("The line %q did not contain the regex, %q", line, r)
+		}
+		return nil
+	}
+}
+
+func MatchesString(s string) LineOutputTest {
+	return func(t *testing.T, line []byte) []byte {
+		if !bytes.Equal(line, []byte(s)) {
+			t.Errorf("The line %q did not match expected, %q", line, s)
+		}
+		return nil
+	}
 }

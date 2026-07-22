@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"net/http"
 	"testing"
-	"time"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
@@ -18,79 +17,8 @@ import (
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
-	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/filters"
 	"golang.org/x/crypto/ed25519"
 )
-
-var (
-	defaultC2SOptions = config.Options{
-		Hostname: "first1",
-		HTTPPort: 4000,
-		SSHPort:  4044,
-	}
-
-	MockDate = time.Date(2001, time.April, 1, 0, 0, 23, 00, time.UTC)
-)
-
-func rootIRI(conf config.Options) vocab.IRI {
-	return vocab.IRI("http://" + conf.Hostname)
-}
-
-var c2sRootIRI = rootIRI(defaultC2SOptions)
-var s2sRootIRI = rootIRI(defaultS2SOptions)
-
-func root(rootIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Actor {
-	initFn = append([]ap.InitFn{
-		ap.HasID(rootIRI),
-		ap.HasType(vocab.ServiceType),
-		ap.HasPreferredUsername("FedBOX"),
-		ap.HasAttributedTo("https://github.com/mariusor"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasContext("https://github.com/go-ap/fedbox"),
-		ap.HasSummary("Generic ActivityPub service"),
-		ap.HasURL(rootIRI),
-		ap.HasStream(filters.ActorsType.IRI(rootIRI)),
-		ap.HasStream(filters.ActivitiesType.IRI(rootIRI)),
-		ap.HasStream(filters.ObjectsType.IRI(rootIRI)),
-		ap.HasAuthEp(vocab.CollectionPath("/oauth/authorize").IRI(rootIRI)),
-		ap.HasTokenEp(vocab.CollectionPath("/oauth/token").IRI(rootIRI)),
-		ap.HasProxyURL(vocab.CollectionPath("proxyUrl").IRI(rootIRI)),
-	}, initFn...)
-
-	return ap.Actor(initFn...)
-}
-
-func person(actorIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Actor {
-	rootU, _ := actorIRI.URL()
-	rootU.Path = ""
-	rootIRI := vocab.IRI(rootU.String())
-	initFn = append([]ap.InitFn{
-		ap.HasID(actorIRI),
-		ap.HasType(vocab.PersonType),
-		ap.HasAttributedTo(actorIRI),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasGenerator(rootIRI),
-		ap.HasURL(actorIRI),
-		ap.HasAuthEp(vocab.CollectionPath("oauth/authorize").IRI(actorIRI)),
-		ap.HasTokenEp(vocab.CollectionPath("oauth/token").IRI(actorIRI)),
-		ap.HasSharedInbox(vocab.Inbox.IRI(rootIRI)),
-		ap.HasProxyURL(vocab.CollectionPath("proxyUrl").IRI(rootIRI)),
-	}, initFn...)
-	return ap.Actor(initFn...)
-}
-
-func object(objectIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Object {
-	rootU, _ := objectIRI.URL()
-	rootU.Path = ""
-	rootIRI := vocab.IRI(rootU.String())
-	initFn = append([]ap.InitFn{
-		ap.HasID(objectIRI),
-		ap.HasAttributedTo(rootIRI),
-		ap.HasTo(vocab.PublicNS),
-	}, initFn...)
-	return ap.Object(initFn...)
-}
 
 func Test_Fetch(t *testing.T) {
 	publicKey, privateKey, _ := ed25519.GenerateKey(rand.Reader)
@@ -264,27 +192,25 @@ func Test_C2S_Requests(t *testing.T) {
 				User: c2sRootIRI.String(),
 				Key:  prvKey,
 			},
-			IO: tests.WithTests(extractToken(token), anyOutput),
+			IO: tests.WithTests(tests.GetToken(token), tests.AnyOutput),
 		},
 		tests.HTTPTest{
 			Name: "to outbox",
 			Req: tests.Request().IRI(admin.Outbox.GetLink()).
 				Post().
 				ContentType(client.ContentTypeJsonLD).
-				Signer(func(r *http.Request) error {
-					auth := token.TokenType + " " + token.AccessToken
-					if len(auth) <= 1 {
-						t.Fatalf("Invalid authorization token: %v", token)
-					}
-					r.Header.Set("Authorization", auth)
-					return nil
-				}).
+				Signer(token.Sign).
 				BodyBytes([]byte(`{"type":"Flag","actor":"http://fedbox/actors/1","object":"http://fedbox/actors/1","published":"2001-04-01T00:00:23Z"}`)),
 			Res: tests.Response().
 				HasCode(http.StatusCreated).
 				HasContentType(contentTypes...).
 				HasLocation(admin.ID).
-				HasItemProperties(&vocab.Activity{Type: vocab.FlagType, Actor: admin, Object: admin, AttributedTo: admin, Published: MockDate}),
+				ItemMatch(
+					tests.IsType(vocab.FlagType),
+					tests.HasActor(admin.ID),
+					tests.HasObject(admin.ID),
+					tests.WasPublished(MockDate),
+				),
 		},
 	}
 

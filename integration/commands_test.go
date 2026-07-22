@@ -3,86 +3,16 @@
 package integration
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
-	"regexp"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
 )
-
-func anyOutput(t *testing.T, line []byte) []byte {
-	t.Logf("read %q", bytes.Trim(line, string(tests.CRLF)))
-	return nil
-}
-
-func endOK(t *testing.T, line []byte) []byte {
-	ok := []byte("FedBOX SSH: OK")
-	if !bytes.Equal(line, ok) {
-		t.Errorf("Output line %q, expected: %q", line, ok)
-	}
-	return nil
-}
-
-func extractToken(token *c2s.BearerSigner) func(t *testing.T, i []byte) []byte {
-	return func(t *testing.T, i []byte) []byte {
-		i = bytes.TrimSpace(i)
-		auth, found := bytes.CutPrefix(i, []byte("Authorization: "))
-		if !found {
-			t.Fatalf("Unable to get Authorization value from CLI output: %s", i)
-		}
-		if hasEoL := bytes.IndexByte(auth, '\n'); hasEoL > 0 {
-			auth = auth[:hasEoL]
-		}
-		authPieces := strings.Split(string(auth), " ")
-		if len(authPieces) < 2 {
-			t.Fatalf("Authorization value is not recognized: %+v", authPieces)
-		}
-		token.TokenType = strings.TrimSpace(authPieces[0])
-		token.AccessToken = strings.TrimSpace(authPieces[1])
-		if token.AccessToken == "" || token.TokenType == "" {
-			t.Fatalf("Unable to build Authorization token")
-		}
-		return nil
-	}
-}
-
-var urlRegexp = regexp.MustCompile(`(http|https://[a-zA-Z0-9./-]+)`)
-var passMatch = matchesString(`Password: `)
-var confirmMatch = matchesString(` Confirm: `)
-
-func withInput(r tests.LineOutputTest, input string) tests.LineOutputTest {
-	return func(t *testing.T, line []byte) []byte {
-		// NOTE(marius): ignore any input returned by previous test
-		_ = r(t, line)
-		return []byte(input)
-	}
-}
-
-func matchesRegexp(r *regexp.Regexp) tests.LineOutputTest {
-	return func(t *testing.T, line []byte) []byte {
-		if matches := r.FindSubmatch(line); len(matches) == 0 {
-			t.Errorf("The line %q did not contain the regex, %q", line, r)
-		}
-		return nil
-	}
-}
-
-func matchesString(s string) tests.LineOutputTest {
-	return func(t *testing.T, line []byte) []byte {
-		if !bytes.Equal(line, []byte(s)) {
-			t.Errorf("The line %q did not match expected, %q", line, s)
-		}
-		return nil
-	}
-}
 
 func Test_Commands_inSeparateContainers(t *testing.T) {
 	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
@@ -96,7 +26,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: c2sRootIRI.String(),
 				Key:  privateKey,
 			},
-			IO: tests.WithTests(endOK),
+			IO: tests.WithTests(tests.EndOK),
 		},
 		{
 			Name: "reload",
@@ -106,7 +36,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: c2sRootIRI.String(),
 				Key:  privateKey,
 			},
-			IO: tests.WithTests(endOK),
+			IO: tests.WithTests(tests.EndOK),
 		},
 		{
 			Name: "maintenance",
@@ -116,7 +46,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: c2sRootIRI.String(),
 				Key:  privateKey,
 			},
-			IO: tests.WithTests(endOK),
+			IO: tests.WithTests(tests.EndOK),
 		},
 		{
 			Name: "pub actor add",
@@ -127,10 +57,10 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  privateKey,
 			},
 			IO: tests.WithTests(
-				withInput(passMatch, "asd"),
-				withInput(confirmMatch, "asd"),
-				matchesRegexp(urlRegexp),
-				endOK,
+				tests.WithInput(tests.PassMatch, "asd"),
+				tests.WithInput(tests.ConfirmMatch, "asd"),
+				tests.MatchesRegexp(tests.URLRegexp),
+				tests.EndOK,
 			),
 		},
 		{
@@ -142,10 +72,10 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  privateKey,
 			},
 			IO: tests.WithTests(
-				withInput(passMatch, "asd"),
-				withInput(confirmMatch, "asd"),
-				matchesRegexp(urlRegexp),
-				endOK),
+				tests.WithInput(tests.PassMatch, "asd"),
+				tests.WithInput(tests.ConfirmMatch, "asd"),
+				tests.MatchesRegexp(tests.URLRegexp),
+				tests.EndOK),
 		},
 		{
 			Name: "storage bootstrap",
@@ -155,7 +85,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: c2sRootIRI.String(),
 				Key:  privateKey,
 			},
-			IO: tests.WithTests(endOK),
+			IO: tests.WithTests(tests.EndOK),
 		},
 		{
 			Name: "password change",
@@ -166,9 +96,9 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				Key:  privateKey,
 			},
 			IO: tests.WithTests(
-				withInput(passMatch, "asd"),
-				withInput(confirmMatch, "asd"),
-				endOK,
+				tests.WithInput(tests.PassMatch, "asd"),
+				tests.WithInput(tests.ConfirmMatch, "asd"),
+				tests.EndOK,
 			),
 		},
 		{
@@ -179,7 +109,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: c2sRootIRI.String(),
 				Key:  privateKey,
 			},
-			IO: tests.WithTests(endOK),
+			IO: tests.WithTests(tests.EndOK),
 		},
 	}
 
