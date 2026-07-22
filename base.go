@@ -462,7 +462,9 @@ func (ctl *Base) ListClients() ([]osin.Client, error) {
 
 func (ctl *Base) GenAuthToken(clientID, actorIdentifier string, _ any) (string, error) {
 	if u, err := vocab.IRI(clientID).URL(); err == nil {
-		clientID = filepath.Base(u.Path)
+		if base := filepath.Base(u.Path); base != "." {
+			clientID = base
+		}
 	}
 	cl, err := ctl.Storage.GetClient(clientID)
 	if err != nil {
