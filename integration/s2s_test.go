@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
@@ -74,27 +73,31 @@ func Test_S2SRequests(t *testing.T) {
 			},
 			IO: tests.WithTests(tests.GetToken(token), tests.EndOK),
 		},
-		tests.HTTPTest{
-			Name: "Simple note",
-			Req: tests.Request().IRI(c2sAdmin.Outbox.GetLink()).
-				Post().
-				Signer(token.Sign).
-				BodyItem(vocab.Flag{
-					Type:  vocab.CreateType,
-					Actor: c2sAdmin,
-					Object: &vocab.Object{
-						Type: vocab.NoteType,
-						//To:      vocab.ItemCollection{s2sAdmin.ID},
-						Content: vocab.DefaultNaturalLanguage("Lorem Ipsum"),
-					},
-				}),
-			Res: tests.Response().
-				HasCode(http.StatusCreated).
-				HasContentType(client.ContentTypeJsonLD).
-				ItemMatch(
-					tests.IsType(vocab.NoteType),
-					tests.HasContent(vocab.DefaultNaturalLanguage("Lorem Ipsum")),
-				),
+		tests.TestSuite{
+			Name: "Create Note",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Simple note",
+					Req: tests.Request().IRI(c2sAdmin.Outbox.GetLink()).
+						Post().
+						Signer(token.Sign).
+						BodyItem(vocab.Flag{
+							Type:  vocab.CreateType,
+							Actor: c2sAdmin,
+							Object: &vocab.Object{
+								Type:    vocab.NoteType,
+								To:      vocab.ItemCollection{s2sAdmin.ID},
+								Content: vocab.DefaultNaturalLanguage("Lorem Ipsum"),
+							},
+						}),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.IsType(vocab.NoteType),
+							tests.HasContent(vocab.DefaultNaturalLanguage("Lorem Ipsum")),
+						),
+				},
+			},
 		},
 	}
 	for _, test := range toRun {

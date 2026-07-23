@@ -12,7 +12,7 @@ import (
 
 type TestSuite struct {
 	Name  string
-	tests []RunnableTest
+	Tests []RunnableTest
 }
 
 func (ht TestSuite) Label() string {
@@ -26,7 +26,7 @@ func (ht TestSuite) Fn(ctx context.Context, mocks c.Running) func(t *testing.T) 
 }
 
 func (ht TestSuite) Run(ctx context.Context, mocks c.Running, t *testing.T) {
-	for _, tt := range ht.tests {
+	for _, tt := range ht.Tests {
 		t.Run(tt.Label(), func(t *testing.T) {
 			tt.Run(ctx, mocks, t)
 		})

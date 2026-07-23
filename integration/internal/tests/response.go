@@ -8,6 +8,7 @@ import (
 
 	ct "github.com/elnormous/contenttype"
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -39,10 +40,6 @@ func checkItem(wanted vocab.Item, equateFn cmp.Option) bodyCheckFn {
 	}
 }
 
-func (res resChecks) HasItemProperties(wanted vocab.Item) resChecks {
-	return res.BodyMust(checkItem(wanted, equateItemsWithoutID))
-}
-
 func (res resChecks) HasExactItem(wanted vocab.Item) resChecks {
 	return res.BodyMust(checkItem(wanted, equateItems))
 }
@@ -66,26 +63,6 @@ func compareItems(wanted, got any) bool {
 }
 
 var equateItems = cmp.FilterValues(areItems, cmp.Comparer(compareItems))
-
-func compareItemsWithoutID(wanted, got any) bool {
-	var wi vocab.Item
-	var gi vocab.Item
-	if w, ok := wanted.(vocab.Item); ok {
-		wi = w
-	}
-	if g, ok := got.(vocab.Item); ok {
-		gi = g
-	}
-	vocab.OnObject(gi, func(ob *vocab.Object) error {
-		if ob.ID == "" {
-			ob.ID = wi.GetID()
-		}
-		return nil
-	})
-	return vocab.ItemsEqual(wi, gi)
-}
-
-var equateItemsWithoutID = cmp.FilterValues(areItems, cmp.Comparer(compareItemsWithoutID))
 
 func (res resChecks) HasErrors(wanted ...error) resChecks {
 	return res.BodyMust(func(t testing.TB, raw []byte) {
@@ -155,7 +132,8 @@ func (res resChecks) BodyMust(bodyChecks ...bodyCheckFn) resChecks {
 type itemCheckFn func(testing.TB, vocab.Item)
 
 func (res resChecks) ItemMatch(itemChecks ...itemCheckFn) resChecks {
-	return append(res, func(t testing.TB, r *http.Response) {
+	t := append(res, res.HasContentType(client.ContentTypeJsonLD)...)
+	return append(t, func(t testing.TB, r *http.Response) {
 		raw, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("Unable to read response body: %v", err)

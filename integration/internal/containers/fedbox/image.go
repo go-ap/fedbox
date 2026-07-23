@@ -16,8 +16,6 @@ import (
 	"github.com/go-ap/fedbox/internal/config"
 	pg "github.com/go-ap/storage-pg"
 	"github.com/jackc/pgx/v5"
-	"github.com/moby/moby/api/types/container"
-	"github.com/moby/moby/api/types/network"
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -66,7 +64,7 @@ func (f *fboxImage) Name() string {
 }
 
 func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
-	initFns := []tc.ContainerCustomizer{c.WithImage(f.name), c.WithEnvFromConfig(*f.conf)}
+	initFns := []tc.ContainerCustomizer{c.WithImage(f.name), tc.WithName(f.Hostname()), c.WithEnvFromConfig(*f.conf)}
 	if len(f.env) > 0 {
 		initFns = append(initFns, c.WithEnvFile(f.env))
 	}
@@ -100,7 +98,7 @@ func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 	return initFns
 }
 
-func initPGSidecar(ctx context.Context, f *fboxImage) (tc.Container, error) {
+func initPGSidecar(ctx context.Context, f *fboxImage, extra ...tc.ContainerCustomizer) (tc.Container, error) {
 	pgInitFns := []tc.ContainerCustomizer{
 		c.WithInitScript(),
 		postgres.WithDatabase("storage"),
@@ -113,6 +111,7 @@ func initPGSidecar(ctx context.Context, f *fboxImage) (tc.Container, error) {
 	if f.logger != nil {
 		pgInitFns = append(pgInitFns, tc.WithLogger(f.logger))
 	}
+	pgInitFns = append(pgInitFns, extra...)
 
 	pgContainer, err := postgres.Run(ctx, "postgres:18-alpine", pgInitFns...)
 	if err != nil {
@@ -137,27 +136,20 @@ func initPGSidecar(ctx context.Context, f *fboxImage) (tc.Container, error) {
 	return pgContainer, nil
 }
 
-func (f *fboxImage) Start(ctx context.Context, t testing.TB) ([]tc.Container, error) {
+func (f *fboxImage) Start(ctx context.Context, t testing.TB, extra ...tc.ContainerCustomizer) ([]tc.Container, error) {
 	cont := make([]tc.Container, 0, 2)
 	if f.conf.Storage == config.StoragePostgres {
 		// NOTE(marius): currently the FedBOX service doesn't really work with postgres
-		pg, err := initPGSidecar(ctx, f)
+		pg, err := initPGSidecar(ctx, f, extra...)
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize PostgreSQL container: %w", err)
 		}
 		cont = append(cont, pg)
 	}
 
-	opts := f.InitFns()
+	opts := append(f.InitFns(), extra...)
 
 	req := defaultFedBOXRequest(f, t)
-	hostCfg := func(hostConfig *container.HostConfig) {
-		hostConfig.NetworkMode = network.NetworkBridge
-		hostConfig.AutoRemove = true
-		hostConfig.ExtraHosts = []string{"localhost:" + f.Hostname()}
-	}
-
-	opts = append(opts, tc.WithHostConfigModifier(hostCfg))
 	for _, opt := range opts {
 		if err := opt.Customize(&req); err != nil {
 			return nil, err

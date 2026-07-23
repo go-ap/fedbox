@@ -7,20 +7,23 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/filters"
 )
 
 var (
 	defaultC2SOptions = config.Options{
-		Hostname: "fedbox",
-		HTTPPort: 4000,
-		SSHPort:  4044,
+		Hostname: "primary.localdomain",
+		HTTPPort: 80,
+		SSHPort:  422,
+		Env:      env.PROD,
 	}
 	defaultS2SOptions = config.Options{
-		Hostname: "secondary",
-		HTTPPort: 4011,
-		SSHPort:  4055,
+		Hostname: "secondary.localdomain",
+		HTTPPort: 80,
+		SSHPort:  422,
 		Storage:  storage.FS,
+		Env:      env.PROD,
 	}
 
 	c2sRootIRI = rootIRI(defaultC2SOptions)

@@ -203,7 +203,6 @@ func Test_C2S_Requests(t *testing.T) {
 				BodyBytes([]byte(`{"type":"Flag","actor":"http://fedbox/actors/1","object":"http://fedbox/actors/1","published":"2001-04-01T00:00:00Z"}`)),
 			Res: tests.Response().
 				HasCode(http.StatusCreated).
-				HasContentType(contentTypes...).
 				HasLocation(admin.ID).
 				ItemMatch(
 					tests.IsType(vocab.FlagType),

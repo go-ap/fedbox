@@ -19,6 +19,7 @@ import (
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/moby/moby/api/types/container"
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 	nw "github.com/testcontainers/testcontainers-go/network"
@@ -26,7 +27,8 @@ import (
 
 type ContainerInitializer interface {
 	Name() string
-	Start(ctx context.Context, t testing.TB) ([]tc.Container, error)
+	Start(ctx context.Context, t testing.TB, extra ...tc.ContainerCustomizer) ([]tc.Container, error)
+	Hostname() string
 }
 
 type Running struct {
@@ -39,16 +41,14 @@ func Suite(container ...ContainerInitializer) []ContainerInitializer {
 }
 
 func Init(ctx context.Context, t testing.TB, s ...ContainerInitializer) (Running, error) {
-	netInitFns := []nw.NetworkCustomizer{nw.WithInternal(), nw.WithAttachable(), nw.WithDriver("bridge"), nw.WithEnableIPv6()}
+	netInitFns := []nw.NetworkCustomizer{nw.WithDriver("bridge")}
 	newNetwork, err := nw.New(ctx, netInitFns...)
 	if err != nil {
 		t.Fatalf("unable to initialize network: %v", err)
 	}
-	// NOTE(marius): the docker host can come from multiple places.
-	// @see github.com/testcontainers/testcontainers-go/internal/core.MustExtractDockerHost()
 	m := Running{Containers: make([]tc.Container, 0), Network: newNetwork}
 	for _, img := range s {
-		c, err := img.Start(context.WithoutCancel(ctx), t)
+		c, err := img.Start(context.WithoutCancel(ctx), t, nw.WithNetworkName([]string{img.Hostname()}, newNetwork.Name))
 		if err != nil {
 			t.Fatalf("unable to initialize container %T: %v", img, err)
 		}
@@ -60,8 +60,9 @@ func Init(ctx context.Context, t testing.TB, s ...ContainerInitializer) (Running
 }
 
 func (m Running) Cleanup(t testing.TB) {
-	tc.CleanupNetwork(t, m.Network)
-
+	if m.Network != nil {
+		tc.CleanupNetwork(t, m.Network)
+	}
 	for _, mm := range m.Containers {
 		tc.CleanupContainer(t, mm)
 	}
@@ -175,6 +176,10 @@ func WithEnvFromConfig(options config.Options) tc.CustomizeRequestOption {
 			req.Env["HOSTNAME"] = options.Hostname
 			req.NetworkAliases = map[string][]string{host: {host}}
 		}
+
+		req.ConfigModifier = func(c *container.Config) {
+			c.Hostname = options.Hostname
+		}
 		return nil
 	}
 }
@@ -219,6 +224,9 @@ func WithEnvFile(env map[string]string) tc.CustomizeRequestOption {
 		}
 		if host, ok := req.Env["HOSTNAME"]; ok {
 			req.NetworkAliases = map[string][]string{host: {host}}
+			req.ConfigModifier = func(c *container.Config) {
+				c.Hostname = host
+			}
 		}
 		return nil
 	}
