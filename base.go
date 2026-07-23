@@ -40,7 +40,7 @@ func (ctl *Base) SendSignalToServer(sig syscall.Signal) func() error {
 
 func (ctl *Base) infFn(s string, p ...any) {
 	if ctl.Logger != nil {
-		ctl.Logger.Infof(s, p...)
+		ctl.Logger.Debugf(s, p...)
 	}
 }
 

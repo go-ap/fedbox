@@ -140,9 +140,9 @@ func setup(ct *Base, conf config.Options) error {
 	}
 	if ct.Logger == nil {
 		if conf.Env.IsDev() {
-			ct.Logger = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+			ct.Logger = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out)).WithContext(lw.Ctx{"host": conf.Hostname})
 		} else {
-			ct.Logger = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out))
+			ct.Logger = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out)).WithContext(lw.Ctx{"host": conf.Hostname})
 		}
 	}
 	_l.Store(ct.Logger)
