@@ -3,6 +3,7 @@ package integration
 import (
 	"time"
 
+	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
@@ -16,7 +17,8 @@ var (
 		Hostname: "primary.localdomain",
 		HTTPPort: 80,
 		SSHPort:  422,
-		Env:      env.PROD,
+		Env:      env.DEV,
+		LogLevel: lw.TraceLevel,
 	}
 	defaultS2SOptions = config.Options{
 		Hostname: "secondary.localdomain",
@@ -24,6 +26,7 @@ var (
 		SSHPort:  422,
 		Storage:  storage.FS,
 		Env:      env.PROD,
+		LogLevel: lw.DebugLevel,
 	}
 
 	c2sRootIRI = rootIRI(defaultC2SOptions)

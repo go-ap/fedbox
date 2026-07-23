@@ -7,17 +7,20 @@ require (
 	git.sr.ht/~mariusor/storage-all v0.0.0-20260716114018-9dd029ef0a82
 	github.com/carlmjohnson/requests v0.25.1
 	github.com/elnormous/contenttype v1.0.4
-	github.com/go-ap/activitypub v0.0.0-20260701132640-13f25467c431
-	github.com/go-ap/client v0.0.0-20260718172348-2cabce602885
+	github.com/go-ap/activitypub v0.0.0-20260720130625-e2c76676dde7
+	github.com/go-ap/client v0.0.0-20260723115020-5b594d277d26
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/fedbox v0.0.0-20260717173704-0c1f2719fe9d
-	github.com/go-ap/filters v0.0.0-20260716110857-13bff629eba4
+	github.com/go-ap/filters v0.0.0-20260720130825-55f4e622346f
+	github.com/go-ap/storage-pg v0.0.0-20260720133924-78f126369345
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.20.7
 	github.com/google/ko v0.18.1
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/moby/moby/api v1.55.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/testcontainers/testcontainers-go v0.43.0
+	github.com/testcontainers/testcontainers-go/modules/postgres v0.41.0
 	golang.org/x/crypto v0.54.0
 )
 
@@ -107,7 +110,6 @@ require (
 	github.com/go-ap/storage-badger v0.0.0-20260716113120-fb9dbdc295c3 // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260716112902-fda877e9ed69 // indirect
 	github.com/go-ap/storage-fs v0.0.0-20260716112713-310e21fe66f7 // indirect
-	github.com/go-ap/storage-pg v0.0.0-20260716113514-ab3668b1f971 // indirect
 	github.com/go-ap/storage-sqlite v0.0.0-20260716113311-0c7f0c9dc235 // indirect
 	github.com/go-chi/chi/v5 v5.3.1 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
@@ -151,7 +153,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.10.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
 	github.com/jedisct1/go-minisign v0.0.0-20241212093149-d2f9f49435c7 // indirect

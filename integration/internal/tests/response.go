@@ -146,7 +146,11 @@ func (res resChecks) ItemMatch(itemChecks ...itemCheckFn) resChecks {
 
 		it, err := vocab.UnmarshalJSON(raw)
 		if err != nil {
-			t.Errorf("Failed to unmarshal ActivityPub object from body: %v", err)
+			if maybeErr, err1 := errors.UnmarshalJSON(raw); err1 == nil {
+				t.Errorf("Received error from FedBOX server: %v", maybeErr)
+			} else {
+				t.Errorf("Failed to unmarshal ActivityPub object from body: %v", err)
+			}
 			return
 		}
 		if vocab.IsNil(it) && len(itemChecks) > 0 {

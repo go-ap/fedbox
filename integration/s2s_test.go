@@ -37,6 +37,11 @@ func Test_S2SRequests(t *testing.T) {
 		fedbox.WithRootIRI(c2sRootIRI), fedbox.WithPw(rand.Text()[:8]),
 		fedbox.WithItems(c2sTagAdmin, c2sAdmin),
 		fedbox.WithTestLogger(t, Verbose),
+		fedbox.WithCmd(c.SSHCmd{
+			Cmd:  []string{"accounts", "gen-keys", string(c2sAdmin.ID)},
+			User: string(c2sRootIRI),
+			Key:  c2sPrvKey,
+		}),
 	)
 
 	s2sSetup := fedbox.New(

@@ -14,13 +14,13 @@ require (
 	github.com/alecthomas/kong v1.16.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/go-ap/activitypub v0.0.0-20260720130625-e2c76676dde7
-	github.com/go-ap/auth v0.0.0-20260720131932-148d55cb6dc6
+	github.com/go-ap/auth v0.0.0-20260723115354-14314ecbba33
 	github.com/go-ap/cache v0.0.0-20260720130756-5966f822532a
-	github.com/go-ap/client v0.0.0-20260720131204-e2a338936cfd
+	github.com/go-ap/client v0.0.0-20260723115020-5b594d277d26
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/filters v0.0.0-20260720130825-55f4e622346f
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/processing v0.0.0-20260722135237-51e4b084f4b4
+	github.com/go-ap/processing v0.0.0-20260723115854-9950741edab5
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0

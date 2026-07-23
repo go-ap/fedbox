@@ -26,6 +26,7 @@ type tbLogger struct {
 }
 
 func (t *tbLogger) Printf(s string, args ...any) {
+	t.Helper()
 	t.Logf(s, args...)
 }
 
@@ -66,7 +67,7 @@ func (f *fboxImage) Name() string {
 func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 	initFns := []tc.ContainerCustomizer{c.WithImage(f.name), tc.WithName(f.Hostname()), c.WithEnvFromConfig(*f.conf)}
 	if len(f.env) > 0 {
-		initFns = append(initFns, c.WithEnvFile(f.env))
+		initFns = append(initFns, c.WithEnv(f.env))
 	}
 
 	if f.args != nil {

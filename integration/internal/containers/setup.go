@@ -176,6 +176,7 @@ func WithEnvFromConfig(options config.Options) tc.CustomizeRequestOption {
 			req.Env["HOSTNAME"] = options.Hostname
 			req.NetworkAliases = map[string][]string{host: {host}}
 		}
+		req.Env["LOG_LEVEL"] = options.LogLevel.String()
 
 		req.ConfigModifier = func(c *container.Config) {
 			c.Hostname = options.Hostname
@@ -184,7 +185,7 @@ func WithEnvFromConfig(options config.Options) tc.CustomizeRequestOption {
 	}
 }
 
-func WithEnvFile(env map[string]string) tc.CustomizeRequestOption {
+func WithEnv(env map[string]string) tc.CustomizeRequestOption {
 	storageType := ExtractStorageTagFromBuild()
 	envType := ExtractEnvTagFromBuild()
 	if storageType == "all" {
@@ -193,11 +194,6 @@ func WithEnvFile(env map[string]string) tc.CustomizeRequestOption {
 	return func(req *tc.GenericContainerRequest) error {
 		if req.Env == nil {
 			req.Env = make(map[string]string)
-		}
-		for k, v := range env {
-			if v != "" {
-				req.Env[k] = v
-			}
 		}
 		exposePort := func(portVal string) {
 			req.ContainerRequest.ExposedPorts = append(req.ContainerRequest.ExposedPorts, portVal)
@@ -226,6 +222,11 @@ func WithEnvFile(env map[string]string) tc.CustomizeRequestOption {
 			req.NetworkAliases = map[string][]string{host: {host}}
 			req.ConfigModifier = func(c *container.Config) {
 				c.Hostname = host
+			}
+		}
+		for k, v := range env {
+			if v != "" {
+				req.Env[k] = v
 			}
 		}
 		return nil
