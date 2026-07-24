@@ -94,9 +94,9 @@ func Test_Fetch(t *testing.T) {
 	))
 
 	ctx := context.Background()
-	cont, err := c.Init(ctx, t, images...)
+	cont, err := c.Start(ctx, t, images...)
 	if err != nil {
-		t.Fatalf("unable to initialize containers: %s", err)
+		t.Fatalf("Error: %s", err)
 	}
 
 	t.Cleanup(func() {
@@ -180,7 +180,7 @@ func Test_C2S_Requests(t *testing.T) {
 				HasCode(http.StatusBadRequest).
 				HasContentType(client.ContentTypeJson).
 				HasErrors(
-					errors.NewBadRequest(errors.BadRequestf("Activity is not valid: invalid activity id"), "Unable to save activity Flag to http://fedbox/actors/1/inbox"),
+					errors.NewBadRequest(errors.BadRequestf("Activity is not valid: invalid activity id"), "Unable to save activity Flag to http://primary.localdomain/actors/1/inbox"),
 					errors.BadRequestf("Activity is not valid: invalid activity id"),
 				),
 		},
@@ -200,7 +200,7 @@ func Test_C2S_Requests(t *testing.T) {
 				Post().
 				ContentType(client.ContentTypeJsonLD).
 				Signer(token.Sign).
-				BodyBytes([]byte(`{"type":"Flag","actor":"http://fedbox/actors/1","object":"http://fedbox/actors/1","published":"2001-04-01T00:00:00Z"}`)),
+				BodyBytes([]byte(`{"type":"Flag","actor":"http://primary.localdomain/actors/1","object":"http://primary.localdomain/actors/1","published":"2001-04-01T00:00:00Z"}`)),
 			Res: tests.Response().
 				HasCode(http.StatusCreated).
 				HasLocation(admin.ID).
@@ -224,9 +224,9 @@ func Test_C2S_Requests(t *testing.T) {
 	))
 
 	ctx := context.Background()
-	cont, err := c.Init(ctx, t, images...)
+	cont, err := c.Start(ctx, t, images...)
 	if err != nil {
-		t.Fatalf("unable to initialize containers: %s", err)
+		t.Fatalf("Error: %s", err)
 	}
 
 	t.Cleanup(func() {

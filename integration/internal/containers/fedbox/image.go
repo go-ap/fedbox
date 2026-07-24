@@ -11,7 +11,6 @@ import (
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/internal/config"
 	pg "github.com/go-ap/storage-pg"
@@ -64,8 +63,8 @@ func (f *fboxImage) Name() string {
 	return f.name
 }
 
-func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
-	initFns := []tc.ContainerCustomizer{c.WithImage(f.name), tc.WithName(f.Hostname()), c.WithEnvFromConfig(*f.conf)}
+func (f *fboxImage) InitFns(t testing.TB) []tc.ContainerCustomizer {
+	initFns := []tc.ContainerCustomizer{c.WithImage(f.name), c.WithEnvFromConfig(*f.conf)}
 	if len(f.env) > 0 {
 		initFns = append(initFns, c.WithEnv(f.env))
 	}
@@ -80,16 +79,11 @@ func (f *fboxImage) InitFns() []tc.ContainerCustomizer {
 		initFns = append(initFns, c.WithPassword(f.pw))
 	}
 	if len(f.mocks) > 0 {
-		importCmd := c.SSHCmd{
-			Cmd:  []string{ /*ctlBin, "--env", envType, */ "pub", "import", "/storage/import.json"},
-			User: f.rootIRI,
+		sshCmd := func(cmd ...string) c.SSHCmd {
+			return c.SSHCmd{Cmd: cmd, User: f.rootIRI, Key: f.key, Pw: f.pw}
 		}
-		if f.key != nil {
-			importCmd.Key = f.key
-		}
-		if f.pw != nil {
-			importCmd.Pw = f.pw
-		}
+
+		importCmd := sshCmd( /*ctlBin, "--env", envType, */ "pub", "import", "/storage/import.json")
 		// NOTE(marius): we add the mocks to the import file, and the SSH command to actually import it.
 		initFns = append(initFns, c.WithMocks(f.mocks...), tc.WithAfterReadyCommand(importCmd))
 	}
@@ -148,9 +142,9 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB, extra ...tc.Contain
 		cont = append(cont, pg)
 	}
 
-	opts := append(f.InitFns(), extra...)
+	opts := append(f.InitFns(t), extra...)
 
-	req := defaultFedBOXRequest(f, t)
+	req := defaultFedBOXRequest(f)
 	for _, opt := range opts {
 		if err := opt.Customize(&req); err != nil {
 			return nil, err
@@ -158,7 +152,7 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB, extra ...tc.Contain
 	}
 
 	// NOTE(marius): for fedbox containers we use our custom Exec, that is capable of
-	// running the Post Ready Hook commands as SSH
+	// running the Post Ready Hook commands through SSH
 	var cmds []tc.ContainerHook
 	for i, hook := range req.LifecycleHooks {
 		if len(hook.PostReadies) > 0 {
@@ -176,19 +170,16 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB, extra ...tc.Contain
 	if err = c.Start(ctx); err != nil {
 		return nil, fmt.Errorf("unable to start FedBOX container: %w", err)
 	}
-	cont = append(cont, &c)
 	if len(cmds) > 0 {
-		errs := make([]error, 0, len(cmds))
 		name, _ := c.Name(ctx)
 		for _, ex := range cmds {
 			if err = ex(ctx, c); err != nil {
-				errs = append(errs, fmt.Errorf("unable to run startup command on container %s[%T]: %w", name, f, err))
+				return cont, fmt.Errorf("unable to run startup command on container %s[%T]: %w", name, f, err)
 			}
 		}
-		err = errors.Join(errs...)
 	}
 
-	return cont, err
+	return append(cont, &c), nil
 }
 
 type imageInitFn func(*fboxImage)
@@ -283,7 +274,7 @@ func ConfigFromBuildInfo(base config.Options) config.Options {
 	return base
 }
 
-func defaultFedBOXRequest(fb *fboxImage, _ testing.TB) tc.GenericContainerRequest {
+func defaultFedBOXRequest(fb *fboxImage) tc.GenericContainerRequest {
 	return tc.GenericContainerRequest{
 		ContainerRequest: tc.ContainerRequest{
 			Image: fb.name,

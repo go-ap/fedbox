@@ -146,15 +146,14 @@ func (res resChecks) ItemMatch(itemChecks ...itemCheckFn) resChecks {
 
 		it, err := vocab.UnmarshalJSON(raw)
 		if err != nil {
+			t.Errorf("Failed to unmarshal ActivityPub object from body: %v", err)
+		}
+		if vocab.IsNil(it) && len(itemChecks) > 0 {
 			if maybeErr, err1 := errors.UnmarshalJSON(raw); err1 == nil {
 				t.Errorf("Received error from FedBOX server: %v", maybeErr)
 			} else {
-				t.Errorf("Failed to unmarshal ActivityPub object from body: %v", err)
+				t.Errorf("Invalid nil item in response when expecting to run checks")
 			}
-			return
-		}
-		if vocab.IsNil(it) && len(itemChecks) > 0 {
-			t.Errorf("Invalid nil item in response when expecting to run checks")
 			return
 		}
 		for _, checkFn := range itemChecks {

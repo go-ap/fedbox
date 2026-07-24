@@ -29,37 +29,31 @@ func Test_S2SRequests(t *testing.T) {
 	s2sTagAdmin := object(s2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
 	s2sAdmin := person(vocab.CollectionPath("actors/1").IRI(s2sRootIRI), ap.HasPreferredUsername("admin"), ap.HasTag(s2sTagAdmin))
 
-	c2sSetup := fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithKey(c2sPrvKey),
-		fedbox.WithRootIRI(c2sRootIRI), fedbox.WithPw(rand.Text()[:8]),
-		fedbox.WithItems(c2sTagAdmin, c2sAdmin),
-		fedbox.WithTestLogger(t, Verbose),
-		fedbox.WithCmd(c.SSHCmd{
-			Cmd:  []string{"accounts", "gen-keys", string(c2sAdmin.ID)},
-			User: string(c2sRootIRI),
-			Key:  c2sPrvKey,
-		}),
+	images := c.Suite(
+		fedbox.New(
+			fedbox.WithImageName(fedBOXImageName),
+			fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+			fedbox.WithArgs([]string{"--bootstrap"}),
+			fedbox.WithKey(c2sPrvKey),
+			fedbox.WithRootIRI(c2sRootIRI), fedbox.WithPw(rand.Text()[:8]),
+			fedbox.WithItems(c2sTagAdmin, c2sAdmin),
+			fedbox.WithTestLogger(t, Verbose),
+		),
+		fedbox.New(
+			fedbox.WithImageName(fedBOXImageName),
+			fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultS2SOptions)),
+			fedbox.WithArgs([]string{"--bootstrap"}),
+			fedbox.WithKey(s2sPrvKey),
+			fedbox.WithRootIRI(s2sRootIRI), fedbox.WithPw(rand.Text()[:8]),
+			fedbox.WithItems(s2sTagAdmin, s2sAdmin),
+			fedbox.WithTestLogger(t, Verbose),
+		),
 	)
-
-	s2sSetup := fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultS2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithKey(s2sPrvKey),
-		fedbox.WithRootIRI(s2sRootIRI), fedbox.WithPw(rand.Text()[:8]),
-		fedbox.WithItems(s2sTagAdmin, s2sAdmin),
-		fedbox.WithTestLogger(t, Verbose),
-	)
-
-	images := c.Suite(c2sSetup, s2sSetup)
 
 	ctx := context.Background()
-	cont, err := c.Init(ctx, t, images...)
+	cont, err := c.Start(ctx, t, images...)
 	if err != nil {
-		t.Fatalf("unable to initialize containers: %s", err)
+		t.Fatalf("Error: %s", err)
 	}
 
 	t.Cleanup(func() {
@@ -69,11 +63,21 @@ func Test_S2SRequests(t *testing.T) {
 	token := new(c2s.BearerSigner)
 	toRun := []tests.RunnableTest{
 		tests.CommandTest{
+			Name: "GenKeys admin",
+			Host: string(c2sRootIRI),
+			Cmd: c.SSHCmd{
+				Cmd:  []string{"accounts", "gen-keys"},
+				User: string(c2sRootIRI),
+				Key:  c2sPrvKey,
+			},
+			IO: tests.WithTests(tests.EndOK),
+		},
+		tests.CommandTest{
 			Name: "Gen OAuth2 bearer",
 			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"oauth", "token", "add", string(c2sAdmin.ID)},
-				User: c2sRootIRI.String(),
+				User: string(c2sRootIRI),
 				Key:  c2sPrvKey,
 			},
 			IO: tests.WithTests(tests.GetToken(token), tests.EndOK),

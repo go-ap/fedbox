@@ -31,8 +31,7 @@ func (c SSHCmd) Options() []exec.ProcessOption {
 		"_PK=" + string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: prvEnc})),
 		"_PW=" + string(c.Pw),
 	}
-	opts := []exec.ProcessOption{exec.WithEnv(env), exec.WithUser(c.User)}
-	return opts
+	return []exec.ProcessOption{exec.WithEnv(env), exec.WithUser(c.User)}
 }
 
 var _ tc.Executable = SSHCmd{}

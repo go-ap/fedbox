@@ -112,13 +112,13 @@ func (c CommandTest) Fn(ctx context.Context, mocks c.Running) func(t *testing.T)
 	}
 }
 
-func (c CommandTest) Run(ctx context.Context, mocks c.Running, t *testing.T) {
-	_, err := mocks.RunCommand(ctx, c.Host, c.Cmd, c.IO(t))
+func (c CommandTest) Run(ctx context.Context, containers c.Running, t *testing.T) {
+	_, err := containers.RunCommand(ctx, c.Host, c.Cmd, c.IO(t))
 	if !EqErrs(c.WantErr, err) && !errors.Is(err, new(gossh.ExitMissingError)) {
 		if c.Cmd == nil {
-			t.Errorf("Err received executing nil command %s: %+v", c.Host, DiffErrs(c.WantErr, err))
+			t.Errorf("Error received executing nil command %s: %+v", c.Host, DiffErrs(c.WantErr, err))
 		}
-		t.Errorf("Err received executing command %s->%v: %+v", c.Host, c.Cmd.AsCommand(), DiffErrs(c.WantErr, err))
+		t.Errorf("Error received executing command %s %v: %+v", c.Host, c.Cmd.AsCommand(), DiffErrs(c.WantErr, err))
 	}
 }
 

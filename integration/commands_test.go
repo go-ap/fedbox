@@ -138,9 +138,9 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				fedbox.WithTestLogger(t, Verbose && test.Label() != "stop"),
 			))
 
-			cont, err := c.Init(ctx, t, images...)
+			cont, err := c.Start(ctx, t, images...)
 			if err != nil {
-				t.Fatalf("unable to initialize containers: %s", err)
+				t.Fatalf("Error: %s", err)
 			}
 
 			var cancelFn func()

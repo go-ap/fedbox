@@ -40,17 +40,17 @@ func Suite(container ...ContainerInitializer) []ContainerInitializer {
 	return append([]ContainerInitializer{}, container...)
 }
 
-func Init(ctx context.Context, t testing.TB, s ...ContainerInitializer) (Running, error) {
+func Start(ctx context.Context, t testing.TB, imgs ...ContainerInitializer) (Running, error) {
 	netInitFns := []nw.NetworkCustomizer{nw.WithDriver("bridge")}
 	newNetwork, err := nw.New(ctx, netInitFns...)
 	if err != nil {
-		t.Fatalf("unable to initialize network: %v", err)
+		return Running{}, fmt.Errorf("network initialization failed: %w", err)
 	}
 	m := Running{Containers: make([]tc.Container, 0), Network: newNetwork}
-	for _, img := range s {
+	for _, img := range imgs {
 		c, err := img.Start(context.WithoutCancel(ctx), t, nw.WithNetworkName([]string{img.Hostname()}, newNetwork.Name))
 		if err != nil {
-			t.Fatalf("unable to initialize container %T: %v", img, err)
+			return m, fmt.Errorf("container start failed %T: %w", img, err)
 		}
 
 		m.Containers = append(m.Containers, c...)
@@ -71,7 +71,7 @@ func (m Running) Cleanup(t testing.TB) {
 func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable, IO io.ReadWriter) (io.Reader, error) {
 	uu, err := url.Parse(host)
 	if err != nil {
-		return nil, fmt.Errorf("received invalid url: %w", err)
+		return nil, fmt.Errorf("received invalid host url: %w", err)
 	}
 
 	for _, fc := range m.Containers {
@@ -80,19 +80,21 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable,
 			return nil, fmt.Errorf("unable to inspect container: %w", err)
 		}
 		for _, pair := range info.Config.Env {
-			if hostname, found := strings.CutPrefix(pair, "HOSTNAME="); found {
-				if hostname == uu.Host {
-					opts := cmd.Options()
-					if IO != nil {
-						opts = append(opts, WithIO(IO))
-					}
-					_, r, err := fc.Exec(ctx, cmd.AsCommand(), opts...)
-					return r, err
+			hostname, found := strings.CutPrefix(pair, "HOSTNAME=")
+			if !found {
+				continue
+			}
+			if strings.EqualFold(hostname, uu.Host) {
+				opts := cmd.Options()
+				if IO != nil {
+					opts = append(opts, WithIO(IO))
 				}
+				_, r, err := fc.Exec(ctx, cmd.AsCommand(), opts...)
+				return r, err
 			}
 		}
 	}
-	return nil, fmt.Errorf("no matching mock instance for the host: %s", host)
+	return nil, fmt.Errorf("no matching instance for host %s, tried %d containers", host, len(m.Containers))
 }
 
 func (m Running) RedirectRequest(ctx context.Context, req *http.Request) error {
