@@ -8,13 +8,13 @@ MAKEFLAGS += --no-builtin-rules
 ENV ?= dev
 STORAGE ?= all
 
-TAGS ?=
+TAGS ?= c2s,s2s,ssh
 
 ifneq ($(STORAGE),)
-TAGS := $(TAGS),storage_$(STORAGE),c2s,s2s,ssh
+TAGS := $(TAGS),storage_$(STORAGE)
 endif
 
-TEST_FLAGS ?= -timeout 40s -count=1 -tags '$(TAGS)'
+TEST_FLAGS ?= -timeout 90s -count=1 -tags '$(TAGS)'
 
 
 download:

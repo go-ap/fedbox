@@ -50,7 +50,7 @@ func Start(ctx context.Context, t testing.TB, imgs ...ContainerInitializer) (Run
 	}
 	m := Running{Containers: make([]tc.Container, 0), Network: newNetwork}
 	for _, img := range imgs {
-		c, err := img.Start(context.WithoutCancel(ctx), t, nw.WithNetworkName([]string{img.Hostname()}, newNetwork.Name))
+		c, err := img.Start(ctx, t, nw.WithNetworkName([]string{img.Hostname()}, newNetwork.Name))
 		if err != nil {
 			return m, fmt.Errorf("container start failed %T: %w", img, err)
 		}
@@ -61,7 +61,7 @@ func Start(ctx context.Context, t testing.TB, imgs ...ContainerInitializer) (Run
 	return m, nil
 }
 
-func (m Running) Cleanup(t testing.TB) {
+func (m *Running) Cleanup(t testing.TB) {
 	if m.Network != nil {
 		tc.CleanupNetwork(t, m.Network)
 	}
@@ -70,7 +70,7 @@ func (m Running) Cleanup(t testing.TB) {
 	}
 }
 
-func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable, IO io.ReadWriter) (io.Reader, error) {
+func (m *Running) RunCommand(ctx context.Context, host string, cmd tc.Executable, IO io.ReadWriter) (io.Reader, error) {
 	uu, err := url.Parse(host)
 	if err != nil {
 		return nil, fmt.Errorf("received invalid host url: %w", err)
@@ -103,7 +103,7 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable,
 	return nil, fmt.Errorf("no matching instance for host %s, tried %d containers", host, len(m.Containers))
 }
 
-func (m Running) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+func (m *Running) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
 	dialer := sync.OnceValue(func() net.Dialer {
 		return net.Dialer{}
 	})()
