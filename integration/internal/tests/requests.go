@@ -210,7 +210,7 @@ type redirecter interface {
 	RedirectRequest(context.Context, *http.Request) error
 }
 
-func (rb *reqBuilder) Request(ctx context.Context, mocks redirecter) (*http.Request, error) {
+func (rb *reqBuilder) Request(ctx context.Context) (*http.Request, error) {
 	if rb == nil {
 		return nil, fmt.Errorf("nil request")
 	}
@@ -224,5 +224,5 @@ func (rb *reqBuilder) Request(ctx context.Context, mocks redirecter) (*http.Requ
 			return req, err
 		}
 	}
-	return req, mocks.RedirectRequest(ctx, req)
+	return req, nil
 }

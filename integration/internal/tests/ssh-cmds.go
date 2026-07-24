@@ -18,7 +18,7 @@ import (
 )
 
 type ioTest struct {
-	t           *testing.T
+	t           testing.TB
 	m           sync.RWMutex
 	lineCount   int
 	input       []byte
@@ -71,7 +71,7 @@ func (t *ioTest) Write(p []byte) (n int, err error) {
 
 var _ io.ReadWriter = new(ioTest)
 
-type LineOutputTest func(*testing.T, []byte) []byte
+type LineOutputTest func(testing.TB, []byte) []byte
 
 func WithTests(testFns ...LineOutputTest) ioTestFn {
 	tt := ioTest{
@@ -146,12 +146,12 @@ func DiffErrs(want, got error) string {
 	return cmp.Diff(want, got, EquateWeakErrors)
 }
 
-func AnyOutput(t *testing.T, line []byte) []byte {
+func AnyOutput(t testing.TB, line []byte) []byte {
 	t.Logf("read %q", bytes.Trim(line, string(CRLF)))
 	return nil
 }
 
-func EndOK(t *testing.T, line []byte) []byte {
+func EndOK(t testing.TB, line []byte) []byte {
 	ok := []byte("FedBOX SSH: OK")
 	if !bytes.Equal(line, ok) {
 		t.Errorf("Output line %q, expected: %q", line, ok)
@@ -159,7 +159,7 @@ func EndOK(t *testing.T, line []byte) []byte {
 	return nil
 }
 
-func MatchToken(t *testing.T, i []byte) []byte {
+func MatchToken(t testing.TB, i []byte) []byte {
 	remainder, found := bytes.CutPrefix(i, []byte("Authorization: "))
 	if !found {
 		t.Errorf("Invalid output for oauth token command (missing Authorization prefix): %s", i)
@@ -171,8 +171,8 @@ func MatchToken(t *testing.T, i []byte) []byte {
 	return nil
 }
 
-func GetToken(token *c2s.BearerSigner) func(t *testing.T, i []byte) []byte {
-	return func(t *testing.T, i []byte) []byte {
+func GetToken(token *c2s.BearerSigner) LineOutputTest {
+	return func(t testing.TB, i []byte) []byte {
 		i = bytes.TrimSpace(i)
 		auth, found := bytes.CutPrefix(i, []byte("Authorization: "))
 		if !found {
@@ -201,7 +201,7 @@ var (
 )
 
 func WithInput(r LineOutputTest, input string) LineOutputTest {
-	return func(t *testing.T, line []byte) []byte {
+	return func(t testing.TB, line []byte) []byte {
 		// NOTE(marius): ignore any input returned by previous test
 		_ = r(t, line)
 		return []byte(input)
@@ -209,7 +209,7 @@ func WithInput(r LineOutputTest, input string) LineOutputTest {
 }
 
 func MatchesRegexp(r *regexp.Regexp) LineOutputTest {
-	return func(t *testing.T, line []byte) []byte {
+	return func(t testing.TB, line []byte) []byte {
 		if matches := r.FindSubmatch(line); len(matches) == 0 {
 			t.Errorf("The line %q did not contain the regex, %q", line, r)
 		}
@@ -218,7 +218,7 @@ func MatchesRegexp(r *regexp.Regexp) LineOutputTest {
 }
 
 func MatchesString(s string) LineOutputTest {
-	return func(t *testing.T, line []byte) []byte {
+	return func(t testing.TB, line []byte) []byte {
 		if !bytes.Equal(line, []byte(s)) {
 			t.Errorf("The line %q did not match expected, %q", line, s)
 		}

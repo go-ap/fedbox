@@ -85,9 +85,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				User: string(c2sRootIRI),
 				Key:  privateKey,
 			},
-			IO: tests.WithTests(
-				tests.MatchToken,
-				tests.EndOK),
+			IO: tests.WithTests(tests.MatchToken, tests.EndOK),
 		},
 		{
 			Name: "storage bootstrap",

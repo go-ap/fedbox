@@ -9,11 +9,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
+	"net"
 	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -102,37 +103,38 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable,
 	return nil, fmt.Errorf("no matching instance for host %s, tried %d containers", host, len(m.Containers))
 }
 
-func (m Running) RedirectRequest(ctx context.Context, req *http.Request) error {
+func (m Running) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	var dialer net.Dialer
+	new(sync.Once).Do(func() {
+		dialer = net.Dialer{}
+	})
 	for _, fc := range m.Containers {
 		info, err := fc.Inspect(ctx)
 		if err != nil {
-			return fmt.Errorf("unable to inspect container: %w", err)
+			return nil, fmt.Errorf("unable to inspect container: %w", err)
 		}
 		for _, pair := range info.Config.Env {
-			if host, found := strings.CutPrefix(pair, "HOSTNAME="); found && host == req.URL.Host {
-				return rewriteRequestHost(ctx, fc, req)
+			host, found := strings.CutPrefix(pair, "HOSTNAME=")
+			if !found {
+				continue
 			}
+			if addr != host+":80" && !strings.HasSuffix(addr, "."+host+":80") {
+				continue
+			}
+			// NOTE(marius): found container with matching host.
+			// If we don't manage to find a matching container past this point, we fail.
+			cHost, err := fc.Endpoint(ctx, "http")
+			if err != nil {
+				return nil, fmt.Errorf("unable to compose container end-point: %w", err)
+			}
+			uh, err := url.Parse(cHost)
+			if err != nil {
+				return nil, fmt.Errorf("invalid container url: %w", err)
+			}
+			return dialer.DialContext(ctx, network, uh.Host)
 		}
 	}
-	return fmt.Errorf("no matching mock instance for the url: %s", req.URL)
-}
-
-func rewriteRequestHost(ctx context.Context, fc tc.Container, r *http.Request) error {
-	host, err := fc.Endpoint(ctx, "http")
-	if err != nil {
-		return fmt.Errorf("unable to compose container end-point: %w", err)
-	}
-	uh, err := url.Parse(host)
-	if err != nil {
-		return fmt.Errorf("invalid container url: %w", err)
-	}
-
-	origHost := r.URL.Host
-
-	r.URL.Host = uh.Host
-	r.Host = origHost
-
-	return nil
+	return nil, fmt.Errorf("no matching container for address: %s", addr)
 }
 
 func WithIO(in io.ReadWriter) exec.ProcessOption {

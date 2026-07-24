@@ -43,10 +43,6 @@ func (ht HTTPTest) Label() string {
 	return ht.Name
 }
 
-var httpClient = http.Client{
-	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-}
-
 func (ht HTTPTest) Fn(ctx context.Context, mocks c.Running) func(t *testing.T) {
 	return func(t *testing.T) {
 		ht.Run(ctx, mocks, t)
@@ -54,13 +50,23 @@ func (ht HTTPTest) Fn(ctx context.Context, mocks c.Running) func(t *testing.T) {
 }
 
 func (ht HTTPTest) Run(ctx context.Context, mocks c.Running, t *testing.T) {
-	cl := &httpClient
+	cl := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       20 * time.Second,
+			TLSHandshakeTimeout:   2 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			DialContext:           mocks.DialContext,
+		},
+	}
 
 	var cancelFn func()
 	ctx, cancelFn = context.WithTimeout(ctx, 10*time.Second)
 	defer cancelFn()
 
-	req, err := ht.Req.Request(ctx, mocks)
+	req, err := ht.Req.Request(ctx)
 	if err != nil {
 		t.Fatalf("unable to create request: %+v", err)
 	}
