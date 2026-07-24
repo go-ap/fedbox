@@ -104,10 +104,9 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable,
 }
 
 func (m Running) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
-	var dialer net.Dialer
-	new(sync.Once).Do(func() {
-		dialer = net.Dialer{}
-	})
+	dialer := sync.OnceValue(func() net.Dialer {
+		return net.Dialer{}
+	})()
 	for _, fc := range m.Containers {
 		info, err := fc.Inspect(ctx)
 		if err != nil {

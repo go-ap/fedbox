@@ -279,9 +279,12 @@ func defaultFedBOXRequest(fb *fboxImage) tc.GenericContainerRequest {
 		ContainerRequest: tc.ContainerRequest{
 			Image: fb.name,
 			WaitingFor: wait.ForAny(
-				wait.ForListeningPort(strconv.Itoa(fb.conf.HTTPPort)),
-				wait.ForListeningPort(strconv.Itoa(fb.conf.SSHPort)),
-			).WithDeadline(5 * time.Second),
+				wait.ForAll(
+					wait.ForListeningPort(strconv.Itoa(fb.conf.HTTPPort)),
+					wait.ForListeningPort(strconv.Itoa(fb.conf.SSHPort)),
+				),
+				wait.ForLog("Started"),
+			).WithDeadline(10 * time.Second),
 		},
 		ProviderType: tc.ProviderPodman,
 		Started:      true,
