@@ -54,7 +54,7 @@ tasks:
       ./tools/run-tests.sh fs
   - integration-boltdb: |
       cd fedbox
-      #./tools/run-tests.sh boltdb
+      ./tools/run-tests.sh boltdb
   - integration-sqlite: |
       cd fedbox
       ./tools/run-tests.sh sqlite
