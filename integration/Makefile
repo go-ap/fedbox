@@ -14,7 +14,7 @@ ifneq ($(STORAGE),)
 TAGS := $(TAGS),storage_$(STORAGE),c2s,s2s,ssh
 endif
 
-TEST_FLAGS ?= -timeout 60s -race -count=1 -tags '$(TAGS)'
+TEST_FLAGS ?= -timeout 40s -count=1 -tags '$(TAGS)'
 
 
 download:

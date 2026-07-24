@@ -26,7 +26,7 @@ tasks:
   - integration-new-setup: |
       systemctl --user start podman.socket
       cd fedbox
-      make STORAGE=fs -C integration download
+      make -C integration download
   - integration-new-fs: |
       cd fedbox
       make STORAGE=fs -C integration test

@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
@@ -73,6 +74,10 @@ func (m Running) RunCommand(ctx context.Context, host string, cmd tc.Executable,
 	if err != nil {
 		return nil, fmt.Errorf("received invalid host url: %w", err)
 	}
+
+	var cancelFn func()
+	ctx, cancelFn = context.WithTimeout(ctx, time.Second)
+	defer cancelFn()
 
 	for _, fc := range m.Containers {
 		info, err := fc.Inspect(ctx)
