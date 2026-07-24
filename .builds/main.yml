@@ -27,6 +27,8 @@ tasks:
       systemctl --user start podman.socket
       cd fedbox
       make -C integration download
+      # try to cache some steps of the the build so real tests don't need so long of a timeout
+      go test -timeout 120s -tags s2s,c2s,ssh -c -o /tmp/integration.test ./ || true
   - integration-new-fs: |
       cd fedbox
       make STORAGE=fs -C integration test
