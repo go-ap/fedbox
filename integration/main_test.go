@@ -29,8 +29,11 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	name := fedBOXImageName
+
 	flag.BoolVar(&Verbose, "verbose", false, "enable more verbose logging")
 	flag.BoolVar(&Build, "build", false, "build images before run")
+	flag.StringVar(&name, "name", fedBOXImageName, "which container image to use")
 	flag.StringVar(&Storage, "storage", string(storage.Default), fmt.Sprintf("which storage type to use for tests, valid values: %#v", validStorageTypes))
 	flag.Parse()
 
@@ -42,9 +45,9 @@ func TestMain(m *testing.M) {
 	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true, ForceColors: true, DisableLevelTruncation: true})
 
 	if Build {
-		name, err := containers.BuildImage(context.Background(), fedBOXImageName, logger)
-		if err != nil {
-			logger.Fatalf("error building: %+v", err)
+		var err error
+		if name, err = containers.BuildImage(context.Background(), fedBOXImageName, logger); err != nil {
+			logger.Fatalf("error building image: %+v", err)
 		} else {
 			fedBOXImageName = name
 			logger.Infof("built image: %s", name)
