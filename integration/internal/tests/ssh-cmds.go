@@ -5,11 +5,13 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net/url"
 	"regexp"
 	"strings"
 	"sync"
 	"testing"
 
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/google/go-cmp/cmp"
@@ -20,7 +22,7 @@ import (
 type ioTest struct {
 	t           testing.TB
 	m           sync.RWMutex
-	lineCount   int
+	outputCount int
 	input       []byte
 	checkOutput []LineOutputTest
 }
@@ -57,14 +59,15 @@ func (t *ioTest) Write(p []byte) (n int, err error) {
 		t.t.Errorf("output was provided, but no handler was provided in the test setup")
 		return len(p), nil
 	}
-	if t.lineCount >= len(t.checkOutput) {
-		t.t.Errorf("not enough output checker functions %d for how many lines of output we want: %d", len(t.checkOutput), t.lineCount)
+	// NOTE(marius): we need that the checkOutput functions count match the number of output buffers
+	if t.outputCount >= len(t.checkOutput) {
+		t.t.Errorf("not enough output checker functions %d for how many lines of output we want: %d", len(t.checkOutput)+1, t.outputCount)
 		return len(p), nil
 	}
 
-	checkFn := t.checkOutput[t.lineCount]
+	checkFn := t.checkOutput[t.outputCount]
 	t.input = checkFn(t.t, bytes.Trim(p, string(CRLF)))
-	t.lineCount++
+	t.outputCount++
 
 	return len(p), nil
 }
@@ -195,7 +198,7 @@ func GetToken(token *c2s.BearerSigner) LineOutputTest {
 }
 
 var (
-	URLRegexp    = regexp.MustCompile(`(http|https://[a-zA-Z0-9./-]+)`)
+	URLRegexp    = regexp.MustCompile(`((?:http|https)://[a-zA-Z0-9./-]+)`)
 	PassMatch    = MatchesString(`Password: `)
 	ConfirmMatch = MatchesString(` Confirm: `)
 )
@@ -208,10 +211,34 @@ func WithInput(r LineOutputTest, input string) LineOutputTest {
 	}
 }
 
+func ExtractActorIRI(iri *vocab.IRI) LineOutputTest {
+	// NOTE(marius): this expects the output:
+	// Added "TYPE" "PREFERRED_USERNAME"
+	// \thttps://URL
+	return func(t testing.TB, line []byte) []byte {
+		matches := URLRegexp.FindSubmatch(line)
+		if len(matches) == 0 {
+			t.Errorf("The line %q did not contain the regex, %q", line, URLRegexp)
+			return nil
+		}
+		u, err := url.Parse(string(bytes.TrimSpace(matches[0])))
+		if err != nil {
+			t.Errorf("The line %q did not contain a valid URL, %v", line, err)
+			return nil
+		}
+		*iri = vocab.IRI(u.String())
+		return nil
+	}
+}
+
 func MatchesRegexp(r *regexp.Regexp) LineOutputTest {
 	return func(t testing.TB, line []byte) []byte {
-		if matches := r.FindSubmatch(line); len(matches) == 0 {
+		matches := r.FindSubmatch(line)
+		if len(matches) == 0 {
 			t.Errorf("The line %q did not contain the regex, %q", line, r)
+		}
+		if _, err := url.Parse(string(bytes.TrimSpace(matches[0]))); err != nil {
+			t.Errorf("The line %q did not contain a valid URL, %v", line, err)
 		}
 		return nil
 	}

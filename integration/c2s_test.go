@@ -200,7 +200,12 @@ func Test_C2S_Requests(t *testing.T) {
 				Post().
 				ContentType(client.ContentTypeJsonLD).
 				Signer(token.Sign).
-				BodyBytes([]byte(`{"type":"Flag","actor":"http://primary.localdomain/actors/1","object":"http://primary.localdomain/actors/1","published":"2001-04-01T00:00:00Z"}`)),
+				BodyItem(&vocab.Activity{
+					Type:      vocab.FlagType,
+					Actor:     admin.ID,
+					Object:    admin.ID,
+					Published: MockDate,
+				}),
 			Res: tests.Response().
 				HasCode(http.StatusCreated).
 				HasLocation(admin.ID).

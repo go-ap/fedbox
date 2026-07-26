@@ -1,11 +1,18 @@
 package integration
 
 import (
+	"context"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"testing"
 	"time"
 
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
+	c "github.com/go-ap/fedbox/integration/internal/containers"
+	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
@@ -89,4 +96,23 @@ func object(objectIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Object {
 		ap.HasTo(vocab.PublicNS),
 	}, initFn...)
 	return ap.Object(initFn...)
+}
+
+func initC2SContainers(ctx context.Context, t *testing.T) (string, crypto.PrivateKey, c.Running, error) {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	pw := rand.Text()[:8]
+	images := c.Suite(fedbox.New(
+		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+		fedbox.WithArgs([]string{"--bootstrap"}),
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithKey(privateKey),
+		fedbox.WithRootIRI(c2sRootIRI),
+		fedbox.WithPw(pw),
+	))
+
+	running, err := c.Start(ctx, t, images...)
+	if err != nil {
+		return pw, privateKey, running, err
+	}
+	return pw, privateKey, running, nil
 }

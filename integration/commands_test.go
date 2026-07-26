@@ -3,32 +3,38 @@
 package integration
 
 import (
-	"context"
-	"crypto/rand"
-	"crypto/rsa"
 	"testing"
-	"time"
 
+	vocab "github.com/go-ap/activitypub"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
-	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
 )
 
-func Test_Commands_inSeparateContainers(t *testing.T) {
-	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+func Test_Commands(t *testing.T) {
+	ctx := t.Context()
+	_, privateKey, cont, err := initC2SContainers(ctx, t)
+	if err != nil {
+		t.Fatalf("Error: %s", err)
+	}
 
-	toRun := []tests.CommandTest{
-		{
-			Name: "--help",
-			Host: string(c2sRootIRI),
-			Cmd: c.SSHCmd{
-				Cmd:  []string{"reload"},
-				User: string(c2sRootIRI),
-				Key:  privateKey,
-			},
-			IO: tests.WithTests(tests.EndOK),
-		},
-		{
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	toRun := []tests.RunnableTest{
+		//tests.CommandTest{
+		//	Name: "--help",
+		//	Host: string(c2sRootIRI),
+		//	Cmd: c.SSHCmd{
+		//		Cmd:  []string{"--help"},
+		//		User: string(c2sRootIRI),
+		//		Key:  privateKey,
+		//	},
+		//	// NOTE(marius): this is strange, the help should be a single buffer output, not 4
+		//	// So we disabled this for the moment
+		//	IO: tests.WithTests(tests.AnyOutput, tests.AnyOutput, tests.AnyOutput, tests.AnyOutput),
+		//},
+		tests.CommandTest{
 			Name: "reload",
 			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
@@ -38,17 +44,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			},
 			IO: tests.WithTests(tests.EndOK),
 		},
-		{
-			Name: "maintenance",
-			Host: string(c2sRootIRI),
-			Cmd: c.SSHCmd{
-				Cmd:  []string{"maintenance"},
-				User: string(c2sRootIRI),
-				Key:  privateKey,
-			},
-			IO: tests.WithTests(tests.EndOK),
-		},
-		{
+		tests.CommandTest{
 			Name: "pub actor add",
 			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
@@ -59,11 +55,11 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			IO: tests.WithTests(
 				tests.WithInput(tests.PassMatch, "asd"),
 				tests.WithInput(tests.ConfirmMatch, "asd"),
-				tests.MatchesRegexp(tests.URLRegexp),
+				tests.ExtractActorIRI(new(vocab.IRI)),
 				tests.EndOK,
 			),
 		},
-		{
+		tests.CommandTest{
 			Name: "oauth client add",
 			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
@@ -77,7 +73,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				tests.MatchesRegexp(tests.URLRegexp),
 				tests.EndOK),
 		},
-		{
+		tests.CommandTest{
 			Name: "oauth token generate",
 			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
@@ -87,17 +83,7 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 			},
 			IO: tests.WithTests(tests.MatchToken, tests.EndOK),
 		},
-		{
-			Name: "storage bootstrap",
-			Host: string(c2sRootIRI),
-			Cmd: c.SSHCmd{
-				Cmd:  []string{"storage", "bootstrap"},
-				User: string(c2sRootIRI),
-				Key:  privateKey,
-			},
-			IO: tests.WithTests(tests.EndOK),
-		},
-		{
+		tests.CommandTest{
 			Name: "password change",
 			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
@@ -111,11 +97,21 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 				tests.EndOK,
 			),
 		},
-		{
-			Name: "stop",
+		tests.CommandTest{
+			Name: "gen-keys all",
 			Host: string(c2sRootIRI),
 			Cmd: c.SSHCmd{
-				Cmd:  []string{"stop"},
+				Cmd:  []string{"accounts", "gen-keys"},
+				User: string(c2sRootIRI),
+				Key:  privateKey,
+			},
+			IO: tests.WithTests(tests.EndOK),
+		},
+		tests.CommandTest{
+			Name: "gen-keys root actor",
+			Host: string(c2sRootIRI),
+			Cmd: c.SSHCmd{
+				Cmd:  []string{"accounts", "gen-keys", string(c2sRootIRI)},
 				User: string(c2sRootIRI),
 				Key:  privateKey,
 			},
@@ -124,33 +120,75 @@ func Test_Commands_inSeparateContainers(t *testing.T) {
 	}
 
 	for _, test := range toRun {
-		t.Run(test.Label(), func(t *testing.T) {
-			ctx := t.Context()
-			images := c.Suite(fedbox.New(
-				fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-				fedbox.WithArgs([]string{"--bootstrap"}),
-				fedbox.WithImageName(fedBOXImageName),
-				fedbox.WithKey(privateKey),
-				fedbox.WithRootIRI(c2sRootIRI),
-				fedbox.WithPw(rand.Text()[:8]),
-				fedbox.WithTestLogger(t, Verbose && test.Label() != "stop"),
-			))
-
-			cont, err := c.Start(ctx, t, images...)
-			if err != nil {
-				t.Fatalf("Error: %s", err)
-			}
-
-			var cancelFn func()
-			ctx, cancelFn = context.WithTimeout(ctx, 2*time.Second)
-
-			test.Run(ctx, cont, t)
-			t.Cleanup(func() {
-				if test.Name != "stop" {
-					cont.Cleanup(t)
-				}
-				cancelFn()
-			})
-		})
+		t.Run(test.Label(), test.Fn(ctx, cont))
 	}
+}
+
+func Test_Commands_StorageBootstrap(t *testing.T) {
+	ctx := t.Context()
+
+	_, privateKey, cont, err := initC2SContainers(ctx, t)
+	if err != nil {
+		t.Fatalf("Error: %s", err)
+	}
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	tests.CommandTest{
+		Name: "storage bootstrap",
+		Host: string(c2sRootIRI),
+		Cmd: c.SSHCmd{
+			Cmd:  []string{"storage", "bootstrap"},
+			User: string(c2sRootIRI),
+			Key:  privateKey,
+		},
+		IO: tests.WithTests(tests.EndOK),
+	}.Run(ctx, cont, t)
+}
+
+func Test_Commands_Maintenance(t *testing.T) {
+	ctx := t.Context()
+
+	_, privateKey, cont, err := initC2SContainers(ctx, t)
+	if err != nil {
+		t.Fatalf("Error: %s", err)
+	}
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	tests.CommandTest{
+		Name: "maintenance",
+		Host: string(c2sRootIRI),
+		Cmd: c.SSHCmd{
+			Cmd:  []string{"maintenance"},
+			User: string(c2sRootIRI),
+			Key:  privateKey,
+		},
+		IO: tests.WithTests(tests.EndOK),
+	}.Run(ctx, cont, t)
+}
+
+func Test_Commands_Stop(t *testing.T) {
+	ctx := t.Context()
+
+	_, privateKey, cont, err := initC2SContainers(ctx, t)
+	if err != nil {
+		t.Fatalf("Error: %s", err)
+	}
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	tests.CommandTest{
+		Name: "stop",
+		Host: string(c2sRootIRI),
+		Cmd: c.SSHCmd{
+			Cmd:  []string{"stop"},
+			User: string(c2sRootIRI),
+			Key:  privateKey,
+		},
+		IO: tests.WithTests(tests.EndOK),
+	}.Run(ctx, cont, t)
 }
