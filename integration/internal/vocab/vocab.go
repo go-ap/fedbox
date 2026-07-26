@@ -116,16 +116,31 @@ func HasTo(i iri) func(*o) error {
 	}
 }
 
-func HasName(n string) func(*o) error {
+func nlv[T ~string | vocab.NaturalLanguageValues](c T) vocab.NaturalLanguageValues {
+	var result vocab.NaturalLanguageValues
+	switch v := any(c).(type) {
+	case string:
+		result = vocab.DefaultNaturalLanguage[string](v)
+	case []byte:
+		result = vocab.DefaultNaturalLanguage(string(v))
+	case vocab.NaturalLanguageValues:
+		result = v
+	}
+	return result
+}
+
+func HasName[T ~string | vocab.NaturalLanguageValues](c T) func(*o) error {
+	v := nlv(c)
 	return func(ob *o) error {
-		ob.Name = EN(n)
+		ob.Name = v
 		return nil
 	}
 }
 
-func HasSummary(n string) func(*o) error {
+func HasSummary[T ~string | vocab.NaturalLanguageValues](c T) func(*o) error {
+	v := nlv(c)
 	return func(ob *o) error {
-		ob.Summary = EN(n)
+		ob.Summary = v
 		return nil
 	}
 }
@@ -138,9 +153,10 @@ func HasSource(c string, mt string) func(*o) error {
 	}
 }
 
-func HasContent(c string) func(*o) error {
+func HasContent[T ~string | vocab.NaturalLanguageValues](c T) func(*o) error {
+	v := nlv(c)
 	return func(ob *o) error {
-		ob.Content = EN(c)
+		ob.Content = v
 		return nil
 	}
 }
@@ -168,9 +184,10 @@ func HasUpdated(s string) func(*o) error {
 	}
 }
 
-func HasPreferredUsername(n string) func(*a) error {
+func HasPreferredUsername[T ~string | vocab.NaturalLanguageValues](c T) func(*a) error {
+	v := nlv(c)
 	return func(act *a) error {
-		act.PreferredUsername = EN(n)
+		act.PreferredUsername = v
 		return nil
 	}
 }

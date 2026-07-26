@@ -15,6 +15,7 @@ import (
 
 type reqBuilder struct {
 	*requests.Builder
+	urlFn  func() string
 	signer func(*http.Request) error
 }
 
@@ -33,6 +34,18 @@ func (rb *reqBuilder) URL(s string) *reqBuilder {
 
 func (rb *reqBuilder) IRI(s vocab.IRI) *reqBuilder {
 	return rb.URL(string(s))
+}
+
+func (rb *reqBuilder) URLFunc(fn func() string) *reqBuilder {
+	rb.urlFn = fn
+	return rb
+}
+
+func (rb *reqBuilder) IRIFunc(fn func() vocab.IRI) *reqBuilder {
+	rb.urlFn = func() string {
+		return string(fn())
+	}
+	return rb
 }
 
 func (rb *reqBuilder) Method(method string) *reqBuilder {
@@ -213,6 +226,11 @@ type redirecter interface {
 func (rb *reqBuilder) Request(ctx context.Context) (*http.Request, error) {
 	if rb == nil {
 		return nil, fmt.Errorf("nil request")
+	}
+	if rb.urlFn != nil {
+		if u, err := rb.Builder.URL(); err != nil || u.Host == "" {
+			rb.Builder.BaseURL(rb.urlFn())
+		}
 	}
 	req, err := rb.Builder.Request(ctx)
 	if err != nil {

@@ -3,9 +3,11 @@
 package integration
 
 import (
+	"net/http"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/client"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/tests"
 )
@@ -21,6 +23,8 @@ func Test_Commands(t *testing.T) {
 		cont.Cleanup(t)
 	})
 
+	clientIRI := new(vocab.IRI)
+	var actorIRI vocab.IRI
 	toRun := []tests.RunnableTest{
 		//tests.CommandTest{
 		//	Name: "--help",
@@ -44,34 +48,70 @@ func Test_Commands(t *testing.T) {
 			},
 			IO: tests.WithTests(tests.EndOK),
 		},
-		tests.CommandTest{
-			Name: "pub actor add",
-			Host: string(c2sRootIRI),
-			Cmd: c.SSHCmd{
-				Cmd:  []string{"pub", "actor", "add", "--type", "Person", "--key-type", "RSA", "--tag", "#sysop", "jdoe"},
-				User: string(c2sRootIRI),
-				Key:  privateKey,
+		tests.TestSuite{
+			Name: "actor add",
+			Tests: []tests.RunnableTest{
+				tests.CommandTest{
+					Name: "pub actor add",
+					Host: string(c2sRootIRI),
+					Cmd: c.SSHCmd{
+						Cmd:  []string{"pub", "actor", "add", "--type", "Person", "--key-type", "RSA", "--tag", "#sysop", "jdoe"},
+						User: string(c2sRootIRI),
+						Key:  privateKey,
+					},
+					IO: tests.WithTests(
+						tests.WithInput(tests.PassMatch, "asd"),
+						tests.WithInput(tests.ConfirmMatch, "asd"),
+						tests.ExtractActorIRI(&actorIRI),
+						tests.EndOK,
+					),
+				},
+				tests.HTTPTest{
+					Name: "check actor iri",
+					Req: tests.Request().IRIFunc(func() vocab.IRI {
+						return actorIRI
+					}),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						HasContentType(client.ContentTypeJsonLD).
+						ItemMatch(
+							tests.IsType(vocab.PersonType),
+							tests.HasPreferredUsername("jdoe"),
+						),
+				},
 			},
-			IO: tests.WithTests(
-				tests.WithInput(tests.PassMatch, "asd"),
-				tests.WithInput(tests.ConfirmMatch, "asd"),
-				tests.ExtractActorIRI(new(vocab.IRI)),
-				tests.EndOK,
-			),
 		},
-		tests.CommandTest{
-			Name: "oauth client add",
-			Host: string(c2sRootIRI),
-			Cmd: c.SSHCmd{
-				Cmd:  []string{"oauth", "client", "add", "--redirect-uri", "http://127.0.0.1"},
-				User: string(c2sRootIRI),
-				Key:  privateKey,
+		tests.TestSuite{
+			Name: "client add",
+			Tests: []tests.RunnableTest{
+				tests.CommandTest{
+					Name: "oauth client add",
+					Host: string(c2sRootIRI),
+					Cmd: c.SSHCmd{
+						Cmd:  []string{"oauth", "client", "add", "--redirect-uri", "http://127.0.0.1"},
+						User: string(c2sRootIRI),
+						Key:  privateKey,
+					},
+					IO: tests.WithTests(
+						tests.WithInput(tests.PassMatch, "asd"),
+						tests.WithInput(tests.ConfirmMatch, "asd"),
+						tests.ExtractActorIRI(clientIRI),
+						tests.EndOK),
+				},
+				tests.HTTPTest{
+					Name: "check actor iri",
+					Req: tests.Request().IRIFunc(func() vocab.IRI {
+						return *clientIRI
+					}),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						HasContentType(client.ContentTypeJsonLD).
+						ItemMatch(
+							tests.IsType(vocab.ApplicationType),
+							tests.HasURL("http://127.0.0.1"),
+						),
+				},
 			},
-			IO: tests.WithTests(
-				tests.WithInput(tests.PassMatch, "asd"),
-				tests.WithInput(tests.ConfirmMatch, "asd"),
-				tests.MatchesRegexp(tests.URLRegexp),
-				tests.EndOK),
 		},
 		tests.CommandTest{
 			Name: "oauth token generate",

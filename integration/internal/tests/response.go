@@ -170,11 +170,40 @@ func IsType(typ vocab.ActivityVocabularyType) itemCheckFn {
 	}
 }
 
-func HasContent(cont vocab.NaturalLanguageValues) itemCheckFn {
+func nlv[T ~string | vocab.NaturalLanguageValues](c T) vocab.NaturalLanguageValues {
+	var result vocab.NaturalLanguageValues
+	switch v := any(c).(type) {
+	case string:
+		result = vocab.DefaultNaturalLanguage[string](v)
+	case []byte:
+		result = vocab.DefaultNaturalLanguage(string(v))
+	case vocab.NaturalLanguageValues:
+		result = v
+	}
+	return result
+}
+
+func HasPreferredUsername[T ~string | vocab.NaturalLanguageValues](name T) itemCheckFn {
+	v := nlv(name)
+	return func(t testing.TB, it vocab.Item) {
+		err := vocab.OnActor(it, func(act *vocab.Actor) error {
+			if !cmp.Equal(v, act.PreferredUsername) {
+				t.Errorf("Failed PreferredUsername check for %s, received %s", act.ID, cmp.Diff(v, act.PreferredUsername))
+			}
+			return nil
+		})
+		if err != nil {
+			t.Errorf("Failed Actor %s check: %v", it.GetID(), err)
+		}
+	}
+}
+
+func HasContent[T ~string | vocab.NaturalLanguageValues](cont T) itemCheckFn {
+	v := nlv(cont)
 	return func(t testing.TB, it vocab.Item) {
 		err := vocab.OnObject(it, func(ob *vocab.Object) error {
-			if !cmp.Equal(cont, ob.Content) {
-				t.Errorf("Failed Content check for %s, received %s", ob.ID, cmp.Diff(cont, ob.Content))
+			if !cmp.Equal(v, ob.Content) {
+				t.Errorf("Failed Content check for %s, received %s", ob.ID, cmp.Diff(v, ob.Content))
 			}
 			return nil
 		})
@@ -191,6 +220,22 @@ func WasPublished(d time.Time) itemCheckFn {
 				t.Errorf("Failed Published date check for %s, received %s, expected %s", ob.ID, ob.Published, d)
 			}
 			return nil
+		})
+		if err != nil {
+			t.Errorf("Failed Object %s check: %v", it.GetID(), err)
+		}
+	}
+}
+
+func HasURL(u string) itemCheckFn {
+	return func(t testing.TB, it vocab.Item) {
+		err := vocab.OnObject(it, func(ob *vocab.Object) error {
+			return vocab.OnItem(ob.URL, func(it vocab.Item) error {
+				if !it.GetLink().Equal(vocab.IRI(u)) {
+					t.Errorf("Object URL %v does not match expected: %s", it, u)
+				}
+				return nil
+			})
 		})
 		if err != nil {
 			t.Errorf("Failed Object %s check: %v", it.GetID(), err)
