@@ -13,12 +13,12 @@ require (
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.16.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
-	github.com/go-ap/activitypub v0.0.0-20260720130625-e2c76676dde7
+	github.com/go-ap/activitypub v0.0.0-20260726121542-1f5299646d89
 	github.com/go-ap/auth v0.0.0-20260723115354-14314ecbba33
-	github.com/go-ap/cache v0.0.0-20260720130756-5966f822532a
-	github.com/go-ap/client v0.0.0-20260723115020-5b594d277d26
+	github.com/go-ap/cache v0.0.0-20260726121806-b16fde52ceaa
+	github.com/go-ap/client v0.0.0-20260726122738-10df2dce1ad6
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
-	github.com/go-ap/filters v0.0.0-20260720130825-55f4e622346f
+	github.com/go-ap/filters v0.0.0-20260726122206-0a4b91e3b913
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
 	github.com/go-ap/processing v0.0.0-20260723115854-9950741edab5
 	github.com/go-chi/chi/v5 v5.3.1
@@ -61,15 +61,15 @@ require (
 	github.com/creack/pty v1.1.24 // indirect
 	github.com/dadrus/httpsig v0.9.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dgraph-io/badger/v4 v4.9.4 // indirect
+	github.com/dgraph-io/badger/v4 v4.9.5 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.4.2 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260720133651-9a77f79975eb // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260720133541-b3b4068d37ec // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260720133415-df574ee684e8 // indirect
-	github.com/go-ap/storage-pg v0.0.0-20260720133924-78f126369345 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260720133505-c65c4f80114e // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260726124421-9705cc7345ff // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260726124340-91648a8b961b // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260726123703-293e7bbb54c7 // indirect
+	github.com/go-ap/storage-pg v0.0.0-20260726124821-2ff5ef1d465c // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260726124308-21db377a296d // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -88,8 +88,8 @@ require (
 	github.com/mariusor/bubbles-tree v0.0.0-20260519151908-a3185afecf1e // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
-	github.com/mattn/go-isatty v0.0.23 // indirect
-	github.com/mattn/go-runewidth v0.0.24 // indirect
+	github.com/mattn/go-isatty v0.0.24 // indirect
+	github.com/mattn/go-runewidth v0.0.27 // indirect
 	github.com/mattn/go-sqlite3 v1.14.48 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
