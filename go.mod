@@ -9,18 +9,18 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/motley v0.0.0-20260701134918-ee840538d90b
 	git.sr.ht/~mariusor/servermux v0.0.0-20260310142041-b6c9be7e7820
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260720134348-fc68655b1df2
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260726150910-84fc65457ef5
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.16.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
 	github.com/go-ap/activitypub v0.0.0-20260726121542-1f5299646d89
-	github.com/go-ap/auth v0.0.0-20260723115354-14314ecbba33
+	github.com/go-ap/auth v0.0.0-20260726123255-8b09c6f58bf3
 	github.com/go-ap/cache v0.0.0-20260726121806-b16fde52ceaa
 	github.com/go-ap/client v0.0.0-20260726122738-10df2dce1ad6
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/filters v0.0.0-20260726122206-0a4b91e3b913
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/processing v0.0.0-20260723115854-9950741edab5
+	github.com/go-ap/processing v0.0.0-20260726123334-62c00da0b414
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
