@@ -92,8 +92,12 @@ func (res resChecks) HasContentType(validContentTypes ...string) resChecks {
 func (res resChecks) HasLocation(l vocab.IRI) resChecks {
 	return append(res, func(t testing.TB, response *http.Response) {
 		loc := response.Header.Get("Location")
-		if l.Equal(vocab.IRI(loc)) {
-			t.Errorf("Location header value %s, does not match expected value: %s", loc, l)
+		if l != "" && loc == "" {
+			t.Errorf("Empty Location header value, does not match expected: %s", l)
+			return
+		}
+		if !l.Equal(vocab.IRI(loc)) {
+			t.Errorf("Location header value %s, does not match expected: %s", loc, l)
 		}
 	})
 }
@@ -132,34 +136,43 @@ func (res resChecks) BodyMust(bodyChecks ...bodyCheckFn) resChecks {
 type itemCheckFn func(testing.TB, vocab.Item)
 
 func (res resChecks) ItemMatch(itemChecks ...itemCheckFn) resChecks {
-	t := append(res, res.HasContentType(client.ContentTypeJsonLD)...)
-	return append(t, func(t testing.TB, r *http.Response) {
-		raw, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Errorf("Unable to read response body: %v", err)
-		}
-		defer func() {
-			if err := r.Body.Close(); err != nil {
-				t.Errorf("Unable to close response body: %v", err)
+	return append(res.HasContentType(client.ContentTypeJsonLD),
+		func(t testing.TB, r *http.Response) {
+			raw, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Errorf("Unable to read response body: %v", err)
 			}
-		}()
+			defer func() {
+				if err := r.Body.Close(); err != nil {
+					t.Errorf("Unable to close response body: %v", err)
+				}
+			}()
 
-		it, err := vocab.UnmarshalJSON(raw)
-		if err != nil {
-			t.Errorf("Failed to unmarshal ActivityPub object from body: %v", err)
-		}
-		if vocab.IsNil(it) && len(itemChecks) > 0 {
-			if maybeErr, err1 := errors.UnmarshalJSON(raw); err1 == nil {
-				t.Errorf("Received error from FedBOX server: %v", maybeErr)
-			} else {
-				t.Errorf("Invalid nil item in response when expecting to run checks")
+			it, err := vocab.UnmarshalJSON(raw)
+			if err != nil {
+				t.Errorf("Failed to unmarshal ActivityPub object from body: %v", err)
 			}
-			return
+			if vocab.IsNil(it) && len(itemChecks) > 0 {
+				if maybeErr, err1 := errors.UnmarshalJSON(raw); err1 == nil {
+					t.Errorf("Received error from FedBOX server: %v", maybeErr)
+				} else {
+					t.Errorf("Invalid nil item in response when expecting to run checks")
+				}
+				return
+			}
+			for _, checkFn := range itemChecks {
+				checkFn(t, it)
+			}
+		},
+	)
+}
+
+func HasID(want vocab.IRI) itemCheckFn {
+	return func(t testing.TB, it vocab.Item) {
+		if got := it.GetID(); !want.Equal(got) {
+			t.Errorf("Object ID check failure on item, received %s, expected %s", got, want)
 		}
-		for _, checkFn := range itemChecks {
-			checkFn(t, it)
-		}
-	})
+	}
 }
 
 func IsType(typ vocab.ActivityVocabularyType) itemCheckFn {

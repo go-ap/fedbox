@@ -106,7 +106,6 @@ func initC2SContainers(ctx context.Context, t *testing.T) (string, crypto.Privat
 		fedbox.WithArgs([]string{"--bootstrap"}),
 		fedbox.WithImageName(fedBOXImageName),
 		fedbox.WithKey(privateKey),
-		fedbox.WithRootIRI(c2sRootIRI),
 		fedbox.WithPw(pw),
 	))
 

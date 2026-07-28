@@ -100,7 +100,7 @@ func buildEnvValues() []string {
 func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string, error) {
 	storageType := ExtractStorageTagFromBuild()
 	envType := ExtractEnvTagFromBuild()
-	tags := []string{"ssh", string(envType)}
+	tags := []string{"integration", "ssh", string(envType)}
 	if storageType != "all" {
 		storageType = storage.Default
 	} else {

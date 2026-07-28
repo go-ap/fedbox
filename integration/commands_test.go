@@ -100,9 +100,7 @@ func Test_Commands(t *testing.T) {
 				},
 				tests.HTTPTest{
 					Name: "check actor iri",
-					Req: tests.Request().IRIFunc(func() vocab.IRI {
-						return *clientIRI
-					}),
+					Req:  tests.Request().IRIFunc(func() vocab.IRI { return *clientIRI }),
 					Res: tests.Response().
 						HasCode(http.StatusOK).
 						HasContentType(client.ContentTypeJsonLD).

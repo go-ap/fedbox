@@ -58,7 +58,7 @@ func (fc fboxContainer) Exec(ctx context.Context, cmd []string, opts ...exec.Pro
 	if len(initFns) == 0 {
 		return 0, nil, fmt.Errorf("no SSH authorization methods found")
 	}
-	if len(fc.img.rootIRI) == 0 {
+	if len(fc.img.conf.Hostname) == 0 {
 		return 0, nil, fmt.Errorf("no user for SSH authorization found")
 	}
 	config := &ssh.ClientConfig{

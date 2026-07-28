@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"net"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -278,7 +279,7 @@ func WithPassword(pw []byte) tc.CustomizeRequestOption {
 	}
 }
 
-func WithInitScript() tc.CustomizeRequestOption {
+func WithPostgresInitScript() tc.CustomizeRequestOption {
 	initScript := `CREATE USER storage;
 GRANT ALL PRIVILEGES ON DATABASE storage TO storage;
 `
@@ -311,20 +312,32 @@ func WithMocks(items ...vocab.Item) tc.CustomizeRequestOption {
 }
 
 func WithStorage(storage string) tc.CustomizeRequestOption {
-	base := filepath.Dir(storage)
 	return func(req *tc.GenericContainerRequest) error {
-		_ = filepath.WalkDir(storage, func(path string, d fs.DirEntry, err error) error {
+		//req.HostConfigModifier = func(hostConfig *container.HostConfig) {
+		//	if hostConfig.Binds == nil {
+		//		hostConfig.Binds = make([]string, 0, 1)
+		//	}
+		//	hostConfig.Binds = append(hostConfig.Binds, storage+":/storage")
+		//}
+		sr, err := os.OpenRoot(storage)
+		if err != nil {
+			return err
+		}
+		err = fs.WalkDir(sr.FS(), ".", func(path string, d fs.DirEntry, err error) error {
 			if d.IsDir() {
 				return nil
 			}
 			cf := tc.ContainerFile{
-				HostFilePath:      path,
-				ContainerFilePath: filepath.Join("/storage", strings.TrimPrefix(path, base)),
+				HostFilePath:      filepath.Join(storage, path),
+				ContainerFilePath: filepath.Join("/storage", path),
 				FileMode:          0600,
 			}
 			req.Files = append(req.Files, cf)
 			return nil
 		})
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 }

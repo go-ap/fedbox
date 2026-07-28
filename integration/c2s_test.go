@@ -4,8 +4,11 @@ package integration
 
 import (
 	"context"
+	"crypto"
 	"crypto/rand"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
@@ -17,6 +20,7 @@ import (
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
+	"github.com/go-ap/storage-conformance-suite/gen"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -53,27 +57,27 @@ func Test_Fetch(t *testing.T) {
 		ap.HasTo("https://www.w3.org/ns/activitystreams#Public"),
 	)
 
-	contentTypes := []string{client.ContentTypeJsonLD, client.ContentTypeJsonActivity}
+	contentType := client.ContentTypeJsonLD
 	toRun := []tests.HTTPTest{
 		{
 			Name: "service",
 			Req:  tests.Request().IRI(c2sRootIRI),
-			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentTypes...).HasExactItem(service),
+			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentType).HasExactItem(service),
 		},
 		{
 			Name: "actors/1",
 			Req:  tests.Request().IRI(admin1.ID),
-			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentTypes...).HasExactItem(admin1),
+			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentType).HasExactItem(admin1),
 		},
 		{
 			Name: "objects/0",
 			Req:  tests.Request().IRI(tag0.ID),
-			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentTypes...).HasExactItem(tag0),
+			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentType).HasExactItem(tag0),
 		},
 		{
 			Name: "objects/1",
 			Req:  tests.Request().IRI(object1.ID),
-			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentTypes...).HasExactItem(object1),
+			Res:  tests.Response().HasCode(http.StatusOK).HasContentType(contentType).HasExactItem(object1),
 		},
 		{
 			Name: "actors/2",
@@ -87,7 +91,6 @@ func Test_Fetch(t *testing.T) {
 		fedbox.WithArgs([]string{"--bootstrap"}),
 		fedbox.WithTestLogger(t, Verbose),
 		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithRootIRI(c2sRootIRI),
 		fedbox.WithKey(privateKey),
 		fedbox.WithPw(rand.Text()[:8]),
 		fedbox.WithItems(tag0, object1, admin1, actor2),
@@ -105,6 +108,87 @@ func Test_Fetch(t *testing.T) {
 
 	for _, test := range toRun {
 		t.Run(test.Name, test.Fn(ctx, cont))
+	}
+}
+
+func plausibleRandomObjects(pubKey crypto.PublicKey, cnt int) vocab.ItemCollection {
+	gen.DefaultHost = c2sRootIRI
+	gen.Root = root(c2sRootIRI, ap.HasPublicKey(pubKey))
+	randomObjects := make(vocab.ItemCollection, 0, cnt)
+	for _, ob := range gen.PlausibleStorage(gen.Root, cnt) {
+		if it, ok := ob.(vocab.Item); ok {
+			randomObjects = append(randomObjects, it)
+		}
+	}
+	return randomObjects
+}
+
+func Test_CollectionFilters(t *testing.T) {
+	publicKey, privateKey, _ := ed25519.GenerateKey(rand.Reader)
+	pw := rand.Text()[:8]
+
+	tempDir := t.TempDir()
+	tempRoot, err := os.OpenRoot(tempDir)
+	if err != nil {
+		t.Fatalf("Error, unable to open temp dir: %v", err)
+	}
+
+	importFileName := "import.json"
+	importFile, err := tempRoot.Create(importFileName)
+	if err != nil {
+		t.Fatalf("Error, unable to create import file: %v", err)
+	}
+
+	rawImport, err := vocab.MarshalJSON(plausibleRandomObjects(publicKey, 60))
+	if err != nil {
+		t.Fatalf("Error, unable to generate import json: %v", err)
+	}
+	_, err = importFile.Write(rawImport)
+	if err != nil {
+		t.Fatalf("Error, unable to write import file: %v", err)
+	}
+	_ = importFile.Close()
+
+	importCmd := c.SSHCmd{
+		Cmd:  []string{"pub", "import", "--skip-remotes", filepath.Join("/storage", importFileName)},
+		User: string(c2sRootIRI),
+		Pw:   []byte(pw),
+		Key:  privateKey,
+	}
+
+	images := c.Suite(fedbox.New(
+		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+		fedbox.WithArgs([]string{"--bootstrap"}),
+		fedbox.WithStorage(tempDir),
+		fedbox.WithTestLogger(t, Verbose),
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithKey(privateKey),
+		fedbox.WithPw(pw),
+		fedbox.WithCmd(importCmd),
+	))
+
+	ctx := context.Background()
+	cont, err := c.Start(ctx, t, images...)
+	if err != nil {
+		t.Fatalf("Error: %s", err)
+	}
+
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	toRun := []tests.RunnableTest{
+		tests.HTTPTest{
+			Name: "root outbox",
+			Req:  tests.Request().IRI(vocab.Outbox.IRI(c2sRootIRI)),
+			Res: tests.Response().HasCode(http.StatusOK).
+				ItemMatch(
+					tests.IsType(vocab.OrderedCollectionPageType),
+				),
+		},
+	}
+	for _, test := range toRun {
+		t.Run(test.Label(), test.Fn(ctx, cont))
 	}
 }
 
@@ -195,7 +279,35 @@ func Test_C2S_Requests(t *testing.T) {
 			IO: tests.WithTests(tests.GetToken(token), tests.AnyOutput),
 		},
 		tests.HTTPTest{
-			Name: "to outbox",
+			Name: "create to outbox",
+			Req: tests.Request().IRI(admin.Outbox.GetLink()).
+				Post().
+				ContentType(client.ContentTypeJsonLD).
+				Signer(token.Sign).
+				BodyItem(&vocab.Activity{
+					Type:  vocab.CreateType,
+					Actor: admin.ID,
+					To:    vocab.ItemCollection{vocab.PublicNS},
+					Object: &vocab.Object{
+						ID:        admin.ID.AddPath("note-1"),
+						Type:      vocab.NoteType,
+						Content:   vocab.DefaultNaturalLanguage("test"),
+						Published: MockDate,
+					},
+					Published: MockDate,
+				}),
+			Res: tests.Response().
+				HasCode(http.StatusCreated).
+				HasLocation(c2sRootIRI.AddPath("activities/create-2")).
+				ItemMatch(
+					tests.HasID(admin.ID.AddPath("note-1")),
+					tests.IsType(vocab.NoteType),
+					tests.HasContent("test"),
+					tests.WasPublished(MockDate),
+				),
+		},
+		tests.HTTPTest{
+			Name: "flag to outbox",
 			Req: tests.Request().IRI(admin.Outbox.GetLink()).
 				Post().
 				ContentType(client.ContentTypeJsonLD).
@@ -208,8 +320,8 @@ func Test_C2S_Requests(t *testing.T) {
 				}),
 			Res: tests.Response().
 				HasCode(http.StatusCreated).
-				HasLocation(admin.ID).
 				ItemMatch(
+					tests.HasID(c2sRootIRI.AddPath("activities/flag-3")),
 					tests.IsType(vocab.FlagType),
 					tests.HasActor(admin.ID),
 					tests.HasObject(admin.ID),
@@ -222,7 +334,6 @@ func Test_C2S_Requests(t *testing.T) {
 		fedbox.WithImageName(fedBOXImageName),
 		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
 		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithRootIRI(c2sRootIRI),
 		fedbox.WithKey(prvKey), fedbox.WithPw(rand.Text()[:8]),
 		fedbox.WithItems(tagAdmin, admin),
 		fedbox.WithTestLogger(t, Verbose),

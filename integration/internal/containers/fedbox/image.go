@@ -36,14 +36,11 @@ func (t *tbLogger) Accept(l tc.Log) {
 
 type fboxImage struct {
 	name    string
-	args    []string
 	conf    *config.Options
-	env     map[string]string
-	rootIRI string
 	key     crypto.PrivateKey
 	pw      []byte
 	mocks   vocab.ItemCollection
-	cmds    []tc.Executable
+	initFns []tc.ContainerCustomizer
 	logger  *tbLogger
 }
 
@@ -63,15 +60,20 @@ func (f *fboxImage) Name() string {
 	return f.name
 }
 
-func (f *fboxImage) InitFns(t testing.TB) []tc.ContainerCustomizer {
-	initFns := []tc.ContainerCustomizer{c.WithImage(f.name), c.WithEnvFromConfig(*f.conf)}
-	if len(f.env) > 0 {
-		initFns = append(initFns, c.WithEnv(f.env))
+func (f *fboxImage) RootIRI() string {
+	if f.conf.BaseURL != "" {
+		return f.conf.BaseURL
 	}
+	proto := "http"
+	if f.conf.Secure {
+		proto += "s"
+	}
+	return proto + "://" + f.conf.Hostname
+}
 
-	if f.args != nil {
-		initFns = append(initFns, tc.WithCmdArgs(f.args...))
-	}
+func (f *fboxImage) InitFns(t testing.TB) []tc.ContainerCustomizer {
+	initFns := append(f.initFns, c.WithImage(f.name), c.WithEnvFromConfig(*f.conf))
+
 	if f.key != nil {
 		initFns = append(initFns, c.WithPrivateKey(f.key))
 	}
@@ -80,7 +82,7 @@ func (f *fboxImage) InitFns(t testing.TB) []tc.ContainerCustomizer {
 	}
 	if len(f.mocks) > 0 {
 		sshCmd := func(cmd ...string) c.SSHCmd {
-			return c.SSHCmd{Cmd: cmd, User: f.rootIRI, Key: f.key, Pw: f.pw}
+			return c.SSHCmd{Cmd: cmd, User: f.RootIRI(), Key: f.key, Pw: f.pw}
 		}
 
 		importCmd := sshCmd( /*ctlBin, "--env", envType, */ "pub", "import", "/storage/import.json")
@@ -95,7 +97,7 @@ func (f *fboxImage) InitFns(t testing.TB) []tc.ContainerCustomizer {
 
 func initPGSidecar(ctx context.Context, f *fboxImage, extra ...tc.ContainerCustomizer) (tc.Container, error) {
 	pgInitFns := []tc.ContainerCustomizer{
-		c.WithInitScript(),
+		c.WithPostgresInitScript(),
 		postgres.WithDatabase("storage"),
 		postgres.WithUsername("postgres"),
 		postgres.WithPassword("postgres"),
@@ -207,12 +209,6 @@ func WithImageName(name string) imageInitFn {
 	}
 }
 
-func WithRootIRI(user vocab.IRI) imageInitFn {
-	return func(f *fboxImage) {
-		f.rootIRI = string(user)
-	}
-}
-
 func WithKey(key crypto.PrivateKey) imageInitFn {
 	return func(f *fboxImage) {
 		f.key = key
@@ -227,7 +223,7 @@ func WithPw(pw string) imageInitFn {
 
 func WithEnv(m map[string]string) imageInitFn {
 	return func(f *fboxImage) {
-		f.env = m
+		f.initFns = append(f.initFns, c.WithEnv(m))
 	}
 }
 
@@ -239,18 +235,25 @@ func WithConfig(opts config.Options) imageInitFn {
 
 func WithArgs(args []string) imageInitFn {
 	return func(f *fboxImage) {
-		f.args = args
+		f.initFns = append(f.initFns, tc.WithCmdArgs(args...))
 	}
 }
 
 func WithCmd(cmds ...tc.Executable) imageInitFn {
 	return func(f *fboxImage) {
-		f.cmds = cmds
+		f.initFns = append(f.initFns, tc.WithAfterReadyCommand(cmds...))
+	}
+}
+
+func WithStorage(path string) imageInitFn {
+	return func(f *fboxImage) {
+		f.initFns = append(f.initFns, c.WithStorage(path))
 	}
 }
 
 func New(fns ...imageInitFn) *fboxImage {
 	img := new(fboxImage)
+	img.initFns = make([]tc.ContainerCustomizer, 0, 4)
 	for _, fn := range fns {
 		fn(img)
 	}

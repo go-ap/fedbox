@@ -833,7 +833,12 @@ func hostFromUrl(uu string) string {
 func errOnRequest(t *testing.T) func(testPair) map[string]any {
 	c := &http.Client{
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       20 * time.Second,
+			TLSHandshakeTimeout:   2 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
 		},
 		Timeout: 400 * time.Second,
 	}
