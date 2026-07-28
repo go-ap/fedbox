@@ -19,7 +19,9 @@ type Accounts struct {
 	Pass    ChangePassword `cmd:"" help:"Change password for an actor."`
 }
 
-type Export struct{}
+type Export struct {
+	To string `flag:"" name:"path"`
+}
 
 func (e Export) Run(ctl *Base) error {
 	metaLoader, ok := ctl.Storage.(storage.MetadataStorage)
@@ -47,11 +49,20 @@ func (e Export) Run(ctl *Base) error {
 	}
 
 	allMeta := ap.LoadMetadataForItems(metaLoader)
-	bytes, err := jsonld.Marshal(allMeta)
+	buff, err := jsonld.Marshal(allMeta)
 	if err != nil {
 		return err
 	}
-	_, _ = fmt.Fprintf(ctl.out, "%s\n", bytes)
+	where := os.Stdout
+	if e.To != "" {
+		f, err := os.OpenFile(e.To, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		where = f
+	}
+	_, _ = fmt.Fprintf(where, "%s\n", buff)
 	return nil
 }
 
@@ -80,6 +91,7 @@ func (i Import) Run(ctl *Base) error {
 			Errf(ctl.err, "Empty file %s", f.Name())
 			continue
 		}
+		_ = f.Close()
 
 		start := time.Now()
 		if err = ap.SaveMetadataForItems(metaLoader, buf); err != nil {

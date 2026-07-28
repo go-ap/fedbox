@@ -328,7 +328,7 @@ func (i ImportCmd) Run(ctl *Base) error {
 }
 
 type ExportCmd struct {
-	File string `help:"The path where to output the items, if absent it will be printed to stdout."`
+	To string `name:"to" optional:"" help:"The To where to output the items, if absent it will be printed to stdout."`
 }
 
 func dumpAll(ctl *Base, iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection, error) {
@@ -365,9 +365,12 @@ func (e ExportCmd) Run(ctl *Base) error {
 	sort.Slice(objects, func(i, j int) bool {
 		return vocab.ItemOrderTimestamp(objects[i], objects[j])
 	})
+	for i, it := range objects {
+		objects[i] = vocab.FlattenProperties(it)
+	}
 	where := os.Stdout
-	if e.File != "" {
-		f, err := os.OpenFile(e.File, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if e.To != "" {
+		f, err := os.OpenFile(e.To, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			return err
 		}
