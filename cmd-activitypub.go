@@ -249,7 +249,7 @@ func (a AddCmd) Run(ctl *Base) error {
 type ImportCmd struct {
 	Base        vocab.IRI  `flag:"" help:"The base IRI to replace"`
 	SkipRemotes bool       `flag:"" help:"Do not try to disseminate to remote recipients"`
-	Files       []*os.File `arg:""`
+	Files       []*os.File `arg:"" help:"The files containing the JSON encoded items."`
 }
 
 func (i ImportCmd) Run(ctl *Base) error {
@@ -329,7 +329,7 @@ func (i ImportCmd) Run(ctl *Base) error {
 }
 
 type ExportCmd struct {
-	To string `name:"to" optional:"" help:"The To where to output the items, if absent it will be printed to stdout."`
+	To string `name:"to" optional:"" help:"The files where to output the items, if absent it will be printed to stdout."`
 }
 
 func dumpAll(ctl *Base, iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection, error) {

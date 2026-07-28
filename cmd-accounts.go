@@ -20,7 +20,7 @@ type Accounts struct {
 }
 
 type Export struct {
-	To string `flag:"" name:"path"`
+	To string `flag:"" help:"The file where to output the items, if absent it will be printed to stdout."`
 }
 
 func (e Export) Run(ctl *Base) error {
@@ -67,7 +67,7 @@ func (e Export) Run(ctl *Base) error {
 }
 
 type Import struct {
-	Files []*os.File `arg:""`
+	Files []*os.File `arg:"" help:"The file containing the JSON encoded items."`
 }
 
 func (i Import) Run(ctl *Base) error {
