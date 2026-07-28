@@ -247,8 +247,9 @@ func (a AddCmd) Run(ctl *Base) error {
 }
 
 type ImportCmd struct {
-	Base  vocab.IRI  `help:"The base IRI to replace"`
-	Files []*os.File `arg:""`
+	Base        vocab.IRI  `flag:"" help:"The base IRI to replace"`
+	SkipRemotes bool       `flag:"" help:"Do not try to disseminate to remote recipients"`
+	Files       []*os.File `arg:""`
 }
 
 func (i ImportCmd) Run(ctl *Base) error {
@@ -301,7 +302,7 @@ func (i ImportCmd) Run(ctl *Base) error {
 						if err != nil {
 							actor = &vocab.Actor{ID: a.Actor.GetLink()}
 						}
-						activityPub := ctl.Saver(&ctl.Service)
+						activityPub := ctl.Saver(&ctl.Service, i.SkipRemotes)
 						it, err = activityPub.ProcessClientActivity(it, *actor, vocab.Outbox.Of(a.Actor).GetLink())
 						return err
 					})

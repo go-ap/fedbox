@@ -137,12 +137,22 @@ func KeyPairFromPrivateBytes(prvBytes []byte) (*KeyPair, error) {
 	return pair, nil
 }
 
+func KeyGenerator(metaSaver storage.MetadataStorage, typ KeyType) func(act *vocab.Actor) error {
+	return func(act *vocab.Actor) error {
+		pair, err := GenerateKeyPair(typ)
+		if err != nil {
+			return err
+		}
+		return AddKeyToPerson(metaSaver, *pair)(act)
+	}
+}
+
 func GenerateKeyPair(typ KeyType) (*KeyPair, error) {
 	var pub crypto.PublicKey
 	var prv crypto.PrivateKey
 	var err error
-	switch typ {
 
+	switch typ {
 	case KeyTypeED25519:
 		pub, prv, err = ed25519.GenerateKey(rand.Reader)
 	case KeyTypeRSA:

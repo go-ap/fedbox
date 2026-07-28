@@ -231,7 +231,7 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, by vocab.Item) (vocab.ID, er
 	}
 }
 
-func (ctl *Base) Saver(actor *vocab.Actor) processing.P {
+func (ctl *Base) Saver(actor *vocab.Actor, onlyLocalSaves bool) processing.P {
 	baseIRI := ctl.Service.ID
 
 	db := ctl.Storage
@@ -247,9 +247,13 @@ func (ctl *Base) Saver(actor *vocab.Actor) processing.P {
 	if vocab.IsNil(actor) {
 		actor = &ctl.Service
 	}
+	if onlyLocalSaves {
+		// NOTE(marius): currently setting the retry count to a negative value
+		// is the only way to avoid remote dissemination.
+		initFns = append(initFns, processing.WithDisseminationRetryCount(-1))
+	}
 	initFns = append(initFns, processing.WithClient(ActorClient(ctl, actor)))
-	p := processing.New(initFns...)
-	return p
+	return processing.New(initFns...)
 }
 
 func (ctl *Base) AddActor(p *vocab.Actor, author vocab.Actor) (*vocab.Actor, error) {
@@ -276,7 +280,7 @@ func (ctl *Base) AddActor(p *vocab.Actor, author vocab.Actor) (*vocab.Actor, err
 		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
 	}
 
-	_, err := ctl.Saver(&author).ProcessClientActivity(create, author, outbox.GetLink())
+	_, err := ctl.Saver(&author, false).ProcessClientActivity(create, author, outbox.GetLink())
 	if err != nil && !errors.IsConflict(err) {
 		return nil, err
 	}
@@ -305,7 +309,7 @@ func (ctl *Base) AddObject(p *vocab.Object, author vocab.Actor) (*vocab.Object, 
 		return nil, errors.NotFoundf("unable to load current's instance Application actor: %s", ctl.Conf.BaseURL)
 	}
 
-	processor := ctl.Saver(&author)
+	processor := ctl.Saver(&author, false)
 	outbox := vocab.Outbox.Of(author).GetLink()
 	if vocab.IsNil(outbox) {
 		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
@@ -370,7 +374,7 @@ func (ctl *Base) DeleteObjects(reason string, inReplyTo []string, ids ...vocab.I
 	}
 	d.Object = delItems
 
-	if _, err := ctl.Saver(&ctl.Service).ProcessClientActivity(d, self, vocab.Outbox.Of(d.Actor).GetLink()); err != nil {
+	if _, err := ctl.Saver(&ctl.Service, false).ProcessClientActivity(d, self, vocab.Outbox.Of(d.Actor).GetLink()); err != nil {
 		return err
 	}
 

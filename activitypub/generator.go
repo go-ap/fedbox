@@ -1,7 +1,8 @@
+//go:build !integration
+
 package ap
 
 import (
-	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/pborman/uuid"
 )
@@ -45,14 +46,4 @@ func GenerateID(it vocab.Item, partOf vocab.IRI, by vocab.Item) (vocab.ID, error
 		o.ID = id
 		return nil
 	})
-}
-
-func KeyGenerator(metaSaver storage.MetadataStorage, typ KeyType) func(act *vocab.Actor) error {
-	return func(act *vocab.Actor) error {
-		pair, err := GenerateKeyPair(typ)
-		if err != nil {
-			return err
-		}
-		return AddKeyToPerson(metaSaver, *pair)(act)
-	}
 }

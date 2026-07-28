@@ -150,7 +150,7 @@ func (g GenKeys) Run(ctl *Base) error {
 	for _, actor := range actors {
 		// NOTE(marius): we initialize the client that we're going to use for Update
 		// dissemination with an HTTP-Signature based on the current private key.
-		saver := ctl.Saver(actor)
+		saver := ctl.Saver(actor, false)
 		pair, _ := ap.GenerateKeyPair(ap.KeyType(typ))
 		if pair != nil {
 			if err := ap.AddKeyToItem(metaSaver, actor, *pair); err != nil {
