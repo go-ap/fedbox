@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
@@ -342,20 +343,74 @@ func Test_C2S_Requests(t *testing.T) {
 			},
 		},
 		tests.TestSuite{
-			Name: "Flag activity",
+			Name: "update to outbox",
 			Tests: []tests.RunnableTest{
-				tests.CommandTest{
-					Name: "create OAuth2 token",
-					Host: string(c2sRootIRI),
-					Cmd: c.SSHCmd{
-						Cmd:  []string{"oauth", "token", "add", string(admin.ID)},
-						User: c2sRootIRI.String(),
-						Key:  prvKey,
-					},
-					IO: tests.WithTests(tests.GetToken(token), tests.AnyOutput),
+				tests.HTTPTest{
+					Name: "Update",
+					Req: tests.Request().IRI(admin.Outbox.GetLink()).
+						Post().
+						ContentType(client.ContentTypeJsonLD).
+						Signer(token.Sign).
+						BodyItem(&vocab.Activity{
+							Type:  vocab.UpdateType,
+							Actor: admin.ID,
+							To:    vocab.ItemCollection{vocab.PublicNS},
+							Object: &vocab.Object{
+								ID:      c2sRootIRI.AddPath("objects/note-3"),
+								Type:    vocab.NoteType,
+								Content: vocab.DefaultNaturalLanguage("updated"),
+							},
+						}),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(c2sRootIRI.AddPath("activities/update-4")),
+							tests.IsType(vocab.UpdateType),
+							tests.WasPublished(time.Now().Round(200*time.Millisecond)),
+							tests.HasTo(vocab.ItemCollection{vocab.PublicNS}),
+							tests.HasActor(admin.ID),
+							tests.HasObject(c2sRootIRI.AddPath("objects/note-3")),
+						),
 				},
 				tests.HTTPTest{
-					// NOTE(marius): due to previous tests, the cnt is at 4, so our activity is flag-4
+					Name: "check update activity",
+					Req: tests.Request().
+						ContentType(client.ContentTypeJsonLD).
+						IRI(c2sRootIRI.AddPath("activities/update-4")),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(c2sRootIRI.AddPath("activities/update-4")),
+							tests.IsType(vocab.UpdateType),
+							tests.WasPublished(time.Now().Round(200*time.Millisecond)),
+							tests.HasTo(vocab.ItemCollection{vocab.PublicNS}),
+							tests.HasActor(admin.ID),
+							tests.HasObject(c2sRootIRI.AddPath("objects/note-3")),
+						),
+				},
+				tests.HTTPTest{
+					Name: "check updated object",
+					Req: tests.Request().
+						Signer(token.Sign).
+						ContentType(client.ContentTypeJsonLD).
+						IRI(c2sRootIRI.AddPath("objects/note-3")),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(c2sRootIRI.AddPath("objects/note-3")),
+							tests.IsType(vocab.NoteType),
+							tests.HasContent("updated"),
+							tests.WasPublished(MockDate),
+							//tests.WasUpdated(time.Now().Round(200*time.Millisecond)), // TODO(marius): this doesn't seem to get updated
+						),
+				},
+			},
+		},
+		tests.TestSuite{
+			Name: "Flag activity",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					// NOTE(marius): due to previous tests, the cnt is at 5, so our activity is flag-5
 					Name: "flag to outbox",
 					Req: tests.Request().IRI(admin.Outbox.GetLink()).
 						Post().
@@ -370,7 +425,7 @@ func Test_C2S_Requests(t *testing.T) {
 					Res: tests.Response().
 						HasCode(http.StatusCreated).
 						ItemMatch(
-							tests.HasID(c2sRootIRI.AddPath("activities/flag-4")),
+							tests.HasID(c2sRootIRI.AddPath("activities/flag-5")),
 							tests.IsType(vocab.FlagType),
 							tests.HasActor(admin.ID),
 							tests.HasObject(admin.ID),

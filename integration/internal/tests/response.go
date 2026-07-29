@@ -254,6 +254,20 @@ func HasCC(cc vocab.Item) itemCheckFn {
 	}
 }
 
+func WasUpdated(d time.Time) itemCheckFn {
+	return func(t testing.TB, it vocab.Item) {
+		err := vocab.OnObject(it, func(ob *vocab.Object) error {
+			if !cmp.Equal(d, ob.Updated, cmpopts.EquateApproxTime(time.Second)) {
+				t.Errorf("Failed Updated date check for %s, received %s, expected %s", ob.ID, ob.Updated, d)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Errorf("Failed Object %s check: %v", it.GetID(), err)
+		}
+	}
+}
+
 func WasPublished(d time.Time) itemCheckFn {
 	return func(t testing.TB, it vocab.Item) {
 		err := vocab.OnObject(it, func(ob *vocab.Object) error {
