@@ -226,6 +226,34 @@ func HasContent[T ~string | vocab.NaturalLanguageValues](cont T) itemCheckFn {
 	}
 }
 
+func HasTo(to vocab.Item) itemCheckFn {
+	return func(t testing.TB, it vocab.Item) {
+		err := vocab.OnObject(it, func(ob *vocab.Object) error {
+			if !cmp.Equal(to, ob.To, equateItems) {
+				t.Errorf("Failed To check for %s, received %s, expected %s", ob.ID, ob.To, to)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Errorf("Failed Object %s check: %v", it.GetID(), err)
+		}
+	}
+}
+
+func HasCC(cc vocab.Item) itemCheckFn {
+	return func(t testing.TB, it vocab.Item) {
+		err := vocab.OnObject(it, func(ob *vocab.Object) error {
+			if !cmp.Equal(cc, ob.CC, equateItems) {
+				t.Errorf("Failed CC check for %s, received %s, expected %s", ob.ID, ob.CC, cc)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Errorf("Failed Object %s check: %v", it.GetID(), err)
+		}
+	}
+}
+
 func WasPublished(d time.Time) itemCheckFn {
 	return func(t testing.TB, it vocab.Item) {
 		err := vocab.OnObject(it, func(ob *vocab.Object) error {

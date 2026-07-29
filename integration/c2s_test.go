@@ -193,18 +193,18 @@ func Test_CollectionFilters(t *testing.T) {
 }
 
 func Test_C2S_Requests(t *testing.T) {
-	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
-	_, admKey, _ := ed25519.GenerateKey(rand.Reader)
+	publicKey, prvKey, _ := ed25519.GenerateKey(rand.Reader)
+
+	service := root(c2sRootIRI, ap.HasPublicKey(publicKey))
 
 	tagAdmin := object(c2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
 	admin := person(
 		c2sRootIRI.AddPath("actors/1"),
 		ap.HasPreferredUsername("admin"),
 		ap.HasTag(tagAdmin),
-		ap.HasPublicKey(admKey.Public()),
 	)
 
-	draftSig := s2s.New(s2s.WithActor(admin, admKey))
+	draftSig := s2s.New(s2s.WithActor(service, prvKey))
 	token := new(c2s.BearerSigner)
 
 	contentTypes := []string{client.ContentTypeJsonLD, client.ContentTypeJsonActivity}
@@ -268,65 +268,116 @@ func Test_C2S_Requests(t *testing.T) {
 					errors.BadRequestf("Activity is not valid: invalid activity id"),
 				),
 		},
-		tests.CommandTest{
-			Name: "gen OAuth2 bearer",
-			Host: string(c2sRootIRI),
-			Cmd: c.SSHCmd{
-				Cmd:  []string{"oauth", "token", "add", string(admin.ID)},
-				User: c2sRootIRI.String(),
-				Key:  prvKey,
-			},
-			IO: tests.WithTests(tests.GetToken(token), tests.AnyOutput),
-		},
-		tests.HTTPTest{
+		tests.TestSuite{
 			Name: "create to outbox",
-			Req: tests.Request().IRI(admin.Outbox.GetLink()).
-				Post().
-				ContentType(client.ContentTypeJsonLD).
-				Signer(token.Sign).
-				BodyItem(&vocab.Activity{
-					Type:  vocab.CreateType,
-					Actor: admin.ID,
-					To:    vocab.ItemCollection{vocab.PublicNS},
-					Object: &vocab.Object{
-						ID:        admin.ID.AddPath("note-1"),
-						Type:      vocab.NoteType,
-						Content:   vocab.DefaultNaturalLanguage("test"),
-						Published: MockDate,
+			Tests: []tests.RunnableTest{
+				tests.CommandTest{
+					// NOTE(marius): this command generates an activity and increases object count to 2
+					Name: "create OAuth2 token",
+					Host: string(c2sRootIRI),
+					Cmd: c.SSHCmd{
+						Cmd:  []string{"oauth", "token", "add", string(admin.ID)},
+						User: c2sRootIRI.String(),
+						Key:  prvKey,
 					},
-					Published: MockDate,
-				}),
-			Res: tests.Response().
-				HasCode(http.StatusCreated).
-				HasLocation(c2sRootIRI.AddPath("activities/create-2")).
-				ItemMatch(
-					tests.HasID(admin.ID.AddPath("note-1")),
-					tests.IsType(vocab.NoteType),
-					tests.HasContent("test"),
-					tests.WasPublished(MockDate),
-				),
+					IO: tests.WithTests(tests.GetToken(token), tests.AnyOutput),
+				},
+				tests.HTTPTest{
+					Name: "Create",
+					Req: tests.Request().IRI(admin.Outbox.GetLink()).
+						Post().
+						ContentType(client.ContentTypeJsonLD).
+						Signer(token.Sign).
+						BodyItem(&vocab.Activity{
+							Type:  vocab.CreateType,
+							Actor: admin.ID,
+							To:    vocab.ItemCollection{vocab.PublicNS},
+							Object: &vocab.Object{
+								Type:      vocab.NoteType,
+								Content:   vocab.DefaultNaturalLanguage("test"),
+								Published: MockDate,
+							},
+							Published: MockDate,
+						}),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						HasLocation(c2sRootIRI.AddPath("activities/create-2")).
+						ItemMatch(
+							tests.HasID(c2sRootIRI.AddPath("objects/note-3")),
+							tests.IsType(vocab.NoteType),
+							tests.HasContent("test"),
+							tests.WasPublished(MockDate),
+							tests.HasTo(vocab.ItemCollection{vocab.PublicNS}),
+						),
+				},
+				tests.HTTPTest{
+					Name: "check activity",
+					Req: tests.Request().
+						ContentType(client.ContentTypeJsonLD).
+						IRI(c2sRootIRI.AddPath("activities/create-2")),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(c2sRootIRI.AddPath("activities/create-2")),
+							tests.IsType(vocab.CreateType),
+							tests.HasActor(admin.ID),
+							tests.HasObject(c2sRootIRI.AddPath("objects/note-3")),
+						),
+				},
+				tests.HTTPTest{
+					Name: "check object",
+					Req: tests.Request().
+						Signer(token.Sign).
+						ContentType(client.ContentTypeJsonLD).
+						IRI(c2sRootIRI.AddPath("objects/note-3")),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(c2sRootIRI.AddPath("objects/note-3")),
+							tests.IsType(vocab.NoteType),
+							tests.HasContent("test"),
+							tests.WasPublished(MockDate),
+						),
+				},
+			},
 		},
-		tests.HTTPTest{
-			Name: "flag to outbox",
-			Req: tests.Request().IRI(admin.Outbox.GetLink()).
-				Post().
-				ContentType(client.ContentTypeJsonLD).
-				Signer(token.Sign).
-				BodyItem(&vocab.Activity{
-					Type:      vocab.FlagType,
-					Actor:     admin.ID,
-					Object:    admin.ID,
-					Published: MockDate,
-				}),
-			Res: tests.Response().
-				HasCode(http.StatusCreated).
-				ItemMatch(
-					tests.HasID(c2sRootIRI.AddPath("activities/flag-3")),
-					tests.IsType(vocab.FlagType),
-					tests.HasActor(admin.ID),
-					tests.HasObject(admin.ID),
-					tests.WasPublished(MockDate),
-				),
+		tests.TestSuite{
+			Name: "Flag activity",
+			Tests: []tests.RunnableTest{
+				tests.CommandTest{
+					Name: "create OAuth2 token",
+					Host: string(c2sRootIRI),
+					Cmd: c.SSHCmd{
+						Cmd:  []string{"oauth", "token", "add", string(admin.ID)},
+						User: c2sRootIRI.String(),
+						Key:  prvKey,
+					},
+					IO: tests.WithTests(tests.GetToken(token), tests.AnyOutput),
+				},
+				tests.HTTPTest{
+					// NOTE(marius): due to previous tests, the cnt is at 4, so our activity is flag-4
+					Name: "flag to outbox",
+					Req: tests.Request().IRI(admin.Outbox.GetLink()).
+						Post().
+						ContentType(client.ContentTypeJsonLD).
+						Signer(token.Sign).
+						BodyItem(&vocab.Activity{
+							Type:      vocab.FlagType,
+							Actor:     admin.ID,
+							Object:    admin.ID,
+							Published: MockDate,
+						}),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(c2sRootIRI.AddPath("activities/flag-4")),
+							tests.IsType(vocab.FlagType),
+							tests.HasActor(admin.ID),
+							tests.HasObject(admin.ID),
+							tests.WasPublished(MockDate),
+						),
+				},
+			},
 		},
 	}
 

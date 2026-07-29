@@ -67,21 +67,30 @@ func root(rootIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Actor {
 	return ap.Actor(initFn...)
 }
 
+func baseIRI(iri vocab.IRI) vocab.IRI {
+	ub, err := iri.GetLink().URL()
+	if err != nil {
+		return iri
+	}
+	ub.Path = ""
+	ub.RawQuery = ""
+	ub.Fragment = ""
+	return vocab.IRI(ub.String())
+}
+
 func person(actorIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Actor {
-	rootU, _ := actorIRI.URL()
-	rootU.Path = ""
-	rootIRI := vocab.IRI(rootU.String())
+	serviceIRI := baseIRI(actorIRI)
 	initFn = append([]ap.InitFn{
 		ap.HasID(actorIRI),
 		ap.HasType(vocab.PersonType),
 		ap.HasAttributedTo(actorIRI),
 		ap.HasAudience(vocab.PublicNS),
-		ap.HasGenerator(rootIRI),
+		ap.HasGenerator(serviceIRI),
 		ap.HasURL(actorIRI),
 		ap.HasAuthEp(vocab.CollectionPath("oauth/authorize").IRI(actorIRI)),
 		ap.HasTokenEp(vocab.CollectionPath("oauth/token").IRI(actorIRI)),
-		ap.HasSharedInbox(vocab.Inbox.IRI(rootIRI)),
-		ap.HasProxyURL(vocab.CollectionPath("proxyUrl").IRI(rootIRI)),
+		ap.HasSharedInbox(vocab.Inbox.IRI(serviceIRI)),
+		ap.HasProxyURL(vocab.CollectionPath("proxyUrl").IRI(serviceIRI)),
 	}, initFn...)
 	return ap.Actor(initFn...)
 }

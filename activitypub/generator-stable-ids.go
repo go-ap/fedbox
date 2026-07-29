@@ -28,20 +28,22 @@ func baseIRI(iri vocab.IRI) vocab.IRI {
 func GenerateID(it vocab.Item, partOf vocab.IRI, by vocab.Item) (vocab.ID, error) {
 	typ := it.GetType()
 	typLbl := "tag"
-	base := partOf
+	base := baseIRI(partOf)
 	if base == "" {
-		_ = vocab.OnObject(it, func(ob *vocab.Object) error {
-			base = baseIRI(ob.AttributedTo.GetLink())
-			return nil
-		})
-		switch {
-		case vocab.ActorTypes.Match(typ):
-			base = filters.ActorsType.IRI(base)
-		case append(vocab.ActivityTypes, vocab.IntransitiveActivityTypes...).Match(typ):
-			base = filters.ActivitiesType.IRI(base)
-		default:
-			base = filters.ObjectsType.IRI(base)
+		if base = baseIRI(by.GetID()); base == "" {
+			_ = vocab.OnObject(it, func(ob *vocab.Object) error {
+				base = baseIRI(ob.AttributedTo.GetLink())
+				return nil
+			})
 		}
+	}
+	switch {
+	case vocab.ActorTypes.Match(typ):
+		base = filters.ActorsType.IRI(base)
+	case append(vocab.ActivityTypes, vocab.IntransitiveActivityTypes...).Match(typ):
+		base = filters.ActivitiesType.IRI(base)
+	default:
+		base = filters.ObjectsType.IRI(base)
 	}
 
 	if typ != nil {
