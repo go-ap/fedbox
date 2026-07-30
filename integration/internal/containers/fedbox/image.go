@@ -85,8 +85,9 @@ func (f *fboxImage) InitFns(t testing.TB) []tc.ContainerCustomizer {
 			return c.SSHCmd{Cmd: cmd, User: f.RootIRI(), Key: f.key, Pw: f.pw}
 		}
 
-		importCmd := sshCmd( /*ctlBin, "--env", envType, */ "pub", "import", "/storage/import.json")
-		// NOTE(marius): we add the mocks to the import file, and the SSH command to actually import it.
+		// NOTE(marius): we add the mocks to the import file,
+		// and then the SSH command to actually import it without remote dissemination.
+		importCmd := sshCmd( /*ctlBin, "--env", envType, */ "pub", "import", "--skip-remotes", "/storage/import.json")
 		initFns = append(initFns, c.WithMocks(f.mocks...), tc.WithAfterReadyCommand(importCmd))
 	}
 	if f.logger != nil {

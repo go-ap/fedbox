@@ -40,5 +40,13 @@ fi
 CMD=$(command -v podman || which docker)
 
 #$CMD pull ${_what}
-$CMD run --security-opt no-new-privileges --pull=newer --network=host --name="${_name}" --replace -v "${_env}:/.env" -v "${_storage}:/storage" --env-file="${_env}" "${_what}" ${@}
+$CMD run --security-opt no-new-privileges --pull=newer --network=host --name="${_name}" --replace \
+    -v "${_env}:/.env" -v "${_storage}:/storage" \
+    -v "$(pwd)/images/fedbox.local.key:/storage/fedbox.local.key" \
+    -v "$(pwd)/images/fedbox.local.crt:/storage/fedbox.local.crt" \
+    --env HOSTNAME=fedbox.local \
+    --env STORAGE_PATH=/storage \
+    --env CERT_PATH=/storage/fedbox.local.crt \
+    --env KEY_PATH=/storage/fedbox.local.key \
+    --env-file="${_env}" "${_what}" ${@}
 

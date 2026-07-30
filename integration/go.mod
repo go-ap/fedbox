@@ -4,16 +4,16 @@ go 1.25.9
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260728143334-76b96ce2660d
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260730171407-df9fe516b63c
 	github.com/carlmjohnson/requests v0.25.1
 	github.com/elnormous/contenttype v1.0.4
-	github.com/go-ap/activitypub v0.0.0-20260728101245-29ad8d823d52
-	github.com/go-ap/client v0.0.0-20260728141705-7e0e75901bed
+	github.com/go-ap/activitypub v0.0.0-20260730100035-a64b9d392262
+	github.com/go-ap/client v0.0.0-20260730164540-d95e618f8fd4
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/fedbox v0.0.0-20260717173704-0c1f2719fe9d
-	github.com/go-ap/filters v0.0.0-20260728141602-d17cbb6bba25
-	github.com/go-ap/storage-conformance-suite v0.0.0-20260728142034-448e8dbf5d39
-	github.com/go-ap/storage-pg v0.0.0-20260728142831-47508c2438c8
+	github.com/go-ap/filters v0.0.0-20260730164443-1e2ebeb8cf42
+	github.com/go-ap/storage-conformance-suite v0.0.0-20260730170412-e05d153d2143
+	github.com/go-ap/storage-pg v0.0.0-20260730171159-b25ad4bf6bf7
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.20.7
 	github.com/google/ko v0.18.1
@@ -32,6 +32,7 @@ require (
 	git.sr.ht/~mariusor/cache v0.0.0-20260516133819-5427e9c3067b // indirect
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/mask v0.0.0-20250114195353-98705a6977b7 // indirect
+	git.sr.ht/~mariusor/ssm v0.0.0-20260505081700-875e54c38633 // indirect
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -106,12 +107,13 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/go-ap/cache v0.0.0-20260728141544-0135f166141c // indirect
+	github.com/go-ap/cache v0.0.0-20260730100116-cf6babfea406 // indirect
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38 // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260728142510-b3103c00bd59 // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260728142339-77d0695fb2ef // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260728142131-a61b312a24c5 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260728142219-65e02cc71a95 // indirect
+	github.com/go-ap/processing v0.0.0-20260716111245-78d0ef51171a // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260730170950-963ad898c1d4 // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260730170924-206d14fbeeaa // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260730170634-9fed06fcc21f // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260730170739-1d5f73079625 // indirect
 	github.com/go-chi/chi/v5 v5.3.1 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
@@ -166,7 +168,7 @@ require (
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-runewidth v0.0.24 // indirect
-	github.com/mattn/go-sqlite3 v1.14.48 // indirect
+	github.com/mattn/go-sqlite3 v1.14.49 // indirect
 	github.com/mfridman/tparse v0.18.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
@@ -260,7 +262,7 @@ require (
 	modernc.org/libc v1.74.4 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.54.0 // indirect
+	modernc.org/sqlite v1.55.0 // indirect
 	quamina.net/go/quamina/v2 v2.0.2 // indirect
 	sigs.k8s.io/kind v0.31.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect

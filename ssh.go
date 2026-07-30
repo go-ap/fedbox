@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/ssh"
 	"charm.land/wish/v2"
 	bm "charm.land/wish/v2/bubbletea"
 	"charm.land/wish/v2/logging"
@@ -18,7 +19,6 @@ import (
 	"git.sr.ht/~mariusor/mask"
 	m "git.sr.ht/~mariusor/servermux"
 	"github.com/alecthomas/kong"
-	"github.com/charmbracelet/ssh"
 	vocab "github.com/go-ap/activitypub"
 	"golang.org/x/crypto/ed25519"
 	gossh "golang.org/x/crypto/ssh"

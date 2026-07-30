@@ -10,6 +10,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
+	"github.com/go-ap/filters"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -322,6 +323,47 @@ func HasObject(iri vocab.IRI) itemCheckFn {
 		})
 		if err != nil {
 			t.Errorf("Failed Activity %s check: %v", it.GetID(), err)
+		}
+	}
+}
+
+func HasTotalItems(cnt int) itemCheckFn {
+	return func(t testing.TB, it vocab.Item) {
+		err := vocab.OnOrderedCollection(it, func(col *vocab.OrderedCollection) error {
+			if int(col.TotalItems) != cnt {
+				t.Errorf("Failed totalItems check for %s, received %d, expected %d", it.GetID(), col.TotalItems, cnt)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Errorf("Failed collection %s check: %v", it.GetID(), err)
+		}
+	}
+}
+
+func HasItems(items ...vocab.Item) itemCheckFn {
+	return func(t testing.TB, got vocab.Item) {
+		err := vocab.OnOrderedCollection(got, func(col *vocab.OrderedCollection) error {
+			gotItems := col.OrderedItems
+			for i, it := range items {
+				maybeFound, _ := filters.Checks{filters.SameID(it.GetID())}.Run(gotItems).(vocab.ItemCollection)
+				if maybeFound.Count() == 0 {
+					t.Errorf("Failed items check, item at pos %d does not exist in collection: %s", i, it.GetLink())
+					return nil
+				}
+				found := maybeFound.First()
+				if !it.GetLink().Equal(found.GetLink()) {
+					t.Errorf("Failed items check, item at pos %d differs: %s", i, cmp.Diff(it.GetLink(), found.GetLink()))
+					return nil
+				}
+				if !cmp.Equal(found, it, equateItems) {
+					t.Logf("Failed items check, item at pos %d differs: %s", i, cmp.Diff(it, found, equateItems))
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			t.Errorf("Failed collection %s check: %v", got.GetID(), err)
 		}
 	}
 }

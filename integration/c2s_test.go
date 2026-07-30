@@ -6,9 +6,8 @@ import (
 	"context"
 	"crypto"
 	"crypto/rand"
+	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -17,10 +16,12 @@ import (
 	"github.com/go-ap/client/c2s"
 	"github.com/go-ap/client/s2s"
 	"github.com/go-ap/errors"
+	ap2 "github.com/go-ap/fedbox/activitypub"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
+	"github.com/go-ap/filters"
 	"github.com/go-ap/storage-conformance-suite/gen"
 	"golang.org/x/crypto/ed25519"
 )
@@ -113,8 +114,14 @@ func Test_Fetch(t *testing.T) {
 }
 
 func plausibleRandomObjects(pubKey crypto.PublicKey, cnt int) vocab.ItemCollection {
+	service := root(c2sRootIRI, ap.HasPublicKey(pubKey))
+
 	gen.DefaultHost = c2sRootIRI
-	gen.Root = root(c2sRootIRI, ap.HasPublicKey(pubKey))
+	gen.SetItemID = func(it vocab.Item) {
+		ap2.GenerateID(it, c2sRootIRI, service)
+	}
+	gen.Root = service
+
 	randomObjects := make(vocab.ItemCollection, 0, cnt)
 	for _, ob := range gen.PlausibleStorage(gen.Root, cnt) {
 		if it, ok := ob.(vocab.Item); ok {
@@ -128,44 +135,15 @@ func Test_CollectionFilters(t *testing.T) {
 	publicKey, privateKey, _ := ed25519.GenerateKey(rand.Reader)
 	pw := rand.Text()[:8]
 
-	tempDir := t.TempDir()
-	tempRoot, err := os.OpenRoot(tempDir)
-	if err != nil {
-		t.Fatalf("Error, unable to open temp dir: %v", err)
-	}
-
-	importFileName := "import.json"
-	importFile, err := tempRoot.Create(importFileName)
-	if err != nil {
-		t.Fatalf("Error, unable to create import file: %v", err)
-	}
-
-	rawImport, err := vocab.MarshalJSON(plausibleRandomObjects(publicKey, 60))
-	if err != nil {
-		t.Fatalf("Error, unable to generate import json: %v", err)
-	}
-	_, err = importFile.Write(rawImport)
-	if err != nil {
-		t.Fatalf("Error, unable to write import file: %v", err)
-	}
-	_ = importFile.Close()
-
-	importCmd := c.SSHCmd{
-		Cmd:  []string{"pub", "import", "--skip-remotes", filepath.Join("/storage", importFileName)},
-		User: string(c2sRootIRI),
-		Pw:   []byte(pw),
-		Key:  privateKey,
-	}
-
+	items := plausibleRandomObjects(publicKey, 60)
 	images := c.Suite(fedbox.New(
 		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
 		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithStorage(tempDir),
 		fedbox.WithTestLogger(t, Verbose),
 		fedbox.WithImageName(fedBOXImageName),
 		fedbox.WithKey(privateKey),
 		fedbox.WithPw(pw),
-		fedbox.WithCmd(importCmd),
+		fedbox.WithItems(items...),
 	))
 
 	ctx := context.Background()
@@ -178,6 +156,62 @@ func Test_CollectionFilters(t *testing.T) {
 		cont.Cleanup(t)
 	})
 
+	byAdminFilter := filters.Checks{filters.Actor(filters.SameID(c2sRootIRI))}
+	adminItems, _ := byAdminFilter.Run(items).(vocab.ItemCollection)
+	adminItemIRIs := adminItems.IRIs()
+
+	// NOTE(marius): we get only the actors created by the Service actor
+	createActorsFilter := filters.Checks{
+		filters.HasType(vocab.CreateType),
+		filters.Actor(filters.SameID(c2sRootIRI)),
+		filters.Object(filters.HasType(vocab.ActorTypes...)),
+	}
+
+	actorCreateItems, _ := createActorsFilter.Run(items).(vocab.ItemCollection)
+	actorItems := make(vocab.ItemCollection, 0, len(actorCreateItems))
+	for _, act := range actorCreateItems {
+		_ = vocab.OnActivity(act, func(act *vocab.Activity) error {
+			actorItems = append(actorItems, act.Object)
+			return nil
+		})
+	}
+
+	filterIRI := func(iri vocab.IRI, ff ...filters.Check) vocab.IRI {
+		if len(ff) == 0 {
+			return iri
+		}
+		return vocab.IRI(string(iri) + "?" + filters.ToValues(ff...).Encode())
+	}
+	addTest := func(actor vocab.Item, ff ...filters.Check) tests.HTTPTest {
+		name := vocab.NameOf(actor)
+		testName := fmt.Sprintf("%s outbox", name)
+		if len(ff) > 0 {
+			testName = fmt.Sprintf("%s outbox:%s", name, filters.Checks(ff).GoString())
+		}
+
+		// NOTE(marius): we filter the global items collection for what matches current actor and filters
+		wantItems, _ := append(filters.Checks{filters.Actor(filters.SameID(actor.GetLink()))}, ff...).Run(items).(vocab.ItemCollection)
+		wantItemIRIs := wantItems.IRIs()
+		return tests.HTTPTest{
+			Name: testName,
+			Req:  tests.Request().IRI(filterIRI(vocab.Outbox.IRI(actor), ff...)),
+			Res: tests.Response().HasCode(http.StatusOK).
+				ItemMatch(
+					tests.IsType(vocab.OrderedCollectionPageType),
+					tests.HasTotalItems(len(wantItemIRIs)),
+					tests.HasItems(wantItems...),
+				),
+		}
+	}
+
+	actorTests := func(actors ...vocab.Item) []tests.RunnableTest {
+		tests := make([]tests.RunnableTest, 0, len(actors))
+		for _, act := range actors {
+			tests = append(tests, addTest(act))
+		}
+		return tests
+	}
+
 	toRun := []tests.RunnableTest{
 		tests.HTTPTest{
 			Name: "root outbox",
@@ -185,9 +219,13 @@ func Test_CollectionFilters(t *testing.T) {
 			Res: tests.Response().HasCode(http.StatusOK).
 				ItemMatch(
 					tests.IsType(vocab.OrderedCollectionPageType),
+					tests.HasTotalItems(len(adminItems)+1), // NOTE(marius): +1 from the bootstrap Create:Service activity
+					tests.HasItems(adminItemIRIs.Collection()...),
 				),
 		},
 	}
+	toRun = append(toRun, actorTests(actorItems...)...)
+
 	for _, test := range toRun {
 		t.Run(test.Label(), test.Fn(ctx, cont))
 	}

@@ -7,9 +7,9 @@ import (
 	"log/slog"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/ssh"
 	"charm.land/wish/v2/bubbletea"
 	"git.sr.ht/~mariusor/motley"
-	"github.com/charmbracelet/ssh"
 	vocab "github.com/go-ap/activitypub"
 )
 

@@ -256,10 +256,11 @@ func (i ImportCmd) Run(ctl *Base) error {
 	baseIRI := ctl.Conf.BaseURL
 	toReplace := i.Base
 
+	var col vocab.ItemCollection
 	for _, f := range i.Files {
 		buf, err := io.ReadAll(f)
 		if err != nil {
-			Errf(ctl.err, "Error %s", err)
+			Errf(ctl.err, "Error %v", err)
 			continue
 		}
 		if len(buf) == 0 {
@@ -272,58 +273,87 @@ func (i ImportCmd) Run(ctl *Base) error {
 		}
 		ob, err := vocab.UnmarshalJSON(buf)
 		if err != nil {
-			Errf(ctl.err, "Error unmarshaling JSON: %s", err)
+			Errf(ctl.err, "Error unmarshaling JSON: %v", err)
 			continue
 		}
 
-		col := ob
-		if !ob.IsCollection() {
+		if vocab.IsItemCollection(ob) {
+			var isItThough bool
+			if col, isItThough = ob.(vocab.ItemCollection); !isItThough {
+				Errf(ctl.err, "Invalid item collection unmarshaled: %v", err)
+			}
+		} else {
 			col = vocab.ItemCollection{ob}
 		}
-		start := time.Now()
-		count := 0
-		_ = vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
-			for _, it := range c.Collection() {
-				typ := it.GetType()
-				_, _ = fmt.Fprintf(ctl.out, "Saving %s\n", it.GetID())
+	}
 
-				var err error
-				if vocab.ActivityTypes.Match(typ) || vocab.IntransitiveActivityTypes.Match(typ) {
-					_ = vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
-						if a == nil {
-							Errf(ctl.err, "invalid activity, is nil: %s", it.GetLink())
-							return nil
-						}
-						if a.Actor == nil {
-							Errf(ctl.err, "invalid activity, actor is nil: %s", it.GetLink())
-							return nil
-						}
-						actor, err := vocab.ToActor(a.Actor)
-						if err != nil {
-							actor = &vocab.Actor{ID: a.Actor.GetLink()}
-						}
-						activityPub := ctl.Saver(&ctl.Service, i.SkipRemotes)
-						it, err = activityPub.ProcessClientActivity(it, *actor, vocab.Outbox.Of(a.Actor).GetLink())
-						return err
-					})
-				} else {
-					it, err = ctl.Storage.Save(it)
-				}
-				if err != nil {
-					Errf(ctl.err, "Unable to save %s %s: %s", it.GetType(), it.GetID(), err)
-					continue
-				}
-				count++
-			}
-			return nil
-		})
-		tot := time.Now().Sub(start)
-		_, _ = fmt.Fprintf(ctl.out, "Elapsed time:          %4s\n", tot)
-		if count > 0 {
-			perIt := time.Duration(int64(tot) / int64(count))
-			_, _ = fmt.Fprintf(ctl.out, "Elapsed time per item: %4s\n", perIt)
+	activities := make(vocab.ItemCollection, 0, len(col))
+	objects := make(vocab.ItemCollection, 0, len(col))
+	for _, it := range col {
+		typ := it.GetType()
+		if vocab.ActivityTypes.Match(typ) || vocab.IntransitiveActivityTypes.Match(typ) {
+			activities = append(activities, it)
+		} else {
+			objects = append(objects, it)
 		}
 	}
+
+	count := 0
+	start := time.Now()
+	for _, it := range activities {
+		_, _ = fmt.Fprintf(ctl.out, "Processing %s %s\n", it.GetType(), it.GetID())
+		err := vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
+			if a == nil {
+				Errf(ctl.err, "invalid activity, is nil: %s", it.GetLink())
+				return nil
+			}
+			if a.Actor == nil {
+				Errf(ctl.err, "invalid activity, actor is nil: %s", it.GetLink())
+				return nil
+			}
+			actor, err := vocab.ToActor(a.Actor)
+			if err != nil {
+				actor = &vocab.Actor{ID: a.Actor.GetLink()}
+			}
+			activityPub := ctl.Saver(&ctl.Service, i.SkipRemotes)
+			it, err = activityPub.ProcessClientActivity(it, *actor, vocab.Outbox.Of(a.Actor).GetLink())
+			return err
+		})
+		if err != nil {
+			Errf(ctl.err, "Unable to process %s %s: %v", it.GetType(), it.GetID(), err)
+			continue
+		}
+		count++
+	}
+
+	tot := time.Now().Sub(start)
+	_, _ = fmt.Fprintf(ctl.out, "Activities processing time:          %3s\n", tot)
+	if count > 0 {
+		perIt := time.Duration(int64(tot) / int64(count))
+		_, _ = fmt.Fprintf(ctl.out, "Elapsed time per activity: %3s\n", perIt)
+	}
+
+	count = 0
+	start = time.Now()
+	for _, it := range objects {
+		// NOTE(marius): need to check if already created by activities processing
+		exists, err := ctl.Storage.Load(it.GetLink())
+		if (err != nil && errors.IsNotFound(err)) || vocab.IsNil(exists) {
+			if _, err := ctl.Storage.Save(it); err != nil {
+				Errf(ctl.err, "Unable to save %s %s: %v", it.GetType(), it.GetID(), err)
+				continue
+			}
+		}
+		count++
+	}
+
+	tot = time.Now().Sub(start)
+	_, _ = fmt.Fprintf(ctl.out, "Elapsed item save time:          %4s\n", tot)
+	if count > 0 {
+		perIt := time.Duration(int64(tot) / int64(count))
+		_, _ = fmt.Fprintf(ctl.out, "Elapsed time per item: %4s\n", perIt)
+	}
+
 	_, _ = fmt.Fprintf(ctl.out, "Import done!\n")
 	return nil
 }
@@ -440,7 +470,7 @@ func (i IndexCmd) Run(ctl *Base) error {
 	}
 
 	if err := indexer.Reindex(); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Indexing failed: %s", err)
+		_, _ = fmt.Fprintf(os.Stderr, "Indexing failed: %v\n", err)
 		return err
 	}
 

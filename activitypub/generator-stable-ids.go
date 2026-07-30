@@ -49,10 +49,20 @@ func GenerateID(it vocab.Item, partOf vocab.IRI, by vocab.Item) (vocab.ID, error
 	if typ != nil {
 		typLbl = strings.ToLower(typ.AsTypes().String())
 	}
-	err := vocab.OnObject(it, func(o *vocab.Object) error {
-		cnt.Add(1)
-		o.ID = base.AddPath(typLbl + "-" + strconv.FormatInt(cnt.Load(), 10))
-		return nil
-	})
+	var err error
+	switch {
+	case vocab.IsLink(it):
+		err = vocab.OnLink(it, func(l *vocab.Link) error {
+			cnt.Add(1)
+			l.ID = base.AddPath(typLbl + "-" + strconv.FormatInt(cnt.Load(), 10))
+			return nil
+		})
+	case vocab.IsObject(it):
+		err = vocab.OnObject(it, func(o *vocab.Object) error {
+			cnt.Add(1)
+			o.ID = base.AddPath(typLbl + "-" + strconv.FormatInt(cnt.Load(), 10))
+			return nil
+		})
+	}
 	return it.GetID(), err
 }
