@@ -8,15 +8,13 @@ MAKEFLAGS += --no-builtin-rules
 ENV ?= dev
 STORAGE ?= all
 
-TAGS ?=
-
 PODMAN_SOCKET ?= /run/user/$(shell id -u)/podman/podman.sock
 
 ifneq ($(STORAGE),)
-TAGS := $(TAGS),storage_$(STORAGE)
+STORAGE_TAG = storage_$(STORAGE),
 endif
 
-TEST_FLAGS ?= -timeout 90s -count=1 -tags '$(TAGS)'
+TEST_FLAGS ?= -timeout 90s -count=1 -tags '$(STORAGE_TAG)integration,$(TAGS)'
 
 .PHONY: download test
 
