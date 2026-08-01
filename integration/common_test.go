@@ -40,6 +40,13 @@ var (
 	s2sRootIRI = rootIRI(defaultS2SOptions)
 
 	MockDate = time.Date(2001, time.April, 1, 0, 0, 0, 00, time.UTC)
+
+	RootCreate = &vocab.Activity{
+		ID:     filters.ActivitiesType.IRI(c2sRootIRI).AddPath("create-1"),
+		Type:   vocab.CreateType,
+		Actor:  c2sRootIRI,
+		Object: c2sRootIRI,
+	}
 )
 
 func rootIRI(conf config.Options) vocab.IRI {

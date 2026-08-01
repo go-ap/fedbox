@@ -345,15 +345,19 @@ func HasItems(items ...vocab.Item) itemCheckFn {
 	return func(t testing.TB, got vocab.Item) {
 		err := vocab.OnOrderedCollection(got, func(col *vocab.OrderedCollection) error {
 			gotItems := col.OrderedItems
+			if len(gotItems) != len(items) {
+				t.Errorf("Failed items check, the amount of received items %d does not match the expected count: %d", len(gotItems), len(items))
+				return nil
+			}
 			for i, it := range items {
 				maybeFound, _ := filters.Checks{filters.SameID(it.GetID())}.Run(gotItems).(vocab.ItemCollection)
 				if maybeFound.Count() == 0 {
 					t.Errorf("Failed items check, item at pos %d does not exist in collection: %s", i, it.GetLink())
 					return nil
 				}
-				found := maybeFound.First()
-				if !it.GetLink().Equal(found.GetLink()) {
-					t.Errorf("Failed items check, item at pos %d differs: %s", i, cmp.Diff(it.GetLink(), found.GetLink()))
+				gotIt := maybeFound.First()
+				if !it.GetLink().Equal(gotIt.GetLink()) {
+					t.Errorf("Failed items check, item at pos %d differs: %s", i, cmp.Diff(it.GetLink(), gotIt.GetLink()))
 					return nil
 				}
 				if !cmp.Equal(found, it, equateItems) {
