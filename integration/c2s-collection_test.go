@@ -8,9 +8,8 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net/http"
-	"slices"
+	"sort"
 	"testing"
-	"time"
 
 	vocab "github.com/go-ap/activitypub"
 	ap2 "github.com/go-ap/fedbox/activitypub"
@@ -83,9 +82,10 @@ func actorTests(items vocab.ItemCollection) func(actors ...vocab.Item) []tests.R
 
 func paginateByIRIs(items vocab.ItemCollection, cnt int) vocab.IRIs {
 	result := make(vocab.IRIs, 0, len(items)/cnt)
-	for i, it := range items {
+	for i := range items {
 		if (i+1)%cnt == 0 {
-			result = append(result, it.GetLink())
+			next := items[i]
+			result = append(result, next.GetLink())
 		}
 	}
 	return result
@@ -102,7 +102,7 @@ func addRootInboxTest(items vocab.ItemCollection) func(ff ...filters.Check) test
 			Res: tests.Response().HasCode(http.StatusOK).
 				ItemMatch(
 					tests.IsType(vocab.OrderedCollectionPageType),
-					tests.HasTotalItems(len(items)+1), // NOTE(marius): the Create Service activity is also here.
+					tests.HasTotalItems(len(items)),
 					tests.HasItems(wantItems...),
 				),
 		}
@@ -110,21 +110,9 @@ func addRootInboxTest(items vocab.ItemCollection) func(ff ...filters.Check) test
 }
 
 func rootInboxPaginationTest(items []vocab.Item) func(cnt int) []tests.RunnableTest {
-	slices.SortFunc(items, func(a vocab.Item, b vocab.Item) int {
-		var t1 time.Time
-		var t2 time.Time
-		_ = vocab.OnObject(a, func(o *vocab.Object) error {
-			t1 = o.Published
-			return nil
-		})
-		_ = vocab.OnObject(b, func(o *vocab.Object) error {
-			t2 = o.Published
-			return nil
-		})
-		return int(t1.Sub(t2))
-	})
 	return func(cnt int) []tests.RunnableTest {
-		tests := make([]tests.RunnableTest, 0, len(items)/cnt)
+		tests := make([]tests.RunnableTest, 0, len(items)/cnt+1)
+		tests = append(tests, addRootInboxTest(items)(filters.WithMaxCount(cnt)))
 		for _, it := range paginateByIRIs(items, cnt) {
 			tests = append(tests, addRootInboxTest(items)(filters.After(filters.SameID(it.GetLink())), filters.WithMaxCount(cnt)))
 		}
@@ -157,8 +145,9 @@ func Test_CollectionFilters(t *testing.T) {
 		cont.Cleanup(t)
 	})
 
-	byAdminFilter := filters.Checks{filters.Actor(filters.SameID(c2sRootIRI))}
-	adminItems, _ := byAdminFilter.Run(items).(vocab.ItemCollection)
+	sort.SliceStable(items, func(i int, j int) bool {
+		return vocab.ItemOrderTimestamp(items[i], items[j])
+	})
 
 	// NOTE(marius): we get only the actors created by the Service actor
 	createActorsFilter := filters.Checks{
@@ -175,6 +164,9 @@ func Test_CollectionFilters(t *testing.T) {
 			return nil
 		})
 	}
+
+	byAdminFilter := filters.Checks{filters.Actor(filters.SameID(c2sRootIRI))}
+	adminItems, _ := byAdminFilter.Run(items).(vocab.ItemCollection)
 
 	allOutboxItems := append(vocab.ItemCollection{RootCreate}, adminItems...)
 	allInboxItems := append(vocab.ItemCollection{RootCreate}, items...)
@@ -201,9 +193,10 @@ func Test_CollectionFilters(t *testing.T) {
 		},
 	}
 
-	//toRun = append(toRun, rootInboxPaginationTest(0)...)
-	//toRun = append(toRun, rootInboxPaginationTest(6)...)
-	toRun = append(toRun, rootInboxPaginationTest(items)(10)...)
+	toRun = append(toRun, rootInboxPaginationTest(allInboxItems)(2)...)
+	toRun = append(toRun, rootInboxPaginationTest(allInboxItems)(6)...)
+	toRun = append(toRun, rootInboxPaginationTest(allInboxItems)(10)...)
+	toRun = append(toRun, rootInboxPaginationTest(allInboxItems)(30)...)
 	toRun = append(toRun, actorTests(items)(actorItems...)...)
 
 	for _, test := range toRun {

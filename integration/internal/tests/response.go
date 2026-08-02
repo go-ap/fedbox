@@ -272,7 +272,7 @@ func WasUpdated(d time.Time) itemCheckFn {
 func WasPublished(d time.Time) itemCheckFn {
 	return func(t testing.TB, it vocab.Item) {
 		err := vocab.OnObject(it, func(ob *vocab.Object) error {
-			if !cmp.Equal(d, ob.Published, cmpopts.EquateApproxTime(time.Second)) {
+			if !cmp.Equal(d, ob.Published, cmpopts.EquateApproxTime(2*time.Second)) {
 				t.Errorf("Failed Published date check for %s, received %s, expected %s", ob.ID, ob.Published, d)
 			}
 			return nil
@@ -360,8 +360,8 @@ func HasItems(items ...vocab.Item) itemCheckFn {
 					t.Errorf("Failed items check, item at pos %d differs: %s", i, cmp.Diff(it.GetLink(), gotIt.GetLink()))
 					return nil
 				}
-				if !cmp.Equal(found, it, equateItems) {
-					t.Logf("Failed items check, item at pos %d differs: %s", i, cmp.Diff(it, found, equateItems))
+				if !cmp.Equal(gotIt, it, equateItems) {
+					t.Logf("Failed items check, item at pos %d are not totally identical: %s", i, cmp.Diff(it, gotIt, equateItems))
 				}
 			}
 			return nil

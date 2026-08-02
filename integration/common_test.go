@@ -42,10 +42,11 @@ var (
 	MockDate = time.Date(2001, time.April, 1, 0, 0, 0, 00, time.UTC)
 
 	RootCreate = &vocab.Activity{
-		ID:     filters.ActivitiesType.IRI(c2sRootIRI).AddPath("create-1"),
-		Type:   vocab.CreateType,
-		Actor:  c2sRootIRI,
-		Object: c2sRootIRI,
+		ID:        filters.ActivitiesType.IRI(c2sRootIRI).AddPath("create-1"),
+		Type:      vocab.CreateType,
+		Actor:     c2sRootIRI,
+		Object:    c2sRootIRI,
+		Published: time.Now().Round(2 * time.Second), // NOTE(marius): to order it at the top of the collection
 	}
 )
 
