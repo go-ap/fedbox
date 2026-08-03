@@ -132,3 +132,11 @@ func initC2SContainers(ctx context.Context, t *testing.T) (string, crypto.Privat
 	}
 	return pw, privateKey, running, nil
 }
+
+func buildFilterURL(iri vocab.IRI, ff ...filters.Check) string {
+	if filters.MaxCountCheck(ff...) == nil {
+		// NOTE(marius): the FedBOX server appends a maxItems filter of 100 if it's missing.
+		ff = append(ff, filters.WithMaxCount(filters.MaxItems))
+	}
+	return string(iri) + "?" + filters.ToValues(ff...).Encode()
+}

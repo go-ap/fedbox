@@ -37,47 +37,39 @@ func plausibleRandomObjects(pubKey crypto.PublicKey, cnt int) vocab.ItemCollecti
 			randomObjects = append(randomObjects, it)
 		}
 	}
+
 	return randomObjects
 }
 
-func buildFilterURL(iri vocab.IRI, ff ...filters.Check) string {
-	if len(ff) == 0 {
-		return string(iri)
+func addActorOutboxTest(items vocab.ItemCollection, actor vocab.Item, ff ...filters.Check) tests.HTTPTest {
+	name := vocab.NameOf(actor)
+	testName := fmt.Sprintf("%s outbox", name)
+	if len(ff) > 0 {
+		testName = fmt.Sprintf("%s outbox:%s", name, filters.Checks(ff).GoString())
 	}
-	return string(iri) + "?" + filters.ToValues(ff...).Encode()
-}
 
-func addActorOutboxTest(items vocab.ItemCollection) func(actor vocab.Item, ff ...filters.Check) tests.HTTPTest {
-	return func(actor vocab.Item, ff ...filters.Check) tests.HTTPTest {
-		name := vocab.NameOf(actor)
-		testName := fmt.Sprintf("%s outbox", name)
-		if len(ff) > 0 {
-			testName = fmt.Sprintf("%s outbox:%s", name, filters.Checks(ff).GoString())
-		}
-
-		// NOTE(marius): we filter the global items collection for what matches current actor and filters
-		wantItems, _ := append(filters.Checks{filters.Actor(filters.SameID(actor.GetLink()))}, ff...).Run(items).(vocab.ItemCollection)
-		return tests.HTTPTest{
-			Name: testName,
-			Req:  tests.Request().URL(buildFilterURL(vocab.Outbox.IRI(actor), ff...)),
-			Res: tests.Response().HasCode(http.StatusOK).
-				ItemMatch(
-					tests.IsType(vocab.OrderedCollectionPageType),
-					tests.HasTotalItems(len(wantItems)),
-					tests.HasItems(wantItems...),
-				),
-		}
+	// NOTE(marius): we filter the global items collection for what matches current actor and filters
+	wantItems, _ := append(filters.Checks{filters.Actor(filters.SameID(actor.GetLink()))}, ff...).Run(items).(vocab.ItemCollection)
+	paginatedURL := buildFilterURL(vocab.Outbox.IRI(actor), ff...)
+	return tests.HTTPTest{
+		Name: testName,
+		Req:  tests.Request().URL(paginatedURL),
+		Res: tests.Response().HasCode(http.StatusOK).
+			ItemMatch(
+				tests.HasID(vocab.IRI(paginatedURL)),
+				tests.IsType(vocab.OrderedCollectionPageType),
+				tests.HasTotalItems(len(wantItems)),
+				tests.HasItems(wantItems...),
+			),
 	}
 }
 
-func actorTests(items vocab.ItemCollection) func(actors ...vocab.Item) []tests.RunnableTest {
-	return func(actors ...vocab.Item) []tests.RunnableTest {
-		tests := make([]tests.RunnableTest, 0, len(actors))
-		for _, act := range actors {
-			tests = append(tests, addActorOutboxTest(items)(act))
-		}
-		return tests
+func actorTests(items vocab.ItemCollection, actors ...vocab.Item) []tests.RunnableTest {
+	tests := make([]tests.RunnableTest, 0, len(actors))
+	for _, act := range actors {
+		tests = append(tests, addActorOutboxTest(items, act))
 	}
+	return tests
 }
 
 func paginateByIRIs(items vocab.ItemCollection, cnt int) vocab.IRIs {
@@ -91,33 +83,45 @@ func paginateByIRIs(items vocab.ItemCollection, cnt int) vocab.IRIs {
 	return result
 }
 
-func addRootInboxTest(items vocab.ItemCollection) func(ff ...filters.Check) tests.HTTPTest {
-	return func(ff ...filters.Check) tests.HTTPTest {
-		testName := fmt.Sprintf("root inbox:%s", filters.Checks(ff).GoString())
-		// NOTE(marius): we filter the global items collection for what matches current actor and filters
-		wantItems, _ := filters.PaginateCollection(items, ff...).(vocab.ItemCollection)
-		return tests.HTTPTest{
-			Name: testName,
-			Req:  tests.Request().URL(buildFilterURL(vocab.Inbox.IRI(c2sRootIRI), ff...)),
-			Res: tests.Response().HasCode(http.StatusOK).
-				ItemMatch(
-					tests.IsType(vocab.OrderedCollectionPageType),
-					tests.HasTotalItems(len(items)),
-					tests.HasItems(wantItems...),
-				),
-		}
+func addRootInboxTest(items vocab.ItemCollection, maxItems int, ff ...filters.Check) tests.HTTPTest {
+	testName := fmt.Sprintf("root inbox:%s", filters.Checks(ff).GoString())
+	// NOTE(marius): we filter the global items collection for what matches current actor and filters
+	wantItems, _ := filters.PaginateCollection(items, ff...).(vocab.ItemCollection)
+	paginatedURL := buildFilterURL(vocab.Inbox.IRI(c2sRootIRI), ff...)
+	return tests.HTTPTest{
+		Name: testName,
+		Req:  tests.Request().URL(paginatedURL),
+		Res: tests.Response().HasCode(http.StatusOK).
+			ItemMatch(
+				tests.HasID(vocab.IRI(paginatedURL)),
+				tests.IsType(vocab.OrderedCollectionPageType),
+				tests.HasTotalItems(maxItems),
+				tests.HasItems(wantItems...),
+			),
 	}
 }
 
-func rootInboxPaginationTest(items []vocab.Item) func(cnt int) []tests.RunnableTest {
-	return func(cnt int) []tests.RunnableTest {
-		tests := make([]tests.RunnableTest, 0, len(items)/cnt+1)
-		tests = append(tests, addRootInboxTest(items)(filters.WithMaxCount(cnt)))
-		for _, it := range paginateByIRIs(items, cnt) {
-			tests = append(tests, addRootInboxTest(items)(filters.After(filters.SameID(it.GetLink())), filters.WithMaxCount(cnt)))
-		}
-		return tests
+func rootInboxPaginationTest(items []vocab.Item, cnt, maxItems int, ff ...filters.Check) []tests.RunnableTest {
+	if len(items) == 0 || cnt == 0 {
+		return nil
 	}
+	if cnt == 1 {
+		return []tests.RunnableTest{addRootInboxTest(items, maxItems, ff...)}
+	}
+	tests := make([]tests.RunnableTest, 0, len(items)/cnt+1)
+	tests = append(tests, addRootInboxTest(items, maxItems, append(ff, filters.WithMaxCount(cnt))...))
+	for _, it := range paginateByIRIs(items, cnt) {
+		tests = append(tests, addRootInboxTest(items, maxItems, append(ff, filters.After(filters.SameID(it.GetLink())), filters.WithMaxCount(cnt))...))
+	}
+	return tests
+}
+
+func rootInboxAdditionalFiltersTest(items vocab.ItemCollection, ff ...filters.Check) []tests.RunnableTest {
+	wantItems, _ := filters.Checks(ff).Run(items).(vocab.ItemCollection)
+	if len(wantItems) == 0 {
+		return nil
+	}
+	return rootInboxPaginationTest(wantItems, len(wantItems)/2, len(items), ff...)
 }
 
 func Test_CollectionFilters(t *testing.T) {
@@ -145,18 +149,12 @@ func Test_CollectionFilters(t *testing.T) {
 		cont.Cleanup(t)
 	})
 
-	sort.SliceStable(items, func(i int, j int) bool {
-		return vocab.ItemOrderTimestamp(items[i], items[j])
-	})
-
-	// NOTE(marius): we get only the actors created by the Service actor
-	createActorsFilter := filters.Checks{
+	// NOTE(marius): we load the actors created by the Service actor
+	actorCreateItems, _ := filters.Checks{
 		filters.HasType(vocab.CreateType),
 		filters.Actor(filters.SameID(c2sRootIRI)),
 		filters.Object(filters.HasType(vocab.ActorTypes...)),
-	}
-
-	actorCreateItems, _ := createActorsFilter.Run(items).(vocab.ItemCollection)
+	}.Run(items).(vocab.ItemCollection)
 	actorItems := make(vocab.ItemCollection, 0, len(actorCreateItems))
 	for _, act := range actorCreateItems {
 		_ = vocab.OnActivity(act, func(act *vocab.Activity) error {
@@ -164,40 +162,65 @@ func Test_CollectionFilters(t *testing.T) {
 			return nil
 		})
 	}
+	// NOTE(marius): we append an activity matching the one generated by FedBOX to create
+	// the root Service actor.
+	items = append(items, RootCreate)
 
-	byAdminFilter := filters.Checks{filters.Actor(filters.SameID(c2sRootIRI))}
-	adminItems, _ := byAdminFilter.Run(items).(vocab.ItemCollection)
+	// NOTE(marius): this sorting is important so our after/before activity IDs
+	// match the tests we generate for pagination.
+	sort.SliceStable(items, func(i int, j int) bool {
+		return vocab.ItemOrderTimestamp(items[i], items[j])
+	})
 
-	allOutboxItems := append(vocab.ItemCollection{RootCreate}, adminItems...)
-	allInboxItems := append(vocab.ItemCollection{RootCreate}, items...)
+	// NOTE(marius): get the activities created by the root service actor
+	allOutboxItems, _ := filters.Checks{
+		filters.Actor(filters.SameID(c2sRootIRI)),
+	}.Run(items).(vocab.ItemCollection)
+
 	toRun := []tests.RunnableTest{
 		tests.HTTPTest{
 			Name: "root outbox",
 			Req:  tests.Request().IRI(vocab.Outbox.IRI(c2sRootIRI)),
 			Res: tests.Response().HasCode(http.StatusOK).
 				ItemMatch(
+					tests.HasID(vocab.Outbox.IRI(c2sRootIRI)+"?maxItems=100"),
 					tests.IsType(vocab.OrderedCollectionPageType),
 					tests.HasTotalItems(len(allOutboxItems)),
 					tests.HasItems(allOutboxItems...),
 				),
 		},
+		// NOTE(marius): all activities have also landed in the root actor's inbox
 		tests.HTTPTest{
 			Name: "root inbox",
 			Req:  tests.Request().IRI(vocab.Inbox.IRI(c2sRootIRI)),
 			Res: tests.Response().HasCode(http.StatusOK).
 				ItemMatch(
+					// NOTE(marius): automatic redirect from FedBOX to a collection page
+					// limited to 100 items.
+					tests.HasID(vocab.Inbox.IRI(c2sRootIRI)+"?maxItems=100"),
 					tests.IsType(vocab.OrderedCollectionPageType),
-					tests.HasTotalItems(len(allInboxItems)),
-					tests.HasItems(allInboxItems...),
+					tests.HasTotalItems(len(items)),
+					tests.HasItems(items...),
 				),
 		},
 	}
+	toRun = append(toRun, actorTests(items, actorItems...)...)
 
-	toRun = append(toRun, rootInboxPaginationTest(allInboxItems)(2)...)
-	toRun = append(toRun, rootInboxPaginationTest(allInboxItems)(6)...)
-	toRun = append(toRun, rootInboxPaginationTest(allInboxItems)(10)...)
-	toRun = append(toRun, rootInboxPaginationTest(allInboxItems)(30)...)
-	toRun = append(toRun, actorTests(items)(actorItems...)...)
+	// NOTE(marius): pagination tests
+	toRun = append(toRun, rootInboxPaginationTest(items, len(items)/20, len(items))...)
+	toRun = append(toRun, rootInboxPaginationTest(items, len(items)/10, len(items))...)
+	toRun = append(toRun, rootInboxPaginationTest(items, len(items)/6, len(items))...)
+	toRun = append(toRun, rootInboxPaginationTest(items, len(items)/2, len(items))...)
+	// NOTE(marius): use a pagination count that's not divisible by the items slice length
+	toRun = append(toRun, rootInboxPaginationTest(items, (len(items)/6)+1, len(items))...)
+	// NOTE(marius): add some additional filters on the inbox
+	toRun = append(toRun, rootInboxAdditionalFiltersTest(items, filters.HasType(vocab.CreateType))...)
+	toRun = append(toRun, rootInboxAdditionalFiltersTest(items, filters.HasType(vocab.LikeType))...)
+	toRun = append(toRun, rootInboxAdditionalFiltersTest(items, filters.Object(filters.HasType(vocab.LinkType)))...)
+	toRun = append(toRun, rootInboxAdditionalFiltersTest(items, filters.Object(filters.HasType(vocab.ImageType)))...)
+	toRun = append(toRun, rootInboxAdditionalFiltersTest(items, filters.Object(filters.HasType(vocab.AudioType)))...)
+	toRun = append(toRun, rootInboxAdditionalFiltersTest(items, filters.HasType(vocab.LikeType, vocab.DislikeType), filters.Object(filters.HasType(vocab.ImageType, vocab.VideoType, vocab.AudioType)))...)
+	toRun = append(toRun, rootInboxAdditionalFiltersTest(items, filters.HasType(vocab.IgnoreType), filters.Object(filters.HasType(vocab.ActorTypes...)))...)
 
 	for _, test := range toRun {
 		t.Run(test.Label(), test.Fn(ctx, cont))

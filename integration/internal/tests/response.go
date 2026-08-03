@@ -360,9 +360,10 @@ func HasItems(items ...vocab.Item) itemCheckFn {
 					t.Errorf("Failed items check, item at pos %d differs: %s", i, cmp.Diff(it.GetLink(), gotIt.GetLink()))
 					return nil
 				}
-				if !cmp.Equal(gotIt, it, equateItems) {
-					t.Logf("Failed items check, item at pos %d are not totally identical: %s", i, cmp.Diff(it, gotIt, equateItems))
-				}
+				// NOTE(marius): these won't be equal because processing activities/creating objects modifies the original item
+				//if !cmp.Equal(gotIt, it, equateItems) {
+				//	t.Logf("Failed items check, item at pos %d are not totally identical: %s", i, cmp.Diff(it, gotIt, equateItems))
+				//}
 			}
 			return nil
 		})
