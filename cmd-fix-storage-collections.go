@@ -84,7 +84,7 @@ func tryCreateAllObjectsCollections(ctl *Base, actor vocab.Item) error {
 					if vocab.ActorTypes.Match(it.GetType()) {
 						allCollections = append(allCollections, getActorCollections(it)...)
 					} else {
-						if it.IsCollection() {
+						if vocab.IsCollection(it) {
 							continue
 						}
 						allCollections = append(allCollections, getObjectCollections(it)...)
@@ -161,7 +161,7 @@ func tryCreateCollection(ctl *Base, colIRI vocab.IRI) error {
 		return nil
 	}
 
-	if !items.IsCollection() {
+	if !vocab.IsCollection(items) {
 		if _, err := storage.Save(items); err != nil {
 			ctl.Logger.Errorf("Unable to save object %s: %s", items.GetLink(), err)
 			return err

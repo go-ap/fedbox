@@ -10,7 +10,7 @@ import (
 )
 
 func OutItem(it vocab.Item, b io.Writer) error {
-	if it.IsCollection() {
+	if vocab.IsCollection(it) {
 		return vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
 			for _, it := range c.Collection() {
 				_ = OutItem(it, b)
@@ -19,7 +19,7 @@ func OutItem(it vocab.Item, b io.Writer) error {
 			return nil
 		})
 	}
-	if it.IsLink() {
+	if vocab.IsIRI(it) {
 		_, err := b.Write([]byte(it.GetLink()))
 		return err
 	}

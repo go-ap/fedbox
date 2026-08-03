@@ -36,7 +36,7 @@ func (e Export) Run(ctl *Base) error {
 	}
 
 	items := make(vocab.ItemCollection, 0)
-	if col.IsCollection() {
+	if vocab.IsCollection(col) {
 		err = vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
 			items = append(items, c.Collection()...)
 			return nil

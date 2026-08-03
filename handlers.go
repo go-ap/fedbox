@@ -150,7 +150,7 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 				return nil, err
 			}
 		}
-		if vocab.IsNil(it) || !it.IsCollection() {
+		if vocab.IsNil(it) || !vocab.IsCollection(it) {
 			return nil, errors.NotFoundf("%s not found", typ)
 		}
 

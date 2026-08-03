@@ -368,7 +368,7 @@ func dumpAll(ctl *Base, iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection
 	if err != nil {
 		return col, err
 	}
-	if objects.IsCollection() {
+	if vocab.IsCollection(objects) {
 		_ = vocab.OnCollectionIntf(objects, func(c vocab.CollectionInterface) error {
 			col = append(col, c.Collection()...)
 			return nil

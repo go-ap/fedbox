@@ -36,7 +36,7 @@ func GenerateID(it vocab.Item, partOf vocab.IRI, by vocab.Item) (vocab.ID, error
 		})
 		return id, err
 	}
-	if it.IsLink() {
+	if vocab.IsLink(it) {
 		return id, vocab.OnLink(it, func(l *vocab.Link) error {
 			l.ID = id
 			return nil
