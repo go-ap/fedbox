@@ -894,8 +894,8 @@ func errOnRequest(t *testing.T) func(testPair) map[string]any {
 			resp, err := c.Do(req)
 
 			assertTrue(err == nil, "Error: request failed: %s", err)
-			assertTrue(resp != nil, "Error: request failed: response is nil")
 			if resp == nil {
+				t.Fatal("Error: request failed: response is nil")
 				return
 			}
 			defer resp.Body.Close()
@@ -999,6 +999,7 @@ func bootstrapApps(t *testing.T, l lw.Logger, apps map[vocab.IRI]*fedbox.FedBOX,
 
 		t.Cleanup(func() {
 			stopFn()
+			time.Sleep(time.Second)
 			if err := app.Stop(ctx); err != nil {
 				t.Logf("unable to stop application %s: %s", appID, err)
 			}
