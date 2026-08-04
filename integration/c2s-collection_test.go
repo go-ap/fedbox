@@ -177,7 +177,41 @@ func Test_CollectionFilters(t *testing.T) {
 		filters.Actor(filters.SameID(c2sRootIRI)),
 	}.Run(items).(vocab.ItemCollection)
 
-	toRun := []tests.RunnableTest{
+	toRun := make([]tests.RunnableTest, 0, len(items))
+	objects := make(vocab.ItemCollection, 0, len(items))
+	for _, it := range items {
+		if RootCreate.Equals(it) {
+			continue
+		}
+		toRun = append(toRun,
+			tests.HTTPTest{
+				Name: "fetch " + string(it.GetLink()),
+				Req:  tests.Request().IRI(it.GetLink()),
+				Res: tests.Response().HasCode(http.StatusOK).
+					ItemMatch(
+						tests.HasID(it.GetLink()),
+						tests.IsType(it.GetType()),
+					),
+			},
+		)
+		_ = vocab.OnActivity(it, func(act *vocab.Activity) error {
+			return objects.Append(act.Object)
+		})
+	}
+	for _, it := range objects {
+		toRun = append(toRun,
+			tests.HTTPTest{
+				Name: "fetch " + string(it.GetLink()),
+				Req:  tests.Request().IRI(it.GetLink()),
+				Res: tests.Response().HasCode(http.StatusOK).
+					ItemMatch(
+						tests.HasID(it.GetLink()),
+						tests.IsType(it.GetType()),
+					),
+			},
+		)
+	}
+	toRun = append(toRun,
 		tests.HTTPTest{
 			Name: "root outbox",
 			Req:  tests.Request().IRI(vocab.Outbox.IRI(c2sRootIRI)),
@@ -189,8 +223,8 @@ func Test_CollectionFilters(t *testing.T) {
 					tests.HasItems(allOutboxItems...),
 				),
 		},
-		// NOTE(marius): all activities have also landed in the root actor's inbox
 		tests.HTTPTest{
+			// NOTE(marius): all activities have also landed in the root actor's inbox
 			Name: "root inbox",
 			Req:  tests.Request().IRI(vocab.Inbox.IRI(c2sRootIRI)),
 			Res: tests.Response().HasCode(http.StatusOK).
@@ -203,7 +237,7 @@ func Test_CollectionFilters(t *testing.T) {
 					tests.HasItems(items...),
 				),
 		},
-	}
+	)
 	toRun = append(toRun, actorTests(items, actorItems...)...)
 
 	// NOTE(marius): pagination tests

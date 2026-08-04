@@ -176,9 +176,9 @@ func HasID(want vocab.IRI) itemCheckFn {
 	}
 }
 
-func IsType(typ vocab.ActivityVocabularyType) itemCheckFn {
+func IsType(typ vocab.Typer) itemCheckFn {
 	return func(t testing.TB, it vocab.Item) {
-		if ityp := it.GetType(); !typ.Match(ityp) {
+		if ityp := it.GetType(); ityp != typ && !typ.AsTypes().Match(ityp) {
 			t.Errorf("Type check failure on item %s, received %s, expected %s", it.GetID(), ityp, typ)
 		}
 	}
@@ -188,7 +188,7 @@ func nlv[T ~string | vocab.NaturalLanguageValues](c T) vocab.NaturalLanguageValu
 	var result vocab.NaturalLanguageValues
 	switch v := any(c).(type) {
 	case string:
-		result = vocab.DefaultNaturalLanguage[string](v)
+		result = vocab.DefaultNaturalLanguage(v)
 	case []byte:
 		result = vocab.DefaultNaturalLanguage(string(v))
 	case vocab.NaturalLanguageValues:
