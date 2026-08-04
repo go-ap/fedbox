@@ -9,7 +9,7 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/motley v0.0.0-20260804093450-2b4c96d763da
 	git.sr.ht/~mariusor/servermux v0.0.0-20260730181755-b356bceeedee
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260804082242-616e682da353
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260804130332-0e34ede24155
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.16.0
 	github.com/go-ap/activitypub v0.0.0-20260803135430-cb9978486dff
@@ -66,7 +66,7 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.4.2 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260804081855-f066127d890e // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260804130140-338427bee5b3 // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260803181216-171aab2709d7 // indirect
 	github.com/go-ap/storage-fs v0.0.0-20260803180900-b2a8927022c2 // indirect
 	github.com/go-ap/storage-pg v0.0.0-20260803181345-256534129558 // indirect
