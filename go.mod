@@ -7,7 +7,7 @@ require (
 	charm.land/wish/v2 v2.0.3
 	git.sr.ht/~mariusor/cache v0.0.0-20260516133819-5427e9c3067b
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
-	git.sr.ht/~mariusor/motley v0.0.0-20260730182519-ef7943634124
+	git.sr.ht/~mariusor/motley v0.0.0-20260804093450-2b4c96d763da
 	git.sr.ht/~mariusor/servermux v0.0.0-20260730181755-b356bceeedee
 	git.sr.ht/~mariusor/storage-all v0.0.0-20260804082242-616e682da353
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
@@ -86,7 +86,7 @@ require (
 	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/leporo/sqlf v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
-	github.com/mariusor/bubbles-tree v0.0.0-20260519151908-a3185afecf1e // indirect
+	github.com/mariusor/bubbles-tree v0.0.0-20260804092904-048968f1532d // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
