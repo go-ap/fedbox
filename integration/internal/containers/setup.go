@@ -111,7 +111,7 @@ func (m *Running) DialContext(ctx context.Context, network, addr string) (net.Co
 	for _, fc := range m.Containers {
 		info, err := fc.Inspect(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("unable to inspect container: %w", err)
+			continue
 		}
 		for _, pair := range info.Config.Env {
 			host, found := strings.CutPrefix(pair, "HOSTNAME=")
@@ -121,8 +121,8 @@ func (m *Running) DialContext(ctx context.Context, network, addr string) (net.Co
 			if addr != host+":80" && !strings.HasSuffix(addr, "."+host+":80") {
 				continue
 			}
-			// NOTE(marius): found container with matching host.
-			// If we don't manage to find a matching container past this point, we fail.
+			// NOTE(marius): found the container with the matching host.
+			// If we receive any errors past this point we simply fail.
 			cHost, err := fc.Endpoint(ctx, "http")
 			if err != nil {
 				return nil, fmt.Errorf("unable to compose container end-point: %w", err)
@@ -131,10 +131,11 @@ func (m *Running) DialContext(ctx context.Context, network, addr string) (net.Co
 			if err != nil {
 				return nil, fmt.Errorf("invalid container url: %w", err)
 			}
-			return dialer.DialContext(ctx, network, uh.Host)
+			addr = uh.Host
+			break
 		}
 	}
-	return nil, fmt.Errorf("no matching container for address: %s", addr)
+	return dialer.DialContext(ctx, network, addr)
 }
 
 func WithIO(in io.ReadWriter) exec.ProcessOption {
