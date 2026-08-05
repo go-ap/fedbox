@@ -1707,7 +1707,7 @@ var QuestionTests = testPairs{
 	},
 }
 
-var createID = fmt.Sprintf("http://%s/create/1", host)
+var createID = "http://" + host + "/activities/create-1"
 var UndoCreateTests = testPairs{
 	{
 		name:    "CreateNote",
@@ -1735,7 +1735,7 @@ var UndoCreateTests = testPairs{
 				res: testRes{
 					code: http.StatusCreated,
 					val: &objectVal{
-						id:  "",
+						id:  createID,
 						typ: string(vocab.CreateType),
 						act: &objectVal{
 							typ:               string(vocab.PersonType),

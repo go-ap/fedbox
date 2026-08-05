@@ -198,7 +198,7 @@ var S2SReceiveTests = testPairs{
 	},
 }
 
-var followID = fmt.Sprintf("http://%s/follow/1", host)
+var followID = "http://" + host + "/activities/follow-1"
 var UndoTests = testPairs{
 	{
 		name:    "Follow Actor then Undo",
