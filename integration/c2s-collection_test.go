@@ -59,7 +59,7 @@ func addActorOutboxTest(items vocab.ItemCollection, actor vocab.Item, ff ...filt
 				tests.HasID(vocab.IRI(paginatedURL)),
 				tests.IsType(vocab.OrderedCollectionPageType),
 				tests.HasTotalItems(len(wantItems)),
-				tests.HasItems(wantItems...),
+				tests.HasExactItems(wantItems...),
 			),
 	}
 }
@@ -96,7 +96,7 @@ func addRootInboxTest(items vocab.ItemCollection, maxItems int, ff ...filters.Ch
 				tests.HasID(vocab.IRI(paginatedURL)),
 				tests.IsType(vocab.OrderedCollectionPageType),
 				tests.HasTotalItems(maxItems),
-				tests.HasItems(wantItems...),
+				tests.HasExactItems(wantItems...),
 			),
 	}
 }
@@ -217,10 +217,10 @@ func Test_CollectionFilters(t *testing.T) {
 			Req:  tests.Request().IRI(vocab.Outbox.IRI(c2sRootIRI)),
 			Res: tests.Response().HasCode(http.StatusOK).
 				ItemMatch(
-					tests.HasID(vocab.Outbox.IRI(c2sRootIRI)+"?maxItems=100"),
+					tests.HasID(filterIRI(vocab.Outbox.IRI(c2sRootIRI), filters.WithMaxCount(100))),
 					tests.IsType(vocab.OrderedCollectionPageType),
 					tests.HasTotalItems(len(allOutboxItems)),
-					tests.HasItems(allOutboxItems...),
+					tests.HasExactItems(allOutboxItems...),
 				),
 		},
 		tests.HTTPTest{
@@ -231,10 +231,10 @@ func Test_CollectionFilters(t *testing.T) {
 				ItemMatch(
 					// NOTE(marius): automatic redirect from FedBOX to a collection page
 					// limited to 100 items.
-					tests.HasID(vocab.Inbox.IRI(c2sRootIRI)+"?maxItems=100"),
+					tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(100))),
 					tests.IsType(vocab.OrderedCollectionPageType),
 					tests.HasTotalItems(len(items)),
-					tests.HasItems(items...),
+					tests.HasExactItems(items...),
 				),
 		},
 	)

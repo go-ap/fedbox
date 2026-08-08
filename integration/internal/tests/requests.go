@@ -143,7 +143,9 @@ func (rb *reqBuilder) BodyItem(it vocab.Item) *reqBuilder {
 	if err != nil {
 		panic(fmt.Errorf("unable to marshal item: %v", err))
 	}
-	rb.Builder = rb.Builder.ContentType(client.ContentTypeJsonLD).BodyBytes(raw)
+	rb.Builder = rb.Builder.Post().
+		ContentType(client.ContentTypeJsonLD).
+		BodyBytes(raw)
 	return rb
 }
 

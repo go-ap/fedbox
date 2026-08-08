@@ -18,6 +18,8 @@ type (
 	ep  = vocab.Endpoints
 	o   = vocab.Object
 	a   = vocab.Actor
+	aa  = vocab.Activity
+	ai  = vocab.IntransitiveActivity
 
 	InitFn = any
 )
@@ -243,23 +245,46 @@ func Object(initFn ...InitFn) *o {
 	return &ob
 }
 
-func Actor(initFn ...InitFn) *a {
-	act := a{}
+func HasActor(a i) func(*ai) error {
+	return func(act *ai) error {
+		act.Actor = a
+		return nil
+	}
+}
+
+func HasObject(a i) func(*aa) error {
+	return func(act *aa) error {
+		act.Object = a
+		return nil
+	}
+}
+
+func Activity(initFn ...InitFn) *aa {
+	act := new(aa)
 	for _, maybeFn := range initFn {
 		switch fn := maybeFn.(type) {
-		case func(*vocab.Object) error:
-			_ = vocab.OnObject(&act, fn)
-		case func(*vocab.Actor) error:
-			_ = vocab.OnActor(&act, fn)
+		case func(*o) error:
+			_ = vocab.OnObject(act, fn)
+		case func(*ai) error:
+			_ = vocab.OnIntransitiveActivity(act, fn)
+		case func(*aa) error:
+			_ = vocab.OnActivity(act, fn)
 		}
 	}
-	if act.Inbox == nil {
-		act.Inbox = vocab.Inbox.IRI(act)
+	return act
+}
+
+func IntransitiveActivity(initFn ...InitFn) *ai {
+	act := new(ai)
+	for _, maybeFn := range initFn {
+		switch fn := maybeFn.(type) {
+		case func(*o) error:
+			_ = vocab.OnObject(act, fn)
+		case func(*ai) error:
+			_ = vocab.OnIntransitiveActivity(act, fn)
+		}
 	}
-	if act.Outbox == nil {
-		act.Outbox = vocab.Outbox.IRI(act)
-	}
-	return &act
+	return act
 }
 
 func HasAuthEp(i iri) func(*a) error {
@@ -280,4 +305,23 @@ func HasTokenEp(i iri) func(*a) error {
 		act.Endpoints.OauthTokenEndpoint = i
 		return nil
 	}
+}
+
+func Actor(initFn ...InitFn) *a {
+	act := a{}
+	for _, maybeFn := range initFn {
+		switch fn := maybeFn.(type) {
+		case func(*vocab.Object) error:
+			_ = vocab.OnObject(&act, fn)
+		case func(*vocab.Actor) error:
+			_ = vocab.OnActor(&act, fn)
+		}
+	}
+	if act.Inbox == nil {
+		act.Inbox = vocab.Inbox.IRI(act)
+	}
+	if act.Outbox == nil {
+		act.Outbox = vocab.Outbox.IRI(act)
+	}
+	return &act
 }

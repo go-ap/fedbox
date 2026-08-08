@@ -75,6 +75,13 @@ func root(rootIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Actor {
 	return ap.Actor(initFn...)
 }
 
+func create(initFn ...ap.InitFn) *vocab.Activity {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.CreateType),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
 func baseIRI(iri vocab.IRI) vocab.IRI {
 	ub, err := iri.GetLink().URL()
 	if err != nil {
@@ -104,14 +111,12 @@ func person(actorIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Actor {
 }
 
 func object(objectIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Object {
-	rootU, _ := objectIRI.URL()
-	rootU.Path = ""
-	rootIRI := vocab.IRI(rootU.String())
 	initFn = append([]ap.InitFn{
-		ap.HasID(objectIRI),
-		ap.HasAttributedTo(rootIRI),
 		ap.HasTo(vocab.PublicNS),
 	}, initFn...)
+	if objectIRI != "" {
+		initFn = append(initFn, ap.HasID(objectIRI))
+	}
 	return ap.Object(initFn...)
 }
 
@@ -131,6 +136,10 @@ func initC2SContainers(ctx context.Context, t *testing.T) (string, crypto.Privat
 		return pw, privateKey, running, err
 	}
 	return pw, privateKey, running, nil
+}
+
+func filterIRI(iri vocab.IRI, ff ...filters.Check) vocab.IRI {
+	return vocab.IRI(buildFilterURL(iri, ff...))
 }
 
 func buildFilterURL(iri vocab.IRI, ff ...filters.Check) string {

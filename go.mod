@@ -19,7 +19,7 @@ require (
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/filters v0.0.0-20260803180515-dca600d1a418
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/processing v0.0.0-20260805135454-69d169251d35
+	github.com/go-ap/processing v0.0.0-20260808154127-35fa3dcfe37d
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0

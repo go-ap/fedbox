@@ -4,7 +4,7 @@ go 1.26.3
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260804130332-0e34ede24155
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260805145212-d14235277bb8
 	github.com/carlmjohnson/requests v0.25.1
 	github.com/elnormous/contenttype v1.0.4
 	github.com/go-ap/activitypub v0.0.0-20260803135430-cb9978486dff
@@ -87,7 +87,7 @@ require (
 	github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 // indirect
 	github.com/dadrus/httpsig v0.9.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dgraph-io/badger/v4 v4.9.5 // indirect
+	github.com/dgraph-io/badger/v4 v4.9.6 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.4.2 // indirect
 	github.com/digitorus/pkcs7 v0.0.0-20250730155240-ffadbf3f398c // indirect
 	github.com/digitorus/timestamp v0.0.0-20250524132541-c45532741eea // indirect
@@ -107,10 +107,10 @@ require (
 	github.com/go-ap/cache v0.0.0-20260803141141-2249e83e921d // indirect
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38 // indirect
 	github.com/go-ap/processing v0.0.0-20260716111245-78d0ef51171a // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260804130140-338427bee5b3 // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260805145001-713155192813 // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260803181216-171aab2709d7 // indirect
 	github.com/go-ap/storage-fs v0.0.0-20260803180900-b2a8927022c2 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260804081527-85e0fe76b5b2 // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260805135402-5ae620645bb7 // indirect
 	github.com/go-chi/chi/v5 v5.3.1 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
@@ -159,7 +159,7 @@ require (
 	github.com/jdkato/prose v1.2.1 // indirect
 	github.com/jedisct1/go-minisign v0.0.0-20241212093149-d2f9f49435c7 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
-	github.com/klauspost/compress v1.19.1 // indirect
+	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/leporo/sqlf v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260627054121-477a66015f15 // indirect
@@ -253,9 +253,9 @@ require (
 	k8s.io/apimachinery v0.36.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
-	modernc.org/libc v1.74.4 // indirect
+	modernc.org/libc v1.75.2 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
-	modernc.org/memory v1.11.0 // indirect
+	modernc.org/memory v1.12.0 // indirect
 	modernc.org/sqlite v1.56.0 // indirect
 	quamina.net/go/quamina/v2 v2.0.2 // indirect
 	sigs.k8s.io/kind v0.32.0 // indirect
