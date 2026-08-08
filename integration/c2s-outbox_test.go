@@ -21,6 +21,46 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
+func Test_C2S_CreateRequests(t *testing.T) {
+	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
+
+	admin := person(
+		c2sRootIRI.AddPath("actors/1"),
+		ap.HasPreferredUsername("admin"),
+	)
+	token := new(c2s.BearerSigner)
+	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+	//adminPw := rand.Text()[:8]
+
+	images := c.Suite(fedbox.New(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+		fedbox.WithArgs([]string{"--bootstrap"}),
+		fedbox.WithKey(prvKey), fedbox.WithPw(rand.Text()[:8]),
+		fedbox.WithTestLogger(t, Verbose),
+		fedbox.WithItems(admin),
+		fedbox.WithCmd(
+			//rootExec.SetPassword(admin.ID, adminPw),
+			rootExec.ExtractOAuth2Bearer(admin.ID, token),
+		),
+	))
+
+	ctx := context.Background()
+	cont, err := c.Start(ctx, t, images...)
+	if err != nil {
+		t.Fatalf("Unable to start test containers: %v", err)
+	}
+
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	toRun := []tests.RunnableTest{}
+	for _, test := range toRun {
+		t.Run(test.Label(), test.Fn(ctx, cont))
+	}
+}
+
 func Test_C2S_Requests(t *testing.T) {
 	publicKey, prvKey, _ := ed25519.GenerateKey(rand.Reader)
 

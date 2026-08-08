@@ -15,13 +15,13 @@ require (
 	github.com/go-ap/storage-conformance-suite v0.0.0-20260803143156-1d6f11dd8e84
 	github.com/go-ap/storage-pg v0.0.0-20260803181345-256534129558
 	github.com/google/go-cmp v0.7.0
-	github.com/google/go-containerregistry v0.21.8
+	github.com/google/go-containerregistry v0.21.9
 	github.com/google/ko v0.19.1
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/moby/moby/api v1.55.0
 	github.com/sirupsen/logrus v1.9.4
-	github.com/testcontainers/testcontainers-go v0.43.0
-	github.com/testcontainers/testcontainers-go/modules/postgres v0.43.0
+	github.com/testcontainers/testcontainers-go v0.44.0
+	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
 	golang.org/x/crypto v0.54.0
 )
 

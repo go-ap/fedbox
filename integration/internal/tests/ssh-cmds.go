@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/url"
 	"regexp"
-	"strings"
 	"sync"
 	"testing"
 
@@ -176,22 +175,8 @@ func MatchToken(t testing.TB, i []byte) []byte {
 
 func GetToken(token *c2s.BearerSigner) LineOutputTest {
 	return func(t testing.TB, i []byte) []byte {
-		i = bytes.TrimSpace(i)
-		auth, found := bytes.CutPrefix(i, []byte("Authorization: "))
-		if !found {
-			t.Fatalf("Unable to get Authorization value from CLI output: %s", i)
-		}
-		if hasEoL := bytes.IndexByte(auth, '\n'); hasEoL > 0 {
-			auth = auth[:hasEoL]
-		}
-		authPieces := strings.Split(string(auth), " ")
-		if len(authPieces) < 2 {
-			t.Fatalf("Authorization value is not recognized: %+v", authPieces)
-		}
-		token.TokenType = strings.TrimSpace(authPieces[0])
-		token.AccessToken = strings.TrimSpace(authPieces[1])
-		if token.AccessToken == "" || token.TokenType == "" {
-			t.Fatalf("Unable to build Authorization token")
+		if _, err := c.ExtractToken(token, i); err != nil {
+			t.Fatalf("Unable to extract token: %v", err)
 		}
 		return nil
 	}

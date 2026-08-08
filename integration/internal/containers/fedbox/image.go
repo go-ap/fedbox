@@ -35,13 +35,12 @@ func (t *tbLogger) Accept(l tc.Log) {
 }
 
 type fboxImage struct {
-	name    string
-	conf    *config.Options
-	key     crypto.PrivateKey
-	pw      []byte
-	mocks   vocab.ItemCollection
-	initFns []tc.ContainerCustomizer
-	logger  *tbLogger
+	conf          *config.Options
+	key           crypto.PrivateKey
+	pw            []byte
+	contCustomFns []tc.ContainerCustomizer
+	initFns       []tc.Executable
+	logger        *tbLogger
 }
 
 func (f *fboxImage) EnvType() string {
@@ -57,7 +56,7 @@ func (f *fboxImage) Hostname() string {
 }
 
 func (f *fboxImage) Name() string {
-	return f.name
+	return f.conf.AppName
 }
 
 func (f *fboxImage) RootIRI() string {
@@ -72,28 +71,17 @@ func (f *fboxImage) RootIRI() string {
 }
 
 func (f *fboxImage) InitFns(t testing.TB) []tc.ContainerCustomizer {
-	initFns := append(f.initFns, c.WithImage(f.name), c.WithEnvFromConfig(*f.conf))
-
+	customizerFns := append(f.contCustomFns, c.WithEnvFromConfig(*f.conf))
 	if f.key != nil {
-		initFns = append(initFns, c.WithPrivateKey(f.key))
+		customizerFns = append(customizerFns, c.WithPrivateKey(f.key))
 	}
 	if f.pw != nil {
-		initFns = append(initFns, c.WithPassword(f.pw))
-	}
-	if len(f.mocks) > 0 {
-		sshCmd := func(cmd ...string) c.SSHCmd {
-			return c.SSHCmd{Cmd: cmd, User: f.RootIRI(), Key: f.key, Pw: f.pw}
-		}
-
-		// NOTE(marius): we add the mocks to the import file,
-		// and then the SSH command to actually import it without remote dissemination.
-		importCmd := sshCmd( /*ctlBin, "--env", envType, */ "pub", "import", "--skip-remotes", "/storage/import.json")
-		initFns = append(initFns, c.WithMocks(f.mocks...), tc.WithAfterReadyCommand(importCmd))
+		customizerFns = append(customizerFns, c.WithPassword(f.pw))
 	}
 	if f.logger != nil {
-		initFns = append(initFns, tc.WithLogConsumers(f.logger))
+		customizerFns = append(customizerFns, tc.WithLogConsumers(f.logger))
 	}
-	return initFns
+	return customizerFns
 }
 
 func initPGSidecar(ctx context.Context, f *fboxImage, extra ...tc.ContainerCustomizer) (tc.Container, error) {
@@ -173,10 +161,15 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB, extra ...tc.Contain
 	if err = c.Start(ctx); err != nil {
 		return nil, fmt.Errorf("unable to start FedBOX container: %w", err)
 	}
-	if len(cmds) > 0 {
+	if len(cmds) > 0 || len(f.initFns) > 0 {
 		name, _ := c.Name(ctx)
 		for _, ex := range cmds {
 			if err = ex(ctx, c); err != nil {
+				return cont, fmt.Errorf("unable to run startup command on container %s[%T]: %w", name, f, err)
+			}
+		}
+		for _, cmd := range f.initFns {
+			if _, _, err := c.Exec(ctx, cmd.AsCommand(), cmd.Options()...); err != nil {
 				return cont, fmt.Errorf("unable to run startup command on container %s[%T]: %w", name, f, err)
 			}
 		}
@@ -200,13 +193,23 @@ func WithTestLogger(t testing.TB, enabled bool) imageInitFn {
 
 func WithItems(it ...vocab.Item) imageInitFn {
 	return func(f *fboxImage) {
-		f.mocks = it
+		if len(it) == 0 {
+			return
+		}
+		sshFn := func(cmd ...string) c.SSHCmd {
+			return c.SSHCmd{Cmd: cmd, User: f.RootIRI(), Key: f.key, Pw: f.pw}
+		}
+
+		// NOTE(marius): we add the mocks to the import file,
+		// and then the SSH command to actually import it without remote dissemination.
+		importMocksCmd := sshFn( /*ctlBin, "--env", envType, */ "pub", "import", "--skip-remotes", "/storage/import.json")
+		f.contCustomFns = append(f.contCustomFns, c.WithMocks(it...), tc.WithAfterReadyCommand(importMocksCmd))
 	}
 }
 
 func WithImageName(name string) imageInitFn {
 	return func(f *fboxImage) {
-		f.name = name
+		f.contCustomFns = append(f.contCustomFns, c.WithImage(name))
 	}
 }
 
@@ -224,7 +227,7 @@ func WithPw(pw string) imageInitFn {
 
 func WithEnv(m map[string]string) imageInitFn {
 	return func(f *fboxImage) {
-		f.initFns = append(f.initFns, c.WithEnv(m))
+		f.contCustomFns = append(f.contCustomFns, c.WithEnv(m))
 	}
 }
 
@@ -236,25 +239,26 @@ func WithConfig(opts config.Options) imageInitFn {
 
 func WithArgs(args []string) imageInitFn {
 	return func(f *fboxImage) {
-		f.initFns = append(f.initFns, tc.WithCmdArgs(args...))
+		f.contCustomFns = append(f.contCustomFns, tc.WithCmdArgs(args...))
 	}
 }
 
 func WithCmd(cmds ...tc.Executable) imageInitFn {
 	return func(f *fboxImage) {
-		f.initFns = append(f.initFns, tc.WithAfterReadyCommand(cmds...))
+		f.initFns = append(f.initFns, cmds...)
 	}
 }
 
 func WithStorage(path string) imageInitFn {
 	return func(f *fboxImage) {
-		f.initFns = append(f.initFns, c.WithStorage(path))
+		f.contCustomFns = append(f.contCustomFns, c.WithStorage(path))
 	}
 }
 
 func New(fns ...imageInitFn) *fboxImage {
 	img := new(fboxImage)
-	img.initFns = make([]tc.ContainerCustomizer, 0, 4)
+	img.contCustomFns = make([]tc.ContainerCustomizer, 0, 4)
+	img.initFns = make([]tc.Executable, 0)
 	for _, fn := range fns {
 		fn(img)
 	}
@@ -281,7 +285,6 @@ func ConfigFromBuildInfo(base config.Options) config.Options {
 func defaultFedBOXRequest(fb *fboxImage) tc.GenericContainerRequest {
 	return tc.GenericContainerRequest{
 		ContainerRequest: tc.ContainerRequest{
-			Image: fb.name,
 			WaitingFor: wait.ForAny(
 				wait.ForAll(
 					wait.ForListeningPort(strconv.Itoa(fb.conf.HTTPPort)),
