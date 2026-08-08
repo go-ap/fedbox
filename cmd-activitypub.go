@@ -288,18 +288,23 @@ func (i ImportCmd) Run(ctl *Base) error {
 	}
 
 	activities := make(vocab.ItemCollection, 0, len(col))
-	objects := make(vocab.ItemCollection, 0, len(col))
 	for _, it := range col {
 		typ := it.GetType()
-		if vocab.ActivityTypes.Match(typ) || vocab.IntransitiveActivityTypes.Match(typ) {
+		if append(vocab.ActivityTypes, vocab.IntransitiveActivityTypes...).Match(typ) {
 			activities = append(activities, it)
 		} else {
-			objects = append(objects, it)
+			exists, err := ctl.Storage.Load(it.GetLink())
+			if errors.IsNotFound(err) || vocab.IsNil(exists) {
+				// NOTE(marius): we wrap single objects into Create activities in order
+				// to get them handled through the ProcessingActivity functionality which
+				// enhances the object with various elements.
+				activities = append(activities, ap.WrapObjectInCreate(it, ctl.Service))
+			}
 		}
 	}
 
 	count := 0
-	start := time.Now()
+	start := time.Now().Round(0)
 	for _, it := range activities {
 		_, _ = fmt.Fprintf(ctl.out, "Processing %s %s\n", it.GetType(), it.GetID())
 		err := vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
@@ -327,31 +332,11 @@ func (i ImportCmd) Run(ctl *Base) error {
 	}
 
 	tot := time.Now().Sub(start)
-	_, _ = fmt.Fprintf(ctl.out, "Activities processing time:          %3s\n", tot)
+	_, _ = fmt.Fprintf(ctl.out, "Activities count:             % 10d\n", len(activities))
+	_, _ = fmt.Fprintf(ctl.out, "Activities processing time:   %10s\n", tot.Round(500*time.Microsecond))
 	if count > 0 {
 		perIt := time.Duration(int64(tot) / int64(count))
-		_, _ = fmt.Fprintf(ctl.out, "Elapsed time per activity: %3s\n", perIt)
-	}
-
-	count = 0
-	start = time.Now()
-	for _, it := range objects {
-		// NOTE(marius): need to check if already created by activities processing
-		exists, err := ctl.Storage.Load(it.GetLink())
-		if (err != nil && errors.IsNotFound(err)) || vocab.IsNil(exists) {
-			if _, err := ctl.Storage.Save(it); err != nil {
-				Errf(ctl.err, "Unable to save %s %s: %v", it.GetType(), it.GetID(), err)
-				continue
-			}
-		}
-		count++
-	}
-
-	tot = time.Now().Sub(start)
-	_, _ = fmt.Fprintf(ctl.out, "Elapsed item save time:          %4s\n", tot)
-	if count > 0 {
-		perIt := time.Duration(int64(tot) / int64(count))
-		_, _ = fmt.Fprintf(ctl.out, "Elapsed time per item: %4s\n", perIt)
+		_, _ = fmt.Fprintf(ctl.out, "Elapsed time per activity:    %10s\n", perIt.Round(500*time.Microsecond))
 	}
 
 	_, _ = fmt.Fprintf(ctl.out, "Import done!\n")
