@@ -384,6 +384,7 @@ func Test_C2S_UpdateRequests(t *testing.T) {
 		ap.HasName("John Doe"),
 		ap.HasAudience(vocab.PublicNS),
 		ap.HasPublished(MockDate),
+		ap.HasReplies,
 	)
 	article3 := object(
 		c2sRootIRI.AddPath("objects/article-3"),
@@ -414,6 +415,20 @@ func Test_C2S_UpdateRequests(t *testing.T) {
 			ap.HasName("update-test"),
 			ap.HasSummary("lorem ipsum dolor sic amet"),
 			ap.HasContent("updated-content"),
+		)),
+	)
+
+	update6ID := c2sRootIRI.AddPath("activities/update-6")
+	update6 := update(
+		ap.HasCC(vocab.PublicNS),
+		ap.HasActor(person1),
+		ap.HasObject(object(
+			ap.HasID(article3.ID),
+			ap.HasType(vocab.NoteType),
+			ap.HasName("update-test"),
+			ap.HasSummary("lorem ipsum dolor sic amet"),
+			ap.HasContent("updated-content"),
+			ap.HasInReplyTo(person1.ID),
 		)),
 	)
 
@@ -653,12 +668,96 @@ func Test_C2S_UpdateRequests(t *testing.T) {
 				},
 			},
 		},
+		tests.TestSuite{
+			Name: "Update note by adding InReplyTo",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "update again",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						IRI(vocab.Outbox.IRI(person1)).
+						BodyItem(update6),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(update6ID),
+							tests.IsType(update6.Type),
+							tests.HasActor(person1.ID),
+							tests.HasObject(article3.ID),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "update is in Outbox",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(100))),
+							tests.HasTotalItems(3),
+							tests.HasItem(update4ID),
+							tests.HasItem(update5ID),
+							tests.HasItem(update6ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "update is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(update6ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(update6ID),
+							tests.IsType(update6.Type),
+							tests.HasActor(person1.ID),
+							tests.HasObject(article3.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "note is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(article3.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(article3.ID),
+							tests.IsType(vocab.NoteType),
+							tests.HasName("update-test"),
+							tests.HasSummary(article3.Content),
+							tests.HasContent("updated-content"),
+							tests.WasPublished(article3.Published),
+							tests.WasUpdated(time.Now().Round(0)),
+							tests.HasInReplyTo(person1.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person1 has the note in replies",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Replies.IRI(person1.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Replies.IRI(person1.ID), filters.WithMaxCount(filters.MaxItems))),
+							tests.HasTotalItems(1),
+							tests.HasItem(article3.ID),
+						),
+				},
+			},
+		},
 	}
 
 	for _, test := range toRun {
 		t.Run(test.Label(), test.Fn(ctx, cont))
 	}
 }
+
 func Test_C2S_Requests(t *testing.T) {
 	publicKey, prvKey, _ := ed25519.GenerateKey(rand.Reader)
 
