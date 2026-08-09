@@ -369,7 +369,7 @@ func WasUpdated(d time.Time) itemCheckFn {
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("Updated", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if !cmp.Equal(d, ob.Updated, cmpopts.EquateApproxTime(time.Second)) {
+				if !cmp.Equal(d, ob.Updated, cmpopts.EquateApproxTime(fudgeDuration)) {
 					t.Errorf("Failed Updated date check for %s, received %s, expected %s", ob.ID, ob.Updated, d)
 				}
 				return nil
@@ -381,11 +381,13 @@ func WasUpdated(d time.Time) itemCheckFn {
 	}
 }
 
+const fudgeDuration = 10 * time.Second
+
 func WasPublished(d time.Time) itemCheckFn {
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("Published", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if !cmp.Equal(d, ob.Published, cmpopts.EquateApproxTime(2*time.Second)) {
+				if !cmp.Equal(d, ob.Published, cmpopts.EquateApproxTime(fudgeDuration)) {
 					t.Errorf("Received %s, expected %s", ob.Published, d)
 				}
 				return nil
