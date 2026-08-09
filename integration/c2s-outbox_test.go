@@ -29,6 +29,7 @@ func Test_C2S_CreateRequests(t *testing.T) {
 	admin := person(
 		c2sRootIRI.AddPath("actors/1"),
 		ap.HasPreferredUsername("admin"),
+		ap.HasAudience(vocab.PublicNS),
 	)
 	token := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, prvKey)
@@ -57,18 +58,37 @@ func Test_C2S_CreateRequests(t *testing.T) {
 		cont.Cleanup(t)
 	})
 
-	person1 := person(
-		c2sRootIRI.AddPath("actors/2"),
+	person4 := person(
+		c2sRootIRI.AddPath("actors/person-4"),
 		ap.HasPreferredUsername("example1"),
 		ap.HasName("Example McSample"),
+		ap.HasReplies,
 	)
 
-	article1 := object("",
+	article5 := object(
+		c2sRootIRI.AddPath("objects/article-5"),
 		ap.HasType(vocab.ArticleType),
 		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasReplies,
 	)
-	create2 := create(ap.HasActor(admin), ap.HasObject(person1))
-	create3 := create(ap.HasActor(admin), ap.HasObject(article1))
+
+	article7 := object(
+		c2sRootIRI.AddPath("objects/article-7"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasType(vocab.ArticleType),
+		ap.HasContent("this should go to multiple reply collections"),
+		ap.HasInReplyTo(article5.ID, person4.ID, c2sRootIRI),
+	)
+
+	create3ID := c2sRootIRI.AddPath("activities/create-3")
+	create3 := create(ap.HasActor(admin), ap.HasObject(person4))
+
+	create4ID := c2sRootIRI.AddPath("activities/create-4")
+	create4 := create(ap.HasActor(admin), ap.HasObject(article5))
+
+	create6ID := c2sRootIRI.AddPath("activities/create-5")
+	create6 := create(ap.HasActor(admin), ap.HasObject(article7))
 
 	toRun := []tests.RunnableTest{
 		tests.HTTPTest{
@@ -93,17 +113,18 @@ func Test_C2S_CreateRequests(t *testing.T) {
 					Req: tests.Request().
 						Bearer(token.AccessToken).
 						IRI(vocab.Outbox.IRI(admin)).
-						BodyItem(create2),
+						BodyItem(create3),
 					Res: tests.Response().
 						HasCode(http.StatusCreated).
-						HasLocation(c2sRootIRI.AddPath("activities/create-3")).
+						HasLocation(create3ID).
 						ItemMatch(
-							tests.HasID(person1.ID),
-							tests.IsType(person1.Type),
-							tests.HasPreferredUsername(person1.PreferredUsername),
-							tests.HasName(person1.Name),
-							tests.HasInbox(person1.Inbox.GetLink()),
-							tests.HasOutbox(person1.Outbox.GetLink()),
+							tests.HasID(person4.ID),
+							tests.IsType(person4.Type),
+							tests.HasPreferredUsername(person4.PreferredUsername),
+							tests.HasName(person4.Name),
+							tests.HasInbox(person4.Inbox.GetLink()),
+							tests.HasOutbox(person4.Outbox.GetLink()),
+							tests.HasReplies(person4.Replies.GetLink()),
 						),
 				},
 				tests.HTTPTest{
@@ -118,7 +139,7 @@ func Test_C2S_CreateRequests(t *testing.T) {
 							tests.HasID(filterIRI(vocab.Outbox.IRI(admin), filters.WithMaxCount(filters.MaxItems))),
 							tests.IsType(vocab.OrderedCollectionPageType),
 							tests.HasTotalItems(1),
-							tests.HasItem(c2sRootIRI.AddPath("activities/create-3")),
+							tests.HasItem(create3ID),
 						),
 				},
 				tests.HTTPTest{
@@ -132,33 +153,33 @@ func Test_C2S_CreateRequests(t *testing.T) {
 							tests.IsType(vocab.OrderedCollectionPageType),
 							tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(100))),
 							tests.HasTotalItems(3),
-							tests.HasItem(c2sRootIRI.AddPath("activities/create-3")),
+							tests.HasItem(create3ID),
 						),
 				},
 				tests.HTTPTest{
 					Name: "Create is accessible",
 					Req: tests.Request().
 						Accept(client.ContentTypeJsonActivity).
-						IRI(c2sRootIRI.AddPath("activities/create-3")),
+						IRI(create3ID),
 					Res: tests.Response().
 						HasCode(http.StatusOK).
 						ItemMatch(
-							tests.IsType(create2.Type),
-							tests.HasID(c2sRootIRI.AddPath("activities/create-3")),
-							tests.HasActor(admin.ID),
-							tests.HasObject(person1.ID),
+							tests.HasID(create3ID),
+							tests.IsType(create3.Type),
+							tests.HasActor(create3.Actor),
+							tests.HasObject(create3.Object),
 						),
 				},
 				tests.HTTPTest{
 					Name: "Actor is accessible",
 					Req: tests.Request().
 						Accept(client.ContentTypeJsonActivity).
-						IRI(person1.ID),
+						IRI(person4.ID),
 					Res: tests.Response().
 						HasCode(http.StatusOK).
 						ItemMatch(
-							tests.HasID(person1.ID),
-							tests.IsType(person1.Type),
+							tests.HasID(person4.ID),
+							tests.IsType(person4.Type),
 						),
 				},
 			},
@@ -171,14 +192,15 @@ func Test_C2S_CreateRequests(t *testing.T) {
 					Req: tests.Request().
 						Bearer(token.AccessToken).
 						IRI(vocab.Outbox.IRI(admin)).
-						BodyItem(create3),
+						BodyItem(create4),
 					Res: tests.Response().
 						HasCode(http.StatusCreated).
-						HasLocation(c2sRootIRI.AddPath("activities/create-4")).
+						HasLocation(create4ID).
 						ItemMatch(
-							tests.HasID(c2sRootIRI.AddPath("objects/article-5")),
-							tests.IsType(article1.Type),
-							tests.HasContent(article1.Content),
+							tests.HasID(article5.ID),
+							tests.IsType(article5.Type),
+							tests.HasContent(article5.Content),
+							tests.HasReplies(vocab.Replies.IRI(article5)),
 						),
 				},
 				tests.HTTPTest{
@@ -193,7 +215,7 @@ func Test_C2S_CreateRequests(t *testing.T) {
 							tests.HasID(filterIRI(vocab.Outbox.IRI(admin), filters.WithMaxCount(filters.MaxItems))),
 							tests.IsType(vocab.OrderedCollectionPageType),
 							tests.HasTotalItems(2),
-							tests.HasItem(c2sRootIRI.AddPath("activities/create-4")),
+							tests.HasItem(create4ID),
 						),
 				},
 				tests.HTTPTest{
@@ -207,34 +229,146 @@ func Test_C2S_CreateRequests(t *testing.T) {
 							tests.IsType(vocab.OrderedCollectionPageType),
 							tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(100))),
 							tests.HasTotalItems(4),
-							tests.HasItem(c2sRootIRI.AddPath("activities/create-4")),
+							tests.HasItem(create4ID),
 						),
 				},
 				tests.HTTPTest{
 					Name: "Create is accessible",
 					Req: tests.Request().
 						Accept(client.ContentTypeJsonActivity).
-						IRI(c2sRootIRI.AddPath("activities/create-4")),
+						IRI(create4ID),
 					Res: tests.Response().
 						HasCode(http.StatusOK).
 						ItemMatch(
-							tests.HasID(c2sRootIRI.AddPath("activities/create-4")),
-							tests.IsType(create2.Type),
-							tests.HasActor(admin.ID),
-							tests.HasObject(c2sRootIRI.AddPath("objects/article-5")),
+							tests.HasID(create4ID),
+							tests.IsType(create4.Type),
+							tests.HasActor(create4.Actor),
+							tests.HasObject(create4.Object),
 						),
 				},
 				tests.HTTPTest{
 					Name: "Article is accessible",
 					Req: tests.Request().
 						Accept(client.ContentTypeJsonActivity).
-						IRI(c2sRootIRI.AddPath("objects/article-5")),
+						IRI(article5.ID),
 					Res: tests.Response().
 						HasCode(http.StatusOK).
 						ItemMatch(
-							tests.HasID(c2sRootIRI.AddPath("objects/article-5")),
-							tests.IsType(article1.Type),
+							tests.HasID(article5.ID),
+							tests.IsType(article5.Type),
+							tests.HasContent(article5.Content),
 						),
+				},
+			},
+		},
+		tests.TestSuite{
+			Name: "Create Note with multiple InReplyTo",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Create article",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						IRI(vocab.Outbox.IRI(admin)).
+						BodyItem(create6),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						HasLocation(create6ID).
+						ItemMatch(
+							tests.HasID(article7.ID),
+							tests.IsType(article7.Type),
+							tests.HasContent(article7.Content),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create-Article is in Outbox",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(admin)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(admin), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(3),
+							tests.HasItem(create6ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is in root Inbox",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(c2sRootIRI)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(100))),
+							tests.HasTotalItems(5),
+							tests.HasItem(create6ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(create6ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(create6ID),
+							tests.IsType(create4.Type),
+							tests.HasActor(admin.ID),
+							tests.HasObject(article7.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Article is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(article7.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(article7.ID),
+							tests.IsType(article7.Type),
+							tests.HasContent(article7.Content),
+							tests.HasInReplyTo(article5.ID, person4.ID, c2sRootIRI),
+						),
+				},
+				tests.HTTPTest{
+					Name: "article-5 has article-7 in replies",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Replies.IRI(article5)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Replies.IRI(article5), filters.WithMaxCount(filters.MaxItems))),
+							tests.HasTotalItems(1),
+							tests.HasItem(article7.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person-4 has article-7 in replies",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Replies.IRI(person4)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Replies.IRI(person4), filters.WithMaxCount(filters.MaxItems))),
+							tests.HasTotalItems(1),
+							tests.HasItem(article7.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "admin does not have a replies collection",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Replies.IRI(admin)),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound),
 				},
 			},
 		},
@@ -250,7 +384,11 @@ func Test_C2S_Requests(t *testing.T) {
 
 	service := root(c2sRootIRI, ap.HasPublicKey(publicKey))
 
-	tagAdmin := object(c2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
+	tagAdmin := object(
+		c2sRootIRI.AddPath("objects/0"),
+		ap.HasName("#sysop"),
+		ap.HasTo(vocab.PublicNS),
+	)
 	admin := person(
 		c2sRootIRI.AddPath("actors/1"),
 		ap.HasPreferredUsername("admin"),

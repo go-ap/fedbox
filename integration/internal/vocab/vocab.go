@@ -13,6 +13,7 @@ import (
 type (
 	iri = vocab.IRI
 	t   = vocab.ActivityVocabularyType
+	ts  = vocab.ActivityVocabularyTypes
 	ic  = vocab.ItemCollection
 	i   = vocab.Item
 	ep  = vocab.Endpoints
@@ -214,11 +215,14 @@ func HasSharedInbox(i iri) func(*a) error {
 	}
 }
 
-func HasLiked() func(*a) error {
-	return func(act *a) error {
-		act.Liked = vocab.Liked.IRI(act.ID)
-		return nil
-	}
+func HasReplies(ob *o) error {
+	ob.Replies = vocab.Replies.IRI(ob.ID)
+	return nil
+}
+
+func HasLiked(act *a) error {
+	act.Liked = vocab.Liked.IRI(act.ID)
+	return nil
 }
 
 func HasID(i iri) func(*o) error {
@@ -227,9 +231,35 @@ func HasID(i iri) func(*o) error {
 		return nil
 	}
 }
-func HasType(t t) func(*o) error {
+
+func HasType(t ...t) func(*o) error {
 	return func(ob *o) error {
-		ob.Type = t
+		if len(t) == 1 {
+			ob.Type = t[0]
+		} else {
+			ob.Type = ts(t)
+		}
+		return nil
+	}
+}
+
+func HasInReplyTo(c ...i) func(*o) error {
+	return func(ob *o) error {
+		ob.InReplyTo = ic(c).Normalize()
+		return nil
+	}
+}
+
+func HasActor(a ...i) func(*ai) error {
+	return func(act *ai) error {
+		act.Actor = ic(a).Normalize()
+		return nil
+	}
+}
+
+func HasObject(o ...i) func(*aa) error {
+	return func(act *aa) error {
+		act.Object = ic(o).Normalize()
 		return nil
 	}
 }
@@ -238,25 +268,13 @@ func Object(initFn ...InitFn) *o {
 	ob := o{}
 	for _, maybeFn := range initFn {
 		switch fn := maybeFn.(type) {
+		case vocab.IRI:
+			ob.ID = fn
 		case func(*vocab.Object) error:
 			_ = vocab.OnObject(&ob, fn)
 		}
 	}
 	return &ob
-}
-
-func HasActor(a i) func(*ai) error {
-	return func(act *ai) error {
-		act.Actor = a
-		return nil
-	}
-}
-
-func HasObject(a i) func(*aa) error {
-	return func(act *aa) error {
-		act.Object = a
-		return nil
-	}
 }
 
 func Activity(initFn ...InitFn) *aa {

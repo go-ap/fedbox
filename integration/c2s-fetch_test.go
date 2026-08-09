@@ -23,7 +23,11 @@ func Test_Fetch(t *testing.T) {
 
 	service := root(c2sRootIRI, ap.HasPublicKey(publicKey))
 
-	tag0 := object(c2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
+	tag0 := object(
+		c2sRootIRI.AddPath("objects/0"),
+		ap.HasName("#sysop"),
+		ap.HasTo(vocab.PublicNS),
+	)
 
 	admin1 := person(c2sRootIRI.AddPath("actors/1"),
 		ap.HasPreferredUsername("admin"),
@@ -33,7 +37,7 @@ func Test_Fetch(t *testing.T) {
 	actor2 := person(c2sRootIRI.AddPath("actors/2"),
 		ap.HasContent("Generated actor"),
 		ap.HasSummary("Generated actor"),
-		ap.HasLiked(),
+		ap.HasLiked,
 		ap.HasPreferredUsername("johndoe"),
 		ap.HasPublished("2019-08-11T13:14:47.000000000+02:00"),
 		ap.HasUpdated("2019-08-11T13:14:47.000000000+02:00"),
@@ -95,7 +99,6 @@ func Test_Fetch(t *testing.T) {
 				HasContentType(contentType).
 				ItemMatch(
 					tests.HasID(admin1.ID),
-					tests.HasURL(admin1.URL),
 					tests.HasURL(admin1.URL),
 				),
 		},

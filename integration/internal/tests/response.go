@@ -207,6 +207,16 @@ func HasOutbox(want vocab.IRI) itemCheckFn {
 	}
 }
 
+func HasReplies(want vocab.IRI) itemCheckFn {
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("Replies", func(t *testing.T) {
+			if got := vocab.Replies.IRI(it); !got.Equal(want) {
+				t.Errorf("Received %s, expected %s", got, want)
+			}
+		})
+	}
+}
+
 func IsType(typ vocab.Typer) itemCheckFn {
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("Type", func(t *testing.T) {
@@ -415,12 +425,30 @@ func HasAudience(u vocab.Item) itemCheckFn {
 	}
 }
 
-func HasAttributedTo(u vocab.Item) itemCheckFn {
+func HasInReplyTo(u ...vocab.Item) itemCheckFn {
+	ui := vocab.ItemCollection(u).Normalize()
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("InReplyTo", func(t *testing.T) {
+			err := vocab.OnObject(it, func(ob *vocab.Object) error {
+				if !cmp.Equal(ob.InReplyTo, ui, equateItems) {
+					t.Errorf("%s", cmp.Diff(ui, ob.InReplyTo, equateItems))
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid Object: %v", err)
+			}
+		})
+	}
+}
+
+func HasAttributedTo(u ...vocab.Item) itemCheckFn {
+	ui := vocab.ItemCollection(u).Normalize()
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("AttributedTo", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if !cmp.Equal(ob.AttributedTo, u, equateItems) {
-					t.Errorf("%s", cmp.Diff(u, ob.AttributedTo, equateItems))
+				if !cmp.Equal(ob.AttributedTo, ui, equateItems) {
+					t.Errorf("%s", cmp.Diff(ui, ob.AttributedTo, equateItems))
 				}
 				return nil
 			})
@@ -458,22 +486,6 @@ func HasTag(u vocab.Item) itemCheckFn {
 			})
 			if err != nil {
 				t.Errorf("Invalid Object: %v", err)
-			}
-		})
-	}
-}
-
-func HasActor(iri vocab.IRI) itemCheckFn {
-	return func(t *testing.T, it vocab.Item) {
-		t.Run("Actor", func(t *testing.T) {
-			err := vocab.OnIntransitiveActivity(it, func(act *vocab.IntransitiveActivity) error {
-				if !iri.Equal(act.Actor.GetLink()) {
-					t.Errorf("Received %s, expected %s", act.Actor.GetID(), iri)
-				}
-				return nil
-			})
-			if err != nil {
-				t.Errorf("Invalid IntransitiveActivity: %v", err)
 			}
 		})
 	}
@@ -519,12 +531,32 @@ func HasSharedInbox(iri vocab.Item) itemCheckFn {
 	}
 }
 
-func HasObject(iri vocab.IRI) itemCheckFn {
+func HasActor(u ...vocab.Item) itemCheckFn {
+	ui := vocab.FlattenItemCollection(u).Normalize()
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("Actor", func(t *testing.T) {
+			err := vocab.OnIntransitiveActivity(it, func(act *vocab.IntransitiveActivity) error {
+				aa := vocab.Flatten(act.Actor)
+				if !cmp.Equal(aa, ui, equateItems) {
+					t.Errorf("Received %s", cmp.Diff(ui, aa, equateItems))
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid IntransitiveActivity: %v", err)
+			}
+		})
+	}
+}
+
+func HasObject(u ...vocab.Item) itemCheckFn {
+	ui := vocab.FlattenItemCollection(u).Normalize()
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("Object", func(t *testing.T) {
 			err := vocab.OnActivity(it, func(act *vocab.Activity) error {
-				if !iri.Equal(act.Object.GetLink()) {
-					t.Errorf("Received %s, expected %s", act.Object.GetID(), iri)
+				oo := vocab.Flatten(act.Object)
+				if !cmp.Equal(oo, ui, equateItems) {
+					t.Errorf("Received %s", cmp.Diff(ui, oo, equateItems))
 				}
 				return nil
 			})

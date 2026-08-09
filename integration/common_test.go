@@ -93,27 +93,42 @@ func baseIRI(iri vocab.IRI) vocab.IRI {
 	return vocab.IRI(ub.String())
 }
 
-func person(actorIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Actor {
-	serviceIRI := baseIRI(actorIRI)
+func person(initFn ...ap.InitFn) *vocab.Actor {
+	var actorIRI vocab.IRI
+	for _, maybeFn := range initFn {
+		if iri, ok := maybeFn.(vocab.IRI); ok {
+			actorIRI = iri
+			break
+		}
+	}
 	initFn = append([]ap.InitFn{
 		ap.HasID(actorIRI),
 		ap.HasType(vocab.PersonType),
 		ap.HasAttributedTo(actorIRI),
 		ap.HasAudience(vocab.PublicNS),
-		ap.HasGenerator(serviceIRI),
 		ap.HasURL(actorIRI),
 		ap.HasAuthEp(vocab.CollectionPath("oauth/authorize").IRI(actorIRI)),
 		ap.HasTokenEp(vocab.CollectionPath("oauth/token").IRI(actorIRI)),
-		ap.HasSharedInbox(vocab.Inbox.IRI(serviceIRI)),
-		ap.HasProxyURL(vocab.CollectionPath("proxyUrl").IRI(serviceIRI)),
 	}, initFn...)
+	if serviceIRI := baseIRI(actorIRI); serviceIRI != "" {
+		initFn = append(initFn,
+			ap.HasGenerator(serviceIRI),
+			ap.HasSharedInbox(vocab.Inbox.IRI(serviceIRI)),
+			ap.HasProxyURL(vocab.CollectionPath("proxyUrl").IRI(serviceIRI)),
+		)
+	}
 	return ap.Actor(initFn...)
 }
 
-func object(objectIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Object {
-	initFn = append([]ap.InitFn{
-		ap.HasTo(vocab.PublicNS),
-	}, initFn...)
+func object(initFn ...ap.InitFn) *vocab.Object {
+	var objectIRI vocab.IRI
+	for _, maybeFn := range initFn {
+		if iri, ok := maybeFn.(vocab.IRI); ok {
+			objectIRI = iri
+			break
+		}
+	}
+
 	if objectIRI != "" {
 		initFn = append(initFn, ap.HasID(objectIRI))
 	}
