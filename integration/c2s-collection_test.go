@@ -185,7 +185,7 @@ func Test_CollectionFilters(t *testing.T) {
 		}
 		toRun = append(toRun,
 			tests.HTTPTest{
-				Name: "fetch " + string(it.GetLink()),
+				Name: string(it.GetLink()),
 				Req:  tests.Request().IRI(it.GetLink()),
 				Res: tests.Response().HasCode(http.StatusOK).
 					ItemMatch(
@@ -201,7 +201,7 @@ func Test_CollectionFilters(t *testing.T) {
 	for _, it := range objects {
 		toRun = append(toRun,
 			tests.HTTPTest{
-				Name: "fetch " + string(it.GetLink()),
+				Name: string(it.GetLink()),
 				Req:  tests.Request().IRI(it.GetLink()),
 				Res: tests.Response().HasCode(http.StatusOK).
 					ItemMatch(

@@ -9,7 +9,7 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
 	git.sr.ht/~mariusor/motley v0.0.0-20260804093450-2b4c96d763da
 	git.sr.ht/~mariusor/servermux v0.0.0-20260730181755-b356bceeedee
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260805145212-d14235277bb8
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260809090334-40bd0a8ea7e0
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.16.0
 	github.com/go-ap/activitypub v0.0.0-20260803135430-cb9978486dff
@@ -49,7 +49,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/keygen v0.5.4 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20260803092147-8b693049ce2a // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260808192814-d38ea0f8aa5c // indirect
 	github.com/charmbracelet/x/ansi v0.11.7 // indirect
 	github.com/charmbracelet/x/conpty v0.2.0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
@@ -66,11 +66,11 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.4.2 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260805145001-713155192813 // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260803181216-171aab2709d7 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260803180900-b2a8927022c2 // indirect
-	github.com/go-ap/storage-pg v0.0.0-20260803181345-256534129558 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260805135402-5ae620645bb7 // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260809084018-a8c313fad7d4 // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260809083936-ff9f18c58b61 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260809083728-e5c3ab207b31 // indirect
+	github.com/go-ap/storage-pg v0.0.0-20260809085100-76702885ca90 // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260809083831-7ef47529a8e2 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -124,7 +124,7 @@ require (
 	golang.org/x/text v0.40.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	modernc.org/libc v1.75.2 // indirect
+	modernc.org/libc v1.75.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.0 // indirect
 	modernc.org/sqlite v1.56.0 // indirect

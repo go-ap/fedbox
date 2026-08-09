@@ -106,7 +106,7 @@ func Test_Commands(t *testing.T) {
 						HasContentType(client.ContentTypeJsonLD).
 						ItemMatch(
 							tests.IsType(vocab.ApplicationType),
-							tests.HasURL("http://127.0.0.1"),
+							tests.HasURL(vocab.IRI("http://127.0.0.1")),
 						),
 				},
 			},
