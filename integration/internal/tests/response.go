@@ -583,6 +583,24 @@ func HasTotalItems(cnt int) itemCheckFn {
 	}
 }
 
+func DoesNotHaveItem(it vocab.Item) itemCheckFn {
+	return func(t *testing.T, got vocab.Item) {
+		t.Run("Contains:"+string(it.GetLink()), func(t *testing.T) {
+			err := vocab.OnOrderedCollection(got, func(col *vocab.OrderedCollection) error {
+				gotItems := col.OrderedItems
+				maybeFound, _ := filters.Checks{filters.SameID(it.GetID())}.Run(gotItems).(vocab.ItemCollection)
+				if maybeFound.Count() > 0 {
+					t.Errorf("Item does exist in the collection: %s", it.GetLink())
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid Collection: %v", err)
+			}
+		})
+	}
+}
+
 func HasItem(it vocab.Item) itemCheckFn {
 	return func(t *testing.T, got vocab.Item) {
 		t.Run("Contains:"+string(it.GetLink()), func(t *testing.T) {

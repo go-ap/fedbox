@@ -123,7 +123,9 @@ func nlv[T ~string | vocab.NaturalLanguageValues](c T) vocab.NaturalLanguageValu
 	var result vocab.NaturalLanguageValues
 	switch v := any(c).(type) {
 	case string:
-		result = vocab.DefaultNaturalLanguage[string](v)
+		if v != "" {
+			result = vocab.DefaultNaturalLanguage(v)
+		}
 	case []byte:
 		result = vocab.DefaultNaturalLanguage(string(v))
 	case vocab.NaturalLanguageValues:
@@ -171,16 +173,28 @@ func HasMediaType(m string) func(*o) error {
 	}
 }
 
-func HasPublished(s string) func(*o) error {
-	p, _ := time.Parse(time.RFC3339Nano, s)
+func HasPublished[T string | time.Time](s T) func(*o) error {
+	var p time.Time
+	switch ss := any(s).(type) {
+	case string:
+		p, _ = time.Parse(time.RFC3339Nano, ss)
+	case time.Time:
+		p = ss
+	}
 	return func(ob *o) error {
 		ob.Published = p
 		return nil
 	}
 }
 
-func HasUpdated(s string) func(*o) error {
-	u, _ := time.Parse(time.RFC3339Nano, s)
+func HasUpdated[T string | time.Time](s T) func(*o) error {
+	var u time.Time
+	switch ss := any(s).(type) {
+	case string:
+		u, _ = time.Parse(time.RFC3339Nano, ss)
+	case time.Time:
+		u = ss
+	}
 	return func(ob *o) error {
 		ob.Updated = u
 		return nil

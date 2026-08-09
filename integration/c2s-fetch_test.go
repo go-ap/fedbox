@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"net/http"
 	"testing"
+	"time"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
@@ -39,8 +40,8 @@ func Test_Fetch(t *testing.T) {
 		ap.HasSummary("Generated actor"),
 		ap.HasLiked,
 		ap.HasPreferredUsername("johndoe"),
-		ap.HasPublished("2019-08-11T13:14:47.000000000+02:00"),
-		ap.HasUpdated("2019-08-11T13:14:47.000000000+02:00"),
+		ap.HasPublished(MockDate.Add(100*time.Hour)),
+		ap.HasUpdated(MockDate.Add(400*time.Hour)),
 		ap.HasName("Johnathan Doe"),
 	)
 
@@ -48,8 +49,8 @@ func Test_Fetch(t *testing.T) {
 		ap.HasType(vocab.NoteType),
 		ap.HasContent("<p>Hello</p><code>FedBOX</code>!</p>\n"),
 		ap.HasMediaType("text/html"),
-		ap.HasPublished("2019-09-27T14:26:43.000000000Z"),
-		ap.HasUpdated("2019-09-27T14:26:43.000000000Z"),
+		ap.HasPublished(MockDate.Add(86400*time.Hour)),
+		ap.HasUpdated(MockDate.Add(10000*time.Hour)),
 		ap.HasAttributedTo(admin1.ID),
 		ap.HasSource("Hello `FedBOX`!", "text/markdown"),
 		ap.HasTo("https://www.w3.org/ns/activitystreams#Public"),

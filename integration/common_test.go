@@ -82,6 +82,13 @@ func create(initFn ...ap.InitFn) *vocab.Activity {
 	return ap.Activity(initFn...)
 }
 
+func update(initFn ...ap.InitFn) *vocab.Activity {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.UpdateType),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
 func baseIRI(iri vocab.IRI) vocab.IRI {
 	ub, err := iri.GetLink().URL()
 	if err != nil {
