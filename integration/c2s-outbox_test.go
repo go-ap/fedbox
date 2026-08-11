@@ -1239,6 +1239,17 @@ func Test_C2S_LikeRequests(t *testing.T) {
 	}
 }
 
+// TODO(marius): ShareRequests -> shares collection gets updated
+// TODO(marius): FollowRequests -> follower/following collections get updated
+// TODO(marius): BlockRequests -> unable to access blocker and its collections using blocked's authorization
+// TODO(marius): IgnoreRequests -> ignored's activities don't get to ignorer's inbox
+
+// TODO(marius): QuestionRequests -> port old question tests
+
+// TODO(marius): AddRequests -> collection gets updated with item
+// TODO(marius): RemoveRequests -> collection loses item
+// TODO(marius): MoveRequests -> old collection loses item, new collection gets updated with item
+
 func Test_C2S_Requests(t *testing.T) {
 	publicKey, prvKey, _ := ed25519.GenerateKey(rand.Reader)
 
