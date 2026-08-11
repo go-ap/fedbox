@@ -132,6 +132,8 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 
 		var err error
 		if !fromCache {
+			repo := fb.Storage
+
 			fil := make(filters.Checks, 0)
 			// NOTE(marius): I want a way to make that the owner of a collection would automatically
 			// be authorized for all objects inside _even_ when they don't appear in the recipients list.
@@ -139,13 +141,24 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 			// Until that behaviour can be added to the filters module: https://todo.sr.ht/~mariusor/go-activitypub/433
 			// we can remove the authorization check if actor extracted from the authorization header
 			// matches the owner of the collection.
-			_, maybeCol := vocab.Split(iri)
+			maybeActor, maybeCol := vocab.Split(iri)
+
+			// NOTE(marius): load the actor that owns the collection
+			if it, err = repo.Load(maybeActor.GetLink()); err != nil {
+				return nil, err
+			}
+			// NOTE(marius): for deleted objects, their collections can't be found
+			if vocab.TombstoneType.Match(it.GetType()) {
+				// TODO(marius): we probably need a long term solution for this
+				//   with the processing module needs to remove them explicitly
+				return nil, errors.NotFoundf("%s not found", typ)
+			}
+
 			if col := maybeCol.Of(authorized); vocab.IsNil(col) || col.GetLink().Equal(iri) {
 				fil = append(fil, filters.Authorized(authorized.ID))
 			}
 			fil = append(fil, filters.FromValues(r.URL.Query())...)
 
-			repo := fb.Storage
 			if it, err = repo.Load(iri, fil...); err != nil {
 				return nil, err
 			}
