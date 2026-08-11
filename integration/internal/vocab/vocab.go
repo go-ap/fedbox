@@ -234,6 +234,11 @@ func HasReplies(ob *o) error {
 	return nil
 }
 
+func HasLikes(ob *o) error {
+	ob.Likes = vocab.Likes.IRI(ob.ID)
+	return nil
+}
+
 func HasLiked(act *a) error {
 	act.Liked = vocab.Liked.IRI(act.ID)
 	return nil

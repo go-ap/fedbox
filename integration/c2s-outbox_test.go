@@ -979,6 +979,266 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 	}
 }
 
+func Test_C2S_LikeRequests(t *testing.T) {
+	person1 := person(
+		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
+		ap.HasPreferredUsername("jdoe"),
+		ap.HasName("John Doe"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasLikes,
+		ap.HasLiked,
+	)
+	article3 := object(
+		c2sRootIRI.AddPath("objects/article-3"),
+		ap.HasType(vocab.ArticleType),
+		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasLikes,
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+	)
+
+	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
+
+	token := new(c2s.BearerSigner)
+	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+
+	images := c.Suite(fedbox.New(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+		fedbox.WithArgs([]string{"--bootstrap"}),
+		fedbox.WithKey(prvKey),
+		fedbox.WithTestLogger(t, Verbose),
+		fedbox.WithItems(person1, article3),
+		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, token)),
+	))
+
+	ctx := context.Background()
+	cont, err := c.Start(ctx, t, images...)
+	if err != nil {
+		t.Fatalf("Unable to start test containers: %v", err)
+	}
+
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	like4ID := c2sRootIRI.AddPath("activities/like-4")
+	like4 := like(
+		ap.HasCC(vocab.PublicNS),
+		ap.HasActor(person1),
+		ap.HasObject(article3.ID),
+	)
+
+	like5ID := c2sRootIRI.AddPath("activities/dislike-5")
+	like5 := like(
+		ap.HasType(vocab.DislikeType),
+		ap.HasCC(vocab.PublicNS),
+		ap.HasActor(person1),
+		ap.HasObject(person1.ID),
+	)
+
+	toRun := []tests.RunnableTest{
+		tests.TestSuite{
+			Name: "Like article",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Like article",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)).
+						BodyItem(like4),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(like4ID),
+							tests.IsType(like4.Type),
+							tests.HasActor(person1.ID),
+							tests.HasObject(article3.ID),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Like is in Outbox",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(like4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Like is in root Inbox",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(c2sRootIRI)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(4),
+							tests.HasItem(like4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Like is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(like4ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(like4ID),
+							tests.IsType(like4.Type),
+							tests.HasActor(person1.ID),
+							tests.HasObject(article3.ID),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Article has a like",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Likes.IRI(article3.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Likes.IRI(article3), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(like4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person has article in the liked collection",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Liked.IRI(person1.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Liked.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(article3.ID),
+						),
+				},
+			},
+		},
+		tests.TestSuite{
+			Name: "Dislike actor",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Dislike actor",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)).
+						BodyItem(like5),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(like5ID),
+							tests.IsType(like5.Type),
+							tests.HasActor(person1.ID),
+							tests.HasObject(person1.ID),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Dislike is in Outbox",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(2),
+							tests.HasItem(like4ID),
+							tests.HasItem(like5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Dislike is in root Inbox",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(c2sRootIRI)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(100))),
+							tests.HasTotalItems(5),
+							tests.HasItem(like4ID),
+							tests.HasItem(like5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Dislike is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(like5ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(like5ID),
+							tests.IsType(like5.Type),
+							tests.HasActor(like5.Actor),
+							tests.HasObject(like5.Object),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person does not have a Dislike",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Likes.IRI(person1.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Likes.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(0),
+							tests.DoesNotHaveItem(like5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person does not have itself in the liked collection",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Liked.IRI(person1.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Liked.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(article3.ID),
+							tests.DoesNotHaveItem(person1.ID),
+						),
+				},
+			},
+		},
+	}
+
+	for _, test := range toRun {
+		t.Run(test.Label(), test.Fn(ctx, cont))
+	}
+}
+
 func Test_C2S_Requests(t *testing.T) {
 	publicKey, prvKey, _ := ed25519.GenerateKey(rand.Reader)
 

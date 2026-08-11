@@ -96,6 +96,13 @@ func del(initFn ...ap.InitFn) *vocab.Activity {
 	return ap.Activity(initFn...)
 }
 
+func like(initFn ...ap.InitFn) *vocab.Activity {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.LikeType),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
 func baseIRI(iri vocab.IRI) vocab.IRI {
 	ub, err := iri.GetLink().URL()
 	if err != nil {
