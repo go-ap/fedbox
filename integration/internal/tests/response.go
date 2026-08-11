@@ -227,6 +227,22 @@ func IsType(typ vocab.Typer) itemCheckFn {
 	}
 }
 
+func HasFormerType(typ vocab.Typer) itemCheckFn {
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("FormerType", func(*testing.T) {
+			err := vocab.OnTombstone(it, func(ts *vocab.Tombstone) error {
+				if !ts.FormerType.AsTypes().Match(typ) {
+					t.Errorf("Received %s, expected %s", ts.FormerType, typ)
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid Tombstone: %v", err)
+			}
+		})
+	}
+}
+
 func nlv[T ~string | vocab.NaturalLanguageValues](c T) vocab.NaturalLanguageValues {
 	var result vocab.NaturalLanguageValues
 	switch v := any(c).(type) {
@@ -399,6 +415,22 @@ func WasPublished(d time.Time) itemCheckFn {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
 				if !cmp.Equal(d, ob.Published, cmpopts.EquateApproxTime(fudgeDuration)) {
 					t.Errorf("Received %s, expected %s", ob.Published, d)
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid Object: %v", err)
+			}
+		})
+	}
+}
+
+func WasDeleted(d time.Time) itemCheckFn {
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("Deleted", func(*testing.T) {
+			err := vocab.OnTombstone(it, func(ts *vocab.Tombstone) error {
+				if !cmp.Equal(d, ts.Deleted, cmpopts.EquateApproxTime(fudgeDuration)) {
+					t.Errorf("Received %s, expected %s", ts.Deleted, d)
 				}
 				return nil
 			})

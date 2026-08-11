@@ -376,8 +376,6 @@ func Test_C2S_CreateRequests(t *testing.T) {
 }
 
 func Test_C2S_UpdateRequests(t *testing.T) {
-	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
-
 	person1 := person(
 		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
 		ap.HasPreferredUsername("jdoe"),
@@ -432,6 +430,7 @@ func Test_C2S_UpdateRequests(t *testing.T) {
 		)),
 	)
 
+	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
 	token := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, prvKey)
 
@@ -747,6 +746,144 @@ func Test_C2S_UpdateRequests(t *testing.T) {
 							tests.HasID(filterIRI(vocab.Replies.IRI(person1.ID), filters.WithMaxCount(filters.MaxItems))),
 							tests.HasTotalItems(1),
 							tests.HasItem(article3.ID),
+						),
+				},
+			},
+		},
+	}
+
+	for _, test := range toRun {
+		t.Run(test.Label(), test.Fn(ctx, cont))
+	}
+}
+
+func Test_C2S_DeleteRequests(t *testing.T) {
+	person1 := person(
+		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
+		ap.HasPreferredUsername("jdoe"),
+		ap.HasName("John Doe"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasReplies,
+	)
+	article3 := object(
+		c2sRootIRI.AddPath("objects/article-3"),
+		ap.HasType(vocab.ArticleType),
+		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+	)
+
+	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
+
+	token := new(c2s.BearerSigner)
+	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+
+	images := c.Suite(fedbox.New(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+		fedbox.WithArgs([]string{"--bootstrap"}),
+		fedbox.WithKey(prvKey),
+		fedbox.WithTestLogger(t, Verbose),
+		fedbox.WithItems(person1, article3),
+		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, token)),
+	))
+
+	ctx := context.Background()
+	cont, err := c.Start(ctx, t, images...)
+	if err != nil {
+		t.Fatalf("Unable to start test containers: %v", err)
+	}
+
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	delete4ID := c2sRootIRI.AddPath("activities/delete-4")
+	delete4 := del(
+		ap.HasCC(vocab.PublicNS),
+		ap.HasActor(person1),
+		ap.HasObject(article3.ID),
+	)
+
+	toRun := []tests.RunnableTest{
+		tests.TestSuite{
+			Name: "Delete",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Delete article",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)).
+						BodyItem(delete4),
+					Res: tests.Response().
+						HasCode(http.StatusGone).
+						ItemMatch(
+							tests.HasID(delete4ID),
+							tests.IsType(delete4.Type),
+							tests.HasActor(person1.ID),
+							tests.HasObject(article3.ID),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Delete is in Outbox",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(delete4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Delete is in root Inbox",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(c2sRootIRI)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(100))),
+							tests.HasTotalItems(4),
+							tests.HasItem(delete4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Delete is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(delete4ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(delete4ID),
+							tests.IsType(delete4.Type),
+							tests.HasActor(delete4.Actor),
+							tests.HasObject(delete4.Object),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "article is now a Tombstone",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(article3.ID),
+					Res: tests.Response().
+						HasCode(http.StatusGone).
+						ItemMatch(
+							tests.HasID(article3.ID),
+							tests.IsType(vocab.TombstoneType),
+							tests.WasDeleted(time.Now().Round(0)),
+							tests.HasFormerType(article3.Type),
 						),
 				},
 			},
