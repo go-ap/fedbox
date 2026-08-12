@@ -319,8 +319,18 @@ func LoadFromEnv(conf *Options) {
 	disableMastodonCompatibility, _ := strconv.ParseBool(Getval(KeyMastodonCompatibilityDisable, "false"))
 	conf.MastodonCompatible = !disableMastodonCompatibility
 
-	conf.KeyPath = normalizeConfigPath(Getval(KeyKeyPath, ""), *conf)
-	conf.CertPath = normalizeConfigPath(Getval(KeyCertPath, ""), *conf)
+	keyPath := Getval(KeyKeyPath, "")
+	if filepath.IsAbs(keyPath) {
+		conf.KeyPath = normalizeConfigPath(keyPath, *conf)
+	} else {
+		conf.KeyPath = filepath.Join(conf.StoragePath, keyPath)
+	}
+	certPath := Getval(KeyCertPath, "")
+	if filepath.IsAbs(certPath) {
+		conf.CertPath = normalizeConfigPath(certPath, *conf)
+	} else {
+		conf.CertPath = filepath.Join(conf.StoragePath, certPath)
+	}
 }
 
 func (o Options) RuntimePath() string {
