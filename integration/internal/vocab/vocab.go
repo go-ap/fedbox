@@ -244,6 +244,16 @@ func HasLiked(act *a) error {
 	return nil
 }
 
+func HasFollowing(act *a) error {
+	act.Following = vocab.Following.IRI(act.ID)
+	return nil
+}
+
+func HasFollowers(act *a) error {
+	act.Followers = vocab.Followers.IRI(act.ID)
+	return nil
+}
+
 func HasID(i iri) func(*o) error {
 	return func(ob *o) error {
 		ob.ID = i

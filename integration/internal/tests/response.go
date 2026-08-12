@@ -359,12 +359,21 @@ func HasSource[T ~string | vocab.NaturalLanguageValues](cont T, mt vocab.MimeTyp
 	}
 }
 
-func HasTo(to vocab.Item) itemCheckFn {
+func toItemCol(it vocab.Item) vocab.ItemCollection {
+	col := make(vocab.ItemCollection, 0)
+	_ = vocab.OnItem(it, func(item vocab.Item) error {
+		return col.Append(item)
+	})
+	return col
+}
+
+func HasTo(to ...vocab.Item) itemCheckFn {
+	ti := vocab.ItemCollection(to)
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("To", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if !cmp.Equal(to, ob.To, equateItems) {
-					t.Errorf("Received %s, expected %s", ob.To, to)
+				if tt := toItemCol(ob.To); !cmp.Equal(ti, tt, equateItems) {
+					t.Errorf("Received %s", cmp.Diff(ti, tt, equateItems))
 				}
 				return nil
 			})
@@ -375,12 +384,13 @@ func HasTo(to vocab.Item) itemCheckFn {
 	}
 }
 
-func HasCC(cc vocab.Item) itemCheckFn {
+func HasCC(cc ...vocab.Item) itemCheckFn {
+	ci := vocab.ItemCollection(cc).Normalize()
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("CC", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if !cmp.Equal(cc, ob.CC, equateItems) {
-					t.Errorf("Received %s, expected %s", ob.CC, cc)
+				if ccc := toItemCol(ob.CC).Normalize(); !cmp.Equal(ci, cc, equateItems) {
+					t.Errorf("Received %s", cmp.Diff(ci, ccc, equateItems))
 				}
 				return nil
 			})
@@ -441,12 +451,13 @@ func WasDeleted(d time.Time) itemCheckFn {
 	}
 }
 
-func HasAudience(u vocab.Item) itemCheckFn {
+func HasAudience(u ...vocab.Item) itemCheckFn {
+	ui := vocab.ItemCollection(u).Normalize()
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("Audience", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if !cmp.Equal(ob.Audience, u, equateItems) {
-					t.Errorf("%s", cmp.Diff(u, ob.Audience, equateItems))
+				if !cmp.Equal(ob.Audience, ui, equateItems) {
+					t.Errorf("%s", cmp.Diff(ui, ob.Audience, equateItems))
 				}
 				return nil
 			})

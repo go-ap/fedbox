@@ -139,7 +139,7 @@ func Test_Fetch(t *testing.T) {
 					tests.HasID(tag0.ID),
 					tests.IsType(tag0.Type),
 					tests.HasName(tag0.Name),
-					tests.HasTo(tag0.To),
+					tests.HasTo(tag0.To...),
 				),
 		},
 		{
@@ -154,7 +154,7 @@ func Test_Fetch(t *testing.T) {
 					tests.HasContent(object1.Content),
 					tests.WasPublished(object1.Published),
 					tests.WasUpdated(object1.Updated),
-					tests.HasTo(object1.To),
+					tests.HasTo(object1.To...),
 					tests.HasMediaType(object1.MediaType),
 					tests.HasSource(object1.Source.Content, object1.Source.MediaType),
 				),

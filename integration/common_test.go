@@ -103,6 +103,20 @@ func like(initFn ...ap.InitFn) *vocab.Activity {
 	return ap.Activity(initFn...)
 }
 
+func follow(initFn ...ap.InitFn) *vocab.Activity {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.FollowType),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
+func accept(initFn ...ap.InitFn) *vocab.Activity {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.AcceptType),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
 func baseIRI(iri vocab.IRI) vocab.IRI {
 	ub, err := iri.GetLink().URL()
 	if err != nil {
