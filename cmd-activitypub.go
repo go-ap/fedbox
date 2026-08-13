@@ -94,7 +94,7 @@ func (a AddActorCmd) Run(ctl *Base) error {
 		if len(tags) > 0 {
 			p.Tag = tags
 		}
-		if p, err = ctl.AddActor(p, author); err != nil {
+		if p, err = ctl.AddActor(p, &author); err != nil {
 			return err
 		}
 		_, _ = fmt.Fprintf(ctl.out, "Added %q %q\n", a.Type, name)
@@ -320,7 +320,7 @@ func (i ImportCmd) Run(ctl *Base) error {
 			if err != nil {
 				actor = &vocab.Actor{ID: a.Actor.GetLink()}
 			}
-			activityPub := ctl.Saver(&ctl.Service, i.SkipRemotes)
+			activityPub := ctl.Saver(&ctl.Service, i.SkipRemotes, false)
 			it, err = activityPub.ProcessClientActivity(it, *actor, vocab.Outbox.Of(a.Actor).GetLink())
 			return err
 		})

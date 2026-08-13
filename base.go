@@ -62,7 +62,7 @@ func (ctl *Base) LoadLocalActorWithKey(actorIRI vocab.IRI) (*vocab.Actor, crypto
 	fallbackActor := &ctl.Service
 	fallbackKey := ctl.ServicePrivateKey
 
-	var signActor *vocab.Actor = &ctl.Service
+	signActor := &ctl.Service
 	if maybeActorID, col := vocab.Split(actorIRI); filters.ValidCollection(col) {
 		signActorID = maybeActorID
 	}
@@ -231,7 +231,7 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, by vocab.Item) (vocab.ID, er
 	}
 }
 
-func (ctl *Base) Saver(actor *vocab.Actor, onlyLocalSaves bool) processing.P {
+func (ctl *Base) Saver(actor *vocab.Actor, onlyLocalSaves, skipInboundValidation bool) processing.P {
 	baseIRI := ctl.Service.ID
 
 	db := ctl.Storage
@@ -252,15 +252,19 @@ func (ctl *Base) Saver(actor *vocab.Actor, onlyLocalSaves bool) processing.P {
 		// is the only way to avoid remote dissemination.
 		initFns = append(initFns, processing.WithDisseminationRetryCount(-1))
 	}
+	if skipInboundValidation {
+		// NOTE(marius): for saving the service actor we need to skip collection validation
+		initFns = append(initFns, processing.SkipInboundCollectionValidation)
+	}
 	initFns = append(initFns, processing.WithClient(ActorClient(ctl, actor)))
 	return processing.New(initFns...)
 }
 
-func (ctl *Base) AddActor(p *vocab.Actor, author vocab.Actor) (*vocab.Actor, error) {
+func (ctl *Base) AddActor(p, by *vocab.Actor) (*vocab.Actor, error) {
 	if ctl == nil || ctl.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
-	if isAnonymous(author) {
+	if isAnonymous(by) {
 		self, err := ap.LoadActor(ctl.Storage, ap.DefaultServiceIRI(ctl.Conf.BaseURL))
 		if err != nil {
 			return nil, errors.NewNotFound(err, "unable to load current's instance Application actor")
@@ -268,19 +272,20 @@ func (ctl *Base) AddActor(p *vocab.Actor, author vocab.Actor) (*vocab.Actor, err
 		if self.ID == "" {
 			return nil, errors.NotFoundf("unable to load current's instance Application actor")
 		}
-		author = self
+		by = &self
 	}
-	if author.GetID() == "" {
+	if by.GetID() == "" {
 		return nil, errors.NotFoundf("unable to load current's instance Application actor: %s", ctl.Conf.BaseURL)
 	}
 
-	create := ap.WrapObjectInCreate(p, author)
-	outbox := vocab.Outbox.Of(author)
+	create := ap.WrapObjectInCreate(p, by)
+	outbox := vocab.Outbox.Of(by)
 	if vocab.IsNil(outbox) {
-		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
+		return nil, errors.Newf("unable to find Actor's outbox: %s", by)
 	}
 
-	_, err := ctl.Saver(&author, false).ProcessClientActivity(create, author, outbox.GetLink())
+	skipInboundCollectionValidation := ctl.Service.ID.Equal(p.ID)
+	_, err := ctl.Saver(by, false, skipInboundCollectionValidation).ProcessClientActivity(create, *by, outbox.GetLink())
 	if err != nil && !errors.IsConflict(err) {
 		return nil, err
 	}
@@ -309,7 +314,7 @@ func (ctl *Base) AddObject(p *vocab.Object, author vocab.Actor) (*vocab.Object, 
 		return nil, errors.NotFoundf("unable to load current's instance Application actor: %s", ctl.Conf.BaseURL)
 	}
 
-	processor := ctl.Saver(&author, false)
+	processor := ctl.Saver(&author, false, false)
 	outbox := vocab.Outbox.Of(author).GetLink()
 	if vocab.IsNil(outbox) {
 		return nil, errors.Newf("unable to find Actor's outbox: %s", author)
@@ -374,7 +379,7 @@ func (ctl *Base) DeleteObjects(reason string, inReplyTo []string, ids ...vocab.I
 	}
 	d.Object = delItems
 
-	if _, err := ctl.Saver(&ctl.Service, false).ProcessClientActivity(d, self, vocab.Outbox.Of(d.Actor).GetLink()); err != nil {
+	if _, err := ctl.Saver(&ctl.Service, false, false).ProcessClientActivity(d, self, vocab.Outbox.Of(d.Actor).GetLink()); err != nil {
 		return err
 	}
 
@@ -582,7 +587,7 @@ func (ctl *Base) AddClient(pw []byte, redirectUris []string, u any) (string, err
 		PreferredUsername: vocab.DefaultNaturalLanguage(name),
 		URL:               urls,
 	}
-	app, err := ctl.AddActor(p, self)
+	app, err := ctl.AddActor(p, &self)
 	if err != nil {
 		return "", err
 	}
@@ -650,10 +655,10 @@ func CreateService(ctl *Base, self vocab.Item, pair *ap.KeyPair, pw []byte) (err
 	if err != nil {
 		return err
 	}
-	service.Published = time.Now().Truncate(time.Second).UTC()
+	service.Published = time.Now().UTC()
 
 	ctl.Service = *service
-	service, err = ctl.AddActor(service, *service)
+	service, err = ctl.AddActor(service, service)
 	if err != nil {
 		return err
 	}
