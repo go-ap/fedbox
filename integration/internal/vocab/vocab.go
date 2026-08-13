@@ -244,6 +244,11 @@ func HasLiked(act *a) error {
 	return nil
 }
 
+func HasShares(ob *o) error {
+	ob.Shares = vocab.Shares.IRI(ob.ID)
+	return nil
+}
+
 func HasFollowing(act *a) error {
 	act.Following = vocab.Following.IRI(act.ID)
 	return nil

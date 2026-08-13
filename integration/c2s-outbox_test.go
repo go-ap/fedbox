@@ -1239,7 +1239,145 @@ func Test_C2S_LikeRequests(t *testing.T) {
 	}
 }
 
-// TODO(marius): ShareRequests -> shares collection gets updated
+func Test_ShareRequests(t *testing.T) {
+	person1 := person(
+		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
+		ap.HasPreferredUsername("jdoe"),
+		ap.HasName("John Doe"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasShares,
+	)
+	article3 := object(
+		c2sRootIRI.AddPath("objects/article-3"),
+		ap.HasType(vocab.ArticleType),
+		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasShares,
+	)
+
+	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
+
+	token := new(c2s.BearerSigner)
+	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+
+	images := c.Suite(fedbox.New(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+		fedbox.WithArgs([]string{"--bootstrap"}),
+		fedbox.WithKey(prvKey),
+		fedbox.WithTestLogger(t, Verbose),
+		fedbox.WithItems(person1, article3),
+		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, token)),
+	))
+
+	ctx := context.Background()
+	cont, err := c.Start(ctx, t, images...)
+	if err != nil {
+		t.Fatalf("Unable to start test containers: %v", err)
+	}
+
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	announce4ID := c2sRootIRI.AddPath("activities/announce-4")
+	announce4 := announce(
+		ap.HasCC(vocab.PublicNS),
+		ap.HasActor(person1),
+		ap.HasObject(article3.ID),
+	)
+
+	toRun := []tests.RunnableTest{
+		tests.TestSuite{
+			Name: "Announce article",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Announce article",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)).
+						BodyItem(announce4),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(announce4ID),
+							tests.IsType(announce4.Type),
+							tests.HasActor(person1.ID),
+							tests.HasObject(article3.ID),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Announce is in Outbox",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(announce4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Announce is in root Inbox",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(c2sRootIRI)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(4),
+							tests.HasItem(announce4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Announce is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(announce4ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(announce4ID),
+							tests.IsType(announce4.Type),
+							tests.HasActor(person1.ID),
+							tests.HasObject(article3.ID),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Article has an Announce",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Shares.IRI(article3.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Shares.IRI(article3), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(announce4ID),
+						),
+				},
+			},
+		},
+	}
+
+	for _, test := range toRun {
+		t.Run(test.Label(), test.Fn(ctx, cont))
+	}
+}
+
 func Test_FollowRequests(t *testing.T) {
 	person1 := person(
 		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),

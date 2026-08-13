@@ -103,6 +103,13 @@ func like(initFn ...ap.InitFn) *vocab.Activity {
 	return ap.Activity(initFn...)
 }
 
+func announce(initFn ...ap.InitFn) *vocab.Activity {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.AnnounceType),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
 func follow(initFn ...ap.InitFn) *vocab.Activity {
 	initFn = append([]ap.InitFn{
 		ap.HasType(vocab.FollowType),
