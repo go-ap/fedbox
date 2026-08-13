@@ -125,6 +125,12 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 		colUrl := reqURL(*r, fb.Conf.Secure)
 		iri := vocab.IRI(colUrl)
 		authorized := fb.actorFromRequestWithClient(r, FedBOXClient(fb), iri)
+
+		maybeActor, _ := vocab.OfActor.Split(iri)
+		if fb.checkIfBlocked(maybeActor)(authorized) {
+			return nil, errors.NotFoundf("")
+		}
+
 		cacheKey := CacheKey(fb, authorized, *r)
 
 		it := fb.caches.Load(cacheKey)
@@ -166,6 +172,10 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 		}
 		if vocab.IsNil(it) || !vocab.IsCollection(it) {
 			return nil, errors.NotFoundf("%s not found", typ)
+		}
+
+		if fb.checkIfBlocked(it)(authorized) {
+			return nil, errors.NotFoundf("")
 		}
 
 		var col vocab.CollectionInterface
@@ -316,6 +326,49 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 	}
 }
 
+func (fb *FedBOX) checkIfBlocked(it vocab.Item) func(vocab.Item) bool {
+	allBlocked := make(vocab.IRIs, 0)
+	accumAuthors := func(it vocab.Item) error {
+		authors := make(vocab.ItemCollection, 0)
+		_ = vocab.OnActivity(it, func(activity *vocab.Activity) error {
+			return vocab.OnItem(activity.Actor, func(act vocab.Item) error {
+				return authors.Append(act)
+			})
+		})
+		_ = vocab.OnObject(it, func(ob *vocab.Object) error {
+			return vocab.OnItem(ob.AttributedTo, func(act vocab.Item) error {
+				return authors.Append(act)
+			})
+		})
+		_ = vocab.OnActor(it, func(ob *vocab.Actor) error {
+			return authors.Append(ob.ID)
+		})
+
+		if vocab.IsIRI(it) {
+			authors.Append(it.GetLink())
+		}
+
+		for _, auth := range authors {
+			blocked, _ := fb.Storage.Load(processing.BlockedCollection.IRI(auth))
+			_ = vocab.OnCollectionIntf(blocked, func(col vocab.CollectionInterface) error {
+				return allBlocked.Append(col.Collection()...)
+			})
+		}
+		return nil
+	}
+
+	_ = vocab.OnItem(it, accumAuthors)
+
+	if len(allBlocked) == 0 {
+		return func(_ vocab.Item) bool {
+			return false
+		}
+	}
+	return func(item vocab.Item) bool {
+		return allBlocked.Contains(item)
+	}
+}
+
 // HandleItem serves content from the following, followers, liked, and likes end-points
 // that returns a single ActivityPub object
 func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
@@ -356,6 +409,9 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 			if err != nil {
 				return nil, err
 			}
+		}
+		if fb.checkIfBlocked(it)(authorized) {
+			return nil, errors.NotFoundf("")
 		}
 
 		if !fromCache {
