@@ -277,7 +277,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		initFns := make([]processing.OptionFn, 0)
 		initFns = append(initFns,
 			processing.WithIRI(baseIRI, InternalIRI),
-			processing.WithClient(ActorClient(fb.Base, receivedIn)),
+			processing.WithClient(ActorClient(fb.Base, authorized)),
 			processing.WithStorage(repo),
 			processing.WithLogger(l),
 			processing.WithIDGenerator(GenerateID(baseIRI)),
