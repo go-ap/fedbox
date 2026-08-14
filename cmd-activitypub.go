@@ -63,7 +63,7 @@ func (a AddActorCmd) Run(ctl *Base) error {
 	})
 
 	rw := muxReadWriter{Reader: ctl.in, Writer: ctl.out}
-	var actors = make(vocab.ItemCollection, 0)
+	actors := make(vocab.ItemCollection, 0)
 	for _, name := range a.Names {
 		pw, err := loadPwFromStdin(rw, fmt.Sprintf("%s's password: ", name))
 		if err != nil {
@@ -116,7 +116,7 @@ func (a AddActorCmd) Run(ctl *Base) error {
 		if pw != nil {
 			err = ctl.Storage.PasswordSet(p.ID, pw)
 		}
-		actors = append(actors, p)
+		_ = actors.Append(p)
 	}
 	return nil
 }
@@ -260,6 +260,8 @@ type ImportCmd struct {
 	Files       []*os.File `arg:"" help:"The files containing the JSON encoded items."`
 }
 
+var activityTypes = append(vocab.ActivityTypes, vocab.IntransitiveActivityTypes...)
+
 func (i ImportCmd) Run(ctl *Base) error {
 	baseIRI := ctl.Conf.BaseURL
 	toReplace := i.Base
@@ -295,25 +297,22 @@ func (i ImportCmd) Run(ctl *Base) error {
 		}
 	}
 
-	activities := make(vocab.ItemCollection, 0, len(col))
-	for _, it := range col {
+	for i, it := range col {
 		typ := it.GetType()
-		if append(vocab.ActivityTypes, vocab.IntransitiveActivityTypes...).Match(typ) {
-			activities = append(activities, it)
-		} else {
-			exists, err := ctl.Storage.Load(it.GetLink())
-			if errors.IsNotFound(err) || vocab.IsNil(exists) {
-				// NOTE(marius): we wrap single objects into Create activities in order
-				// to get them handled through the ProcessingActivity functionality which
-				// enhances the object with various elements.
-				activities = append(activities, ap.WrapObjectInCreate(it, ctl.Service))
+		if !activityTypes.Match(typ) {
+			// NOTE(marius): we wrap single objects into Create activities in order
+			// to get them handled through the ProcessingActivity functionality which
+			// enhances the object with various elements.
+			if exists, err := ctl.Storage.Load(it.GetLink()); errors.IsNotFound(err) || vocab.IsNil(exists) {
+				it = ap.WrapObjectInCreate(it, ctl.Service)
 			}
 		}
+		col[i] = it
 	}
 
 	count := 0
 	start := time.Now().Round(0)
-	for _, it := range activities {
+	for _, it := range col {
 		_, _ = fmt.Fprintf(ctl.out, "Processing %s %s\n", it.GetType(), it.GetID())
 		err := vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
 			if a == nil {
@@ -328,7 +327,7 @@ func (i ImportCmd) Run(ctl *Base) error {
 			if err != nil {
 				actor = &vocab.Actor{ID: a.Actor.GetLink()}
 			}
-			activityPub := ctl.Saver(&ctl.Service, i.SkipRemotes, false)
+			activityPub := ctl.Saver(&ctl.Service, i.SkipRemotes, true)
 			it, err = activityPub.ProcessClientActivity(it, *actor, vocab.Outbox.Of(a.Actor).GetLink())
 			return err
 		})
@@ -340,7 +339,7 @@ func (i ImportCmd) Run(ctl *Base) error {
 	}
 
 	tot := time.Now().Sub(start)
-	_, _ = fmt.Fprintf(ctl.out, "Activities count:             % 10d\n", len(activities))
+	_, _ = fmt.Fprintf(ctl.out, "Activities count:             % 10d\n", len(col))
 	_, _ = fmt.Fprintf(ctl.out, "Activities processing time:   %10s\n", tot.Round(500*time.Microsecond))
 	if count > 0 {
 		perIt := time.Duration(int64(tot) / int64(count))
@@ -355,33 +354,35 @@ type ExportCmd struct {
 	To string `name:"to" optional:"" help:"The files where to output the items, if absent it will be printed to stdout."`
 }
 
+func toItemCol(it vocab.Item) vocab.ItemCollection {
+	col := make(vocab.ItemCollection, 0)
+	_ = vocab.OnItem(it, func(item vocab.Item) error {
+		return col.Append(item)
+	})
+	return col
+}
+
 func dumpAll(ctl *Base, iri vocab.IRI, f ...filters.Check) (vocab.ItemCollection, error) {
 	col := make(vocab.ItemCollection, 0)
+
 	objects, err := ctl.Storage.Load(iri, f...)
 	if err != nil {
 		return col, err
 	}
-	if vocab.IsCollection(objects) {
-		_ = vocab.OnCollectionIntf(objects, func(c vocab.CollectionInterface) error {
-			col = append(col, c.Collection()...)
-			return nil
-		})
-	} else {
-		col = append(col, objects)
-	}
-	return col, nil
+
+	return col, col.Append(toItemCol(objects)...)
 }
 
 func (e ExportCmd) Run(ctl *Base) error {
 	baseURL := vocab.IRI(ctl.Conf.BaseURL)
-	objects := make(vocab.ItemCollection, 0)
 	allCollections := vocab.CollectionPaths{filters.ActivitiesType, filters.ActorsType, filters.ObjectsType}
+	objects := make(vocab.ItemCollection, 0, 4)
 	for _, col := range allCollections {
 		dump, err := dumpAll(ctl, vocab.IRIf(baseURL, col))
 		if err != nil {
 			return err
 		}
-		objects = append(objects, dump...)
+		_ = objects.Append(dump...)
 	}
 	if len(objects) == 0 {
 		return errors.Errorf("No objects to export")
@@ -410,7 +411,7 @@ type InfoCmd struct {
 }
 
 func (l InfoCmd) Run(ctl *Base) error {
-	objects := make(vocab.ItemCollection, 0)
+	objects := make(vocab.ItemCollection, 0, len(l.IRIs))
 	if len(l.IRIs) == 0 {
 		return errors.Errorf("No IRIs passed")
 	}
@@ -420,7 +421,7 @@ func (l InfoCmd) Run(ctl *Base) error {
 			Errf(ctl.err, err.Error())
 			continue
 		}
-		objects = append(objects, ob)
+		_ = objects.Append(ob)
 	}
 
 	for _, ob := range objects {

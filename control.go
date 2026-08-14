@@ -69,24 +69,17 @@ func InitControl(c *CTL) (*Base, error) {
 	if c.Path != "" {
 		opt.StoragePath = c.Path
 	}
-	if c.Verbose > 0 {
-		// NOTE(marius): no verbosity means show only warnings and errors
-		// verbosity = 1 means show info messages
-		// verbosity = 2 debug messages
-		// verbosity = 3 tracing messages
-		opt.LogLevel = DefaultLogLevel - lw.Level(c.Verbose)
-	}
-
-	errors.SetIncludeBacktrace(opt.LogLevel == lw.TraceLevel)
 	ct := Base{
 		in:   os.Stdin,
 		out:  os.Stdout,
 		err:  os.Stderr,
 		Conf: opt,
 	}
-	if err := setup(&ct, opt); err != nil {
+	if err := setup(&ct, opt, c.Verbose); err != nil {
 		return nil, err
 	}
+	errors.SetIncludeBacktrace(opt.LogLevel == lw.TraceLevel)
+
 	return &ct, nil
 }
 
@@ -120,7 +113,7 @@ func NewBase(db storage.FullStorage, conf config.Options, l lw.Logger) (*Base, e
 	}, nil
 }
 
-func setup(ct *Base, conf config.Options) error {
+func setup(ct *Base, conf config.Options, verbose int) error {
 	path := conf.StoragePath
 	err := config.Load(&conf, path)
 	if err != nil {
@@ -139,6 +132,13 @@ func setup(ct *Base, conf config.Options) error {
 		}()
 	}
 	if ct.Logger == nil {
+		if verbose > 0 {
+			// NOTE(marius): no verbosity means show only warnings and errors
+			// verbosity = 1 means show info messages
+			// verbosity = 2 debug messages
+			// verbosity = 3 tracing messages
+			conf.LogLevel = DefaultLogLevel - lw.Level(verbose)
+		}
 		if conf.Env.IsDev() {
 			ct.Logger = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out)).WithContext(lw.Ctx{"host": conf.Hostname})
 		} else {

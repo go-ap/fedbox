@@ -4,16 +4,16 @@ go 1.26.3
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20250325163623-1639f3fb0e0d
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260805145212-d14235277bb8
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260814122136-4eb8e1d40e37
 	github.com/carlmjohnson/requests v0.25.1
 	github.com/elnormous/contenttype v1.0.4
-	github.com/go-ap/activitypub v0.0.0-20260803135430-cb9978486dff
-	github.com/go-ap/client v0.0.0-20260803180630-41bd16196b43
+	github.com/go-ap/activitypub v0.0.0-20260814115726-02a6eaf49e18
+	github.com/go-ap/client v0.0.0-20260813125257-d05a09c56b39
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/fedbox v0.0.0-20260717173704-0c1f2719fe9d
-	github.com/go-ap/filters v0.0.0-20260803180515-dca600d1a418
-	github.com/go-ap/storage-conformance-suite v0.0.0-20260803143156-1d6f11dd8e84
-	github.com/go-ap/storage-pg v0.0.0-20260803181345-256534129558
+	github.com/go-ap/filters v0.0.0-20260814115918-ee31b596ad6a
+	github.com/go-ap/storage-conformance-suite v0.0.0-20260814120045-8265fcc973e8
+	github.com/go-ap/storage-pg v0.0.0-20260814122005-125ff2b8d25d
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.21.9
 	github.com/google/ko v0.19.1
@@ -22,7 +22,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
-	golang.org/x/crypto v0.54.0
+	golang.org/x/crypto v0.55.0
 )
 
 require (
@@ -65,7 +65,7 @@ require (
 	github.com/aws/smithy-go v1.26.0 // indirect
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.12.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/bits-and-blooms/bitset v1.24.6 // indirect
+	github.com/bits-and-blooms/bitset v1.25.0 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
@@ -104,13 +104,13 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	github.com/go-ap/cache v0.0.0-20260803141141-2249e83e921d // indirect
+	github.com/go-ap/cache v0.0.0-20260814115838-221d70b37daa // indirect
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38 // indirect
 	github.com/go-ap/processing v0.0.0-20260716111245-78d0ef51171a // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260805145001-713155192813 // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260803181216-171aab2709d7 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260803180900-b2a8927022c2 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260805135402-5ae620645bb7 // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260814121750-af5032fcd324 // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260814121708-d093da14fac2 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260814121432-888b9a95e0e2 // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260814121551-4dc143073318 // indirect
 	github.com/go-chi/chi/v5 v5.3.1 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
@@ -237,23 +237,23 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.6 // indirect
 	golang.org/x/mod v0.38.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/grpc v1.82.1 // indirect
-	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apimachinery v0.36.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
-	modernc.org/libc v1.75.2 // indirect
+	modernc.org/libc v1.75.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.0 // indirect
 	modernc.org/sqlite v1.56.0 // indirect

@@ -29,7 +29,7 @@ func getObjectCollections(act vocab.Item) vocab.IRIs {
 	collections := make(vocab.IRIs, 0)
 	for _, col := range vocab.OfObject {
 		if colIRI := col.IRI(act); colIRI != "" {
-			collections = append(collections, colIRI)
+			_ = collections.Append(colIRI)
 		}
 	}
 	return collections
@@ -39,7 +39,7 @@ func getActorCollections(act vocab.Item) vocab.IRIs {
 	collections := make(vocab.IRIs, 0)
 	for _, col := range vocab.OfActor {
 		if colIRI := col.IRI(act); colIRI != "" {
-			collections = append(collections, colIRI)
+			_ = collections.Append(colIRI)
 		}
 	}
 	return collections

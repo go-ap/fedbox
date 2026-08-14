@@ -124,6 +124,27 @@ func accept(initFn ...ap.InitFn) *vocab.Activity {
 	return ap.Activity(initFn...)
 }
 
+func reject(initFn ...ap.InitFn) *vocab.Activity {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.RejectType),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
+func block(initFn ...ap.InitFn) *vocab.Activity {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.BlockType),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
+func ignore(initFn ...ap.InitFn) *vocab.Activity {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.IgnoreType),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
 func baseIRI(iri vocab.IRI) vocab.IRI {
 	ub, err := iri.GetLink().URL()
 	if err != nil {

@@ -11,16 +11,17 @@ import (
 )
 
 type (
-	iri = vocab.IRI
-	t   = vocab.ActivityVocabularyType
-	ts  = vocab.ActivityVocabularyTypes
-	ic  = vocab.ItemCollection
-	i   = vocab.Item
-	ep  = vocab.Endpoints
-	o   = vocab.Object
-	a   = vocab.Actor
-	aa  = vocab.Activity
-	ai  = vocab.IntransitiveActivity
+	iri  = vocab.IRI
+	iris = vocab.IRIs
+	t    = vocab.ActivityVocabularyType
+	ts   = vocab.ActivityVocabularyTypes
+	ic   = vocab.ItemCollection
+	i    = vocab.Item
+	ep   = vocab.Endpoints
+	o    = vocab.Object
+	a    = vocab.Actor
+	aa   = vocab.Activity
+	ai   = vocab.IntransitiveActivity
 
 	InitFn = any
 )
@@ -33,39 +34,42 @@ func NL[T ~string](content T) vocab.NaturalLanguageValues {
 	return vocab.NaturalLanguageValuesNew(vocab.RefValue(vocab.NilLangRef, content))
 }
 
-func HasAttributedTo(i iri) func(*o) error {
+func HasAttributedTo(i ...iri) func(*o) error {
+	is := iris(i)
 	return func(ob *o) error {
-		ob.AttributedTo = i
+		ob.AttributedTo = is.Collection().Normalize()
 		return nil
 	}
 }
 
-func HasContext(i iri) func(*o) error {
+func HasContext(i ...iri) func(*o) error {
+	is := iris(i)
 	return func(ob *o) error {
-		ob.Context = i
+		ob.Context = is.Collection().Normalize()
 		return nil
 	}
 }
 
-func HasAudience(i iri) func(*o) error {
+func HasAudience(i ...iri) func(*o) error {
+	aud := iris(i)
 	return func(ob *o) error {
-		if ob.Audience == nil {
-			ob.Audience = make(ic, 0)
-		}
-		return ob.Audience.Append(i)
-	}
-}
-
-func HasGenerator(i iri) func(*o) error {
-	return func(ob *o) error {
-		ob.Generator = i
+		ob.Audience = aud.Collection()
 		return nil
 	}
 }
 
-func HasURL(i iri) func(*o) error {
+func HasGenerator(i ...iri) func(*o) error {
+	is := iris(i)
 	return func(ob *o) error {
-		ob.URL = i
+		ob.Generator = is.Collection().Normalize()
+		return nil
+	}
+}
+
+func HasURL(i ...iri) func(*o) error {
+	is := iris(i)
+	return func(ob *o) error {
+		ob.URL = is.Collection().Normalize()
 		return nil
 	}
 }
@@ -94,27 +98,18 @@ func HasPublicKey(k crypto.PublicKey) func(*a) error {
 
 func HasTag(t i) func(*o) error {
 	return func(ob *o) error {
-		if ob.Tag == nil {
-			ob.Tag = make(ic, 0)
-		}
 		return ob.Tag.Append(t)
 	}
 }
 
 func HasCC(i iri) func(*o) error {
 	return func(ob *o) error {
-		if ob.CC == nil {
-			ob.CC = make(ic, 0)
-		}
 		return ob.CC.Append(i)
 	}
 }
 
 func HasTo(i iri) func(*o) error {
 	return func(ob *o) error {
-		if ob.To == nil {
-			ob.To = make(ic, 0)
-		}
 		return ob.To.Append(i)
 	}
 }

@@ -38,14 +38,13 @@ func (e Export) Run(ctl *Base) error {
 	items := make(vocab.ItemCollection, 0)
 	if vocab.IsCollection(col) {
 		err = vocab.OnCollectionIntf(col, func(c vocab.CollectionInterface) error {
-			items = append(items, c.Collection()...)
-			return nil
+			return items.Append(c.Collection()...)
 		})
 		if err != nil {
 			return err
 		}
 	} else {
-		items = append(items, col)
+		_ = items.Append(col)
 	}
 
 	allMeta := ap.LoadMetadataForItems(metaLoader)

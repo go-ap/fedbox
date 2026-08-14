@@ -1239,7 +1239,7 @@ func Test_C2S_LikeRequests(t *testing.T) {
 	}
 }
 
-func Test_ShareRequests(t *testing.T) {
+func Test_C2S_ShareRequests(t *testing.T) {
 	person1 := person(
 		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
 		ap.HasPreferredUsername("jdoe"),
@@ -1378,12 +1378,11 @@ func Test_ShareRequests(t *testing.T) {
 	}
 }
 
-func Test_FollowRequests(t *testing.T) {
+func Test_C2S_FollowRequests(t *testing.T) {
 	person1 := person(
 		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
 		ap.HasPreferredUsername("jdoe"),
 		ap.HasName("John Doe"),
-		ap.HasAudience(vocab.PublicNS),
 		ap.HasPublished(MockDate),
 		ap.HasFollowing,
 		ap.HasFollowers,
@@ -1392,7 +1391,6 @@ func Test_FollowRequests(t *testing.T) {
 		c2sRootIRI.AddPath("actors/person-3"),
 		ap.HasPreferredUsername("alice"),
 		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
 		ap.HasPublished(MockDate),
 		ap.HasFollowing,
 		ap.HasFollowers,
@@ -1428,14 +1426,15 @@ func Test_FollowRequests(t *testing.T) {
 
 	follow4ID := c2sRootIRI.AddPath("activities/follow-4")
 	follow4 := follow(
+		//ap.HasTo(person3.ID), // NOTE(marius): this is added by processing the Follow
 		ap.HasCC(vocab.PublicNS),
 		ap.HasActor(person1.ID),
 		ap.HasObject(person3.ID),
 	)
 	accept5ID := c2sRootIRI.AddPath("activities/accept-5")
 	accept5 := accept(
-		ap.HasCC(vocab.PublicNS),
 		ap.HasTo(person1.ID),
+		ap.HasCC(vocab.PublicNS),
 		ap.HasActor(person3.ID),
 		ap.HasObject(follow4ID),
 	)
@@ -1535,7 +1534,7 @@ func Test_FollowRequests(t *testing.T) {
 			},
 		},
 		tests.TestSuite{
-			Name: "Follow Accept",
+			Name: "Follow then Accept",
 			Tests: []tests.RunnableTest{
 				tests.HTTPTest{
 					Name: "Follow person3",
@@ -1759,7 +1758,437 @@ func Test_FollowRequests(t *testing.T) {
 	}
 }
 
-// TODO(marius): BlockRequests -> unable to access blocker and its collections using blocked's authorization
+func Test_C2S_BlockRequests(t *testing.T) {
+	person1 := person(
+		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
+		ap.HasPreferredUsername("jdoe"),
+		ap.HasName("John Doe"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasFollowing,
+		ap.HasFollowers,
+	)
+	person3 := person(
+		c2sRootIRI.AddPath("actors/person-3"),
+		ap.HasPreferredUsername("alice"),
+		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasFollowing,
+		ap.HasFollowers,
+	)
+
+	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
+
+	tokenP1 := new(c2s.BearerSigner)
+	tokenP3 := new(c2s.BearerSigner)
+
+	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+
+	images := c.Suite(fedbox.New(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+		fedbox.WithArgs([]string{"--bootstrap"}),
+		fedbox.WithKey(prvKey),
+		fedbox.WithTestLogger(t, Verbose),
+		fedbox.WithItems(person1, person3),
+		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1)),
+		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person3.ID, tokenP3)),
+	))
+
+	ctx := context.Background()
+	cont, err := c.Start(ctx, t, images...)
+	if err != nil {
+		t.Fatalf("Unable to start test containers: %v", err)
+	}
+
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	blocked := vocab.CollectionPath("blocked")
+
+	block4ID := c2sRootIRI.AddPath("/activities/block-4")
+	block4 := block(
+		ap.HasActor(person1.ID),
+		ap.HasObject(person3.ID),
+	)
+
+	article6 := object(
+		c2sRootIRI.AddPath("objects/article-6"),
+		ap.HasType(vocab.ArticleType),
+		ap.HasTo(person1.ID),
+		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasAudience(vocab.PublicNS),
+	)
+
+	create5ID := c2sRootIRI.AddPath("/activities/create-5")
+	create5 := create(ap.HasActor(person3), ap.HasObject(article6))
+
+	toRun := []tests.RunnableTest{
+		tests.TestSuite{
+			Name: "control checks",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "person1 exists",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(person1.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(person1.ID),
+							tests.IsType(person1.Type),
+							tests.HasName(person1.Name),
+							tests.HasPreferredUsername(person1.PreferredUsername),
+							tests.HasSummary(person1.Summary),
+							tests.HasContent(person1.Content),
+							tests.WasPublished(person1.Published),
+							tests.HasAudience(person1.Audience),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person1 blocked collection is not accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(blocked.IRI(person1.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errors.NotFoundf("not found")),
+				},
+				//tests.HTTPTest{
+				//	Name: "person1 blocked collection is accessible if authenticated",
+				//	Req: tests.Request().
+				//		Bearer(tokenP1.AccessToken).
+				//		Accept(client.ContentTypeJsonActivity).
+				//		IRI(blocked.IRI(person1.ID)),
+				//	Res: tests.Response().
+				//		HasCode(http.StatusOK),
+				//},
+				tests.HTTPTest{
+					Name: "person3 exists",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(person3.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(person3.ID),
+							tests.IsType(person3.Type),
+							tests.HasName(person3.Name),
+							tests.HasPreferredUsername(person3.PreferredUsername),
+							tests.HasSummary(person3.Summary),
+							tests.HasContent(person3.Content),
+							tests.WasPublished(person3.Published),
+							tests.HasAudience(person3.Audience),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person3 blocked collection is not accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(blocked.IRI(person3.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errors.NotFoundf("not found")),
+				},
+				//tests.HTTPTest{
+				//	Name: "person3 blocked collection is accessible if authenticated",
+				//	Req: tests.Request().
+				//		Bearer(tokenP3.AccessToken).
+				//		Accept(client.ContentTypeJsonActivity).
+				//		IRI(blocked.IRI(person3.ID)),
+				//	Res: tests.Response().
+				//		HasCode(http.StatusOK),
+				//},
+				tests.HTTPTest{
+					Name: "person1 is accessible as person3",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(person1.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(person1.ID),
+							tests.HasPreferredUsername(person1.PreferredUsername),
+							tests.HasName(person1.Name),
+							tests.HasAudience(person3.Audience),
+							tests.WasPublished(person3.Published),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person1 Outbox is accessible as person3",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(0),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person1 Inbox is accessible as person3",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Inbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(0),
+						),
+				},
+			},
+		},
+		tests.TestSuite{
+			Name: "Block",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Block person3",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)).
+						BodyItem(block4),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(block4ID),
+							tests.IsType(block4.Type),
+							tests.HasActor(person1.ID),
+							tests.HasObject(person3.ID),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Block is not accessible in Outbox without authorization",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.DoesNotHaveItem(block4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Block is in Outbox when authorized",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(block4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Block is not in person3 Inbox",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(person3.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Inbox.IRI(person3.ID), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(0),
+							tests.DoesNotHaveItem(block4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Block is accessible as person1",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(block4ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(block4ID),
+							tests.IsType(block4.Type),
+							tests.HasActor(person1.ID),
+							tests.HasObject(person3.ID),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Block is not accessible without authorization",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(block4ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errors.NotFoundf("%s not found", block4ID)),
+				},
+				tests.HTTPTest{
+					Name: "Block is not accessible as person3",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(block4ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errors.NotFoundf("%s not found", block4ID)),
+				},
+			},
+		},
+		tests.TestSuite{
+			Name: "person1 no longer accessible to person3",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "person1 is not accessible as person3",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(person1.ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errors.NotFoundf("%s not found", person1.ID)),
+				},
+				tests.HTTPTest{
+					Name: "person1 Outbox is not accessible as person3",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errors.NotFoundf("%s not found", vocab.Outbox.IRI(person1))),
+				},
+				tests.HTTPTest{
+					Name: "person1 Inbox is not accessible as person3",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errors.NotFoundf("%s not found", vocab.Inbox.IRI(person1))),
+				},
+			},
+		},
+		tests.TestSuite{
+			Name: "no person1 activities reach person3",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					// NOTE(marius): if we want that a blocked actor is no longer accessible to the actor
+					// that operated the block, the client needs to have access to the blocked collection.
+					Name: "person3 is accessible as person1",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(person3.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(person3.ID),
+							tests.HasPreferredUsername(person3.PreferredUsername),
+							tests.HasContent(person3.Content),
+							tests.HasAudience(person3.Audience),
+							tests.WasPublished(person3.Published),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create with person1 in CC",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person3)).
+						BodyItem(create5),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						HasLocation(create5ID).
+						ItemMatch(
+							tests.HasID(article6.ID),
+							tests.IsType(article6.Type),
+							tests.HasCC(article6.CC),
+							tests.HasContent(article6.Content),
+							tests.HasAudience(vocab.PublicNS),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is in person3's Outbox",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person3)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(create5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is not in person1's Inbox",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Inbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(0),
+							tests.DoesNotHaveItem(create5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Article is publicly accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(article6.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(article6.ID),
+							tests.IsType(article6.Type),
+							tests.HasContent(article6.Content),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Article is accessible as person1",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(article6.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(article6.ID),
+							tests.IsType(article6.Type),
+							tests.HasContent(article6.Content),
+						),
+				},
+			},
+		},
+	}
+
+	for _, test := range toRun {
+		t.Run(test.Label(), test.Fn(ctx, cont))
+	}
+}
+
 // TODO(marius): IgnoreRequests -> ignored's activities don't get to ignorer's inbox
 
 // TODO(marius): QuestionRequests -> port old question tests

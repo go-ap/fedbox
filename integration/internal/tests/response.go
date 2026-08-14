@@ -72,6 +72,8 @@ func (res resChecks) HasErrors(wanted ...error) resChecks {
 			maybeErr, err := errors.UnmarshalJSON(raw)
 			if err != nil {
 				t.Errorf("Unable to unmarshal FedBOX error: %v", err)
+				t.Logf("Body is: %s", raw)
+				return
 			}
 			if !cmp.Equal(wanted, maybeErr, EquateWeakErrors) {
 				t.Errorf("Received error from FedBOX server: %s", cmp.Diff(wanted, maybeErr, EquateWeakErrors))
@@ -359,20 +361,20 @@ func HasSource[T ~string | vocab.NaturalLanguageValues](cont T, mt vocab.MimeTyp
 	}
 }
 
-func toItemCol(it vocab.Item) vocab.ItemCollection {
+func toNormalizedItemCol(it vocab.Item) vocab.Item {
 	col := make(vocab.ItemCollection, 0)
 	_ = vocab.OnItem(it, func(item vocab.Item) error {
 		return col.Append(item)
 	})
-	return col
+	return col.Normalize()
 }
 
 func HasTo(to ...vocab.Item) itemCheckFn {
-	ti := vocab.ItemCollection(to)
+	ti := toNormalizedItemCol(vocab.ItemCollection(to))
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("To", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if tt := toItemCol(ob.To); !cmp.Equal(ti, tt, equateItems) {
+				if tt := toNormalizedItemCol(ob.To); !cmp.Equal(ti, tt, equateItems) {
 					t.Errorf("Received %s", cmp.Diff(ti, tt, equateItems))
 				}
 				return nil
@@ -385,11 +387,11 @@ func HasTo(to ...vocab.Item) itemCheckFn {
 }
 
 func HasCC(cc ...vocab.Item) itemCheckFn {
-	ci := vocab.ItemCollection(cc).Normalize()
+	ci := toNormalizedItemCol(vocab.ItemCollection(cc))
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("CC", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if ccc := toItemCol(ob.CC).Normalize(); !cmp.Equal(ci, cc, equateItems) {
+				if ccc := toNormalizedItemCol(ob.CC); !cmp.Equal(ci, ccc, equateItems) {
 					t.Errorf("Received %s", cmp.Diff(ci, ccc, equateItems))
 				}
 				return nil
@@ -452,12 +454,12 @@ func WasDeleted(d time.Time) itemCheckFn {
 }
 
 func HasAudience(u ...vocab.Item) itemCheckFn {
-	ui := vocab.ItemCollection(u).Normalize()
+	ui := toNormalizedItemCol(vocab.ItemCollection(u))
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("Audience", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if !cmp.Equal(ob.Audience, ui, equateItems) {
-					t.Errorf("%s", cmp.Diff(ui, ob.Audience, equateItems))
+				if aud := toNormalizedItemCol(ob.Audience); !cmp.Equal(aud, ui, equateItems) {
+					t.Errorf("%s", cmp.Diff(ui, aud, equateItems))
 				}
 				return nil
 			})
@@ -469,12 +471,12 @@ func HasAudience(u ...vocab.Item) itemCheckFn {
 }
 
 func HasInReplyTo(u ...vocab.Item) itemCheckFn {
-	ui := vocab.ItemCollection(u).Normalize()
+	ui := toNormalizedItemCol(vocab.ItemCollection(u))
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("InReplyTo", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if !cmp.Equal(ob.InReplyTo, ui, equateItems) {
-					t.Errorf("%s", cmp.Diff(ui, ob.InReplyTo, equateItems))
+				if ir := toNormalizedItemCol(ob.InReplyTo); !cmp.Equal(ir, ui, equateItems) {
+					t.Errorf("%s", cmp.Diff(ui, ir, equateItems))
 				}
 				return nil
 			})
@@ -486,12 +488,12 @@ func HasInReplyTo(u ...vocab.Item) itemCheckFn {
 }
 
 func HasAttributedTo(u ...vocab.Item) itemCheckFn {
-	ui := vocab.ItemCollection(u).Normalize()
+	ui := toNormalizedItemCol(vocab.ItemCollection(u))
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("AttributedTo", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if !cmp.Equal(ob.AttributedTo, ui, equateItems) {
-					t.Errorf("%s", cmp.Diff(ui, ob.AttributedTo, equateItems))
+				if at := toNormalizedItemCol(ob.AttributedTo); !cmp.Equal(at, ui, equateItems) {
+					t.Errorf("%s", cmp.Diff(ui, at, equateItems))
 				}
 				return nil
 			})
@@ -502,12 +504,13 @@ func HasAttributedTo(u ...vocab.Item) itemCheckFn {
 	}
 }
 
-func HasURL(u vocab.Item) itemCheckFn {
+func HasURL(u ...vocab.Item) itemCheckFn {
+	ui := toNormalizedItemCol(vocab.ItemCollection(u))
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("URL", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if !cmp.Equal(ob.URL, u, equateItems) {
-					t.Errorf("%s", cmp.Diff(u, ob.URL, equateItems))
+				if uu := toNormalizedItemCol(ob.URL); !cmp.Equal(uu, ui, equateItems) {
+					t.Errorf("%s", cmp.Diff(ui, uu, equateItems))
 				}
 				return nil
 			})
@@ -628,7 +631,7 @@ func HasTotalItems(cnt int) itemCheckFn {
 
 func DoesNotHaveItem(it vocab.Item) itemCheckFn {
 	return func(t *testing.T, got vocab.Item) {
-		t.Run("Contains:"+string(it.GetLink()), func(t *testing.T) {
+		t.Run("Does not contain: "+string(it.GetLink()), func(t *testing.T) {
 			err := vocab.OnOrderedCollection(got, func(col *vocab.OrderedCollection) error {
 				gotItems := col.OrderedItems
 				maybeFound, _ := filters.Checks{filters.SameID(it.GetID())}.Run(gotItems).(vocab.ItemCollection)
@@ -646,7 +649,7 @@ func DoesNotHaveItem(it vocab.Item) itemCheckFn {
 
 func HasItem(it vocab.Item) itemCheckFn {
 	return func(t *testing.T, got vocab.Item) {
-		t.Run("Contains:"+string(it.GetLink()), func(t *testing.T) {
+		t.Run("Contains: "+string(it.GetLink()), func(t *testing.T) {
 			err := vocab.OnOrderedCollection(got, func(col *vocab.OrderedCollection) error {
 				gotItems := col.OrderedItems
 				maybeFound, _ := filters.Checks{filters.SameID(it.GetID())}.Run(gotItems).(vocab.ItemCollection)

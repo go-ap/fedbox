@@ -136,15 +136,13 @@ func saveMocks(testData []string, config config.Options, db storage.FullStorage,
 	}
 
 	baseIRI := vocab.IRI(config.BaseURL)
-	m := make(vocab.ItemCollection, 0)
+	m := make(vocab.ItemCollection, 0, len(testData))
 	for _, mock := range testData {
 		it := loadMockFromDisk(mock, nil)
 		if !it.GetLink().Contains(baseIRI, false) {
 			continue
 		}
-		if !m.Contains(it) {
-			m = append(m, it)
-		}
+		_ = m.Append(it)
 	}
 	if err := addMockObjects(db, m); err != nil {
 		return err

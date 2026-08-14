@@ -66,7 +66,7 @@ func BootstrapStorage(conf config.Options, service vocab.Item, l lw.Logger, pair
 		out: os.Stdout,
 		err: os.Stderr,
 	}
-	if err := setup(&ctl, conf); err != nil {
+	if err := setup(&ctl, conf, 0); err != nil {
 		return err
 	}
 	return bootstrap(&ctl, service, l, pair, nil)

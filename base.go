@@ -345,7 +345,7 @@ func (ctl *Base) DeleteObjects(reason string, inReplyTo []string, ids ...vocab.I
 			if _, err := url.Parse(repl); err != nil {
 				continue
 			}
-			replIRI = append(replIRI, vocab.IRI(repl))
+			_ = replIRI.Append(vocab.IRI(repl))
 		}
 		d.InReplyTo = replIRI
 	}
@@ -369,8 +369,7 @@ func (ctl *Base) DeleteObjects(reason string, inReplyTo []string, ids ...vocab.I
 			if o.AttributedTo != nil {
 				d.CC = append(d.CC, o.AttributedTo.GetLink())
 			}
-			delItems = append(delItems, o.GetLink())
-			return nil
+			return delItems.Append(o.GetLink())
 		})
 	}
 	d.CC = append(d.CC, self.GetLink())
