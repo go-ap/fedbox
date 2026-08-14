@@ -47,22 +47,19 @@ func (a AddActorCmd) Run(ctl *Base) error {
 
 	objectsCollection := filters.ObjectsType.IRI(vocab.IRI(ctl.Conf.BaseURL))
 	allObjects, _ := ctl.Storage.Load(objectsCollection)
-	_ = vocab.OnCollectionIntf(allObjects, func(col vocab.CollectionInterface) error {
-		for _, it := range col.Collection() {
-			_ = vocab.OnObject(it, func(object *vocab.Object) error {
-				for _, tag := range a.Tags {
-					if object.Name.First().String() != tag {
-						continue
-					}
-					if object.AttributedTo.GetLink() != author.GetLink() {
-						continue
-					}
-					_ = tags.Append(object)
+	_ = vocab.OnItem(allObjects, func(it vocab.Item) error {
+		return vocab.OnObject(it, func(object *vocab.Object) error {
+			for _, tag := range a.Tags {
+				if object.Name.First().String() != tag {
+					continue
 				}
-				return nil
-			})
-		}
-		return nil
+				if object.AttributedTo.GetLink() != author.GetLink() {
+					continue
+				}
+				_ = tags.Append(object)
+			}
+			return nil
+		})
 	})
 
 	rw := muxReadWriter{Reader: ctl.in, Writer: ctl.out}
@@ -77,23 +74,34 @@ func (a AddActorCmd) Run(ctl *Base) error {
 		}
 
 		now := time.Now().UTC()
-		p := &vocab.Person{
+		p := &vocab.Actor{
 			Type: a.Type,
 			// TODO(marius): when adding authentication to the command, we can set here the actor that executes it
-			AttributedTo: author.GetLink(),
-			Generator:    author.GetLink(),
-			Published:    now,
-			Summary: vocab.NaturalLanguageValues{
-				vocab.NilLangRef: vocab.Content("Generated actor"),
-			},
-			Updated: now,
-			PreferredUsername: vocab.NaturalLanguageValues{
-				vocab.NilLangRef: vocab.Content(name),
-			},
+			AttributedTo:      author.GetLink(),
+			Generator:         ctl.Service.ID,
+			Published:         now,
+			PreferredUsername: vocab.DefaultNaturalLanguage(name),
 		}
 		if len(tags) > 0 {
 			p.Tag = tags
 		}
+		id, err := GenerateID(ctl.Service.ID)(p, author)
+		if err == nil {
+			p.Inbox = vocab.Inbox.IRI(id)
+			p.Outbox = vocab.Outbox.IRI(id)
+			p.Followers = vocab.Followers.IRI(id)
+			p.Following = vocab.Following.IRI(id)
+
+			oauth := id.AddPath("oauth")
+			proxyURL := ctl.Service.ID.AddPath("proxyUrl")
+			p.Endpoints = &vocab.Endpoints{
+				OauthAuthorizationEndpoint: oauth.AddPath("authorize"),
+				OauthTokenEndpoint:         oauth.AddPath("token"),
+				ProxyURL:                   proxyURL,
+				SharedInbox:                vocab.Inbox.IRI(ctl.Service),
+			}
+		}
+
 		if p, err = ctl.AddActor(p, &author); err != nil {
 			return err
 		}
