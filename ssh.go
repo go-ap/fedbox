@@ -56,12 +56,9 @@ func runSSHCommand(f *FedBOX, s ssh.Session) error {
 	if len(args) == 0 {
 		return fmt.Errorf("PTY is not interactive and no command was sent")
 	}
-	ctl := new(Base)
-	ctl.Conf = f.Conf
-	ctl.Logger = f.Logger
-	ctl.Service = f.Service
-	ctl.ServicePrivateKey = f.ServicePrivateKey
-	ctl.Storage = f.Storage
+
+	// NOTE(marius): making a copy of the ctrl setup, in which we override the input/output/error streams
+	ctl := *f.Base
 	ctl.out = s
 	ctl.in = s
 	ctl.err = s.Stderr()
@@ -88,7 +85,7 @@ func runSSHCommand(f *FedBOX, s ssh.Session) error {
 		return err
 	}
 
-	if err = ktx.Run(ctl); err != nil {
+	if err = ktx.Run(&ctl); err != nil {
 		_ = k.Errorf("%s\n", err)
 		return err
 	}

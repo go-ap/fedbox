@@ -11,12 +11,10 @@ import (
 
 	"git.sr.ht/~mariusor/lw"
 	m "git.sr.ht/~mariusor/servermux"
-	"git.sr.ht/~mariusor/storage-all"
 	w "git.sr.ht/~mariusor/wrapper"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/cache"
 	"github.com/go-ap/errors"
-	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/processing"
 	"github.com/go-chi/chi/v5"
@@ -40,8 +38,6 @@ type FedBOX struct {
 
 	maintenanceMode atomic.Bool
 	shuttingDown    atomic.Bool
-
-	keyGenerator func(act *vocab.Actor) error
 }
 
 func initHttpServer(app *FedBOX) (m.Server, error) {
@@ -121,16 +117,6 @@ func New(ctl *Base) (*FedBOX, error) {
 		caches: cache.New(conf.RequestCache),
 	}
 
-	if metaSaver, ok := db.(storage.MetadataStorage); ok {
-		keysType := ap.KeyTypeED25519
-		if conf.MastodonCompatible {
-			keysType = ap.KeyTypeRSA
-		}
-
-		ctl.Logger.Debugf("Setting actor key generator %T[%s]", metaSaver, keysType)
-		app.keyGenerator = ap.KeyGenerator(metaSaver, keysType)
-	}
-
 	if err := ctl.LoadServiceActor(); err != nil {
 		app.Logger.WithContext(lw.Ctx{"err": err, "iri": ctl.Conf.BaseURL}).Warnf("no root service exists")
 	}
@@ -167,12 +153,12 @@ func New(ctl *Base) (*FedBOX, error) {
 	return &app, nil
 }
 
-func (f *FedBOX) Pause() error {
-	if f.maintenanceMode.Load() {
+func (fb *FedBOX) Pause() error {
+	if fb.maintenanceMode.Load() {
 		// restart everything
-		f.Storage.Close()
+		fb.Storage.Close()
 	} else {
-		return f.Storage.Open()
+		return fb.Storage.Open()
 	}
 	return nil
 }

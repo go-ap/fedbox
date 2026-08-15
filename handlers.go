@@ -67,13 +67,13 @@ func FedBOXClient(fb *FedBOX) *client.C {
 	return ActorClient(fb.Base, fb.Service.ID)
 }
 
-func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, receivedIn vocab.IRI) vocab.Actor {
+func (fb *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, receivedIn vocab.IRI) vocab.Actor {
 	// NOTE(marius): if the Storage is nil, we can still use the remote client in the load function
-	l := f.Logger.WithContext(lw.Ctx{"log": "auth"})
+	l := fb.Logger.WithContext(lw.Ctx{"log": "auth"})
 	initFns := []auth.InitFn{
 		auth.WithClient(cl),
 		auth.WithLogger(l),
-		auth.WithStorage(f.Storage),
+		auth.WithStorage(fb.Storage),
 	}
 
 	var ar actorVerifier
@@ -90,9 +90,13 @@ func (f *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, recei
 
 	actor, err := ar.Verify(r)
 	if err != nil {
-		f.Logger.WithContext(lw.Ctx{"err": err.Error()}).Errorf("unable to load an authorized Actor from request")
+		fb.Logger.WithContext(lw.Ctx{"err": err.Error()}).Errorf("unable to load an authorized Actor from request")
 	}
 	return actor
+}
+
+var pathNotFound = func(r *http.Request) error {
+	return errors.NotFoundf("%s not found", r.URL.Path)
 }
 
 // HandleCollection serves content from the generic collection end-points
@@ -103,10 +107,10 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 	}
 	return func(typ vocab.CollectionPath, r *http.Request) (vocab.CollectionInterface, error) {
 		if typ == vocab.Unknown {
-			return nil, errors.NotFoundf("%s not found", r.URL.Path)
+			return nil, pathNotFound(r)
 		}
-		if !filters.ValidCollection(typ) {
-			return nil, errors.NotFoundf("collection '%s' not found", typ)
+		if !filters.ValidCollection(typ) && !filters.HiddenCollections.Contains(typ) {
+			return nil, pathNotFound(r)
 		}
 
 		// NOTE(marius): this is the main collection page, let's redirect to its first page.
@@ -126,15 +130,20 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 		iri := vocab.IRI(colUrl)
 		authorized := fb.actorFromRequestWithClient(r, FedBOXClient(fb), iri)
 
-		maybeActor, _ := vocab.OfActor.Split(iri)
-		if fb.checkIfBlocked(maybeActor)(authorized) {
-			return nil, errors.NotFoundf("")
+		maybeObject, maybeCol := vocab.Split(iri)
+		if filters.HiddenCollections.Contains(typ) && !authorized.ID.Equal(maybeObject) {
+			// NOTE(marius): we hardcode that only a hidden collection's owner can view it
+			return nil, pathNotFound(r)
+		}
+		if fb.checkIfBlocked(maybeObject)(authorized) {
+			// NOTE(marius): if the current actor has blocked the authorized one, we refuse access
+			return nil, pathNotFound(r)
 		}
 
 		cacheKey := CacheKey(fb, authorized, *r)
 
-		it := fb.caches.Load(cacheKey)
-		fromCache := !vocab.IsNil(it)
+		colOwner := fb.caches.Load(cacheKey)
+		fromCache := !vocab.IsNil(colOwner)
 
 		var err error
 		if !fromCache {
@@ -142,16 +151,14 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 
 			fil := make(filters.Checks, 0)
 
-			maybeObject, maybeCol := vocab.Split(iri)
-
 			// NOTE(marius): load the object that owns the collection
-			if it, err = repo.Load(maybeObject.GetLink()); err != nil {
+			if colOwner, err = repo.Load(maybeObject.GetLink()); err != nil {
 				return nil, err
 			}
 			// NOTE(marius): for deleted objects, their collections should also be not found
-			if vocab.TombstoneType.Match(it.GetType()) {
+			if vocab.TombstoneType.Match(colOwner.GetType()) {
 				// NOTE(marius): we do this despite having the collections removed in the processing module
-				return nil, errors.NotFoundf("%s not found", typ)
+				return nil, pathNotFound(r)
 			}
 
 			// NOTE(marius): I want a way to make that the owner of a collection would automatically
@@ -165,21 +172,21 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 			}
 			fil = append(fil, filters.FromValues(r.URL.Query())...)
 
-			if it, err = repo.Load(iri, fil...); err != nil {
+			if colOwner, err = repo.Load(iri, fil...); err != nil {
 				fb.Logger.WithContext(lw.Ctx{"iri": iri, "err": err}).Warnf("unable to load collection")
-				return nil, errors.NotFoundf("%s not found", typ)
+				return nil, pathNotFound(r)
 			}
 		}
-		if vocab.IsNil(it) || !vocab.IsCollection(it) {
-			return nil, errors.NotFoundf("%s not found", typ)
+		if vocab.IsNil(colOwner) || !vocab.IsCollection(colOwner) {
+			return nil, pathNotFound(r)
 		}
 
-		if fb.checkIfBlocked(it)(authorized) {
-			return nil, errors.NotFoundf("")
+		if fb.checkIfBlocked(colOwner)(authorized) {
+			return nil, pathNotFound(r)
 		}
 
 		var col vocab.CollectionInterface
-		err = vocab.OnCollectionIntf(it, func(c vocab.CollectionInterface) error {
+		err = vocab.OnCollectionIntf(colOwner, func(c vocab.CollectionInterface) error {
 			col = c
 			return nil
 		})
@@ -390,18 +397,18 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 			var f filters.Check
 			f = filters.Authorized(authorized.ID)
 			if it, err = repo.Load(iri, f); err != nil {
-				return nil, errors.NotFoundf("%s was not found", iri)
+				return nil, errors.NotFoundf("%s was not found", r.URL.Path)
 			}
 		}
 		var err error
 		if vocab.IsItemCollection(it) {
 			err = vocab.OnCollectionIntf(it, func(col vocab.CollectionInterface) error {
 				if col.Count() == 0 {
-					return errors.NotFoundf("%s not found", iri)
+					return pathNotFound(r)
 				}
 
 				if col.Count() > 1 {
-					return errors.Conflictf("Too many %s found", iri)
+					return errors.Conflictf("Too many %s found", r.URL.Path)
 				}
 				it = col.Collection().First()
 				return nil

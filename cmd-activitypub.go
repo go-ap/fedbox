@@ -102,7 +102,7 @@ func (a AddActorCmd) Run(ctl *Base) error {
 			}
 		}
 
-		if p, err = ctl.AddActor(p, &author); err != nil {
+		if p, err = ctl.AddActor(p, &author, false); err != nil {
 			return err
 		}
 		_, _ = fmt.Fprintf(ctl.out, "Added %q %q\n", a.Type, name)
@@ -331,6 +331,7 @@ func (i ImportCmd) Run(ctl *Base) error {
 			it, err = activityPub.ProcessClientActivity(it, *actor, vocab.Outbox.Of(a.Actor).GetLink())
 			return err
 		})
+
 		if err != nil {
 			Errf(ctl.err, "Unable to process %s %s: %v", it.GetType(), it.GetID(), err)
 			continue

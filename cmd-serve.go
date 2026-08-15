@@ -26,6 +26,8 @@ type Base struct {
 	ServicePrivateKey crypto.PrivateKey
 	Storage           storage.FullStorage
 
+	keyGenerator func(act *vocab.Actor) error
+
 	debugMode atomic.Bool
 
 	out io.Writer

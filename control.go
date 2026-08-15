@@ -163,6 +163,17 @@ func setup(ct *Base, conf config.Options, verbose int) error {
 	if ct.Storage, err = storage.New(initFn...); err != nil {
 		return err
 	}
+
+	if metaSaver, ok := ct.Storage.(storage.MetadataStorage); ok {
+		keysType := ap.KeyTypeED25519
+		if conf.MastodonCompatible {
+			keysType = ap.KeyTypeRSA
+		}
+
+		ct.Logger.Debugf("Setting actor key generator %T[%s]", metaSaver, keysType)
+		ct.keyGenerator = ap.KeyGenerator(metaSaver, keysType)
+	}
+
 	return nil
 }
 

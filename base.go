@@ -256,11 +256,14 @@ func (ctl *Base) Saver(actor *vocab.Actor, onlyLocalSaves, skipInboundValidation
 		// NOTE(marius): for saving the service actor we need to skip collection validation
 		initFns = append(initFns, processing.SkipInboundCollectionValidation)
 	}
+	if ctl.keyGenerator != nil {
+		initFns = append(initFns, processing.WithActorKeyGenerator(ctl.keyGenerator))
+	}
 	initFns = append(initFns, processing.WithClient(ActorClient(ctl, actor)))
 	return processing.New(initFns...)
 }
 
-func (ctl *Base) AddActor(p, by *vocab.Actor) (*vocab.Actor, error) {
+func (ctl *Base) AddActor(p, by *vocab.Actor, skipInboundCollectionValidation bool) (*vocab.Actor, error) {
 	if ctl == nil || ctl.Storage == nil {
 		return nil, errors.Errorf("invalid storage backend")
 	}
@@ -284,7 +287,6 @@ func (ctl *Base) AddActor(p, by *vocab.Actor) (*vocab.Actor, error) {
 		return nil, errors.Newf("unable to find Actor's outbox: %s", by)
 	}
 
-	skipInboundCollectionValidation := ctl.Service.ID.Equal(p.ID)
 	_, err := ctl.Saver(by, false, skipInboundCollectionValidation).ProcessClientActivity(create, *by, outbox.GetLink())
 	if err != nil && !errors.IsConflict(err) {
 		return nil, err
@@ -586,7 +588,7 @@ func (ctl *Base) AddClient(pw []byte, redirectUris []string, u any) (string, err
 		PreferredUsername: vocab.DefaultNaturalLanguage(name),
 		URL:               urls,
 	}
-	app, err := ctl.AddActor(p, &self)
+	app, err := ctl.AddActor(p, &self, false)
 	if err != nil {
 		return "", err
 	}
@@ -657,7 +659,7 @@ func CreateService(ctl *Base, self vocab.Item, pair *ap.KeyPair, pw []byte) (err
 	service.Published = time.Now().UTC()
 
 	ctl.Service = *service
-	service, err = ctl.AddActor(service, service)
+	service, err = ctl.AddActor(service, service, true)
 	if err != nil {
 		return err
 	}

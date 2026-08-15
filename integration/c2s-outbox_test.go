@@ -1856,15 +1856,15 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						HasCode(http.StatusNotFound).
 						HasErrors(errors.NotFoundf("not found")),
 				},
-				//tests.HTTPTest{
-				//	Name: "person1 blocked collection is accessible if authenticated",
-				//	Req: tests.Request().
-				//		Bearer(tokenP1.AccessToken).
-				//		Accept(client.ContentTypeJsonActivity).
-				//		IRI(blocked.IRI(person1.ID)),
-				//	Res: tests.Response().
-				//		HasCode(http.StatusOK),
-				//},
+				tests.HTTPTest{
+					Name: "person1 blocked collection is accessible if authenticated",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(blocked.IRI(person1.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK),
+				},
 				tests.HTTPTest{
 					Name: "person3 exists",
 					Req: tests.Request().
@@ -1892,15 +1892,15 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						HasCode(http.StatusNotFound).
 						HasErrors(errors.NotFoundf("not found")),
 				},
-				//tests.HTTPTest{
-				//	Name: "person3 blocked collection is accessible if authenticated",
-				//	Req: tests.Request().
-				//		Bearer(tokenP3.AccessToken).
-				//		Accept(client.ContentTypeJsonActivity).
-				//		IRI(blocked.IRI(person3.ID)),
-				//	Res: tests.Response().
-				//		HasCode(http.StatusOK),
-				//},
+				tests.HTTPTest{
+					Name: "person3 blocked collection is accessible if authenticated",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(blocked.IRI(person3.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK),
+				},
 				tests.HTTPTest{
 					Name: "person1 is accessible as person3",
 					Req: tests.Request().
