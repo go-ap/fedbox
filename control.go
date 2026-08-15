@@ -42,7 +42,7 @@ type CTL struct {
 
 	Url     *url.URL         `help:"The URL used by the application."`
 	Env     env.Type         `enum:"${envTypes}" help:"The environment to use. Expected values: ${envTypes}" default:"${defaultEnv}"`
-	Verbose int              `counter:"v" help:"Increase verbosity level from the default associated with the environment settings."`
+	Verbose int              `name:"verbose" short:"v" default:"0" type:"counter" help:"Increase verbosity of the log output" `
 	Path    string           `path:"" help:"The path for the storage folder or socket" env:"STORAGE_PATH"`
 	Version kong.VersionFlag `short:"V"`
 
@@ -133,11 +133,7 @@ func setup(ct *Base, conf config.Options, verbose int) error {
 	}
 	if ct.Logger == nil {
 		if verbose > 0 {
-			// NOTE(marius): no verbosity means show only warnings and errors
-			// verbosity = 1 means show info messages
-			// verbosity = 2 debug messages
-			// verbosity = 3 tracing messages
-			conf.LogLevel = DefaultLogLevel - lw.Level(verbose)
+			conf.LogLevel = lw.Level(max(int(lw.TraceLevel), int(conf.LogLevel)-verbose))
 		}
 		if conf.Env.IsDev() {
 			ct.Logger = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out)).WithContext(lw.Ctx{"host": conf.Hostname})
