@@ -102,7 +102,7 @@ var pathNotFound = func(r *http.Request) error {
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
-	if fb == nil {
+	if fb == nil || fb.Storage == nil {
 		return outOfOrderCollectionHandler
 	}
 	return func(typ vocab.CollectionPath, r *http.Request) (vocab.CollectionInterface, error) {
@@ -131,19 +131,21 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 		authorized := fb.actorFromRequestWithClient(r, FedBOXClient(fb), iri)
 
 		maybeObject, maybeCol := vocab.Split(iri)
+		// NOTE(marius): we hardcode that only a hidden collection's owner can view it
 		if filters.HiddenCollections.Contains(typ) && !authorized.ID.Equal(maybeObject) {
-			// NOTE(marius): we hardcode that only a hidden collection's owner can view it
 			return nil, pathNotFound(r)
 		}
-		if fb.checkIfBlocked(maybeObject)(authorized) {
-			// NOTE(marius): if the current actor has blocked the authorized one, we refuse access
+
+		// NOTE(marius): we try a preliminary check if the current collection belongs to an object
+		// that has blocked the authorized actor
+		if !vocab.PublicNS.Equal(authorized.ID) && fb.checkIfBlocked(maybeObject)(authorized) {
 			return nil, pathNotFound(r)
 		}
 
 		cacheKey := CacheKey(fb, authorized, *r)
 
-		colOwner := fb.caches.Load(cacheKey)
-		fromCache := !vocab.IsNil(colOwner)
+		collection := fb.caches.Load(cacheKey)
+		fromCache := !vocab.IsNil(collection)
 
 		var err error
 		if !fromCache {
@@ -151,14 +153,12 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 
 			fil := make(filters.Checks, 0)
 
-			// NOTE(marius): load the object that owns the collection
-			if colOwner, err = repo.Load(maybeObject.GetLink()); err != nil {
-				return nil, err
-			}
 			// NOTE(marius): for deleted objects, their collections should also be not found
-			if vocab.TombstoneType.Match(colOwner.GetType()) {
-				// NOTE(marius): we do this despite having the collections removed in the processing module
-				return nil, pathNotFound(r)
+			//   We do this despite having the collections removed in the processing module
+			if colOwner, err := repo.Load(maybeObject.GetLink()); err == nil {
+				if vocab.TombstoneType.Match(colOwner.GetType()) {
+					return nil, pathNotFound(r)
+				}
 			}
 
 			// NOTE(marius): I want a way to make that the owner of a collection would automatically
@@ -172,26 +172,23 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 			}
 			fil = append(fil, filters.FromValues(r.URL.Query())...)
 
-			if colOwner, err = repo.Load(iri, fil...); err != nil {
+			if collection, err = repo.Load(iri, fil...); err != nil {
 				fb.Logger.WithContext(lw.Ctx{"iri": iri, "err": err}).Warnf("unable to load collection")
 				return nil, pathNotFound(r)
 			}
 		}
-		if vocab.IsNil(colOwner) || !vocab.IsCollection(colOwner) {
+		if vocab.IsNil(collection) || !vocab.IsCollection(collection) {
 			return nil, pathNotFound(r)
 		}
 
-		if fb.checkIfBlocked(colOwner)(authorized) {
+		col, ok := collection.(vocab.CollectionInterface)
+		if !ok {
 			return nil, pathNotFound(r)
 		}
 
-		var col vocab.CollectionInterface
-		err = vocab.OnCollectionIntf(colOwner, func(c vocab.CollectionInterface) error {
-			col = c
-			return nil
-		})
-		if err != nil {
-			return nil, err
+		// NOTE(marius): check if the attributedTo actor of the collection has blocked the authorized actor
+		if fb.checkIfBlocked(col)(authorized) {
+			return nil, pathNotFound(r)
 		}
 
 		vocab.CleanRecipients(col)
@@ -253,7 +250,7 @@ func CacheKey(fb *FedBOX, auth vocab.Actor, r http.Request) vocab.IRI {
 
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
 func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
-	if fb == nil {
+	if fb == nil || fb.Storage == nil {
 		return outOfOrderActivityHandler
 	}
 
@@ -333,38 +330,39 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 	}
 }
 
-func (fb *FedBOX) checkIfBlocked(it vocab.Item) func(vocab.Item) bool {
-	allBlocked := make(vocab.IRIs, 0)
-	accumAuthors := func(it vocab.Item) error {
-		authors := make(vocab.ItemCollection, 0)
-		_ = vocab.OnActivity(it, func(activity *vocab.Activity) error {
-			return vocab.OnItem(activity.Actor, func(act vocab.Item) error {
-				return authors.Append(act)
-			})
+func (fb *FedBOX) accumAuthors(it vocab.Item) vocab.ItemCollection {
+	authors := make(vocab.ItemCollection, 0)
+	_ = vocab.OnActivity(it, func(activity *vocab.Activity) error {
+		return vocab.OnItem(activity.Actor, func(act vocab.Item) error {
+			return authors.Append(act)
 		})
-		_ = vocab.OnObject(it, func(ob *vocab.Object) error {
-			return vocab.OnItem(ob.AttributedTo, func(act vocab.Item) error {
-				return authors.Append(act)
-			})
+	})
+	_ = vocab.OnObject(it, func(ob *vocab.Object) error {
+		return vocab.OnItem(ob.AttributedTo, func(act vocab.Item) error {
+			return authors.Append(act)
 		})
-		_ = vocab.OnActor(it, func(ob *vocab.Actor) error {
-			return authors.Append(ob.ID)
-		})
+	})
+	_ = vocab.OnActor(it, func(ob *vocab.Actor) error {
+		return authors.Append(ob.ID)
+	})
 
-		if vocab.IsIRI(it) {
-			authors.Append(it.GetLink())
-		}
-
-		for _, auth := range authors {
-			blocked, _ := fb.Storage.Load(processing.BlockedCollection.IRI(auth))
-			_ = vocab.OnCollectionIntf(blocked, func(col vocab.CollectionInterface) error {
-				return allBlocked.Append(col.Collection()...)
-			})
-		}
-		return nil
+	if vocab.IsIRI(it) {
+		authors.Append(it.GetLink())
 	}
 
-	_ = vocab.OnItem(it, accumAuthors)
+	return authors
+}
+
+func (fb *FedBOX) checkIfBlocked(it vocab.Item) func(vocab.Item) bool {
+	authors := fb.accumAuthors(it)
+
+	allBlocked := make(vocab.IRIs, 0, len(authors))
+	for _, auth := range authors {
+		blocked, _ := fb.Storage.Load(processing.BlockedCollection.IRI(auth))
+		_ = vocab.OnCollectionIntf(blocked, func(col vocab.CollectionInterface) error {
+			return allBlocked.Append(col.Collection()...)
+		})
+	}
 
 	if len(allBlocked) == 0 {
 		return func(_ vocab.Item) bool {
@@ -379,7 +377,7 @@ func (fb *FedBOX) checkIfBlocked(it vocab.Item) func(vocab.Item) bool {
 // HandleItem serves content from the following, followers, liked, and likes end-points
 // that returns a single ActivityPub object
 func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
-	if fb == nil {
+	if fb == nil || fb.Storage == nil {
 		return outOfOrderItemHandler
 	}
 	return func(r *http.Request) (vocab.Item, error) {
@@ -417,8 +415,10 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 				return nil, err
 			}
 		}
+
+		// NOTE(marius): check if the authors or the actor itself has blocked the authorized actor
 		if fb.checkIfBlocked(it)(authorized) {
-			return nil, errors.NotFoundf("")
+			return nil, pathNotFound(r)
 		}
 
 		if !fromCache {
@@ -441,7 +441,7 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 //
 // https://www.w3.org/TR/activitypub/#proxyUrl
 func ProxyURL(fb *FedBOX) http.Handler {
-	if fb == nil {
+	if fb == nil || fb.Storage == nil {
 		return processing.ItemHandlerFn(outOfOrderItemHandler)
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
