@@ -1913,8 +1913,8 @@ func Test_C2S_BlockRequests(t *testing.T) {
 							tests.HasID(person1.ID),
 							tests.HasPreferredUsername(person1.PreferredUsername),
 							tests.HasName(person1.Name),
-							tests.HasAudience(person3.Audience),
-							tests.WasPublished(person3.Published),
+							tests.HasAudience(person1.Audience),
+							tests.WasPublished(person1.Published),
 						),
 				},
 				tests.HTTPTest{
@@ -2190,6 +2190,403 @@ func Test_C2S_BlockRequests(t *testing.T) {
 }
 
 // TODO(marius): IgnoreRequests -> ignored's activities don't get to ignorer's inbox
+func Test_C2S_IgnoreRequests(t *testing.T) {
+	person1 := person(
+		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
+		ap.HasPreferredUsername("jdoe"),
+		ap.HasName("John Doe"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasFollowing,
+		ap.HasFollowers,
+	)
+	person3 := person(
+		c2sRootIRI.AddPath("actors/person-3"),
+		ap.HasPreferredUsername("alice"),
+		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasFollowing,
+		ap.HasFollowers,
+	)
+
+	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
+
+	tokenP1 := new(c2s.BearerSigner)
+	tokenP3 := new(c2s.BearerSigner)
+
+	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+
+	images := c.Suite(fedbox.New(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+		fedbox.WithArgs([]string{"--bootstrap"}),
+		fedbox.WithKey(prvKey),
+		fedbox.WithTestLogger(t, Verbose),
+		fedbox.WithItems(person1, person3),
+		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1)),
+		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person3.ID, tokenP3)),
+	))
+
+	ctx := context.Background()
+	cont, err := c.Start(ctx, t, images...)
+	if err != nil {
+		t.Fatalf("Unable to start test containers: %v", err)
+	}
+
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	ignored := vocab.CollectionPath("ignored")
+
+	ignore4ID := c2sRootIRI.AddPath("/activities/ignore-4")
+	ignore4 := ignore(
+		ap.HasActor(person3.ID),
+		ap.HasObject(person1.ID),
+	)
+
+	article6 := object(
+		c2sRootIRI.AddPath("objects/article-6"),
+		ap.HasType(vocab.ArticleType),
+		ap.HasTo(person3.ID),
+		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasAudience(vocab.PublicNS),
+	)
+
+	create5ID := c2sRootIRI.AddPath("/activities/create-5")
+	create5 := create(ap.HasActor(person1), ap.HasObject(article6))
+
+	toRun := []tests.RunnableTest{
+		tests.TestSuite{
+			Name: "control checks",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "person1 exists",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(person1.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(person1.ID),
+							tests.IsType(person1.Type),
+							tests.HasName(person1.Name),
+							tests.HasPreferredUsername(person1.PreferredUsername),
+							tests.HasSummary(person1.Summary),
+							tests.HasContent(person1.Content),
+							tests.WasPublished(person1.Published),
+							tests.HasAudience(person1.Audience),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person1 ignored collection is not accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(ignored.IRI(person1.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errors.NotFoundf("not found")),
+				},
+				tests.HTTPTest{
+					Name: "person1 ignored collection is accessible if authenticated",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(ignored.IRI(person1.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK),
+				},
+				tests.HTTPTest{
+					Name: "person3 exists",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(person3.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(person3.ID),
+							tests.IsType(person3.Type),
+							tests.HasName(person3.Name),
+							tests.HasPreferredUsername(person3.PreferredUsername),
+							tests.HasSummary(person3.Summary),
+							tests.HasContent(person3.Content),
+							tests.WasPublished(person3.Published),
+							tests.HasAudience(person3.Audience),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person3 ignored collection is not accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(ignored.IRI(person3.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errors.NotFoundf("not found")),
+				},
+				tests.HTTPTest{
+					Name: "person3 ignored collection is accessible if authenticated",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(ignored.IRI(person3.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK),
+				},
+				tests.HTTPTest{
+					Name: "person1 is accessible as person3",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(person1.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(person1.ID),
+							tests.HasPreferredUsername(person1.PreferredUsername),
+							tests.HasName(person1.Name),
+							tests.HasAudience(person3.Audience),
+							tests.WasPublished(person3.Published),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person3 is accessible as person1",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(person3.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(person3.ID),
+							tests.HasPreferredUsername(person3.PreferredUsername),
+							tests.HasName(person3.Name),
+							tests.HasAudience(person3.Audience),
+							tests.WasPublished(person3.Published),
+						),
+				},
+			},
+		},
+		tests.TestSuite{
+			Name: "Ignore",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Ignore person1",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person3)).
+						BodyItem(ignore4),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(ignore4ID),
+							tests.IsType(ignore4.Type),
+							tests.HasActor(person3.ID),
+							tests.HasObject(person1.ID),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Ignore is not accessible in Outbox without authorization",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person3)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.DoesNotHaveItem(ignore4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Ignore is in Outbox when authorized",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person3)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(ignore4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Ignore is not in person3 Inbox",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(person1.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Inbox.IRI(person1.ID), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(0),
+							tests.DoesNotHaveItem(ignore4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Ignore is accessible as person1",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(ignore4ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(ignore4ID),
+							tests.IsType(ignore4.Type),
+							tests.HasActor(person3.ID),
+							tests.HasObject(person1.ID),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Ignore is not accessible without authorization",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(ignore4ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errors.NotFoundf("%s not found", ignore4ID)),
+				},
+				tests.HTTPTest{
+					Name: "Ignore is accessible also as person1",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(ignore4ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(ignore4ID),
+							tests.IsType(ignore4.Type),
+							tests.HasActor(person3.ID),
+							tests.HasObject(person1.ID),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+			},
+		},
+		tests.TestSuite{
+			Name: "person1 no longer accessible to person3",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "person3 is not accessible as person1",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(person1.ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errors.NotFoundf("%s not found", person1.ID)),
+				},
+			},
+		},
+
+		tests.TestSuite{
+			Name: "no person3 activities reach person1",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Create with person3 in CC",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)).
+						BodyItem(create5),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						HasLocation(create5ID).
+						ItemMatch(
+							tests.HasID(article6.ID),
+							tests.IsType(article6.Type),
+							tests.HasCC(article6.CC),
+							tests.HasContent(article6.Content),
+							tests.HasAudience(vocab.PublicNS),
+							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is in person1's Outbox",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(create5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is not in person3's Inbox",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(person3)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Inbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(0),
+							tests.DoesNotHaveItem(create5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Article is publicly accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(article6.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(article6.ID),
+							tests.IsType(article6.Type),
+							tests.HasContent(article6.Content),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Article is accessible as person3",
+					Req: tests.Request().
+						Bearer(tokenP3.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(article6.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(article6.ID),
+							tests.IsType(article6.Type),
+							tests.HasContent(article6.Content),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Article is not accessible as person1",
+					Req: tests.Request().
+						Bearer(tokenP1.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(article6.ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errors.NotFoundf("%s not found", article6.ID)),
+				},
+			},
+		},
+	}
+
+	t.Skipf("We're not entirely sure of how Ignore should operate")
+	for _, test := range toRun {
+		t.Run(test.Label(), test.Fn(ctx, cont))
+	}
+}
 
 // TODO(marius): QuestionRequests -> port old question tests
 
