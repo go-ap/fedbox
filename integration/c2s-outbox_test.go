@@ -23,6 +23,11 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
+func errFedBOXNotFound(iri vocab.IRI) error {
+	u, _ := iri.URL()
+	return errors.NotFoundf("%s not found", u.Path)
+}
+
 func Test_C2S_CreateRequests(t *testing.T) {
 	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
 
@@ -923,7 +928,7 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 						IRI(vocab.Outbox.IRI(person1)),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("not found")),
+						HasErrors(errFedBOXNotFound(vocab.Outbox.IRI(person1))),
 				},
 				tests.HTTPTest{
 					Name: "Delete is in root Inbox",
@@ -1854,7 +1859,7 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						IRI(blocked.IRI(person1.ID)),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("not found")),
+						HasErrors(errFedBOXNotFound(blocked.IRI(person1.ID))),
 				},
 				tests.HTTPTest{
 					Name: "person1 blocked collection is accessible if authenticated",
@@ -1890,7 +1895,7 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						IRI(blocked.IRI(person3.ID)),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("not found")),
+						HasErrors(errFedBOXNotFound(blocked.IRI(person3.ID))),
 				},
 				tests.HTTPTest{
 					Name: "person3 blocked collection is accessible if authenticated",
@@ -2034,7 +2039,7 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						IRI(block4ID),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("%s not found", block4ID)),
+						HasErrors(errFedBOXNotFound(block4ID)),
 				},
 				tests.HTTPTest{
 					Name: "Block is not accessible as person3",
@@ -2044,7 +2049,7 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						IRI(block4ID),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("%s not found", block4ID)),
+						HasErrors(errFedBOXNotFound(block4ID)),
 				},
 			},
 		},
@@ -2059,7 +2064,7 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						IRI(person1.ID),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("%s not found", person1.ID)),
+						HasErrors(errFedBOXNotFound(person1.ID)),
 				},
 				tests.HTTPTest{
 					Name: "person1 Outbox is not accessible as person3",
@@ -2069,7 +2074,7 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						IRI(vocab.Outbox.IRI(person1)),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("%s not found", vocab.Outbox.IRI(person1))),
+						HasErrors(errFedBOXNotFound(vocab.Outbox.IRI(person1))),
 				},
 				tests.HTTPTest{
 					Name: "person1 Inbox is not accessible as person3",
@@ -2079,7 +2084,7 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						IRI(vocab.Inbox.IRI(person1)),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("%s not found", vocab.Inbox.IRI(person1))),
+						HasErrors(errFedBOXNotFound(vocab.Inbox.IRI(person1))),
 				},
 			},
 		},
@@ -2454,7 +2459,7 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 						IRI(ignore4ID),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("%s not found", ignore4ID)),
+						HasErrors(errFedBOXNotFound(ignore4ID)),
 				},
 				tests.HTTPTest{
 					Name: "Ignore is accessible also as person1",
@@ -2485,7 +2490,7 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 						IRI(person1.ID),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("%s not found", person1.ID)),
+						HasErrors(errFedBOXNotFound(person1.ID)),
 				},
 			},
 		},
@@ -2576,13 +2581,238 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 						IRI(article6.ID),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("%s not found", article6.ID)),
+						HasErrors(errFedBOXNotFound(article6.ID)),
 				},
 			},
 		},
 	}
 
 	t.Skipf("We're not entirely sure of how Ignore should operate")
+	for _, test := range toRun {
+		t.Run(test.Label(), test.Fn(ctx, cont))
+	}
+}
+
+// TODO(marius): UndoRequests -> port old undo tests
+func Test_C2S_UndoRequests(t *testing.T) {
+	person1 := person(
+		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
+		ap.HasPreferredUsername("jdoe"),
+		ap.HasName("John Doe"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasFollowing,
+		ap.HasFollowers,
+	)
+	person3 := person(
+		c2sRootIRI.AddPath("actors/person-3"),
+		ap.HasPreferredUsername("alice"),
+		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasFollowing,
+		ap.HasFollowers,
+	)
+
+	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
+
+	tokenP1 := new(c2s.BearerSigner)
+	tokenP3 := new(c2s.BearerSigner)
+
+	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+
+	images := c.Suite(fedbox.New(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
+		fedbox.WithArgs([]string{"--bootstrap"}),
+		fedbox.WithKey(prvKey),
+		fedbox.WithTestLogger(t, Verbose),
+		fedbox.WithItems(person1, person3),
+		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1)),
+		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person3.ID, tokenP3)),
+	))
+
+	ctx := context.Background()
+	cont, err := c.Start(ctx, t, images...)
+	if err != nil {
+		t.Fatalf("Unable to start test containers: %v", err)
+	}
+
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
+	article5 := object(
+		c2sRootIRI.AddPath("objects/article-5"),
+		ap.HasType(vocab.ArticleType),
+		ap.HasCC(person3.ID),
+		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasAudience(vocab.PublicNS),
+	)
+
+	create4ID := c2sRootIRI.AddPath("/activities/create-4")
+	create4 := create(ap.HasActor(person1), ap.HasObject(article5))
+
+	undo5ID := c2sRootIRI.AddPath("/activities/undo-5")
+	undo5 := undo(ap.HasActor(person1), ap.HasObject(create4ID), ap.HasCC(person3.ID))
+
+	toRun := []tests.RunnableTest{
+		tests.TestSuite{
+			Name: "Undo Create",
+			Tests: []tests.RunnableTest{
+				tests.TestSuite{
+					Name: "Setup Create",
+					Tests: []tests.RunnableTest{
+						tests.HTTPTest{
+							Name: "Create",
+							Req: tests.Request().
+								IRI(vocab.Outbox.IRI(person1)).
+								Post().
+								ContentType(client.ContentTypeJsonLD).
+								Signer(tokenP1.Sign).
+								BodyItem(create4),
+							Res: tests.Response().
+								HasCode(http.StatusCreated).
+								HasLocation(create4ID).
+								ItemMatch(
+									tests.HasID(article5.ID),
+									tests.IsType(article5.Type),
+									tests.HasCC(article5.CC),
+									tests.HasContent(article5.Content),
+									tests.WasPublished(time.Now()),
+								),
+						},
+						tests.HTTPTest{
+							Name: "Create is in person1's outbox",
+							Req: tests.Request().
+								ContentType(client.ContentTypeJsonLD).
+								IRI(vocab.Outbox.IRI(person1)),
+							Res: tests.Response().
+								HasCode(http.StatusOK).
+								ItemMatch(
+									tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+									tests.IsType(vocab.OrderedCollectionPageType),
+									tests.HasTotalItems(1),
+									tests.HasItem(create4ID),
+								),
+						},
+						tests.HTTPTest{
+							Name: "Create is in person3's inbox",
+							Req: tests.Request().
+								ContentType(client.ContentTypeJsonLD).
+								IRI(vocab.Inbox.IRI(person3)),
+							Res: tests.Response().
+								HasCode(http.StatusOK).
+								ItemMatch(
+									tests.HasID(filterIRI(vocab.Inbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
+									tests.IsType(vocab.OrderedCollectionPageType),
+									tests.HasTotalItems(1),
+									tests.HasItem(create4ID),
+								),
+						},
+						tests.HTTPTest{
+							Name: "Create is accessible",
+							Req: tests.Request().
+								ContentType(client.ContentTypeJsonLD).
+								IRI(create4ID),
+							Res: tests.Response().
+								HasCode(http.StatusOK).
+								ItemMatch(
+									tests.HasID(create4ID),
+									tests.IsType(create4.Type),
+									tests.HasActor(create4.Actor),
+									tests.HasObject(create4.Object),
+								),
+						},
+						tests.HTTPTest{
+							Name: "Article is accessible",
+							Req: tests.Request().
+								ContentType(client.ContentTypeJsonLD).
+								IRI(article5.ID),
+							Res: tests.Response().
+								HasCode(http.StatusOK).
+								ItemMatch(
+									tests.HasID(article5.ID),
+									tests.IsType(article5.Type),
+									tests.HasCC(article5.CC),
+									tests.HasContent(article5.Content),
+									tests.WasPublished(time.Now()),
+								),
+						},
+					},
+				},
+				tests.HTTPTest{
+					Name: "Undo Create",
+					Req: tests.Request().
+						IRI(vocab.Outbox.IRI(person1)).
+						Post().
+						ContentType(client.ContentTypeJsonLD).
+						Signer(tokenP1.Sign).
+						BodyItem(undo5),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(undo5ID),
+							tests.IsType(undo5.Type),
+							tests.HasCC(undo5.CC),
+							tests.HasContent(undo5.Content),
+							tests.WasPublished(time.Now()),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Undo is in person1's outbox, but no Create",
+					Req: tests.Request().
+						Signer(tokenP1.Sign).
+						ContentType(client.ContentTypeJsonLD).
+						IRI(vocab.Outbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(undo5ID),
+							tests.DoesNotHaveItem(create4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Undo is in person3's inbox, but no Create",
+					Req: tests.Request().
+						Signer(tokenP3.Sign).
+						ContentType(client.ContentTypeJsonLD).
+						IRI(vocab.Inbox.IRI(person3)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Inbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(undo5ID),
+							tests.DoesNotHaveItem(create4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is no longer accessible",
+					Req: tests.Request().
+						ContentType(client.ContentTypeJson).
+						IRI(create4ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errFedBOXNotFound(create4ID)),
+				},
+				tests.HTTPTest{
+					Name: "Article is no longer accessible",
+					Req: tests.Request().
+						ContentType(client.ContentTypeJson).
+						IRI(article5.ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errFedBOXNotFound(article5.ID)),
+				},
+			},
+		},
+	}
+
 	for _, test := range toRun {
 		t.Run(test.Label(), test.Fn(ctx, cont))
 	}
@@ -2665,7 +2895,7 @@ func Test_C2S_Requests(t *testing.T) {
 			Res: tests.Response().
 				HasCode(http.StatusUnauthorized).
 				HasContentType(client.ContentTypeJson).
-				HasErrors(errors.Unauthorizedf("unable to read request body")),
+				HasErrors(errors.Unauthorizedf("authorized Actor is invalid")),
 		},
 		tests.HTTPTest{
 			Name: "collection not found",
@@ -2690,8 +2920,8 @@ func Test_C2S_Requests(t *testing.T) {
 				HasCode(http.StatusBadRequest).
 				HasContentType(client.ContentTypeJson).
 				HasErrors(
-					errors.NewBadRequest(errors.BadRequestf("Activity is not valid: invalid activity id"), "Unable to save activity Flag to http://primary.localdomain/actors/1/inbox"),
-					errors.BadRequestf("Activity is not valid: invalid activity id"),
+					errors.NewBadRequest(errors.BadRequestf("Activity is not valid: empty activity id"), "Unable to save activity Flag to %s", vocab.Inbox.IRI(admin)),
+					errors.BadRequestf("Activity is not valid: empty activity id"),
 				),
 		},
 		tests.TestSuite{
@@ -2861,7 +3091,7 @@ func Test_C2S_Requests(t *testing.T) {
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
 						HasContentType(client.ContentTypeJson).
-						HasErrors(errors.NotFoundf("http://primary.localdomain/activities/flag-7 was not found")),
+						HasErrors(errFedBOXNotFound(c2sRootIRI.AddPath("activities/flag-7"))),
 					//Res: tests.Response().
 					//	HasCode(http.StatusOK).
 					//	ItemMatch(

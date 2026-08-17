@@ -395,7 +395,7 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 			var f filters.Check
 			f = filters.Authorized(authorized.ID)
 			if it, err = repo.Load(iri, f); err != nil {
-				return nil, errors.NotFoundf("%s was not found", r.URL.Path)
+				return nil, errors.NotFoundf("%s not found", r.URL.Path)
 			}
 		}
 		var err error

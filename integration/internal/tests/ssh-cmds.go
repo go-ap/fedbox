@@ -137,7 +137,7 @@ func areErrors(x, y any) bool {
 func compareErrors(x, y any) bool {
 	xe := x.(error)
 	ye := y.(error)
-	return errors.Is(xe, ye) || errors.Is(ye, xe) || xe.Error() == ye.Error()
+	return (errors.Is(xe, ye) || errors.Is(ye, xe)) && xe.Error() == ye.Error()
 }
 
 func EqErrs(want, got error) bool {

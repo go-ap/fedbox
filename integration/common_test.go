@@ -145,6 +145,13 @@ func ignore(initFn ...ap.InitFn) *vocab.Activity {
 	return ap.Activity(initFn...)
 }
 
+func undo(initFn ...ap.InitFn) *vocab.Activity {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.UndoType),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
 func baseIRI(iri vocab.IRI) vocab.IRI {
 	ub, err := iri.GetLink().URL()
 	if err != nil {
