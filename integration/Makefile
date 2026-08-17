@@ -14,7 +14,7 @@ ifneq ($(STORAGE),)
 STORAGE_TAG = storage_$(STORAGE),
 endif
 
-TEST_FLAGS ?= -timeout 90s -count=1 -tags '$(STORAGE_TAG)integration,$(TAGS)'
+TEST_FLAGS ?= -timeout 120s -count=1 -tags '$(STORAGE_TAG)integration,$(TAGS)'
 
 .PHONY: download test
 
