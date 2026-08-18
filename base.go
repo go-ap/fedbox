@@ -231,7 +231,7 @@ func GenerateID(base vocab.IRI) func(it vocab.Item, by vocab.Item) (vocab.ID, er
 	}
 }
 
-func (ctl *Base) Saver(actor *vocab.Actor, onlyLocalSaves, skipInboundValidation bool) processing.P {
+func (ctl *Base) Saver(actor *vocab.Actor, onlyLocalSaves, skipInboundValidation bool) *processing.P {
 	baseIRI := ctl.Service.ID
 
 	db := ctl.Storage

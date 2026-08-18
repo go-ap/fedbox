@@ -23,11 +23,6 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-func errFedBOXNotFound(iri vocab.IRI) error {
-	u, _ := iri.URL()
-	return errors.NotFoundf("%s not found", u.Path)
-}
-
 func Test_C2S_CreateRequests(t *testing.T) {
 	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
 
@@ -2656,6 +2651,24 @@ func Test_C2S_UndoRequests(t *testing.T) {
 	undo5ID := c2sRootIRI.AddPath("/activities/undo-5")
 	undo5 := undo(ap.HasActor(person1), ap.HasObject(create4ID), ap.HasCC(person3.ID))
 
+	follow6ID := c2sRootIRI.AddPath("activities/follow-6")
+	follow6 := follow(
+		//ap.HasTo(person3.ID), // NOTE(marius): this is added by processing the Follow
+		ap.HasCC(vocab.PublicNS),
+		ap.HasActor(person1.ID),
+		ap.HasObject(person3.ID),
+	)
+	accept7ID := c2sRootIRI.AddPath("activities/accept-7")
+	accept7 := accept(
+		ap.HasTo(person1.ID),
+		ap.HasCC(vocab.PublicNS),
+		ap.HasActor(person3.ID),
+		ap.HasObject(follow6ID),
+	)
+
+	undo8ID := c2sRootIRI.AddPath("/activities/undo-8")
+	undo8 := undo(ap.HasActor(person1), ap.HasObject(follow6ID), ap.HasCC(person3.ID))
+
 	toRun := []tests.RunnableTest{
 		tests.TestSuite{
 			Name: "Undo Create",
@@ -2808,6 +2821,253 @@ func Test_C2S_UndoRequests(t *testing.T) {
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
 						HasErrors(errFedBOXNotFound(article5.ID)),
+				},
+			},
+		},
+
+		tests.TestSuite{
+			Name: "Undo Follow",
+			Tests: []tests.RunnableTest{
+				tests.TestSuite{
+					Name: "Follow then Accept",
+					Tests: []tests.RunnableTest{
+						tests.TestSuite{
+							Name: "Setup Follow",
+							Tests: []tests.RunnableTest{
+								tests.HTTPTest{
+									Name: "Follow person3",
+									Req: tests.Request().
+										Bearer(tokenP1.AccessToken).
+										Accept(client.ContentTypeJsonActivity).
+										IRI(vocab.Outbox.IRI(person1)).
+										BodyItem(follow6),
+									Res: tests.Response().
+										HasCode(http.StatusCreated).
+										ItemMatch(
+											tests.HasID(follow6ID),
+											tests.IsType(follow6.Type),
+											tests.HasActor(person1.ID),
+											tests.HasObject(person3.ID),
+											tests.WasPublished(time.Now().Round(0)),
+										),
+								},
+								tests.HTTPTest{
+									Name: "Follow is in Outbox",
+									Req: tests.Request().
+										Bearer(tokenP1.AccessToken).
+										Accept(client.ContentTypeJsonActivity).
+										IRI(vocab.Outbox.IRI(person1)),
+									Res: tests.Response().
+										HasCode(http.StatusOK).
+										ItemMatch(
+											tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+											tests.IsType(vocab.OrderedCollectionPageType),
+											tests.HasTotalItems(2),
+											tests.HasItem(follow6ID),
+										),
+								},
+								tests.HTTPTest{
+									Name: "Follow is in root Inbox",
+									Req: tests.Request().
+										Accept(client.ContentTypeJsonActivity).
+										IRI(vocab.Inbox.IRI(c2sRootIRI)),
+									Res: tests.Response().
+										HasCode(http.StatusOK).
+										ItemMatch(
+											tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(filters.MaxItems))),
+											tests.IsType(vocab.OrderedCollectionPageType),
+											tests.HasTotalItems(5),
+											tests.HasItem(follow6ID),
+										),
+								},
+								tests.HTTPTest{
+									Name: "Follow is in person3 Inbox",
+									Req: tests.Request().
+										Bearer(tokenP3.AccessToken).
+										Accept(client.ContentTypeJsonActivity).
+										IRI(vocab.Inbox.IRI(person3.ID)),
+									Res: tests.Response().
+										HasCode(http.StatusOK).
+										ItemMatch(
+											tests.HasID(filterIRI(vocab.Inbox.IRI(person3.ID), filters.WithMaxCount(filters.MaxItems))),
+											tests.IsType(vocab.OrderedCollectionPageType),
+											tests.HasTotalItems(2),
+											tests.HasItem(follow6ID),
+										),
+								},
+								tests.HTTPTest{
+									Name: "Follow is accessible",
+									Req: tests.Request().
+										Accept(client.ContentTypeJsonActivity).
+										IRI(follow6ID),
+									Res: tests.Response().
+										HasCode(http.StatusOK).
+										ItemMatch(
+											tests.HasID(follow6ID),
+											tests.IsType(follow6.Type),
+											tests.HasActor(person1.ID),
+											tests.HasObject(person3.ID),
+											tests.WasPublished(time.Now().Round(0)),
+										),
+								},
+								tests.HTTPTest{
+									Name: "person1 Following is empty",
+									Req: tests.Request().
+										Bearer(tokenP1.AccessToken).
+										Accept(client.ContentTypeJsonActivity).
+										IRI(vocab.Following.IRI(person1.ID)),
+									Res: tests.Response().
+										HasCode(http.StatusOK).
+										ItemMatch(
+											tests.HasID(filterIRI(vocab.Following.IRI(person1.ID), filters.WithMaxCount(filters.MaxItems))),
+											tests.IsType(vocab.OrderedCollectionPageType),
+											tests.HasTotalItems(0),
+										),
+								},
+								tests.HTTPTest{
+									Name: "person3 Followers is empty",
+									Req: tests.Request().
+										Bearer(tokenP3.AccessToken).
+										Accept(client.ContentTypeJsonActivity).
+										IRI(vocab.Followers.IRI(person3.ID)),
+									Res: tests.Response().
+										HasCode(http.StatusOK).
+										ItemMatch(
+											tests.HasID(filterIRI(vocab.Followers.IRI(person3.ID), filters.WithMaxCount(filters.MaxItems))),
+											tests.IsType(vocab.OrderedCollectionPageType),
+											tests.HasTotalItems(0),
+										),
+								},
+								tests.HTTPTest{
+									Name: "Accept follow-6",
+									Req: tests.Request().
+										Bearer(tokenP3.AccessToken).
+										Accept(client.ContentTypeJsonActivity).
+										IRI(vocab.Outbox.IRI(person3)).
+										BodyItem(accept7),
+									Res: tests.Response().
+										HasCode(http.StatusCreated).
+										ItemMatch(
+											tests.HasID(accept7ID),
+											tests.IsType(accept7.Type),
+											tests.HasActor(person3.ID),
+											tests.HasTo(person1.ID),
+											tests.HasObject(follow6ID),
+											tests.WasPublished(time.Now().Round(0)),
+										),
+								},
+								tests.HTTPTest{
+									Name: "Accept is in person3's Outbox",
+									Req: tests.Request().
+										Bearer(tokenP3.AccessToken).
+										Accept(client.ContentTypeJsonActivity).
+										IRI(vocab.Outbox.IRI(person3)),
+									Res: tests.Response().
+										HasCode(http.StatusOK).
+										ItemMatch(
+											tests.HasID(filterIRI(vocab.Outbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
+											tests.IsType(vocab.OrderedCollectionPageType),
+											tests.HasTotalItems(1),
+											tests.HasItem(accept7ID),
+										),
+								},
+								tests.HTTPTest{
+									Name: "Accept is in root Inbox",
+									Req: tests.Request().
+										Accept(client.ContentTypeJsonActivity).
+										IRI(vocab.Inbox.IRI(c2sRootIRI)),
+									Res: tests.Response().
+										HasCode(http.StatusOK).
+										ItemMatch(
+											tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(filters.MaxItems))),
+											tests.IsType(vocab.OrderedCollectionPageType),
+											tests.HasTotalItems(6),
+											tests.HasItem(follow6ID),
+											tests.HasItem(accept7ID),
+										),
+								},
+								tests.HTTPTest{
+									Name: "Accept is in person1's Inbox",
+									Req: tests.Request().
+										Bearer(tokenP3.AccessToken).
+										Accept(client.ContentTypeJsonActivity).
+										IRI(vocab.Inbox.IRI(person1.ID)),
+									Res: tests.Response().
+										HasCode(http.StatusOK).
+										ItemMatch(
+											tests.HasID(filterIRI(vocab.Inbox.IRI(person1.ID), filters.WithMaxCount(filters.MaxItems))),
+											tests.IsType(vocab.OrderedCollectionPageType),
+											tests.HasTotalItems(1),
+											tests.HasItem(accept7ID),
+										),
+								},
+								tests.HTTPTest{
+									Name: "Accept is accessible",
+									Req: tests.Request().
+										Accept(client.ContentTypeJsonActivity).
+										IRI(accept7ID),
+									Res: tests.Response().
+										HasCode(http.StatusOK).
+										ItemMatch(
+											tests.HasID(accept7ID),
+											tests.IsType(accept7.Type),
+											tests.HasActor(person3.ID),
+											tests.HasObject(follow6ID),
+											tests.HasTo(person1.ID),
+											tests.WasPublished(time.Now().Round(0)),
+										),
+								},
+								tests.HTTPTest{
+									Name: "person1 Following has person3",
+									Req: tests.Request().
+										Bearer(tokenP1.AccessToken).
+										Accept(client.ContentTypeJsonActivity).
+										IRI(vocab.Following.IRI(person1.ID)),
+									Res: tests.Response().
+										HasCode(http.StatusOK).
+										ItemMatch(
+											tests.HasID(filterIRI(vocab.Following.IRI(person1.ID), filters.WithMaxCount(filters.MaxItems))),
+											tests.IsType(vocab.OrderedCollectionPageType),
+											tests.HasTotalItems(1),
+											tests.HasItem(person3.ID),
+										),
+								},
+								tests.HTTPTest{
+									Name: "person3 Followers has person1",
+									Req: tests.Request().
+										Bearer(tokenP3.AccessToken).
+										Accept(client.ContentTypeJsonActivity).
+										IRI(vocab.Followers.IRI(person3.ID)),
+									Res: tests.Response().
+										HasCode(http.StatusOK).
+										ItemMatch(
+											tests.HasID(filterIRI(vocab.Followers.IRI(person3.ID), filters.WithMaxCount(filters.MaxItems))),
+											tests.IsType(vocab.OrderedCollectionPageType),
+											tests.HasTotalItems(1),
+											tests.HasItem(person1.ID),
+										),
+								},
+							},
+						},
+					},
+				},
+				tests.HTTPTest{
+					Name: "Undo Follow",
+					Req: tests.Request().
+						IRI(vocab.Outbox.IRI(person1)).
+						Post().
+						ContentType(client.ContentTypeJsonLD).
+						Signer(tokenP1.Sign).
+						BodyItem(undo8),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(undo8ID),
+							tests.IsType(undo8.Type),
+							tests.HasCC(undo8.CC),
+							tests.HasContent(undo8.Content),
+							tests.WasPublished(time.Now()),
+						),
 				},
 			},
 		},

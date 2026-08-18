@@ -11,6 +11,7 @@ import (
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/errors"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
@@ -49,6 +50,11 @@ var (
 		Published: time.Now().Round(2 * time.Second), // NOTE(marius): to order it at the top of the collection
 	}
 )
+
+func errFedBOXNotFound(iri vocab.IRI) error {
+	u, _ := iri.URL()
+	return errors.NotFoundf("%s not found", u.Path)
+}
 
 func rootIRI(conf config.Options) vocab.IRI {
 	return vocab.IRI("http://" + conf.Hostname)

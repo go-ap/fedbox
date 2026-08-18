@@ -397,6 +397,9 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 			if it, err = repo.Load(iri, f); err != nil {
 				return nil, errors.NotFoundf("%s not found", r.URL.Path)
 			}
+			if vocab.IsNil(it) {
+				return nil, errors.NotFoundf("%s not found", r.URL.Path)
+			}
 		}
 		var err error
 		if vocab.IsItemCollection(it) {
