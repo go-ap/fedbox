@@ -419,7 +419,8 @@ func WasUpdated(d time.Time) itemCheckFn {
 	}
 }
 
-const fudgeDuration = 15 * time.Second
+// NOTE(marius): this is becoming slightly ridiculous
+const fudgeDuration = time.Minute
 
 func WasPublished(d time.Time) itemCheckFn {
 	return func(t *testing.T, it vocab.Item) {

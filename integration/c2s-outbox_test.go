@@ -83,8 +83,17 @@ func Test_C2S_CreateRequests(t *testing.T) {
 	create4ID := c2sRootIRI.AddPath("activities/create-4")
 	create4 := create(ap.HasActor(admin), ap.HasObject(article5))
 
-	create6ID := c2sRootIRI.AddPath("activities/create-5")
-	create6 := create(ap.HasActor(admin), ap.HasObject(article7))
+	create5ID := c2sRootIRI.AddPath("activities/create-5")
+	create5 := create(ap.HasActor(admin), ap.HasObject(article7))
+
+	undo6ID := c2sRootIRI.AddPath("/activities/undo-6")
+	undo6 := undo(ap.HasActor(admin), ap.HasObject(create5ID), ap.HasCC(person4.ID))
+
+	undo7ID := c2sRootIRI.AddPath("/activities/undo-7")
+	undo7 := undo(ap.HasActor(admin), ap.HasObject(create4ID), ap.HasCC(person4.ID))
+
+	undo8ID := c2sRootIRI.AddPath("/activities/undo-8")
+	undo8 := undo(ap.HasActor(admin), ap.HasObject(create3ID))
 
 	toRun := []tests.RunnableTest{
 		tests.HTTPTest{
@@ -265,10 +274,10 @@ func Test_C2S_CreateRequests(t *testing.T) {
 					Req: tests.Request().
 						Bearer(token.AccessToken).
 						IRI(vocab.Outbox.IRI(admin)).
-						BodyItem(create6),
+						BodyItem(create5),
 					Res: tests.Response().
 						HasCode(http.StatusCreated).
-						HasLocation(create6ID).
+						HasLocation(create5ID).
 						ItemMatch(
 							tests.HasID(article7.ID),
 							tests.IsType(article7.Type),
@@ -287,7 +296,7 @@ func Test_C2S_CreateRequests(t *testing.T) {
 							tests.HasID(filterIRI(vocab.Outbox.IRI(admin), filters.WithMaxCount(filters.MaxItems))),
 							tests.IsType(vocab.OrderedCollectionPageType),
 							tests.HasTotalItems(3),
-							tests.HasItem(create6ID),
+							tests.HasItem(create5ID),
 						),
 				},
 				tests.HTTPTest{
@@ -301,18 +310,18 @@ func Test_C2S_CreateRequests(t *testing.T) {
 							tests.IsType(vocab.OrderedCollectionPageType),
 							tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(100))),
 							tests.HasTotalItems(5),
-							tests.HasItem(create6ID),
+							tests.HasItem(create5ID),
 						),
 				},
 				tests.HTTPTest{
 					Name: "Create is accessible",
 					Req: tests.Request().
 						Accept(client.ContentTypeJsonActivity).
-						IRI(create6ID),
+						IRI(create5ID),
 					Res: tests.Response().
 						HasCode(http.StatusOK).
 						ItemMatch(
-							tests.HasID(create6ID),
+							tests.HasID(create5ID),
 							tests.IsType(create4.Type),
 							tests.HasActor(admin.ID),
 							tests.HasObject(article7.ID),
@@ -365,6 +374,256 @@ func Test_C2S_CreateRequests(t *testing.T) {
 						IRI(vocab.Replies.IRI(admin)),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound),
+				},
+			},
+		},
+		tests.TestSuite{
+			Name: "Undo Create Note with multiple InReplyTo",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Undo Create",
+					Req: tests.Request().
+						IRI(vocab.Outbox.IRI(admin)).
+						Post().
+						ContentType(client.ContentTypeJsonLD).
+						Signer(token.Sign).
+						BodyItem(undo6),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(undo6ID),
+							tests.IsType(undo6.Type),
+							tests.HasCC(undo6.CC),
+							tests.HasActor(undo6.Actor),
+							tests.HasObject(undo6.Object),
+							tests.WasPublished(time.Now()),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Undo is in admin's outbox, but no Create",
+					Req: tests.Request().
+						Signer(token.Sign).
+						ContentType(client.ContentTypeJsonLD).
+						IRI(vocab.Outbox.IRI(admin)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(admin), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(3),
+							tests.HasItem(undo6ID),
+							tests.DoesNotHaveItem(create5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Undo is in person4's inbox, but no Create",
+					Req: tests.Request().
+						Signer(token.Sign).
+						ContentType(client.ContentTypeJsonLD).
+						IRI(vocab.Inbox.IRI(person4)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Inbox.IRI(person4), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(undo6ID),
+							tests.DoesNotHaveItem(create5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is no longer accessible",
+					Req: tests.Request().
+						ContentType(client.ContentTypeJson).
+						IRI(create5ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errFedBOXNotFound(create5ID)),
+				},
+				tests.HTTPTest{
+					Name: "Article is no longer accessible",
+					Req: tests.Request().
+						ContentType(client.ContentTypeJson).
+						IRI(article7.ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errFedBOXNotFound(article7.ID)),
+				},
+				tests.HTTPTest{
+					Name: "article-5 no longer has article-7 in replies",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Replies.IRI(article5)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Replies.IRI(article5), filters.WithMaxCount(filters.MaxItems))),
+							tests.HasTotalItems(0),
+							tests.DoesNotHaveItem(article7.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "person-4 no longer has article-7 in replies",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Replies.IRI(person4)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Replies.IRI(person4), filters.WithMaxCount(filters.MaxItems))),
+							tests.HasTotalItems(0),
+							tests.DoesNotHaveItem(article7.ID),
+						),
+				},
+			},
+		},
+		tests.TestSuite{
+			Name: "Undo Create article",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Undo Create",
+					Req: tests.Request().
+						IRI(vocab.Outbox.IRI(admin)).
+						Post().
+						ContentType(client.ContentTypeJsonLD).
+						Signer(token.Sign).
+						BodyItem(undo7),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(undo7ID),
+							tests.IsType(undo7.Type),
+							tests.HasCC(undo7.CC),
+							tests.HasActor(undo7.Actor),
+							tests.HasObject(undo7.Object),
+							tests.WasPublished(time.Now()),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Undo is in admin's outbox, but no Create",
+					Req: tests.Request().
+						Signer(token.Sign).
+						ContentType(client.ContentTypeJsonLD).
+						IRI(vocab.Outbox.IRI(admin)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(admin), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(3),
+							tests.HasItem(undo6ID),
+							tests.HasItem(undo7ID),
+							tests.DoesNotHaveItem(create5ID),
+							tests.DoesNotHaveItem(create4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Undo is in person4's inbox, but no Create",
+					Req: tests.Request().
+						Signer(token.Sign).
+						ContentType(client.ContentTypeJsonLD).
+						IRI(vocab.Inbox.IRI(person4)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Inbox.IRI(person4), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(2),
+							tests.HasItem(undo6ID),
+							tests.HasItem(undo7ID),
+							tests.DoesNotHaveItem(create5ID),
+							tests.DoesNotHaveItem(create4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is no longer accessible",
+					Req: tests.Request().
+						ContentType(client.ContentTypeJson).
+						IRI(create5ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errFedBOXNotFound(create5ID)),
+				},
+				tests.HTTPTest{
+					Name: "Article is no longer accessible",
+					Req: tests.Request().
+						ContentType(client.ContentTypeJson).
+						IRI(article5.ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errFedBOXNotFound(article5.ID)),
+				},
+			},
+		},
+
+		tests.TestSuite{
+			Name: "Undo Create actor",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Undo Create",
+					Req: tests.Request().
+						IRI(vocab.Outbox.IRI(admin)).
+						Post().
+						ContentType(client.ContentTypeJsonLD).
+						Signer(token.Sign).
+						BodyItem(undo8),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(undo8ID),
+							tests.IsType(undo8.Type),
+							tests.HasCC(undo8.CC),
+							tests.HasActor(undo8.Actor),
+							tests.HasObject(undo8.Object),
+							tests.WasPublished(time.Now()),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Undo is in admin's outbox, but no Create",
+					Req: tests.Request().
+						Signer(token.Sign).
+						ContentType(client.ContentTypeJsonLD).
+						IRI(vocab.Outbox.IRI(admin)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(admin), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(3),
+							tests.HasItem(undo6ID),
+							tests.HasItem(undo7ID),
+							tests.HasItem(undo8ID),
+							tests.DoesNotHaveItem(create5ID),
+							tests.DoesNotHaveItem(create4ID),
+							tests.DoesNotHaveItem(create3ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is no longer accessible",
+					Req: tests.Request().
+						ContentType(client.ContentTypeJson).
+						IRI(create5ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errFedBOXNotFound(create5ID)),
+				},
+				tests.HTTPTest{
+					Name: "Actor is no longer accessible",
+					Req: tests.Request().
+						ContentType(client.ContentTypeJson).
+						IRI(person4.ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errFedBOXNotFound(person4.ID)),
+				},
+				tests.HTTPTest{
+					Name: "Actor's outbox is no longer accessible",
+					Req: tests.Request().
+						ContentType(client.ContentTypeJson).
+						IRI(vocab.Outbox.IRI(person4.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errFedBOXNotFound(vocab.Outbox.IRI(person4.ID))),
 				},
 			},
 		},
@@ -1439,6 +1698,9 @@ func Test_C2S_FollowRequests(t *testing.T) {
 		ap.HasObject(follow4ID),
 	)
 
+	undo6ID := c2sRootIRI.AddPath("/activities/undo-6")
+	undo6 := undo(ap.HasActor(person1), ap.HasObject(follow4ID), ap.HasCC(person3.ID))
+
 	toRun := []tests.RunnableTest{
 		tests.TestSuite{
 			Name: "control checks",
@@ -1748,6 +2010,55 @@ func Test_C2S_FollowRequests(t *testing.T) {
 							tests.HasTotalItems(1),
 							tests.HasItem(person1.ID),
 						),
+				},
+			},
+		},
+
+		tests.TestSuite{
+			Name: "Undo Follow",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Undo Follow",
+					Req: tests.Request().
+						IRI(vocab.Outbox.IRI(person1)).
+						Post().
+						ContentType(client.ContentTypeJsonLD).
+						Signer(tokenP1.Sign).
+						BodyItem(undo6),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						ItemMatch(
+							tests.HasID(undo6ID),
+							tests.IsType(undo6.Type),
+							tests.HasCC(undo6.CC),
+							tests.HasContent(undo6.Content),
+							tests.WasPublished(time.Now()),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Undo is in person1's outbox, but no Follow",
+					Req: tests.Request().
+						Signer(tokenP1.Sign).
+						ContentType(client.ContentTypeJsonLD).
+						IRI(vocab.Outbox.IRI(person1)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(1),
+							tests.HasItem(undo6ID),
+							tests.DoesNotHaveItem(follow4ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Follow is no longer accessible",
+					Req: tests.Request().
+						ContentType(client.ContentTypeJson).
+						IRI(follow4ID),
+					Res: tests.Response().
+						HasCode(http.StatusNotFound).
+						HasErrors(errFedBOXNotFound(follow4ID)),
 				},
 			},
 		},
@@ -2182,6 +2493,11 @@ func Test_C2S_BlockRequests(t *testing.T) {
 				},
 			},
 		},
+
+		tests.TestSuite{
+			Name:  "Undo Block",
+			Tests: []tests.RunnableTest{},
+		},
 	}
 
 	for _, test := range toRun {
@@ -2583,496 +2899,6 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 	}
 
 	t.Skipf("We're not entirely sure of how Ignore should operate")
-	for _, test := range toRun {
-		t.Run(test.Label(), test.Fn(ctx, cont))
-	}
-}
-
-// TODO(marius): UndoRequests -> port old undo tests
-func Test_C2S_UndoRequests(t *testing.T) {
-	person1 := person(
-		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
-		ap.HasPreferredUsername("jdoe"),
-		ap.HasName("John Doe"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasFollowing,
-		ap.HasFollowers,
-	)
-	person3 := person(
-		c2sRootIRI.AddPath("actors/person-3"),
-		ap.HasPreferredUsername("alice"),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasFollowing,
-		ap.HasFollowers,
-	)
-
-	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
-
-	tokenP1 := new(c2s.BearerSigner)
-	tokenP3 := new(c2s.BearerSigner)
-
-	rootExec := c.ExecAs(c2sRootIRI, prvKey)
-
-	images := c.Suite(fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithKey(prvKey),
-		fedbox.WithTestLogger(t, Verbose),
-		fedbox.WithItems(person1, person3),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1)),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person3.ID, tokenP3)),
-	))
-
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
-	if err != nil {
-		t.Fatalf("Unable to start test containers: %v", err)
-	}
-
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
-	article5 := object(
-		c2sRootIRI.AddPath("objects/article-5"),
-		ap.HasType(vocab.ArticleType),
-		ap.HasCC(person3.ID),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
-	)
-
-	create4ID := c2sRootIRI.AddPath("/activities/create-4")
-	create4 := create(ap.HasActor(person1), ap.HasObject(article5))
-
-	undo5ID := c2sRootIRI.AddPath("/activities/undo-5")
-	undo5 := undo(ap.HasActor(person1), ap.HasObject(create4ID), ap.HasCC(person3.ID))
-
-	follow6ID := c2sRootIRI.AddPath("activities/follow-6")
-	follow6 := follow(
-		//ap.HasTo(person3.ID), // NOTE(marius): this is added by processing the Follow
-		ap.HasCC(vocab.PublicNS),
-		ap.HasActor(person1.ID),
-		ap.HasObject(person3.ID),
-	)
-	accept7ID := c2sRootIRI.AddPath("activities/accept-7")
-	accept7 := accept(
-		ap.HasTo(person1.ID),
-		ap.HasCC(vocab.PublicNS),
-		ap.HasActor(person3.ID),
-		ap.HasObject(follow6ID),
-	)
-
-	undo8ID := c2sRootIRI.AddPath("/activities/undo-8")
-	undo8 := undo(ap.HasActor(person1), ap.HasObject(follow6ID), ap.HasCC(person3.ID))
-
-	toRun := []tests.RunnableTest{
-		tests.TestSuite{
-			Name: "Undo Create",
-			Tests: []tests.RunnableTest{
-				tests.TestSuite{
-					Name: "Setup Create",
-					Tests: []tests.RunnableTest{
-						tests.HTTPTest{
-							Name: "Create",
-							Req: tests.Request().
-								IRI(vocab.Outbox.IRI(person1)).
-								Post().
-								ContentType(client.ContentTypeJsonLD).
-								Signer(tokenP1.Sign).
-								BodyItem(create4),
-							Res: tests.Response().
-								HasCode(http.StatusCreated).
-								HasLocation(create4ID).
-								ItemMatch(
-									tests.HasID(article5.ID),
-									tests.IsType(article5.Type),
-									tests.HasCC(article5.CC),
-									tests.HasContent(article5.Content),
-									tests.WasPublished(time.Now()),
-								),
-						},
-						tests.HTTPTest{
-							Name: "Create is in person1's outbox",
-							Req: tests.Request().
-								ContentType(client.ContentTypeJsonLD).
-								IRI(vocab.Outbox.IRI(person1)),
-							Res: tests.Response().
-								HasCode(http.StatusOK).
-								ItemMatch(
-									tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
-									tests.IsType(vocab.OrderedCollectionPageType),
-									tests.HasTotalItems(1),
-									tests.HasItem(create4ID),
-								),
-						},
-						tests.HTTPTest{
-							Name: "Create is in person3's inbox",
-							Req: tests.Request().
-								ContentType(client.ContentTypeJsonLD).
-								IRI(vocab.Inbox.IRI(person3)),
-							Res: tests.Response().
-								HasCode(http.StatusOK).
-								ItemMatch(
-									tests.HasID(filterIRI(vocab.Inbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
-									tests.IsType(vocab.OrderedCollectionPageType),
-									tests.HasTotalItems(1),
-									tests.HasItem(create4ID),
-								),
-						},
-						tests.HTTPTest{
-							Name: "Create is accessible",
-							Req: tests.Request().
-								ContentType(client.ContentTypeJsonLD).
-								IRI(create4ID),
-							Res: tests.Response().
-								HasCode(http.StatusOK).
-								ItemMatch(
-									tests.HasID(create4ID),
-									tests.IsType(create4.Type),
-									tests.HasActor(create4.Actor),
-									tests.HasObject(create4.Object),
-								),
-						},
-						tests.HTTPTest{
-							Name: "Article is accessible",
-							Req: tests.Request().
-								ContentType(client.ContentTypeJsonLD).
-								IRI(article5.ID),
-							Res: tests.Response().
-								HasCode(http.StatusOK).
-								ItemMatch(
-									tests.HasID(article5.ID),
-									tests.IsType(article5.Type),
-									tests.HasCC(article5.CC),
-									tests.HasContent(article5.Content),
-									tests.WasPublished(time.Now()),
-								),
-						},
-					},
-				},
-				tests.HTTPTest{
-					Name: "Undo Create",
-					Req: tests.Request().
-						IRI(vocab.Outbox.IRI(person1)).
-						Post().
-						ContentType(client.ContentTypeJsonLD).
-						Signer(tokenP1.Sign).
-						BodyItem(undo5),
-					Res: tests.Response().
-						HasCode(http.StatusCreated).
-						ItemMatch(
-							tests.HasID(undo5ID),
-							tests.IsType(undo5.Type),
-							tests.HasCC(undo5.CC),
-							tests.HasContent(undo5.Content),
-							tests.WasPublished(time.Now()),
-						),
-				},
-				tests.HTTPTest{
-					Name: "Undo is in person1's outbox, but no Create",
-					Req: tests.Request().
-						Signer(tokenP1.Sign).
-						ContentType(client.ContentTypeJsonLD).
-						IRI(vocab.Outbox.IRI(person1)),
-					Res: tests.Response().
-						HasCode(http.StatusOK).
-						ItemMatch(
-							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
-							tests.IsType(vocab.OrderedCollectionPageType),
-							tests.HasTotalItems(1),
-							tests.HasItem(undo5ID),
-							tests.DoesNotHaveItem(create4ID),
-						),
-				},
-				tests.HTTPTest{
-					Name: "Undo is in person3's inbox, but no Create",
-					Req: tests.Request().
-						Signer(tokenP3.Sign).
-						ContentType(client.ContentTypeJsonLD).
-						IRI(vocab.Inbox.IRI(person3)),
-					Res: tests.Response().
-						HasCode(http.StatusOK).
-						ItemMatch(
-							tests.HasID(filterIRI(vocab.Inbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
-							tests.IsType(vocab.OrderedCollectionPageType),
-							tests.HasTotalItems(1),
-							tests.HasItem(undo5ID),
-							tests.DoesNotHaveItem(create4ID),
-						),
-				},
-				tests.HTTPTest{
-					Name: "Create is no longer accessible",
-					Req: tests.Request().
-						ContentType(client.ContentTypeJson).
-						IRI(create4ID),
-					Res: tests.Response().
-						HasCode(http.StatusNotFound).
-						HasErrors(errFedBOXNotFound(create4ID)),
-				},
-				tests.HTTPTest{
-					Name: "Article is no longer accessible",
-					Req: tests.Request().
-						ContentType(client.ContentTypeJson).
-						IRI(article5.ID),
-					Res: tests.Response().
-						HasCode(http.StatusNotFound).
-						HasErrors(errFedBOXNotFound(article5.ID)),
-				},
-			},
-		},
-
-		tests.TestSuite{
-			Name: "Undo Follow",
-			Tests: []tests.RunnableTest{
-				tests.TestSuite{
-					Name: "Follow then Accept",
-					Tests: []tests.RunnableTest{
-						tests.TestSuite{
-							Name: "Setup Follow",
-							Tests: []tests.RunnableTest{
-								tests.HTTPTest{
-									Name: "Follow person3",
-									Req: tests.Request().
-										Bearer(tokenP1.AccessToken).
-										Accept(client.ContentTypeJsonActivity).
-										IRI(vocab.Outbox.IRI(person1)).
-										BodyItem(follow6),
-									Res: tests.Response().
-										HasCode(http.StatusCreated).
-										ItemMatch(
-											tests.HasID(follow6ID),
-											tests.IsType(follow6.Type),
-											tests.HasActor(person1.ID),
-											tests.HasObject(person3.ID),
-											tests.WasPublished(time.Now().Round(0)),
-										),
-								},
-								tests.HTTPTest{
-									Name: "Follow is in Outbox",
-									Req: tests.Request().
-										Bearer(tokenP1.AccessToken).
-										Accept(client.ContentTypeJsonActivity).
-										IRI(vocab.Outbox.IRI(person1)),
-									Res: tests.Response().
-										HasCode(http.StatusOK).
-										ItemMatch(
-											tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
-											tests.IsType(vocab.OrderedCollectionPageType),
-											tests.HasTotalItems(2),
-											tests.HasItem(follow6ID),
-										),
-								},
-								tests.HTTPTest{
-									Name: "Follow is in root Inbox",
-									Req: tests.Request().
-										Accept(client.ContentTypeJsonActivity).
-										IRI(vocab.Inbox.IRI(c2sRootIRI)),
-									Res: tests.Response().
-										HasCode(http.StatusOK).
-										ItemMatch(
-											tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(filters.MaxItems))),
-											tests.IsType(vocab.OrderedCollectionPageType),
-											tests.HasTotalItems(5),
-											tests.HasItem(follow6ID),
-										),
-								},
-								tests.HTTPTest{
-									Name: "Follow is in person3 Inbox",
-									Req: tests.Request().
-										Bearer(tokenP3.AccessToken).
-										Accept(client.ContentTypeJsonActivity).
-										IRI(vocab.Inbox.IRI(person3.ID)),
-									Res: tests.Response().
-										HasCode(http.StatusOK).
-										ItemMatch(
-											tests.HasID(filterIRI(vocab.Inbox.IRI(person3.ID), filters.WithMaxCount(filters.MaxItems))),
-											tests.IsType(vocab.OrderedCollectionPageType),
-											tests.HasTotalItems(2),
-											tests.HasItem(follow6ID),
-										),
-								},
-								tests.HTTPTest{
-									Name: "Follow is accessible",
-									Req: tests.Request().
-										Accept(client.ContentTypeJsonActivity).
-										IRI(follow6ID),
-									Res: tests.Response().
-										HasCode(http.StatusOK).
-										ItemMatch(
-											tests.HasID(follow6ID),
-											tests.IsType(follow6.Type),
-											tests.HasActor(person1.ID),
-											tests.HasObject(person3.ID),
-											tests.WasPublished(time.Now().Round(0)),
-										),
-								},
-								tests.HTTPTest{
-									Name: "person1 Following is empty",
-									Req: tests.Request().
-										Bearer(tokenP1.AccessToken).
-										Accept(client.ContentTypeJsonActivity).
-										IRI(vocab.Following.IRI(person1.ID)),
-									Res: tests.Response().
-										HasCode(http.StatusOK).
-										ItemMatch(
-											tests.HasID(filterIRI(vocab.Following.IRI(person1.ID), filters.WithMaxCount(filters.MaxItems))),
-											tests.IsType(vocab.OrderedCollectionPageType),
-											tests.HasTotalItems(0),
-										),
-								},
-								tests.HTTPTest{
-									Name: "person3 Followers is empty",
-									Req: tests.Request().
-										Bearer(tokenP3.AccessToken).
-										Accept(client.ContentTypeJsonActivity).
-										IRI(vocab.Followers.IRI(person3.ID)),
-									Res: tests.Response().
-										HasCode(http.StatusOK).
-										ItemMatch(
-											tests.HasID(filterIRI(vocab.Followers.IRI(person3.ID), filters.WithMaxCount(filters.MaxItems))),
-											tests.IsType(vocab.OrderedCollectionPageType),
-											tests.HasTotalItems(0),
-										),
-								},
-								tests.HTTPTest{
-									Name: "Accept follow-6",
-									Req: tests.Request().
-										Bearer(tokenP3.AccessToken).
-										Accept(client.ContentTypeJsonActivity).
-										IRI(vocab.Outbox.IRI(person3)).
-										BodyItem(accept7),
-									Res: tests.Response().
-										HasCode(http.StatusCreated).
-										ItemMatch(
-											tests.HasID(accept7ID),
-											tests.IsType(accept7.Type),
-											tests.HasActor(person3.ID),
-											tests.HasTo(person1.ID),
-											tests.HasObject(follow6ID),
-											tests.WasPublished(time.Now().Round(0)),
-										),
-								},
-								tests.HTTPTest{
-									Name: "Accept is in person3's Outbox",
-									Req: tests.Request().
-										Bearer(tokenP3.AccessToken).
-										Accept(client.ContentTypeJsonActivity).
-										IRI(vocab.Outbox.IRI(person3)),
-									Res: tests.Response().
-										HasCode(http.StatusOK).
-										ItemMatch(
-											tests.HasID(filterIRI(vocab.Outbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
-											tests.IsType(vocab.OrderedCollectionPageType),
-											tests.HasTotalItems(1),
-											tests.HasItem(accept7ID),
-										),
-								},
-								tests.HTTPTest{
-									Name: "Accept is in root Inbox",
-									Req: tests.Request().
-										Accept(client.ContentTypeJsonActivity).
-										IRI(vocab.Inbox.IRI(c2sRootIRI)),
-									Res: tests.Response().
-										HasCode(http.StatusOK).
-										ItemMatch(
-											tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(filters.MaxItems))),
-											tests.IsType(vocab.OrderedCollectionPageType),
-											tests.HasTotalItems(6),
-											tests.HasItem(follow6ID),
-											tests.HasItem(accept7ID),
-										),
-								},
-								tests.HTTPTest{
-									Name: "Accept is in person1's Inbox",
-									Req: tests.Request().
-										Bearer(tokenP3.AccessToken).
-										Accept(client.ContentTypeJsonActivity).
-										IRI(vocab.Inbox.IRI(person1.ID)),
-									Res: tests.Response().
-										HasCode(http.StatusOK).
-										ItemMatch(
-											tests.HasID(filterIRI(vocab.Inbox.IRI(person1.ID), filters.WithMaxCount(filters.MaxItems))),
-											tests.IsType(vocab.OrderedCollectionPageType),
-											tests.HasTotalItems(1),
-											tests.HasItem(accept7ID),
-										),
-								},
-								tests.HTTPTest{
-									Name: "Accept is accessible",
-									Req: tests.Request().
-										Accept(client.ContentTypeJsonActivity).
-										IRI(accept7ID),
-									Res: tests.Response().
-										HasCode(http.StatusOK).
-										ItemMatch(
-											tests.HasID(accept7ID),
-											tests.IsType(accept7.Type),
-											tests.HasActor(person3.ID),
-											tests.HasObject(follow6ID),
-											tests.HasTo(person1.ID),
-											tests.WasPublished(time.Now().Round(0)),
-										),
-								},
-								tests.HTTPTest{
-									Name: "person1 Following has person3",
-									Req: tests.Request().
-										Bearer(tokenP1.AccessToken).
-										Accept(client.ContentTypeJsonActivity).
-										IRI(vocab.Following.IRI(person1.ID)),
-									Res: tests.Response().
-										HasCode(http.StatusOK).
-										ItemMatch(
-											tests.HasID(filterIRI(vocab.Following.IRI(person1.ID), filters.WithMaxCount(filters.MaxItems))),
-											tests.IsType(vocab.OrderedCollectionPageType),
-											tests.HasTotalItems(1),
-											tests.HasItem(person3.ID),
-										),
-								},
-								tests.HTTPTest{
-									Name: "person3 Followers has person1",
-									Req: tests.Request().
-										Bearer(tokenP3.AccessToken).
-										Accept(client.ContentTypeJsonActivity).
-										IRI(vocab.Followers.IRI(person3.ID)),
-									Res: tests.Response().
-										HasCode(http.StatusOK).
-										ItemMatch(
-											tests.HasID(filterIRI(vocab.Followers.IRI(person3.ID), filters.WithMaxCount(filters.MaxItems))),
-											tests.IsType(vocab.OrderedCollectionPageType),
-											tests.HasTotalItems(1),
-											tests.HasItem(person1.ID),
-										),
-								},
-							},
-						},
-					},
-				},
-				tests.HTTPTest{
-					Name: "Undo Follow",
-					Req: tests.Request().
-						IRI(vocab.Outbox.IRI(person1)).
-						Post().
-						ContentType(client.ContentTypeJsonLD).
-						Signer(tokenP1.Sign).
-						BodyItem(undo8),
-					Res: tests.Response().
-						HasCode(http.StatusCreated).
-						ItemMatch(
-							tests.HasID(undo8ID),
-							tests.IsType(undo8.Type),
-							tests.HasCC(undo8.CC),
-							tests.HasContent(undo8.Content),
-							tests.WasPublished(time.Now()),
-						),
-				},
-			},
-		},
-	}
-
 	for _, test := range toRun {
 		t.Run(test.Label(), test.Fn(ctx, cont))
 	}
