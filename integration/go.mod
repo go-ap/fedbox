@@ -4,7 +4,7 @@ go 1.26.3
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20260818081520-a466820a662e
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260819160120-0d2b0a9190c5
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260820102812-b70793f8e4f0
 	github.com/carlmjohnson/requests v0.25.1
 	github.com/elnormous/contenttype v1.0.4
 	github.com/go-ap/activitypub v0.0.0-20260819152015-c3df165dcded
@@ -12,8 +12,8 @@ require (
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/fedbox v0.0.0-20260717173704-0c1f2719fe9d
 	github.com/go-ap/filters v0.0.0-20260819154911-65176da3bd4a
-	github.com/go-ap/storage-conformance-suite v0.0.0-20260819155052-701196ed2d41
-	github.com/go-ap/storage-pg v0.0.0-20260819155912-7d36afe1adb6
+	github.com/go-ap/storage-conformance-suite v0.0.0-20260820094857-97de5c32ce3e
+	github.com/go-ap/storage-pg v0.0.0-20260820102625-f55a37e7b178
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.21.9
 	github.com/google/ko v0.19.1
@@ -107,11 +107,11 @@ require (
 	github.com/go-ap/cache v0.0.0-20260819154747-7d864fe72648 // indirect
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38 // indirect
 	github.com/go-ap/processing v0.0.0-20260716111245-78d0ef51171a // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260819155640-a863748c359d // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260819155458-deef5a08eb02 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260819155342-e0efd0166b68 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260819155438-50faac5f7720 // indirect
-	github.com/go-chi/chi/v5 v5.3.1 // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260820100213-8a2d572b1843 // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260820095804-1e83ad8b00f1 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260820095514-95b09ce756a2 // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260820095726-f1799f2e0db9 // indirect
+	github.com/go-chi/chi/v5 v5.3.2 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
@@ -255,7 +255,7 @@ require (
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
 	modernc.org/libc v1.75.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
-	modernc.org/memory v1.12.0 // indirect
+	modernc.org/memory v1.12.1 // indirect
 	modernc.org/sqlite v1.57.0 // indirect
 	quamina.net/go/quamina/v2 v2.0.2 // indirect
 	sigs.k8s.io/kind v0.32.0 // indirect
