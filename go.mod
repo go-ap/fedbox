@@ -68,7 +68,7 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.4.2 // indirect
 	github.com/dunglas/httpsfv v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260819155640-a863748c359d // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260820092427-c71002a36f69 // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260819155458-deef5a08eb02 // indirect
 	github.com/go-ap/storage-fs v0.0.0-20260819155342-e0efd0166b68 // indirect
 	github.com/go-ap/storage-pg v0.0.0-20260819155912-7d36afe1adb6 // indirect
@@ -128,7 +128,7 @@ require (
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 	modernc.org/libc v1.75.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
-	modernc.org/memory v1.12.0 // indirect
+	modernc.org/memory v1.12.1 // indirect
 	modernc.org/sqlite v1.57.0 // indirect
 	quamina.net/go/quamina/v2 v2.0.2 // indirect
 )
