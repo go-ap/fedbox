@@ -155,14 +155,18 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 
 			// NOTE(marius): for deleted objects, their collections should also be not found
 			//   We do this despite having the collections removed in the processing module
-			if colOwner, err := repo.Load(maybeObject.GetLink()); err == nil {
+			if colOwner, err := repo.Load(maybeObject.GetLink()); err != nil {
+				if errors.IsNotFound(err) {
+					return nil, pathNotFound(r)
+				}
+			} else {
 				if vocab.TombstoneType.Match(colOwner.GetType()) {
 					return nil, pathNotFound(r)
 				}
 			}
 
 			// NOTE(marius): I want a way to make that the owner of a collection would automatically
-			// be authorized for all objects inside _even_ when they don't appear in the recipients list.
+			//  be authorized for all objects inside _even_ when they don't appear in the recipients list.
 			//
 			// Until that behaviour can be added to the filters module: https://todo.sr.ht/~mariusor/go-activitypub/433
 			// we can remove the authorization check if actor extracted from the authorization header
@@ -395,10 +399,10 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 			var f filters.Check
 			f = filters.Authorized(authorized.ID)
 			if it, err = repo.Load(iri, f); err != nil {
-				return nil, errors.NotFoundf("%s not found", r.URL.Path)
+				return nil, pathNotFound(r)
 			}
 			if vocab.IsNil(it) {
-				return nil, errors.NotFoundf("%s not found", r.URL.Path)
+				return nil, pathNotFound(r)
 			}
 		}
 		var err error
