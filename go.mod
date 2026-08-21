@@ -1,6 +1,6 @@
 module github.com/go-ap/fedbox
 
-go 1.25.12
+go 1.26.0
 
 require (
 	charm.land/bubbletea/v2 v2.0.9
@@ -9,7 +9,7 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20260818081520-a466820a662e
 	git.sr.ht/~mariusor/motley v0.0.0-20260817113911-c37ff7152433
 	git.sr.ht/~mariusor/servermux v0.0.0-20260730181755-b356bceeedee
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260820134556-d83c8b674146
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260821132307-15983a538b35
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.16.0
 	github.com/go-ap/activitypub v0.0.0-20260819152015-c3df165dcded
@@ -34,7 +34,7 @@ require (
 )
 
 require (
-	charm.land/bubbles/v2 v2.1.1 // indirect
+	charm.land/bubbles/v2 v2.2.0 // indirect
 	charm.land/lipgloss/v2 v2.0.6 // indirect
 	charm.land/log/v2 v2.0.0 // indirect
 	charm.land/ssh v0.4.3
@@ -45,7 +45,7 @@ require (
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.25.0 // indirect
-	github.com/carlmjohnson/requests v0.25.1 // indirect
+	github.com/carlmjohnson/requests v0.26.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/keygen v0.5.4 // indirect
@@ -72,7 +72,7 @@ require (
 	github.com/go-ap/storage-boltdb v0.0.0-20260820095804-1e83ad8b00f1 // indirect
 	github.com/go-ap/storage-fs v0.0.0-20260820095514-95b09ce756a2 // indirect
 	github.com/go-ap/storage-pg v0.0.0-20260820102625-f55a37e7b178 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260820134427-69437985537b // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260821132105-2b7b1e104e76 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -116,7 +116,7 @@ require (
 	go.opentelemetry.io/otel v1.45.0 // indirect
 	go.opentelemetry.io/otel/metric v1.45.0 // indirect
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
-	golang.org/x/exp v0.0.0-20260820122028-d6e0b57b1a69 // indirect
+	golang.org/x/exp v0.0.0-20260820142414-ca536658362e // indirect
 	golang.org/x/image v0.44.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
@@ -126,7 +126,7 @@ require (
 	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	modernc.org/libc v1.75.3 // indirect
+	modernc.org/libc v1.75.4 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 	modernc.org/sqlite v1.57.0 // indirect

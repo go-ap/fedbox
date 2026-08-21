@@ -4,8 +4,8 @@ go 1.26.3
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20260818081520-a466820a662e
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260820134556-d83c8b674146
-	github.com/carlmjohnson/requests v0.25.1
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260821132307-15983a538b35
+	github.com/carlmjohnson/requests v0.26.1
 	github.com/elnormous/contenttype v1.0.4
 	github.com/go-ap/activitypub v0.0.0-20260819152015-c3df165dcded
 	github.com/go-ap/client v0.0.0-20260819154951-7d3dd851d073
@@ -110,7 +110,7 @@ require (
 	github.com/go-ap/storage-badger v0.0.0-20260820130206-16070e2314e0 // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260820095804-1e83ad8b00f1 // indirect
 	github.com/go-ap/storage-fs v0.0.0-20260820095514-95b09ce756a2 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260820134427-69437985537b // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260821132105-2b7b1e104e76 // indirect
 	github.com/go-chi/chi/v5 v5.3.2 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
@@ -253,7 +253,7 @@ require (
 	k8s.io/apimachinery v0.36.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
-	modernc.org/libc v1.75.3 // indirect
+	modernc.org/libc v1.75.4 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 	modernc.org/sqlite v1.57.0 // indirect
