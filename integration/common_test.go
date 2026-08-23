@@ -133,6 +133,14 @@ func undo(initFn ...ap.InitFn) *vocab.Activity {
 	return ap.Activity(initFn...)
 }
 
+func question(initFn ...ap.InitFn) *vocab.Question {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.QuestionType),
+		ap.HasAudience(vocab.PublicNS),
+	}, initFn...)
+	return ap.Question(initFn...)
+}
+
 func baseIRI(iri vocab.IRI) vocab.IRI {
 	ub, err := iri.GetLink().URL()
 	if err != nil {

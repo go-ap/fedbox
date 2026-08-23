@@ -22,6 +22,7 @@ type (
 	a    = vocab.Actor
 	aa   = vocab.Activity
 	ai   = vocab.IntransitiveActivity
+	q    = vocab.Question
 
 	InitFn = any
 )
@@ -319,6 +320,35 @@ func Activity(initFn ...InitFn) *aa {
 		}
 	}
 	return act
+}
+
+func Question(initFn ...InitFn) *q {
+	act := new(q)
+	for _, maybeFn := range initFn {
+		switch fn := maybeFn.(type) {
+		case func(*o) error:
+			_ = vocab.OnObject(act, fn)
+		case func(*ai) error:
+			_ = vocab.OnIntransitiveActivity(act, fn)
+		case func(*q) error:
+			_ = vocab.OnQuestion(act, fn)
+		}
+	}
+	return act
+}
+
+func AnyOf(o ...i) func(*q) error {
+	return func(act *q) error {
+		act.AnyOf = ic(o).Normalize()
+		return nil
+	}
+}
+
+func OneOf(o ...i) func(*q) error {
+	return func(act *q) error {
+		act.OneOf = ic(o).Normalize()
+		return nil
+	}
 }
 
 func IntransitiveActivity(initFn ...InitFn) *ai {

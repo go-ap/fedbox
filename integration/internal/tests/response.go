@@ -361,12 +361,12 @@ func HasSource[T ~string | vocab.NaturalLanguageValues](cont T, mt vocab.MimeTyp
 	}
 }
 
-func toNormalizedItemCol(it vocab.Item) vocab.Item {
+func toNormalizedItemCol(it vocab.Item) vocab.ItemCollection {
 	col := make(vocab.ItemCollection, 0)
 	_ = vocab.OnItem(it, func(item vocab.Item) error {
 		return col.Append(item)
 	})
-	return col.Normalize()
+	return col
 }
 
 func HasTo(to ...vocab.Item) itemCheckFn {
@@ -609,6 +609,40 @@ func HasObject(u ...vocab.Item) itemCheckFn {
 			})
 			if err != nil {
 				t.Errorf("Invalid Activity: %v", err)
+			}
+		})
+	}
+}
+
+func HasAnyOf(u ...vocab.Item) itemCheckFn {
+	ui := toNormalizedItemCol(vocab.ItemCollection(u)).Normalize()
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("AnyOf", func(t *testing.T) {
+			err := vocab.OnQuestion(it, func(act *vocab.Question) error {
+				if !cmp.Equal(act.AnyOf, ui, equateItems) {
+					t.Errorf("Received %s", cmp.Diff(ui, act.AnyOf, equateItems))
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid Question: %v", err)
+			}
+		})
+	}
+}
+
+func HasOneOf(u ...vocab.Item) itemCheckFn {
+	ui := toNormalizedItemCol(vocab.ItemCollection(u)).Normalize()
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("OneOf", func(t *testing.T) {
+			err := vocab.OnQuestion(it, func(act *vocab.Question) error {
+				if !cmp.Equal(act.OneOf, ui, equateItems) {
+					t.Errorf("Received %s", cmp.Diff(ui, act.OneOf, equateItems))
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid Question: %v", err)
 			}
 		})
 	}
