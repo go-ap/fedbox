@@ -1,44 +1,19 @@
 package integration
 
 import (
-	"context"
-	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
-	"testing"
 	"time"
 
-	"git.sr.ht/~mariusor/lw"
-	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
-	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/fedbox/internal/config"
-	"github.com/go-ap/fedbox/internal/env"
 	"github.com/go-ap/filters"
 )
 
 var (
-	defaultC2SOptions = config.Options{
-		Hostname: "primary.localdomain",
-		HTTPPort: 80,
-		SSHPort:  422,
-		Env:      env.DEV,
-		LogLevel: lw.TraceLevel,
-	}
-	defaultS2SOptions = config.Options{
-		Hostname: "secondary.localdomain",
-		HTTPPort: 80,
-		SSHPort:  422,
-		Storage:  storage.FS,
-		Env:      env.PROD,
-		LogLevel: lw.DebugLevel,
-	}
-
-	c2sRootIRI = rootIRI(defaultC2SOptions)
-	s2sRootIRI = rootIRI(defaultS2SOptions)
+	c2sRootIRI = rootIRI(fedbox.DefaultC2SOptions)
+	s2sRootIRI = rootIRI(fedbox.DefaultS2SOptions)
 
 	MockDate = time.Date(2001, time.April, 1, 0, 0, 0, 00, time.UTC)
 
@@ -209,24 +184,6 @@ func object(initFn ...ap.InitFn) *vocab.Object {
 		initFn = append(initFn, ap.HasID(objectIRI))
 	}
 	return ap.Object(initFn...)
-}
-
-func initC2SContainers(ctx context.Context, t *testing.T) (string, crypto.PrivateKey, c.Running, error) {
-	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	pw := rand.Text()[:8]
-	images := c.Suite(fedbox.New(
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithKey(privateKey),
-		fedbox.WithPw(pw),
-	))
-
-	running, err := c.Start(ctx, t, images...)
-	if err != nil {
-		return pw, privateKey, running, err
-	}
-	return pw, privateKey, running, nil
 }
 
 func filterIRI(iri vocab.IRI, ff ...filters.Check) vocab.IRI {

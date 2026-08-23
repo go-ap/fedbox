@@ -3,7 +3,6 @@
 package integration
 
 import (
-	"context"
 	"crypto/rand"
 	"net/http"
 	"testing"
@@ -23,29 +22,52 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-func Test_C2S_CreateRequests(t *testing.T) {
-	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
+var (
+	_, ed2559Key, _ = ed25519.GenerateKey(rand.Reader)
 
-	admin := person(
+	tagAdmin = object(
+		c2sRootIRI.AddPath("objects/0"),
+		ap.HasName("#sysop"),
+		ap.HasTo(vocab.PublicNS),
+	)
+	admin = person(
 		c2sRootIRI.AddPath("actors/1"),
 		ap.HasPreferredUsername("admin"),
 		ap.HasAudience(vocab.PublicNS),
+		ap.HasTag(tagAdmin),
 	)
+	person1 = person(
+		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
+		ap.HasPreferredUsername("jdoe"),
+		ap.HasName("John Doe"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasFollowing,
+		ap.HasFollowers,
+		ap.HasLiked,
+		ap.HasLikes,
+		ap.HasShares,
+		ap.HasReplies,
+	)
+	person3 = person(
+		c2sRootIRI.AddPath("actors/person-3"),
+		ap.HasPreferredUsername("alice"),
+		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasFollowing,
+		ap.HasFollowers,
+		ap.HasShares,
+	)
+)
+
+func Test_C2S_CreateRequests(t *testing.T) {
 	token := new(c2s.BearerSigner)
-	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
+	conf := fedbox.C2SConfig(fedBOXImageName, admin, ed2559Key, rootExec.ExtractOAuth2Bearer(admin.ID, token))
 
-	images := c.Suite(fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithKey(prvKey),
-		fedbox.WithTestLogger(t, Verbose),
-		fedbox.WithItems(admin),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(admin.ID, token)),
-	))
-
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
+	ctx := t.Context()
+	cont, err := fedbox.StartContainers(ctx, t, conf)
 	if err != nil {
 		t.Fatalf("Unable to start test containers: %v", err)
 	}
@@ -635,14 +657,6 @@ func Test_C2S_CreateRequests(t *testing.T) {
 }
 
 func Test_C2S_UpdateRequests(t *testing.T) {
-	person1 := person(
-		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
-		ap.HasPreferredUsername("jdoe"),
-		ap.HasName("John Doe"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasReplies,
-	)
 	article3 := object(
 		c2sRootIRI.AddPath("objects/article-3"),
 		ap.HasType(vocab.ArticleType),
@@ -689,22 +703,11 @@ func Test_C2S_UpdateRequests(t *testing.T) {
 		)),
 	)
 
-	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
 	token := new(c2s.BearerSigner)
-	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
+	conf := fedbox.C2SConfig(fedBOXImageName, person1, article3, ed2559Key, rootExec.ExtractOAuth2Bearer(person1.ID, token))
 
-	images := c.Suite(fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithKey(prvKey),
-		fedbox.WithTestLogger(t, Verbose),
-		fedbox.WithItems(person1, article3),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, token)),
-	))
-
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
+	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
 		t.Fatalf("Unable to start test containers: %v", err)
 	}
@@ -1012,19 +1015,11 @@ func Test_C2S_UpdateRequests(t *testing.T) {
 	}
 
 	for _, test := range toRun {
-		t.Run(test.Label(), test.Fn(ctx, cont))
+		t.Run(test.Label(), test.Fn(t.Context(), cont))
 	}
 }
 
 func Test_C2S_DeleteRequests(t *testing.T) {
-	person1 := person(
-		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
-		ap.HasPreferredUsername("jdoe"),
-		ap.HasName("John Doe"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasReplies,
-	)
 	article3 := object(
 		c2sRootIRI.AddPath("objects/article-3"),
 		ap.HasType(vocab.ArticleType),
@@ -1033,23 +1028,11 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 		ap.HasPublished(MockDate),
 	)
 
-	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
-
 	token := new(c2s.BearerSigner)
-	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
+	conf := fedbox.C2SConfig(fedBOXImageName, person1, article3, ed2559Key, rootExec.ExtractOAuth2Bearer(person1.ID, token))
 
-	images := c.Suite(fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithKey(prvKey),
-		fedbox.WithTestLogger(t, Verbose),
-		fedbox.WithItems(person1, article3),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, token)),
-	))
-
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
+	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
 		t.Fatalf("Unable to start test containers: %v", err)
 	}
@@ -1234,20 +1217,11 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 	}
 
 	for _, test := range toRun {
-		t.Run(test.Label(), test.Fn(ctx, cont))
+		t.Run(test.Label(), test.Fn(t.Context(), cont))
 	}
 }
 
 func Test_C2S_LikeRequests(t *testing.T) {
-	person1 := person(
-		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
-		ap.HasPreferredUsername("jdoe"),
-		ap.HasName("John Doe"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasLikes,
-		ap.HasLiked,
-	)
 	article3 := object(
 		c2sRootIRI.AddPath("objects/article-3"),
 		ap.HasType(vocab.ArticleType),
@@ -1257,23 +1231,11 @@ func Test_C2S_LikeRequests(t *testing.T) {
 		ap.HasPublished(MockDate),
 	)
 
-	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
-
 	token := new(c2s.BearerSigner)
-	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
+	conf := fedbox.C2SConfig(fedBOXImageName, person1, article3, ed2559Key, rootExec.ExtractOAuth2Bearer(person1.ID, token))
 
-	images := c.Suite(fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithKey(prvKey),
-		fedbox.WithTestLogger(t, Verbose),
-		fedbox.WithItems(person1, article3),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, token)),
-	))
-
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
+	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
 		t.Fatalf("Unable to start test containers: %v", err)
 	}
@@ -1494,19 +1456,11 @@ func Test_C2S_LikeRequests(t *testing.T) {
 	}
 
 	for _, test := range toRun {
-		t.Run(test.Label(), test.Fn(ctx, cont))
+		t.Run(test.Label(), test.Fn(t.Context(), cont))
 	}
 }
 
 func Test_C2S_ShareRequests(t *testing.T) {
-	person1 := person(
-		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
-		ap.HasPreferredUsername("jdoe"),
-		ap.HasName("John Doe"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasShares,
-	)
 	article3 := object(
 		c2sRootIRI.AddPath("objects/article-3"),
 		ap.HasType(vocab.ArticleType),
@@ -1516,23 +1470,11 @@ func Test_C2S_ShareRequests(t *testing.T) {
 		ap.HasShares,
 	)
 
-	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
-
 	token := new(c2s.BearerSigner)
-	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
+	conf := fedbox.C2SConfig(fedBOXImageName, person1, article3, ed2559Key, rootExec.ExtractOAuth2Bearer(person1.ID, token))
 
-	images := c.Suite(fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithKey(prvKey),
-		fedbox.WithTestLogger(t, Verbose),
-		fedbox.WithItems(person1, article3),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, token)),
-	))
-
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
+	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
 		t.Fatalf("Unable to start test containers: %v", err)
 	}
@@ -1633,48 +1575,23 @@ func Test_C2S_ShareRequests(t *testing.T) {
 	}
 
 	for _, test := range toRun {
-		t.Run(test.Label(), test.Fn(ctx, cont))
+		t.Run(test.Label(), test.Fn(t.Context(), cont))
 	}
 }
 
 func Test_C2S_FollowRequests(t *testing.T) {
-	person1 := person(
-		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
-		ap.HasPreferredUsername("jdoe"),
-		ap.HasName("John Doe"),
-		ap.HasPublished(MockDate),
-		ap.HasFollowing,
-		ap.HasFollowers,
-	)
-	person3 := person(
-		c2sRootIRI.AddPath("actors/person-3"),
-		ap.HasPreferredUsername("alice"),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasPublished(MockDate),
-		ap.HasFollowing,
-		ap.HasFollowers,
-	)
-
-	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
-
 	tokenP1 := new(c2s.BearerSigner)
 	tokenP3 := new(c2s.BearerSigner)
 
-	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
+	conf := fedbox.C2SConfig(
+		fedBOXImageName,
+		person1, person3, ed2559Key,
+		rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1),
+		rootExec.ExtractOAuth2Bearer(person3.ID, tokenP3),
+	)
 
-	images := c.Suite(fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithKey(prvKey),
-		fedbox.WithTestLogger(t, Verbose),
-		fedbox.WithItems(person1, person3),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1)),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person3.ID, tokenP3)),
-	))
-
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
+	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
 		t.Fatalf("Unable to start test containers: %v", err)
 	}
@@ -2065,50 +1982,22 @@ func Test_C2S_FollowRequests(t *testing.T) {
 	}
 
 	for _, test := range toRun {
-		t.Run(test.Label(), test.Fn(ctx, cont))
+		t.Run(test.Label(), test.Fn(t.Context(), cont))
 	}
 }
 
 func Test_C2S_BlockRequests(t *testing.T) {
-	person1 := person(
-		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
-		ap.HasPreferredUsername("jdoe"),
-		ap.HasName("John Doe"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasFollowing,
-		ap.HasFollowers,
-	)
-	person3 := person(
-		c2sRootIRI.AddPath("actors/person-3"),
-		ap.HasPreferredUsername("alice"),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasFollowing,
-		ap.HasFollowers,
-	)
-
-	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
-
 	tokenP1 := new(c2s.BearerSigner)
 	tokenP3 := new(c2s.BearerSigner)
 
-	rootExec := c.ExecAs(c2sRootIRI, prvKey)
-
-	images := c.Suite(fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithKey(prvKey),
-		fedbox.WithTestLogger(t, Verbose),
-		fedbox.WithItems(person1, person3),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1)),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person3.ID, tokenP3)),
-	))
-
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
+	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
+	conf := fedbox.C2SConfig(
+		fedBOXImageName,
+		person1, person3, ed2559Key,
+		rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1),
+		rootExec.ExtractOAuth2Bearer(person3.ID, tokenP3),
+	)
+	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
 		t.Fatalf("Unable to start test containers: %v", err)
 	}
@@ -2684,51 +2573,24 @@ func Test_C2S_BlockRequests(t *testing.T) {
 	}
 
 	for _, test := range toRun {
-		t.Run(test.Label(), test.Fn(ctx, cont))
+		t.Run(test.Label(), test.Fn(t.Context(), cont))
 	}
 }
 
 // TODO(marius): IgnoreRequests -> ignored's activities don't get to ignorer's inbox
 func Test_C2S_IgnoreRequests(t *testing.T) {
-	person1 := person(
-		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
-		ap.HasPreferredUsername("jdoe"),
-		ap.HasName("John Doe"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasFollowing,
-		ap.HasFollowers,
-	)
-	person3 := person(
-		c2sRootIRI.AddPath("actors/person-3"),
-		ap.HasPreferredUsername("alice"),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasFollowing,
-		ap.HasFollowers,
-	)
-
-	_, prvKey, _ := ed25519.GenerateKey(rand.Reader)
-
 	tokenP1 := new(c2s.BearerSigner)
 	tokenP3 := new(c2s.BearerSigner)
+	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
 
-	rootExec := c.ExecAs(c2sRootIRI, prvKey)
+	conf := fedbox.C2SConfig(
+		fedBOXImageName,
+		person1, person3, ed2559Key,
+		rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1),
+		rootExec.ExtractOAuth2Bearer(person3.ID, tokenP3),
+	)
 
-	images := c.Suite(fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithKey(prvKey),
-		fedbox.WithTestLogger(t, Verbose),
-		fedbox.WithItems(person1, person3),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1)),
-		fedbox.WithCmd(rootExec.ExtractOAuth2Bearer(person3.ID, tokenP3)),
-	))
-
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
+	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
 		t.Fatalf("Unable to start test containers: %v", err)
 	}
@@ -3058,7 +2920,7 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 	}
 
 	for _, test := range toRun {
-		t.Run(test.Label(), test.Fn(ctx, cont))
+		t.Run(test.Label(), test.Fn(t.Context(), cont))
 	}
 }
 
@@ -3069,22 +2931,18 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 // TODO(marius): MoveRequests -> old collection loses item, new collection gets updated with item
 
 func Test_C2S_Requests(t *testing.T) {
-	publicKey, prvKey, _ := ed25519.GenerateKey(rand.Reader)
+	conf := fedbox.C2SConfig(fedBOXImageName, tagAdmin, admin)
+	cont, err := fedbox.StartContainers(t.Context(), t, conf)
+	if err != nil {
+		t.Fatalf("Error: %s", err)
+	}
 
-	service := root(c2sRootIRI, ap.HasPublicKey(publicKey))
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
 
-	tagAdmin := object(
-		c2sRootIRI.AddPath("objects/0"),
-		ap.HasName("#sysop"),
-		ap.HasTo(vocab.PublicNS),
-	)
-	admin := person(
-		c2sRootIRI.AddPath("actors/1"),
-		ap.HasPreferredUsername("admin"),
-		ap.HasTag(tagAdmin),
-	)
-
-	draftSig := s2s.New(s2s.WithActor(service, prvKey))
+	service := root(c2sRootIRI, ap.HasPublicKey(conf.Key.Public()))
+	draftSig := s2s.New(s2s.WithActor(service, conf.Key))
 	token := new(c2s.BearerSigner)
 
 	toRun := []tests.RunnableTest{
@@ -3178,7 +3036,7 @@ func Test_C2S_Requests(t *testing.T) {
 					Cmd: c.SSHCmd{
 						Cmd:  []string{"oauth", "token", "add", string(admin.ID)},
 						User: c2sRootIRI.String(),
-						Key:  prvKey,
+						Key:  conf.Key,
 					},
 					IO: tests.WithTests(tests.GetToken(token), tests.AnyOutput),
 				},
@@ -3351,26 +3209,7 @@ func Test_C2S_Requests(t *testing.T) {
 		},
 	}
 
-	images := c.Suite(fedbox.New(
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithKey(prvKey),
-		fedbox.WithItems(tagAdmin, admin),
-		fedbox.WithTestLogger(t, Verbose),
-	))
-
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
-	if err != nil {
-		t.Fatalf("Error: %s", err)
-	}
-
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	for _, test := range toRun {
-		t.Run(test.Label(), test.Fn(ctx, cont))
+		t.Run(test.Label(), test.Fn(t.Context(), cont))
 	}
 }

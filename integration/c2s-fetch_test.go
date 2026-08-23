@@ -3,7 +3,6 @@
 package integration
 
 import (
-	"context"
 	"crypto/rand"
 	"net/http"
 	"testing"
@@ -11,7 +10,6 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/client"
-	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
@@ -56,14 +54,22 @@ func Test_Fetch(t *testing.T) {
 		ap.HasTo("https://www.w3.org/ns/activitystreams#Public"),
 	)
 
-	contentType := client.ContentTypeJsonLD
+	conf := fedbox.C2SConfig(fedBOXImageName, tag0, object1, admin1, actor2, privateKey)
+	cont, err := fedbox.StartContainers(t.Context(), t, conf)
+	if err != nil {
+		t.Fatalf("Error: %s", err)
+	}
+	t.Cleanup(func() {
+		cont.Cleanup(t)
+	})
+
 	toRun := []tests.HTTPTest{
 		{
 			Name: "service",
 			Req:  tests.Request().IRI(c2sRootIRI),
 			Res: tests.Response().
 				HasCode(http.StatusOK).
-				HasContentType(contentType).
+				HasContentType(client.ContentTypeJsonLD).
 				HasExactItem(service),
 		},
 		{
@@ -72,7 +78,7 @@ func Test_Fetch(t *testing.T) {
 				IRI(vocab.Outbox.IRI(c2sRootIRI)),
 			Res: tests.Response().
 				HasCode(http.StatusOK).
-				HasContentType(contentType).
+				HasContentType(client.ContentTypeJsonLD).
 				ItemMatch(
 					tests.HasID(
 						filterIRI(vocab.Outbox.IRI(c2sRootIRI), filters.WithMaxCount(filters.MaxItems)),
@@ -85,7 +91,7 @@ func Test_Fetch(t *testing.T) {
 				IRI(vocab.Inbox.IRI(c2sRootIRI)),
 			Res: tests.Response().
 				HasCode(http.StatusOK).
-				HasContentType(contentType).
+				HasContentType(client.ContentTypeJsonLD).
 				ItemMatch(
 					tests.HasID(
 						filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(filters.MaxItems)),
@@ -97,7 +103,7 @@ func Test_Fetch(t *testing.T) {
 			Req:  tests.Request().IRI(admin1.ID),
 			Res: tests.Response().
 				HasCode(http.StatusOK).
-				HasContentType(contentType).
+				HasContentType(client.ContentTypeJsonLD).
 				ItemMatch(
 					tests.HasID(admin1.ID),
 					tests.HasURL(admin1.URL),
@@ -109,7 +115,7 @@ func Test_Fetch(t *testing.T) {
 				IRI(admin1.Outbox.GetLink()),
 			Res: tests.Response().
 				HasCode(http.StatusOK).
-				HasContentType(contentType).
+				HasContentType(client.ContentTypeJsonLD).
 				ItemMatch(
 					tests.HasID(
 						filterIRI(admin1.Outbox.GetLink(), filters.WithMaxCount(filters.MaxItems)),
@@ -122,7 +128,7 @@ func Test_Fetch(t *testing.T) {
 				IRI(admin1.Inbox.GetLink()),
 			Res: tests.Response().
 				HasCode(http.StatusOK).
-				HasContentType(contentType).
+				HasContentType(client.ContentTypeJsonLD).
 				ItemMatch(
 					tests.HasID(
 						filterIRI(admin1.Inbox.GetLink(), filters.WithMaxCount(filters.MaxItems)),
@@ -134,7 +140,7 @@ func Test_Fetch(t *testing.T) {
 			Req:  tests.Request().IRI(tag0.ID),
 			Res: tests.Response().
 				HasCode(http.StatusOK).
-				HasContentType(contentType).
+				HasContentType(client.ContentTypeJsonLD).
 				ItemMatch(
 					tests.HasID(tag0.ID),
 					tests.IsType(tag0.Type),
@@ -147,7 +153,7 @@ func Test_Fetch(t *testing.T) {
 			Req:  tests.Request().IRI(object1.ID),
 			Res: tests.Response().
 				HasCode(http.StatusOK).
-				HasContentType(contentType).
+				HasContentType(client.ContentTypeJsonLD).
 				ItemMatch(
 					tests.HasID(object1.ID),
 					tests.IsType(object1.Type),
@@ -182,7 +188,7 @@ func Test_Fetch(t *testing.T) {
 				IRI(actor2.Outbox.GetLink()),
 			Res: tests.Response().
 				HasCode(http.StatusOK).
-				HasContentType(contentType).
+				HasContentType(client.ContentTypeJsonLD).
 				ItemMatch(
 					tests.HasID(
 						filterIRI(actor2.Outbox.GetLink(), filters.WithMaxCount(filters.MaxItems)),
@@ -195,7 +201,7 @@ func Test_Fetch(t *testing.T) {
 				IRI(actor2.Inbox.GetLink()),
 			Res: tests.Response().
 				HasCode(http.StatusOK).
-				HasContentType(contentType).
+				HasContentType(client.ContentTypeJsonLD).
 				ItemMatch(
 					tests.HasID(
 						filterIRI(actor2.Inbox.GetLink(), filters.WithMaxCount(filters.MaxItems)),
@@ -204,27 +210,7 @@ func Test_Fetch(t *testing.T) {
 		},
 	}
 
-	images := c.Suite(fedbox.New(
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
-		fedbox.WithTestLogger(t, Verbose),
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithKey(privateKey),
-		fedbox.WithPw(rand.Text()[:8]),
-		fedbox.WithItems(tag0, object1, admin1, actor2),
-	))
-
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
-	if err != nil {
-		t.Fatalf("Error: %s", err)
-	}
-
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	for _, test := range toRun {
-		t.Run(test.Name, test.Fn(ctx, cont))
+		t.Run(test.Name, test.Fn(t.Context(), cont))
 	}
 }

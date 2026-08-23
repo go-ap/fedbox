@@ -3,7 +3,6 @@
 package integration
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"net/http"
@@ -20,38 +19,17 @@ import (
 
 func Test_S2SRequests(t *testing.T) {
 	_, c2sPrvKey, _ := ed25519.GenerateKey(rand.Reader)
-
 	c2sTagAdmin := object(c2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
 	c2sAdmin := person(c2sRootIRI.AddPath("actors/1"), ap.HasPreferredUsername("admin"), ap.HasTag(c2sTagAdmin))
 
 	s2sPrvKey, _ := rsa.GenerateKey(rand.Reader, 1024)
-
 	s2sTagAdmin := object(s2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
 	s2sAdmin := person(vocab.CollectionPath("actors/1").IRI(s2sRootIRI), ap.HasPreferredUsername("admin"), ap.HasTag(s2sTagAdmin))
 
-	images := c.Suite(
-		fedbox.New(
-			fedbox.WithImageName(fedBOXImageName),
-			fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultC2SOptions)),
-			fedbox.WithArgs([]string{"--bootstrap"}),
-			fedbox.WithKey(c2sPrvKey),
-			fedbox.WithPw(rand.Text()[:8]),
-			fedbox.WithItems(c2sTagAdmin, c2sAdmin),
-			fedbox.WithTestLogger(t, Verbose),
-		),
-		fedbox.New(
-			fedbox.WithImageName(fedBOXImageName),
-			fedbox.WithConfig(fedbox.ConfigFromBuildInfo(defaultS2SOptions)),
-			fedbox.WithArgs([]string{"--bootstrap"}),
-			fedbox.WithKey(s2sPrvKey),
-			fedbox.WithPw(rand.Text()[:8]),
-			fedbox.WithItems(s2sTagAdmin, s2sAdmin),
-			fedbox.WithTestLogger(t, Verbose),
-		),
-	)
+	c2sConf := fedbox.C2SConfig(fedBOXImageName, c2sTagAdmin, c2sAdmin, c2sPrvKey)
+	s2sConf := fedbox.C2SConfig(fedBOXImageName, s2sTagAdmin, s2sAdmin, s2sPrvKey)
 
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
+	cont, err := fedbox.StartContainers(t.Context(), t, c2sConf, s2sConf)
 	if err != nil {
 		t.Fatalf("Error: %s", err)
 	}
@@ -109,7 +87,8 @@ func Test_S2SRequests(t *testing.T) {
 			},
 		},
 	}
+
 	for _, test := range toRun {
-		t.Run(test.Label(), test.Fn(ctx, cont))
+		t.Run(test.Label(), test.Fn(t.Context(), cont))
 	}
 }
