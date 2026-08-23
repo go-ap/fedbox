@@ -2745,16 +2745,8 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 		ap.HasObject(person1.ID),
 	)
 
-	article6 := object(
-		c2sRootIRI.AddPath("objects/article-6"),
-		ap.HasType(vocab.ArticleType),
-		ap.HasTo(person3.ID),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
-	)
-
-	create5ID := c2sRootIRI.AddPath("/activities/create-5")
-	create5 := create(ap.HasActor(person1), ap.HasObject(article6))
+	undo5ID := c2sRootIRI.AddPath("/activities/undo-5")
+	undo5 := undo(ap.HasActor(person3), ap.HasObject(ignore4ID), ap.HasCC(person1.ID))
 
 	toRun := []tests.RunnableTest{
 		tests.TestSuite{
@@ -2785,7 +2777,7 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 						IRI(ignored.IRI(person1.ID)),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("not found")),
+						HasErrors(errFedBOXNotFound(ignored.IRI(person1.ID))),
 				},
 				tests.HTTPTest{
 					Name: "person1 ignored collection is accessible if authenticated",
@@ -2821,7 +2813,7 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 						IRI(ignored.IRI(person3.ID)),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errors.NotFoundf("not found")),
+						HasErrors(errFedBOXNotFound(ignored.IRI(person3.ID))),
 				},
 				tests.HTTPTest{
 					Name: "person3 ignored collection is accessible if authenticated",
@@ -2973,115 +2965,98 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 				},
 			},
 		},
-		tests.TestSuite{
-			Name: "person1 no longer accessible to person3",
-			Tests: []tests.RunnableTest{
-				tests.HTTPTest{
-					Name: "person3 is not accessible as person1",
-					Req: tests.Request().
-						Bearer(tokenP1.AccessToken).
-						Accept(client.ContentTypeJsonActivity).
-						IRI(person1.ID),
-					Res: tests.Response().
-						HasCode(http.StatusNotFound).
-						HasErrors(errFedBOXNotFound(person1.ID)),
-				},
-			},
-		},
 
+		// NOTE(marius): keeping the Undo tests alongside the activity they operate on
+		//  to match how we structured the code in the go-ap/processing module
 		tests.TestSuite{
-			Name: "no person3 activities reach person1",
+			Name: "Undo Ignore",
 			Tests: []tests.RunnableTest{
 				tests.HTTPTest{
-					Name: "Create with person3 in CC",
+					Name: "Undo Ignore",
 					Req: tests.Request().
-						Bearer(tokenP3.AccessToken).
-						Accept(client.ContentTypeJsonActivity).
-						IRI(vocab.Outbox.IRI(person1)).
-						BodyItem(create5),
+						IRI(vocab.Outbox.IRI(person3)).
+						Post().
+						ContentType(client.ContentTypeJsonLD).
+						Signer(tokenP3.Sign).
+						BodyItem(undo5),
 					Res: tests.Response().
 						HasCode(http.StatusCreated).
-						HasLocation(create5ID).
 						ItemMatch(
-							tests.HasID(article6.ID),
-							tests.IsType(article6.Type),
-							tests.HasCC(article6.CC),
-							tests.HasContent(article6.Content),
-							tests.HasAudience(vocab.PublicNS),
-							tests.WasPublished(time.Now().Round(0)),
+							tests.HasID(undo5ID),
+							tests.IsType(undo5.Type),
+							tests.HasCC(undo5.CC),
+							tests.HasContent(undo5.Content),
+							tests.WasPublished(time.Now()),
 						),
 				},
 				tests.HTTPTest{
-					Name: "Create is in person1's Outbox",
+					Name: "Undo is in person3's outbox and the Ignore isn't",
 					Req: tests.Request().
-						Accept(client.ContentTypeJsonActivity).
-						IRI(vocab.Outbox.IRI(person1)),
+						Signer(tokenP3.Sign).
+						ContentType(client.ContentTypeJsonLD).
+						IRI(vocab.Outbox.IRI(person3)),
 					Res: tests.Response().
 						HasCode(http.StatusOK).
 						ItemMatch(
-							tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+							tests.HasID(filterIRI(vocab.Outbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
 							tests.IsType(vocab.OrderedCollectionPageType),
 							tests.HasTotalItems(1),
-							tests.HasItem(create5ID),
+							tests.HasItem(undo5ID),
+							tests.DoesNotHaveItem(ignore4ID),
 						),
 				},
 				tests.HTTPTest{
-					Name: "Create is not in person3's Inbox",
+					Name: "Ignore is no longer accessible",
 					Req: tests.Request().
-						Bearer(tokenP3.AccessToken).
-						Accept(client.ContentTypeJsonActivity).
-						IRI(vocab.Inbox.IRI(person3)),
-					Res: tests.Response().
-						HasCode(http.StatusOK).
-						ItemMatch(
-							tests.HasID(filterIRI(vocab.Inbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
-							tests.IsType(vocab.OrderedCollectionPageType),
-							tests.HasTotalItems(0),
-							tests.DoesNotHaveItem(create5ID),
-						),
-				},
-				tests.HTTPTest{
-					Name: "Article is publicly accessible",
-					Req: tests.Request().
-						Accept(client.ContentTypeJsonActivity).
-						IRI(article6.ID),
-					Res: tests.Response().
-						HasCode(http.StatusOK).
-						ItemMatch(
-							tests.HasID(article6.ID),
-							tests.IsType(article6.Type),
-							tests.HasContent(article6.Content),
-						),
-				},
-				tests.HTTPTest{
-					Name: "Article is accessible as person3",
-					Req: tests.Request().
-						Bearer(tokenP3.AccessToken).
-						Accept(client.ContentTypeJsonActivity).
-						IRI(article6.ID),
-					Res: tests.Response().
-						HasCode(http.StatusOK).
-						ItemMatch(
-							tests.HasID(article6.ID),
-							tests.IsType(article6.Type),
-							tests.HasContent(article6.Content),
-						),
-				},
-				tests.HTTPTest{
-					Name: "Article is not accessible as person1",
-					Req: tests.Request().
-						Bearer(tokenP1.AccessToken).
-						Accept(client.ContentTypeJsonActivity).
-						IRI(article6.ID),
+						ContentType(client.ContentTypeJson).
+						IRI(ignore4ID),
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
-						HasErrors(errFedBOXNotFound(article6.ID)),
+						HasErrors(errFedBOXNotFound(ignore4ID)),
+				},
+				tests.TestSuite{
+					Name: "Ignore side-effects no longer apply",
+					Tests: []tests.RunnableTest{
+						tests.HTTPTest{
+							Name: "person3 is again accessible as person1",
+							Req: tests.Request().
+								Bearer(tokenP1.AccessToken).
+								Accept(client.ContentTypeJsonActivity).
+								IRI(person3.ID),
+							Res: tests.Response().
+								HasCode(http.StatusOK).
+								ItemMatch(
+									tests.HasID(person3.ID),
+									tests.IsType(person3.Type),
+									tests.HasName(person3.Name),
+									tests.HasPreferredUsername(person3.PreferredUsername),
+									tests.HasSummary(person3.Summary),
+									tests.HasContent(person3.Content),
+									tests.WasPublished(person3.Published),
+									tests.HasAudience(person3.Audience),
+								),
+						},
+						tests.HTTPTest{
+							Name: "person3 Outbox is again accessible as person1",
+							Req: tests.Request().
+								Bearer(tokenP1.AccessToken).
+								Accept(client.ContentTypeJsonActivity).
+								IRI(vocab.Outbox.IRI(person3)),
+							Res: tests.Response().
+								HasCode(http.StatusOK).
+								ItemMatch(
+									tests.HasID(filterIRI(vocab.Outbox.IRI(person3), filters.WithMaxCount(filters.MaxItems))),
+									tests.IsType(vocab.OrderedCollectionPageType),
+									tests.HasTotalItems(1),
+									tests.HasItem(undo5ID),
+								),
+						},
+					},
 				},
 			},
 		},
 	}
 
-	t.Skipf("We're not entirely sure of how Ignore should operate")
 	for _, test := range toRun {
 		t.Run(test.Label(), test.Fn(ctx, cont))
 	}
