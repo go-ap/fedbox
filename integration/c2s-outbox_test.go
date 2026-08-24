@@ -3071,7 +3071,8 @@ func Test_C2S_QuestionRequests(t *testing.T) {
 						ItemMatch(
 							tests.HasID(filterIRI(vocab.Outbox.IRI(person1.ID), filters.WithMaxCount(filters.MaxItems))),
 							tests.IsType(vocab.OrderedCollectionPageType),
-							tests.HasTotalItems(1),
+							tests.HasTotalItems(2),
+							tests.HasItem(question3ID),
 							tests.HasItem(question4ID),
 						),
 				},
@@ -3128,7 +3129,9 @@ func Test_C2S_QuestionRequests(t *testing.T) {
 						ItemMatch(
 							tests.HasID(filterIRI(vocab.Outbox.IRI(person1.ID), filters.WithMaxCount(filters.MaxItems))),
 							tests.IsType(vocab.OrderedCollectionPageType),
-							tests.HasTotalItems(1),
+							tests.HasTotalItems(3),
+							tests.HasItem(question3ID),
+							tests.HasItem(question4ID),
 							tests.HasItem(question5ID),
 						),
 				},
