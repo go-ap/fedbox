@@ -614,6 +614,42 @@ func HasObject(u ...vocab.Item) itemCheckFn {
 	}
 }
 
+func HasOrigin(u ...vocab.Item) itemCheckFn {
+	ui := vocab.FlattenItemCollection(u).Normalize()
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("Origin", func(t *testing.T) {
+			err := vocab.OnIntransitiveActivity(it, func(act *vocab.IntransitiveActivity) error {
+				oo := vocab.Flatten(act.Origin)
+				if !cmp.Equal(oo, ui, equateItems) {
+					t.Errorf("Received %s", cmp.Diff(ui, oo, equateItems))
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid Activity: %v", err)
+			}
+		})
+	}
+}
+
+func HasTarget(u ...vocab.Item) itemCheckFn {
+	ui := vocab.FlattenItemCollection(u).Normalize()
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("Target", func(t *testing.T) {
+			err := vocab.OnIntransitiveActivity(it, func(act *vocab.IntransitiveActivity) error {
+				oo := vocab.Flatten(act.Target)
+				if !cmp.Equal(oo, ui, equateItems) {
+					t.Errorf("Received %s", cmp.Diff(ui, oo, equateItems))
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid Activity: %v", err)
+			}
+		})
+	}
+}
+
 func HasAnyOf(u ...vocab.Item) itemCheckFn {
 	ui := toNormalizedItemCol(vocab.ItemCollection(u)).Normalize()
 	return func(t *testing.T, it vocab.Item) {

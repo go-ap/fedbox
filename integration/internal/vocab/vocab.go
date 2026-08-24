@@ -23,6 +23,8 @@ type (
 	aa   = vocab.Activity
 	ai   = vocab.IntransitiveActivity
 	q    = vocab.Question
+	oc   = vocab.OrderedCollection
+	c    = vocab.Collection
 
 	InitFn = any
 )
@@ -294,13 +296,27 @@ func HasObject(o ...i) func(*aa) error {
 	}
 }
 
+func HasOrigin(o ...i) func(*aa) error {
+	return func(act *aa) error {
+		act.Origin = ic(o).Normalize()
+		return nil
+	}
+}
+
+func HasTarget(t ...i) func(*aa) error {
+	return func(act *aa) error {
+		act.Target = ic(t).Normalize()
+		return nil
+	}
+}
+
 func Object(initFn ...InitFn) *o {
 	ob := o{}
 	for _, maybeFn := range initFn {
 		switch fn := maybeFn.(type) {
 		case vocab.IRI:
 			ob.ID = fn
-		case func(*vocab.Object) error:
+		case func(*o) error:
 			_ = vocab.OnObject(&ob, fn)
 		}
 	}
@@ -335,6 +351,36 @@ func Question(initFn ...InitFn) *q {
 		}
 	}
 	return act
+}
+
+func OrderedCollection(initFn ...InitFn) *oc {
+	ob := oc{}
+	for _, maybeFn := range initFn {
+		switch fn := maybeFn.(type) {
+		case vocab.IRI:
+			ob.ID = fn
+		case func(*o) error:
+			_ = vocab.OnObject(&ob, fn)
+		case func(*oc) error:
+			_ = vocab.OnOrderedCollection(&ob, fn)
+		}
+	}
+	return &ob
+}
+
+func Collection(initFn ...InitFn) *c {
+	ob := c{}
+	for _, maybeFn := range initFn {
+		switch fn := maybeFn.(type) {
+		case vocab.IRI:
+			ob.ID = fn
+		case func(*o) error:
+			_ = vocab.OnObject(&ob, fn)
+		case func(*c) error:
+			_ = vocab.OnCollection(&ob, fn)
+		}
+	}
+	return &ob
 }
 
 func AnyOf(o ...i) func(*q) error {

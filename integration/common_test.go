@@ -141,6 +141,30 @@ func question(initFn ...ap.InitFn) *vocab.Question {
 	return ap.Question(initFn...)
 }
 
+func add(initFn ...ap.InitFn) *vocab.Add {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.AddType),
+		ap.HasAudience(vocab.PublicNS),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
+func remove(initFn ...ap.InitFn) *vocab.Activity {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.RemoveType),
+		ap.HasAudience(vocab.PublicNS),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
+func move(initFn ...ap.InitFn) *vocab.Activity {
+	initFn = append([]ap.InitFn{
+		ap.HasType(vocab.MoveType),
+		ap.HasAudience(vocab.PublicNS),
+	}, initFn...)
+	return ap.Activity(initFn...)
+}
+
 func baseIRI(iri vocab.IRI) vocab.IRI {
 	ub, err := iri.GetLink().URL()
 	if err != nil {
@@ -192,6 +216,20 @@ func object(initFn ...ap.InitFn) *vocab.Object {
 		initFn = append(initFn, ap.HasID(objectIRI))
 	}
 	return ap.Object(initFn...)
+}
+
+func collection(initFn ...ap.InitFn) *vocab.Collection {
+	var objectIRI vocab.IRI
+	for _, maybeFn := range initFn {
+		if iri, ok := maybeFn.(vocab.IRI); ok {
+			objectIRI = iri
+			break
+		}
+	}
+	if objectIRI != "" {
+		initFn = append(initFn, ap.HasID(objectIRI))
+	}
+	return ap.Collection(initFn...)
 }
 
 func filterIRI(iri vocab.IRI, ff ...filters.Check) vocab.IRI {
