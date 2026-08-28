@@ -2928,8 +2928,9 @@ func Test_C2S_QuestionRequests(t *testing.T) {
 	tokenP1 := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
 
+	verbose := true
 	conf := fedbox.C2SConfig(
-		fedBOXImageName, person1, ed2559Key,
+		fedBOXImageName, person1, ed2559Key, verbose,
 		rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1),
 	)
 
@@ -3161,7 +3162,6 @@ func Test_C2S_QuestionRequests(t *testing.T) {
 	}
 }
 
-// TODO(marius): AddRequests -> collection gets updated with item
 func Test_C2S_AddRequests(t *testing.T) {
 	tokenP1 := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
@@ -3169,7 +3169,9 @@ func Test_C2S_AddRequests(t *testing.T) {
 	target := collection(c2sRootIRI.AddPath("objects/target-collection"))
 	note := object(
 		c2sRootIRI.AddPath("objects/note"),
+		ap.HasAttributedTo(person1.ID),
 		ap.HasType("Note"),
+		ap.HasCC(vocab.PublicNS),
 		ap.HasContent("Lorem ipsum dolor sic amet."),
 	)
 
@@ -3191,7 +3193,41 @@ func Test_C2S_AddRequests(t *testing.T) {
 	add5ID := c2sRootIRI.AddPath("activities/add-5")
 	add5 := add(ap.HasActor(person1), ap.HasObject(note.ID), ap.HasTarget(target.ID))
 
+	// TODO(marius): We should add some tests for failure cases:
+	//  * try to add an item to a collection that doesn't exist
+	//  * try to add an item to a collection that the actor doesn't "own"
 	toRun := []tests.RunnableTest{
+		tests.TestSuite{
+			Name: "control checks",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "target collection is empty",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(target.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(target.ID),
+							tests.IsType(vocab.CollectionType),
+							tests.HasTotalItems(0),
+						),
+				},
+				tests.HTTPTest{
+					Name: "note is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(note.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(note.ID),
+							tests.IsType(note.Type),
+							tests.HasContent(note.Content),
+						),
+				},
+			},
+		},
 		tests.TestSuite{
 			Name: "Add to collection",
 			Tests: []tests.RunnableTest{
@@ -3247,8 +3283,36 @@ func Test_C2S_AddRequests(t *testing.T) {
 			},
 		},
 		tests.TestSuite{
-			Name:  "Add side-effects",
-			Tests: []tests.RunnableTest{},
+			Name: "Add side-effects",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "target collection contains note",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(target.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(target.ID),
+							tests.IsType(vocab.CollectionType),
+							tests.HasTotalItems(1),
+							tests.HasItem(note.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "note is still accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(note.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(note.ID),
+							tests.IsType(note.Type),
+							tests.HasContent(note.Content),
+						),
+				},
+			},
 		},
 	}
 	for _, test := range toRun {
@@ -3256,9 +3320,7 @@ func Test_C2S_AddRequests(t *testing.T) {
 	}
 }
 
-// TODO(marius): RemoveRequests -> collection loses item
 func Test_C2S_RemoveRequests(t *testing.T) {
-	t.Skipf("Remove tests are not yet ready")
 	tokenP1 := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
 
@@ -3310,6 +3372,33 @@ func Test_C2S_RemoveRequests(t *testing.T) {
 							tests.WasPublished(time.Now()),
 						),
 				},
+				tests.HTTPTest{
+					Name: "target collection contains note",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(target.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(target.ID),
+							tests.IsType(vocab.CollectionType),
+							tests.HasTotalItems(1),
+							tests.HasItem(note.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "note is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(note.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(note.ID),
+							tests.IsType(note.Type),
+							tests.HasContent(note.Content),
+						),
+				},
 			},
 		},
 
@@ -3317,7 +3406,7 @@ func Test_C2S_RemoveRequests(t *testing.T) {
 			Name: "Remove from collection",
 			Tests: []tests.RunnableTest{
 				tests.HTTPTest{
-					Name: "Remove6",
+					Name: "Remove",
 					Req: tests.Request().
 						Bearer(tokenP1.AccessToken).
 						Accept(client.ContentTypeJsonActivity).
@@ -3335,7 +3424,7 @@ func Test_C2S_RemoveRequests(t *testing.T) {
 						),
 				},
 				tests.HTTPTest{
-					Name: "Remove6 is in person1's Outbox",
+					Name: "Remove is in person1's Outbox",
 					Req: tests.Request().
 						Bearer(tokenP1.AccessToken).
 						Accept(client.ContentTypeJsonActivity).
@@ -3350,7 +3439,7 @@ func Test_C2S_RemoveRequests(t *testing.T) {
 						),
 				},
 				tests.HTTPTest{
-					Name: "Remove6 is accessible",
+					Name: "Remove is accessible",
 					Req: tests.Request().
 						Accept(client.ContentTypeJsonActivity).
 						IRI(remove6ID),
@@ -3367,13 +3456,46 @@ func Test_C2S_RemoveRequests(t *testing.T) {
 				},
 			},
 		},
+
+		tests.TestSuite{
+			Name: "Remove side-effects",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "target collection does not contain note anymore",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(target.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(target.ID),
+							tests.IsType(vocab.CollectionType),
+							tests.HasTotalItems(0),
+							tests.DoesNotHaveItem(note.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "note is still accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(note.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(note.ID),
+							tests.IsType(note.Type),
+							tests.HasContent(note.Content),
+						),
+				},
+			},
+		},
 	}
+
 	for _, test := range toRun {
 		t.Run(test.Label(), test.Fn(t.Context(), cont))
 	}
 }
 
-// TODO(marius): MoveRequests -> old collection loses item, new collection gets updated with item
 func Test_C2S_MoveRequests(t *testing.T) {
 	tokenP1 := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
@@ -3428,11 +3550,52 @@ func Test_C2S_MoveRequests(t *testing.T) {
 							tests.WasPublished(time.Now()),
 						),
 				},
+				tests.HTTPTest{
+					Name: "origin collection contains note",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(origin.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(origin.ID),
+							tests.IsType(vocab.CollectionType),
+							tests.HasTotalItems(1),
+							tests.HasItem(note.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "target collection does not contain note",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(target.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(target.ID),
+							tests.IsType(vocab.CollectionType),
+							tests.HasTotalItems(0),
+							tests.DoesNotHaveItem(note.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "note is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(note.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(note.ID),
+							tests.IsType(note.Type),
+							tests.HasContent(note.Content),
+						),
+				},
 			},
 		},
 
 		tests.TestSuite{
-			Name: "Move from collection",
+			Name: "Move from origin to target",
 			Tests: []tests.RunnableTest{
 				tests.HTTPTest{
 					Name: "Move",
@@ -3483,6 +3646,53 @@ func Test_C2S_MoveRequests(t *testing.T) {
 							tests.HasTarget(move7.Target),
 							tests.HasOrigin(move7.Origin),
 							tests.WasPublished(time.Now().Round(0)),
+						),
+				},
+			},
+		},
+
+		tests.TestSuite{
+			Name: "Move side-effects",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "origin collection does not contain note anymore",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(origin.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(origin.ID),
+							tests.IsType(vocab.CollectionType),
+							tests.HasTotalItems(0),
+							tests.DoesNotHaveItem(note.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "target collection contains note",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(target.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(target.ID),
+							tests.IsType(vocab.CollectionType),
+							tests.HasTotalItems(1),
+							tests.HasItem(note.ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "note is still accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(note.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(note.ID),
+							tests.IsType(note.Type),
+							tests.HasContent(note.Content),
 						),
 				},
 			},

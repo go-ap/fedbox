@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/url"
 	"os"
-	"sort"
+	"slices"
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
@@ -183,9 +183,7 @@ func (l ListCmd) Run(ctl *Base) error {
 	if err != nil {
 		return err
 	}
-	sort.Slice(all, func(i, j int) bool {
-		return vocab.ItemOrderTimestamp(all[i], all[j])
-	})
+	slices.SortStableFunc(all, vocab.TimestampSortFunc)
 	_ = printItem(ctl.out, all, l.Output)
 	return nil
 }
@@ -388,9 +386,7 @@ func (e ExportCmd) Run(ctl *Base) error {
 	if len(objects) == 0 {
 		return errors.Errorf("No objects to export")
 	}
-	sort.Slice(objects, func(i, j int) bool {
-		return vocab.ItemOrderTimestamp(objects[i], objects[j])
-	})
+	slices.SortStableFunc(objects, vocab.TimestampSortFunc)
 	for i, it := range objects {
 		objects[i] = vocab.FlattenProperties(it)
 	}

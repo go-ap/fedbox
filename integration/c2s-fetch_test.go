@@ -75,7 +75,7 @@ func Test_Fetch(t *testing.T) {
 		{
 			Name: "service outbox",
 			Req: tests.Request().
-				IRI(vocab.Outbox.IRI(c2sRootIRI)),
+				IRI(vocab.Outbox.IRI(service)),
 			Res: tests.Response().
 				HasCode(http.StatusOK).
 				HasContentType(client.ContentTypeJsonLD).
@@ -88,7 +88,7 @@ func Test_Fetch(t *testing.T) {
 		{
 			Name: "service inbox",
 			Req: tests.Request().
-				IRI(vocab.Inbox.IRI(c2sRootIRI)),
+				IRI(vocab.Inbox.IRI(service)),
 			Res: tests.Response().
 				HasCode(http.StatusOK).
 				HasContentType(client.ContentTypeJsonLD).

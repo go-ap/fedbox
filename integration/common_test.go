@@ -22,6 +22,7 @@ var (
 		Type:      vocab.CreateType,
 		Actor:     c2sRootIRI,
 		Object:    c2sRootIRI,
+		Audience:  vocab.ItemCollection{vocab.PublicNS},
 		Published: time.Now().Round(2 * time.Second), // NOTE(marius): to order it at the top of the collection
 	}
 )
@@ -218,6 +219,21 @@ func object(initFn ...ap.InitFn) *vocab.Object {
 	return ap.Object(initFn...)
 }
 
+func orderedCollection(initFn ...ap.InitFn) *vocab.OrderedCollection {
+	var objectIRI vocab.IRI
+	for _, maybeFn := range initFn {
+		if iri, ok := maybeFn.(vocab.IRI); ok {
+			objectIRI = iri
+			break
+		}
+	}
+	if objectIRI != "" {
+		initFn = append(initFn, ap.HasID(objectIRI), ap.HasType(vocab.OrderedCollectionType))
+	}
+
+	return ap.OrderedCollection(initFn...)
+}
+
 func collection(initFn ...ap.InitFn) *vocab.Collection {
 	var objectIRI vocab.IRI
 	for _, maybeFn := range initFn {
@@ -227,19 +243,16 @@ func collection(initFn ...ap.InitFn) *vocab.Collection {
 		}
 	}
 	if objectIRI != "" {
-		initFn = append(initFn, ap.HasID(objectIRI))
+		initFn = append(initFn, ap.HasID(objectIRI), ap.HasType(vocab.CollectionType))
 	}
+
 	return ap.Collection(initFn...)
 }
 
 func filterIRI(iri vocab.IRI, ff ...filters.Check) vocab.IRI {
-	return vocab.IRI(buildFilterURL(iri, ff...))
-}
-
-func buildFilterURL(iri vocab.IRI, ff ...filters.Check) string {
 	if filters.MaxCountCheck(ff...) == nil {
 		// NOTE(marius): the FedBOX server appends a maxItems filter of 100 if it's missing.
 		ff = append(ff, filters.WithMaxCount(filters.MaxItems))
 	}
-	return string(iri) + "?" + filters.ToValues(ff...).Encode()
+	return filters.IRIf(iri, ff...)
 }

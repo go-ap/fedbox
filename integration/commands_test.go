@@ -11,6 +11,7 @@ import (
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
+	"github.com/go-ap/filters"
 )
 
 func Test_Commands(t *testing.T) {
@@ -173,16 +174,56 @@ func Test_Commands_StorageBootstrap(t *testing.T) {
 		cont.Cleanup(t)
 	})
 
-	tests.CommandTest{
-		Name: "storage bootstrap",
-		Host: string(c2sRootIRI),
-		Cmd: c.SSHCmd{
-			Cmd:  []string{"storage", "bootstrap"},
-			User: string(c2sRootIRI),
-			Key:  conf.Key,
+	service := root(c2sRootIRI)
+
+	toRun := []tests.RunnableTest{
+		tests.CommandTest{
+			Name: "storage bootstrap",
+			Host: string(c2sRootIRI),
+			Cmd: c.SSHCmd{
+				Cmd:  []string{"storage", "bootstrap"},
+				User: string(c2sRootIRI),
+				Key:  conf.Key,
+			},
+			IO: tests.WithTests(tests.EndOK),
 		},
-		IO: tests.WithTests(tests.EndOK),
-	}.Run(t.Context(), cont, t)
+		tests.HTTPTest{
+			Name: "service",
+			Req:  tests.Request().IRI(c2sRootIRI),
+			Res: tests.Response().
+				HasCode(http.StatusOK).
+				HasContentType(client.ContentTypeJsonLD).
+				HasExactItem(service),
+		},
+		tests.HTTPTest{
+			Name: "service outbox",
+			Req: tests.Request().
+				IRI(vocab.Outbox.IRI(service)),
+			Res: tests.Response().
+				HasCode(http.StatusOK).
+				HasContentType(client.ContentTypeJsonLD).
+				ItemMatch(
+					tests.HasID(filterIRI(vocab.Outbox.IRI(c2sRootIRI), filters.WithMaxCount(filters.MaxItems))),
+					tests.HasTotalItems(1),
+					tests.HasItem(RootCreate),
+				),
+		},
+		tests.HTTPTest{
+			Name: "service inbox",
+			Req: tests.Request().
+				IRI(vocab.Inbox.IRI(service)),
+			Res: tests.Response().
+				HasCode(http.StatusOK).
+				HasContentType(client.ContentTypeJsonLD).
+				ItemMatch(
+					tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(filters.MaxItems))),
+					tests.HasTotalItems(1),
+				),
+		},
+	}
+	for _, test := range toRun {
+		test.Run(t.Context(), cont, t)
+	}
 }
 
 func Test_Commands_Maintenance(t *testing.T) {

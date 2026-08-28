@@ -189,11 +189,15 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 		if !ok {
 			return nil, pathNotFound(r)
 		}
-
 		// NOTE(marius): check if the attributedTo actor of the collection has blocked the authorized actor
 		if fb.checkIfBlocked(col)(authorized) {
 			return nil, pathNotFound(r)
 		}
+
+		_ = vocab.OnObject(col, func(ob *vocab.Object) error {
+			ob.ID = iri
+			return nil
+		})
 
 		vocab.CleanRecipients(col)
 		for _, ob := range col.Collection() {
@@ -396,8 +400,7 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 		if !fromCache {
 			repo := fb.Storage
 			var err error
-			var f filters.Check
-			f = filters.Authorized(authorized.ID)
+			f := filters.Authorized(authorized.ID)
 			if it, err = repo.Load(iri, f); err != nil {
 				return nil, pathNotFound(r)
 			}

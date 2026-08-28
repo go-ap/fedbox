@@ -44,14 +44,21 @@ func C2SConfig(init ...any) *FedBOXConfig {
 }
 
 func InitFedBOXConfig(init ...any) *FedBOXConfig {
+	var (
+		privateKey PrivateKey
+		pw         string
+		opts       config.Options
+		image      string
+		verbose    bool
+	)
+
 	items := make(vocab.ItemCollection, 0, len(init))
 	fns := make([]tc.Executable, 0, len(init))
-	var privateKey PrivateKey
-	var pw string
-	var opts config.Options
-	var image string
+
 	for _, in := range init {
 		switch opt := in.(type) {
+		case bool:
+			verbose = opt
 		case vocab.Item:
 			items.Append(opt)
 		case tc.Executable:
@@ -73,12 +80,13 @@ func InitFedBOXConfig(init ...any) *FedBOXConfig {
 		pw = rand.Text()[:8]
 	}
 	return &FedBOXConfig{
-		Image: image,
-		Conf:  opts,
-		Items: items,
-		Key:   privateKey,
-		Pw:    pw,
-		Fns:   fns,
+		Image:   image,
+		Conf:    opts,
+		Items:   items,
+		Key:     privateKey,
+		Pw:      pw,
+		Fns:     fns,
+		Verbose: verbose,
 	}
 }
 
