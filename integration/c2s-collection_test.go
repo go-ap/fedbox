@@ -133,7 +133,6 @@ func Test_CollectionFilters(t *testing.T) {
 	items := plausibleRandomObjects(publicKey, 60)
 	images := c.Suite(fedbox.New(
 		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(fedbox.DefaultC2SOptions)),
-		fedbox.WithArgs([]string{"--bootstrap"}),
 		fedbox.WithTestLogger(t, Verbose),
 		fedbox.WithImageName(fedBOXImageName),
 		fedbox.WithKey(privateKey),

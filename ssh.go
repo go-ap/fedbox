@@ -24,11 +24,14 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 )
 
-func SSHAuthPw(f *FedBOX) ssh.PasswordHandler {
+func SSHAuthPw(fb *FedBOX) ssh.PasswordHandler {
 	return func(ctx ssh.Context, pw string) bool {
-		acc, ok := pwCheck(f, ctx.User(), []byte(pw))
+		if !vocab.IRI(fb.Conf.BaseURL).Equal(fb.Service.ID) {
+			fb.createRootService()
+		}
+		acc, ok := pwCheck(fb, ctx.User(), []byte(pw))
 		if !ok {
-			f.Logger.WithContext(lw.Ctx{"iri": ctx.User(), "pw": mask.S(pw)}).Warnf("failed password authentication")
+			fb.Logger.WithContext(lw.Ctx{"iri": ctx.User(), "pw": mask.S(pw)}).Warnf("failed password authentication")
 			return false
 		}
 
@@ -37,11 +40,14 @@ func SSHAuthPw(f *FedBOX) ssh.PasswordHandler {
 	}
 }
 
-func SSHAuthPublicKey(f *FedBOX) ssh.PublicKeyHandler {
+func SSHAuthPublicKey(fb *FedBOX) ssh.PublicKeyHandler {
 	return func(ctx ssh.Context, key ssh.PublicKey) bool {
-		acc, ok := publicKeyCheck(f, ctx.User(), key)
+		if !vocab.IRI(fb.Conf.BaseURL).Equal(fb.Service.ID) {
+			fb.createRootService()
+		}
+		acc, ok := publicKeyCheck(fb, ctx.User(), key)
 		if !ok {
-			f.Logger.WithContext(lw.Ctx{"iri": ctx.User()}).Warnf("failed public key authentication")
+			fb.Logger.WithContext(lw.Ctx{"iri": ctx.User()}).Warnf("failed public key authentication")
 			return false
 		}
 

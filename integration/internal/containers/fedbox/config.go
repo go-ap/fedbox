@@ -112,7 +112,6 @@ func StartContainers(ctx context.Context, t *testing.T, configs ...*FedBOXConfig
 
 		initFns = append(initFns, New(
 			WithImageName(conf.Image),
-			WithArgs([]string{"--bootstrap"}),
 			WithConfig(ConfigFromBuildInfo(conf.Conf)),
 			WithKey(conf.Key),
 			WithPw(conf.Pw),

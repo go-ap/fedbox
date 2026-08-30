@@ -39,39 +39,6 @@ func (b ResetCmd) Run(ctl *Base) error {
 	return bootstrap(ctl, ctl.Service, ctl.Logger, pair, nil)
 }
 
-type BootstrapCmd struct {
-	KeyType  string `help:"Type of keys to generate: ${keyTypes}" enum:"${keyTypes}" default:"${defaultKeyType}"`
-	Password string `hidden:""`
-}
-
-func (b BootstrapCmd) Run(ctl *Base) error {
-	keyType := ap.KeyType(b.KeyType)
-	if CTLRun.Storage.Type != "" {
-		ctl.Conf.Storage = CTLRun.Storage.Type
-	}
-
-	pw, pair := getPwAndKey(ctl, keyType)
-	if b.Password != "" {
-		pw = []byte(b.Password)
-	}
-	if err := ctl.Bootstrap(pw, pair); err != nil {
-		ctl.Logger.WithContext(lw.Ctx{"err": err}).Warnf("Unable to bootstrap service actor")
-	}
-	return nil
-}
-
-func BootstrapStorage(conf config.Options, service vocab.Item, l lw.Logger, pair *ap.KeyPair) error {
-	ctl := Base{
-		in:  os.Stdin,
-		out: os.Stdout,
-		err: os.Stderr,
-	}
-	if err := setup(&ctl, conf, 0); err != nil {
-		return err
-	}
-	return bootstrap(&ctl, service, l, pair, nil)
-}
-
 func bootstrap(ctl *Base, service vocab.Item, l lw.Logger, pair *ap.KeyPair, pw []byte) error {
 	conf := ctl.Conf
 	path, err := conf.BaseStoragePath()

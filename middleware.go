@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"path"
 
+	"git.sr.ht/~mariusor/lw"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
+	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -67,6 +69,30 @@ func OutOfOrderMw(f *FedBOX) func(next http.Handler) http.Handler {
 				maybeOoOHandler = errors.HandleError(errOutOfOrder)
 			}
 			maybeOoOHandler.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (fb *FedBOX) createRootService() {
+	if vocab.IRI(fb.Conf.BaseURL).Equal(fb.Service.ID) {
+		return
+	}
+	keyType := ap.KeyTypeED25519
+	if fb.Conf.MastodonCompatible {
+		keyType = ap.KeyTypeRSA
+	}
+	if err := fb.Bootstrap(getPwAndKey(fb.Base, keyType)); err != nil {
+		fb.Logger.WithContext(lw.Ctx{"err": err}).Warnf("Unable to bootstrap service actor")
+	}
+}
+
+func CreateRootMw(fb *FedBOX) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !vocab.IRI(fb.Conf.BaseURL).Equal(fb.Service.ID) {
+				fb.createRootService()
+			}
+			next.ServeHTTP(w, r)
 		})
 	}
 }

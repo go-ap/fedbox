@@ -11,7 +11,6 @@ import (
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	"github.com/go-ap/filters"
 )
 
 func Test_Commands(t *testing.T) {
@@ -161,68 +160,6 @@ func Test_Commands(t *testing.T) {
 
 	for _, test := range toRun {
 		t.Run(test.Label(), test.Fn(t.Context(), cont))
-	}
-}
-
-func Test_Commands_StorageBootstrap(t *testing.T) {
-	conf := fedbox.C2SConfig(fedBOXImageName)
-	cont, err := fedbox.StartContainers(t.Context(), t, conf)
-	if err != nil {
-		t.Fatalf("Error: %s", err)
-	}
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
-	service := root(c2sRootIRI)
-
-	toRun := []tests.RunnableTest{
-		tests.CommandTest{
-			Name: "storage bootstrap",
-			Host: string(c2sRootIRI),
-			Cmd: c.SSHCmd{
-				Cmd:  []string{"storage", "bootstrap"},
-				User: string(c2sRootIRI),
-				Key:  conf.Key,
-			},
-			IO: tests.WithTests(tests.EndOK),
-		},
-		tests.HTTPTest{
-			Name: "service",
-			Req:  tests.Request().IRI(c2sRootIRI),
-			Res: tests.Response().
-				HasCode(http.StatusOK).
-				HasContentType(client.ContentTypeJsonLD).
-				HasExactItem(service),
-		},
-		tests.HTTPTest{
-			Name: "service outbox",
-			Req: tests.Request().
-				IRI(vocab.Outbox.IRI(service)),
-			Res: tests.Response().
-				HasCode(http.StatusOK).
-				HasContentType(client.ContentTypeJsonLD).
-				ItemMatch(
-					tests.HasID(filterIRI(vocab.Outbox.IRI(c2sRootIRI), filters.WithMaxCount(filters.MaxItems))),
-					tests.HasTotalItems(1),
-					tests.HasItem(RootCreate),
-				),
-		},
-		tests.HTTPTest{
-			Name: "service inbox",
-			Req: tests.Request().
-				IRI(vocab.Inbox.IRI(service)),
-			Res: tests.Response().
-				HasCode(http.StatusOK).
-				HasContentType(client.ContentTypeJsonLD).
-				ItemMatch(
-					tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(filters.MaxItems))),
-					tests.HasTotalItems(1),
-				),
-		},
-	}
-	for _, test := range toRun {
-		test.Run(t.Context(), cont, t)
 	}
 }
 

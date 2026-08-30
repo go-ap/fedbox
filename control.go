@@ -21,7 +21,6 @@ import (
 type Storage struct {
 	Type storage.Type `help:"Type of the backend to use. Possible values: ${storageTypes}"`
 
-	Bootstrap      BootstrapCmd   `cmd:"" help:"Bootstrap the storage"`
 	Reset          ResetCmd       `cmd:"" help:"Reset an existing storage."`
 	FixCollections FixCollections `cmd:"" help:"Fix storage collections."`
 }
