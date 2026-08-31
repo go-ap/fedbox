@@ -41,7 +41,7 @@ func (d pathTyper) Type(r *http.Request) vocab.CollectionPath {
 	return col
 }
 
-func reqURL(r http.Request, secure bool) string {
+func reqIRI(r http.Request, secure bool) vocab.IRI {
 	scheme := "http"
 	if secure || r.TLS != nil {
 		scheme = "https"
@@ -60,7 +60,7 @@ func reqURL(r http.Request, secure bool) string {
 	if u.Path == "/" {
 		u.Path = ""
 	}
-	return u.String()
+	return vocab.IRI(u.String())
 }
 
 func FedBOXClient(fb *FedBOX) *client.C {
@@ -99,6 +99,29 @@ var pathNotFound = func(r *http.Request) error {
 	return errors.NotFoundf("%s not found", r.URL.Path)
 }
 
+func colIRI(r http.Request, secure bool) (vocab.IRI, filters.Checks) {
+	scheme := "http"
+	if secure || r.TLS != nil {
+		scheme = "https"
+	}
+	host := r.Host
+	if forwardedHost := r.Header.Get("X-Forwarded-Host"); forwardedHost != "" {
+		host = forwardedHost
+	}
+	u := url.URL{
+		Scheme:  scheme,
+		Host:    host,
+		Path:    r.URL.Path,
+		RawPath: r.URL.RawPath,
+	}
+	if u.Path == "/" {
+		u.Path = ""
+	}
+	iri := vocab.IRI(u.String())
+	fil := filters.FromValues(r.URL.Query())
+	return iri, fil
+}
+
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
@@ -113,21 +136,21 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 			return nil, pathNotFound(r)
 		}
 
+		iri, fil := colIRI(*r, fb.Conf.Secure)
 		// NOTE(marius): this is the main collection page, let's redirect to its first page.
 		//
 		// This would avoid clients having to parse the first page twice when
 		// iterating through a collection:
 		// * once the main collection page (which doesn't have a Next property, but just First)
 		// * the second as the first page of the collection (which has a link to the Next page)
-		q := r.URL.Query()
-		if filters.PaginatorValues(q).Count() < 0 {
+		if filters.MaxCountCheck(fil...) == nil {
+			u := r.URL
+			q := u.Query()
 			maps.Copy(q, filters.FirstPage())
-			r.URL.RawQuery = q.Encode()
-			return nil, errors.SeeOther(r.URL.String())
+			u.RawQuery = q.Encode()
+			return nil, errors.SeeOther(u.String())
 		}
 
-		colUrl := reqURL(*r, fb.Conf.Secure)
-		iri := vocab.IRI(colUrl)
 		authorized := fb.actorFromRequestWithClient(r, FedBOXClient(fb), iri)
 
 		maybeObject, maybeCol := vocab.Split(iri)
@@ -151,8 +174,6 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 		if !fromCache {
 			repo := fb.Storage
 
-			fil := make(filters.Checks, 0)
-
 			// NOTE(marius): for deleted objects, their collections should also be not found
 			//   We do this despite having the collections removed in the processing module
 			if colOwner, err := repo.Load(maybeObject.GetLink()); err != nil {
@@ -174,7 +195,6 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 			if maybeCol != vocab.Unknown && !authorized.ID.Equal(maybeObject) {
 				fil = append(fil, filters.Authorized(authorized.ID))
 			}
-			fil = append(fil, filters.FromValues(r.URL.Query())...)
 
 			if collection, err = repo.Load(iri, fil...); err != nil {
 				fb.Logger.WithContext(lw.Ctx{"iri": iri, "err": err}).Warnf("unable to load collection")
@@ -185,19 +205,20 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 			return nil, pathNotFound(r)
 		}
 
+		// NOTE(marius): check if the attributedTo actor of the collection has blocked the authorized actor
+		if fb.checkIfBlocked(collection)(authorized) {
+			return nil, pathNotFound(r)
+		}
+
+		_ = vocab.OnObject(collection, func(ob *vocab.Object) error {
+			ob.ID = reqIRI(*r, fb.Conf.Secure)
+			return nil
+		})
+
 		col, ok := collection.(vocab.CollectionInterface)
 		if !ok {
 			return nil, pathNotFound(r)
 		}
-		// NOTE(marius): check if the attributedTo actor of the collection has blocked the authorized actor
-		if fb.checkIfBlocked(col)(authorized) {
-			return nil, pathNotFound(r)
-		}
-
-		_ = vocab.OnObject(col, func(ob *vocab.Object) error {
-			ob.ID = iri
-			return nil
-		})
 
 		vocab.CleanRecipients(col)
 		for _, ob := range col.Collection() {
@@ -253,7 +274,7 @@ func CacheKey(fb *FedBOX, auth vocab.Actor, r http.Request) vocab.IRI {
 		u.User = url.User(filepath.Base(auth.ID.String()))
 	}
 	r.URL = u
-	return vocab.IRI(reqURL(r, fb.Conf.Secure))
+	return reqIRI(r, fb.Conf.Secure)
 }
 
 // HandleActivity handles POST requests to an ActivityPub actor's inbox/outbox, based on the CollectionType
@@ -389,7 +410,7 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 		return outOfOrderItemHandler
 	}
 	return func(r *http.Request) (vocab.Item, error) {
-		iri := vocab.IRI(reqURL(*r, fb.Conf.Secure))
+		iri := reqIRI(*r, fb.Conf.Secure)
 
 		authorized := fb.actorFromRequestWithClient(r, ActorClient(fb.Base, vocab.PublicNS), iri)
 		cacheKey := CacheKey(fb, authorized, *r)
