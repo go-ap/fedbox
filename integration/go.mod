@@ -4,16 +4,16 @@ go 1.26.3
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20260818081520-a466820a662e
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260825133833-8cc71a11e56e
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260831075814-c996bbe40940
 	github.com/carlmjohnson/requests v0.26.1
 	github.com/elnormous/contenttype v1.0.4
-	github.com/go-ap/activitypub v0.0.0-20260828090159-3a7d0b7e9631
-	github.com/go-ap/client v0.0.0-20260828091034-a76787a641ca
+	github.com/go-ap/activitypub v0.0.0-20260828142325-6c1da3fca413
+	github.com/go-ap/client v0.0.0-20260829144040-cd957e71873e
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/fedbox v0.0.0-20260717173704-0c1f2719fe9d
-	github.com/go-ap/filters v0.0.0-20260828090627-8fe34a6bb3e6
+	github.com/go-ap/filters v0.0.0-20260829143922-adca6eec8763
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/storage-conformance-suite v0.0.0-20260828091529-55047adcb483
+	github.com/go-ap/storage-conformance-suite v0.0.0-20260829144310-85c3295f4e1b
 	github.com/go-ap/storage-pg v0.0.0-20260824084036-2164e6e4d850
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.21.9
@@ -104,12 +104,12 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	github.com/go-ap/cache v0.0.0-20260828090543-1d34b37d2736 // indirect
+	github.com/go-ap/cache v0.0.0-20260828143636-d5c30a299ed2 // indirect
 	github.com/go-ap/processing v0.0.0-20260716111245-78d0ef51171a // indirect
 	github.com/go-ap/storage-badger v0.0.0-20260824083927-0d12e9183b8e // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260824083822-2706effcfba1 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260828091735-178dc1e600f4 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260824083710-68c9d4f1c5ac // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260829152715-17a882178892 // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260831075219-de09d91c44b5 // indirect
 	github.com/go-chi/chi/v5 v5.3.2 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect

@@ -9,17 +9,17 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20260818081520-a466820a662e
 	git.sr.ht/~mariusor/motley v0.0.0-20260817113911-c37ff7152433
 	git.sr.ht/~mariusor/servermux v0.0.0-20260730181755-b356bceeedee
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260825133833-8cc71a11e56e
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260831075814-c996bbe40940
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.16.0
-	github.com/go-ap/activitypub v0.0.0-20260828090159-3a7d0b7e9631
-	github.com/go-ap/auth v0.0.0-20260828091122-e8bf66d416d0
-	github.com/go-ap/cache v0.0.0-20260828090543-1d34b37d2736
-	github.com/go-ap/client v0.0.0-20260828091034-a76787a641ca
+	github.com/go-ap/activitypub v0.0.0-20260828142325-6c1da3fca413
+	github.com/go-ap/auth v0.0.0-20260829144226-dbf9bfe428ad
+	github.com/go-ap/cache v0.0.0-20260828143636-d5c30a299ed2
+	github.com/go-ap/client v0.0.0-20260829144040-cd957e71873e
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
-	github.com/go-ap/filters v0.0.0-20260828090627-8fe34a6bb3e6
+	github.com/go-ap/filters v0.0.0-20260829143922-adca6eec8763
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/processing v0.0.0-20260828091244-cb73ca60a8d8
+	github.com/go-ap/processing v0.0.0-20260829144331-bbd6a5b3e32e
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -70,9 +70,9 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-ap/storage-badger v0.0.0-20260824083927-0d12e9183b8e // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260824083822-2706effcfba1 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260828091735-178dc1e600f4 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260829152715-17a882178892 // indirect
 	github.com/go-ap/storage-pg v0.0.0-20260824084036-2164e6e4d850 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260824083710-68c9d4f1c5ac // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260831075219-de09d91c44b5 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
