@@ -4,17 +4,17 @@ go 1.26.3
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20260818081520-a466820a662e
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260831094714-52aa3142da79
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260831135101-99322f5413ff
 	github.com/carlmjohnson/requests v0.26.1
 	github.com/elnormous/contenttype v1.0.4
-	github.com/go-ap/activitypub v0.0.0-20260828142325-6c1da3fca413
-	github.com/go-ap/client v0.0.0-20260829144040-cd957e71873e
+	github.com/go-ap/activitypub v0.0.0-20260831124014-72a94f5a8a10
+	github.com/go-ap/client v0.0.0-20260831130403-5680ad0797ed
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/fedbox v0.0.0-20260717173704-0c1f2719fe9d
-	github.com/go-ap/filters v0.0.0-20260829143922-adca6eec8763
+	github.com/go-ap/filters v0.0.0-20260831130242-f116eb702ce2
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/storage-conformance-suite v0.0.0-20260831090222-2c28ad1825e4
-	github.com/go-ap/storage-pg v0.0.0-20260831094604-c28707ee174b
+	github.com/go-ap/storage-conformance-suite v0.0.0-20260831131648-7ba04be0be0a
+	github.com/go-ap/storage-pg v0.0.0-20260831134927-1fe7d39ba1d4
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.21.9
 	github.com/google/ko v0.19.1
@@ -104,12 +104,12 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	github.com/go-ap/cache v0.0.0-20260828143636-d5c30a299ed2 // indirect
+	github.com/go-ap/cache v0.0.0-20260831124102-1153c19aa428 // indirect
 	github.com/go-ap/processing v0.0.0-20260716111245-78d0ef51171a // indirect
-	github.com/go-ap/storage-badger v0.0.0-20260831093236-243debc56091 // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260831090927-30cde5d71af5 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260831090658-aad264c76cc5 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260831090856-5199d168c7bf // indirect
+	github.com/go-ap/storage-badger v0.0.0-20260831134646-1acd44095edf // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260831134539-6e2411d66e3e // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260831134307-ee78f0622342 // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260831134336-4e5ac9377fe1 // indirect
 	github.com/go-chi/chi/v5 v5.3.2 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect

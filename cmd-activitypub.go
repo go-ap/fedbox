@@ -183,7 +183,7 @@ func (l ListCmd) Run(ctl *Base) error {
 	if err != nil {
 		return err
 	}
-	slices.SortStableFunc(all, vocab.TimestampSortFunc)
+	slices.SortStableFunc(all, filters.TimestampSortFunc)
 	_ = printItem(ctl.out, all, l.Output)
 	return nil
 }
@@ -386,7 +386,7 @@ func (e ExportCmd) Run(ctl *Base) error {
 	if len(objects) == 0 {
 		return errors.Errorf("No objects to export")
 	}
-	slices.SortStableFunc(objects, vocab.TimestampSortFunc)
+	slices.SortStableFunc(objects, filters.TimestampSortFunc)
 	for i, it := range objects {
 		objects[i] = vocab.FlattenProperties(it)
 	}
