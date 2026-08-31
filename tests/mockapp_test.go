@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"embed"
@@ -20,6 +21,7 @@ import (
 	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/fedbox"
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
@@ -229,11 +231,19 @@ func getTestFedBOX(options config.Options, l lw.Logger) (*fedbox.FedBOX, error) 
 	b := fedbox.Base{Conf: options, Storage: db, Logger: l}
 	a, err := fedbox.New(&b)
 	if err != nil {
-		return nil, err
+		return nil, errors.Annotatef(err, "unable to initialize instance")
+	}
+
+	pair, err := ap.GenerateKeyPair(ap.KeyTypeRSA)
+	if err != nil {
+		return nil, errors.Annotatef(err, "unable to generate key pair for instance")
+	}
+	if err = b.Bootstrap([]byte(rand.Text()[:8]), pair); err != nil {
+		return nil, errors.Annotatef(err, "unable to bootstrap instance")
 	}
 
 	if err = seedTestData(a); err != nil {
-		return nil, err
+		return nil, errors.Annotatef(err, "unable to seed test data")
 	}
 
 	return a, nil

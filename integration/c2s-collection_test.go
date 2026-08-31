@@ -8,8 +8,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
@@ -19,7 +17,6 @@ import (
 	"github.com/go-ap/fedbox/integration/internal/tests"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
-	"github.com/go-ap/jsonld"
 	"github.com/go-ap/storage-conformance-suite/gen"
 	"golang.org/x/crypto/ed25519"
 )
