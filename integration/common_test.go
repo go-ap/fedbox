@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"crypto/rand"
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
@@ -9,6 +10,7 @@ import (
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/filters"
+	"golang.org/x/crypto/ed25519"
 )
 
 var (
@@ -25,6 +27,45 @@ var (
 		Audience:  vocab.ItemCollection{vocab.PublicNS},
 		Published: time.Now().Round(2 * time.Second), // NOTE(marius): to order it at the top of the collection
 	}
+
+	_, ed2559Key, _ = ed25519.GenerateKey(rand.Reader)
+
+	tagAdmin = object(
+		c2sRootIRI.AddPath("objects/0"),
+		ap.HasName("#sysop"),
+		ap.HasTo(vocab.PublicNS),
+	)
+	admin = person(
+		c2sRootIRI.AddPath("actors/1"),
+		ap.HasPreferredUsername("admin"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasTag(tagAdmin),
+		ap.HasSharedInbox(vocab.Inbox.IRI(c2sRootIRI)),
+	)
+	person1 = person(
+		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
+		ap.HasPreferredUsername("jdoe"),
+		ap.HasName("John Doe"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasFollowing,
+		ap.HasFollowers,
+		ap.HasLiked,
+		ap.HasLikes,
+		ap.HasShares,
+		ap.HasReplies,
+		ap.HasSharedInbox(vocab.Inbox.IRI(c2sRootIRI)),
+	)
+	person3 = person(
+		c2sRootIRI.AddPath("actors/person-3"),
+		ap.HasPreferredUsername("alice"),
+		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasFollowing,
+		ap.HasFollowers,
+		ap.HasShares,
+	)
 )
 
 func errFedBOXNotFound(iri vocab.IRI) error {
@@ -197,7 +238,6 @@ func person(initFn ...ap.InitFn) *vocab.Actor {
 	if serviceIRI := baseIRI(actorIRI); serviceIRI != "" {
 		initFn = append(initFn,
 			ap.HasGenerator(serviceIRI),
-			ap.HasSharedInbox(vocab.Inbox.IRI(serviceIRI)),
 			ap.HasProxyURL(vocab.CollectionPath("proxyUrl").IRI(serviceIRI)),
 		)
 	}
