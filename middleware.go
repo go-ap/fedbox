@@ -74,9 +74,6 @@ func OutOfOrderMw(f *FedBOX) func(next http.Handler) http.Handler {
 }
 
 func (fb *FedBOX) createRootService() {
-	if vocab.IRI(fb.Conf.BaseURL).Equal(fb.Service.ID) {
-		return
-	}
 	keyType := ap.KeyTypeED25519
 	if fb.Conf.MastodonCompatible {
 		keyType = ap.KeyTypeRSA

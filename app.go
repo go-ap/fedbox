@@ -117,9 +117,6 @@ func New(ctl *Base) (*FedBOX, error) {
 		caches: cache.New(conf.RequestCache),
 	}
 
-	if err := ctl.LoadServiceActor(); err != nil {
-		app.Logger.WithContext(lw.Ctx{"err": err, "iri": ctl.Conf.BaseURL}).Warnf("no root service exists")
-	}
 	app.debugMode.Store(conf.Env.IsDev())
 
 	app.R.Group(app.Routes())

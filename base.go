@@ -638,7 +638,7 @@ func (ctl *Base) Bootstrap(pw []byte, pair *ap.KeyPair) error {
 	actor := ap.Self(ap.DefaultServiceIRI(conf.BaseURL), AppName)
 	// NOTE(marius): Storage needs to be closed for bootstrapping
 	ctl.Storage.Close()
-	if err := bootstrap(ctl, actor, ctl.Logger, pair, pw); err != nil {
+	if err := bootstrap(ctl, &actor, ctl.Logger, pair, pw); err != nil {
 		return err
 	}
 	if err := ctl.Storage.Open(); err != nil {

@@ -418,18 +418,21 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 		it := fb.caches.Load(cacheKey)
 		fromCache := !vocab.IsNil(it)
 
+		var err error
 		if !fromCache {
 			repo := fb.Storage
-			var err error
 			f := filters.Authorized(authorized.ID)
-			if it, err = repo.Load(iri, f); err != nil {
-				return nil, pathNotFound(r)
-			}
-			if vocab.IsNil(it) {
-				return nil, pathNotFound(r)
+
+			it, err = repo.Load(iri, f)
+			if err != nil || vocab.IsNil(it) {
+				if !iri.Equal(fb.Service.ID) && errors.IsNotFound(err) {
+					return nil, pathNotFound(r)
+				}
+				fb.createRootService()
+				it = fb.Service
+				err = nil
 			}
 		}
-		var err error
 		if vocab.IsItemCollection(it) {
 			err = vocab.OnCollectionIntf(it, func(col vocab.CollectionInterface) error {
 				if col.Count() == 0 {

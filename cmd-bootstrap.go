@@ -36,7 +36,7 @@ func (b ResetCmd) Run(ctl *Base) error {
 	if err != nil {
 		return err
 	}
-	return bootstrap(ctl, ctl.Service, ctl.Logger, pair, nil)
+	return bootstrap(ctl, &ctl.Service, ctl.Logger, pair, nil)
 }
 
 func bootstrap(ctl *Base, service vocab.Item, l lw.Logger, pair *ap.KeyPair, pw []byte) error {
