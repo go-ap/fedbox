@@ -35,6 +35,7 @@ var (
 		ap.HasName("#sysop"),
 		ap.HasTo(vocab.PublicNS),
 	)
+
 	admin = person(
 		c2sRootIRI.AddPath("actors/1"),
 		ap.HasPreferredUsername("admin"),
@@ -42,6 +43,7 @@ var (
 		ap.HasTag(tagAdmin),
 		ap.HasSharedInbox(vocab.Inbox.IRI(c2sRootIRI)),
 	)
+
 	person1 = person(
 		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
 		ap.HasPreferredUsername("jdoe"),
@@ -56,6 +58,7 @@ var (
 		ap.HasReplies,
 		ap.HasSharedInbox(vocab.Inbox.IRI(c2sRootIRI)),
 	)
+
 	person3 = person(
 		c2sRootIRI.AddPath("actors/person-3"),
 		ap.HasPreferredUsername("alice"),

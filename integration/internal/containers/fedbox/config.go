@@ -43,6 +43,11 @@ func C2SConfig(init ...any) *FedBOXConfig {
 	return InitFedBOXConfig(init...)
 }
 
+func S2SConfig(init ...any) *FedBOXConfig {
+	init = append(init, any(DefaultS2SOptions))
+	return InitFedBOXConfig(init...)
+}
+
 func InitFedBOXConfig(init ...any) *FedBOXConfig {
 	var (
 		privateKey PrivateKey

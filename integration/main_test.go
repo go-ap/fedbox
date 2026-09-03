@@ -20,11 +20,11 @@ var (
 	fedBOXImageName = "localhost/fedbox/app"
 
 	validStorageTypes = []string{
-		"fs",
-		"badger",
-		"boltdb",
-		"postgres",
-		"sqlite",
+		string(storage.FS),       // fs
+		string(storage.Badger),   // badger
+		string(storage.BoltDB),   // boltdb
+		string(storage.Sqlite),   // sqlite
+		string(storage.Postgres), // postgres
 	}
 )
 
