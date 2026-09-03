@@ -13,13 +13,13 @@ require (
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.16.0
 	github.com/go-ap/activitypub v0.0.0-20260831124014-72a94f5a8a10
-	github.com/go-ap/auth v0.0.0-20260831130826-b5f96e4303bc
+	github.com/go-ap/auth v0.0.0-20260903141521-2470102fcbae
 	github.com/go-ap/cache v0.0.0-20260831124102-1153c19aa428
 	github.com/go-ap/client v0.0.0-20260831130403-5680ad0797ed
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/filters v0.0.0-20260831130242-f116eb702ce2
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/processing v0.0.0-20260831130951-690f5be6fe10
+	github.com/go-ap/processing v0.0.0-20260903173437-7cf94433a84e
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -30,13 +30,13 @@ require (
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef
 	go.uber.org/goleak v1.3.0
-	golang.org/x/crypto v0.55.0
+	golang.org/x/crypto v0.56.0
 )
 
 require (
 	charm.land/bubbles/v2 v2.2.1 // indirect
 	charm.land/lipgloss/v2 v2.0.6 // indirect
-	charm.land/log/v2 v2.0.0 // indirect
+	charm.land/log/v2 v2.0.1 // indirect
 	charm.land/ssh v0.4.3
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/mask v0.0.0-20250114195353-98705a6977b7
@@ -50,7 +50,7 @@ require (
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/keygen v0.5.4 // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20260812204455-68fa937c71be // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260903151058-ae99b731b8c5 // indirect
 	github.com/charmbracelet/x/ansi v0.11.8 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
 	github.com/charmbracelet/x/conpty v0.2.0 // indirect
@@ -84,14 +84,14 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
-	github.com/klauspost/compress v1.19.2 // indirect
+	github.com/klauspost/compress v1.20.0 // indirect
 	github.com/leporo/sqlf v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/mariusor/bubbles-tree v0.0.0-20260804092904-048968f1532d // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
-	github.com/mattn/go-runewidth v0.0.28 // indirect
+	github.com/mattn/go-runewidth v0.0.29 // indirect
 	github.com/mattn/go-sqlite3 v1.14.50 // indirect
 	github.com/mfridman/tparse v0.18.0 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
@@ -126,10 +126,10 @@ require (
 	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	modernc.org/libc v1.75.6 // indirect
+	modernc.org/libc v1.75.7 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
-	modernc.org/sqlite v1.57.0 // indirect
+	modernc.org/sqlite v1.58.0 // indirect
 	quamina.net/go/quamina/v2 v2.0.2 // indirect
 )
 

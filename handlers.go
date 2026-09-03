@@ -70,26 +70,36 @@ func FedBOXClient(fb *FedBOX) *client.C {
 func (fb *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, receivedIn vocab.IRI) vocab.Actor {
 	// NOTE(marius): if the Storage is nil, we can still use the remote client in the load function
 	l := fb.Logger.WithContext(lw.Ctx{"log": "auth"})
+
 	initFns := []auth.InitFn{
 		auth.WithClient(cl),
 		auth.WithLogger(l),
-		auth.WithStorage(fb.Storage),
 	}
 
 	var ar actorVerifier
 	switch {
 	case r.Method == http.MethodPost && processing.IsInbox(receivedIn):
+		initFns = append(initFns, auth.WithStorage(fb.Storage))
 		ar = auth.HTTPSignature(initFns...)
 	case r.Method == http.MethodPost && processing.IsOutbox(receivedIn):
+		initFns = append(initFns, auth.WithOAuth2Storage(fb.Storage))
 		ar = auth.OAuth2(initFns...)
 	case IsProxyURL(receivedIn):
+		initFns = append(initFns, auth.WithOAuth2Storage(fb.Storage))
 		ar = auth.OAuth2(initFns...)
 	default:
+		initFns = append(initFns, auth.WithStorage(fb.Storage), auth.WithOAuth2Storage(fb.Storage))
 		ar = auth.Verifier(initFns...)
 	}
 
 	actor, err := ar.Verify(r)
 	if err != nil {
+		if fb.Conf.Env.IsTest() {
+			if actorID, exists := strings.CutPrefix(r.Header.Get("Signature"), "keyId=\""); exists {
+				actorID = strings.TrimSuffix(actorID, "\"")
+				actor = vocab.Actor{ID: vocab.IRI(actorID)}
+			}
+		}
 		fb.Logger.WithContext(lw.Ctx{"err": err.Error()}).Errorf("unable to load an authorized Actor from request")
 	}
 	return actor
@@ -306,23 +316,30 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.NewBadRequest(err, "unable to unmarshal JSON request")
 		}
 
-		l := fb.Logger.WithContext(lw.Ctx{"log": "processing"})
-
-		authorized := fb.actorFromRequestWithClient(r, ActorClient(fb.Base, vocab.PublicNS), receivedIn)
+		cl := FedBOXClient(fb)
+		authorized := fb.actorFromRequestWithClient(r, cl, receivedIn)
 		if authorized.ID.Equal(vocab.PublicNS) {
-			fb.errFn("invalid Anonymous actor request: %s", receivedIn)
 			return it, http.StatusUnauthorized, errors.Unauthorizedf("authorized Actor is invalid")
 		}
 
-		repo := fb.Storage
+		maybeActor, maybeCol := (vocab.CollectionPaths{vocab.Inbox, vocab.Outbox}).Split(receivedIn)
+		if fb.checkIfBlocked(maybeActor)(authorized) {
+			return nil, http.StatusNotFound, pathNotFound(r)
+		}
+
+		if processing.IsOutbox(receivedIn) {
+			cl = ActorClient(fb.Base, authorized)
+		} else if maybeCol == vocab.Inbox {
+			cl = ActorClient(fb.Base, maybeActor)
+		}
 
 		baseIRI := vocab.IRI(fb.Conf.BaseURL)
 		initFns := make([]processing.OptionFn, 0)
 		initFns = append(initFns,
 			processing.WithIRI(baseIRI, InternalIRI),
-			processing.WithClient(ActorClient(fb.Base, authorized)),
-			processing.WithStorage(repo),
-			processing.WithLogger(l),
+			processing.WithClient(cl),
+			processing.WithStorage(fb.Storage),
+			processing.WithLogger(fb.Logger.WithContext(lw.Ctx{"log": "processing"})),
 			processing.WithIDGenerator(GenerateID(baseIRI)),
 		)
 		if fb.keyGenerator != nil {

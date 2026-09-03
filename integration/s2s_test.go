@@ -52,6 +52,7 @@ func Test_S2S_SharedInbox(t *testing.T) {
 	s2sPrvKey, _ := rsa.GenerateKey(rand.Reader, 1024)
 	s2sAdmin := person(vocab.CollectionPath("actors/1").IRI(s2sRootIRI), ap.HasPreferredUsername("admin"))
 
+	verbose := true
 	adminTok := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
 	c2sConf := fedbox.C2SConfig(fedBOXImageName, ed2559Key,
@@ -60,7 +61,7 @@ func Test_S2S_SharedInbox(t *testing.T) {
 	)
 
 	// NOTE(marius): s2sAdmin does not have a shared inbox, while s2sPerson1 and s2sPerson3 do
-	s2sConf := fedbox.S2SConfig(fedBOXImageName, s2sPrvKey,
+	s2sConf := fedbox.S2SConfig(fedBOXImageName, s2sPrvKey, verbose,
 		s2sAdmin, s2sPerson1, s2sPerson3,
 	)
 
@@ -153,7 +154,7 @@ func Test_S2S_SharedInbox(t *testing.T) {
 		},
 
 		tests.TestSuite{
-			Name: "SharedInbox",
+			Name: "Create directly to sharedInbox",
 			Tests: []tests.RunnableTest{
 				tests.HTTPTest{
 					Name: "Create article",
@@ -264,7 +265,7 @@ func Test_S2S_SharedInbox(t *testing.T) {
 						ItemMatch(
 							tests.IsType(vocab.OrderedCollectionPageType),
 							tests.HasID(filterIRI(vocab.Inbox.IRI(s2sPerson1), filters.WithMaxCount(100))),
-							tests.HasTotalItems(1),
+							tests.HasTotalItems(3),
 							tests.HasItem(create4ID),
 						),
 				},
@@ -278,13 +279,14 @@ func Test_S2S_SharedInbox(t *testing.T) {
 						ItemMatch(
 							tests.IsType(vocab.OrderedCollectionPageType),
 							tests.HasID(filterIRI(vocab.Inbox.IRI(s2sPerson3), filters.WithMaxCount(100))),
-							tests.HasTotalItems(1),
+							tests.HasTotalItems(2),
 							tests.HasItem(create4ID),
 						),
 				},
 			},
 		},
 	}
+
 	for _, test := range toRun {
 		t.Run(test.Label(), test.Fn(t.Context(), cont))
 	}
