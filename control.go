@@ -84,7 +84,7 @@ func InitControl(c *CTL) (*Base, error) {
 
 func (ctl *Base) LoadServiceActor() error {
 	if ctl.Conf.BaseURL == "" {
-		return errors.Errorf("No HOSTNAME configured for service")
+		return errors.Errorf("no HOSTNAME configured for service")
 	}
 
 	selfIRI := ap.DefaultServiceIRI(ctl.Conf.BaseURL)

@@ -119,6 +119,10 @@ func New(ctl *Base) (*FedBOX, error) {
 
 	app.debugMode.Store(conf.Env.IsDev())
 
+	if err := ctl.LoadServiceActor(); err != nil && !errors.IsNotFound(err) {
+		return nil, err
+	}
+
 	app.R.Group(app.Routes())
 
 	muxSetters := make([]m.MuxFn, 0, 1)
@@ -199,9 +203,6 @@ type actorVerifier interface {
 // Run is the wrapper for starting the web-server and handling signals
 func (f *FedBOX) Run(ctx context.Context) error {
 	logCtx := lw.Ctx{}
-	if f.Conf.BaseURL != "" {
-		logCtx["URL"] = f.Conf.BaseURL
-	}
 	if f.Conf.Version != "" {
 		logCtx["version"] = f.Conf.Version
 	}
@@ -211,12 +212,15 @@ func (f *FedBOX) Run(ctx context.Context) error {
 	if f.Conf.Storage != "" {
 		logCtx["storage"] = f.Conf.Storage
 	}
+	if f.Conf.Env != "" {
+		logCtx["env"] = f.Conf.Env
+	}
 	var cancelFn func()
 
 	ctx, cancelFn = context.WithCancel(ctx)
 	defer cancelFn()
 
-	logger := f.Logger
+	logger := f.Logger.WithContext(lw.Ctx{"instance": f.Conf.BaseURL})
 	logger.WithContext(logCtx).Infof("Started")
 	if err := f.Conf.WritePid(); err != nil {
 		logger.Warnf("Unable to write pid file: %s", err)
