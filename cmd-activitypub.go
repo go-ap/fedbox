@@ -281,14 +281,14 @@ func (i ImportCmd) Run(ctl *Base) error {
 		}
 		ob, err := vocab.UnmarshalJSON(buf)
 		if err != nil {
-			Errf(ctl.err, "Error unmarshaling JSON: %v", err)
+			Errf(ctl.err, "Error unmarshaling JSON: %+v", err)
 			continue
 		}
 
 		if vocab.IsItemCollection(ob) {
 			var isItThough bool
 			if col, isItThough = ob.(vocab.ItemCollection); !isItThough {
-				Errf(ctl.err, "Invalid item collection unmarshaled: %v", err)
+				Errf(ctl.err, "Invalid item collection unmarshaled: %+v", err)
 			}
 		} else {
 			col = vocab.ItemCollection{ob}

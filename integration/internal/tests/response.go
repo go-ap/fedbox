@@ -34,7 +34,7 @@ func checkItem(wanted vocab.Item, equateFn cmp.Option) bodyCheckFn {
 	return func(t *testing.T, raw []byte) {
 		got, err := vocab.UnmarshalJSON(raw)
 		if err != nil {
-			t.Fatalf("Unable to unmarshal ActivityPub object: %v", err)
+			t.Fatalf("Unable to unmarshal ActivityPub object: %+v", err)
 		}
 		if !cmp.Equal(wanted, got, equateFn) {
 			t.Errorf("Received item is different %s", cmp.Diff(wanted, got, equateFn))
@@ -71,7 +71,7 @@ func (res resChecks) HasErrors(wanted ...error) resChecks {
 		t.Run("Error body", func(t *testing.T) {
 			maybeErr, err := errors.UnmarshalJSON(raw)
 			if err != nil {
-				t.Errorf("Unable to unmarshal FedBOX error: %v", err)
+				t.Errorf("Unable to unmarshal FedBOX error: %+v", err)
 				t.Logf("Body is: %s", raw)
 				return
 			}
@@ -128,11 +128,11 @@ func (res resChecks) BodyMust(bodyChecks ...bodyCheckFn) resChecks {
 	return append(res, func(t *testing.T, r *http.Response) {
 		raw, err := io.ReadAll(r.Body)
 		if err != nil {
-			t.Errorf("Unable to read response body: %v", err)
+			t.Errorf("Unable to read response body: %+v", err)
 		}
 		defer func() {
 			if err := r.Body.Close(); err != nil {
-				t.Errorf("Unable to close response body: %v", err)
+				t.Errorf("Unable to close response body: %+v", err)
 			}
 		}()
 		for _, checkFn := range bodyChecks {
@@ -149,17 +149,17 @@ func (res resChecks) ItemMatch(itemChecks ...itemCheckFn) resChecks {
 			t.Run("Item", func(t *testing.T) {
 				raw, err := io.ReadAll(r.Body)
 				if err != nil {
-					t.Errorf("Unable to read response body: %v", err)
+					t.Errorf("Unable to read response body: %+v", err)
 				}
 				defer func() {
 					if err := r.Body.Close(); err != nil {
-						t.Errorf("Unable to close response body: %v", err)
+						t.Errorf("Unable to close response body: %+v", err)
 					}
 				}()
 
 				it, err := vocab.UnmarshalJSON(raw)
 				if err != nil {
-					t.Errorf("Failed to unmarshal ActivityPub object from body: %v", err)
+					t.Errorf("Failed to unmarshal ActivityPub object from body: %+v", err)
 				}
 				if vocab.IsNil(it) && len(itemChecks) > 0 {
 					if maybeErr, err1 := errors.UnmarshalJSON(raw); err1 == nil {
@@ -239,7 +239,7 @@ func HasFormerType(typ vocab.Typer) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Tombstone: %v", err)
+				t.Errorf("Invalid Tombstone: %+v", err)
 			}
 		})
 	}
@@ -381,7 +381,7 @@ func HasTo(to ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Object: %v", err)
+				t.Errorf("Invalid Object: %+v", err)
 			}
 		})
 	}
@@ -398,7 +398,7 @@ func HasCC(cc ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Object: %v", err)
+				t.Errorf("Invalid Object: %+v", err)
 			}
 		})
 	}
@@ -414,7 +414,7 @@ func WasUpdated(d time.Time) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Object: %v", err)
+				t.Errorf("Invalid Object: %+v", err)
 			}
 		})
 	}
@@ -433,7 +433,7 @@ func WasPublished(d time.Time) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Object: %v", err)
+				t.Errorf("Invalid Object: %+v", err)
 			}
 		})
 	}
@@ -449,7 +449,7 @@ func WasDeleted(d time.Time) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Object: %v", err)
+				t.Errorf("Invalid Object: %+v", err)
 			}
 		})
 	}
@@ -466,7 +466,7 @@ func HasAudience(u ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Object: %v", err)
+				t.Errorf("Invalid Object: %+v", err)
 			}
 		})
 	}
@@ -483,7 +483,7 @@ func HasInReplyTo(u ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Object: %v", err)
+				t.Errorf("Invalid Object: %+v", err)
 			}
 		})
 	}
@@ -500,7 +500,7 @@ func HasAttributedTo(u ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Object: %v", err)
+				t.Errorf("Invalid Object: %+v", err)
 			}
 		})
 	}
@@ -517,7 +517,7 @@ func HasContext(u ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Object: %v", err)
+				t.Errorf("Invalid Object: %+v", err)
 			}
 		})
 	}
@@ -534,7 +534,7 @@ func HasURL(u ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Object: %v", err)
+				t.Errorf("Invalid Object: %+v", err)
 			}
 		})
 	}
@@ -550,7 +550,7 @@ func HasTag(u vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Object: %v", err)
+				t.Errorf("Invalid Object: %+v", err)
 			}
 		})
 	}
@@ -570,7 +570,7 @@ func HasProxyURL(iri vocab.IRI) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Actor: %v", err)
+				t.Errorf("Invalid Actor: %+v", err)
 			}
 		})
 	}
@@ -590,7 +590,7 @@ func HasSharedInbox(iri vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Actor: %v", err)
+				t.Errorf("Invalid Actor: %+v", err)
 			}
 		})
 	}
@@ -606,7 +606,7 @@ func HasPublicKey(pub vocab.PublicKey) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Actor: %v", err)
+				t.Errorf("Invalid Actor: %+v", err)
 			}
 		})
 	}
@@ -623,7 +623,7 @@ func HasStreams(u ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Actor: %v", err)
+				t.Errorf("Invalid Actor: %+v", err)
 			}
 		})
 	}
@@ -639,7 +639,7 @@ func HasEndpoints(e *vocab.Endpoints) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Actor: %v", err)
+				t.Errorf("Invalid Actor: %+v", err)
 			}
 		})
 	}
@@ -657,7 +657,7 @@ func HasActor(u ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid IntransitiveActivity: %v", err)
+				t.Errorf("Invalid IntransitiveActivity: %+v", err)
 			}
 		})
 	}
@@ -675,7 +675,7 @@ func HasObject(u ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Activity: %v", err)
+				t.Errorf("Invalid Activity: %+v", err)
 			}
 		})
 	}
@@ -693,7 +693,7 @@ func HasOrigin(u ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Activity: %v", err)
+				t.Errorf("Invalid Activity: %+v", err)
 			}
 		})
 	}
@@ -711,7 +711,7 @@ func HasTarget(u ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Activity: %v", err)
+				t.Errorf("Invalid Activity: %+v", err)
 			}
 		})
 	}
@@ -728,7 +728,7 @@ func HasAnyOf(u ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Question: %v", err)
+				t.Errorf("Invalid Question: %+v", err)
 			}
 		})
 	}
@@ -745,7 +745,7 @@ func HasOneOf(u ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Question: %v", err)
+				t.Errorf("Invalid Question: %+v", err)
 			}
 		})
 	}
@@ -761,7 +761,7 @@ func HasTotalItems(cnt int) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Collection: %v", err)
+				t.Errorf("Invalid Collection: %+v", err)
 			}
 		})
 	}
@@ -779,7 +779,7 @@ func DoesNotHaveItem(it vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Collection: %v", err)
+				t.Errorf("Invalid Collection: %+v", err)
 			}
 		})
 	}
@@ -803,7 +803,7 @@ func HasItem(it vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Collection: %v", err)
+				t.Errorf("Invalid Collection: %+v", err)
 			}
 		})
 	}
@@ -833,7 +833,7 @@ func HasExactItems(items ...vocab.Item) itemCheckFn {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("Invalid Collection: %v", err)
+				t.Errorf("Invalid Collection: %+v", err)
 			}
 		})
 	}

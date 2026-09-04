@@ -1,4 +1,4 @@
-//go:build c2s && (remove || all)
+//go:build c2s && (Remove || all)
 
 package integration
 
@@ -34,7 +34,7 @@ func Test_C2S_RemoveRequests(t *testing.T) {
 
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
-		t.Fatalf("Unable to start test containers: %v", err)
+		t.Fatalf("Unable to start test containers: %+v", err)
 	}
 
 	t.Cleanup(func() {

@@ -176,7 +176,7 @@ func MatchToken(t testing.TB, i []byte) []byte {
 func GetToken(token *c2s.BearerSigner) LineOutputTest {
 	return func(t testing.TB, i []byte) []byte {
 		if _, err := c.ExtractToken(token, i); err != nil {
-			t.Fatalf("Unable to extract token: %v", err)
+			t.Fatalf("Unable to extract token: %+v", err)
 		}
 		return nil
 	}

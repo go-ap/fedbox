@@ -1,4 +1,4 @@
-//go:build c2s && (create || all)
+//go:build c2s && (Create || all)
 
 package integration
 
@@ -25,7 +25,7 @@ func Test_C2S_CreateRequests(t *testing.T) {
 	ctx := t.Context()
 	cont, err := fedbox.StartContainers(ctx, t, conf)
 	if err != nil {
-		t.Fatalf("Unable to start test containers: %v", err)
+		t.Fatalf("Unable to start test containers: %+v", err)
 	}
 
 	t.Cleanup(func() {

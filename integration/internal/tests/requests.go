@@ -141,7 +141,7 @@ func (rb *reqBuilder) BodyWriter(f func(w io.Writer) error) *reqBuilder {
 func (rb *reqBuilder) BodyItem(it vocab.Item) *reqBuilder {
 	raw, err := vocab.MarshalJSON(it)
 	if err != nil {
-		panic(fmt.Errorf("unable to marshal item: %v", err))
+		panic(fmt.Errorf("unable to marshal item: %+v", err))
 	}
 	rb.Builder = rb.Builder.Post().
 		ContentType(client.ContentTypeJsonLD).
