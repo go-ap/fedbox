@@ -1,4 +1,4 @@
-//go:build c2s
+//go:build c2s && (follow || all)
 
 package integration
 

@@ -7,12 +7,18 @@ MAKEFLAGS += --no-builtin-rules
 
 ENV ?= dev
 STORAGE ?= all
+TAGS ?= c2s,all,s2s,ssh
 
 PODMAN_SOCKET ?= /run/user/$(shell id -u)/podman/podman.sock
 
 ifneq ($(STORAGE),)
 STORAGE_TAG = storage_$(STORAGE),
 endif
+
+ifeq ($(TAGS),)
+TAGS = c2s,all,s2s,ssh
+endif
+
 
 TEST_FLAGS ?= -timeout 180s -count=1 -tags '$(STORAGE_TAG)integration,$(TAGS)'
 
