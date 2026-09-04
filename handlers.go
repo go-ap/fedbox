@@ -442,7 +442,7 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 
 			it, err = repo.Load(iri, f)
 			if err != nil || vocab.IsNil(it) {
-				if !iri.Equal(fb.Service.ID) && errors.IsNotFound(err) {
+				if !(iri.Equal(vocab.IRI(fb.Conf.BaseURL)) && errors.IsNotFound(err)) {
 					return nil, pathNotFound(r)
 				}
 				fb.createRootService()

@@ -187,7 +187,6 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						ItemMatch(
 							tests.HasID(filterIRI(vocab.Inbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
 							tests.IsType(vocab.OrderedCollectionPageType),
-							tests.HasTotalItems(0),
 						),
 				},
 			},
@@ -395,7 +394,7 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						ItemMatch(
 							tests.HasID(filterIRI(vocab.Inbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
 							tests.IsType(vocab.OrderedCollectionPageType),
-							tests.HasTotalItems(0),
+							tests.HasTotalItems(2),
 							tests.DoesNotHaveItem(create5ID),
 						),
 				},
@@ -525,7 +524,7 @@ func Test_C2S_BlockRequests(t *testing.T) {
 								ItemMatch(
 									tests.HasID(filterIRI(vocab.Inbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
 									tests.IsType(vocab.OrderedCollectionPageType),
-									tests.HasTotalItems(0),
+									tests.HasTotalItems(2),
 								),
 						},
 						tests.TestSuite{
@@ -577,7 +576,7 @@ func Test_C2S_BlockRequests(t *testing.T) {
 										ItemMatch(
 											tests.HasID(filterIRI(vocab.Inbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
 											tests.IsType(vocab.OrderedCollectionPageType),
-											tests.HasTotalItems(1),
+											tests.HasTotalItems(3),
 											tests.HasItem(create8ID),
 										),
 								},

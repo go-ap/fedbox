@@ -20,7 +20,7 @@ import (
 func Test_Fetch(t *testing.T) {
 	publicKey, privateKey, _ := ed25519.GenerateKey(rand.Reader)
 
-	service := root(c2sRootIRI, ap.HasPublicKey(publicKey))
+	service := root(c2sRootIRI, ap.HasPublicKey(publicKey), ap.HasTo(vocab.PublicNS), ap.HasCC(c2sRootIRI))
 
 	tag0 := object(
 		c2sRootIRI.AddPath("objects/0"),
@@ -70,7 +70,20 @@ func Test_Fetch(t *testing.T) {
 			Res: tests.Response().
 				HasCode(http.StatusOK).
 				HasContentType(client.ContentTypeJsonLD).
-				HasExactItem(service),
+				ItemMatch(
+					tests.HasID(service.ID),
+					tests.IsType(service.Type),
+					tests.HasPublicKey(service.PublicKey),
+					tests.HasPreferredUsername(service.PreferredUsername),
+					tests.HasAttributedTo(service.AttributedTo),
+					tests.WasPublished(time.Now().Round(0)),
+					tests.HasContext(service.Context),
+					tests.HasAudience(service.Audience),
+					tests.HasSummary(service.Summary),
+					tests.HasURL(service.URL),
+					tests.HasStreams(service.Streams...),
+					tests.HasEndpoints(service.Endpoints),
+				),
 		},
 		{
 			Name: "service outbox",

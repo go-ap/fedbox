@@ -341,6 +341,7 @@ func HasMediaType(mt vocab.MimeType) itemCheckFn {
 		})
 	}
 }
+
 func HasSource[T ~string | vocab.NaturalLanguageValues](cont T, mt vocab.MimeType) itemCheckFn {
 	v := nlv(cont)
 	return func(t *testing.T, it vocab.Item) {
@@ -505,6 +506,23 @@ func HasAttributedTo(u ...vocab.Item) itemCheckFn {
 	}
 }
 
+func HasContext(u ...vocab.Item) itemCheckFn {
+	ui := toNormalizedItemCol(vocab.ItemCollection(u))
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("Context", func(t *testing.T) {
+			err := vocab.OnObject(it, func(ob *vocab.Object) error {
+				if at := toNormalizedItemCol(ob.Context); !cmp.Equal(at, ui, equateItems) {
+					t.Errorf("%s", cmp.Diff(ui, at, equateItems))
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid Object: %v", err)
+			}
+		})
+	}
+}
+
 func HasURL(u ...vocab.Item) itemCheckFn {
 	ui := toNormalizedItemCol(vocab.ItemCollection(u))
 	return func(t *testing.T, it vocab.Item) {
@@ -568,6 +586,55 @@ func HasSharedInbox(iri vocab.Item) itemCheckFn {
 				}
 				if !cmp.Equal(iri, act.Endpoints.SharedInbox, equateItems) {
 					t.Errorf("Received %s, expected %s", act.Endpoints.SharedInbox, iri)
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid Actor: %v", err)
+			}
+		})
+	}
+}
+
+func HasPublicKey(pub vocab.PublicKey) itemCheckFn {
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("PublicKey", func(t *testing.T) {
+			err := vocab.OnActor(it, func(act *vocab.Actor) error {
+				if !cmp.Equal(act.PublicKey, pub) {
+					t.Errorf("Received %s", cmp.Diff(pub, act.PublicKey))
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid Actor: %v", err)
+			}
+		})
+	}
+}
+
+func HasStreams(u ...vocab.Item) itemCheckFn {
+	ui := toNormalizedItemCol(vocab.ItemCollection(u))
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("Streams", func(t *testing.T) {
+			err := vocab.OnActor(it, func(act *vocab.Actor) error {
+				if uu := toNormalizedItemCol(act.Streams); !cmp.Equal(uu, ui, equateItems) {
+					t.Errorf("%s", cmp.Diff(ui, uu, equateItems))
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("Invalid Actor: %v", err)
+			}
+		})
+	}
+}
+
+func HasEndpoints(e *vocab.Endpoints) itemCheckFn {
+	return func(t *testing.T, it vocab.Item) {
+		t.Run("Endpoints", func(t *testing.T) {
+			err := vocab.OnActor(it, func(act *vocab.Actor) error {
+				if !cmp.Equal(act.Endpoints, e) {
+					t.Errorf("%s", cmp.Diff(e, act.Endpoints))
 				}
 				return nil
 			})

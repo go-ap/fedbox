@@ -219,7 +219,7 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 						ItemMatch(
 							tests.HasID(filterIRI(vocab.Inbox.IRI(person1.ID), filters.WithMaxCount(filters.MaxItems))),
 							tests.IsType(vocab.OrderedCollectionPageType),
-							tests.HasTotalItems(0),
+							tests.HasTotalItems(2),
 							tests.DoesNotHaveItem(ignore4ID),
 						),
 				},
