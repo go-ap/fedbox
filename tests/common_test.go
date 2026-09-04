@@ -968,7 +968,7 @@ func initializeApps(t *testing.T, l lw.Logger, configs ...config.Options) map[vo
 			var err error
 			app, err = getTestFedBOX(options, l)
 			if err != nil {
-				t.Fatalf("%s", err)
+				t.Fatalf("failed to initialized FedBOX application: %+v", err)
 			}
 			apps[selfID] = app
 		}

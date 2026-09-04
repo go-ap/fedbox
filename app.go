@@ -98,9 +98,6 @@ func New(ctl *Base) (*FedBOX, error) {
 		return nil, errors.Newf("invalid storage")
 	}
 	conf := ctl.Conf
-	if err := db.Open(); err != nil {
-		return nil, errors.Annotatef(err, "unable to open storage: %s", conf.StoragePath)
-	}
 
 	if ctl.in == nil {
 		ctl.in = os.Stdin

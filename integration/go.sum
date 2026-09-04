@@ -31,8 +31,8 @@ git.sr.ht/~mariusor/mask v0.0.0-20250114195353-98705a6977b7 h1:mforQrhdB8Xz4xxam
 git.sr.ht/~mariusor/mask v0.0.0-20250114195353-98705a6977b7/go.mod h1:Mw0HVQc45uMVOiZNDngXg6zQiO2h/yTsNhI5cm0uk3A=
 git.sr.ht/~mariusor/ssm v0.0.0-20260505081700-875e54c38633 h1:tNTJT8gaXOO+pv2NmjQCNMOZfAmhqkmN0gZ9LgCIfIw=
 git.sr.ht/~mariusor/ssm v0.0.0-20260505081700-875e54c38633/go.mod h1:uGk4NvFQ6Xo1JC9aXk9H2L6/QRWJEIFL02qqY1fy/Us=
-git.sr.ht/~mariusor/storage-all v0.0.0-20260831135101-99322f5413ff h1:HSajxvmVdHG/lkpYuMbxN/0jJVlFoBejyo1GB+MiyhY=
-git.sr.ht/~mariusor/storage-all v0.0.0-20260831135101-99322f5413ff/go.mod h1:gbTokev66S6RKf7URTAIL2vRxpzObd6iLr++z5YrTPI=
+git.sr.ht/~mariusor/storage-all v0.0.0-20260904085016-2684dce7703c h1:pyAWagSC37mmaAQsE/lL5kAPoZcM0cwKyTtmf3rEH/M=
+git.sr.ht/~mariusor/storage-all v0.0.0-20260904085016-2684dce7703c/go.mod h1:skrNzXW3ANo2f13ppdZEkw3P4qciwXAsJBq5+zDk6l4=
 github.com/AdaLogics/go-fuzz-headers v0.0.0-20240806141605-e8a1dd7889d6 h1:He8afgbRMd7mFxO99hRNu+6tazq8nFF9lIwo9JFroBk=
 github.com/AdaLogics/go-fuzz-headers v0.0.0-20240806141605-e8a1dd7889d6/go.mod h1:8o94RPi1/7XTJvwPpRSzSUedZrtlirdB3r9Z20bi2f8=
 github.com/AdamKorcz/go-fuzz-headers-1 v0.0.0-20230919221257-8b5d3ce2d11d h1:zjqpY4C7H15HjRPEenkS4SAn3Jy2eRRjkjZbGR30TOg=
@@ -257,8 +257,8 @@ github.com/go-ap/storage-fs v0.0.0-20260831134307-ee78f0622342 h1:BJyu7GhluZ0z8a
 github.com/go-ap/storage-fs v0.0.0-20260831134307-ee78f0622342/go.mod h1:uYL/WMgN3bIC6OYuuctrJYDqLDoeS8JhX7765de0a5g=
 github.com/go-ap/storage-pg v0.0.0-20260831134927-1fe7d39ba1d4 h1:1l/8gfPyi2Ix+hs3jazMzyqeecla38bX8nphvmr92Jo=
 github.com/go-ap/storage-pg v0.0.0-20260831134927-1fe7d39ba1d4/go.mod h1:gzuaJYOP/cMwzYApX3Czfp52PgN6mqmLcBt4A0ymNn0=
-github.com/go-ap/storage-sqlite v0.0.0-20260831134336-4e5ac9377fe1 h1:1ohWNU9+xGtgzVH2mI76GOewRmOceA6BhHw1ahWwmKU=
-github.com/go-ap/storage-sqlite v0.0.0-20260831134336-4e5ac9377fe1/go.mod h1:m64RjoDIprYgBJEB7Msztzy0AFghHQ7Zz7WjWXd9Lak=
+github.com/go-ap/storage-sqlite v0.0.0-20260904084649-478ecc829f7a h1:qqCg48oth4l03VeZhhvMKajcTrsqJeYjlRPhF0kXNSo=
+github.com/go-ap/storage-sqlite v0.0.0-20260904084649-478ecc829f7a/go.mod h1:h5ac4xduPHmWp+09Ju8gi1fmhFSH13UNbHKiod8JwLU=
 github.com/go-chi/chi/v5 v5.3.2 h1:5YQkICvTCSZ25hoRsyJazN0scjzKGiu4VAUc7H1o1nY=
 github.com/go-chi/chi/v5 v5.3.2/go.mod h1:R+tYY2hNuVUUjxoPtqUdgBqevM9s9njzkTLutVsOCto=
 github.com/go-fed/httpsig v1.1.0 h1:9M+hb0jkEICD8/cAiNqEB66R87tTINszBRTjwjQzWcI=

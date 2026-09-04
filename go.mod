@@ -9,7 +9,7 @@ require (
 	git.sr.ht/~mariusor/lw v0.0.0-20260818081520-a466820a662e
 	git.sr.ht/~mariusor/motley v0.0.0-20260817113911-c37ff7152433
 	git.sr.ht/~mariusor/servermux v0.0.0-20260730181755-b356bceeedee
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260831135101-99322f5413ff
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260904085016-2684dce7703c
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.16.0
 	github.com/go-ap/activitypub v0.0.0-20260831124014-72a94f5a8a10
@@ -72,7 +72,7 @@ require (
 	github.com/go-ap/storage-boltdb v0.0.0-20260831134539-6e2411d66e3e // indirect
 	github.com/go-ap/storage-fs v0.0.0-20260831134307-ee78f0622342 // indirect
 	github.com/go-ap/storage-pg v0.0.0-20260831134927-1fe7d39ba1d4 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20260831134336-4e5ac9377fe1 // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20260904084649-478ecc829f7a // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

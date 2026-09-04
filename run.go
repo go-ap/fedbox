@@ -60,13 +60,9 @@ func Run(args ...string) error {
 			defer func() { _ = pauseFn() }()
 		}
 		if cmd != "storage bootstrap" {
-			if err = ctl.Storage.Open(); err != nil {
-				return err
-			}
 			if err = ctl.LoadServiceActor(); err != nil {
 				return err
 			}
-			defer ctl.Storage.Close()
 		}
 	}
 
