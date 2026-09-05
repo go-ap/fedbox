@@ -25,7 +25,7 @@ var (
 		Hostname: "primary.localdomain",
 		HTTPPort: 80,
 		SSHPort:  422,
-		Env:      env.DEV,
+		Env:      env.TEST,
 		LogLevel: lw.TraceLevel,
 	}
 	DefaultS2SOptions = config.Options{
@@ -33,8 +33,8 @@ var (
 		HTTPPort: 80,
 		SSHPort:  422,
 		Storage:  storage.FS,
-		Env:      env.PROD,
-		LogLevel: lw.DebugLevel,
+		Env:      env.TEST,
+		LogLevel: lw.TraceLevel,
 	}
 )
 

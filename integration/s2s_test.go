@@ -52,7 +52,6 @@ func Test_S2S_SharedInbox(t *testing.T) {
 	s2sPrvKey, _ := rsa.GenerateKey(rand.Reader, 1024)
 	s2sAdmin := person(vocab.CollectionPath("actors/1").IRI(s2sRootIRI), ap.HasPreferredUsername("admin"))
 
-	verbose := true
 	adminTok := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
 	c2sConf := fedbox.C2SConfig(fedBOXImageName, ed2559Key,
@@ -61,7 +60,7 @@ func Test_S2S_SharedInbox(t *testing.T) {
 	)
 
 	// NOTE(marius): s2sAdmin does not have a shared inbox, while s2sPerson1 and s2sPerson3 do
-	s2sConf := fedbox.S2SConfig(fedBOXImageName, s2sPrvKey, verbose,
+	s2sConf := fedbox.S2SConfig(fedBOXImageName, s2sPrvKey,
 		s2sAdmin, s2sPerson1, s2sPerson3,
 	)
 
@@ -88,6 +87,21 @@ func Test_S2S_SharedInbox(t *testing.T) {
 		// NOTE(marius): make sure we dispatch to the sharedInbox of s2sPerson1 and s2sPerson3
 		//  which is the s2sRootIRI
 		ap.HasTo(s2sRootIRI),
+	)
+
+	note6 := object(
+		c2sRootIRI.AddPath("objects/article-6"),
+		ap.HasType(vocab.NoteType),
+		ap.HasContent("lorem ipsum dolor sic amet"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasReplies,
+	)
+	create5ID := c2sRootIRI.AddPath("activities/create-5")
+	create5 := create(
+		ap.HasActor(admin),
+		ap.HasObject(note6),
+		// NOTE(marius): we add only _one_ actor with sharedInbox
+		ap.HasTo(s2sPerson1.ID),
 	)
 
 	toRun := []tests.RunnableTest{
@@ -281,6 +295,139 @@ func Test_S2S_SharedInbox(t *testing.T) {
 							tests.HasID(filterIRI(vocab.Inbox.IRI(s2sPerson3), filters.WithMaxCount(100))),
 							tests.HasTotalItems(2),
 							tests.HasItem(create4ID),
+						),
+				},
+			},
+		},
+
+		tests.TestSuite{
+			Name: "Create to actor that uses sharedInbox",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Create note",
+					Req: tests.Request().
+						Bearer(adminTok.AccessToken).
+						IRI(vocab.Outbox.IRI(admin)).
+						BodyItem(create5),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						HasLocation(create5ID).
+						ItemMatch(
+							tests.HasID(note6.ID),
+							tests.IsType(note6.Type),
+							tests.HasContent(note6.Content),
+							tests.HasReplies(vocab.Replies.IRI(note6)),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(create5ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(create5ID),
+							tests.IsType(create5.Type),
+							tests.HasActor(create5.Actor),
+							tests.HasObject(create5.Object),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Note is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(note6.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(note6.ID),
+							tests.IsType(note6.Type),
+							tests.HasContent(note6.Content),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is in first instance's admin Outbox",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(admin)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(admin), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(2),
+							tests.HasItem(create5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is in first instance's root Inbox",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(c2sRootIRI)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(100))),
+							tests.HasTotalItems(5),
+							tests.HasItem(create5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is in second instance's root Inbox",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(s2sRootIRI)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasID(filterIRI(vocab.Inbox.IRI(s2sRootIRI), filters.WithMaxCount(100))),
+							tests.HasTotalItems(6),
+							tests.HasItem(create5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is NOT in second instance's admin Inbox",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(s2sAdmin.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasID(filterIRI(vocab.Inbox.IRI(s2sAdmin), filters.WithMaxCount(100))),
+							tests.HasTotalItems(0),
+							tests.DoesNotHaveItem(create5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is in second instance's s2sPerson1 Inbox",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(s2sPerson1.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasID(filterIRI(vocab.Inbox.IRI(s2sPerson1), filters.WithMaxCount(100))),
+							tests.HasTotalItems(4),
+							tests.HasItem(create5ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "Create is in second instance's s2sPerson3 Inbox",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(s2sPerson3.ID)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasID(filterIRI(vocab.Inbox.IRI(s2sPerson3), filters.WithMaxCount(100))),
+							tests.HasTotalItems(3),
+							tests.HasItem(create5ID),
 						),
 				},
 			},
