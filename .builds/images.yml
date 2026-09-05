@@ -21,12 +21,12 @@ tasks:
   - fs: |
       cd fedbox || exit
       ./tools/build-images.sh push fs
+  - sqlite: |
+      cd fedbox || exit
+      ./tools/build-images.sh push sqlite
   - boltdb: |
       cd fedbox || exit
       ./tools/build-images.sh push boltdb
   - badger: |
       cd fedbox || exit
       ./tools/build-images.sh push badger
-  - sqlite: |
-      cd fedbox || exit
-      ./tools/build-images.sh push sqlite
