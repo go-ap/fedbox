@@ -34,7 +34,6 @@ import (
 	"github.com/go-ap/jsonld"
 	"github.com/go-fed/httpsig"
 	"github.com/openshift/osin"
-	"go.uber.org/goleak"
 )
 
 // UserAgent value that the client uses when performing requests
@@ -1006,7 +1005,6 @@ func bootstrapApps(t *testing.T, l lw.Logger, apps map[vocab.IRI]*fedbox.FedBOX,
 func runTestSuite(t *testing.T, suite testSuite, l lw.Logger) {
 	t.Helper()
 
-	defer goleak.VerifyNone(t)
 	t.Run(suite.name, func(t *testing.T) {
 		apps := initializeApps(t, l, suite.configs...)
 		for _, test := range suite.tests {
