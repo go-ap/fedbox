@@ -158,19 +158,22 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 	ll := ctl.Logger
 
 	conf := ctl.Conf
-	var cacheStorage cache2.Storage = cache2.Mem(MB)
-	if !conf.Env.IsDev() {
-		cachePath, err := os.UserCacheDir()
-		if err != nil {
-			cachePath = os.TempDir()
+	// NOTE(marius): in testing, use no cache
+	if !conf.Env.IsTest() {
+		var cacheStorage cache2.Storage = cache2.Mem(50 * MB)
+		// NOTE(marius): in non-dev environments use disk storage
+		if !conf.Env.IsDev() {
+			cachePath, err := os.UserCacheDir()
+			if err != nil {
+				cachePath = os.TempDir()
+			}
+			cacheStorage = cache2.FS(filepath.Join(cachePath, conf.AppName))
 		}
-		cacheStorage = cache2.FS(filepath.Join(cachePath, conf.AppName))
+		tr = cache2.Private(tr, cacheStorage)
 	}
 
 	ua := fmt.Sprintf("%s@%s (+%s)", conf.BaseURL, conf.Version, ap.ProjectURL)
-	baseClient := &http.Client{
-		Transport: cache2.Private(tr, cacheStorage),
-	}
+	baseClient := &http.Client{Transport: tr}
 
 	initFns := []client.OptionFn{
 		client.WithHTTPClient(baseClient),
