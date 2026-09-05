@@ -159,7 +159,7 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 
 	conf := ctl.Conf
 	// NOTE(marius): in testing, use no cache
-	if !conf.Env.IsTest() {
+	if conf.RequestCache {
 		var cacheStorage cache2.Storage = cache2.Mem(50 * MB)
 		// NOTE(marius): in non-dev environments use disk storage
 		if !conf.Env.IsDev() {
