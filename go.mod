@@ -13,13 +13,13 @@ require (
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.16.0
 	github.com/go-ap/activitypub v0.0.0-20260831124014-72a94f5a8a10
-	github.com/go-ap/auth v0.0.0-20260903141521-2470102fcbae
+	github.com/go-ap/auth v0.0.0-20260905151425-c65b146155c7
 	github.com/go-ap/cache v0.0.0-20260831124102-1153c19aa428
 	github.com/go-ap/client v0.0.0-20260831130403-5680ad0797ed
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/filters v0.0.0-20260831130242-f116eb702ce2
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/processing v0.0.0-20260904095107-cd62877b17d4
+	github.com/go-ap/processing v0.0.0-20260905151925-d6997bfd0e03
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
