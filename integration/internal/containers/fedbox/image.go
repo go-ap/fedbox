@@ -291,7 +291,7 @@ func defaultFedBOXRequest(fb *fboxImage) tc.GenericContainerRequest {
 					wait.ForListeningPort(strconv.Itoa(fb.conf.SSHPort)),
 				),
 				wait.ForLog("Started"),
-			).WithDeadline(10 * time.Second),
+			).WithStartupTimeoutDefault(15 * time.Second),
 		},
 		ProviderType: tc.ProviderPodman,
 		Started:      true,
