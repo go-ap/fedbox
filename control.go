@@ -86,10 +86,6 @@ func (ctl *Base) LoadServiceActor() error {
 	if ctl.Conf.BaseURL == "" {
 		return errors.Errorf("no HOSTNAME configured for service")
 	}
-	if err := ctl.Storage.Open(); err != nil {
-		return err
-	}
-	defer ctl.Storage.Close()
 
 	selfIRI := ap.DefaultServiceIRI(ctl.Conf.BaseURL)
 	actor, err := ap.LoadActor(ctl.Storage, selfIRI)

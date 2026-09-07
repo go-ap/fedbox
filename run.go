@@ -56,6 +56,11 @@ func Run(args ...string) error {
 		// they involve sending their own signals, so we skip pausing.
 	default:
 		pauseFn := ctl.SendSignalToServer(syscall.SIGUSR1)
+		if err := ctl.Storage.Open(); err != nil {
+			return err
+		}
+		defer ctl.Storage.Close()
+
 		if err = pauseFn(); err == nil {
 			defer func() { _ = pauseFn() }()
 		}

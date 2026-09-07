@@ -116,6 +116,10 @@ func New(ctl *Base) (*FedBOX, error) {
 
 	app.debugMode.Store(conf.Env.IsDev())
 
+	if err := app.Storage.Open(); err != nil {
+		return nil, err
+	}
+
 	if err := ctl.LoadServiceActor(); err != nil && !errors.IsNotFound(err) {
 		return nil, err
 	}

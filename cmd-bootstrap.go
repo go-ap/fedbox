@@ -19,11 +19,6 @@ import (
 type ResetCmd struct{}
 
 func (b ResetCmd) Run(ctl *Base) error {
-	if err := ctl.Storage.Open(); err != nil {
-		return http.Annotatef(err, "Unable to open FedBOX storage for path %s", ctl.Conf.StoragePath)
-	}
-	defer ctl.Storage.Close()
-
 	err := reset(ctl.Conf, ctl.Logger)
 	if err != nil {
 		return err
