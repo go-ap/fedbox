@@ -132,7 +132,7 @@ func setup(ct *Base, conf config.Options, verbose int) error {
 	}
 	if ct.Logger == nil {
 		if verbose > 0 {
-			conf.LogLevel = lw.Level(max(int(lw.TraceLevel), int(conf.LogLevel)-verbose))
+			conf.LogLevel = lw.Level(max(int(lw.TraceLevel), int(conf.LogLevel)-(4*verbose)))
 		}
 		if conf.Env.IsDev() {
 			ct.Logger = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out)).WithContext(lw.Ctx{"host": conf.Hostname})
