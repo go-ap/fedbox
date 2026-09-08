@@ -202,7 +202,8 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 				s2s.WithActor(signActor, prv),
 				s2s.WithAlg(s2s.KeyTypePKCS),
 				s2s.WithCoveredComponents(s2s.FetchCoveredComponents...),
-				s2s.WithLogFn(ll.Warnf),
+				s2s.WithLogger(ll.WithContext(lw.Ctx{"log": "signer"})),
+				s2s.WithNonce(func() (string, error) { return "", nil }),
 			)
 			initFns = append(initFns, client.WithAuthorizationFn(sig.SignRFC9421, sig.SignDraft))
 		}

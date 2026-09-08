@@ -216,14 +216,6 @@ func loadFromStdin(s string, params ...any) ([]byte, error) {
 var _l atomic.Value
 
 func Errf(out io.Writer, s string, par ...any) {
-	ll := _l.Load()
-	if ll == nil {
-		_, _ = fmt.Fprintf(out, s+"\n", par...)
-		return
-	}
-	if lll, ok := ll.(lw.Logger); ok {
-		zl := lw.ZeroLog(lll)
-		zl.Output(out)
-		lll.Errorf(s+"\n", par...)
-	}
+	_, _ = fmt.Fprintf(out, s+"\n", par...)
+	return
 }

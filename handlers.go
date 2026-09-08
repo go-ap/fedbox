@@ -76,6 +76,13 @@ func (fb *FedBOX) actorFromRequestWithClient(r *http.Request, cl *client.C, rece
 		auth.WithLogger(l),
 	}
 
+	// NOTE(marius): before trying to find the actor corresponding to the request authorization
+	//  we try to see if the Host header matches our FedBOX service, or it's been mangled by proxies.
+	if fb.Conf.Hostname != r.Host {
+		if forwardedHost := r.Header.Get("X-Forwarded-Host"); fb.Service.ID.Equal(vocab.IRI(forwardedHost)) {
+			r.Host = forwardedHost
+		}
+	}
 	var ar actorVerifier
 	switch {
 	case r.Method == http.MethodPost && processing.IsInbox(receivedIn):
@@ -317,6 +324,8 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		}
 
 		cl := FedBOXClient(fb)
+		// NOTE(marius): we need to load hte authorized actor _before_ we read the request body.
+		//  This allows the httpSignatures verifier to replace it if it needs the value for computing a digest.
 		authorized := fb.actorFromRequestWithClient(r, cl, receivedIn)
 		if authorized.ID.Equal(vocab.PublicNS) {
 			return it, http.StatusUnauthorized, errors.Unauthorizedf("authorized Actor is invalid")

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"math/rand/v2"
 	"net/url"
 	"os"
@@ -248,7 +249,7 @@ func LoadFromEnv(conf *Options) {
 	lvl := Getval(KeyLogLevel, "")
 	switch strings.ToLower(lvl) {
 	case "none":
-		conf.LogLevel = lw.NoLevel
+		conf.LogLevel = slog.Level(-6)
 	case "trace":
 		conf.LogLevel = lw.TraceLevel
 	case "debug":
