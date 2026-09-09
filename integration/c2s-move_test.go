@@ -1,4 +1,4 @@
-//go:build c2s && (Move || all)
+//go:build c2s || Move
 
 package integration
 

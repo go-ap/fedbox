@@ -1,4 +1,4 @@
-//go:build c2s && (Update || all)
+//go:build c2s || Update
 
 package integration
 

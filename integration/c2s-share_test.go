@@ -1,4 +1,4 @@
-//go:build c2s && (Share || all)
+//go:build c2s || Share
 
 package integration
 

@@ -1,4 +1,4 @@
-//go:build c2s && (Block || all)
+//go:build c2s || Block
 
 package integration
 

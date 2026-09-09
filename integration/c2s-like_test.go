@@ -1,4 +1,4 @@
-//go:build c2s && (Like || all)
+//go:build c2s || Like
 
 package integration
 

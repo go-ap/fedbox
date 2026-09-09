@@ -29,38 +29,42 @@ tasks:
       make -C integration download
   - integration-new-fs: |
       cd fedbox
-      make STORAGE=fs TAGS=c2s,Create,Update,Delete -C integration test
-      make STORAGE=fs TAGS=c2s,Add,Move,Remove -C integration test
-      make STORAGE=fs TAGS=c2s,Like,Share,Follow -C integration test
-      make STORAGE=fs TAGS=c2s,Ignore,Block -C integration test
-      make STORAGE=fs TAGS=c2s,Question -C integration test
+      make STORAGE=fs TAGS=Fetch,Filter,Outbox -C integration test
+      make STORAGE=fs TAGS=Create,Update,Delete -C integration test
+      make STORAGE=fs TAGS=Add,Move,Remove -C integration test
+      make STORAGE=fs TAGS=Like,Share,Follow -C integration test
+      make STORAGE=fs TAGS=Ignore,Block -C integration test
+      make STORAGE=fs TAGS=Question -C integration test
       make TAGS=ssh STORAGE=fs -C integration test
       make TAGS=s2s STORAGE=fs -C integration test
   - integration-new-badger: |
       cd fedbox
-      make STORAGE=badger TAGS=c2s,Create,Update,Delete -C integration test
-      make STORAGE=badger TAGS=c2s,Add,Move,Remove -C integration test
-      make STORAGE=badger TAGS=c2s,Like,Share,Follow -C integration test
-      make STORAGE=badger TAGS=c2s,Ignore,Block -C integration test
-      make STORAGE=badger TAGS=c2s,Question -C integration test
+      make STORAGE=badger TAGS=Fetch,Filter,Outbox -C integration test
+      make STORAGE=badger TAGS=Create,Update,Delete -C integration test
+      make STORAGE=badger TAGS=Add,Move,Remove -C integration test
+      make STORAGE=badger TAGS=Like,Share,Follow -C integration test
+      make STORAGE=badger TAGS=Ignore,Block -C integration test
+      make STORAGE=badger TAGS=Question -C integration test
       make TAGS=ssh STORAGE=badger -C integration test
       make TAGS=s2s STORAGE=badger -C integration test
   - integration-new-boltdb: |
       cd fedbox
-      make STORAGE=boltdb TAGS=c2s,Create,Update,Delete -C integration test
-      make STORAGE=boltdb TAGS=c2s,Add,Move,Remove -C integration test
-      make STORAGE=boltdb TAGS=c2s,Like,Share,Follow -C integration test
-      make STORAGE=boltdb TAGS=c2s,Ignore,Block -C integration test
-      make STORAGE=boltdb TAGS=c2s,Question -C integration test
+      make STORAGE=boltdb TAGS=Fetch,Filter,Outbox -C integration test
+      make STORAGE=boltdb TAGS=Create,Update,Delete -C integration test
+      make STORAGE=boltdb TAGS=Add,Move,Remove -C integration test
+      make STORAGE=boltdb TAGS=Like,Share,Follow -C integration test
+      make STORAGE=boltdb TAGS=Ignore,Block -C integration test
+      make STORAGE=boltdb TAGS=Question -C integration test
       make TAGS=ssh STORAGE=boltdb -C integration test
       make TAGS=s2s STORAGE=boltdb -C integration test
   - integration-new-sqlite: |
       cd fedbox
-      make STORAGE=sqlite TAGS=c2s,Create,Update,Delete -C integration test
-      make STORAGE=sqlite TAGS=c2s,Add,Move,Remove -C integration test
-      make STORAGE=sqlite TAGS=c2s,Like,Share,Follow -C integration test
-      make STORAGE=sqlite TAGS=c2s,Ignore,Block -C integration test
-      make STORAGE=sqlite TAGS=c2s,Question -C integration test
+      make STORAGE=sqlite TAGS=Fetch,Filter,Outbox -C integration test
+      make STORAGE=sqlite TAGS=Create,Update,Delete -C integration test
+      make STORAGE=sqlite TAGS=Add,Move,Remove -C integration test
+      make STORAGE=sqlite TAGS=Like,Share,Follow -C integration test
+      make STORAGE=sqlite TAGS=Ignore,Block -C integration test
+      make STORAGE=sqlite TAGS=Question -C integration test
       make TAGS=ssh STORAGE=sqlite -C integration test
       make TAGS=s2s STORAGE=sqlite -C integration test
   - push_to_github: |

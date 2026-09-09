@@ -1,4 +1,4 @@
-//go:build c2s && (Delete || all)
+//go:build c2s || Delete
 
 package integration
 

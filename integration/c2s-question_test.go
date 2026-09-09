@@ -1,4 +1,4 @@
-//go:build c2s && (Question || all)
+//go:build c2s || Question
 
 package integration
 

@@ -1,4 +1,4 @@
-//go:build c2s
+//go:build c2s || Filter
 
 package integration
 
