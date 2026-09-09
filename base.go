@@ -167,7 +167,7 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 			if err != nil {
 				cachePath = os.TempDir()
 			}
-			cacheStorage = cache2.FS(filepath.Join(cachePath, conf.AppName))
+			cacheStorage = cache2.FS(filepath.Join(cachePath, strings.ToLower(conf.AppName), conf.Hostname))
 		}
 		tr = cache2.Private(tr, cacheStorage)
 	}

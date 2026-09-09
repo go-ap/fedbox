@@ -202,28 +202,28 @@ type actorVerifier interface {
 }
 
 // Run is the wrapper for starting the web-server and handling signals
-func (f *FedBOX) Run(ctx context.Context) error {
+func (fb *FedBOX) Run(ctx context.Context) error {
 	logCtx := lw.Ctx{}
-	if f.Conf.Version != "" {
-		logCtx["version"] = f.Conf.Version
+	if fb.Conf.Version != "" {
+		logCtx["version"] = fb.Conf.Version
 	}
-	if f.Conf.StoragePath != "" {
-		logCtx["path"] = f.Conf.StoragePath
+	if fb.Conf.StoragePath != "" {
+		logCtx["path"] = fb.Conf.StoragePath
 	}
-	if f.Conf.Storage != "" {
-		logCtx["storage"] = f.Conf.Storage
+	if fb.Conf.Storage != "" {
+		logCtx["storage"] = fb.Conf.Storage
 	}
-	if f.Conf.Env != "" {
-		logCtx["env"] = f.Conf.Env
+	if fb.Conf.Env != "" {
+		logCtx["env"] = fb.Conf.Env
 	}
 	var cancelFn func()
 
 	ctx, cancelFn = context.WithCancel(ctx)
 	defer cancelFn()
 
-	logger := f.Logger.WithContext(lw.Ctx{"instance": f.Conf.BaseURL})
+	logger := fb.Logger.WithContext(lw.Ctx{"instance": fb.Conf.BaseURL})
 	logger.WithContext(logCtx).Infof("Started")
-	if err := f.Conf.WritePid(); err != nil {
+	if err := fb.Conf.WritePid(); err != nil {
 		logger.Warnf("Unable to write pid file: %s", err)
 		logger.Warnf("Some CLI commands relying on it will not work")
 	}
@@ -238,46 +238,46 @@ func (f *FedBOX) Run(ctx context.Context) error {
 	err := w.RegisterSignalHandlers(w.SignalHandlers{
 		syscall.SIGHUP: func(_ chan<- error) {
 			logger.Debugf("SIGHUP received, reloading configuration")
-			if err := f.reload(); err != nil {
+			if err := fb.reload(); err != nil {
 				logger.Errorf("Failed: %+s", err.Error())
 			}
 		},
 		syscall.SIGUSR2: func(_ chan<- error) {
-			isDebug := f.debugMode.Load()
-			f.debugMode.Store(!isDebug)
+			isDebug := fb.debugMode.Load()
+			fb.debugMode.Store(!isDebug)
 			logger.WithContext(lw.Ctx{"debug": !isDebug}).Debugf("SIGUSR2 received, toggle debug mode")
 		},
 		syscall.SIGUSR1: func(_ chan<- error) {
-			isMaintenance := f.maintenanceMode.Load()
-			f.maintenanceMode.Store(!isMaintenance)
+			isMaintenance := fb.maintenanceMode.Load()
+			fb.maintenanceMode.Store(!isMaintenance)
 
 			logFn := logger.WithContext(lw.Ctx{"maintenance": !isMaintenance}).Debugf
-			if err := f.Pause(); err != nil {
+			if err := fb.Pause(); err != nil {
 				logFn = logger.WithContext(lw.Ctx{"err": err.Error()}).Warnf
 			}
 			logFn("SIGUSR1 received, toggle maintenance mode")
 		},
 		syscall.SIGINT: func(exit chan<- error) {
-			if !(f.Conf.Env.IsTest() || f.Conf.Env.IsDev()) {
-				logger = logger.WithContext(lw.Ctx{"wait": f.Conf.TimeOut})
+			if !(fb.Conf.Env.IsTest() || fb.Conf.Env.IsDev()) {
+				logger = logger.WithContext(lw.Ctx{"wait": fb.Conf.TimeOut})
 			}
 			logger.Debugf("SIGINT received, interrupted")
-			exitWithErrOrInterrupt(f.Stop(ctx), exit)
+			exitWithErrOrInterrupt(fb.Stop(ctx), exit)
 		},
 		syscall.SIGTERM: func(exit chan<- error) {
-			if !(f.Conf.Env.IsTest() || f.Conf.Env.IsDev()) {
-				logger = logger.WithContext(lw.Ctx{"wait": f.Conf.TimeOut})
+			if !(fb.Conf.Env.IsTest() || fb.Conf.Env.IsDev()) {
+				logger = logger.WithContext(lw.Ctx{"wait": fb.Conf.TimeOut})
 			}
 			logger.Debugf("SIGTERM received, stopping with cleanup")
-			exitWithErrOrInterrupt(f.Stop(ctx), exit)
+			exitWithErrOrInterrupt(fb.Stop(ctx), exit)
 		},
 		syscall.SIGQUIT: func(exit chan<- error) {
 			logger.Debugf("SIGQUIT received, ungraceful force stopping")
 			// NOTE(marius): to skip any graceful wait on the listening server, cancel the context first
 			cancelFn()
-			exitWithErrOrInterrupt(f.Stop(ctx), exit)
+			exitWithErrOrInterrupt(fb.Stop(ctx), exit)
 		},
-	}).Exec(ctx, f.server.Start)
+	}).Exec(ctx, fb.server.Start)
 	if err == nil {
 		logger.WithContext(logCtx).Infof("Stopped")
 	}
