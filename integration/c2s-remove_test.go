@@ -45,7 +45,7 @@ func Test_C2S_RemoveRequests(t *testing.T) {
 	add5 := add(ap.HasActor(person1), ap.HasObject(note.ID), ap.HasTarget(target.ID))
 
 	remove6ID := c2sRootIRI.AddPath("activities/remove-6")
-	remove6 := remove(ap.HasActor(person1), ap.HasObject(note.ID), ap.HasTarget(target.ID))
+	remove6 := remove(ap.HasActor(person1), ap.HasObject(note.ID), ap.HasOrigin(target.ID))
 
 	toRun := []tests.RunnableTest{
 		tests.TestSuite{
