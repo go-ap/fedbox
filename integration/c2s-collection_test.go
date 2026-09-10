@@ -28,6 +28,7 @@ func plausibleRandomObjects(pubKey crypto.PublicKey, cnt int) vocab.ItemCollecti
 	gen.SetItemID = func(it vocab.Item) {
 		ap2.GenerateID(it, c2sRootIRI, service)
 	}
+	gen.RootID = service.ID
 	gen.Root = service
 
 	randomObjects := make(vocab.ItemCollection, 0, cnt)
