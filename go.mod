@@ -6,20 +6,20 @@ require (
 	charm.land/bubbletea/v2 v2.0.9
 	charm.land/wish/v2 v2.0.3
 	git.sr.ht/~mariusor/cache v0.0.0-20260516133819-5427e9c3067b
-	git.sr.ht/~mariusor/lw v0.0.0-20260909101337-bf5f748a81e6
+	git.sr.ht/~mariusor/lw v0.0.0-20260910124117-d80376e1433e
 	git.sr.ht/~mariusor/motley v0.0.0-20260817113911-c37ff7152433
 	git.sr.ht/~mariusor/servermux v0.0.0-20260730181755-b356bceeedee
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260908164510-09d582dc94e5
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260910132033-b70d5c577944
 	git.sr.ht/~mariusor/wrapper v0.0.0-20260103185140-9873830de009
 	github.com/alecthomas/kong v1.16.0
 	github.com/go-ap/activitypub v0.0.0-20260909093825-f72cfa142bd0
-	github.com/go-ap/auth v0.0.0-20260909101800-af795c12fc5e
+	github.com/go-ap/auth v0.0.0-20260910124615-26fea3c44cfd
 	github.com/go-ap/cache v0.0.0-20260909101407-b27994bd51dd
-	github.com/go-ap/client v0.0.0-20260909101650-34d206fc236c
+	github.com/go-ap/client v0.0.0-20260910124519-85c4b1876743
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/filters v0.0.0-20260909101441-177fa69736fd
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/processing v0.0.0-20260909181841-6f3bb6e86d87
+	github.com/go-ap/processing v0.0.0-20260910130101-93d1bf8e1e08
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -69,7 +69,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-ap/storage-badger v0.0.0-20260909103132-9ea64132c9d8 // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260909103103-fa2530caa4c5 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260909102340-e9ee6fda1885 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260910130847-790c733d2add // indirect
 	github.com/go-ap/storage-pg v0.0.0-20260909104439-c0ed660d7b0c // indirect
 	github.com/go-ap/storage-sqlite v0.0.0-20260909102423-647511963a41 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
@@ -89,7 +89,7 @@ require (
 	github.com/mariusor/bubbles-tree v0.0.0-20260804092904-048968f1532d // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
-	github.com/mattn/go-runewidth v0.0.29 // indirect
+	github.com/mattn/go-runewidth v0.0.30 // indirect
 	github.com/mattn/go-sqlite3 v1.14.52 // indirect
 	github.com/mfridman/tparse v0.18.0 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect

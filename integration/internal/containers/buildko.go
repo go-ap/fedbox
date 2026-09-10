@@ -16,7 +16,6 @@ import (
 	"github.com/google/ko/pkg/build"
 	"github.com/google/ko/pkg/commands"
 	"github.com/google/ko/pkg/commands/options"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -37,8 +36,8 @@ var buildInfo, buildOk = debug.ReadBuildInfo()
 
 func extractValuesFromGoArgument(val string) []string {
 	vals := make([]string, 0)
-	for _, tt := range strings.Split(val, ",") {
-		for _, ttt := range strings.Split(tt, " ") {
+	for tt := range strings.SplitSeq(val, ",") {
+		for ttt := range strings.SplitSeq(tt, " ") {
 			vals = append(vals, ttt)
 		}
 	}
@@ -68,8 +67,8 @@ func ExtractStorageTagFromBuild() storage.Type {
 		for _, bs := range buildInfo.Settings {
 			if bs.Key == "-tags" {
 				for _, tt := range extractValuesFromGoArgument(bs.Value) {
-					if strings.HasPrefix(tt, "storage_") {
-						storageType = strings.TrimPrefix(tt, "storage_")
+					if after, ok := strings.CutPrefix(tt, "storage_"); ok {
+						storageType = after
 					}
 				}
 			}
@@ -97,7 +96,7 @@ func buildEnvValues() []string {
 	return envVars
 }
 
-func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string, error) {
+func BuildImage(ctx context.Context, imageName string, race bool) (string, error) {
 	storageType := ExtractStorageTagFromBuild()
 	envType := ExtractEnvTagFromBuild()
 	tags := []string{"integration", "ssh", string(envType)}
@@ -107,6 +106,10 @@ func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 		tags = append(tags, "storage_"+string(storageType))
 	}
 
+	flags := []string{`-tags=` + strings.Join(tags, ",")}
+	if race {
+		flags = append(flags, "-race")
+	}
 	builder, err := build.NewGo(ctx, "",
 		// NOTE(marius): we're using a minimal base image, requiring a statically compiled app, so we can't use Delve
 		//build.WithDebugger(),
@@ -121,7 +124,7 @@ func BuildImage(ctx context.Context, imageName string, _ *logrus.Logger) (string
 				ID:      strings.Join([]string{"fedbox", string(envType), string(storageType)}, "-"),
 				Dir:     "cmd/fedbox",
 				Ldflags: []string{`-extldflags "-static"`},
-				Flags:   []string{`-tags=` + strings.Join(tags, ",") /*, "-race"*/},
+				Flags:   flags,
 				Env:     buildEnvValues(),
 			},
 		}),

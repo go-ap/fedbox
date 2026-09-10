@@ -3,12 +3,12 @@ module github.com/go-ap/fedbox/integration
 go 1.26.3
 
 require (
-	git.sr.ht/~mariusor/lw v0.0.0-20260909101337-bf5f748a81e6
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260908164510-09d582dc94e5
+	git.sr.ht/~mariusor/lw v0.0.0-20260910124117-d80376e1433e
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260910132033-b70d5c577944
 	github.com/carlmjohnson/requests v0.26.1
 	github.com/elnormous/contenttype v1.0.4
 	github.com/go-ap/activitypub v0.0.0-20260909093825-f72cfa142bd0
-	github.com/go-ap/client v0.0.0-20260909101650-34d206fc236c
+	github.com/go-ap/client v0.0.0-20260910124519-85c4b1876743
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/fedbox v0.0.0-20260717173704-0c1f2719fe9d
 	github.com/go-ap/filters v0.0.0-20260909101441-177fa69736fd
@@ -20,7 +20,6 @@ require (
 	github.com/google/ko v0.19.1
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/moby/moby/api v1.55.0
-	github.com/sirupsen/logrus v1.9.4
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
 	golang.org/x/crypto v0.57.0
@@ -107,7 +106,7 @@ require (
 	github.com/go-ap/processing v0.0.0-20260716111245-78d0ef51171a // indirect
 	github.com/go-ap/storage-badger v0.0.0-20260909103132-9ea64132c9d8 // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260909103103-fa2530caa4c5 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20260909102340-e9ee6fda1885 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20260910130847-790c733d2add // indirect
 	github.com/go-ap/storage-sqlite v0.0.0-20260909102423-647511963a41 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
@@ -202,6 +201,7 @@ require (
 	github.com/sigstore/sigstore v1.10.8 // indirect
 	github.com/sigstore/sigstore-go v1.3.0 // indirect
 	github.com/sigstore/timestamp-authority/v2 v2.1.3 // indirect
+	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
