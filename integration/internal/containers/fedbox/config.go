@@ -28,6 +28,7 @@ var (
 		Env:      env.TEST,
 		LogLevel: lw.TraceLevel,
 	}
+
 	DefaultS2SOptions = config.Options{
 		Hostname: "secondary.localdomain",
 		HTTPPort: 80,

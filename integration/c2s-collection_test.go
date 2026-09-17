@@ -3,7 +3,6 @@
 package integration
 
 import (
-	"context"
 	"crypto"
 	"crypto/rand"
 	"fmt"
@@ -12,7 +11,6 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	ap2 "github.com/go-ap/fedbox/activitypub"
-	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
@@ -126,20 +124,11 @@ func rootInboxAdditionalFiltersTest(items vocab.ItemCollection, ff ...filters.Ch
 
 func Test_CollectionFilters(t *testing.T) {
 	publicKey, privateKey, _ := ed25519.GenerateKey(rand.Reader)
-	pw := rand.Text()[:8]
 
 	items := plausibleRandomObjects(publicKey, 60)
-	images := c.Suite(fedbox.New(
-		fedbox.WithConfig(fedbox.ConfigFromBuildInfo(fedbox.DefaultC2SOptions)),
-		fedbox.WithTestLogger(t, Verbose),
-		fedbox.WithImageName(fedBOXImageName),
-		fedbox.WithKey(privateKey),
-		fedbox.WithPw(pw),
-		fedbox.WithItems(items...),
-	))
+	c2sConf := fedbox.C2SConfig(fedBOXImageName, privateKey, items)
 
-	ctx := context.Background()
-	cont, err := c.Start(ctx, t, images...)
+	cont, err := fedbox.StartContainers(t.Context(), t, c2sConf)
 	if err != nil {
 		t.Fatalf("Error: %s", err)
 	}
@@ -252,6 +241,6 @@ func Test_CollectionFilters(t *testing.T) {
 	toRun = append(toRun, rootInboxAdditionalFiltersTest(items, filters.HasType(vocab.IgnoreType), filters.Object(filters.HasType(vocab.ActorTypes...)))...)
 
 	for _, test := range toRun {
-		t.Run(test.Label(), test.Fn(ctx, cont))
+		t.Run(test.Label(), test.Fn(t.Context(), cont))
 	}
 }
