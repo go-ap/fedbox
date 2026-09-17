@@ -99,9 +99,19 @@ func HasPublicKey(k crypto.PublicKey) func(*a) error {
 	}
 }
 
-func HasTag(t i) func(*o) error {
+func HasAttachment(a ...i) func(*o) error {
+	at := ic(a)
 	return func(ob *o) error {
-		return ob.Tag.Append(t)
+		ob.Attachment = at.Normalize()
+		return nil
+	}
+}
+
+func HasTag(t ...i) func(*o) error {
+	tags := ic(t)
+	return func(ob *o) error {
+		ob.Tag = tags.Normalize()
+		return nil
 	}
 }
 
