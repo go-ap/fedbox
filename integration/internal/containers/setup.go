@@ -78,7 +78,7 @@ func (m *Running) RunCommand(ctx context.Context, host string, cmd tc.Executable
 	}
 
 	var cancelFn func()
-	ctx, cancelFn = context.WithTimeout(ctx, time.Second)
+	ctx, cancelFn = context.WithTimeout(ctx, 5*time.Second)
 	defer cancelFn()
 
 	for _, fc := range m.Containers {
