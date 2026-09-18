@@ -24,11 +24,11 @@ func Self(baseURL vocab.IRI, name string) vocab.Service {
 	s := vocab.Service{
 		ID:                baseURL,
 		Type:              vocab.ServiceType,
-		PreferredUsername: vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef(name)),
+		PreferredUsername: vocab.DefaultLangValue(name),
 		Context:           ProjectURL,
 		AttributedTo:      developerURL,
 		Audience:          vocab.ItemCollection{vocab.PublicNS},
-		Summary:           vocab.NaturalLanguageValuesNew(vocab.DefaultLangRef("Generic ActivityPub service")),
+		Summary:           vocab.DefaultLangValue("Generic ActivityPub service"),
 		Tag:               nil,
 		URL:               baseURL,
 		Endpoints: &vocab.Endpoints{

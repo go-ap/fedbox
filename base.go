@@ -342,8 +342,7 @@ func (ctl *Base) DeleteObjects(reason string, inReplyTo []string, ids ...vocab.I
 	d.To = vocab.ItemCollection{vocab.PublicNS}
 	d.CC = make(vocab.ItemCollection, 0)
 	if reason != "" {
-		d.Content = vocab.NaturalLanguageValuesNew()
-		_ = d.Content.Append(vocab.NilLangRef, vocab.Content(reason))
+		d.Content = vocab.DefaultLangValue(reason)
 	}
 	if len(inReplyTo) > 0 {
 		replIRI := make(vocab.ItemCollection, 0)
@@ -589,7 +588,7 @@ func (ctl *Base) AddClient(pw []byte, redirectUris []string, u any) (string, err
 		Audience:          vocab.ItemCollection{vocab.PublicNS},
 		Generator:         self.GetLink(),
 		Published:         now,
-		PreferredUsername: vocab.DefaultNaturalLanguage(name),
+		PreferredUsername: vocab.DefaultLangValue(name),
 		URL:               urls,
 	}
 	app, err := ctl.AddActor(p, &self, false)

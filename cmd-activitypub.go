@@ -80,7 +80,7 @@ func (a AddActorCmd) Run(ctl *Base) error {
 			AttributedTo:      author.GetLink(),
 			Generator:         ctl.Service.ID,
 			Published:         now,
-			PreferredUsername: vocab.DefaultNaturalLanguage(name),
+			PreferredUsername: vocab.DefaultLangValue(name),
 		}
 		if len(tags) > 0 {
 			p.Tag = tags
@@ -241,7 +241,7 @@ func (a AddCmd) Run(ctl *Base) error {
 		AttributedTo: author.GetLink(),
 		CC:           vocab.ItemCollection{vocab.PublicNS},
 		Published:    now,
-		Name:         vocab.DefaultNaturalLanguage(incName),
+		Name:         vocab.DefaultLangValue(incName),
 	}
 
 	if p, err = ctl.AddObject(p, author); err != nil {
