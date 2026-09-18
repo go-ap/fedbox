@@ -282,6 +282,8 @@ func ConfigFromBuildInfo(base config.Options) config.Options {
 	return base
 }
 
+const DefaultStartupTimeout = 25 * time.Second
+
 func defaultFedBOXRequest(fb *fboxImage) tc.GenericContainerRequest {
 	return tc.GenericContainerRequest{
 		ContainerRequest: tc.ContainerRequest{
@@ -291,7 +293,7 @@ func defaultFedBOXRequest(fb *fboxImage) tc.GenericContainerRequest {
 					wait.ForListeningPort(strconv.Itoa(fb.conf.SSHPort)),
 				),
 				wait.ForLog("Started"),
-			).WithStartupTimeoutDefault(25 * time.Second),
+			).WithStartupTimeoutDefault(DefaultStartupTimeout),
 		},
 		ProviderType: tc.ProviderPodman,
 		Started:      true,

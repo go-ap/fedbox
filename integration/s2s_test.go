@@ -496,14 +496,14 @@ func Test_S2SRequests(t *testing.T) {
 							Object: &vocab.Object{
 								Type:    vocab.NoteType,
 								To:      vocab.ItemCollection{s2sAdmin.ID},
-								Content: vocab.DefaultNaturalLanguage("Lorem Ipsum"),
+								Content: vocab.DefaultLangValue("Lorem Ipsum"),
 							},
 						}),
 					Res: tests.Response().
 						HasCode(http.StatusCreated).
 						ItemMatch(
 							tests.IsType(vocab.NoteType),
-							tests.HasContent(vocab.DefaultNaturalLanguage("Lorem Ipsum")),
+							tests.HasContent(vocab.DefaultLangValue("Lorem Ipsum")),
 						),
 				},
 			},

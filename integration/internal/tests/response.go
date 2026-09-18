@@ -249,9 +249,9 @@ func nlv[T ~string | vocab.NaturalLanguageValues](c T) vocab.NaturalLanguageValu
 	var result vocab.NaturalLanguageValues
 	switch v := any(c).(type) {
 	case string:
-		result = vocab.DefaultNaturalLanguage(v)
+		result = vocab.DefaultLangValue(v)
 	case []byte:
-		result = vocab.DefaultNaturalLanguage(string(v))
+		result = vocab.DefaultLangValue(string(v))
 	case vocab.NaturalLanguageValues:
 		result = v
 	}

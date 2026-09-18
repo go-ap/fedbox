@@ -30,11 +30,11 @@ type (
 )
 
 var (
-	EN = vocab.DefaultNaturalLanguage[string]
+	EN = vocab.DefaultLangValue[string]
 )
 
 func NL[T ~string](content T) vocab.NaturalLanguageValues {
-	return vocab.NaturalLanguageValuesNew(vocab.RefValue(vocab.NilLangRef, content))
+	return vocab.LangValues(vocab.RefValue(vocab.NilLangRef, content))
 }
 
 func HasAttributedTo(i ...iri) func(*o) error {
@@ -132,10 +132,10 @@ func nlv[T ~string | vocab.NaturalLanguageValues](c T) vocab.NaturalLanguageValu
 	switch v := any(c).(type) {
 	case string:
 		if v != "" {
-			result = vocab.DefaultNaturalLanguage(v)
+			result = vocab.DefaultLangValue(v)
 		}
 	case []byte:
-		result = vocab.DefaultNaturalLanguage(string(v))
+		result = vocab.DefaultLangValue(string(v))
 	case vocab.NaturalLanguageValues:
 		result = v
 	}

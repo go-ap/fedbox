@@ -138,7 +138,7 @@ func Test_C2S_Requests(t *testing.T) {
 						BodyItem(ap2.WrapObjectInCreate(
 							vocab.Object{
 								Type:      vocab.NoteType,
-								Content:   vocab.DefaultNaturalLanguage("test"),
+								Content:   vocab.DefaultLangValue("test"),
 								Published: MockDate,
 							}, admin,
 						)),
@@ -197,7 +197,7 @@ func Test_C2S_Requests(t *testing.T) {
 							&vocab.Object{
 								ID:      c2sRootIRI.AddPath("objects/note-5"),
 								Type:    vocab.NoteType,
-								Content: vocab.DefaultNaturalLanguage("updated"),
+								Content: vocab.DefaultLangValue("updated"),
 							}, admin),
 						),
 					Res: tests.Response().
