@@ -540,12 +540,13 @@ func HasURL(u ...vocab.Item) itemCheckFn {
 	}
 }
 
-func HasTag(u vocab.Item) itemCheckFn {
+func HasTag(u ...vocab.Item) itemCheckFn {
+	ui := toNormalizedItemCol(vocab.ItemCollection(u))
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("Tag", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if !cmp.Equal(ob.Tag, u, equateItems) {
-					t.Errorf("%s", cmp.Diff(u, ob.Tag, equateItems))
+				if tag := toNormalizedItemCol(ob.Tag); !cmp.Equal(tag, ui, equateItems) {
+					t.Errorf("%s", cmp.Diff(ui, tag, equateItems))
 				}
 				return nil
 			})

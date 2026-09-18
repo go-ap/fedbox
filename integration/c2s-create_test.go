@@ -371,7 +371,7 @@ func Test_C2S_CreateRequests(t *testing.T) {
 						ItemMatch(
 							tests.HasID(undo6ID),
 							tests.IsType(undo6.Type),
-							tests.HasCC(undo6.CC),
+							tests.HasCC(undo6.CC...),
 							tests.HasActor(undo6.Actor),
 							tests.HasObject(undo6.Object),
 							tests.WasPublished(time.Now()),
@@ -471,7 +471,7 @@ func Test_C2S_CreateRequests(t *testing.T) {
 						ItemMatch(
 							tests.HasID(undo7ID),
 							tests.IsType(undo7.Type),
-							tests.HasCC(undo7.CC),
+							tests.HasCC(undo7.CC...),
 							tests.HasActor(undo7.Actor),
 							tests.HasObject(undo7.Object),
 							tests.WasPublished(time.Now()),
@@ -550,7 +550,7 @@ func Test_C2S_CreateRequests(t *testing.T) {
 						ItemMatch(
 							tests.HasID(undo8ID),
 							tests.IsType(undo8.Type),
-							tests.HasCC(undo8.CC),
+							tests.HasCC(undo8.CC...),
 							tests.HasActor(undo8.Actor),
 							tests.HasObject(undo8.Object),
 							tests.WasPublished(time.Now()),

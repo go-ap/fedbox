@@ -385,7 +385,7 @@ func Test_C2S_FollowRequests(t *testing.T) {
 						ItemMatch(
 							tests.HasID(undo6ID),
 							tests.IsType(undo6.Type),
-							tests.HasCC(undo6.CC),
+							tests.HasCC(undo6.CC...),
 							tests.HasContent(undo6.Content),
 							tests.WasPublished(time.Now()),
 						),

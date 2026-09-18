@@ -285,7 +285,7 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 						ItemMatch(
 							tests.HasID(undo5ID),
 							tests.IsType(undo5.Type),
-							tests.HasCC(undo5.CC),
+							tests.HasCC(undo5.CC...),
 							tests.HasContent(undo5.Content),
 							tests.WasPublished(time.Now()),
 						),

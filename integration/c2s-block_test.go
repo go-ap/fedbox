@@ -361,8 +361,8 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						ItemMatch(
 							tests.HasID(article6.ID),
 							tests.IsType(article6.Type),
-							tests.HasTo(article6.To),
-							tests.HasCC(article6.CC),
+							tests.HasTo(article6.To...),
+							tests.HasCC(article6.CC...),
 							tests.HasContent(article6.Content),
 							tests.HasAudience(vocab.PublicNS),
 							tests.WasPublished(time.Now().Round(0)),
@@ -446,7 +446,7 @@ func Test_C2S_BlockRequests(t *testing.T) {
 						ItemMatch(
 							tests.HasID(undo6ID),
 							tests.IsType(undo6.Type),
-							tests.HasCC(undo6.CC),
+							tests.HasCC(undo6.CC...),
 							tests.HasContent(undo6.Content),
 							tests.WasPublished(time.Now()),
 						),
@@ -543,7 +543,7 @@ func Test_C2S_BlockRequests(t *testing.T) {
 										ItemMatch(
 											tests.HasID(article7.ID),
 											tests.IsType(article7.Type),
-											tests.HasCC(article7.CC),
+											tests.HasCC(article7.CC...),
 											tests.HasContent(article7.Content),
 											tests.HasAudience(vocab.PublicNS),
 											tests.WasPublished(time.Now().Round(0)),

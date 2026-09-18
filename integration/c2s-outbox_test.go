@@ -58,7 +58,7 @@ func Test_C2S_Requests(t *testing.T) {
 					tests.HasID(admin.ID),
 					tests.IsType(admin.Type),
 					tests.HasAttributedTo(admin.ID),
-					tests.HasTag(admin.Tag),
+					tests.HasTag(tagAdmin.ID),
 					tests.HasPreferredUsername(admin.PreferredUsername),
 					tests.HasSharedInbox(admin.Endpoints.SharedInbox),
 					tests.HasProxyURL(admin.Endpoints.ProxyURL),
