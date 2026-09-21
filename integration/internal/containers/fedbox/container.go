@@ -9,17 +9,22 @@ import (
 	"strings"
 	"time"
 
+	vocab "github.com/go-ap/activitypub"
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 	"golang.org/x/crypto/ssh"
 )
 
-type fboxContainer struct {
-	img fboxImage
+type Container struct {
+	img Image
 	tc.Container
 }
 
-func (fc fboxContainer) Exec(ctx context.Context, cmd []string, opts ...exec.ProcessOption) (int, io.Reader, error) {
+func (fc Container) Items() vocab.ItemCollection {
+	return fc.img.items
+}
+
+func (fc Container) Exec(ctx context.Context, cmd []string, opts ...exec.ProcessOption) (int, io.Reader, error) {
 	if cmd[0] == ctlBin {
 		// NOTE(marius): if the command actually wants to call the "fedbox" binary,
 		// we execute it using docker exec.

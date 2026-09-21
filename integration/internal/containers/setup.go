@@ -22,6 +22,7 @@ import (
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
+	"github.com/go-ap/jsonld"
 	"github.com/moby/moby/api/types/container"
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
@@ -62,6 +63,8 @@ func Start(ctx context.Context, t testing.TB, imgs ...ContainerInitializer) (Run
 	return m, nil
 }
 
+type HasItems interface{ Items() vocab.ItemCollection }
+
 func (m *Running) Cleanup(t testing.TB) {
 	if m == nil {
 		return
@@ -69,8 +72,21 @@ func (m *Running) Cleanup(t testing.TB) {
 	if m.Network != nil {
 		tc.CleanupNetwork(t, m.Network)
 	}
-	for _, mm := range m.Containers {
-		tc.CleanupContainer(t, mm)
+	if t.Failed() {
+		t.Logf("Tests failed")
+		for _, cc := range m.Containers {
+			if ff, ok := cc.(HasItems); ok {
+				if items := ff.Items(); len(items) > 0 {
+					raw, _ := jsonld.Marshal(ff.Items())
+					fileName := filepath.Join(t.ArtifactDir(), t.Name()) + ".json"
+					_ = os.WriteFile(fileName, raw, 0600)
+					t.Logf("Tests failed see %s", fileName)
+				}
+			}
+		}
+	}
+	for _, cc := range m.Containers {
+		tc.CleanupContainer(t, cc)
 	}
 }
 

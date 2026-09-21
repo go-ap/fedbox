@@ -34,32 +34,33 @@ func (t *tbLogger) Accept(l tc.Log) {
 	t.Logf("%s", l.Content)
 }
 
-type fboxImage struct {
+type Image struct {
 	conf          *config.Options
 	key           crypto.PrivateKey
 	pw            []byte
 	contCustomFns []tc.ContainerCustomizer
 	initFns       []tc.Executable
 	logger        *tbLogger
+	items         vocab.ItemCollection
 }
 
-func (f *fboxImage) EnvType() string {
+func (f *Image) EnvType() string {
 	return string(f.conf.Env)
 }
 
-func (f *fboxImage) StorageType() string {
+func (f *Image) StorageType() string {
 	return string(f.conf.Storage)
 }
 
-func (f *fboxImage) Hostname() string {
+func (f *Image) Hostname() string {
 	return f.conf.Hostname
 }
 
-func (f *fboxImage) Name() string {
+func (f *Image) Name() string {
 	return f.conf.AppName
 }
 
-func (f *fboxImage) RootIRI() string {
+func (f *Image) RootIRI() string {
 	if f.conf.BaseURL != "" {
 		return f.conf.BaseURL
 	}
@@ -70,7 +71,7 @@ func (f *fboxImage) RootIRI() string {
 	return proto + "://" + f.conf.Hostname
 }
 
-func (f *fboxImage) InitFns(t testing.TB) []tc.ContainerCustomizer {
+func (f *Image) InitFns(t testing.TB) []tc.ContainerCustomizer {
 	customizerFns := append(f.contCustomFns, c.WithEnvFromConfig(*f.conf))
 	if f.key != nil {
 		customizerFns = append(customizerFns, c.WithPrivateKey(f.key))
@@ -84,7 +85,7 @@ func (f *fboxImage) InitFns(t testing.TB) []tc.ContainerCustomizer {
 	return customizerFns
 }
 
-func initPGSidecar(ctx context.Context, f *fboxImage, extra ...tc.ContainerCustomizer) (tc.Container, error) {
+func initPGSidecar(ctx context.Context, f *Image, extra ...tc.ContainerCustomizer) (tc.Container, error) {
 	pgInitFns := []tc.ContainerCustomizer{
 		c.WithPostgresInitScript(),
 		postgres.WithDatabase("storage"),
@@ -122,7 +123,7 @@ func initPGSidecar(ctx context.Context, f *fboxImage, extra ...tc.ContainerCusto
 	return pgContainer, nil
 }
 
-func (f *fboxImage) Start(ctx context.Context, t testing.TB, extra ...tc.ContainerCustomizer) ([]tc.Container, error) {
+func (f *Image) Start(ctx context.Context, t testing.TB, extra ...tc.ContainerCustomizer) ([]tc.Container, error) {
 	cont := make([]tc.Container, 0, 2)
 	if f.conf.Storage == config.StoragePostgres {
 		// NOTE(marius): currently the FedBOX service doesn't really work with postgres
@@ -157,7 +158,7 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB, extra ...tc.Contain
 		return nil, err
 	}
 
-	c := fboxContainer{Container: fc, img: *f}
+	c := Container{Container: fc, img: *f}
 	if err = c.Start(ctx); err != nil {
 		return nil, fmt.Errorf("unable to start FedBOX container: %w", err)
 	}
@@ -178,10 +179,10 @@ func (f *fboxImage) Start(ctx context.Context, t testing.TB, extra ...tc.Contain
 	return append(cont, &c), nil
 }
 
-type imageInitFn func(*fboxImage)
+type imageInitFn func(*Image)
 
 func WithTestLogger(t testing.TB, enabled bool) imageInitFn {
-	return func(f *fboxImage) {
+	return func(f *Image) {
 		if !enabled {
 			return
 		}
@@ -192,10 +193,11 @@ func WithTestLogger(t testing.TB, enabled bool) imageInitFn {
 }
 
 func WithItems(it ...vocab.Item) imageInitFn {
-	return func(f *fboxImage) {
+	return func(f *Image) {
 		if len(it) == 0 {
 			return
 		}
+		f.items = it
 		sshFn := func(cmd ...string) c.SSHCmd {
 			return c.SSHCmd{Cmd: cmd, User: f.RootIRI(), Key: f.key, Pw: f.pw}
 		}
@@ -208,55 +210,55 @@ func WithItems(it ...vocab.Item) imageInitFn {
 }
 
 func WithImageName(name string) imageInitFn {
-	return func(f *fboxImage) {
+	return func(f *Image) {
 		f.contCustomFns = append(f.contCustomFns, c.WithImage(name))
 	}
 }
 
 func WithKey(key crypto.PrivateKey) imageInitFn {
-	return func(f *fboxImage) {
+	return func(f *Image) {
 		f.key = key
 	}
 }
 
 func WithPw(pw string) imageInitFn {
-	return func(f *fboxImage) {
+	return func(f *Image) {
 		f.pw = []byte(pw)
 	}
 }
 
 func WithEnv(m map[string]string) imageInitFn {
-	return func(f *fboxImage) {
+	return func(f *Image) {
 		f.contCustomFns = append(f.contCustomFns, c.WithEnv(m))
 	}
 }
 
 func WithConfig(opts config.Options) imageInitFn {
-	return func(f *fboxImage) {
+	return func(f *Image) {
 		f.conf = &opts
 	}
 }
 
 func WithArgs(args []string) imageInitFn {
-	return func(f *fboxImage) {
+	return func(f *Image) {
 		f.contCustomFns = append(f.contCustomFns, tc.WithCmdArgs(args...))
 	}
 }
 
 func WithCmd(cmds ...tc.Executable) imageInitFn {
-	return func(f *fboxImage) {
+	return func(f *Image) {
 		f.initFns = append(f.initFns, cmds...)
 	}
 }
 
 func WithStorage(path string) imageInitFn {
-	return func(f *fboxImage) {
+	return func(f *Image) {
 		f.contCustomFns = append(f.contCustomFns, c.WithStorage(path))
 	}
 }
 
-func New(fns ...imageInitFn) *fboxImage {
-	img := new(fboxImage)
+func New(fns ...imageInitFn) *Image {
+	img := new(Image)
 	img.contCustomFns = make([]tc.ContainerCustomizer, 0, 4)
 	img.initFns = make([]tc.Executable, 0)
 	for _, fn := range fns {
@@ -284,7 +286,7 @@ func ConfigFromBuildInfo(base config.Options) config.Options {
 
 const DefaultStartupTimeout = 25 * time.Second
 
-func defaultFedBOXRequest(fb *fboxImage) tc.GenericContainerRequest {
+func defaultFedBOXRequest(fb *Image) tc.GenericContainerRequest {
 	return tc.GenericContainerRequest{
 		ContainerRequest: tc.ContainerRequest{
 			WaitingFor: wait.ForAny(
