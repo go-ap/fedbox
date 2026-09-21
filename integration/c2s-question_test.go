@@ -32,10 +32,6 @@ func Test_C2S_QuestionRequests(t *testing.T) {
 		t.Fatalf("Unable to start test containers: %+v", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	question3ID := c2sRootIRI.AddPath("/activities/question-3")
 	question3 := question(
 		ap.HasName("Some question"),

@@ -20,10 +20,6 @@ func Test_Commands(t *testing.T) {
 		t.Fatalf("Error: %s", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	clientIRI := new(vocab.IRI)
 	var actorIRI vocab.IRI
 	toRun := []tests.RunnableTest{
@@ -169,9 +165,6 @@ func Test_Commands_Maintenance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error: %s", err)
 	}
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
 
 	tests.CommandTest{
 		Name: "maintenance",
@@ -191,9 +184,6 @@ func Test_Commands_Stop(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error: %s", err)
 	}
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
 
 	tests.CommandTest{
 		Name: "stop",

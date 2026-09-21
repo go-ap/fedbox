@@ -28,10 +28,6 @@ func Test_C2S_CreateRequests(t *testing.T) {
 		t.Fatalf("Unable to start test containers: %+v", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	person4 := person(
 		c2sRootIRI.AddPath("actors/person-4"),
 		ap.HasPreferredUsername("example1"),

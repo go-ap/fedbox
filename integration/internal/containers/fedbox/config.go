@@ -129,8 +129,8 @@ func StartContainers(ctx context.Context, t *testing.T, configs ...*FedBOXConfig
 	}
 	images := c.Suite(initFns...)
 	running, err := c.Start(ctx, t, images...)
-	if err != nil {
-		return running, err
-	}
-	return running, nil
+	t.Cleanup(func() {
+		running.Cleanup(t)
+	})
+	return running, err
 }

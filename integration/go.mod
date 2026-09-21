@@ -4,7 +4,7 @@ go 1.26.3
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20260917101519-2e0b081e156c
-	git.sr.ht/~mariusor/storage-all v0.0.0-20260921120046-e68031081636
+	git.sr.ht/~mariusor/storage-all v0.0.0-20260921151938-ba5cef33766a
 	github.com/carlmjohnson/requests v0.26.1
 	github.com/elnormous/contenttype v1.0.4
 	github.com/go-ap/activitypub v0.0.0-20260918155011-090adf72874a
@@ -107,7 +107,7 @@ require (
 	github.com/go-ap/cache v0.0.0-20260918155104-22e0a7768d84 // indirect
 	github.com/go-ap/processing v0.0.0-20260716111245-78d0ef51171a // indirect
 	github.com/go-ap/storage-badger v0.0.0-20260921115656-4d2c9799c200 // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20260921115615-8d79794e52e6 // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20260921151637-6cefebe99ea4 // indirect
 	github.com/go-ap/storage-fs v0.0.0-20260921115515-99f55820d52d // indirect
 	github.com/go-ap/storage-sqlite v0.0.0-20260921115545-d849bdcb4b66 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect

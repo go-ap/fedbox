@@ -36,10 +36,6 @@ func Test_C2S_ShareRequests(t *testing.T) {
 		t.Fatalf("Unable to start test containers: %+v", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	announce4ID := c2sRootIRI.AddPath("activities/announce-4")
 	announce4 := announce(
 		ap.HasCC(vocab.PublicNS),

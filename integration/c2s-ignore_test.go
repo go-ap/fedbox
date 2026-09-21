@@ -34,10 +34,6 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 		t.Fatalf("Unable to start test containers: %+v", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	ignored := vocab.CollectionPath("ignored")
 
 	ignore4ID := c2sRootIRI.AddPath("/activities/ignore-4")

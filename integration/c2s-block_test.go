@@ -33,10 +33,6 @@ func Test_C2S_BlockRequests(t *testing.T) {
 		t.Fatalf("Unable to start test containers: %+v", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	blocked := vocab.CollectionPath("blocked")
 
 	block4ID := c2sRootIRI.AddPath("/activities/block-4")

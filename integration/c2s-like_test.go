@@ -36,10 +36,6 @@ func Test_C2S_LikeRequests(t *testing.T) {
 		t.Fatalf("Unable to start test containers: %+v", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	like4ID := c2sRootIRI.AddPath("activities/like-4")
 	like4 := like(
 		ap.HasCC(vocab.PublicNS),

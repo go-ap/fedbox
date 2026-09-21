@@ -35,10 +35,6 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 		t.Fatalf("Unable to start test containers: %+v", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	delete4ID := c2sRootIRI.AddPath("activities/delete-4")
 	delete4 := del(
 		ap.HasCC(vocab.PublicNS),

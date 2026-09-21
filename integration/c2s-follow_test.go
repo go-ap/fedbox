@@ -34,10 +34,6 @@ func Test_C2S_FollowRequests(t *testing.T) {
 		t.Fatalf("Unable to start test containers: %+v", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	follow4ID := c2sRootIRI.AddPath("activities/follow-4")
 	follow4 := follow(
 		//ap.HasTo(person3.ID), // NOTE(marius): this is added by processing the Follow

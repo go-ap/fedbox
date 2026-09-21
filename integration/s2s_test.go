@@ -69,10 +69,6 @@ func Test_S2S_SharedInbox(t *testing.T) {
 		t.Fatalf("Error: %s", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	article5 := object(
 		c2sRootIRI.AddPath("objects/article-5"),
 		ap.HasType(vocab.ArticleType),
@@ -455,10 +451,6 @@ func Test_S2SRequests(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error: %s", err)
 	}
-
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
 
 	token := new(c2s.BearerSigner)
 	toRun := []tests.RunnableTest{

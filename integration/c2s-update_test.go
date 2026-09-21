@@ -73,10 +73,6 @@ func Test_C2S_UpdateRequests(t *testing.T) {
 		t.Fatalf("Unable to start test containers: %+v", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	toRun := []tests.RunnableTest{
 		// NOTE(marius): control checks
 		tests.HTTPTest{

@@ -39,10 +39,6 @@ func Test_C2S_MoveRequests(t *testing.T) {
 		t.Fatalf("Unable to start test containers: %+v", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	add6ID := c2sRootIRI.AddPath("activities/add-6")
 	add6 := add(ap.HasActor(person1), ap.HasObject(note.ID), ap.HasTarget(origin.ID))
 

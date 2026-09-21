@@ -26,10 +26,6 @@ func Test_C2S_Requests(t *testing.T) {
 		t.Fatalf("Error: %s", err)
 	}
 
-	t.Cleanup(func() {
-		cont.Cleanup(t)
-	})
-
 	service := root(c2sRootIRI, ap.HasPublicKey(conf.Key.Public()))
 	draftSig := s2s.New(s2s.WithActor(service, conf.Key))
 	token := new(c2s.BearerSigner)
