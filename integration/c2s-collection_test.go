@@ -132,7 +132,6 @@ func Test_CollectionFilters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error: %s", err)
 	}
-
 	t.Cleanup(func() {
 		cont.Cleanup(t)
 	})

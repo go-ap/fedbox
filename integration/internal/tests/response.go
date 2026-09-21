@@ -11,6 +11,7 @@ import (
 	"github.com/go-ap/client"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/filters"
+	conformance "github.com/go-ap/storage-conformance-suite"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -46,25 +47,7 @@ func (res resChecks) HasExactItem(wanted vocab.Item) resChecks {
 	return res.BodyMust(checkItem(wanted, equateItems))
 }
 
-func areItems(a, b any) bool {
-	_, ok1 := a.(vocab.Item)
-	_, ok2 := b.(vocab.Item)
-	return ok1 && ok2
-}
-
-func compareItems(wanted, got any) bool {
-	var wi vocab.Item
-	var gi vocab.Item
-	if w, ok := wanted.(vocab.Item); ok {
-		wi = w
-	}
-	if g, ok := got.(vocab.Item); ok {
-		gi = g
-	}
-	return vocab.ItemsEqual(wi, gi)
-}
-
-var equateItems = cmp.FilterValues(areItems, cmp.Comparer(compareItems))
+var equateItems = conformance.EquateItems
 
 func (res resChecks) HasErrors(wanted ...error) resChecks {
 	return res.BodyMust(func(t *testing.T, raw []byte) {
@@ -545,8 +528,8 @@ func HasTag(u ...vocab.Item) itemCheckFn {
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("Tag", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if tag := toNormalizedItemCol(ob.Tag); !cmp.Equal(tag, ui, equateItems) {
-					t.Errorf("%s", cmp.Diff(ui, tag, equateItems))
+				if tag := toNormalizedItemCol(ob.Tag); !cmp.Equal(tag, ui) {
+					t.Errorf("%s", cmp.Diff(ui, tag))
 				}
 				return nil
 			})

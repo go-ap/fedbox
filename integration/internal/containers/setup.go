@@ -63,6 +63,9 @@ func Start(ctx context.Context, t testing.TB, imgs ...ContainerInitializer) (Run
 }
 
 func (m *Running) Cleanup(t testing.TB) {
+	if m == nil {
+		return
+	}
 	if m.Network != nil {
 		tc.CleanupNetwork(t, m.Network)
 	}

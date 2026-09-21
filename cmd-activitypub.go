@@ -303,10 +303,14 @@ func (i ImportCmd) Run(ctl *Base) error {
 			// enhances the object with various elements.
 			if exists, err := ctl.Storage.Load(it.GetLink()); errors.IsNotFound(err) || vocab.IsNil(exists) {
 				it = ap.WrapObjectInCreate(it, ctl.Service)
+			} else {
+				it = ap.WrapObjectInUpdate(it, ctl.Service)
 			}
 		}
 		col[i] = it
 	}
+
+	slices.SortFunc(col, SortImportActivitiesByDeps)
 
 	count := 0
 	start := time.Now().Round(0)
@@ -347,6 +351,132 @@ func (i ImportCmd) Run(ctl *Base) error {
 
 	_, _ = fmt.Fprintf(ctl.out, "Import done!\n")
 	return nil
+}
+
+// SortImportActivitiesByDeps can be used as a [slices.SortFn] to
+// sort an activity collection in a consistent order for import,
+// where creating actors comes first, creating objects comes second,
+// the others activities at the end.
+func SortImportActivitiesByDeps(c1, c2 vocab.Item) int {
+	const (
+		switchPos = -1
+		keepPos   = 1
+		meh       = 0
+	)
+
+	t1 := vocab.CreateType.Match(c1.GetType())
+	t2 := vocab.CreateType.Match(c2.GetType())
+
+	// NOTE(marius): if first item is a Create activity it remains before
+	if t1 && !t2 {
+		return 100 * switchPos
+	} else if t2 && !t1 {
+		return 100 * keepPos
+	} else if !t1 && !t2 {
+		return meh
+	}
+
+	// NOTE(marius): both items are create activities
+	actObFn := func(a vocab.Item) (vocab.Item, vocab.Item) {
+		var auth vocab.Item
+		var ob vocab.Item
+		_ = vocab.OnActivity(a, func(act *vocab.Activity) error {
+			auth = act.Actor
+			ob = act.Object
+			return nil
+		})
+		return auth, ob
+	}
+
+	act1, ob1 := actObFn(c1)
+	act2, ob2 := actObFn(c2)
+
+	at1 := vocab.ActorTypes.Match(ob1.GetType())
+	at2 := vocab.ActorTypes.Match(ob2.GetType())
+
+	// NOTE(marius): check if one Create object is an actor (it should be at top)
+	if at1 && !at2 {
+		return 10 * switchPos
+	} else if at2 && !at1 {
+		return 10 * keepPos
+	} else if !at1 && !at2 {
+		return meh
+	}
+
+	if ob1.GetID().Equal(act2.GetID()) {
+		return 5 * switchPos
+	}
+	if ob2.GetID().Equal(act1.GetID()) {
+		return 5 * keepPos
+	}
+
+	authFn := func(o vocab.Item) vocab.Item {
+		var auth vocab.Item
+		_ = vocab.OnObject(o, func(ob *vocab.Object) error {
+			auth = ob.AttributedTo
+			return nil
+		})
+		return auth
+	}
+
+	// NOTE(marius): for Actor Create activities we check that the actor's attributedTo.
+	auth1 := authFn(ob1)
+	auth2 := authFn(ob2)
+	if !vocab.IsNil(auth1) && act2.GetID().Equal(auth1.GetID()) {
+		return 2 * switchPos
+	} else if !vocab.IsNil(auth2) && act1.GetID().Equal(auth2.GetID()) {
+		return 2 * keepPos
+	}
+
+	return meh
+}
+
+func SortImportActivities(c1, c2 vocab.Item) int {
+	t1 := c1.GetType()
+	t2 := c2.GetType()
+
+	if st, ok := checkForTypeMatcher(vocab.CreateType)(t1, t2); ok {
+		if st == 0 {
+			return checkActorTypes(vocab.ActorTypes...)(c1, c2)
+		}
+		return st
+	}
+	if st, ok := checkForTypeMatcher(vocab.UpdateType)(t1, t2); ok {
+		return st
+	}
+	if st, ok := checkForTypeMatcher(vocab.BlockType, vocab.IgnoreType)(t1, t2); ok {
+		return st
+	}
+	return 0
+}
+
+func checkForTypeMatcher(types ...vocab.ActivityVocabularyType) func(t1, t2 vocab.Typer) (int, bool) {
+	return func(t1, t2 vocab.Typer) (int, bool) {
+		if vocab.ActivityVocabularyTypes(types).Match(t1) {
+			if vocab.ActivityVocabularyTypes(types).Match(t2) {
+				return 0, true
+			}
+			return -1, true
+		} else if vocab.ActivityVocabularyTypes(types).Match(t2) {
+			return 1, true
+		}
+		return -2, false
+	}
+}
+
+func checkActorTypes(types ...vocab.ActivityVocabularyType) func(c1, c2 vocab.Item) int {
+	return func(c1, c2 vocab.Item) int {
+		a1, _ := vocab.ToActivity(c1)
+		a2, _ := vocab.ToActivity(c2)
+		if a1 == nil {
+			return -1
+		}
+		if a2 == nil {
+			return 1
+		}
+		st, _ := checkForTypeMatcher(types...)(a1.Actor.GetType(), a2.Actor.GetType())
+		return st
+	}
 }
 
 type ExportCmd struct {

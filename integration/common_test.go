@@ -33,14 +33,18 @@ var (
 	tagAdmin = object(
 		c2sRootIRI.AddPath("objects/0"),
 		ap.HasName("#sysop"),
+		ap.HasAttributedTo(c2sRootIRI),
 		ap.HasTo(vocab.PublicNS),
+		ap.HasPublished(MockDate),
+		ap.HasUpdated(MockDate),
+		ap.HasCC(c2sRootIRI),
 	)
 
 	admin = person(
 		c2sRootIRI.AddPath("actors/1"),
 		ap.HasPreferredUsername("admin"),
 		ap.HasAudience(vocab.PublicNS),
-		ap.HasTag(tagAdmin),
+		ap.HasTag(tagAdmin.ID),
 		ap.HasSharedInbox(vocab.Inbox.IRI(c2sRootIRI)),
 	)
 
