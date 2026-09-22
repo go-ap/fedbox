@@ -315,6 +315,34 @@ GRANT ALL PRIVILEGES ON DATABASE storage TO storage;
 	}
 }
 
+func makeDirOrFail(hostPath string) error {
+	return os.MkdirAll(hostPath, 0700)
+}
+
+func WithCodeCoveragePath(hostPath string) tc.CustomizeRequestOption {
+	localCoveragePath := "/storage/_coverage"
+	return func(req *tc.GenericContainerRequest) error {
+		if err := makeDirOrFail(hostPath); err != nil {
+			return err
+		}
+		if req.Env == nil {
+			req.Env = make(map[string]string)
+		}
+		bindPath := hostPath + ":" + localCoveragePath
+
+		// NOTE(marius): first we pass the GOCOVERDIR env variable
+		req.Env["GOCOVERDIR"] = localCoveragePath
+		req.HostConfigModifier = func(hostConfig *container.HostConfig) {
+			if hostConfig.Binds == nil {
+				hostConfig.Binds = make([]string, 0)
+			}
+			// NOTE(marius): we bind the local path
+			hostConfig.Binds = append(hostConfig.Binds, bindPath)
+		}
+		return nil
+	}
+}
+
 func WithMocks(items ...vocab.Item) tc.CustomizeRequestOption {
 	return func(req *tc.GenericContainerRequest) error {
 		raw, err := vocab.MarshalJSON(vocab.ItemCollection(items))

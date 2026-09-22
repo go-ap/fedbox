@@ -14,7 +14,10 @@ import (
 )
 
 func Test_Commands(t *testing.T) {
-	conf := fedbox.C2SConfig(fedBOXImageName)
+	conf := fedbox.C2SConfig(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+	)
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
 		t.Fatalf("Error: %s", err)
@@ -160,7 +163,10 @@ func Test_Commands(t *testing.T) {
 }
 
 func Test_Commands_Maintenance(t *testing.T) {
-	conf := fedbox.C2SConfig(fedBOXImageName)
+	conf := fedbox.C2SConfig(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+	)
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
 		t.Fatalf("Error: %s", err)
@@ -179,7 +185,10 @@ func Test_Commands_Maintenance(t *testing.T) {
 }
 
 func Test_Commands_Stop(t *testing.T) {
-	conf := fedbox.C2SConfig(fedBOXImageName)
+	conf := fedbox.C2SConfig(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+	)
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
 		t.Fatalf("Error: %s", err)

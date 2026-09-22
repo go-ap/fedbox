@@ -181,7 +181,7 @@ func (f *Image) Start(ctx context.Context, t testing.TB, extra ...tc.ContainerCu
 
 type imageInitFn func(*Image)
 
-func WithTestLogger(t testing.TB, enabled bool) imageInitFn {
+func withTestLogger(t testing.TB, enabled bool) imageInitFn {
 	return func(f *Image) {
 		if !enabled {
 			return
@@ -192,7 +192,7 @@ func WithTestLogger(t testing.TB, enabled bool) imageInitFn {
 	}
 }
 
-func WithItems(it ...vocab.Item) imageInitFn {
+func withItems(it ...vocab.Item) imageInitFn {
 	return func(f *Image) {
 		if len(it) == 0 {
 			return
@@ -209,19 +209,25 @@ func WithItems(it ...vocab.Item) imageInitFn {
 	}
 }
 
-func WithImageName(name string) imageInitFn {
+func withCodeCoveragePath(hostPath string) imageInitFn {
+	return func(img *Image) {
+		img.contCustomFns = append(img.contCustomFns, c.WithCodeCoveragePath(hostPath))
+	}
+}
+
+func withImageName(name string) imageInitFn {
 	return func(f *Image) {
 		f.contCustomFns = append(f.contCustomFns, c.WithImage(name))
 	}
 }
 
-func WithKey(key crypto.PrivateKey) imageInitFn {
+func withKey(key crypto.PrivateKey) imageInitFn {
 	return func(f *Image) {
 		f.key = key
 	}
 }
 
-func WithPw(pw string) imageInitFn {
+func withPw(pw string) imageInitFn {
 	return func(f *Image) {
 		f.pw = []byte(pw)
 	}
@@ -233,7 +239,7 @@ func WithEnv(m map[string]string) imageInitFn {
 	}
 }
 
-func WithConfig(opts config.Options) imageInitFn {
+func withConfig(opts config.Options) imageInitFn {
 	return func(f *Image) {
 		f.conf = &opts
 	}
@@ -245,7 +251,7 @@ func WithArgs(args []string) imageInitFn {
 	}
 }
 
-func WithCmd(cmds ...tc.Executable) imageInitFn {
+func withCmd(cmds ...tc.Executable) imageInitFn {
 	return func(f *Image) {
 		f.initFns = append(f.initFns, cmds...)
 	}

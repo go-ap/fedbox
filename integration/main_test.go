@@ -12,10 +12,11 @@ import (
 )
 
 var (
-	Build   bool
-	Verbose bool
-	Race    bool
-	Storage string
+	Build    bool
+	Verbose  bool
+	Race     bool
+	Coverage bool
+	Storage  string
 
 	fedBOXImageName = "localhost/fedbox/app"
 
@@ -33,6 +34,7 @@ func TestMain(m *testing.M) {
 
 	flag.BoolVar(&Verbose, "verbose", false, "enable more verbose logging")
 	flag.BoolVar(&Race, "race", false, "build the image with data race detection")
+	flag.BoolVar(&Coverage, "cover", false, "build the image with test coverage support")
 	flag.BoolVar(&Build, "build", false, "build images before run")
 	flag.StringVar(&name, "name", fedBOXImageName, "which container image to use")
 	flag.StringVar(&Storage, "storage", string(storage.Default), fmt.Sprintf("which storage type to use for tests, valid values: %#v", validStorageTypes))
@@ -40,7 +42,7 @@ func TestMain(m *testing.M) {
 
 	if Build {
 		var err error
-		if name, err = containers.BuildImage(context.Background(), fedBOXImageName, Race); err != nil {
+		if name, err = containers.BuildImage(context.Background(), fedBOXImageName, Coverage, Race); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "error building image: %+v", err)
 			os.Exit(-1)
 		}

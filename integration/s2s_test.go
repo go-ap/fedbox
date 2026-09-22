@@ -54,14 +54,18 @@ func Test_S2S_SharedInbox(t *testing.T) {
 
 	adminTok := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
-	c2sConf := fedbox.C2SConfig(fedBOXImageName, ed2559Key,
-		tagAdmin, admin,
-		rootExec.ExtractOAuth2Bearer(admin.ID, adminTok),
+	c2sConf := fedbox.C2SConfig(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithPrivateKey(ed2559Key),
+		fedbox.WithItems(tagAdmin, admin),
+		fedbox.WithCommands(rootExec.ExtractOAuth2Bearer(admin.ID, adminTok)),
 	)
 
 	// NOTE(marius): s2sAdmin does not have a shared inbox, while s2sPerson1 and s2sPerson3 do
-	s2sConf := fedbox.S2SConfig(fedBOXImageName, s2sPrvKey,
-		s2sAdmin, s2sPerson1, s2sPerson3,
+	s2sConf := fedbox.S2SConfig(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithPrivateKey(s2sPrvKey),
+		fedbox.WithItems(s2sAdmin, s2sPerson1, s2sPerson3),
 	)
 
 	cont, err := fedbox.StartContainers(t.Context(), t, c2sConf, s2sConf)
@@ -444,8 +448,18 @@ func Test_S2SRequests(t *testing.T) {
 	s2sTagAdmin := object(s2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
 	s2sAdmin := person(vocab.CollectionPath("actors/1").IRI(s2sRootIRI), ap.HasPreferredUsername("admin"), ap.HasTag(s2sTagAdmin))
 
-	c2sConf := fedbox.C2SConfig(fedBOXImageName, c2sTagAdmin, c2sAdmin, c2sPrvKey)
-	s2sConf := fedbox.C2SConfig(fedBOXImageName, s2sTagAdmin, s2sAdmin, s2sPrvKey)
+	c2sConf := fedbox.C2SConfig(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithItems(c2sTagAdmin, c2sAdmin),
+		fedbox.WithPrivateKey(c2sPrvKey),
+		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+	)
+	s2sConf := fedbox.C2SConfig(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithItems(s2sTagAdmin, s2sAdmin),
+		fedbox.WithPrivateKey(s2sPrvKey),
+		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+	)
 
 	cont, err := fedbox.StartContainers(t.Context(), t, c2sConf, s2sConf)
 	if err != nil {

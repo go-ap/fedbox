@@ -31,9 +31,11 @@ func Test_C2S_AddRequests(t *testing.T) {
 	)
 
 	conf := fedbox.C2SConfig(
-		fedBOXImageName, person1, note, target,
-		ed2559Key,
-		rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1),
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithItems(person1, note, target),
+		fedbox.WithPrivateKey(ed2559Key),
+		fedbox.WithCommands(rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1)),
+		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
 	)
 
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)

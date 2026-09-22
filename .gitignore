@@ -12,4 +12,5 @@ bin/*
 *.bdb
 *.tar.*
 .cache
+integration/_artifacts/
 internal/assets/assets.gen.go

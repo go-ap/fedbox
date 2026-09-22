@@ -54,7 +54,12 @@ func Test_Fetch(t *testing.T) {
 		ap.HasTo("https://www.w3.org/ns/activitystreams#Public"),
 	)
 
-	conf := fedbox.C2SConfig(fedBOXImageName, tag0, object1, admin1, actor2, privateKey)
+	conf := fedbox.C2SConfig(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithItems(tag0, object1, admin1, actor2),
+		fedbox.WithPrivateKey(privateKey),
+		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+	)
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
 		t.Fatalf("Error: %s", err)

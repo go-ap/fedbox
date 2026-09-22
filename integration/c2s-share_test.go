@@ -29,7 +29,13 @@ func Test_C2S_ShareRequests(t *testing.T) {
 
 	token := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
-	conf := fedbox.C2SConfig(fedBOXImageName, person1, article3, ed2559Key, rootExec.ExtractOAuth2Bearer(person1.ID, token))
+	conf := fedbox.C2SConfig(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithItems(person1, article3),
+		fedbox.WithPrivateKey(ed2559Key),
+		fedbox.WithCommands(rootExec.ExtractOAuth2Bearer(person1.ID, token)),
+		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+	)
 
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {

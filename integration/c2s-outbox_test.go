@@ -20,7 +20,11 @@ import (
 )
 
 func Test_C2S_Requests(t *testing.T) {
-	conf := fedbox.C2SConfig(fedBOXImageName, tagAdmin, admin)
+	conf := fedbox.C2SConfig(
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithItems(tagAdmin, admin),
+		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+	)
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)
 	if err != nil {
 		t.Fatalf("Error: %s", err)

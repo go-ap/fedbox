@@ -23,8 +23,12 @@ func Test_C2S_QuestionRequests(t *testing.T) {
 
 	verbose := true
 	conf := fedbox.C2SConfig(
-		fedBOXImageName, person1, ed2559Key, verbose,
-		rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1),
+		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithItems(person1),
+		fedbox.WithPrivateKey(ed2559Key),
+		fedbox.Verbose(verbose),
+		fedbox.WithCommands(rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1)),
+		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
 	)
 
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)

@@ -96,7 +96,7 @@ func buildEnvValues() []string {
 	return envVars
 }
 
-func BuildImage(ctx context.Context, imageName string, race bool) (string, error) {
+func BuildImage(ctx context.Context, imageName string, coverage, race bool) (string, error) {
 	storageType := ExtractStorageTagFromBuild()
 	envType := ExtractEnvTagFromBuild()
 	tags := []string{"integration", "ssh", string(envType)}
@@ -109,6 +109,9 @@ func BuildImage(ctx context.Context, imageName string, race bool) (string, error
 	flags := []string{`-tags=` + strings.Join(tags, ",")}
 	if race {
 		flags = append(flags, "-race")
+	}
+	if coverage {
+		flags = append(flags, "-cover")
 	}
 	builder, err := build.NewGo(ctx, "",
 		// NOTE(marius): we're using a minimal base image, requiring a statically compiled app, so we can't use Delve
