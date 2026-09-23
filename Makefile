@@ -50,7 +50,7 @@ endif
 BUILD := $(GO) build $(BUILDFLAGS)
 TEST := $(GO) test $(BUILDFLAGS)
 
-.PHONY: all cert clean test coverage integration install download help compress
+.PHONY: all cert clean clean_test test coverage integration install download help compress
 
 .DEFAULT_GOAL := help
 
@@ -79,23 +79,30 @@ systemd/fedbox.service: systemd/fedbox.service.in ## Creates a systemd service f
 systemd/fedbox.socket: systemd/fedbox.socket.in ## Creates a socket systemd unit file to accompany the service file.
 	$(M4) $(M4_FLAGS) -DLISTEN_HOST=$(FEDBOX_HOSTNAME) -DLISTEN_PORT=$(LISTEN_PORT) $< >$@
 
-clean: ## Cleanup the build workspace.
+clean_test: ## Cleanup the test artifacts.
+	$(MAKE) -C tests clean_test
+
+clean: clean_test ## Cleanup the build workspace.
 	-$(RM) bin/*
-	$(MAKE) -C tests $@
 
 test: TEST_TARGET := . ./{activitypub,internal}/...
 test: download ## Run unit tests for the service.
 	$(TEST) $(TEST_FLAGS) -coverpkg github.com/go-ap/fedbox,github.com/go-ap/fedbox/internal/config,github.com/go-ap/fedbox/internal/env,github.com/go-ap/fedbox/activitypub \
-	-covermode=count -args -test.gocoverdir="$(mkfile_dir)/tests/.cache" $(TEST_TARGET)
+	-covermode=count -args -test.gocoverdir="$(mkfile_dir)tests/.cache" $(TEST_TARGET)
 
-coverage: test integration ## Run unit tests for the service with coverage.
+coverage: clean_test test integration ## Run unit tests for the service with coverage.
 	$(GO) tool covdata percent -i=./tests/.cache -o $(PROJECT).coverprofile
 
 integration: download ## Run integration tests for the service.
-	@
 	$(MAKE) STORAGE=fs -C tests $@
 	$(MAKE) STORAGE=sqlite -C tests $@
+	$(MAKE) STORAGE=boltdb -C tests $@
 	$(MAKE) STORAGE=badger -C tests $@
+	export GOCOVERDIR="$(mkfile_dir)tests/.cache"
+	$(MAKE) STORAGE=fs -C integration test
+	$(MAKE) STORAGE=sqlite -C integration test
+	$(MAKE) STORAGE=boltdb -C integration test
+	$(MAKE) STORAGE=badger -C integration test
 
 cert: bin/$(FEDBOX_HOSTNAME).pem ## Create a certificate.
 bin/$(FEDBOX_HOSTNAME).pem: bin/$(FEDBOX_HOSTNAME).key bin/$(FEDBOX_HOSTNAME).crt

@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 
 	flag.BoolVar(&Verbose, "verbose", false, "enable more verbose logging")
 	flag.BoolVar(&Race, "race", false, "build the image with data race detection")
-	flag.BoolVar(&Coverage, "cover", false, "build the image with test coverage support")
+	flag.BoolVar(&Coverage, "coverage", false, "build the image with test coverage support")
 	flag.BoolVar(&Build, "build", false, "build images before run")
 	flag.StringVar(&name, "name", fedBOXImageName, "which container image to use")
 	flag.StringVar(&Storage, "storage", string(storage.Default), fmt.Sprintf("which storage type to use for tests, valid values: %#v", validStorageTypes))

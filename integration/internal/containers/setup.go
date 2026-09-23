@@ -361,12 +361,6 @@ func WithMocks(items ...vocab.Item) tc.CustomizeRequestOption {
 
 func WithStorage(storage string) tc.CustomizeRequestOption {
 	return func(req *tc.GenericContainerRequest) error {
-		//req.HostConfigModifier = func(hostConfig *container.HostConfig) {
-		//	if hostConfig.Binds == nil {
-		//		hostConfig.Binds = make([]string, 0, 1)
-		//	}
-		//	hostConfig.Binds = append(hostConfig.Binds, storage+":/storage")
-		//}
 		sr, err := os.OpenRoot(storage)
 		if err != nil {
 			return err
@@ -386,6 +380,12 @@ func WithStorage(storage string) tc.CustomizeRequestOption {
 		if err != nil {
 			return err
 		}
+		//req.HostConfigModifier = func(hostConfig *container.HostConfig) {
+		//	if hostConfig.Binds == nil {
+		//		hostConfig.Binds = make([]string, 0, 1)
+		//	}
+		//	hostConfig.Binds = append(hostConfig.Binds, storage+":/storage")
+		//}
 		return nil
 	}
 }

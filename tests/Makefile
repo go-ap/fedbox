@@ -17,7 +17,10 @@ mkfile_dir := $(dir $(mkfile_path))
 .cache:
 	mkdir -p .cache
 
-clean:
+clean_test:
+	@-$(RM) -rf ./.cache/cov*
+
+clean: clean_test
 	@-$(RM) -rf ./.cache/$(ENV)
 	@-$(RM) -rf ./.cache/*.bdb
 
@@ -31,6 +34,6 @@ test: c2s s2s
 
 coverage:
 	@$(TEST) $(TEST_FLAGS) -tags "$(TAGS) c2s s2s" -coverpkg github.com/go-ap/fedbox,github.com/go-ap/fedbox/internal/config,github.com/go-ap/fedbox/internal/env,github.com/go-ap/fedbox/activitypub \
-	-covermode=count -args -test.gocoverdir="$(mkfile_dir)/.cache" $(TEST_TARGET)
+	-covermode=count -args -test.gocoverdir="$(mkfile_dir).cache" $(TEST_TARGET)
 
 integration: coverage

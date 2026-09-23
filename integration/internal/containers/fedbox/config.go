@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"net/url"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -149,6 +150,9 @@ func StartContainers(ctx context.Context, t *testing.T, configs ...*Config) (c.R
 		}
 		if conf.Coverage {
 			coveragePath := filepath.Join(t.ArtifactDir(), url.PathEscape(conf.Conf.Hostname), "coverage")
+			if coverDir := os.Getenv("GOCOVERDIR"); coverDir != "" {
+				coveragePath = coverDir
+			}
 			initFns = append(initFns, withCodeCoveragePath(coveragePath))
 		}
 		startFns = append(startFns, New(initFns...))
