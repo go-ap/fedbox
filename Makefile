@@ -21,6 +21,10 @@ M4_FLAGS =
 DESTDIR ?= /
 INSTALL_PREFIX ?= usr/local
 
+ifeq ($(origin GOCOVERDIR),undefined)
+GOCOVERDIR := $(shell pwd)/tests/.cache
+endif
+
 GO ?= go
 APPSOURCES := $(wildcard ./*.go activitypub/*.go internal/*/*.go storage/*/*.go)
 ASSETFILES := $(wildcard templates/*)
@@ -87,18 +91,19 @@ clean: clean_test ## Cleanup the build workspace.
 
 test: TEST_TARGET := . ./{activitypub,internal}/...
 test: download ## Run unit tests for the service.
+	test -n $(GOCOVERDIR) && mkdir -p ${GOCOVERDIR}
 	$(TEST) $(TEST_FLAGS) -coverpkg github.com/go-ap/fedbox,github.com/go-ap/fedbox/internal/config,github.com/go-ap/fedbox/internal/env,github.com/go-ap/fedbox/activitypub \
-	-covermode=count -args -test.gocoverdir="$(mkfile_dir)tests/.cache" $(TEST_TARGET)
+	-covermode=count -args -test.gocoverdir=$(GOCOVERDIR) $(TEST_TARGET)
 
 coverage: ## Run unit tests for the service with coverage.
-	$(GO) tool covdata percent -i=./tests/.cache -o $(PROJECT).coverprofile
+	$(GO) tool covdata percent -i=$(GOCOVERDIR) -o $(PROJECT).coverprofile
 
 integration: download ## Run integration tests for the service.
+	test -n $(GOCOVERDIR) && mkdir -p ${GOCOVERDIR}
 	$(MAKE) STORAGE=fs -C tests $@
 	$(MAKE) STORAGE=sqlite -C tests $@
 	$(MAKE) STORAGE=boltdb -C tests $@
 	$(MAKE) STORAGE=badger -C tests $@
-	export GOCOVERDIR="$(mkfile_dir)tests/.cache"
 	$(MAKE) STORAGE=fs -C integration test
 	$(MAKE) STORAGE=sqlite -C integration test
 	$(MAKE) STORAGE=boltdb -C integration test

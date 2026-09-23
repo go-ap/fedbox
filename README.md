@@ -2,7 +2,7 @@
 
 [![MIT Licensed](https://img.shields.io/github/license/go-ap/fedbox.svg)](https://raw.githubusercontent.com/go-ap/fedbox/master/LICENSE)
 [![Build Status](https://builds.sr.ht/~mariusor/fedbox.svg)](https://builds.sr.ht/~mariusor/fedbox)
-[![Go Report Card](https://goreportcard.com/badge/github.com/go-ap/fedbox)](https://goreportcard.com/report/github.com/go-ap/fedbox)
+[![Coverage Status](https://coveralls.io/repos/github/go-ap/fedbox/badge.svg?branch=master)](https://coveralls.io/github/go-ap/fedbox?branch=master)
 
 ![FedBOX Logo](./doc/logo.svg)
 

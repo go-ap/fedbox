@@ -4,8 +4,11 @@ packages:
   - podman
 sources:
   - https://github.com/go-ap/fedbox
+environment:
+  GOCOVERDIR: /tmp/coverage
 secrets:
 - 3dcea276-38d6-4a7e-85e5-20cbc903e1ea
+- 2c39e47f-0799-413b-9ba8-a54eb454c60e
 tasks:
   - setup: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
@@ -63,6 +66,7 @@ tasks:
       set -a +x
       cd fedbox
       make coverage
+      go tool goveralls -flagname unit-tests -service=${CI_NAME} -coverprofile fedbox.coverprofile -repotokenfile ~/.coveralls.tok
   - push_to_github: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
       set -a +x
