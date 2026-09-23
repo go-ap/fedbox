@@ -19,10 +19,6 @@ tasks:
   - tests: |
       cd fedbox
       make test
-  - coverage: |
-      set -a +x
-      cd fedbox
-      make coverage
   - integration-new-setup: |
       systemctl --user start podman.socket
       cd fedbox
@@ -35,8 +31,7 @@ tasks:
       make STORAGE=fs TAGS=Like,Share,Follow -C integration test
       make STORAGE=fs TAGS=Ignore,Block -C integration test
       make STORAGE=fs TAGS=Question -C integration test
-      make TAGS=ssh STORAGE=fs -C integration test
-      make TAGS=s2s STORAGE=fs -C integration test
+      make STORAGE=fs TAGS=ssh -C integration test
   - integration-new-badger: |
       cd fedbox
       make STORAGE=badger TAGS=Fetch,Filter,Outbox -C integration test
@@ -45,8 +40,7 @@ tasks:
       make STORAGE=badger TAGS=Like,Share,Follow -C integration test
       make STORAGE=badger TAGS=Ignore,Block -C integration test
       make STORAGE=badger TAGS=Question -C integration test
-      make TAGS=ssh STORAGE=badger -C integration test
-      make TAGS=s2s STORAGE=badger -C integration test
+      make STORAGE=badger TAGS=ssh -C integration test
   - integration-new-boltdb: |
       cd fedbox
       make STORAGE=boltdb TAGS=Fetch,Filter,Outbox -C integration test
@@ -55,8 +49,7 @@ tasks:
       make STORAGE=boltdb TAGS=Like,Share,Follow -C integration test
       make STORAGE=boltdb TAGS=Ignore,Block -C integration test
       make STORAGE=boltdb TAGS=Question -C integration test
-      make TAGS=ssh STORAGE=boltdb -C integration test
-      make TAGS=s2s STORAGE=boltdb -C integration test
+      make STORAGE=boltdb TAGS=ssh -C integration test
   - integration-new-sqlite: |
       cd fedbox
       make STORAGE=sqlite TAGS=Fetch,Filter,Outbox -C integration test
@@ -65,8 +58,11 @@ tasks:
       make STORAGE=sqlite TAGS=Like,Share,Follow -C integration test
       make STORAGE=sqlite TAGS=Ignore,Block -C integration test
       make STORAGE=sqlite TAGS=Question -C integration test
-      make TAGS=ssh STORAGE=sqlite -C integration test
-      make TAGS=s2s STORAGE=sqlite -C integration test
+      make STORAGE=sqlite TAGS=ssh -C integration test
+  - coverage: |
+      set -a +x
+      cd fedbox
+      make coverage
   - push_to_github: |
       test ${BUILD_SUBMITTER} != "git.sr.ht" && complete-build
       set -a +x

@@ -90,7 +90,7 @@ test: download ## Run unit tests for the service.
 	$(TEST) $(TEST_FLAGS) -coverpkg github.com/go-ap/fedbox,github.com/go-ap/fedbox/internal/config,github.com/go-ap/fedbox/internal/env,github.com/go-ap/fedbox/activitypub \
 	-covermode=count -args -test.gocoverdir="$(mkfile_dir)tests/.cache" $(TEST_TARGET)
 
-coverage: clean_test test integration ## Run unit tests for the service with coverage.
+coverage: ## Run unit tests for the service with coverage.
 	$(GO) tool covdata percent -i=./tests/.cache -o $(PROJECT).coverprofile
 
 integration: download ## Run integration tests for the service.
