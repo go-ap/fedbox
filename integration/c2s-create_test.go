@@ -21,11 +21,11 @@ func Test_C2S_CreateRequests(t *testing.T) {
 	token := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
 	conf := fedbox.C2SConfig(
-		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithImageName(imageName),
 		fedbox.WithItems(admin),
 		fedbox.WithPrivateKey(ed2559Key),
 		fedbox.WithCommands(rootExec.ExtractOAuth2Bearer(admin.ID, token)),
-		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
 	)
 
 	ctx := t.Context()

@@ -28,11 +28,11 @@ func Test_C2S_RemoveRequests(t *testing.T) {
 		ap.HasContent("Lorem ipsum dolor sic amet."),
 	)
 	conf := fedbox.C2SConfig(
-		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithImageName(imageName),
 		fedbox.WithItems(person1, target, note),
 		fedbox.WithPrivateKey(ed2559Key),
 		fedbox.WithCommands(rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1)),
-		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
 	)
 
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)

@@ -55,7 +55,7 @@ func Test_S2S_SharedInbox(t *testing.T) {
 	adminTok := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
 	c2sConf := fedbox.C2SConfig(
-		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithImageName(imageName),
 		fedbox.WithPrivateKey(ed2559Key),
 		fedbox.WithItems(tagAdmin, admin),
 		fedbox.WithCommands(rootExec.ExtractOAuth2Bearer(admin.ID, adminTok)),
@@ -63,7 +63,7 @@ func Test_S2S_SharedInbox(t *testing.T) {
 
 	// NOTE(marius): s2sAdmin does not have a shared inbox, while s2sPerson1 and s2sPerson3 do
 	s2sConf := fedbox.S2SConfig(
-		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithImageName(imageName),
 		fedbox.WithPrivateKey(s2sPrvKey),
 		fedbox.WithItems(s2sAdmin, s2sPerson1, s2sPerson3),
 	)
@@ -449,16 +449,16 @@ func Test_S2SRequests(t *testing.T) {
 	s2sAdmin := person(vocab.CollectionPath("actors/1").IRI(s2sRootIRI), ap.HasPreferredUsername("admin"), ap.HasTag(s2sTagAdmin))
 
 	c2sConf := fedbox.C2SConfig(
-		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithImageName(imageName),
 		fedbox.WithItems(c2sTagAdmin, c2sAdmin),
 		fedbox.WithPrivateKey(c2sPrvKey),
-		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
 	)
 	s2sConf := fedbox.C2SConfig(
-		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithImageName(imageName),
 		fedbox.WithItems(s2sTagAdmin, s2sAdmin),
 		fedbox.WithPrivateKey(s2sPrvKey),
-		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
 	)
 
 	cont, err := fedbox.StartContainers(t.Context(), t, c2sConf, s2sConf)

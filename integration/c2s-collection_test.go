@@ -127,10 +127,10 @@ func Test_CollectionFilters(t *testing.T) {
 
 	items := plausibleRandomObjects(publicKey, 60)
 	c2sConf := fedbox.C2SConfig(
-		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithImageName(imageName),
 		fedbox.WithPrivateKey(privateKey),
 		fedbox.WithItems(items...),
-		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
 	)
 
 	cont, err := fedbox.StartContainers(t.Context(), t, c2sConf)

@@ -29,13 +29,13 @@ func Test_C2S_MoveRequests(t *testing.T) {
 		ap.HasContent("Lorem ipsum dolor sic amet."),
 	)
 	conf := fedbox.C2SConfig(
-		fedbox.WithImageName(fedBOXImageName),
+		fedbox.WithImageName(imageName),
 		fedbox.WithItems(person1, target, origin, note),
 		fedbox.WithPrivateKey(ed2559Key),
 		fedbox.WithCommands(
 			rootExec.ExtractOAuth2Bearer(person1.ID, tokenP1),
 		),
-		fedbox.Verbose(Verbose), fedbox.WithCodeCoverage(Coverage),
+		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
 	)
 
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)

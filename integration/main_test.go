@@ -7,46 +7,46 @@ import (
 	"os"
 	"testing"
 
-	"git.sr.ht/~mariusor/storage-all"
+	st "git.sr.ht/~mariusor/storage-all"
 	"github.com/go-ap/fedbox/integration/internal/containers"
 )
 
 var (
-	Build    bool
-	Verbose  bool
-	Race     bool
-	Coverage bool
-	Storage  string
+	build    bool
+	verbose  bool
+	race     bool
+	coverage bool
+	storage  string
 
-	fedBOXImageName = "localhost/fedbox/app"
+	imageName = "localhost/fedbox/app"
 
 	validStorageTypes = []string{
-		string(storage.FS),       // fs
-		string(storage.Badger),   // badger
-		string(storage.BoltDB),   // boltdb
-		string(storage.Sqlite),   // sqlite
-		string(storage.Postgres), // postgres
+		string(st.FS),       // fs
+		string(st.Badger),   // badger
+		string(st.BoltDB),   // boltdb
+		string(st.Sqlite),   // sqlite
+		string(st.Postgres), // postgres
 	}
 )
 
 func TestMain(m *testing.M) {
-	name := fedBOXImageName
+	name := imageName
 
-	flag.BoolVar(&Verbose, "verbose", false, "enable more verbose logging")
-	flag.BoolVar(&Race, "race", false, "build the image with data race detection")
-	flag.BoolVar(&Coverage, "coverage", false, "build the image with test coverage support")
-	flag.BoolVar(&Build, "build", false, "build images before run")
-	flag.StringVar(&name, "name", fedBOXImageName, "which container image to use")
-	flag.StringVar(&Storage, "storage", string(storage.Default), fmt.Sprintf("which storage type to use for tests, valid values: %#v", validStorageTypes))
+	flag.BoolVar(&verbose, "verbose", false, "enable more verbose logging")
+	flag.BoolVar(&race, "race", false, "build the image with data race detection")
+	flag.BoolVar(&coverage, "coverage", false, "build the image with test coverage support")
+	flag.BoolVar(&build, "build", false, "build images before run")
+	flag.StringVar(&name, "name", imageName, "which container image to use")
+	flag.StringVar(&storage, "storage", string(st.Default), fmt.Sprintf("which storage type to use for tests, valid values: %#v", validStorageTypes))
 	flag.Parse()
 
-	if Build {
+	if build {
 		var err error
-		if name, err = containers.BuildImage(context.Background(), fedBOXImageName, Coverage, Race); err != nil {
+		if name, err = containers.BuildImage(context.Background(), imageName, coverage, race); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "error building image: %+v", err)
 			os.Exit(-1)
 		}
-		fedBOXImageName = name
+		imageName = name
 		_, _ = fmt.Fprintf(os.Stderr, "built image: %s", name)
 	}
 	if st := m.Run(); st != 0 {
