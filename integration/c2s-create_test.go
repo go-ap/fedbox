@@ -75,6 +75,24 @@ func Test_C2S_CreateRequests(t *testing.T) {
 	undo8ID := c2sRootIRI.AddPath("/activities/undo-8")
 	undo8 := undo(ap.HasActor(admin), ap.HasObject(create3ID))
 
+	note10 := object(
+		c2sRootIRI.AddPath("objects/note-10"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasType(vocab.NoteType),
+		ap.HasContent("First of two"),
+	)
+	note11 := object(
+		c2sRootIRI.AddPath("objects/note-11"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasType(vocab.NoteType),
+		ap.HasContent("Second of two"),
+	)
+	create9ID := c2sRootIRI.AddPath("/activities/create-9")
+	create9 := create(ap.HasActor(admin), ap.HasObject(note10, note11))
+
+	undo10ID := c2sRootIRI.AddPath("/activities/undo-10")
+	undo10 := undo(ap.HasActor(admin), ap.HasObject(create9ID))
+
 	toRun := []tests.RunnableTest{
 		tests.HTTPTest{
 			Name: "admin Outbox exists",
@@ -457,6 +475,7 @@ func Test_C2S_CreateRequests(t *testing.T) {
 				},
 			},
 		},
+
 		tests.TestSuite{
 			Name: "Undo Create article",
 			Tests: []tests.RunnableTest{
@@ -604,6 +623,168 @@ func Test_C2S_CreateRequests(t *testing.T) {
 					Res: tests.Response().
 						HasCode(http.StatusNotFound).
 						HasErrors(errFedBOXNotFound(vocab.Outbox.IRI(person4.ID))),
+				},
+			},
+		},
+
+		tests.TestSuite{
+			Name: "Create multiple notes",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Create notes",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						IRI(vocab.Outbox.IRI(admin)).
+						BodyItem(create9),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						HasLocation(create9ID).
+						ItemMatch(
+							tests.HasItem(note10),
+							tests.HasItem(note11),
+						),
+				},
+				tests.HTTPTest{
+					Name: "MultiCreate is in Outbox",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Outbox.IRI(admin)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(filterIRI(vocab.Outbox.IRI(admin), filters.WithMaxCount(filters.MaxItems))),
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasTotalItems(4),
+							tests.HasItem(create9ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "MultiCreate is in root Inbox",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(vocab.Inbox.IRI(c2sRootIRI)),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.IsType(vocab.OrderedCollectionPageType),
+							tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(100))),
+							tests.HasTotalItems(6),
+							tests.HasItem(create9ID),
+						),
+				},
+				tests.HTTPTest{
+					Name: "MultiCreate is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(create9ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(create9ID),
+							tests.IsType(create9.Type),
+							tests.HasActor(create9.Actor),
+							tests.HasObject(create9.Object),
+						),
+				},
+				tests.HTTPTest{
+					Name: "note10 is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(note10.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(note10.ID),
+							tests.IsType(note10.Type),
+							tests.HasContent(note10.Content),
+						),
+				},
+				tests.HTTPTest{
+					Name: "note11 is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(note11.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(note11.ID),
+							tests.IsType(note11.Type),
+							tests.HasContent(note11.Content),
+						),
+				},
+				tests.TestSuite{
+					Name: "Undo MultiCreate",
+					Tests: []tests.RunnableTest{
+						tests.HTTPTest{
+							Name: "Undo MultiCreate",
+							Req: tests.Request().
+								IRI(vocab.Outbox.IRI(admin)).
+								Post().
+								ContentType(client.ContentTypeJsonLD).
+								Signer(token.Sign).
+								BodyItem(undo10),
+							Res: tests.Response().
+								HasCode(http.StatusCreated).
+								ItemMatch(
+									tests.HasID(undo10ID),
+									tests.IsType(undo10.Type),
+									tests.HasCC(undo10.CC...),
+									tests.HasActor(undo10.Actor),
+									tests.HasObject(undo10.Object),
+									tests.WasPublished(time.Now()),
+								),
+						},
+						tests.HTTPTest{
+							Name: "Undo is in admin's outbox, but no MultiCreate",
+							Req: tests.Request().
+								Signer(token.Sign).
+								ContentType(client.ContentTypeJsonLD).
+								IRI(vocab.Outbox.IRI(admin)),
+							Res: tests.Response().
+								HasCode(http.StatusOK).
+								ItemMatch(
+									tests.HasID(filterIRI(vocab.Outbox.IRI(admin), filters.WithMaxCount(filters.MaxItems))),
+									tests.IsType(vocab.OrderedCollectionPageType),
+									tests.HasTotalItems(4),
+									tests.HasItem(undo6ID),
+									tests.HasItem(undo7ID),
+									tests.HasItem(undo8ID),
+									tests.HasItem(undo10ID),
+									tests.DoesNotHaveItem(create9ID),
+									tests.DoesNotHaveItem(create5ID),
+									tests.DoesNotHaveItem(create4ID),
+									tests.DoesNotHaveItem(create3ID),
+								),
+						},
+						tests.HTTPTest{
+							Name: "MultiCreate is no longer accessible",
+							Req: tests.Request().
+								ContentType(client.ContentTypeJson).
+								IRI(create9ID),
+							Res: tests.Response().
+								HasCode(http.StatusNotFound).
+								HasErrors(errFedBOXNotFound(create9ID)),
+						},
+						tests.HTTPTest{
+							Name: "note10 is no longer accessible",
+							Req: tests.Request().
+								ContentType(client.ContentTypeJson).
+								IRI(note10.ID),
+							Res: tests.Response().
+								HasCode(http.StatusNotFound).
+								HasErrors(errFedBOXNotFound(note10.ID)),
+						},
+						tests.HTTPTest{
+							Name: "note11 is no longer accessible",
+							Req: tests.Request().
+								ContentType(client.ContentTypeJson).
+								IRI(note11.ID),
+							Res: tests.Response().
+								HasCode(http.StatusNotFound).
+								HasErrors(errFedBOXNotFound(note11.ID)),
+						},
+					},
 				},
 			},
 		},

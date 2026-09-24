@@ -312,10 +312,19 @@ func (i ImportCmd) Run(ctl *Base) error {
 
 	slices.SortFunc(col, SortImportActivitiesByDeps)
 
+	ObjectTypeOf := func(it vocab.Item) (typ vocab.Typer) {
+		vocab.OnActivity(it, func(act *vocab.Activity) error {
+			if act.Object != nil {
+				typ = act.Object.GetType()
+			}
+			return nil
+		})
+		return typ
+	}
 	count := 0
 	start := time.Now().Round(0)
 	for _, it := range col {
-		_, _ = fmt.Fprintf(ctl.out, "Processing %s %s\n", it.GetType(), it.GetID())
+		_, _ = fmt.Fprintf(ctl.out, "Processing %s[%v]\n", it.GetType(), ObjectTypeOf(it))
 		err := vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
 			if a == nil {
 				Errf(ctl.err, "invalid activity, is nil: %s", it.GetLink())

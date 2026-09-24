@@ -3,7 +3,7 @@ module github.com/go-ap/fedbox
 go 1.26.8
 
 require (
-	charm.land/bubbletea/v2 v2.0.9
+	charm.land/bubbletea/v2 v2.0.10
 	charm.land/wish/v2 v2.0.4
 	git.sr.ht/~mariusor/cache v0.0.0-20260911160635-3a397efbb885
 	git.sr.ht/~mariusor/lw v0.0.0-20260917101519-2e0b081e156c
@@ -14,12 +14,12 @@ require (
 	github.com/alecthomas/kong v1.16.1
 	github.com/go-ap/activitypub v0.0.0-20260918155011-090adf72874a
 	github.com/go-ap/auth v0.0.0-20260921115339-289d60428705
-	github.com/go-ap/cache v0.0.0-20260918155104-22e0a7768d84
+	github.com/go-ap/cache v0.0.0-20260924121223-b226daf9beb9
 	github.com/go-ap/client v0.0.0-20260921115125-25a486bb6497
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/filters v0.0.0-20260921115004-5ba28ceac6b8
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/processing v0.0.0-20260921115403-0680032e0775
+	github.com/go-ap/processing v0.0.0-20260924142202-4cbfdf8d94ce
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/go-chi/cors v1.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -50,7 +50,7 @@ require (
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/keygen v0.5.4 // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20260910203606-6c9e17dc7a16 // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260922123528-4e49372c11f9 // indirect
 	github.com/charmbracelet/x/ansi v0.11.8 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
 	github.com/charmbracelet/x/conpty v0.2.0 // indirect
@@ -125,7 +125,7 @@ require (
 	golang.org/x/tools v0.50.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	modernc.org/libc v1.77.0 // indirect
+	modernc.org/libc v1.77.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 	modernc.org/sqlite v1.59.0 // indirect

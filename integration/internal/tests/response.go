@@ -152,7 +152,11 @@ func (res resChecks) ItemMatch(itemChecks ...itemCheckFn) resChecks {
 					}
 					return
 				}
-				t.Run(string(it.GetLink()), func(t *testing.T) {
+				label := string(it.GetLink())
+				if label == "" {
+					label = "items"
+				}
+				t.Run(label, func(t *testing.T) {
 					for _, checkFn := range itemChecks {
 						checkFn(t, it)
 					}
@@ -772,8 +776,8 @@ func DoesNotHaveItem(it vocab.Item) itemCheckFn {
 func HasItem(it vocab.Item) itemCheckFn {
 	return func(t *testing.T, got vocab.Item) {
 		t.Run("Contains: "+string(it.GetLink()), func(t *testing.T) {
-			err := vocab.OnOrderedCollection(got, func(col *vocab.OrderedCollection) error {
-				gotItems := col.OrderedItems
+			err := vocab.OnCollectionIntf(got, func(col vocab.CollectionInterface) error {
+				gotItems := col.Collection()
 				maybeFound, _ := filters.Checks{filters.SameID(it.GetID())}.Run(gotItems).(vocab.ItemCollection)
 				if maybeFound.Count() == 0 {
 					t.Errorf("Item does not exist in collection: %s", it.GetLink())

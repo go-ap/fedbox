@@ -35,24 +35,6 @@ tasks:
       make STORAGE=fs TAGS=Ignore,Block -C integration test
       make STORAGE=fs TAGS=Question -C integration test
       make STORAGE=fs TAGS=ssh -C integration test
-  - integration-new-badger: |
-      cd fedbox
-      make STORAGE=badger TAGS=Fetch,Filter,Outbox -C integration test
-      make STORAGE=badger TAGS=Create,Update,Delete -C integration test
-      make STORAGE=badger TAGS=Add,Move,Remove -C integration test
-      make STORAGE=badger TAGS=Like,Share,Follow -C integration test
-      make STORAGE=badger TAGS=Ignore,Block -C integration test
-      make STORAGE=badger TAGS=Question -C integration test
-      make STORAGE=badger TAGS=ssh -C integration test
-  - integration-new-boltdb: |
-      cd fedbox
-      make STORAGE=boltdb TAGS=Fetch,Filter,Outbox -C integration test
-      make STORAGE=boltdb TAGS=Create,Update,Delete -C integration test
-      make STORAGE=boltdb TAGS=Add,Move,Remove -C integration test
-      make STORAGE=boltdb TAGS=Like,Share,Follow -C integration test
-      make STORAGE=boltdb TAGS=Ignore,Block -C integration test
-      make STORAGE=boltdb TAGS=Question -C integration test
-      make STORAGE=boltdb TAGS=ssh -C integration test
   - integration-new-sqlite: |
       cd fedbox
       make STORAGE=sqlite TAGS=Fetch,Filter,Outbox -C integration test
@@ -62,6 +44,24 @@ tasks:
       make STORAGE=sqlite TAGS=Ignore,Block -C integration test
       make STORAGE=sqlite TAGS=Question -C integration test
       make STORAGE=sqlite TAGS=ssh -C integration test
+  - integration-new-boltdb: |
+      cd fedbox
+      make STORAGE=boltdb TAGS=Fetch,Filter,Outbox -C integration test
+      make STORAGE=boltdb TAGS=Create,Update,Delete -C integration test
+      make STORAGE=boltdb TAGS=Add,Move,Remove -C integration test
+      make STORAGE=boltdb TAGS=Like,Share,Follow -C integration test
+      make STORAGE=boltdb TAGS=Ignore,Block -C integration test
+      make STORAGE=boltdb TAGS=Question -C integration test
+      make STORAGE=boltdb TAGS=ssh -C integration test
+  - integration-new-badger: |
+      cd fedbox
+      make STORAGE=badger TAGS=Fetch,Filter,Outbox -C integration test
+      make STORAGE=badger TAGS=Create,Update,Delete -C integration test
+      make STORAGE=badger TAGS=Add,Move,Remove -C integration test
+      make STORAGE=badger TAGS=Like,Share,Follow -C integration test
+      make STORAGE=badger TAGS=Ignore,Block -C integration test
+      make STORAGE=badger TAGS=Question -C integration test
+      make STORAGE=badger TAGS=ssh -C integration test
   - coverage: |
       set -a +x
       cd fedbox

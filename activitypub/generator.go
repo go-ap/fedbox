@@ -10,7 +10,7 @@ import (
 // GenerateID generates a unique identifier for the 'it' [vocab.Item].
 func GenerateID(it vocab.Item, partOf vocab.IRI, by vocab.Item) (vocab.ID, error) {
 	uid := uuid.New()
-	id := partOf.GetLink().AddPath(uid)
+	id := partOf.AddPath(uid)
 	typ := it.GetType()
 	if vocab.ActivityTypes.Match(typ) || vocab.IntransitiveActivityTypes.Match(typ) {
 		err := vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
@@ -20,7 +20,7 @@ func GenerateID(it vocab.Item, partOf vocab.IRI, by vocab.Item) (vocab.ID, error
 			if vocab.IsNil(by) {
 				by = a.Actor
 			}
-			if !vocab.IsNil(by) {
+			if !vocab.IsNil(by) && !vocab.IsItemCollection(by) {
 				// if "it" is not a public activity, save it to its actor Outbox instead of the global activities collection
 				outbox := vocab.Outbox.IRI(by)
 				id = outbox.AddPath(uid)

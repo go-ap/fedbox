@@ -48,8 +48,30 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 		ap.HasObject(article3.ID),
 	)
 
-	delete5ID := c2sRootIRI.AddPath("activities/delete-5")
-	delete5 := del(
+	note4 := object(
+		c2sRootIRI.AddPath("objects/note-4"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasType(vocab.NoteType),
+		ap.HasContent("First of two"),
+	)
+	note5 := object(
+		c2sRootIRI.AddPath("objects/note-5"),
+		ap.HasAudience(vocab.PublicNS),
+		ap.HasType(vocab.NoteType),
+		ap.HasContent("Second of two"),
+	)
+	create5ID := c2sRootIRI.AddPath("/activities/create-5")
+	create5 := create(ap.HasActor(person1), ap.HasObject(note4, note5))
+
+	delete6ID := c2sRootIRI.AddPath("activities/delete-6")
+	delete6 := del(
+		ap.HasCC(vocab.PublicNS),
+		ap.HasActor(person1),
+		ap.HasObject(note4, note5),
+	)
+
+	delete7ID := c2sRootIRI.AddPath("activities/delete-7")
+	delete7 := del(
 		ap.HasCC(vocab.PublicNS),
 		ap.HasActor(person1),
 		ap.HasObject(person1.ID),
@@ -137,6 +159,121 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 				},
 			},
 		},
+
+		tests.TestSuite{
+			Name: "Delete multiple notes",
+			Tests: []tests.RunnableTest{
+				tests.HTTPTest{
+					Name: "Create notes",
+					Req: tests.Request().
+						Bearer(token.AccessToken).
+						IRI(vocab.Outbox.IRI(person1)).
+						BodyItem(create5),
+					Res: tests.Response().
+						HasCode(http.StatusCreated).
+						HasLocation(create5ID).
+						ItemMatch(
+							tests.HasItem(note4),
+							tests.HasItem(note5),
+						),
+				},
+				tests.HTTPTest{
+					Name: "note10 is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(note4.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(note4.ID),
+							tests.IsType(note4.Type),
+							tests.HasContent(note4.Content),
+						),
+				},
+				tests.HTTPTest{
+					Name: "note11 is accessible",
+					Req: tests.Request().
+						Accept(client.ContentTypeJsonActivity).
+						IRI(note5.ID),
+					Res: tests.Response().
+						HasCode(http.StatusOK).
+						ItemMatch(
+							tests.HasID(note5.ID),
+							tests.IsType(note5.Type),
+							tests.HasContent(note5.Content),
+						),
+				},
+				tests.TestSuite{
+					Name: "Delete notes",
+					Tests: []tests.RunnableTest{
+						tests.HTTPTest{
+							Name: "Delete note10, note11",
+							Req: tests.Request().
+								IRI(vocab.Outbox.IRI(person1)).
+								Post().
+								ContentType(client.ContentTypeJsonLD).
+								Signer(token.Sign).
+								BodyItem(delete6),
+							Res: tests.Response().
+								HasCode(http.StatusGone).
+								ItemMatch(
+									tests.HasID(delete6ID),
+									tests.IsType(delete6.Type),
+									tests.HasCC(delete6.CC...),
+									tests.HasActor(delete6.Actor),
+									tests.HasObject(delete6.Object),
+									tests.WasPublished(time.Now()),
+								),
+						},
+						tests.HTTPTest{
+							Name: "Delete is in person1's outbox",
+							Req: tests.Request().
+								Signer(token.Sign).
+								ContentType(client.ContentTypeJsonLD).
+								IRI(vocab.Outbox.IRI(person1)),
+							Res: tests.Response().
+								HasCode(http.StatusOK).
+								ItemMatch(
+									tests.HasID(filterIRI(vocab.Outbox.IRI(person1), filters.WithMaxCount(filters.MaxItems))),
+									tests.IsType(vocab.OrderedCollectionPageType),
+									tests.HasTotalItems(3),
+									tests.HasItem(delete6ID),
+									tests.HasItem(create5ID),
+								),
+						},
+						tests.HTTPTest{
+							Name: "note10 is now a tombstone",
+							Req: tests.Request().
+								ContentType(client.ContentTypeJson).
+								IRI(note4.ID),
+							Res: tests.Response().
+								HasCode(http.StatusGone).
+								ItemMatch(
+									tests.HasID(note4.ID),
+									tests.IsType(vocab.TombstoneType),
+									tests.WasDeleted(time.Now().Round(0)),
+									tests.HasFormerType(note4.Type),
+								),
+						},
+						tests.HTTPTest{
+							Name: "note11 is now a tombstone",
+							Req: tests.Request().
+								ContentType(client.ContentTypeJson).
+								IRI(note5.ID),
+							Res: tests.Response().
+								HasCode(http.StatusGone).
+								ItemMatch(
+									tests.HasID(note5.ID),
+									tests.IsType(vocab.TombstoneType),
+									tests.WasDeleted(time.Now().Round(0)),
+									tests.HasFormerType(note5.Type),
+								),
+						},
+					},
+				},
+			},
+		},
+
 		tests.TestSuite{
 			Name: "Delete actor",
 			Tests: []tests.RunnableTest{
@@ -146,12 +283,12 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 						Bearer(token.AccessToken).
 						Accept(client.ContentTypeJsonActivity).
 						IRI(vocab.Outbox.IRI(person1)).
-						BodyItem(delete5),
+						BodyItem(delete7),
 					Res: tests.Response().
 						HasCode(http.StatusGone).
 						ItemMatch(
-							tests.HasID(delete5ID),
-							tests.IsType(delete5.Type),
+							tests.HasID(delete7ID),
+							tests.IsType(delete7.Type),
 							tests.HasActor(person1.ID),
 							tests.HasObject(person1.ID),
 							tests.WasPublished(time.Now().Round(0)),
@@ -178,23 +315,25 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 						ItemMatch(
 							tests.IsType(vocab.OrderedCollectionPageType),
 							tests.HasID(filterIRI(vocab.Inbox.IRI(c2sRootIRI), filters.WithMaxCount(100))),
-							tests.HasTotalItems(5),
+							tests.HasTotalItems(7),
 							tests.HasItem(delete4ID),
-							tests.HasItem(delete5ID),
+							tests.HasItem(create5ID),
+							tests.HasItem(delete6ID),
+							tests.HasItem(delete7ID),
 						),
 				},
 				tests.HTTPTest{
 					Name: "Delete is accessible",
 					Req: tests.Request().
 						Accept(client.ContentTypeJsonActivity).
-						IRI(delete5ID),
+						IRI(delete7ID),
 					Res: tests.Response().
 						HasCode(http.StatusOK).
 						ItemMatch(
-							tests.HasID(delete5ID),
-							tests.IsType(delete5.Type),
-							tests.HasActor(delete5.Actor),
-							tests.HasObject(delete5.Object),
+							tests.HasID(delete7ID),
+							tests.IsType(delete7.Type),
+							tests.HasActor(delete7.Actor),
+							tests.HasObject(delete7.Object),
 							tests.WasPublished(time.Now().Round(0)),
 						),
 				},

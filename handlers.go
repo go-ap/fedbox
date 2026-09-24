@@ -171,7 +171,7 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 		authorized := fb.actorFromRequestWithClient(r, FedBOXClient(fb), iri)
 
 		maybeObject, maybeCol := vocab.Split(iri)
-		// NOTE(marius): we hardcode that only a hidden collection's owner can view it
+		// NOTE(marius): hardcode the fact that only a hidden collection's owner can view it
 		if filters.HiddenCollections.Contains(typ) && !authorized.ID.Equal(maybeObject) {
 			return nil, pathNotFound(r)
 		}
@@ -369,7 +369,7 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 			return it, errors.HttpStatus(err), errors.Annotatef(err, "Unable to save activity %s to %s", typ, receivedIn)
 		}
 		_ = vocab.OnActivity(it, func(act *vocab.Activity) error {
-			if err := cache.ActivityPurge(fb.caches, act, receivedIn); err != nil {
+			if err = cache.ActivityPurge(fb.caches, act, receivedIn); err != nil {
 				fb.errFn("unable to purge cache: %+s", err)
 			}
 			return nil

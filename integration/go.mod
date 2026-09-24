@@ -104,7 +104,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	github.com/go-ap/cache v0.0.0-20260918155104-22e0a7768d84 // indirect
+	github.com/go-ap/cache v0.0.0-20260924121223-b226daf9beb9 // indirect
 	github.com/go-ap/processing v0.0.0-20260716111245-78d0ef51171a // indirect
 	github.com/go-ap/storage-badger v0.0.0-20260921115656-4d2c9799c200 // indirect
 	github.com/go-ap/storage-boltdb v0.0.0-20260921151637-6cefebe99ea4 // indirect
@@ -248,7 +248,7 @@ require (
 	k8s.io/apimachinery v0.36.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
-	modernc.org/libc v1.77.0 // indirect
+	modernc.org/libc v1.77.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 	modernc.org/sqlite v1.59.0 // indirect
