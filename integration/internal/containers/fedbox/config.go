@@ -92,8 +92,8 @@ func WithPw(pw string) configInitFn {
 }
 
 func WithImageName(image string) configInitFn {
-	return func(c *Config) {
-		c.Image = image
+	return func(conf *Config) {
+		conf.InitFns = append(conf.InitFns, c.WithImage(image))
 	}
 }
 
@@ -106,10 +106,11 @@ func WithConfig(conf config.Options) configInitFn {
 func InitConfig(init ...configInitFn) *Config {
 	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	conf := &Config{
-		Items: make(vocab.ItemCollection, 0),
-		Key:   privateKey,
-		Pw:    rand.Text()[:8],
-		Fns:   make([]tc.Executable, 0, len(init)),
+		Items:   make(vocab.ItemCollection, 0),
+		Key:     privateKey,
+		Pw:      rand.Text()[:8],
+		Fns:     make([]tc.Executable, 0, len(init)),
+		InitFns: make([]tc.ContainerCustomizer, 0),
 	}
 
 	for _, in := range init {
@@ -119,12 +120,12 @@ func InitConfig(init ...configInitFn) *Config {
 }
 
 type Config struct {
-	Image    string
 	Conf     config.Options
 	Items    vocab.ItemCollection
 	Key      PrivateKey
 	Pw       string
 	Fns      []tc.Executable
+	InitFns  []tc.ContainerCustomizer
 	Verbose  bool
 	Coverage bool
 }
@@ -139,21 +140,23 @@ func StartContainers(ctx context.Context, t *testing.T, configs ...*Config) (c.R
 		if conf.Pw == "" {
 			conf.Pw = rand.Text()[:8]
 		}
-		initFns := []imageInitFn{
-			withImageName(conf.Image),
-			withConfig(ConfigFromBuildInfo(conf.Conf)),
-			withKey(conf.Key),
-			withPw(conf.Pw),
-			withTestLogger(t, conf.Verbose),
-			withItems(conf.Items...),
-			withCmd(conf.Fns...),
-		}
 		if conf.Coverage {
 			coveragePath := filepath.Join(t.ArtifactDir(), url.PathEscape(conf.Conf.Hostname), "coverage")
 			if coverDir := os.Getenv("GOCOVERDIR"); coverDir != "" {
 				coveragePath = coverDir
 			}
-			initFns = append(initFns, withCodeCoveragePath(coveragePath))
+			conf.InitFns = append(conf.InitFns, c.WithCodeCoveragePath(coveragePath))
+		}
+
+		initFns := []imageInitFn{
+			withConfig(ConfigFromBuildInfo(conf.Conf)),
+			withKey(conf.Key),
+			withPw(conf.Pw),
+			withCmd(conf.Fns...),
+			withBootstrappedItems(conf.Items...),
+		}
+		if len(conf.InitFns) > 0 {
+			initFns = append(initFns, withRawCustomizers(conf.InitFns...))
 		}
 		startFns = append(startFns, New(initFns...))
 	}

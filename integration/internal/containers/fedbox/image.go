@@ -192,7 +192,7 @@ func withTestLogger(t testing.TB, enabled bool) imageInitFn {
 	}
 }
 
-func withItems(it ...vocab.Item) imageInitFn {
+func withBootstrappedItems(it ...vocab.Item) imageInitFn {
 	return func(f *Image) {
 		if len(it) == 0 {
 			return
@@ -209,9 +209,9 @@ func withItems(it ...vocab.Item) imageInitFn {
 	}
 }
 
-func withCodeCoveragePath(hostPath string) imageInitFn {
+func withRawCustomizers(opt ...tc.ContainerCustomizer) imageInitFn {
 	return func(img *Image) {
-		img.contCustomFns = append(img.contCustomFns, c.WithCodeCoveragePath(hostPath))
+		img.contCustomFns = append(img.contCustomFns, opt...)
 	}
 }
 
