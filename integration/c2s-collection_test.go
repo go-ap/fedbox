@@ -3,41 +3,17 @@
 package integration
 
 import (
-	"crypto"
 	"crypto/rand"
 	"fmt"
 	"net/http"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
-	ap2 "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
-	"github.com/go-ap/storage-conformance-suite/gen"
 	"golang.org/x/crypto/ed25519"
 )
-
-func plausibleRandomObjects(pubKey crypto.PublicKey, cnt int) vocab.ItemCollection {
-	service := root(c2sRootIRI, ap.HasPublicKey(pubKey))
-
-	gen.DefaultHost = c2sRootIRI
-	gen.SetItemID = func(it vocab.Item) {
-		ap2.GenerateID(it, c2sRootIRI, service)
-	}
-	gen.RootID = service.ID
-	gen.Root = service
-
-	randomObjects := make(vocab.ItemCollection, 0, cnt)
-	for _, ob := range gen.PlausibleStorage(gen.Root, cnt) {
-		if it, ok := ob.(vocab.Item); ok {
-			_ = randomObjects.Append(it)
-		}
-	}
-
-	return randomObjects
-}
 
 func addActorOutboxTest(items vocab.ItemCollection, actor vocab.Item, ff ...filters.Check) tests.HTTPTest {
 	name := vocab.NameOf(actor)

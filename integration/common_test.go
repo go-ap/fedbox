@@ -1,15 +1,18 @@
 package integration
 
 import (
+	"crypto"
 	"crypto/rand"
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
+	ap2 "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/filters"
+	"github.com/go-ap/storage-conformance-suite/gen"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -302,4 +305,24 @@ func filterIRI(iri vocab.IRI, ff ...filters.Check) vocab.IRI {
 		ff = append(ff, filters.WithMaxCount(filters.MaxItems))
 	}
 	return filters.IRIf(iri, ff...)
+}
+
+func plausibleRandomObjects(pubKey crypto.PublicKey, cnt int) vocab.ItemCollection {
+	service := root(c2sRootIRI, ap.HasPublicKey(pubKey))
+
+	gen.DefaultHost = c2sRootIRI
+	gen.SetItemID = func(it vocab.Item) {
+		ap2.GenerateID(it, c2sRootIRI, service)
+	}
+	gen.RootID = service.ID
+	gen.Root = service
+
+	randomObjects := make(vocab.ItemCollection, 0, cnt)
+	for _, ob := range gen.PlausibleStorage(gen.Root, cnt) {
+		if it, ok := ob.(vocab.Item); ok {
+			_ = randomObjects.Append(it)
+		}
+	}
+
+	return randomObjects
 }
