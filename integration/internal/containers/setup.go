@@ -65,25 +65,28 @@ func Start(ctx context.Context, t testing.TB, imgs ...ContainerInitializer) (Run
 
 type HasItems interface{ Items() vocab.ItemCollection }
 
+func (m *Running) SaveItemsFiles(t testing.TB) {
+	for _, cc := range m.Containers {
+		if ff, ok := cc.(HasItems); ok {
+			if items := ff.Items(); len(items) > 0 {
+				fileName := filepath.Join(t.ArtifactDir(), t.Name()) + ".json"
+				raw, _ := jsonld.Marshal(ff.Items())
+				_ = os.WriteFile(fileName, raw, 0600)
+				t.Logf("Tests failed see %s", fileName)
+			}
+		}
+	}
+}
+
 func (m *Running) Cleanup(t testing.TB) {
 	if m == nil {
 		return
 	}
+	if t.Failed() {
+		m.SaveItemsFiles(t)
+	}
 	if m.Network != nil {
 		tc.CleanupNetwork(t, m.Network)
-	}
-	if t.Failed() {
-		t.Logf("Tests failed")
-		for _, cc := range m.Containers {
-			if ff, ok := cc.(HasItems); ok {
-				if items := ff.Items(); len(items) > 0 {
-					raw, _ := jsonld.Marshal(ff.Items())
-					fileName := filepath.Join(t.ArtifactDir(), t.Name()) + ".json"
-					_ = os.WriteFile(fileName, raw, 0600)
-					t.Logf("Tests failed see %s", fileName)
-				}
-			}
-		}
 	}
 	for _, cc := range m.Containers {
 		tc.CleanupContainer(t, cc)

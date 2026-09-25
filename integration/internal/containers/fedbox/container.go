@@ -21,7 +21,37 @@ type Container struct {
 }
 
 func (fc Container) Items() vocab.ItemCollection {
-	return fc.img.items
+	if len(fc.img.items) > 0 {
+		return fc.img.items
+	}
+	if len(fc.img.contCustomFns) == 0 {
+		return nil
+	}
+	req := new(tc.GenericContainerRequest)
+	for _, fn := range fc.img.contCustomFns {
+		_ = fn.Customize(req)
+	}
+	if len(req.Files) == 0 {
+		return nil
+	}
+	items := make(vocab.ItemCollection, 0)
+	for _, f := range req.Files {
+		if seeker, ok := f.Reader.(io.ReadSeeker); ok {
+			_, _ = seeker.Seek(0, io.SeekStart)
+		}
+		raw, err := io.ReadAll(f.Reader)
+		if err != nil {
+			return nil
+		}
+		it, err := vocab.UnmarshalJSON(raw)
+		if err != nil {
+			return nil
+		}
+		_ = vocab.OnItem(it, func(item vocab.Item) error {
+			return items.Append(item)
+		})
+	}
+	return items
 }
 
 func (fc Container) Exec(ctx context.Context, cmd []string, opts ...exec.ProcessOption) (int, io.Reader, error) {
@@ -77,7 +107,7 @@ func (fc Container) Exec(ctx context.Context, cmd []string, opts ...exec.Process
 	if err != nil {
 		return 0, nil, fmt.Errorf("unable to connect to SSH server %s %w", sshHost, err)
 	}
-	// Create a session. It is one session per command.
+
 	session, err := client.NewSession()
 	if err != nil {
 		return 0, nil, err
