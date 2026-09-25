@@ -7,9 +7,9 @@ import (
 	"io"
 	"net"
 	"strings"
-	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/fedbox/integration/internal/containers"
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 	"golang.org/x/crypto/ssh"
@@ -53,8 +53,6 @@ func (fc Container) Items() vocab.ItemCollection {
 	}
 	return items
 }
-
-var defaultCommandExecutionTimeout = 15 * time.Second
 
 func (fc Container) Exec(ctx context.Context, cmd []string, opts ...exec.ProcessOption) (int, io.Reader, error) {
 	if cmd[0] == ctlBin {
@@ -102,7 +100,7 @@ func (fc Container) Exec(ctx context.Context, cmd []string, opts ...exec.Process
 		User:            conf.ExecConfig.User,
 		Auth:            initFns,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         defaultCommandExecutionTimeout,
+		Timeout:         containers.DefaultCommandExecutionTimeout,
 	}
 
 	client, err := ssh.Dial("tcp", sshHost, config)

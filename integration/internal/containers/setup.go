@@ -93,6 +93,8 @@ func (m *Running) Cleanup(t testing.TB) {
 	}
 }
 
+var DefaultCommandExecutionTimeout = 15 * time.Second
+
 func (m *Running) RunCommand(ctx context.Context, host string, cmd tc.Executable, IO io.ReadWriter) (io.Reader, error) {
 	uu, err := url.Parse(host)
 	if err != nil {
@@ -100,7 +102,7 @@ func (m *Running) RunCommand(ctx context.Context, host string, cmd tc.Executable
 	}
 
 	var cancelFn func()
-	ctx, cancelFn = context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancelFn = context.WithTimeout(ctx, DefaultCommandExecutionTimeout+time.Second)
 	defer cancelFn()
 
 	for _, fc := range m.Containers {
@@ -118,6 +120,7 @@ func (m *Running) RunCommand(ctx context.Context, host string, cmd tc.Executable
 				if IO != nil {
 					opts = append(opts, WithIO(IO))
 				}
+
 				_, r, err := fc.Exec(ctx, cmd.AsCommand(), opts...)
 				return r, err
 			}

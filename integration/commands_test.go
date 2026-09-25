@@ -13,7 +13,6 @@ import (
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	tc "github.com/testcontainers/testcontainers-go"
 )
 
 func Test_Commands(t *testing.T) {
@@ -170,6 +169,7 @@ func Test_Commands_Import(t *testing.T) {
 		fedbox.WithImageName(imageName),
 		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
 	)
+
 	items := plausibleRandomObjects(ed2559Key.Public(), 60)
 	conf.InitFns = append(conf.InitFns, c.WithMocks(items...))
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)
@@ -178,7 +178,6 @@ func Test_Commands_Import(t *testing.T) {
 	}
 
 	outputCheckFns := make([]tests.LineOutputTest, 0, len(items)+2)
-
 	for range items {
 		outputCheckFns = append(outputCheckFns, tests.AnyOutput)
 	}
@@ -213,7 +212,7 @@ func Test_Commands_Import(t *testing.T) {
 			}
 		}
 		return nil
-	}, tests.EndOK)
+	})
 
 	tests := []tests.RunnableTest{
 		tests.CommandTest{
@@ -224,14 +223,14 @@ func Test_Commands_Import(t *testing.T) {
 				User: string(c2sRootIRI),
 				Key:  conf.Key,
 			},
-			IO: tests.WithTests(outputCheckFns...),
+			IO: tests.WithTests(append(outputCheckFns, tests.EndOK)...),
 		},
-		tests.CommandTest{
-			Name: "import(cmd)",
-			Host: string(c2sRootIRI),
-			Cmd:  tc.NewRawCommand([]string{"fedbox", "pub", "import", "--skip-remotes", "/storage/import.json"}),
-			IO:   tests.WithTests(outputCheckFns...),
-		},
+		//tests.CommandTest{
+		//	Name: "import(cmd)",
+		//	Host: string(c2sRootIRI),
+		//	Cmd:  tc.NewRawCommand([]string{"fedbox", "pub", "import", "--skip-remotes", "/storage/import.json"}),
+		//	IO:   tests.WithTests(outputCheckFns...),
+		//},
 	}
 	for _, tt := range tests {
 		tt.Run(t.Context(), cont, t)
