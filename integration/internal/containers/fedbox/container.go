@@ -54,6 +54,8 @@ func (fc Container) Items() vocab.ItemCollection {
 	return items
 }
 
+var defaultCommandExecutionTimeout = 15 * time.Second
+
 func (fc Container) Exec(ctx context.Context, cmd []string, opts ...exec.ProcessOption) (int, io.Reader, error) {
 	if cmd[0] == ctlBin {
 		// NOTE(marius): if the command actually wants to call the "fedbox" binary,
@@ -100,7 +102,7 @@ func (fc Container) Exec(ctx context.Context, cmd []string, opts ...exec.Process
 		User:            conf.ExecConfig.User,
 		Auth:            initFns,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         5 * time.Second,
+		Timeout:         defaultCommandExecutionTimeout,
 	}
 
 	client, err := ssh.Dial("tcp", sshHost, config)
