@@ -3,7 +3,9 @@
 package integration
 
 import (
+	"bytes"
 	"net/http"
+	"strconv"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
@@ -11,6 +13,7 @@ import (
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
+	tc "github.com/testcontainers/testcontainers-go"
 )
 
 func Test_Commands(t *testing.T) {
@@ -159,6 +162,79 @@ func Test_Commands(t *testing.T) {
 
 	for _, test := range toRun {
 		t.Run(test.Label(), test.Fn(t.Context(), cont))
+	}
+}
+
+func Test_Commands_Import(t *testing.T) {
+	conf := fedbox.C2SConfig(
+		fedbox.WithImageName(imageName),
+		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
+	)
+	items := plausibleRandomObjects(ed2559Key.Public(), 60)
+	conf.InitFns = append(conf.InitFns, c.WithMocks(items...))
+	cont, err := fedbox.StartContainers(t.Context(), t, conf)
+	if err != nil {
+		t.Fatalf("Error: %s", err)
+	}
+
+	outputCheckFns := make([]tests.LineOutputTest, 0, len(items)+2)
+
+	for range items {
+		outputCheckFns = append(outputCheckFns, tests.AnyOutput)
+	}
+	outputCheckFns = append(outputCheckFns, func(tb testing.TB, raw []byte) []byte {
+		lines := bytes.Split(raw, []byte{'\n'})
+		{
+			line := lines[0]
+			ok := []byte("Activities count:                     " + strconv.Itoa(len(items)))
+			if !bytes.Equal(line, ok) {
+				t.Errorf("Output line %q, expected: %q", line, ok)
+			}
+		}
+		{
+			line := lines[1]
+			ok := []byte("Activities processing time:")
+			if !bytes.HasPrefix(lines[1], ok) {
+				t.Errorf("Output line %q, expected: %q", line, ok)
+			}
+		}
+		{
+			line := lines[2]
+			ok := []byte("Elapsed time per activity:")
+			if !bytes.HasPrefix(line, ok) {
+				t.Errorf("Output line %q, expected: %q", line, ok)
+			}
+		}
+		{
+			line := lines[3]
+			ok := []byte("Import done!")
+			if !bytes.Equal(line, ok) {
+				t.Errorf("Output line %q, expected: %q", line, ok)
+			}
+		}
+		return nil
+	}, tests.EndOK)
+
+	tests := []tests.RunnableTest{
+		tests.CommandTest{
+			Name: "import(ssh)",
+			Host: string(c2sRootIRI),
+			Cmd: c.SSHCmd{
+				Cmd:  []string{"pub", "import", "--skip-remotes", "/storage/import.json"},
+				User: string(c2sRootIRI),
+				Key:  conf.Key,
+			},
+			IO: tests.WithTests(outputCheckFns...),
+		},
+		tests.CommandTest{
+			Name: "import(cmd)",
+			Host: string(c2sRootIRI),
+			Cmd:  tc.NewRawCommand([]string{"fedbox", "pub", "import", "--skip-remotes", "/storage/import.json"}),
+			IO:   tests.WithTests(outputCheckFns...),
+		},
+	}
+	for _, tt := range tests {
+		tt.Run(t.Context(), cont, t)
 	}
 }
 
