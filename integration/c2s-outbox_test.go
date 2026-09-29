@@ -3,6 +3,8 @@
 package integration
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
 	"net/http"
 	"testing"
 	"time"
@@ -23,6 +25,7 @@ func Test_C2S_Requests(t *testing.T) {
 	conf := fedbox.C2SConfig(
 		fedbox.WithImageName(imageName),
 		fedbox.WithItems(tagAdmin, admin),
+		fedbox.WithPrivateKey(ed2559Key),
 		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
 	)
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)
@@ -30,8 +33,9 @@ func Test_C2S_Requests(t *testing.T) {
 		t.Fatalf("Error: %s", err)
 	}
 
-	service := root(c2sRootIRI, ap.HasPublicKey(conf.Key.Public()))
-	draftSig := s2s.New(s2s.WithActor(service, conf.Key))
+	key2, _ := rsa.GenerateKey(rand.Reader, 2048)
+	service := root(c2sRootIRI, ap.HasPublicKey(key2.Public()))
+	draftSig := s2s.New(s2s.WithActor(service, key2))
 	token := new(c2s.BearerSigner)
 
 	toRun := []tests.RunnableTest{

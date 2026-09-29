@@ -18,6 +18,7 @@ import (
 func Test_Commands(t *testing.T) {
 	conf := fedbox.C2SConfig(
 		fedbox.WithImageName(imageName),
+		fedbox.WithPrivateKey(ed2559Key),
 		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
 	)
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)
@@ -46,7 +47,7 @@ func Test_Commands(t *testing.T) {
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"reload"},
 				User: string(c2sRootIRI),
-				Key:  conf.Key,
+				Key:  ed2559Key,
 			},
 			IO: tests.WithTests(tests.EndOK),
 		},
@@ -59,7 +60,7 @@ func Test_Commands(t *testing.T) {
 					Cmd: c.SSHCmd{
 						Cmd:  []string{"pub", "actor", "add", "--type", "Person", "--key-type", "RSA", "--tag", "#sysop", "jdoe"},
 						User: string(c2sRootIRI),
-						Key:  conf.Key,
+						Key:  ed2559Key,
 					},
 					IO: tests.WithTests(
 						tests.WithInput(tests.PassMatch, "asd"),
@@ -92,7 +93,7 @@ func Test_Commands(t *testing.T) {
 					Cmd: c.SSHCmd{
 						Cmd:  []string{"oauth", "client", "add", "--redirect-uri", "http://127.0.0.1"},
 						User: string(c2sRootIRI),
-						Key:  conf.Key,
+						Key:  ed2559Key,
 					},
 					IO: tests.WithTests(
 						tests.WithInput(tests.PassMatch, "asd"),
@@ -119,7 +120,7 @@ func Test_Commands(t *testing.T) {
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"oauth", "token", "add", string(c2sRootIRI)},
 				User: string(c2sRootIRI),
-				Key:  conf.Key,
+				Key:  ed2559Key,
 			},
 			IO: tests.WithTests(tests.MatchToken, tests.EndOK),
 		},
@@ -129,7 +130,7 @@ func Test_Commands(t *testing.T) {
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"accounts", "pass", string(c2sRootIRI)},
 				User: string(c2sRootIRI),
-				Key:  conf.Key,
+				Key:  ed2559Key,
 			},
 			IO: tests.WithTests(
 				tests.WithInput(tests.PassMatch, "asd"),
@@ -143,7 +144,7 @@ func Test_Commands(t *testing.T) {
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"accounts", "gen-keys"},
 				User: string(c2sRootIRI),
-				Key:  conf.Key,
+				Key:  ed2559Key,
 			},
 			IO: tests.WithTests(tests.EndOK),
 		},
@@ -153,7 +154,7 @@ func Test_Commands(t *testing.T) {
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"accounts", "gen-keys", string(c2sRootIRI)},
 				User: string(c2sRootIRI),
-				Key:  conf.Key,
+				Key:  ed2559Key,
 			},
 			IO: tests.WithTests(tests.EndOK),
 		},
@@ -167,6 +168,7 @@ func Test_Commands(t *testing.T) {
 func Test_Commands_Import(t *testing.T) {
 	conf := fedbox.C2SConfig(
 		fedbox.WithImageName(imageName),
+		fedbox.WithPrivateKey(ed2559Key),
 		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
 	)
 
@@ -221,7 +223,7 @@ func Test_Commands_Import(t *testing.T) {
 			Cmd: c.SSHCmd{
 				Cmd:  []string{"pub", "import", "--skip-remotes", "/storage/import.json"},
 				User: string(c2sRootIRI),
-				Key:  conf.Key,
+				Key:  ed2559Key,
 			},
 			IO: tests.WithTests(append(outputCheckFns, tests.EndOK)...),
 		},
@@ -240,6 +242,7 @@ func Test_Commands_Import(t *testing.T) {
 func Test_Commands_Maintenance(t *testing.T) {
 	conf := fedbox.C2SConfig(
 		fedbox.WithImageName(imageName),
+		fedbox.WithPrivateKey(ed2559Key),
 		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
 	)
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)
@@ -253,7 +256,7 @@ func Test_Commands_Maintenance(t *testing.T) {
 		Cmd: c.SSHCmd{
 			Cmd:  []string{"maintenance"},
 			User: string(c2sRootIRI),
-			Key:  conf.Key,
+			Key:  ed2559Key,
 		},
 		IO: tests.WithTests(tests.EndOK),
 	}.Run(t.Context(), cont, t)
@@ -262,6 +265,7 @@ func Test_Commands_Maintenance(t *testing.T) {
 func Test_Commands_Stop(t *testing.T) {
 	conf := fedbox.C2SConfig(
 		fedbox.WithImageName(imageName),
+		fedbox.WithPrivateKey(ed2559Key),
 		fedbox.Verbose(verbose), fedbox.WithCodeCoverage(coverage),
 	)
 	cont, err := fedbox.StartContainers(t.Context(), t, conf)
@@ -275,7 +279,7 @@ func Test_Commands_Stop(t *testing.T) {
 		Cmd: c.SSHCmd{
 			Cmd:  []string{"stop"},
 			User: string(c2sRootIRI),
-			Key:  conf.Key,
+			Key:  ed2559Key,
 		},
 		IO: tests.WithTests(tests.EndOK),
 	}.Run(t.Context(), cont, t)

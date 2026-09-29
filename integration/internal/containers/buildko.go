@@ -132,7 +132,7 @@ func BuildImage(ctx context.Context, imageName string, coverage, race bool) (str
 			},
 		}),
 		build.WithTrimpath(true),
-		build.WithCreationTime(v1.Time{Time: time.Now()}),
+		build.WithCreationTime(v1.Time{Time: time.Now().Round(0)}),
 		build.WithDisabledSBOM(),
 		build.WithLabel("storage", string(storageType)),
 		build.WithLabel("env", string(envType)),
