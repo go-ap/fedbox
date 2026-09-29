@@ -14,6 +14,7 @@ import (
 
 	cache2 "git.sr.ht/~mariusor/cache"
 	"git.sr.ht/~mariusor/lw"
+	"git.sr.ht/~mariusor/mask"
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/auth"
 	"github.com/go-ap/client"
@@ -664,6 +665,7 @@ func CreateService(ctl *Base, self vocab.Item, pair *ap.KeyPair, pw []byte) (err
 	ctl.Service = *service
 	service, err = ctl.AddActor(service, service, true)
 	if err != nil {
+		ctl.Logger.WithContext(lw.Ctx{"id": ctl.Service.ID, "err": err}).Warnf("Failed to create service actor")
 		return err
 	}
 
@@ -673,12 +675,14 @@ func CreateService(ctl *Base, self vocab.Item, pair *ap.KeyPair, pw []byte) (err
 
 	if pw != nil {
 		if err = storage.PasswordSet(service.ID, pw); err != nil {
+			ctl.Logger.WithContext(lw.Ctx{"pw": mask.B(pw), "id": ctl.Service.ID, "err": err}).Warnf("Failed to set password for service actor")
 			return err
 		}
 	}
 
 	if pair != nil {
 		if err = ap.AddKeyToItem(storage, self, *pair); err != nil {
+			ctl.Logger.WithContext(lw.Ctx{"id": ctl.Service.ID, "keyType": pair.Type, "err": err}).Warnf("Failed to add key pair to service actor")
 			return err
 		}
 	}
@@ -697,13 +701,13 @@ func CreateService(ctl *Base, self vocab.Item, pair *ap.KeyPair, pw []byte) (err
 		}
 	}
 	return vocab.OnActor(self, func(service *vocab.Actor) error {
-		var multi error
+		errs := make([]error, 0, len(service.Streams))
 		for _, stream := range service.Streams {
 			// NOTE(marius): create fedbox custom collections /activities, /objects, /actors
 			if _, err := storage.Save(col(stream.GetID())); err != nil {
-				multi = errors.Join(multi, err)
+				errs = append(errs, err)
 			}
 		}
-		return multi
+		return errors.Join(errs...)
 	})
 }
