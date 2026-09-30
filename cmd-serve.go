@@ -16,7 +16,10 @@ import (
 
 const AppName = "FedBOX"
 
-var AppVersion = "HEAD"
+var (
+	AppVersion   = "HEAD"
+	AppDefaultPw = ""
+)
 
 type Base struct {
 	Conf              config.Options

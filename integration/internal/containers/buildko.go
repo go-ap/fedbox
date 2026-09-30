@@ -96,6 +96,8 @@ func buildEnvValues() []string {
 	return envVars
 }
 
+var DefaultTestPw = "asd"
+
 func BuildImage(ctx context.Context, imageName string, coverage, race bool) (string, error) {
 	storageType := ExtractStorageTagFromBuild()
 	envType := ExtractEnvTagFromBuild()
@@ -126,7 +128,7 @@ func BuildImage(ctx context.Context, imageName string, coverage, race bool) (str
 			filepath.Join(importPath, "cmd/fedbox"): {
 				ID:      strings.Join([]string{"fedbox", string(envType), string(storageType)}, "-"),
 				Dir:     "cmd/fedbox",
-				Ldflags: []string{`-extldflags "-static"`},
+				Ldflags: []string{`-extldflags "-static"`, "-X github.com/go-ap/fedbox.AppDefaultPw=" + DefaultTestPw},
 				Flags:   flags,
 				Env:     buildEnvValues(),
 			},

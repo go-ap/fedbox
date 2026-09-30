@@ -3,7 +3,6 @@ package fedbox
 import (
 	"fmt"
 	"io"
-	"syscall"
 	"time"
 
 	"github.com/alecthomas/kong"
@@ -50,25 +49,8 @@ func Run(args ...string) error {
 		return err
 	}
 	cmd := ctx.Command()
-	switch cmd {
-	case "maintenance", "stop", "reload", "run":
-		// NOTE(marius): these don't interact with the storage, and additionally,
-		// they involve sending their own signals, so we skip pausing.
-	default:
-		pauseFn := ctl.SendSignalToServer(syscall.SIGUSR1)
-		if err := ctl.Storage.Open(); err != nil {
-			return err
-		}
-		defer ctl.Storage.Close()
-
-		if err = pauseFn(); err == nil {
-			defer func() { _ = pauseFn() }()
-		}
-		if cmd != "storage bootstrap" {
-			if err = ctl.LoadServiceActor(); err != nil {
-				return err
-			}
-		}
+	if cmd != "run" {
+		return ctl.runCommand(ctx)
 	}
 
 	return ctx.Run(ctl)

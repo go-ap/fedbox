@@ -107,18 +107,24 @@ func getPwAndKey(ctl *Base, keyType ap.KeyType) ([]byte, *ap.KeyPair) {
 			ctl.Logger.WithContext(lw.Ctx{"typ": keyType}).Tracef("Generated key pair for service")
 		}
 	}
-
 	// NOTE(marius): try to find if there's a password set in the storage path
+	var pw []byte
 	pwFilePath := filepath.Join(ctl.Conf.StoragePath, ctl.Conf.Hostname+".pw")
-	pw, err := os.ReadFile(pwFilePath)
-	if err == nil {
-		pw = bytes.TrimSpace(pw)
-		ctl.Logger.WithContext(lw.Ctx{"pw": mask.B(pw)}).Tracef("Found valid password file")
+	if fpw, err := os.ReadFile(pwFilePath); err == nil {
+		pw = bytes.TrimSpace(fpw)
+		ctl.Logger.WithContext(lw.Ctx{"pw": mask.B(pw)}).Infof("Found valid password file")
 		defer os.RemoveAll(pwFilePath)
 	}
 	if pw == nil {
-		pw = []byte(rand.Text())
-		ctl.Logger.WithContext(lw.Ctx{"pw": mask.B(pw)}).Tracef("Generated random password for service")
+		// NOTE(marius): if no password file, we check if there was a AppDefaultPw variable set at build time.
+		// (-ldflags '-X github.com/go-ap/fedbox.AppDefaultPw=xxx')
+		if AppDefaultPw != "" {
+			pw = []byte(AppDefaultPw)
+			ctl.Logger.WithContext(lw.Ctx{"pw": mask.B(pw)}).Infof("Using build time password for service")
+		} else {
+			pw = []byte(rand.Text())
+			ctl.Logger.WithContext(lw.Ctx{"pw": mask.B(pw)}).Infof("Generated random password for service")
+		}
 	}
 
 	return pw, pair

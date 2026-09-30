@@ -9,6 +9,10 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"net"
+	"strconv"
+	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/ssh"
@@ -20,16 +24,38 @@ import (
 	m "git.sr.ht/~mariusor/servermux"
 	"github.com/alecthomas/kong"
 	vocab "github.com/go-ap/activitypub"
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ed25519"
 	gossh "golang.org/x/crypto/ssh"
 )
 
+func defaultPwCheck(fb *FedBOX) func(f *FedBOX, id string, pw []byte) (*vocab.Actor, bool) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(AppDefaultPw), bcrypt.MinCost)
+	if err != nil {
+		fb.Logger.WithContext(lw.Ctx{"err": err}).Debugf("unable to hash default pw")
+		return pwCheck
+	}
+	return func(f *FedBOX, id string, pw []byte) (*vocab.Actor, bool) {
+		fb.Logger.WithContext(lw.Ctx{"iri": id, "pw": mask.B(pw)}).Debugf("compare to default pw")
+		if id == fb.Conf.BaseURL && bcrypt.CompareHashAndPassword(hash, pw) == nil {
+			// NOTE(marius): first check default pw for allowing ssh client authentication
+			// if running from the same binary without needing to load the actual pw from storage.
+			return &f.Service, true
+		}
+		return pwCheck(f, id, pw)
+	}
+}
+
 func SSHAuthPw(fb *FedBOX) ssh.PasswordHandler {
+	checkPw := pwCheck
+	if AppDefaultPw != "" {
+		checkPw = defaultPwCheck(fb)
+	}
 	return func(ctx ssh.Context, pw string) bool {
 		if !vocab.IRI(fb.Conf.BaseURL).Equal(fb.Service.ID) {
 			fb.createRootService()
 		}
-		acc, ok := pwCheck(fb, ctx.User(), []byte(pw))
+		acc, ok := checkPw(fb, ctx.User(), []byte(pw))
 		if !ok {
 			fb.Logger.WithContext(lw.Ctx{"iri": ctx.User(), "pw": mask.S(pw)}).Warnf("failed password authentication")
 			return false
@@ -236,4 +262,42 @@ func initSSHServer(app *FedBOX) (m.Server, error) {
 		}
 	}
 	return m.SSHServer(initFns...)
+}
+
+// runCommand when ssh is available instead of pausing/un-pausing the main process, we connect to the ssh
+// port and operate the command like that.
+func (ctl *Base) runCommand(ctx *kong.Context) error {
+	sshTarget := ctl.Conf.ListenHost + ":" + strconv.Itoa(ctl.Conf.SSHPort)
+	conn, err := net.DialTimeout("tcp", sshTarget, time.Second)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	conf := gossh.ClientConfig{
+		Config: gossh.Config{},
+		User:   ctl.Conf.BaseURL,
+		Auth:   []gossh.AuthMethod{gossh.Password(AppDefaultPw)},
+		HostKeyCallback: func(host string, remote net.Addr, key gossh.PublicKey) error {
+			return nil
+		},
+	}
+	cc, chans, reqs, err := gossh.NewClientConn(conn, sshTarget, &conf)
+	if err != nil {
+		return err
+	}
+
+	sshCl := gossh.NewClient(cc, chans, reqs)
+	defer sshCl.Close()
+
+	sess, err := sshCl.NewSession()
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	sess.Stdin = ctl.in
+	sess.Stdout = ctl.out
+	sess.Stderr = ctl.err
+	return sess.Run(strings.Join(ctx.Args, " "))
 }
