@@ -60,6 +60,7 @@ func Test_C2S_UpdateRequests(t *testing.T) {
 			ap.HasName("update-test"),
 			ap.HasSummary("lorem ipsum dolor sic amet"),
 			ap.HasContent("updated-content"),
+			ap.HasAudience(vocab.PublicNS),
 			ap.HasInReplyTo(person1.ID),
 		)),
 	)

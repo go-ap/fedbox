@@ -380,7 +380,6 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 			status = http.StatusGone
 		}
 
-		fb.infFn("Processing ended")
 		return it, status, nil
 	}
 }
