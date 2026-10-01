@@ -2,7 +2,12 @@
 
 package fedbox
 
-import m "git.sr.ht/~mariusor/servermux"
+import (
+	"syscall"
+
+	m "git.sr.ht/~mariusor/servermux"
+	"github.com/alecthomas/kong"
+)
 
 func initSSHServer(app *FedBOX) (m.Server, error) {
 	return nil, nil
@@ -17,11 +22,11 @@ func (ctl *Base) runCommand(ctx *kong.Context) error {
 	}
 	defer ctl.Storage.Close()
 
-	if err = pauseFn(); err == nil {
+	if err := pauseFn(); err == nil {
 		defer func() { _ = pauseFn() }()
 	}
-	if cmd != "storage bootstrap" {
-		if err = ctl.LoadServiceActor(); err != nil {
+	if ctx.Command() != "storage bootstrap" {
+		if err := ctl.LoadServiceActor(); err != nil {
 			return err
 		}
 	}
