@@ -27,6 +27,8 @@ import (
 	"github.com/openshift/osin"
 )
 
+const pauseDuration = 500 * time.Millisecond
+
 func (ctl *Base) SendSignalToServer(sig syscall.Signal) func() error {
 	pid, err := ctl.Conf.ReadPid()
 	if err != nil {
@@ -35,7 +37,9 @@ func (ctl *Base) SendSignalToServer(sig syscall.Signal) func() error {
 		}
 	}
 	return func() error {
-		return syscall.Kill(pid, sig)
+		err := syscall.Kill(pid, sig)
+		time.Sleep(pauseDuration)
+		return err
 	}
 }
 

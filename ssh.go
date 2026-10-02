@@ -29,33 +29,18 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 )
 
-func defaultPwCheck(fb *FedBOX) func(f *FedBOX, id string, pw []byte) (*vocab.Actor, bool) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(AppDefaultPw), bcrypt.MinCost)
-	if err != nil {
-		fb.Logger.WithContext(lw.Ctx{"err": err}).Debugf("unable to hash default pw")
-		return pwCheck
-	}
-	return func(f *FedBOX, id string, pw []byte) (*vocab.Actor, bool) {
-		fb.Logger.WithContext(lw.Ctx{"iri": id, "pw": mask.B(pw)}).Debugf("compare to default pw")
-		if id == fb.Conf.BaseURL && bcrypt.CompareHashAndPassword(hash, pw) == nil {
-			// NOTE(marius): first check default pw for allowing ssh client authentication
-			// if running from the same binary without needing to load the actual pw from storage.
-			return &f.Service, true
-		}
-		return pwCheck(f, id, pw)
+func defaultPwCheck(fb *FedBOX) func(id string, pw []byte) (*vocab.Actor, bool) {
+	return func(id string, pw []byte) (*vocab.Actor, bool) {
+		return fb.pwCheck(id, pw)
 	}
 }
 
 func SSHAuthPw(fb *FedBOX) ssh.PasswordHandler {
-	checkPw := pwCheck
-	if AppDefaultPw != "" {
-		checkPw = defaultPwCheck(fb)
-	}
 	return func(ctx ssh.Context, pw string) bool {
 		if !vocab.IRI(fb.Conf.BaseURL).Equal(fb.Service.ID) {
 			fb.createRootService()
 		}
-		acc, ok := checkPw(fb, ctx.User(), []byte(pw))
+		acc, ok := fb.pwCheck(ctx.User(), []byte(pw))
 		if !ok {
 			fb.Logger.WithContext(lw.Ctx{"iri": ctx.User(), "pw": mask.S(pw)}).Warnf("failed password authentication")
 			return false
@@ -160,8 +145,15 @@ func MainTui(f *FedBOX) wish.Middleware {
 	return bm.MiddlewareWithProgramHandler(teaHandler)
 }
 
-func pwCheck(f *FedBOX, id string, pw []byte) (*vocab.Actor, bool) {
-	maybeActor, err := f.Storage.Load(vocab.IRI(id))
+func (ctl *Base) pwCheck(id string, pw []byte) (*vocab.Actor, bool) {
+	// NOTE(marius): first check default pw for allowing ssh client authentication
+	// if running from the same binary without needing to load the actual pw from storage.
+	if id == ctl.Conf.BaseURL && bcrypt.CompareHashAndPassword(ctl.ServicePwHash, pw) == nil {
+		ctl.Logger.WithContext(lw.Ctx{"iri": id, "pw": mask.B(pw)}).Debugf("compare to default pw")
+		return &ctl.Service, true
+	}
+
+	maybeActor, err := ctl.Storage.Load(vocab.IRI(id))
 	if err != nil {
 		return nil, false
 	}
@@ -169,7 +161,7 @@ func pwCheck(f *FedBOX, id string, pw []byte) (*vocab.Actor, bool) {
 	if err != nil {
 		return nil, false
 	}
-	err = f.Storage.PasswordCheck(actor.ID, pw)
+	err = ctl.Storage.PasswordCheck(actor.ID, pw)
 	if err != nil {
 		return nil, false
 	}

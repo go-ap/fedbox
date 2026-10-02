@@ -17,7 +17,10 @@ import (
 const AppName = "FedBOX"
 
 var (
-	AppVersion   = "HEAD"
+	AppVersion = "HEAD"
+	// AppDefaultPw is used as a default SSH password for running CLI commands using the same .
+	// Its value is passed through -ldflags -X github.com/go-ap/fedbox.AppDefaultPw
+	// It can be used alongside the pw file that can be set at: ${conf.StoragePath}/${conf.Hostname}.pw
 	AppDefaultPw = ""
 )
 
@@ -26,6 +29,7 @@ type Base struct {
 	Logger            lw.Logger
 	Service           vocab.Actor
 	ServicePrivateKey crypto.PrivateKey
+	ServicePwHash     []byte
 	Storage           storage.FullStorage
 
 	keyGenerator func(act *vocab.Actor) error

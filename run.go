@@ -48,8 +48,7 @@ func Run(args ...string) error {
 	if err != nil {
 		return err
 	}
-	cmd := ctx.Command()
-	if cmd != "run" {
+	if ctx.Command() != "run" {
 		return ctl.runCommand(ctx)
 	}
 

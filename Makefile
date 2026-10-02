@@ -9,8 +9,9 @@ FEDBOX_HOSTNAME ?= fedbox.git
 STORAGE ?= all
 ENV ?= dev
 PROJECT ?= fedbox
+RAND_HASH := $(shell echo $$RANDOM | md5sum | head -c 32)
 
-LDFLAGS ?= -X github.com/go-ap/fedbox.AppVersion=$(VERSION)
+LDFLAGS ?= -X github.com/go-ap/fedbox.AppVersion=$(VERSION) -X github.com/go-ap/fedbox.AppDefaultPw=$(RAND_HASH)
 BUILDFLAGS ?= -a -ldflags '$(LDFLAGS)' -tags "$(TAGS)"
 TEST_FLAGS ?= -timeout 45s -count=1 -tags "$(TAGS)"
 
