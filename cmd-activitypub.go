@@ -310,7 +310,7 @@ func (i ImportCmd) Run(ctl *Base) error {
 		col[i] = it
 	}
 
-	slices.SortFunc(col, SortImportActivitiesByDeps)
+	slices.SortStableFunc(col, SortImportActivitiesByDeps)
 
 	ObjectTypeOf := func(it vocab.Item) (typ vocab.Typer) {
 		vocab.OnActivity(it, func(act *vocab.Activity) error {
@@ -325,24 +325,30 @@ func (i ImportCmd) Run(ctl *Base) error {
 	start := time.Now().Round(0)
 	for _, it := range col {
 		_, _ = fmt.Fprintf(ctl.out, "Processing %s[%v]\n", it.GetType(), ObjectTypeOf(it))
-		err := vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) error {
+		actor := &ctl.Service
+
+		importer := ctl.Saver(&ctl.Service, i.SkipRemotes, true)
+		err := vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) (err error) {
 			if a == nil {
-				Errf(ctl.err, "invalid activity, is nil: %s", it.GetLink())
+				Errf(ctl.err, "invalid activity, is nil")
 				return nil
 			}
-			if a.Actor == nil {
-				Errf(ctl.err, "invalid activity, actor is nil: %s", it.GetLink())
+			if vocab.IsIRI(a.Actor) {
+				if maybeActor, err := importer.DereferenceItem(a.Actor); err == nil {
+					if act, err := vocab.ToActor(maybeActor); err == nil {
+						actor = act
+						a.Actor = act
+					}
+				}
 				return nil
 			}
-			actor, err := vocab.ToActor(a.Actor)
-			if err != nil {
-				actor = &vocab.Actor{ID: a.Actor.GetLink()}
-			}
-			activityPub := ctl.Saver(&ctl.Service, i.SkipRemotes, true)
-			it, err = activityPub.ProcessClientActivity(it, *actor, vocab.Outbox.Of(a.Actor).GetLink())
 			return err
 		})
+		if err != nil {
+			continue
+		}
 
+		it, err = importer.ProcessClientActivity(it, *actor, vocab.Outbox.IRI(actor))
 		if err != nil {
 			Errf(ctl.err, "Unable to process %s %s: %v", it.GetType(), it.GetID(), err)
 			continue
@@ -419,10 +425,12 @@ func SortImportActivitiesByDeps(c1, c2 vocab.Item) int {
 		return 5 * keepPos
 	}
 
-	authFn := func(o vocab.Item) vocab.Item {
-		var auth vocab.Item
+	authFn := func(o vocab.Item) vocab.IRI {
+		var auth vocab.IRI
 		_ = vocab.OnObject(o, func(ob *vocab.Object) error {
-			auth = ob.AttributedTo
+			if ob.AttributedTo != nil {
+				auth = ob.AttributedTo.GetLink()
+			}
 			return nil
 		})
 		return auth
@@ -431,32 +439,17 @@ func SortImportActivitiesByDeps(c1, c2 vocab.Item) int {
 	// NOTE(marius): for Actor Create activities we check that the actor's attributedTo.
 	auth1 := authFn(ob1)
 	auth2 := authFn(ob2)
-	if !vocab.IsNil(auth1) && act2.GetID().Equal(auth1.GetID()) {
+	if vocab.IsNil(auth1) || vocab.IsNil(auth2) || auth1.Equal(auth2) {
+		return meh
+	}
+
+	if act2.GetID().Equal(auth1.GetID()) {
 		return 2 * switchPos
-	} else if !vocab.IsNil(auth2) && act1.GetID().Equal(auth2.GetID()) {
+	} else if act1.GetID().Equal(auth2.GetID()) {
 		return 2 * keepPos
 	}
 
 	return meh
-}
-
-func SortImportActivities(c1, c2 vocab.Item) int {
-	t1 := c1.GetType()
-	t2 := c2.GetType()
-
-	if st, ok := checkForTypeMatcher(vocab.CreateType)(t1, t2); ok {
-		if st == 0 {
-			return checkActorTypes(vocab.ActorTypes...)(c1, c2)
-		}
-		return st
-	}
-	if st, ok := checkForTypeMatcher(vocab.UpdateType)(t1, t2); ok {
-		return st
-	}
-	if st, ok := checkForTypeMatcher(vocab.BlockType, vocab.IgnoreType)(t1, t2); ok {
-		return st
-	}
-	return 0
 }
 
 func checkForTypeMatcher(types ...vocab.ActivityVocabularyType) func(t1, t2 vocab.Typer) (int, bool) {
