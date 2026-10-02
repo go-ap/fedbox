@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"git.sr.ht/~mariusor/lw"
 	"git.sr.ht/~mariusor/storage-all"
 	vocab "github.com/go-ap/activitypub"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
@@ -159,20 +158,18 @@ func (f *Image) Start(ctx context.Context, t testing.TB, extra ...tc.ContainerCu
 	}
 
 	c := Container{Container: fc, img: *f}
+	name, _ := c.Name(ctx)
 	if err = c.Start(ctx); err != nil {
-		return nil, fmt.Errorf("unable to start FedBOX container: %w", err)
+		return nil, fmt.Errorf("unable to start FedBOX container %s[%T]: %w", name, f, err)
 	}
-	if len(cmds) > 0 || len(f.initFns) > 0 {
-		name, _ := c.Name(ctx)
-		for _, ex := range cmds {
-			if err = ex(ctx, c); err != nil {
-				return cont, fmt.Errorf("unable to run startup command on container %s[%T]: %w", name, f, err)
-			}
+	for _, ex := range cmds {
+		if err = ex(ctx, c); err != nil {
+			return cont, fmt.Errorf("unable to run startup command on container %s[%T]: %w", name, f, err)
 		}
-		for _, cmd := range f.initFns {
-			if _, _, err := c.Exec(ctx, cmd.AsCommand(), cmd.Options()...); err != nil {
-				return cont, fmt.Errorf("unable to run startup command on container %s[%T]: %w", name, f, err)
-			}
+	}
+	for _, cmd := range f.initFns {
+		if _, _, err := c.Exec(ctx, cmd.AsCommand(), cmd.Options()...); err != nil {
+			return cont, fmt.Errorf("unable to run startup init command on container %s[%T]: %w", name, f, err)
 		}
 	}
 
@@ -186,7 +183,6 @@ func withTestLogger(t testing.TB, enabled bool) imageInitFn {
 		if !enabled {
 			return
 		}
-		f.conf.LogLevel = lw.TraceLevel
 		logger := tbLogger{TB: t}
 		f.logger = &logger
 	}

@@ -154,6 +154,7 @@ func StartContainers(ctx context.Context, t *testing.T, configs ...*Config) (c.R
 			withPw(conf.Pw),
 			withCmd(conf.Fns...),
 			withBootstrappedItems(conf.Items...),
+			withTestLogger(t, conf.Verbose),
 		}
 		if len(conf.InitFns) > 0 {
 			initFns = append(initFns, withRawCustomizers(conf.InitFns...))
