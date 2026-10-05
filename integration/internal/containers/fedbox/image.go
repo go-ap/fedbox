@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto"
 	"fmt"
-	"io"
 	"strconv"
 	"testing"
 	"time"
@@ -189,18 +188,6 @@ func withTestLogger(t testing.TB, enabled bool) imageInitFn {
 	}
 }
 
-type nopReader struct {
-	io.Writer
-}
-
-func (n nopReader) Read(_ []byte) (int, error) {
-	return 0, nil
-}
-
-func (n nopReader) Write(b []byte) (int, error) {
-	return n.Writer.Write(b)
-}
-
 func withBootstrappedItems(it ...vocab.Item) imageInitFn {
 	return func(f *Image) {
 		if len(it) == 0 {
@@ -209,9 +196,6 @@ func withBootstrappedItems(it ...vocab.Item) imageInitFn {
 		f.items = it
 		sshFn := func(cmd ...string) c.SSHCmd {
 			sc := c.SSHCmd{Cmd: cmd, User: f.RootIRI(), Key: f.key, Pw: f.pw}
-			if f.logger != nil {
-				sc.IO = nopReader{Writer: f.logger.Output()}
-			}
 			return sc
 		}
 
