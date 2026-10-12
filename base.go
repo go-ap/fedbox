@@ -263,7 +263,7 @@ func (ctl *Base) Saver(actor *vocab.Actor, onlyLocalSaves, skipInboundValidation
 	}
 	if skipInboundValidation {
 		// NOTE(marius): for saving the service actor we need to skip collection validation
-		initFns = append(initFns, processing.SkipInboundCollectionValidation)
+		initFns = append(initFns, processing.WithInboundCollectionValidationSkip)
 	}
 	if ctl.keyGenerator != nil {
 		initFns = append(initFns, processing.WithActorKeyGenerator(ctl.keyGenerator))

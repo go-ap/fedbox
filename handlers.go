@@ -354,8 +354,8 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 		if fb.keyGenerator != nil {
 			initFns = append(initFns, processing.WithActorKeyGenerator(fb.keyGenerator))
 		}
-		if !fb.Conf.Env.IsTest() {
-			initFns = append(initFns, processing.Async)
+		if fb.Conf.Env.IsTest() {
+			initFns = append(initFns, processing.WithSynchronousProcessing)
 		}
 		processor := processing.New(initFns...)
 		if err != nil {
