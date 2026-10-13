@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"git.sr.ht/~mariusor/lw"
@@ -31,8 +32,8 @@ func (d pathTyper) Type(r *http.Request) vocab.CollectionPath {
 		return col
 	}
 	pathElements := strings.Split(strings.TrimLeft(r.URL.Path, "/"), "/")
-	for i := len(pathElements) - 1; i >= 0; i-- {
-		piece := vocab.CollectionPath(strings.ToLower(pathElements[i]))
+	for _, pathElement := range slices.Backward(pathElements) {
+		piece := vocab.CollectionPath(strings.ToLower(pathElement))
 		if validCollections.Contains(piece) {
 			col = piece
 			break

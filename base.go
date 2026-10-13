@@ -268,6 +268,9 @@ func (ctl *Base) Saver(actor *vocab.Actor, onlyLocalSaves, skipInboundValidation
 	if ctl.keyGenerator != nil {
 		initFns = append(initFns, processing.WithActorKeyGenerator(ctl.keyGenerator))
 	}
+	if !ctl.Conf.Env.IsProd() {
+		initFns = append(initFns, processing.WithSynchronousProcessing)
+	}
 	initFns = append(initFns, processing.WithClient(ActorClient(ctl, actor)))
 	return processing.New(initFns...)
 }
