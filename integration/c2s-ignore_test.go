@@ -8,12 +8,12 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
 )
 
@@ -41,13 +41,13 @@ func Test_C2S_IgnoreRequests(t *testing.T) {
 	ignored := vocab.CollectionPath("ignored")
 
 	ignore4ID := c2sRootIRI.AddPath("/activities/ignore-4")
-	ignore4 := ignore(
-		ap.HasActor(person3.ID),
-		ap.HasObject(person1.ID),
+	ignore4 := ap.Ignore(
+		ap.WithActor(person3.ID),
+		ap.WithObject(person1.ID),
 	)
 
 	undo5ID := c2sRootIRI.AddPath("/activities/undo-5")
-	undo5 := undo(ap.HasActor(person3), ap.HasObject(ignore4ID), ap.HasCC(person1.ID))
+	undo5 := ap.Undo(ap.WithActor(person3), ap.WithObject(ignore4ID), ap.WithCC(person1.ID))
 
 	toRun := []tests.RunnableTest{
 		tests.TestSuite{

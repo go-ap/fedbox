@@ -4,17 +4,17 @@ go 1.26.3
 
 require (
 	git.sr.ht/~mariusor/lw v0.0.0-20260917101519-2e0b081e156c
-	git.sr.ht/~mariusor/storage-all v0.0.0-20261009164720-e58d833e85d0
+	git.sr.ht/~mariusor/storage-all v0.0.0-20261015125850-c3ac7195a382
 	github.com/carlmjohnson/requests v0.26.2
 	github.com/elnormous/contenttype v1.0.4
-	github.com/go-ap/activitypub v0.0.0-20261009094116-0162bfb5d21b
-	github.com/go-ap/client v0.0.0-20261009162950-ca6460986f9f
+	github.com/go-ap/activitypub v0.0.0-20261015123346-723e63a90dc1
+	github.com/go-ap/client v0.0.0-20261015123702-71b7ee3cec7d
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
 	github.com/go-ap/fedbox v0.0.0-20260717173704-0c1f2719fe9d
-	github.com/go-ap/filters v0.0.0-20261009162847-18caa32a9b63
+	github.com/go-ap/filters v0.0.0-20261015123504-98ece433d654
 	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/storage-conformance-suite v0.0.0-20261009163023-9012f921004a
-	github.com/go-ap/storage-pg v0.0.0-20261009164156-320d06fb153a
+	github.com/go-ap/storage-conformance-suite v0.0.0-20261015124954-d636987393c7
+	github.com/go-ap/storage-pg v0.0.0-20261015125721-5a2bec1ef110
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.21.9
 	github.com/google/ko v0.19.1
@@ -104,12 +104,12 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	github.com/go-ap/cache v0.0.0-20261009162332-155f0485af86 // indirect
+	github.com/go-ap/cache v0.0.0-20261015123442-b195083c865a // indirect
 	github.com/go-ap/processing v0.0.0-20260716111245-78d0ef51171a // indirect
-	github.com/go-ap/storage-badger v0.0.0-20261009163911-ff37417bfb42 // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20261009163622-e901a0acec02 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20261009163239-2a66b01867cf // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20261009163423-eb93716ac964 // indirect
+	github.com/go-ap/storage-badger v0.0.0-20261015125250-e0d45c2e714d // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20261015125417-1453c9522340 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20261015125058-35b9ac1943a3 // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20261015125517-f2c179379489 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
@@ -233,14 +233,14 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.6 // indirect
-	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
-	golang.org/x/tools v0.51.0 // indirect
+	golang.org/x/tools v0.52.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/grpc v1.82.1 // indirect
@@ -249,7 +249,7 @@ require (
 	k8s.io/apimachinery v0.36.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
-	modernc.org/libc v1.78.0 // indirect
+	modernc.org/libc v1.79.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 	modernc.org/sqlite v1.60.1 // indirect

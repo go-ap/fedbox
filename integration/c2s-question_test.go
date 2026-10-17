@@ -8,12 +8,12 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
 )
 
@@ -21,7 +21,6 @@ func Test_C2S_QuestionRequests(t *testing.T) {
 	tokenP1 := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
 
-	verbose := true
 	conf := fedbox.C2SConfig(
 		fedbox.WithImageName(imageName),
 		fedbox.WithItems(person1),
@@ -37,41 +36,37 @@ func Test_C2S_QuestionRequests(t *testing.T) {
 	}
 
 	question3ID := c2sRootIRI.AddPath("/activities/question-3")
-	question3 := question(
-		ap.HasName("Some question"),
-		ap.HasActor(person1.ID),
+	question3 := ap.Question(
+		ap.WithName("Some question"),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithActor(person1.ID),
 	)
 
-	option := func(initFns ...ap.InitFn) vocab.Item {
-		initFns = append(initFns, ap.HasType(vocab.NoteType))
-		return object(initFns...)
-	}
-
 	option5ID := c2sRootIRI.AddPath("/activities/note-5")
+	opt5 := ap.Note(ap.WithID(option5ID), ap.WithName("Option 1"), ap.WithPublished(MockDate))
 	option6ID := c2sRootIRI.AddPath("/activities/note-6")
+	opt6 := ap.Note(ap.WithID(option6ID), ap.WithName("Option 2"), ap.WithPublished(MockDate))
 
 	question4ID := c2sRootIRI.AddPath("/activities/question-4")
-	question4 := question(
-		ap.HasName("A second question, any answer"),
-		ap.HasActor(person1.ID),
-		ap.AnyOf(
-			option(option5ID, ap.HasName("Option 1")),
-			option(option6ID, ap.HasName("Option 2")),
-		),
+	question4 := ap.Question(
+		ap.WithName("A second question, any answer"),
+		ap.WithActor(person1.ID),
+		ap.WithTo(vocab.PublicNS),
+		ap.WithAnyOf(opt5, opt6),
 	)
 
 	option7ID := c2sRootIRI.AddPath("/activities/note-7")
+	opt7 := ap.Note(ap.WithID(option7ID), ap.WithName("Option 1"), ap.WithPublished(MockDate))
 	option8ID := c2sRootIRI.AddPath("/activities/note-8")
+	opt8 := ap.Note(ap.WithID(option8ID), ap.WithName("Option 2"), ap.WithPublished(MockDate))
 	option9ID := c2sRootIRI.AddPath("/activities/note-9")
+	opt9 := ap.Note(ap.WithID(option9ID), ap.WithName("Option 3"), ap.WithPublished(MockDate))
 	question5ID := c2sRootIRI.AddPath("/activities/question-5")
-	question5 := question(
-		ap.HasName("A third question, only one answer"),
-		ap.HasActor(person1.ID),
-		ap.OneOf(
-			option(option7ID, ap.HasName("Option 1")),
-			option(option8ID, ap.HasName("Option 2")),
-			option(option9ID, ap.HasName("Option 3")),
-		),
+	question5 := ap.Question(
+		ap.WithName("A third question, only one answer"),
+		ap.WithActor(person1.ID),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithOneOf(opt7, opt8, opt9),
 	)
 
 	toRun := []tests.RunnableTest{
@@ -149,8 +144,10 @@ func Test_C2S_QuestionRequests(t *testing.T) {
 							tests.IsType(question4.Type),
 							tests.HasContent(question4.Content),
 							tests.HasActor(question4.Actor),
-							tests.HasAnyOf(question4.AnyOf),
-							tests.HasOneOf(question4.OneOf),
+							tests.HasAnyOf(
+								ap.Note(ap.WithID(option5ID), ap.WithName("Option 1"), ap.WithTo(vocab.PublicNS), ap.WithAttributedTo(person1.ID), ap.WithPublished(MockDate)),
+								ap.Note(ap.WithID(option6ID), ap.WithName("Option 2"), ap.WithTo(vocab.PublicNS), ap.WithAttributedTo(person1.ID), ap.WithPublished(MockDate)),
+							),
 							tests.WasPublished(time.Now()),
 						),
 				},
@@ -183,8 +180,10 @@ func Test_C2S_QuestionRequests(t *testing.T) {
 							tests.HasActor(question4.Actor),
 							tests.HasContent(question4.Content),
 							tests.WasPublished(time.Now().Round(0)),
-							tests.HasAnyOf(question4.AnyOf),
-							tests.HasOneOf(question4.OneOf),
+							tests.HasAnyOf(
+								ap.Note(ap.WithID(option5ID), ap.WithName("Option 1"), ap.WithTo(vocab.PublicNS), ap.WithAttributedTo(person1.ID), ap.WithPublished(MockDate)),
+								ap.Note(ap.WithID(option6ID), ap.WithName("Option 2"), ap.WithTo(vocab.PublicNS), ap.WithAttributedTo(person1.ID), ap.WithPublished(MockDate)),
+							),
 						),
 				},
 			},
@@ -207,8 +206,11 @@ func Test_C2S_QuestionRequests(t *testing.T) {
 							tests.IsType(question5.Type),
 							tests.HasContent(question5.Content),
 							tests.HasActor(question5.Actor),
-							tests.HasAnyOf(question5.AnyOf),
-							tests.HasOneOf(question5.OneOf),
+							tests.HasOneOf(
+								ap.Note(ap.WithID(option7ID), ap.WithName("Option 1"), ap.WithAudience(vocab.PublicNS), ap.WithAttributedTo(person1.ID), ap.WithPublished(MockDate)),
+								ap.Note(ap.WithID(option8ID), ap.WithName("Option 2"), ap.WithAudience(vocab.PublicNS), ap.WithAttributedTo(person1.ID), ap.WithPublished(MockDate)),
+								ap.Note(ap.WithID(option9ID), ap.WithName("Option 3"), ap.WithAudience(vocab.PublicNS), ap.WithAttributedTo(person1.ID), ap.WithPublished(MockDate)),
+							),
 							tests.WasPublished(time.Now()),
 						),
 				},
@@ -242,8 +244,11 @@ func Test_C2S_QuestionRequests(t *testing.T) {
 							tests.HasActor(question5.Actor),
 							tests.HasContent(question5.Content),
 							tests.WasPublished(time.Now().Round(0)),
-							tests.HasAnyOf(question5.AnyOf),
-							tests.HasOneOf(question5.OneOf),
+							tests.HasOneOf(
+								ap.Note(ap.WithID(option7ID), ap.WithName("Option 1"), ap.WithAudience(vocab.PublicNS), ap.WithAttributedTo(person1.ID), ap.WithPublished(MockDate)),
+								ap.Note(ap.WithID(option8ID), ap.WithName("Option 2"), ap.WithAudience(vocab.PublicNS), ap.WithAttributedTo(person1.ID), ap.WithPublished(MockDate)),
+								ap.Note(ap.WithID(option9ID), ap.WithName("Option 3"), ap.WithAudience(vocab.PublicNS), ap.WithAttributedTo(person1.ID), ap.WithPublished(MockDate)),
+							),
 						),
 				},
 			},

@@ -8,23 +8,23 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
 )
 
 func Test_C2S_ShareRequests(t *testing.T) {
-	article3 := object(
-		c2sRootIRI.AddPath("objects/article-3"),
-		ap.HasType(vocab.ArticleType),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasShares,
+	article3 := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/article-3")),
+		ap.WithType(vocab.ArticleType),
+		ap.WithContent("lorem ipsum dolor sic amet"),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithPublished(MockDate),
+		ap.WithShares(),
 	)
 
 	token := new(c2s.BearerSigner)
@@ -43,10 +43,10 @@ func Test_C2S_ShareRequests(t *testing.T) {
 	}
 
 	announce4ID := c2sRootIRI.AddPath("activities/announce-4")
-	announce4 := announce(
-		ap.HasCC(vocab.PublicNS),
-		ap.HasActor(person1),
-		ap.HasObject(article3.ID),
+	announce4 := ap.Announce(
+		ap.WithCC(vocab.PublicNS),
+		ap.WithActor(person1),
+		ap.WithObject(article3.ID),
 	)
 
 	toRun := []tests.RunnableTest{

@@ -6,10 +6,10 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/errors"
 	ap2 "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/filters"
 	"github.com/go-ap/storage-conformance-suite/gen"
@@ -22,59 +22,66 @@ var (
 
 	MockDate = time.Date(2001, time.April, 1, 0, 0, 0, 00, time.UTC)
 
-	RootCreate = &vocab.Activity{
-		ID:        filters.ActivitiesType.IRI(c2sRootIRI).AddPath("create-1"),
-		Type:      vocab.CreateType,
-		Actor:     c2sRootIRI,
-		Object:    c2sRootIRI,
-		Audience:  vocab.ItemCollection{vocab.PublicNS},
-		Published: time.Now().Round(2 * time.Second), // NOTE(marius): to order it at the top of the collection
-	}
+	RootCreate = ap.Create(
+		ap.WithID(filters.ActivitiesType.IRI(c2sRootIRI).AddPath("create-1")),
+		ap.WithType(vocab.CreateType),
+		ap.WithActor(c2sRootIRI),
+		ap.WithObject(c2sRootIRI),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithPublished(time.Now().Round(2*time.Second)), // NOTE(marius): to order it at the top of the collection
+	)
 
 	_, ed2559Key, _ = ed25519.GenerateKey(rand.Reader)
 
-	tagAdmin = object(
-		c2sRootIRI.AddPath("objects/0"),
-		ap.HasName("#sysop"),
-		ap.HasAttributedTo(c2sRootIRI),
-		ap.HasTo(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasUpdated(MockDate),
-		ap.HasCC(c2sRootIRI),
+	tagAdmin = ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/0")),
+		ap.WithName("#sysop"),
+		ap.WithAttributedTo(c2sRootIRI),
+		ap.WithTo(vocab.PublicNS),
+		ap.WithPublished(MockDate),
+		ap.WithUpdated(MockDate),
+		ap.WithCC(c2sRootIRI),
 	)
 
-	admin = person(
-		c2sRootIRI.AddPath("actors/1"),
-		ap.HasPreferredUsername("admin"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasTag(tagAdmin.ID),
-		ap.HasSharedInbox(vocab.Inbox.IRI(c2sRootIRI)),
+	admin = ap.Person(
+		ap.WithID(c2sRootIRI.AddPath("actors/1")),
+		ap.WithPreferredUsername("admin"),
+		ap.WithAttributedTo(c2sRootIRI.AddPath("actors/1")),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithTag(tagAdmin.ID),
+		ap.WithInbox(),
+		ap.WithOutbox(),
+		ap.WithSharedInbox(vocab.Inbox.IRI(c2sRootIRI)),
 	)
 
-	person1 = person(
-		ap.HasID(c2sRootIRI.AddPath("actors/person-1")),
-		ap.HasPreferredUsername("jdoe"),
-		ap.HasName("John Doe"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasFollowing,
-		ap.HasFollowers,
-		ap.HasLiked,
-		ap.HasLikes,
-		ap.HasShares,
-		ap.HasReplies,
-		ap.HasSharedInbox(vocab.Inbox.IRI(c2sRootIRI)),
+	person1 = ap.Person(
+		ap.WithID(c2sRootIRI.AddPath("actors/person-1")),
+		ap.WithPreferredUsername("jdoe"),
+		ap.WithName("John Doe"),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithPublished(MockDate),
+		ap.WithInbox(),
+		ap.WithOutbox(),
+		ap.WithFollowing(),
+		ap.WithFollowers(),
+		ap.WithLiked(),
+		ap.WithLikes(),
+		ap.WithShares(),
+		ap.WithReplies(),
+		ap.WithSharedInbox(vocab.Inbox.IRI(c2sRootIRI)),
 	)
 
-	person3 = person(
-		c2sRootIRI.AddPath("actors/person-3"),
-		ap.HasPreferredUsername("alice"),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasFollowing,
-		ap.HasFollowers,
-		ap.HasShares,
+	person3 = ap.Person(
+		ap.WithID(c2sRootIRI.AddPath("actors/person-3")),
+		ap.WithPreferredUsername("alice"),
+		ap.WithContent("lorem ipsum dolor sic amet"),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithPublished(MockDate),
+		ap.WithInbox(),
+		ap.WithOutbox(),
+		ap.WithFollowing(),
+		ap.WithFollowers(),
+		ap.WithShares(),
 	)
 )
 
@@ -89,214 +96,26 @@ func rootIRI(conf config.Options) vocab.IRI {
 
 func root(rootIRI vocab.IRI, initFn ...ap.InitFn) *vocab.Actor {
 	initFn = append([]ap.InitFn{
-		ap.HasID(rootIRI),
-		ap.HasType(vocab.ServiceType),
-		ap.HasPreferredUsername("FedBOX"),
-		ap.HasAttributedTo("https://github.com/mariusor"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasContext("https://github.com/go-ap/fedbox"),
-		ap.HasSummary("Generic ActivityPub service"),
-		ap.HasURL(rootIRI),
-		ap.HasStream(filters.ActorsType.IRI(rootIRI)),
-		ap.HasStream(filters.ActivitiesType.IRI(rootIRI)),
-		ap.HasStream(filters.ObjectsType.IRI(rootIRI)),
-		ap.HasAuthEp(vocab.CollectionPath("/oauth/authorize").IRI(rootIRI)),
-		ap.HasTokenEp(vocab.CollectionPath("/oauth/token").IRI(rootIRI)),
-		ap.HasProxyURL(vocab.CollectionPath("proxyUrl").IRI(rootIRI)),
+		ap.WithID(rootIRI),
+		ap.WithPreferredUsername("FedBOX"),
+		ap.WithAttributedTo(vocab.IRI("https://github.com/mariusor")),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithContext(vocab.IRI("https://github.com/go-ap/fedbox")),
+		ap.WithSummary("Generic ActivityPub service"),
+		ap.WithURL(rootIRI),
+		ap.WithInbox(vocab.Inbox.IRI(rootIRI)),
+		ap.WithOutbox(vocab.Outbox.IRI(rootIRI)),
+		ap.WithStreams(
+			filters.ActorsType.IRI(rootIRI),
+			filters.ActivitiesType.IRI(rootIRI),
+			filters.ObjectsType.IRI(rootIRI),
+		),
+		ap.WithAuthEndpoint(vocab.CollectionPath("/oauth/authorize").IRI(rootIRI)),
+		ap.WithTokenEndpoint(vocab.CollectionPath("/oauth/token").IRI(rootIRI)),
+		ap.WithProxyURL(vocab.CollectionPath("proxyUrl").IRI(rootIRI)),
 	}, initFn...)
 
-	return ap.Actor(initFn...)
-}
-
-func create(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.CreateType),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func update(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.UpdateType),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func del(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.DeleteType),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func like(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.LikeType),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func announce(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.AnnounceType),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func follow(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.FollowType),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func accept(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.AcceptType),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func reject(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.RejectType),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func block(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.BlockType),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func ignore(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.IgnoreType),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func undo(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.UndoType),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func question(initFn ...ap.InitFn) *vocab.Question {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.QuestionType),
-		ap.HasAudience(vocab.PublicNS),
-	}, initFn...)
-	return ap.Question(initFn...)
-}
-
-func add(initFn ...ap.InitFn) *vocab.Add {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.AddType),
-		ap.HasAudience(vocab.PublicNS),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func remove(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.RemoveType),
-		ap.HasAudience(vocab.PublicNS),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func move(initFn ...ap.InitFn) *vocab.Activity {
-	initFn = append([]ap.InitFn{
-		ap.HasType(vocab.MoveType),
-		ap.HasAudience(vocab.PublicNS),
-	}, initFn...)
-	return ap.Activity(initFn...)
-}
-
-func baseIRI(iri vocab.IRI) vocab.IRI {
-	ub, err := iri.GetLink().URL()
-	if err != nil {
-		return iri
-	}
-	ub.Path = ""
-	ub.RawQuery = ""
-	ub.Fragment = ""
-	return vocab.IRI(ub.String())
-}
-
-func person(initFn ...ap.InitFn) *vocab.Actor {
-	var actorIRI vocab.IRI
-	for _, maybeFn := range initFn {
-		if iri, ok := maybeFn.(vocab.IRI); ok {
-			actorIRI = iri
-			break
-		}
-	}
-	initFn = append([]ap.InitFn{
-		ap.HasID(actorIRI),
-		ap.HasType(vocab.PersonType),
-		ap.HasAttributedTo(actorIRI),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasURL(actorIRI),
-		ap.HasAuthEp(vocab.CollectionPath("oauth/authorize").IRI(actorIRI)),
-		ap.HasTokenEp(vocab.CollectionPath("oauth/token").IRI(actorIRI)),
-	}, initFn...)
-	if serviceIRI := baseIRI(actorIRI); serviceIRI != "" {
-		initFn = append(initFn,
-			ap.HasGenerator(serviceIRI),
-			ap.HasProxyURL(vocab.CollectionPath("proxyUrl").IRI(serviceIRI)),
-		)
-	}
-	return ap.Actor(initFn...)
-}
-
-func object(initFn ...ap.InitFn) *vocab.Object {
-	var objectIRI vocab.IRI
-	for _, maybeFn := range initFn {
-		if iri, ok := maybeFn.(vocab.IRI); ok {
-			objectIRI = iri
-			break
-		}
-	}
-
-	if objectIRI != "" {
-		initFn = append(initFn, ap.HasID(objectIRI))
-	}
-	return ap.Object(initFn...)
-}
-
-func orderedCollection(initFn ...ap.InitFn) *vocab.OrderedCollection {
-	var objectIRI vocab.IRI
-	for _, maybeFn := range initFn {
-		if iri, ok := maybeFn.(vocab.IRI); ok {
-			objectIRI = iri
-			break
-		}
-	}
-	if objectIRI != "" {
-		initFn = append(initFn, ap.HasID(objectIRI), ap.HasType(vocab.OrderedCollectionType))
-	}
-
-	return ap.OrderedCollection(initFn...)
-}
-
-func collection(initFn ...ap.InitFn) *vocab.Collection {
-	var objectIRI vocab.IRI
-	for _, maybeFn := range initFn {
-		if iri, ok := maybeFn.(vocab.IRI); ok {
-			objectIRI = iri
-			break
-		}
-	}
-	if objectIRI != "" {
-		initFn = append(initFn, ap.HasID(objectIRI), ap.HasType(vocab.CollectionType))
-	}
-
-	return ap.Collection(initFn...)
+	return ap.Service(initFn...)
 }
 
 func filterIRI(iri vocab.IRI, ff ...filters.Check) vocab.IRI {
@@ -308,7 +127,7 @@ func filterIRI(iri vocab.IRI, ff ...filters.Check) vocab.IRI {
 }
 
 func plausibleRandomObjects(pubKey crypto.PublicKey, cnt int) vocab.ItemCollection {
-	service := root(c2sRootIRI, ap.HasPublicKey(pubKey))
+	service := root(c2sRootIRI, ap.WithPublicKey(ap.PublicKey("", pubKey)))
 
 	gen.DefaultHost = c2sRootIRI
 	gen.SetItemID = func(it vocab.Item) {

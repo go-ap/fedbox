@@ -8,12 +8,12 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
 )
 
@@ -21,13 +21,15 @@ func Test_C2S_AddRequests(t *testing.T) {
 	tokenP1 := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
 
-	target := collection(c2sRootIRI.AddPath("objects/target-collection"))
-	note := object(
-		c2sRootIRI.AddPath("objects/note"),
-		ap.HasAttributedTo(person1.ID),
-		ap.HasType("Note"),
-		ap.HasCC(vocab.PublicNS),
-		ap.HasContent("Lorem ipsum dolor sic amet."),
+	target := ap.Collection(
+		ap.WithID(c2sRootIRI.AddPath("objects/target-collection")),
+	)
+	note := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/note")),
+		ap.WithAttributedTo(person1.ID),
+		ap.WithType("Note"),
+		ap.WithCC(vocab.PublicNS),
+		ap.WithContent("Lorem ipsum dolor sic amet."),
 	)
 
 	conf := fedbox.C2SConfig(
@@ -44,7 +46,12 @@ func Test_C2S_AddRequests(t *testing.T) {
 	}
 
 	add5ID := c2sRootIRI.AddPath("activities/add-5")
-	add5 := add(ap.HasActor(person1), ap.HasObject(note.ID), ap.HasTarget(target.ID))
+	add5 := ap.Add(
+		ap.WithActor(person1),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithObject(note.ID),
+		ap.WithTarget(target.ID),
+	)
 
 	// TODO(marius): We should add some tests for failure cases:
 	//  * try to add an item to a collection that doesn't exist

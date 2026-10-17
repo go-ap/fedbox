@@ -8,60 +8,60 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
 )
 
 func Test_C2S_UpdateRequests(t *testing.T) {
-	article3 := object(
-		c2sRootIRI.AddPath("objects/article-3"),
-		ap.HasType(vocab.ArticleType),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
+	article3 := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/article-3")),
+		ap.WithType(vocab.ArticleType),
+		ap.WithContent("lorem ipsum dolor sic amet"),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithPublished(MockDate),
 	)
 
 	update4ID := c2sRootIRI.AddPath("activities/update-4")
-	update4 := update(
-		ap.HasCC(vocab.PublicNS),
-		ap.HasActor(person1),
-		ap.HasObject(person(
-			ap.HasID(person1.ID),
-			ap.HasPreferredUsername("jdoe"),
-			ap.HasName("Jane Doe"),
-			ap.HasAudience(vocab.PublicNS),
+	update4 := ap.Update(
+		ap.WithCC(vocab.PublicNS),
+		ap.WithActor(person1),
+		ap.WithObject(ap.Person(
+			ap.WithID(person1.ID),
+			ap.WithPreferredUsername("jdoe"),
+			ap.WithName("Jane Doe"),
+			ap.WithAudience(vocab.PublicNS),
 		)),
 	)
 
 	update5ID := c2sRootIRI.AddPath("activities/update-5")
-	update5 := update(
-		ap.HasActor(person1),
-		ap.HasObject(object(
-			ap.HasID(article3.ID),
-			ap.HasType(vocab.NoteType),
-			ap.HasName("update-test"),
-			ap.HasSummary("lorem ipsum dolor sic amet"),
-			ap.HasContent("updated-content"),
+	update5 := ap.Update(
+		ap.WithActor(person1),
+		ap.WithObject(ap.Object(
+			ap.WithID(article3.ID),
+			ap.WithType(vocab.NoteType),
+			ap.WithName("update-test"),
+			ap.WithSummary("lorem ipsum dolor sic amet"),
+			ap.WithContent("updated-content"),
 		)),
 	)
 
 	update6ID := c2sRootIRI.AddPath("activities/update-6")
-	update6 := update(
-		ap.HasCC(vocab.PublicNS),
-		ap.HasActor(person1),
-		ap.HasObject(object(
-			ap.HasID(article3.ID),
-			ap.HasType(vocab.NoteType),
-			ap.HasName("update-test"),
-			ap.HasSummary("lorem ipsum dolor sic amet"),
-			ap.HasContent("updated-content"),
-			ap.HasAudience(vocab.PublicNS),
-			ap.HasInReplyTo(person1.ID),
+	update6 := ap.Update(
+		ap.WithCC(vocab.PublicNS),
+		ap.WithActor(person1),
+		ap.WithObject(ap.Object(
+			ap.WithID(article3.ID),
+			ap.WithType(vocab.NoteType),
+			ap.WithName("update-test"),
+			ap.WithSummary("lorem ipsum dolor sic amet"),
+			ap.WithContent("updated-content"),
+			ap.WithAudience(vocab.PublicNS),
+			ap.WithInReplyTo(person1.ID),
 		)),
 	)
 

@@ -8,12 +8,12 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
 )
 
@@ -40,35 +40,45 @@ func Test_C2S_BlockRequests(t *testing.T) {
 	blocked := vocab.CollectionPath("blocked")
 
 	block4ID := c2sRootIRI.AddPath("/activities/block-4")
-	block4 := block(
-		ap.HasActor(person1.ID),
-		ap.HasObject(person3.ID),
+	block4 := ap.Block(
+		ap.WithActor(person1.ID),
+		ap.WithObject(person3.ID),
 	)
 
-	article6 := object(
-		c2sRootIRI.AddPath("objects/article-6"),
-		ap.HasType(vocab.ArticleType),
-		ap.HasTo(person1.ID),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
+	article6 := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/article-6")),
+		ap.WithType(vocab.ArticleType),
+		ap.WithTo(person1.ID),
+		ap.WithContent("lorem ipsum dolor sic amet"),
+		ap.WithAudience(vocab.PublicNS),
 	)
 
 	create5ID := c2sRootIRI.AddPath("/activities/create-5")
-	create5 := create(ap.HasActor(person3), ap.HasObject(article6))
+	create5 := ap.Create(
+		ap.WithActor(person3),
+		ap.WithObject(article6),
+	)
 
 	undo6ID := c2sRootIRI.AddPath("/activities/undo-6")
-	undo6 := undo(ap.HasActor(person1), ap.HasObject(block4ID), ap.HasCC(person3.ID))
+	undo6 := ap.Undo(
+		ap.WithActor(person1),
+		ap.WithObject(block4ID),
+		ap.WithCC(person3.ID),
+	)
 
-	article7 := object(
-		c2sRootIRI.AddPath("objects/article-7"),
-		ap.HasType(vocab.ArticleType),
-		ap.HasTo(person1.ID),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
+	article7 := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/article-7")),
+		ap.WithType(vocab.ArticleType),
+		ap.WithTo(person1.ID),
+		ap.WithContent("lorem ipsum dolor sic amet"),
+		ap.WithAudience(vocab.PublicNS),
 	)
 	// NOTE(marius): this somehow gets wounded back
 	create8ID := c2sRootIRI.AddPath("/activities/create-7")
-	create8 := create(ap.HasActor(person3), ap.HasObject(article7))
+	create8 := ap.Create(
+		ap.WithActor(person3),
+		ap.WithObject(article7),
+	)
 
 	toRun := []tests.RunnableTest{
 		tests.TestSuite{

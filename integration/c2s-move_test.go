@@ -8,12 +8,12 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
 )
 
@@ -21,12 +21,13 @@ func Test_C2S_MoveRequests(t *testing.T) {
 	tokenP1 := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
 
-	target := collection(c2sRootIRI.AddPath("objects/target-collection"))
-	origin := collection(c2sRootIRI.AddPath("objects/origin-collection"))
-	note := object(
-		c2sRootIRI.AddPath("objects/note"),
-		ap.HasType("Note"),
-		ap.HasContent("Lorem ipsum dolor sic amet."),
+	target := ap.Collection(ap.WithID(c2sRootIRI.AddPath("objects/target-collection")))
+	origin := ap.Collection(ap.WithID(c2sRootIRI.AddPath("objects/origin-collection")))
+	note := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/note")),
+		ap.WithType("Note"),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithContent("Lorem ipsum dolor sic amet."),
 	)
 	conf := fedbox.C2SConfig(
 		fedbox.WithImageName(imageName),
@@ -44,10 +45,16 @@ func Test_C2S_MoveRequests(t *testing.T) {
 	}
 
 	add6ID := c2sRootIRI.AddPath("activities/add-6")
-	add6 := add(ap.HasActor(person1), ap.HasObject(note.ID), ap.HasTarget(origin.ID))
+	add6 := ap.Add(ap.WithActor(person1), ap.WithObject(note.ID), ap.WithTarget(origin.ID))
 
 	move7ID := c2sRootIRI.AddPath("activities/move-7")
-	move7 := move(ap.HasActor(person1), ap.HasObject(note.ID), ap.HasOrigin(origin.ID), ap.HasTarget(target.ID))
+	move7 := ap.Move(
+		ap.WithActor(person1),
+		ap.WithObject(note.ID),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithOrigin(origin.ID),
+		ap.WithTarget(target.ID),
+	)
 
 	toRun := []tests.RunnableTest{
 		tests.TestSuite{

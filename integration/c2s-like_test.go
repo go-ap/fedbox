@@ -8,23 +8,23 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
 )
 
 func Test_C2S_LikeRequests(t *testing.T) {
-	article3 := object(
-		c2sRootIRI.AddPath("objects/article-3"),
-		ap.HasType(vocab.ArticleType),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasLikes,
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
+	article3 := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/article-3")),
+		ap.WithType(vocab.ArticleType),
+		ap.WithContent("lorem ipsum dolor sic amet"),
+		ap.WithLikes(),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithPublished(MockDate),
 	)
 
 	token := new(c2s.BearerSigner)
@@ -43,18 +43,18 @@ func Test_C2S_LikeRequests(t *testing.T) {
 	}
 
 	like4ID := c2sRootIRI.AddPath("activities/like-4")
-	like4 := like(
-		ap.HasCC(vocab.PublicNS),
-		ap.HasActor(person1),
-		ap.HasObject(article3.ID),
+	like4 := ap.Like(
+		ap.WithCC(vocab.PublicNS),
+		ap.WithActor(person1),
+		ap.WithObject(article3.ID),
 	)
 
 	like5ID := c2sRootIRI.AddPath("activities/dislike-5")
-	like5 := like(
-		ap.HasType(vocab.DislikeType),
-		ap.HasCC(vocab.PublicNS),
-		ap.HasActor(person1),
-		ap.HasObject(person1.ID),
+	like5 := ap.Like(
+		ap.WithType(vocab.DislikeType),
+		ap.WithCC(vocab.PublicNS),
+		ap.WithActor(person1),
+		ap.WithObject(person1.ID),
 	)
 
 	toRun := []tests.RunnableTest{

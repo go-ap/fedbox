@@ -140,6 +140,8 @@ func colIRI(r http.Request, secure bool) (vocab.IRI, filters.Checks) {
 	return iri, fil
 }
 
+var errNotModified = errors.NotModified("from cache")
+
 // HandleCollection serves content from the generic collection end-points
 // that return ActivityPub objects or activities
 func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
@@ -249,7 +251,7 @@ func HandleCollection(fb *FedBOX) processing.CollectionHandlerFn {
 		} else {
 			// NOTE(marius): signal the [processing.CollectionHandlerFn]
 			// that the collection was loaded from cache.
-			err = processing.NotModified
+			err = errNotModified
 		}
 
 		return col, err
@@ -486,7 +488,7 @@ func HandleItem(fb *FedBOX) processing.ItemHandlerFn {
 		} else {
 			// NOTE(marius): signal the [processing.CollectionHandlerFn]
 			// that the collection was loaded from cache.
-			err = processing.NotModified
+			err = errNotModified
 		}
 
 		// Remove bcc and bto

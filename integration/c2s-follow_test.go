@@ -8,12 +8,12 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
 )
 
@@ -39,22 +39,22 @@ func Test_C2S_FollowRequests(t *testing.T) {
 	}
 
 	follow4ID := c2sRootIRI.AddPath("activities/follow-4")
-	follow4 := follow(
-		//ap.HasTo(person3.ID), // NOTE(marius): this is added by processing the Follow
-		ap.HasCC(vocab.PublicNS),
-		ap.HasActor(person1.ID),
-		ap.HasObject(person3.ID),
+	follow4 := ap.Follow(
+		//ap.WithTo(person3.ID), // NOTE(marius): this is added by processing the Follow
+		ap.WithCC(vocab.PublicNS),
+		ap.WithActor(person1.ID),
+		ap.WithObject(person3.ID),
 	)
 	accept5ID := c2sRootIRI.AddPath("activities/accept-5")
-	accept5 := accept(
-		ap.HasTo(person1.ID),
-		ap.HasCC(vocab.PublicNS),
-		ap.HasActor(person3.ID),
-		ap.HasObject(follow4ID),
+	accept5 := ap.Accept(
+		ap.WithTo(person1.ID),
+		ap.WithCC(vocab.PublicNS),
+		ap.WithActor(person3.ID),
+		ap.WithObject(follow4ID),
 	)
 
 	undo6ID := c2sRootIRI.AddPath("/activities/undo-6")
-	undo6 := undo(ap.HasActor(person1), ap.HasObject(follow4ID), ap.HasCC(person3.ID))
+	undo6 := ap.Undo(ap.WithActor(person1), ap.WithObject(follow4ID), ap.WithCC(person3.ID))
 
 	toRun := []tests.RunnableTest{
 		tests.TestSuite{

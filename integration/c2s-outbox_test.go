@@ -10,6 +10,7 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	"github.com/go-ap/client/s2s"
@@ -18,7 +19,6 @@ import (
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 )
 
 func Test_C2S_Requests(t *testing.T) {
@@ -34,7 +34,7 @@ func Test_C2S_Requests(t *testing.T) {
 	}
 
 	key2, _ := rsa.GenerateKey(rand.Reader, 2048)
-	service := root(c2sRootIRI, ap.HasPublicKey(key2.Public()))
+	service := root(c2sRootIRI, ap.WithPublicKey(ap.PublicKey("", key2.Public())))
 	draftSig := s2s.New(s2s.WithActor(service, key2))
 	token := new(c2s.BearerSigner)
 
@@ -198,11 +198,10 @@ func Test_C2S_Requests(t *testing.T) {
 						ContentType(client.ContentTypeJsonLD).
 						Signer(token.Sign).
 						BodyItem(ap2.WrapObjectInUpdate(
-							&vocab.Object{
-								ID:      c2sRootIRI.AddPath("objects/note-5"),
-								Type:    vocab.NoteType,
-								Content: vocab.DefaultLangValue("updated"),
-							}, admin),
+							ap.Note(
+								ap.WithID(c2sRootIRI.AddPath("objects/note-5")),
+								ap.WithContent("updated"),
+							), admin),
 						),
 					Res: tests.Response().
 						HasCode(http.StatusCreated).
@@ -259,12 +258,11 @@ func Test_C2S_Requests(t *testing.T) {
 						Post().
 						ContentType(client.ContentTypeJsonLD).
 						Signer(token.Sign).
-						BodyItem(&vocab.Activity{
-							Type:      vocab.FlagType,
-							Actor:     admin.ID,
-							Object:    admin.ID,
-							Published: MockDate,
-						}),
+						BodyItem(ap.Flag(
+							ap.WithActor(admin.ID),
+							ap.WithObject(admin.ID),
+							ap.WithPublished(MockDate),
+						)),
 					Res: tests.Response().
 						HasCode(http.StatusCreated).
 						ItemMatch(

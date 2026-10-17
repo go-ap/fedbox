@@ -9,48 +9,56 @@ import (
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
 	"golang.org/x/crypto/ed25519"
 )
 
 var (
-	s2sPerson1 = person(
-		ap.HasID(s2sRootIRI.AddPath("actors/person-1")),
-		ap.HasPreferredUsername("jdoe"),
-		ap.HasName("John Doe"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasFollowing,
-		ap.HasFollowers,
-		ap.HasLiked,
-		ap.HasLikes,
-		ap.HasShares,
-		ap.HasReplies,
-		ap.HasSharedInbox(vocab.Inbox.IRI(s2sRootIRI)),
+	s2sPerson1 = ap.Person(
+		ap.WithID(s2sRootIRI.AddPath("actors/person-1")),
+		ap.WithPreferredUsername("jdoe"),
+		ap.WithName("John Doe"),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithPublished(MockDate),
+		ap.WithInbox(),
+		ap.WithOutbox(),
+		ap.WithFollowing(),
+		ap.WithFollowers(),
+		ap.WithLiked(),
+		ap.WithLikes(),
+		ap.WithShares(),
+		ap.WithReplies(),
+		ap.WithSharedInbox(vocab.Inbox.IRI(s2sRootIRI)),
 	)
 
-	s2sPerson3 = person(
-		s2sRootIRI.AddPath("actors/person-3"),
-		ap.HasPreferredUsername("alice"),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
-		ap.HasFollowing,
-		ap.HasFollowers,
-		ap.HasShares,
-		ap.HasSharedInbox(vocab.Inbox.IRI(s2sRootIRI)),
+	s2sPerson3 = ap.Person(
+		ap.WithID(s2sRootIRI.AddPath("actors/person-3")),
+		ap.WithPreferredUsername("alice"),
+		ap.WithContent("lorem ipsum dolor sic amet"),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithPublished(MockDate),
+		ap.WithInbox(),
+		ap.WithOutbox(),
+		ap.WithFollowing(),
+		ap.WithFollowers(),
+		ap.WithShares(),
+		ap.WithSharedInbox(vocab.Inbox.IRI(s2sRootIRI)),
 	)
 )
 
 func Test_S2S_SharedInbox(t *testing.T) {
 	s2sPrvKey, _ := rsa.GenerateKey(rand.Reader, 1024)
-	s2sAdmin := person(vocab.CollectionPath("actors/1").IRI(s2sRootIRI), ap.HasPreferredUsername("admin"))
+	s2sAdmin := ap.Person(
+		ap.WithID(vocab.CollectionPath("actors/1").IRI(s2sRootIRI)),
+		ap.WithPreferredUsername("admin"),
+		ap.WithInbox(),
+	)
 
 	adminTok := new(c2s.BearerSigner)
 	rootExec := c.ExecAs(c2sRootIRI, ed2559Key)
@@ -73,35 +81,35 @@ func Test_S2S_SharedInbox(t *testing.T) {
 		t.Fatalf("Error: %s", err)
 	}
 
-	article5 := object(
-		c2sRootIRI.AddPath("objects/article-5"),
-		ap.HasType(vocab.ArticleType),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasReplies,
+	article5 := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/article-5")),
+		ap.WithType(vocab.ArticleType),
+		ap.WithContent("lorem ipsum dolor sic amet"),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithReplies(),
 	)
 	create4ID := c2sRootIRI.AddPath("activities/create-4")
-	create4 := create(
-		ap.HasActor(admin),
-		ap.HasObject(article5),
+	create4 := ap.Create(
+		ap.WithActor(admin),
+		ap.WithObject(article5),
 		// NOTE(marius): make sure we dispatch to the sharedInbox of s2sPerson1 and s2sPerson3
 		//  which is the s2sRootIRI
-		ap.HasTo(s2sRootIRI),
+		ap.WithTo(s2sRootIRI),
 	)
 
-	note6 := object(
-		c2sRootIRI.AddPath("objects/article-6"),
-		ap.HasType(vocab.NoteType),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasReplies,
+	note6 := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/article-6")),
+		ap.WithType(vocab.NoteType),
+		ap.WithContent("lorem ipsum dolor sic amet"),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithReplies(),
 	)
 	create5ID := c2sRootIRI.AddPath("activities/create-5")
-	create5 := create(
-		ap.HasActor(admin),
-		ap.HasObject(note6),
+	create5 := ap.Create(
+		ap.WithActor(admin),
+		ap.WithObject(note6),
 		// NOTE(marius): we add only _one_ actor with sharedInbox
-		ap.HasTo(s2sPerson1.ID),
+		ap.WithTo(s2sPerson1.ID),
 	)
 
 	toRun := []tests.RunnableTest{
@@ -133,7 +141,7 @@ func Test_S2S_SharedInbox(t *testing.T) {
 							tests.HasInbox(vocab.Inbox.IRI(s2sAdmin)),
 							tests.HasOutbox(vocab.Outbox.IRI(s2sAdmin)),
 							// NOTE(marius): this is nil - so it succeeds
-							tests.HasSharedInbox(s2sAdmin.Endpoints.SharedInbox),
+							tests.HasSharedInbox(nil),
 						),
 				},
 				tests.HTTPTest{
@@ -259,7 +267,7 @@ func Test_S2S_SharedInbox(t *testing.T) {
 					Name: "Create is NOT in second instance's admin Inbox",
 					Req: tests.Request().
 						Accept(client.ContentTypeJsonActivity).
-						IRI(vocab.Inbox.IRI(s2sAdmin.ID)),
+						IRI(vocab.Inbox.IRI(s2sAdmin)),
 					Res: tests.Response().
 						HasCode(http.StatusOK).
 						ItemMatch(
@@ -406,7 +414,7 @@ func Test_S2S_SharedInbox(t *testing.T) {
 					Name: "Create is in second instance's s2sPerson1 Inbox",
 					Req: tests.Request().
 						Accept(client.ContentTypeJsonActivity).
-						IRI(vocab.Inbox.IRI(s2sPerson1.ID)),
+						IRI(vocab.Inbox.IRI(s2sPerson1)),
 					Res: tests.Response().
 						HasCode(http.StatusOK).
 						ItemMatch(
@@ -420,7 +428,7 @@ func Test_S2S_SharedInbox(t *testing.T) {
 					Name: "Create is in second instance's s2sPerson3 Inbox",
 					Req: tests.Request().
 						Accept(client.ContentTypeJsonActivity).
-						IRI(vocab.Inbox.IRI(s2sPerson3.ID)),
+						IRI(vocab.Inbox.IRI(s2sPerson3)),
 					Res: tests.Response().
 						HasCode(http.StatusOK).
 						ItemMatch(
@@ -441,12 +449,27 @@ func Test_S2S_SharedInbox(t *testing.T) {
 
 func Test_S2SRequests(t *testing.T) {
 	_, c2sPrvKey, _ := ed25519.GenerateKey(rand.Reader)
-	c2sTagAdmin := object(c2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
-	c2sAdmin := person(c2sRootIRI.AddPath("actors/1"), ap.HasPreferredUsername("admin"), ap.HasTag(c2sTagAdmin))
+	c2sTagAdmin := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/0")),
+		ap.WithName("#sysop"),
+	)
+	c2sAdmin := ap.Person(
+		ap.WithID(c2sRootIRI.AddPath("actors/1")),
+		ap.WithPreferredUsername("admin"), ap.WithTag(c2sTagAdmin),
+		ap.WithInbox(),
+		ap.WithOutbox(),
+	)
 
 	s2sPrvKey, _ := rsa.GenerateKey(rand.Reader, 1024)
-	s2sTagAdmin := object(s2sRootIRI.AddPath("objects/0"), ap.HasName("#sysop"))
-	s2sAdmin := person(vocab.CollectionPath("actors/1").IRI(s2sRootIRI), ap.HasPreferredUsername("admin"), ap.HasTag(s2sTagAdmin))
+	s2sTagAdmin := ap.Object(
+		ap.WithID(s2sRootIRI.AddPath("objects/0")),
+		ap.WithName("#sysop"),
+	)
+	s2sAdmin := ap.Person(
+		ap.WithID(vocab.CollectionPath("actors/1").IRI(s2sRootIRI)),
+		ap.WithPreferredUsername("admin"),
+		ap.WithTag(s2sTagAdmin),
+	)
 
 	c2sConf := fedbox.C2SConfig(
 		fedbox.WithImageName(imageName),
@@ -493,18 +516,14 @@ func Test_S2SRequests(t *testing.T) {
 			Tests: []tests.RunnableTest{
 				tests.HTTPTest{
 					Name: "Simple note",
-					Req: tests.Request().IRI(c2sAdmin.Outbox.GetLink()).
+					Req: tests.Request().IRI(vocab.Outbox.IRI(c2sAdmin)).
 						Post().
 						Signer(token.Sign).
-						BodyItem(vocab.Flag{
-							Type:  vocab.CreateType,
-							Actor: c2sAdmin,
-							Object: &vocab.Object{
-								Type:    vocab.NoteType,
-								To:      vocab.ItemCollection{s2sAdmin.ID},
-								Content: vocab.DefaultLangValue("Lorem Ipsum"),
-							},
-						}),
+						BodyItem(ap.Create(
+							ap.WithActor(c2sAdmin),
+							ap.WithAudience(vocab.PublicNS),
+							ap.WithObject(ap.Note(ap.WithTo(s2sAdmin.ID), ap.WithContent("Lorem Ipsum"))),
+						)),
 					Res: tests.Response().
 						HasCode(http.StatusCreated).
 						ItemMatch(

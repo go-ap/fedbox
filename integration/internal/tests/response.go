@@ -329,16 +329,12 @@ func HasMediaType(mt vocab.MimeType) itemCheckFn {
 	}
 }
 
-func HasSource[T ~string | vocab.NaturalLanguageValues](cont T, mt vocab.MimeType) itemCheckFn {
-	v := nlv(cont)
+func HasSource(s vocab.Source) itemCheckFn {
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("Source", func(t *testing.T) {
 			err := vocab.OnObject(it, func(ob *vocab.Object) error {
-				if !cmp.Equal(v, ob.Source.Content) {
-					t.Errorf("Content Diff %s", cmp.Diff(v, ob.Source.Content))
-				}
-				if !cmp.Equal(mt, ob.Source.MediaType) {
-					t.Errorf("MediaType Diff %s", cmp.Diff(mt, ob.Source.MediaType))
+				if !cmp.Equal(s, ob.Source) {
+					t.Errorf("Content Diff %s", cmp.Diff(s, ob.Source))
 				}
 				return nil
 			})
@@ -564,16 +560,22 @@ func HasProxyURL(iri vocab.IRI) itemCheckFn {
 	}
 }
 
-func HasSharedInbox(iri vocab.Item) itemCheckFn {
+func HasSharedInbox(si vocab.Item) itemCheckFn {
 	return func(t *testing.T, it vocab.Item) {
 		t.Run("SharedInbox", func(t *testing.T) {
 			err := vocab.OnActor(it, func(act *vocab.Actor) error {
-				if act.Endpoints == nil {
-					t.Errorf("Actor's Endpoints is nil")
+				if si == nil {
+					if !(act.Endpoints == nil || act.Endpoints.SharedInbox == nil) {
+						t.Errorf("Actor's SharedInbox was not nil: %s", act.Endpoints.SharedInbox)
+					}
 					return nil
 				}
-				if !cmp.Equal(iri, act.Endpoints.SharedInbox, equateItems) {
-					t.Errorf("Received %s, expected %s", act.Endpoints.SharedInbox, iri)
+				if act.Endpoints == nil {
+					t.Errorf("Actor's Endpoints should not be nil")
+					return nil
+				}
+				if !cmp.Equal(si, act.Endpoints.SharedInbox, equateItems) {
+					t.Errorf("Received %s, expected %s", act.Endpoints.SharedInbox, it)
 				}
 				return nil
 			})

@@ -8,22 +8,22 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	ap "github.com/go-ap/activitypub/build"
 	"github.com/go-ap/client"
 	"github.com/go-ap/client/c2s"
 	c "github.com/go-ap/fedbox/integration/internal/containers"
 	"github.com/go-ap/fedbox/integration/internal/containers/fedbox"
 	"github.com/go-ap/fedbox/integration/internal/tests"
-	ap "github.com/go-ap/fedbox/integration/internal/vocab"
 	"github.com/go-ap/filters"
 )
 
 func Test_C2S_DeleteRequests(t *testing.T) {
-	article3 := object(
-		c2sRootIRI.AddPath("objects/article-3"),
-		ap.HasType(vocab.ArticleType),
-		ap.HasContent("lorem ipsum dolor sic amet"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasPublished(MockDate),
+	article3 := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/article-3")),
+		ap.WithType(vocab.ArticleType),
+		ap.WithContent("lorem ipsum dolor sic amet"),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithPublished(MockDate),
 	)
 
 	token := new(c2s.BearerSigner)
@@ -42,39 +42,39 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 	}
 
 	delete4ID := c2sRootIRI.AddPath("activities/delete-4")
-	delete4 := del(
-		ap.HasCC(vocab.PublicNS),
-		ap.HasActor(person1),
-		ap.HasObject(article3.ID),
+	delete4 := ap.Delete(
+		ap.WithCC(vocab.PublicNS),
+		ap.WithActor(person1),
+		ap.WithObject(article3.ID),
 	)
 
-	note4 := object(
-		c2sRootIRI.AddPath("objects/note-4"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasType(vocab.NoteType),
-		ap.HasContent("First of two"),
+	note4 := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/note-4")),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithType(vocab.NoteType),
+		ap.WithContent("First of two"),
 	)
-	note5 := object(
-		c2sRootIRI.AddPath("objects/note-5"),
-		ap.HasAudience(vocab.PublicNS),
-		ap.HasType(vocab.NoteType),
-		ap.HasContent("Second of two"),
+	note5 := ap.Object(
+		ap.WithID(c2sRootIRI.AddPath("objects/note-5")),
+		ap.WithAudience(vocab.PublicNS),
+		ap.WithType(vocab.NoteType),
+		ap.WithContent("Second of two"),
 	)
 	create5ID := c2sRootIRI.AddPath("/activities/create-5")
-	create5 := create(ap.HasActor(person1), ap.HasObject(note4, note5))
+	create5 := ap.Create(ap.WithActor(person1), ap.WithObject(note4, note5))
 
 	delete6ID := c2sRootIRI.AddPath("activities/delete-6")
-	delete6 := del(
-		ap.HasCC(vocab.PublicNS),
-		ap.HasActor(person1),
-		ap.HasObject(note4, note5),
+	delete6 := ap.Delete(
+		ap.WithCC(vocab.PublicNS),
+		ap.WithActor(person1),
+		ap.WithObject(note4, note5),
 	)
 
 	delete7ID := c2sRootIRI.AddPath("activities/delete-7")
-	delete7 := del(
-		ap.HasCC(vocab.PublicNS),
-		ap.HasActor(person1),
-		ap.HasObject(person1.ID),
+	delete7 := ap.Delete(
+		ap.WithCC(vocab.PublicNS),
+		ap.WithActor(person1),
+		ap.WithObject(person1.ID),
 	)
 
 	toRun := []tests.RunnableTest{
