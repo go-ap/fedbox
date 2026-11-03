@@ -366,11 +366,21 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.Annotatef(err, "unable to initialize processor")
 		}
 
+		typ := it.GetType()
+		if it, err = processor.ProcessActivity(it, authorized, receivedIn); err != nil {
+			fb.errFn("failed processing activity: %+s", err)
+			return it, errors.HttpStatus(err), errors.Annotatef(err, "Unable to save activity %s to %s", typ, receivedIn)
+		}
 		_ = vocab.OnActivity(it, func(act *vocab.Activity) error {
+			if err = cache.ActivityPurge(fb.caches, act, receivedIn); err != nil {
+				fb.Logger.WithContext(lw.Ctx{"err": err}).Debugf("unable to purge cache")
+			}
 			if !vocab.ActorTypes.Match(act.Object.GetType()) {
 				return nil
 			}
 			return vocab.OnActor(act.Object, func(actor *vocab.Actor) error {
+				// NOTE(marius): now that we have a valid actor with a valid ID, we can
+				//  update it with an Outbox and Endpoints, if they're missing
 				oauth := actor.ID.AddPath("oauth")
 				proxyURL := fb.Service.ID.AddPath("proxyUrl")
 				if vocab.IsNil(actor.Outbox) {
@@ -382,19 +392,15 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 					ProxyURL:                   proxyURL,
 					SharedInbox:                vocab.Inbox.IRI(fb.Service),
 				}
+				if err = processor.CreateCollectionsForObject(actor); err != nil {
+					fb.Logger.WithContext(lw.Ctx{"err": err}).Warnf("unable save collections for actor")
+				}
+				if _, err = fb.Storage.Save(actor); err != nil {
+					fb.Logger.WithContext(lw.Ctx{"err": err}).Warnf("unable to update actor")
+				}
+
 				return nil
 			})
-		})
-
-		typ := it.GetType()
-		if it, err = processor.ProcessActivity(it, authorized, receivedIn); err != nil {
-			fb.errFn("failed processing activity: %+s", err)
-			return it, errors.HttpStatus(err), errors.Annotatef(err, "Unable to save activity %s to %s", typ, receivedIn)
-		}
-		_ = vocab.OnActivity(it, func(act *vocab.Activity) error {
-			if err = cache.ActivityPurge(fb.caches, act, receivedIn); err != nil {
-				fb.errFn("unable to purge cache: %+s", err)
-			}
 			return nil
 		})
 
