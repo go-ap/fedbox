@@ -366,6 +366,26 @@ func HandleActivity(fb *FedBOX) processing.ActivityHandlerFn {
 			return it, http.StatusInternalServerError, errors.Annotatef(err, "unable to initialize processor")
 		}
 
+		_ = vocab.OnActivity(it, func(act *vocab.Activity) error {
+			if !vocab.ActorTypes.Match(act.Object.GetType()) {
+				return nil
+			}
+			return vocab.OnActor(act.Object, func(actor *vocab.Actor) error {
+				oauth := actor.ID.AddPath("oauth")
+				proxyURL := fb.Service.ID.AddPath("proxyUrl")
+				if vocab.IsNil(actor.Outbox) {
+					actor.Outbox = vocab.Outbox.IRI(actor.ID)
+				}
+				actor.Endpoints = &vocab.Endpoints{
+					OauthAuthorizationEndpoint: oauth.AddPath("authorize"),
+					OauthTokenEndpoint:         oauth.AddPath("token"),
+					ProxyURL:                   proxyURL,
+					SharedInbox:                vocab.Inbox.IRI(fb.Service),
+				}
+				return nil
+			})
+		})
+
 		typ := it.GetType()
 		if it, err = processor.ProcessActivity(it, authorized, receivedIn); err != nil {
 			fb.errFn("failed processing activity: %+s", err)
