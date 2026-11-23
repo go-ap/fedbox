@@ -23,6 +23,7 @@ func Test_C2S_UpdateRequests(t *testing.T) {
 		ap.WithType(vocab.ArticleType),
 		ap.WithContent("lorem ipsum dolor sic amet"),
 		ap.WithAudience(vocab.PublicNS),
+		ap.WithAttributedTo(person1.ID),
 		ap.WithPublished(MockDate),
 	)
 

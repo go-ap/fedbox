@@ -59,6 +59,7 @@ var (
 		ap.WithPreferredUsername("jdoe"),
 		ap.WithName("John Doe"),
 		ap.WithAudience(vocab.PublicNS),
+		ap.WithAttributedTo(admin.ID),
 		ap.WithPublished(MockDate),
 		ap.WithInbox(),
 		ap.WithOutbox(),

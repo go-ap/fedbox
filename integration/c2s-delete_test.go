@@ -21,6 +21,7 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 	article3 := ap.Object(
 		ap.WithID(c2sRootIRI.AddPath("objects/article-3")),
 		ap.WithType(vocab.ArticleType),
+		ap.WithAttributedTo(person1.ID),
 		ap.WithContent("lorem ipsum dolor sic amet"),
 		ap.WithAudience(vocab.PublicNS),
 		ap.WithPublished(MockDate),
@@ -48,6 +49,8 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 		ap.WithObject(article3.ID),
 	)
 
+	// NOTE(marius): these don't need an attributedTo author, because they get fully processed,
+	// and it gets copied from the Create actor.
 	note4 := ap.Object(
 		ap.WithID(c2sRootIRI.AddPath("objects/note-4")),
 		ap.WithAudience(vocab.PublicNS),
@@ -66,14 +69,14 @@ func Test_C2S_DeleteRequests(t *testing.T) {
 	delete6ID := c2sRootIRI.AddPath("activities/delete-6")
 	delete6 := ap.Delete(
 		ap.WithCC(vocab.PublicNS),
-		ap.WithActor(person1),
+		ap.WithActor(person1.ID),
 		ap.WithObject(note4, note5),
 	)
 
 	delete7ID := c2sRootIRI.AddPath("activities/delete-7")
 	delete7 := ap.Delete(
 		ap.WithCC(vocab.PublicNS),
-		ap.WithActor(person1),
+		ap.WithActor(person1.ID),
 		ap.WithObject(person1.ID),
 	)
 

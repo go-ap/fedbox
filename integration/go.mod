@@ -1,28 +1,28 @@
 module github.com/go-ap/fedbox/integration
 
-go 1.26.3
+go 1.27
 
 require (
-	git.sr.ht/~mariusor/lw v0.0.0-20260917101519-2e0b081e156c
-	git.sr.ht/~mariusor/storage-all v0.0.0-20261101150717-8cee2d275c05
-	github.com/carlmjohnson/requests v0.26.2
+	git.sr.ht/~mariusor/lw v0.0.0-20261123081753-504d91c384ed
+	git.sr.ht/~mariusor/storage-all v0.0.0-20261121152327-81f0fc85752b
+	github.com/carlmjohnson/requests v0.26.3
 	github.com/elnormous/contenttype v1.0.4
-	github.com/go-ap/activitypub v0.0.0-20261101142956-a76d71dd72b0
-	github.com/go-ap/client v0.0.0-20261101144759-895de0be5faf
-	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
+	github.com/go-ap/activitypub v0.0.0-20261117195929-f28d9e613601
+	github.com/go-ap/client v0.0.0-20261120081857-63bcf50ed653
+	github.com/go-ap/errors v0.0.0-20261107170344-5391268d9d2c
 	github.com/go-ap/fedbox v0.0.0-20260717173704-0c1f2719fe9d
-	github.com/go-ap/filters v0.0.0-20261101144638-4754d87b7869
-	github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38
-	github.com/go-ap/storage-conformance-suite v0.0.0-20261101145434-f950c6192791
-	github.com/go-ap/storage-pg v0.0.0-20261101150538-60932ae4fe80
+	github.com/go-ap/filters v0.0.0-20261120081820-5ee59de928b0
+	github.com/go-ap/jsonld v0.0.0-20261107170435-a7bb5ba3f894
+	github.com/go-ap/storage-conformance-suite v0.0.0-20261123082408-df5c0ad5581e
+	github.com/go-ap/storage-pg v0.0.0-20261121151955-e5e74655d878
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.21.9
 	github.com/google/ko v0.19.1
-	github.com/jackc/pgx/v5 v5.12.0
+	github.com/jackc/pgx/v5 v5.13.0
 	github.com/moby/moby/api v1.56.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
-	golang.org/x/crypto v0.58.0
+	golang.org/x/crypto v0.59.0
 )
 
 require (
@@ -65,7 +65,7 @@ require (
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.12.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/aymanbagabas/go-udiff v0.4.1 // indirect
-	github.com/bits-and-blooms/bitset v1.29.0 // indirect
+	github.com/bits-and-blooms/bitset v1.30.0 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
@@ -86,7 +86,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.18.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 // indirect
-	github.com/dadrus/httpsig v0.9.0 // indirect
+	github.com/dadrus/httpsig v0.12.0 // indirect
 	github.com/dgraph-io/badger/v4 v4.9.6 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.4.2 // indirect
 	github.com/digitorus/pkcs7 v0.0.0-20250730155240-ffadbf3f398c // indirect
@@ -104,12 +104,12 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	github.com/go-ap/cache v0.0.0-20261101144458-eb7e2f285afb // indirect
+	github.com/go-ap/cache v0.0.0-20261120081232-a7a4106226a4 // indirect
 	github.com/go-ap/processing v0.0.0-20260716111245-78d0ef51171a // indirect
-	github.com/go-ap/storage-badger v0.0.0-20261101150224-8947b5db8442 // indirect
-	github.com/go-ap/storage-boltdb v0.0.0-20261101150043-cee7449555a4 // indirect
-	github.com/go-ap/storage-fs v0.0.0-20261101145619-9e2891f0a788 // indirect
-	github.com/go-ap/storage-sqlite v0.0.0-20261101145835-b3fbd423c1ea // indirect
+	github.com/go-ap/storage-badger v0.0.0-20261121151448-04b0443bf183 // indirect
+	github.com/go-ap/storage-boltdb v0.0.0-20261121151020-c1a0ac30e515 // indirect
+	github.com/go-ap/storage-fs v0.0.0-20261121150227-13f84aae2e5d // indirect
+	github.com/go-ap/storage-sqlite v0.0.0-20261121150638-5f9e35d4c474 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
@@ -153,18 +153,18 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/puddle/v2 v2.2.3 // indirect
+	github.com/jackc/puddle/v2 v2.2.4 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
 	github.com/jedisct1/go-minisign v0.0.0-20241212093149-d2f9f49435c7 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
-	github.com/klauspost/compress v1.20.3 // indirect
+	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/leporo/sqlf v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20261101121723-be84dd9509a0 // indirect
 	github.com/magiconair/properties v1.18.12 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-runewidth v0.0.31 // indirect
-	github.com/mattn/go-sqlite3 v1.14.52 // indirect
+	github.com/mattn/go-sqlite3 v1.14.53 // indirect
 	github.com/mfridman/tparse v0.18.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
@@ -220,11 +220,11 @@ require (
 	github.com/transparency-dev/merkle v0.0.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fastjson v1.6.10 // indirect
-	github.com/xo/terminfo v1.3.0 // indirect
+	github.com/xo/terminfo v1.3.1 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.etcd.io/bbolt v1.5.0 // indirect
-	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
@@ -233,13 +233,14 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.6 // indirect
-	golang.org/x/mod v0.42.0 // indirect
-	golang.org/x/net v0.62.0 // indirect
-	golang.org/x/oauth2 v0.37.0 // indirect
-	golang.org/x/sync v0.24.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
-	golang.org/x/term v0.47.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/crypto/openpgp v0.1.0-deprecated // indirect
+	golang.org/x/mod v0.43.0 // indirect
+	golang.org/x/net v0.63.0 // indirect
+	golang.org/x/oauth2 v0.38.0 // indirect
+	golang.org/x/sync v0.25.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
+	golang.org/x/term v0.48.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 	golang.org/x/tools v0.52.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d // indirect
@@ -249,10 +250,10 @@ require (
 	k8s.io/apimachinery v0.36.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
-	modernc.org/libc v1.79.1 // indirect
+	modernc.org/libc v1.82.12 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
-	modernc.org/memory v1.12.1 // indirect
-	modernc.org/sqlite v1.61.1 // indirect
+	modernc.org/memory v1.13.0 // indirect
+	modernc.org/sqlite v1.63.0 // indirect
 	quamina.net/go/quamina/v2 v2.0.3 // indirect
 	sigs.k8s.io/kind v0.32.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect

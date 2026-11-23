@@ -15,7 +15,7 @@ import (
 	ap "github.com/go-ap/fedbox/activitypub"
 	"github.com/go-ap/fedbox/internal/config"
 	"github.com/go-ap/fedbox/internal/env"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 type Storage struct {
@@ -135,9 +135,17 @@ func setup(ct *Base, conf config.Options, verbose int) error {
 			conf.LogLevel = lw.Level(max(int(lw.TraceLevel), int(conf.LogLevel)-(4*verbose)))
 		}
 		if conf.Env.IsDev() {
-			ct.Logger = lw.Dev(lw.SetLevel(conf.LogLevel), lw.SetOutput(out)).WithContext(lw.Ctx{"host": conf.Hostname})
+			ct.Logger = lw.Dev(
+				lw.SetLevel(conf.LogLevel),
+				lw.SetOutput(out),
+				lw.WithColors(!conf.Env.IsTest()),
+			).WithContext(lw.Ctx{"host": conf.Hostname})
 		} else {
-			ct.Logger = lw.Prod(lw.SetLevel(conf.LogLevel), lw.SetOutput(out)).WithContext(lw.Ctx{"host": conf.Hostname})
+			ct.Logger = lw.Prod(
+				lw.SetLevel(conf.LogLevel),
+				lw.SetOutput(out),
+				lw.WithColors(!conf.Env.IsTest()),
+			).WithContext(lw.Ctx{"host": conf.Hostname})
 		}
 	}
 	_l.Store(ct.Logger)
@@ -194,7 +202,7 @@ func (w muxReadWriter) Write(p []byte) (n int, err error) {
 var _ io.Reader = muxReadWriter{}
 
 func loadPwFromStdin(rw io.ReadWriter, prompt string) ([]byte, error) {
-	term := terminal.NewTerminal(rw, prompt)
+	term := term.NewTerminal(rw, prompt)
 	pw1, _ := term.ReadPassword("Password: ")
 	if len(pw1) == 0 {
 		return nil, errors.Errorf("empty password")

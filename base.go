@@ -205,10 +205,8 @@ func ActorClient(ctl *Base, actor vocab.Item) *client.C {
 		if prv != nil && signActor != nil {
 			sig := s2s.New(
 				s2s.WithActor(signActor, prv),
-				s2s.WithAlg(s2s.KeyTypePKCS),
 				s2s.WithCoveredComponents(s2s.FetchCoveredComponents...),
 				s2s.WithLogger(ll.WithContext(lw.Ctx{"log": "signer"})),
-				s2s.WithNonce(func() (string, error) { return "", nil }),
 			)
 			initFns = append(initFns, client.WithAuthorizationFn(sig.SignRFC9421, sig.SignDraft))
 		}
@@ -248,6 +246,8 @@ func (ctl *Base) Saver(actor *vocab.Actor, onlyLocalSaves, skipInboundValidation
 
 	initFns := []processing.OptionFn{
 		processing.WithLogger(l), processing.WithStorage(db),
+		// NOTE(marius): don't clear the IDs on imported activities
+		processing.AllowClientActivityIDs,
 	}
 
 	if baseIRI != "" && !baseIRI.Equal(auth.AnonymousActor.ID) {

@@ -1025,7 +1025,7 @@ func runTestSuites(t *testing.T, pairs testPairs) {
 	if Verbose {
 		logLevel = lw.DebugLevel
 	}
-	l := lw.Prod(lw.SetLevel(logLevel), lw.SetOutput(t.Output()))
+	l := lw.Prod(lw.SetLevel(logLevel), lw.SetOutput(t.Output()), lw.WithColors(false))
 
 	for _, suite := range pairs {
 		runTestSuite(t, suite, l)

@@ -116,7 +116,7 @@ func tryCreateActorCollections(ctl *Base, actor vocab.Item) error {
 		}
 		for _, stream := range actor.Streams {
 			if _, maybeCol := allCollectionPaths.Split(stream.GetLink()); !allCollectionPaths.Contains(maybeCol) {
-				ctl.Logger.Debugf("Stream doesn't seem to be a collection", stream)
+				ctl.Logger.Debugf("Stream doesn't seem to be a collection: %v", stream)
 				return nil
 			}
 			initialCollections = append(initialCollections, stream.GetLink())
@@ -186,7 +186,7 @@ func tryCreateCollection(ctl *Base, colIRI vocab.IRI) error {
 	collection.OrderedItems = nil
 	_, err = storage.Save(collection)
 	if err != nil {
-		ctl.Logger.Errorf("Unable to save collection with updated totalItems", err)
+		ctl.Logger.Errorf("Unable to save collection with updated totalItems: %v", err)
 		return err
 	}
 

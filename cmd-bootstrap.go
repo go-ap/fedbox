@@ -44,7 +44,7 @@ func bootstrap(ctl *Base, service vocab.Item, l lw.Logger, pair *ap.KeyPair, pw 
 	if err != nil {
 		return http.Annotatef(err, "Unable to initialize storage")
 	}
-	if err := storage.Bootstrap(initFns...); err != nil {
+	if err = storage.Bootstrap(initFns...); err != nil {
 		return http.Annotatef(err, "Unable to create %s path for storage %s", path, conf.Storage)
 	}
 	l.Infof("Successfully created %s db for storage %s", path, conf.Storage)

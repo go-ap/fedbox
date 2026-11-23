@@ -323,11 +323,12 @@ func (i ImportCmd) Run(ctl *Base) error {
 	}
 	count := 0
 	start := time.Now().Round(0)
+
+	importer := ctl.Saver(&ctl.Service, i.SkipRemotes, true)
 	for _, it := range col {
 		_, _ = fmt.Fprintf(ctl.out, "Processing %s[%v]\n", it.GetType(), ObjectTypeOf(it))
 		actor := &ctl.Service
 
-		importer := ctl.Saver(&ctl.Service, i.SkipRemotes, true)
 		err := vocab.OnIntransitiveActivity(it, func(a *vocab.IntransitiveActivity) (err error) {
 			if a == nil {
 				Errf(ctl.err, "invalid activity, is nil")
