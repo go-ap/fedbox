@@ -7,7 +7,7 @@ sources:
 environment:
   GOCOVERDIR: /tmp/coverage
 secrets:
-- 3dcea276-38d6-4a7e-85e5-20cbc903e1ea
+- c523dfd7-44d6-4a1a-9971-5b355d02c567
 - 2c39e47f-0799-413b-9ba8-a54eb454c60e
 tasks:
   - setup: |
